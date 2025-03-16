@@ -37,12 +37,12 @@ static_assert((cuda::std::__cccl_is_referenceable<const Foo&>::value), "");
 static_assert((cuda::std::__cccl_is_referenceable<Foo&&>::value), "");
 static_assert((cuda::std::__cccl_is_referenceable<const Foo&&>::value), "");
 
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
 static_assert((cuda::std::__cccl_is_referenceable<int __attribute__((__vector_size__(8)))>::value), "");
 static_assert((cuda::std::__cccl_is_referenceable<const int __attribute__((__vector_size__(8)))>::value), "");
 static_assert((cuda::std::__cccl_is_referenceable<float __attribute__((__vector_size__(16)))>::value), "");
 static_assert((cuda::std::__cccl_is_referenceable<const float __attribute__((__vector_size__(16)))>::value), "");
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 
 // Functions without cv-qualifiers are referenceable
 static_assert((cuda::std::__cccl_is_referenceable<void()>::value), "");

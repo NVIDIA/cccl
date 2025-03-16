@@ -59,7 +59,7 @@ class Op(ctypes.Structure):
         ("type", OpKind),
         ("name", ctypes.c_char_p),
         ("ltoir", ctypes.c_char_p),
-        ("ltoir_size", ctypes.c_int),
+        ("ltoir_size", ctypes.c_size_t),
         ("size", ctypes.c_size_t),
         ("alignment", ctypes.c_size_t),
         ("state", ctypes.c_void_p),
@@ -130,6 +130,20 @@ class DeviceSegmentedReduceBuildResult(ctypes.Structure):
         ("library", ctypes.c_void_p),
         ("accumulator_size", ctypes.c_uint64),
         ("segmented_reduce_kernel", ctypes.c_void_p),
+    ]
+
+
+# MUST match `cccl_device_unique_by_key_build_result_t` in c/include/cccl/c/unique_by_key.h
+class DeviceUniqueByKeyBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("compact_init_kernel", ctypes.c_void_p),
+        ("sweep_kernel", ctypes.c_void_p),
+        ("description_bytes_per_tile", ctypes.c_size_t),
+        ("payload_bytes_per_tile", ctypes.c_size_t),
     ]
 
 

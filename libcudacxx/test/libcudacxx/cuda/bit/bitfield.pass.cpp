@@ -23,7 +23,7 @@ __host__ __device__ constexpr bool test()
   assert(cuda::bitfield_insert(T{0}, all_ones, 0, 1) == 1);
   assert(cuda::bitfield_insert(T{0}, all_ones, 1, 1) == 0b10);
   assert(cuda::bitfield_insert(T{0b10}, all_ones, 0, 1) == 0b11);
-  static_assert(cuda::bitfield_insert(all_ones, all_ones, 0, 0) == all_ones);
+  assert(cuda::bitfield_insert(all_ones, all_ones, 0, 0) == all_ones);
   assert(cuda::bitfield_insert(all_ones, all_ones, 0, 1) == all_ones);
   assert(cuda::bitfield_insert(all_ones, all_ones, 2, 1) == all_ones);
   assert(cuda::bitfield_insert(all_ones, T{0b1000}, 1, 2) == (all_ones & static_cast<T>(~T{0b110})));
@@ -34,6 +34,7 @@ __host__ __device__ constexpr bool test()
   assert(cuda::bitfield_insert(T{0b10100000}, T{0b11}, 3, 2) == 0b10111000);
   assert(cuda::bitfield_insert(T{0}, all_ones, nl::digits - 1, 1) == (T{1} << (nl::digits - 1u)));
   assert(cuda::bitfield_insert(T{0b10100000}, all_ones, 0, nl::digits) == all_ones);
+  assert(cuda::bitfield_insert(T{0b10100000}, all_ones, nl::digits, 0) == T{0b10100000});
 
   assert(cuda::bitfield_extract(T{0}, 3, 4) == 0);
   assert(cuda::bitfield_extract(T{0b1011}, 0, 1) == 1);
@@ -49,6 +50,7 @@ __host__ __device__ constexpr bool test()
 
   assert(cuda::bitfield_extract(T{all_ones}, nl::digits - 1, 1) == 1);
   assert(cuda::bitfield_extract(T{0b10100000}, 0, nl::digits) == T{0b10100000});
+  assert(cuda::bitfield_extract(T{0b10100000}, nl::digits, 0) == 0);
   return true;
 }
 

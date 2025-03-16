@@ -46,9 +46,9 @@ int main(int, char**)
 
   { // operator/(const month& m, const weekday_last& wdi) (and switched)
     static_assert(noexcept(February / Tuesday[last]));
-    ASSERT_SAME_TYPE(month_weekday_last, decltype(February / Tuesday[last]));
+    static_assert(cuda::std::is_same_v<month_weekday_last, decltype(February / Tuesday[last])>);
     static_assert(noexcept(Tuesday[last] / February));
-    ASSERT_SAME_TYPE(month_weekday_last, decltype(Tuesday[last] / February));
+    static_assert(cuda::std::is_same_v<month_weekday_last, decltype(Tuesday[last] / February)>);
 
     //  Run the example
     {
@@ -76,9 +76,9 @@ int main(int, char**)
 
   { // operator/(int m, const weekday_last& wdi) (and switched)
     static_assert(noexcept(2 / Tuesday[2]));
-    ASSERT_SAME_TYPE(month_weekday_last, decltype(2 / Tuesday[last]));
+    static_assert(cuda::std::is_same_v<month_weekday_last, decltype(2 / Tuesday[last])>);
     static_assert(noexcept(Tuesday[2] / 2));
-    ASSERT_SAME_TYPE(month_weekday_last, decltype(Tuesday[last] / 2));
+    static_assert(cuda::std::is_same_v<month_weekday_last, decltype(Tuesday[last] / 2)>);
 
     //  Run the example
     {

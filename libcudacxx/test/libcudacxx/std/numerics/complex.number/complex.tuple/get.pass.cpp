@@ -26,18 +26,18 @@
 #include "test_macros.h"
 
 template <typename T>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   // &
   {
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto& r = cuda::std::get<0>(c);
-    ASSERT_SAME_TYPE(T&, decltype(cuda::std::get<0>(c)));
+    static_assert(cuda::std::is_same_v<T&, decltype(cuda::std::get<0>(c))>);
     static_assert(noexcept(cuda::std::get<0>(c)), "");
     assert(r == T{27});
     auto& i = cuda::std::get<1>(c);
-    ASSERT_SAME_TYPE(T&, decltype(cuda::std::get<1>(c)));
+    static_assert(cuda::std::is_same_v<T&, decltype(cuda::std::get<1>(c))>);
     static_assert(noexcept(cuda::std::get<1>(c)), "");
     assert(i == T{28});
   }
@@ -46,7 +46,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto&& r = cuda::std::get<0>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(T&&, decltype(cuda::std::get<0>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<T&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))), "");
     assert(r == T{27});
   }
@@ -54,7 +54,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto&& i = cuda::std::get<1>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(T&&, decltype(cuda::std::get<1>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<T&&, decltype(cuda::std::get<1>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))), "");
     assert(i == T{28});
   }
@@ -63,11 +63,11 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     const cuda::std::complex<T> c{T{27}, T{28}};
 
     const auto& r = cuda::std::get<0>(c);
-    ASSERT_SAME_TYPE(const T&, decltype(cuda::std::get<0>(c)));
+    static_assert(cuda::std::is_same_v<const T&, decltype(cuda::std::get<0>(c))>);
     static_assert(noexcept(cuda::std::get<0>(c)), "");
     assert(r == T{27});
     const auto& i = cuda::std::get<1>(c);
-    ASSERT_SAME_TYPE(const T&, decltype(cuda::std::get<1>(c)));
+    static_assert(cuda::std::is_same_v<const T&, decltype(cuda::std::get<1>(c))>);
     static_assert(noexcept(cuda::std::get<1>(c)), "");
     assert(i == T{28});
   }
@@ -76,7 +76,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     const cuda::std::complex<T> c{T{27}, T{28}};
 
     const auto&& r = cuda::std::get<0>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(const T&&, decltype(cuda::std::get<0>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(cuda::std::get<0>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<0>(cuda::std::move(c))), "");
     assert(r == T{27});
   }
@@ -84,7 +84,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     const cuda::std::complex<T> c{T{27}, T{28}};
 
     const auto&& i = cuda::std::get<1>(cuda::std::move(c));
-    ASSERT_SAME_TYPE(const T&&, decltype(cuda::std::get<1>(cuda::std::move(c))));
+    static_assert(cuda::std::is_same_v<const T&&, decltype(cuda::std::get<1>(cuda::std::move(c)))>);
     static_assert(noexcept(cuda::std::get<1>(cuda::std::move(c))), "");
     assert(i == T{28});
   }
@@ -94,18 +94,18 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto [r, i]{c};
-    ASSERT_SAME_TYPE(T, decltype(r));
+    static_assert(cuda::std::is_same_v<T, decltype(r)>);
     assert(r == T{27});
-    ASSERT_SAME_TYPE(T, decltype(i));
+    static_assert(cuda::std::is_same_v<T, decltype(i)>);
     assert(i == T{28});
   }
   {
     cuda::std::complex<T> c{T{27}, T{28}};
 
     auto& [r, i]{c};
-    ASSERT_SAME_TYPE(T, decltype(r));
+    static_assert(cuda::std::is_same_v<T, decltype(r)>);
     assert(r == T{27});
-    ASSERT_SAME_TYPE(T, decltype(i));
+    static_assert(cuda::std::is_same_v<T, decltype(i)>);
     assert(i == T{28});
   }
 
@@ -145,7 +145,7 @@ __host__ __device__ bool test()
   return true;
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test_constexpr()
+constexpr __host__ __device__ bool test_constexpr()
 {
   test<float>();
   test<double>();

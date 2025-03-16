@@ -92,13 +92,13 @@ public:
     return (start_events.size() > 0);
   }
 
-  void add_start_events(const event_list& lst)
+  void add_start_events(backend_ctx_untyped& bctx, const event_list& lst)
   {
     start_events.merge(lst);
 
     // We only add events at the beginning of the context, but use them
     // often, so it's good to optimize anyhow
-    start_events.optimize();
+    start_events.optimize(bctx);
   }
 
   const event_list& get_start_events() const
@@ -106,7 +106,7 @@ public:
     return start_events;
   }
 
-  void add_dangling_events(const event_list& lst)
+  void add_dangling_events(backend_ctx_untyped& bctx, const event_list& lst)
   {
     auto guard = ::std::lock_guard(dangling_events_mutex);
     dangling_events.merge(lst);
@@ -114,7 +114,7 @@ public:
      * the list to avoid keeping events alive for no reason. */
     if (dangling_events.size() > 16)
     {
-      dangling_events.optimize();
+      dangling_events.optimize(bctx);
     }
   }
 

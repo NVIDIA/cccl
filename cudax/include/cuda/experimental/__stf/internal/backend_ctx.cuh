@@ -672,7 +672,7 @@ protected:
         auto deinit_res = it->deinit(bctx);
         if (track_dangling)
         {
-          stack.add_dangling_events(mv(deinit_res));
+          stack.add_dangling_events(bctx, mv(deinit_res));
         }
       }
 
@@ -683,7 +683,7 @@ protected:
       auto composite_deinit_res = composite_cache.deinit();
       if (track_dangling)
       {
-        stack.add_dangling_events(mv(composite_deinit_res));
+        stack.add_dangling_events(bctx, mv(composite_deinit_res));
       }
     }
 

@@ -63,9 +63,9 @@ int main(int, char**)
 
   test_has_not_nothrow_assign<const int>();
   test_has_not_nothrow_assign<void>();
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
   test_has_not_nothrow_assign<A>();
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
 
   return 0;
 }

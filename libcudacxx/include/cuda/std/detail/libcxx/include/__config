@@ -119,14 +119,6 @@ extern "C++" {
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
 #  endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
 
-// This is wrapped in __CUDA_ARCH__ to prevent error: "ignoring '#pragma unroll'
-// [-Werror=unknown-pragmas]"
-#  if defined(__CUDA_ARCH__)
-#    define _LIBCUDACXX_PRAGMA_UNROLL(_N) _CCCL_PRAGMA(unroll _N)
-#  else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#    define _LIBCUDACXX_PRAGMA_UNROLL(_N)
-#  endif // !__CUDA_ARCH__
-
 #  if _CCCL_HAS_CUDA_COMPILER
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
 #  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)

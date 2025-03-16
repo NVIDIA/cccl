@@ -20,7 +20,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_char()
+__host__ __device__ constexpr void test_char()
 {
   const unsigned n = 4;
   char ca[n]       = {0};
@@ -32,7 +32,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char()
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_int()
+__host__ __device__ constexpr void test_int()
 {
   const unsigned n = 4;
   int ia[n]        = {0};
@@ -43,7 +43,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_int()
   assert(ia[3] == 1);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_char<forward_iterator<char*>>();
   test_char<bidirectional_iterator<char*>>();

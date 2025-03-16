@@ -19,7 +19,9 @@ struct UserAtomicType
 {
   int i;
 
-  __host__ __device__ explicit UserAtomicType(int d = 0) TEST_NOEXCEPT : i(d) {}
+  __host__ __device__ explicit UserAtomicType(int d = 0) noexcept
+      : i(d)
+  {}
 
   __host__ __device__ friend bool operator==(const UserAtomicType& x, const UserAtomicType& y)
   {

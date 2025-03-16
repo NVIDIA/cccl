@@ -277,7 +277,7 @@ struct AgentRadixSortUpsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ResetDigitCounters()
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < COUNTER_LANES; LANE++)
     {
       temp_storage.packed_thread_counters[LANE][threadIdx.x] = 0;
@@ -289,10 +289,10 @@ struct AgentRadixSortUpsweep
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void ResetUnpackedCounters()
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
       {
         local_counts[LANE][UNPACKED_COUNTER] = 0;
@@ -309,16 +309,16 @@ struct AgentRadixSortUpsweep
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
       const int counter_lane = (LANE * WARPS) + warp_id;
       if (counter_lane < COUNTER_LANES)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int PACKED_COUNTER = 0; PACKED_COUNTER < BLOCK_THREADS; PACKED_COUNTER += WARP_THREADS)
         {
-#pragma unroll
+          _CCCL_PRAGMA_UNROLL_FULL()
           for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
           {
             OffsetT counter = temp_storage.thread_counters[counter_lane][warp_tid + PACKED_COUNTER][UNPACKED_COUNTER];
@@ -430,8 +430,8 @@ struct AgentRadixSortUpsweep
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
-// Place unpacked digit counters in shared memory
-#pragma unroll
+    // Place unpacked digit counters in shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
       int counter_lane = (LANE * WARPS) + warp_id;
@@ -439,7 +439,7 @@ struct AgentRadixSortUpsweep
       {
         int digit_row = counter_lane << LOG_PACKING_RATIO;
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
         {
           int bin_idx = digit_row + UNPACKED_COUNTER;
@@ -451,17 +451,17 @@ struct AgentRadixSortUpsweep
 
     __syncthreads();
 
-// Rake-reduce bin_count reductions
+    // Rake-reduce bin_count reductions
 
-// Whole blocks
-#pragma unroll
+    // Whole blocks
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int BIN_BASE = RADIX_DIGITS % BLOCK_THREADS; (BIN_BASE + BLOCK_THREADS) <= RADIX_DIGITS;
          BIN_BASE += BLOCK_THREADS)
     {
-      int bin_idx = BIN_BASE + threadIdx.x;
-
+      int bin_idx       = BIN_BASE + threadIdx.x;
       OffsetT bin_count = 0;
-#pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < WARP_THREADS; ++i)
       {
         bin_count += temp_storage.block_counters[i][bin_idx];
@@ -478,10 +478,10 @@ struct AgentRadixSortUpsweep
     // Remainder
     if ((RADIX_DIGITS % BLOCK_THREADS != 0) && (threadIdx.x < RADIX_DIGITS))
     {
-      int bin_idx = threadIdx.x;
-
+      int bin_idx       = threadIdx.x;
       OffsetT bin_count = 0;
-#pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < WARP_THREADS; ++i)
       {
         bin_count += temp_storage.block_counters[i][bin_idx];
@@ -510,8 +510,8 @@ struct AgentRadixSortUpsweep
     unsigned int warp_id  = threadIdx.x >> LOG_WARP_THREADS;
     unsigned int warp_tid = ::cuda::ptx::get_sreg_laneid();
 
-// Place unpacked digit counters in shared memory
-#pragma unroll
+    // Place unpacked digit counters in shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int LANE = 0; LANE < LANES_PER_WARP; LANE++)
     {
       int counter_lane = (LANE * WARPS) + warp_id;
@@ -519,7 +519,7 @@ struct AgentRadixSortUpsweep
       {
         int digit_row = counter_lane << LOG_PACKING_RATIO;
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int UNPACKED_COUNTER = 0; UNPACKED_COUNTER < PACKING_RATIO; UNPACKED_COUNTER++)
         {
           int bin_idx = digit_row + UNPACKED_COUNTER;
@@ -531,8 +531,8 @@ struct AgentRadixSortUpsweep
 
     __syncthreads();
 
-// Rake-reduce bin_count reductions
-#pragma unroll
+    // Rake-reduce bin_count reductions
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -541,7 +541,7 @@ struct AgentRadixSortUpsweep
       {
         bin_count[track] = 0;
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < WARP_THREADS; ++i)
         {
           bin_count[track] += temp_storage.block_counters[i][bin_idx];
