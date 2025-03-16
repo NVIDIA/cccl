@@ -100,6 +100,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
   using offset_t = c2h::get<1, TestType>;
 
   constexpr std::size_t min_num_items = 1 << 5;
+  constexpr std::size_t max_num_items = 1 << 20;
   const std::size_t num_items         = GENERATE_COPY(take(3, random(min_num_items, max_num_items)));
   const std::size_t num_segments      = GENERATE_COPY(take(2, random(std::size_t{2}, num_items / 2)));
 
