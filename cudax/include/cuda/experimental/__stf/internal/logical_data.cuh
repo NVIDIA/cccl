@@ -60,10 +60,10 @@ public:
   task_set() = default;
 
   /* Add a task to the set : this will copy the done prereqs, and save the ID */
-  void add(const task& t)
+  void add(backend_ctx_untyped& bctx, const task& t)
   {
     done_prereqs.merge(t.get_done_prereqs());
-    done_prereqs.optimize();
+    done_prereqs.optimize(bctx);
     // this will maybe depend on the use of dot or not
     task_ids.push_back(t.get_unique_id());
   }
@@ -216,7 +216,7 @@ public:
     // If the beginning of the context depends on a prereq, we assume this logical data depends on it
     if (ctx.has_start_events())
     {
-      inst.add_read_prereq(ctx.get_start_events());
+      inst.add_read_prereq(ctx, ctx.get_start_events());
     }
 
     // This is not an instance allocated by our library, so we will not
@@ -605,7 +605,7 @@ public:
         // fprintf(stderr, "RECLAIM %s WITH NO TRANSFER (INVALID)... (wb cnt = %ld)\n", get_symbol().c_str(),
         //         total_write_back_cnt);
         // No-op !
-        current_instance.add_read_prereq(prereqs);
+        current_instance.add_read_prereq(ctx, prereqs);
         break;
 
       case reserved::msir_state_id::modified: {
@@ -621,8 +621,8 @@ public:
         // total_write_back_cnt++;
         // fprintf(stderr, "WRITE BACK... %s (%ld)!!\n", get_symbol().c_str(), total_write_back_cnt);
 
-        ref_instance.add_read_prereq(prereqs);
-        current_instance.add_read_prereq(prereqs);
+        ref_instance.add_read_prereq(ctx, prereqs);
+        current_instance.add_read_prereq(ctx, prereqs);
         break;
       }
 
@@ -646,7 +646,7 @@ public:
         assert(cpy_cnt > 0);
 
         current_instance.set_msir(reserved::msir_state_id::invalid);
-        current_instance.add_read_prereq(prereqs);
+        current_instance.add_read_prereq(ctx, prereqs);
 
         // Update other copies (if needed)
         for (auto n : each(nnodes))
@@ -778,7 +778,7 @@ public:
 
             // Make sure this is finished before we delete the source, for example
             // We do not remove existing prereqs as there can be concurrent copies along with existing read accesses
-            src_instance.add_write_prereq(src_avail_prereq);
+            src_instance.add_write_prereq(ctx, src_avail_prereq);
             dst_instance.set_read_prereq(src_avail_prereq);
             // Everything is already in the read_prereq
             dst_instance.clear_write_prereq();
@@ -1336,7 +1336,8 @@ public:
   // temporary results as well.
   // If we have a non relaxed type of access after a reduction
   // instance_id is the data instance which should have a coherent copy after the reduction
-  void reconstruct_after_redux(instance_id_t instance_id, const exec_place& e_place, event_list& prereqs)
+  void reconstruct_after_redux(
+    backend_ctx_untyped& bctx, instance_id_t instance_id, const exec_place& e_place, event_list& prereqs)
   {
     // @@@@TODO@@@@ get from somewhere else (machine ?)
     const size_t max_nodes = cuda_try<cudaGetDeviceCount>() + 2;
@@ -1521,7 +1522,7 @@ public:
 
         // This instance will be used, and we add the current list of events to its existing one
         auto& inst = get_data_instance(copy_instance_id);
-        inst.add_read_prereq(prereqs);
+        inst.add_read_prereq(bctx, prereqs);
 
         // fprintf(stderr, "REUSE INSTANCE %d to copy\n", copy_instance_id);
 #ifdef REDUCTION_DEBUG
@@ -1761,7 +1762,7 @@ inline void reserved::logical_data_untyped_impl::erase()
       data_instance& ref_instance  = get_data_instance(ref_id);
       const data_place& ref_dplace = ref_instance.get_dplace();
       auto e                       = ref_dplace.get_affine_exec_place();
-      l.reconstruct_after_redux(ref_id, e, wb_prereqs);
+      l.reconstruct_after_redux(ctx, ref_id, e, wb_prereqs);
 
       h_state.current_mode = access_mode::none;
     }
@@ -1785,13 +1786,13 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       write_back(src_dplace, src_id, reqs);
 
-      src_instance.add_write_prereq(reqs);
+      src_instance.add_write_prereq(ctx, reqs);
       dst_instance.set_read_prereq(reqs);
 
       if (track_dangling_events)
       {
         // nobody waits for these events, so we put them in the list of dangling events
-        cs.add_dangling_events(reqs);
+        cs.add_dangling_events(ctx, reqs);
       }
     }
   }
@@ -1821,7 +1822,7 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       if (track_dangling_events)
       {
-        cs.add_dangling_events(inst_prereqs);
+        cs.add_dangling_events(ctx, inst_prereqs);
       }
     }
 
@@ -1833,7 +1834,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     if (wb_prereqs.size() > 0)
     {
       // nobody waits for these events, so we put them in the list of dangling events
-      cs.add_dangling_events(wb_prereqs);
+      cs.add_dangling_events(ctx, wb_prereqs);
     }
   }
 
@@ -1925,7 +1926,7 @@ inline event_list enforce_stf_deps_before(
       }
       ctx_.pending_redux_id.clear();
     }
-    handle.reconstruct_after_redux(instance_id, eplace.value(), result);
+    handle.reconstruct_after_redux(bctx, instance_id, eplace.value(), result);
     ctx_.current_mode = access_mode::none;
   }
 
@@ -2025,7 +2026,8 @@ inline event_list enforce_stf_deps_before(
 }
 
 template <typename task_type>
-inline void enforce_stf_deps_after(logical_data_untyped& handle, const task_type& task, const access_mode mode)
+inline void enforce_stf_deps_after(
+  backend_ctx_untyped& bctx, logical_data_untyped& handle, const task_type& task, const access_mode mode)
 {
   if (mode == access_mode::relaxed)
   {
@@ -2043,13 +2045,13 @@ inline void enforce_stf_deps_after(logical_data_untyped& handle, const task_type
   else
   {
     // Add to the list of readers
-    ctx_.current_readers.add(task);
+    ctx_.current_readers.add(bctx, task);
   }
 }
 
 /* Enforce task dependencies, allocations, and copies ... */
 inline void fetch_data(
-  backend_ctx_untyped& ctx,
+  backend_ctx_untyped& bctx,
   logical_data_untyped& d,
   const instance_id_t instance_id,
   task& t,
@@ -2058,12 +2060,12 @@ inline void fetch_data(
   const data_place& dplace,
   event_list& result)
 {
-  event_list stf_prereq = reserved::enforce_stf_deps_before(ctx, d, instance_id, t, mode, eplace);
+  event_list stf_prereq = reserved::enforce_stf_deps_before(bctx, d, instance_id, t, mode, eplace);
 
   if (d.has_interface() && !d.is_void_interface())
   {
     // Allocate data if needed (and possibly reclaim memory to do so)
-    reserved::dep_allocate(ctx, d, mode, dplace, eplace, instance_id, stf_prereq);
+    reserved::dep_allocate(bctx, d, mode, dplace, eplace, instance_id, stf_prereq);
 
     /*
      * DATA LAZY UPDATE (relying on the MSI protocol)
@@ -2072,7 +2074,7 @@ inline void fetch_data(
     // This will initiate a copy if the data was not valid
     d.enforce_msi_protocol(instance_id, mode, stf_prereq);
 
-    stf_prereq.optimize();
+    stf_prereq.optimize(bctx);
 
     // Gather all prereqs required to fetch this piece of data into the
     // dependencies of the task.
@@ -2127,7 +2129,7 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
   {
     if (frozen_mode == access_mode::read)
     {
-      used_instances[i].add_write_prereq(prereqs);
+      used_instances[i].add_write_prereq(ctx, prereqs);
     }
     else
     {
@@ -2141,7 +2143,7 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
   logical_data_untyped d(shared_from_this());
 
   // Keep track of the previous readers/writers and generate dot
-  reserved::enforce_stf_deps_after(d, fake_task, frozen_mode);
+  reserved::enforce_stf_deps_after(ctx, d, fake_task, frozen_mode);
 
   frozen_flag = false;
 }

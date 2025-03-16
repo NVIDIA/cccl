@@ -212,7 +212,7 @@ public:
 
     // Create an event in the stream
     auto start_e = reserved::record_event_in_stream(dstream);
-    get_stack().add_start_events(event_list(mv(start_e)));
+    get_stack().add_start_events(*this, event_list(mv(start_e)));
 
     // When a stream is attached to the context creation, the finalize()
     // semantic is non-blocking
@@ -280,7 +280,7 @@ public:
 
     auto prereqs = get_stack().insert_task_fence(*get_dot());
 
-    prereqs.optimize();
+    prereqs.optimize(*this);
 
     // The output event is used for the tools in practice so we can ignore it
     /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "task_fence", false);
