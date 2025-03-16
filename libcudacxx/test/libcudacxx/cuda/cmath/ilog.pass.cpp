@@ -10,6 +10,7 @@
 #include <cuda/cmath>
 #include <cuda/std/cassert>
 #include <cuda/std/cmath>
+#include <cuda/std/cstddef>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -84,20 +85,20 @@ __host__ __device__ constexpr bool test()
 
 #if !defined(TEST_COMPILER_NVRTC)
   // cstdint types:
-  test<std::size_t>();
-  test<std::ptrdiff_t>();
-  test<std::intptr_t>();
-  test<std::uintptr_t>();
+  test<cuda::std::size_t>();
+  test<cuda::std::ptrdiff_t>();
+  test<cuda::std::intptr_t>();
+  test<cuda::std::uintptr_t>();
 
-  test<std::int8_t>();
-  test<std::int16_t>();
-  test<std::int32_t>();
-  test<std::int64_t>();
+  test<cuda::std::int8_t>();
+  test<cuda::std::int16_t>();
+  test<cuda::std::int32_t>();
+  test<cuda::std::int64_t>();
 
-  test<std::uint8_t>();
-  test<std::uint16_t>();
-  test<std::uint32_t>();
-  test<std::uint64_t>();
+  test<cuda::std::uint8_t>();
+  test<cuda::std::uint16_t>();
+  test<cuda::std::uint32_t>();
+  test<cuda::std::uint64_t>();
 #endif // !TEST_COMPILER_NVRTC
 
 #if _CCCL_HAS_INT128()
