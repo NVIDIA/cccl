@@ -410,7 +410,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
       values,
       current_bit,
       end_bit,
-      bool_constant_v<Order == SortOrder::Descending>,
+      bool_constant_v < Order == SortOrder::Descending >,
       bool_constant_v<KEYS_ONLY>,
       decomposer);
 
@@ -565,9 +565,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
 
   } temp_storage;
 
-  const ::cuda::std::int64_t segment_id =
-    blockIdx.x + (blockIdx.y * static_cast<::cuda::std::int64_t>(gridDim.x))
-    + (blockIdx.z * static_cast<::cuda::std::int64_t>(gridDim.x * gridDim.y));
+  const auto segment_id = blockIdx.x;
 
   // Ensure the size of the current segment does not overflow SegmentSizeT
   _CCCL_ASSERT(static_cast<decltype(d_end_offsets[segment_id] - d_begin_offsets[segment_id])>(

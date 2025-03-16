@@ -1240,32 +1240,60 @@ struct DispatchSegmentedRadixSort
     PassConfigT& pass_config)
   {
     cudaError error = cudaSuccess;
-    do
-    {
-      int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, (end_bit - current_bit));
 
-// Log kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
-              "%lld items per thread, %lld SM occupancy, "
-              "current bit %d, bit_grain %d\n",
-              (long long) num_segments,
-              (long long) pass_config.segmented_config.block_threads,
-              (long long) stream,
-              (long long) pass_config.segmented_config.items_per_thread,
-              (long long) pass_config.segmented_config.sm_occupancy,
-              current_bit,
-              pass_bits);
-#endif
+    // The number of bits to process in this pass
+    int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, (end_bit - current_bit));
+
+    // The offset type (used to specialize the kernel template), large enough to index any segment within a single
+    // invocation
+    using per_invocation_segment_offset_t = ::cuda::std::int32_t;
+
+    // The upper bound of segments that a single kernel invocation will process
+    constexpr auto max_num_segments_per_invocation =
+      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max());
+
+    // Number of radix sort invocations until all segments have been processed
+    const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
+
+    // If d_begin_offsets and d_end_offsets do not support operator+ then we can't have more than
+    // max_num_segments_per_invocation segments per invocation
+    if (num_invocations > 1
+        && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
+    {
+      return cudaErrorInvalidValue;
+    }
+
+    // Iterate over chunks of segments
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    {
+      const auto current_segment_offset = invocation_index * max_num_segments_per_invocation;
+      const auto num_current_segments =
+        ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
+
+      // Log kernel configuration
+      // #ifdef CUB_DEBUG_LOG
+      _CubLog(
+        "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
+        "%lld items per thread, %lld SM occupancy, "
+        "current segment offset %lld, current bit %d, bit_grain %d\n",
+        (long long) num_current_segments,
+        (long long) pass_config.segmented_config.block_threads,
+        (long long) stream,
+        (long long) pass_config.segmented_config.items_per_thread,
+        (long long) pass_config.segmented_config.sm_occupancy,
+        (long long) current_segment_offset,
+        current_bit,
+        pass_bits);
+      // #endif
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        num_segments, pass_config.segmented_config.block_threads, 0, stream)
+        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
               d_values_in,
               d_values_out,
-              d_begin_offsets,
-              d_end_offsets,
+              detail::advance_iterators_if_supported(d_begin_offsets, current_segment_offset),
+              detail::advance_iterators_if_supported(d_end_offsets, current_segment_offset),
               current_bit,
               pass_bits,
               decomposer);
@@ -1274,19 +1302,19 @@ struct DispatchSegmentedRadixSort
       error = CubDebug(cudaPeekAtLastError());
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
 
       // Sync the stream if specified to flush runtime errors
       error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
+    }
 
-      // Update current bit
-      current_bit += pass_bits;
-    } while (0);
+    // Update current bit once all segments have been processed for the current pass
+    current_bit += pass_bits;
 
     return error;
   }
