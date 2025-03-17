@@ -632,7 +632,7 @@ public:
     return enable_timing;
   }
 
-  // Add a context to the vector of contexts we track
+  // Add a context to the vector of contexts we need to depict in DOT
   void track_ctx(::std::shared_ptr<per_ctx_dot> pc)
   {
     ::std::lock_guard<::std::mutex> lock(mtx);
@@ -742,8 +742,8 @@ public:
   }
 
 private:
-  void
-  print_one_context(::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, ::std::shared_ptr<per_ctx_dot> pc)
+  void print_one_context(
+    ::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, const ::std::shared_ptr<per_ctx_dot>& pc)
   {
     // Pick up an identifier in DOT (we may update this value later)
     size_t ctx_id = ctx_cnt++;
@@ -863,7 +863,7 @@ private:
     ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes,
     size_t& ctx_cnt,
     bool display_clusters,
-    ::std::shared_ptr<per_ctx_dot>& pc)
+    const ::std::shared_ptr<per_ctx_dot>& pc)
   {
     // Stop printing sections if they are deeper than the max depth (if defined)
     const char* env_max_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
