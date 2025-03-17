@@ -90,6 +90,10 @@ struct BlockReduceWarpReductions
     EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
   };
 
+  static_assert(BLOCK_THREADS <= 1024);
+  static_assert(WARP_THREADS == 32);
+  static_assert(LOGICAL_WARP_SIZE >= 1 && LOGICAL_WARP_SIZE <= 32);
+
   ///  WarpReduce utility type
   using WarpReduce = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
 

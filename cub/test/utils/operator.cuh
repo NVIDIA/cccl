@@ -38,10 +38,10 @@ template <typename T, typename Operator>
 constexpr T operator_identity_v;
 
 template <typename T>
-constexpr T operator_identity_v<T, cuda::std::plus<>> = T{0};
+constexpr T operator_identity_v<T, cuda::std::plus<>> = T{};
 
 template <typename T>
-constexpr T operator_identity_v<T, cuda::std::plus<T>> = T{0};
+constexpr T operator_identity_v<T, cuda::std::plus<T>> = T{};
 
 template <typename T>
 constexpr T operator_identity_v<T, cuda::std::multiplies<>> = T{1};
