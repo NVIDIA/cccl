@@ -163,14 +163,14 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void Init()
   {
-// Initialize bins to 0.
-#pragma unroll
+    // Initialize bins to 0.
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int part = 0; part < NUM_PARTS; ++part)
         {
           s.bins[pass][bin][part] = 0;
@@ -194,7 +194,7 @@ struct AgentRadixSortHistogram
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       keys[u] = Twiddle::In(keys[u], decomposer);
@@ -205,11 +205,13 @@ struct AgentRadixSortHistogram
   AccumulateSharedHistograms(OffsetT tile_offset, bit_ordered_type (&keys)[ITEMS_PER_THREAD])
   {
     int part = ::cuda::ptx::get_sreg_laneid() % NUM_PARTS;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
     {
       const int num_bits = _CUDA_VSTD::min(+RADIX_BITS, end_bit - current_bit);
-#pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < ITEMS_PER_THREAD; ++u)
       {
         uint32_t bin = digit_extractor(current_bit, num_bits).Digit(keys[u]);
@@ -222,10 +224,10 @@ struct AgentRadixSortHistogram
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void AccumulateGlobalHistograms()
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int bin = threadIdx.x; bin < RADIX_DIGITS; bin += BLOCK_THREADS)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int pass = 0; pass < num_passes; ++pass)
       {
         OffsetT count = cub::ThreadReduce(s.bins[pass][bin], ::cuda::std::plus<>{});

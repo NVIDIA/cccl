@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   int array[] = {40, 41, 42, 43, 44};
   int* b      = array + 0;

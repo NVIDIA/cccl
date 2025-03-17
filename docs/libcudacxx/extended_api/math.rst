@@ -10,6 +10,7 @@ Math
    math/ceil_div
    math/round_up
    math/round_down
+   math/ilog
 
 .. list-table::
    :widths: 25 45 30 30
@@ -34,3 +35,13 @@ Math
      - Round down to the previous multiple
      - CCCL 2.9.0
      - CUDA 12.9
+
+   * - :ref:`ilog2 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 2
+     - CCCL 3.0.0
+     - CUDA 13.0
+
+   * - :ref:`ilog10 <libcudacxx-extended-api-math-ilog>`
+     - Integer logarithm to the base 10
+     - CCCL 3.0.0
+     - CUDA 13.0

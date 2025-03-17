@@ -119,28 +119,27 @@ __host__ __device__ constexpr void test_mdspan_types()
 {
   using MDS = cuda::std::mdspan<T, E, L, A>;
 
-  ASSERT_SAME_TYPE(typename MDS::extents_type, E);
-  ASSERT_SAME_TYPE(typename MDS::layout_type, L);
-  ASSERT_SAME_TYPE(typename MDS::accessor_type, A);
-  ASSERT_SAME_TYPE(typename MDS::mapping_type, typename L::template mapping<E>);
-  ASSERT_SAME_TYPE(typename MDS::element_type, T);
-  ASSERT_SAME_TYPE(typename MDS::value_type, cuda::std::remove_cv_t<T>);
-  ASSERT_SAME_TYPE(typename MDS::index_type, typename E::index_type);
-  ASSERT_SAME_TYPE(typename MDS::size_type, typename E::size_type);
-  ASSERT_SAME_TYPE(typename MDS::rank_type, typename E::rank_type);
-  ASSERT_SAME_TYPE(typename MDS::data_handle_type, typename A::data_handle_type);
-  ASSERT_SAME_TYPE(typename MDS::reference, typename A::reference);
+  static_assert(cuda::std::is_same_v<typename MDS::extents_type, E>);
+  static_assert(cuda::std::is_same_v<typename MDS::layout_type, L>);
+  static_assert(cuda::std::is_same_v<typename MDS::accessor_type, A>);
+  static_assert(cuda::std::is_same_v<typename MDS::mapping_type, typename L::template mapping<E>>);
+  static_assert(cuda::std::is_same_v<typename MDS::element_type, T>);
+  static_assert(cuda::std::is_same_v<typename MDS::value_type, cuda::std::remove_cv_t<T>>);
+  static_assert(cuda::std::is_same_v<typename MDS::index_type, typename E::index_type>);
+  static_assert(cuda::std::is_same_v<typename MDS::size_type, typename E::size_type>);
+  static_assert(cuda::std::is_same_v<typename MDS::rank_type, typename E::rank_type>);
+  static_assert(cuda::std::is_same_v<typename MDS::data_handle_type, typename A::data_handle_type>);
+  static_assert(cuda::std::is_same_v<typename MDS::reference, typename A::reference>);
 
   // This miserably failed with clang-cl - likely because it doesn't honor/enable
   // no-unique-address fully by default
-  // #ifndef TEST_COMPILER_MSVC
   test_mdspan_no_unique_address<L, MDS>();
-  // #endif // TEST_COMPILER_MSVC
 
   // check default template parameters:
-  ASSERT_SAME_TYPE(cuda::std::mdspan<T, E>,
-                   cuda::std::mdspan<T, E, cuda::std::layout_right, cuda::std::default_accessor<T>>);
-  ASSERT_SAME_TYPE(cuda::std::mdspan<T, E, L>, cuda::std::mdspan<T, E, L, cuda::std::default_accessor<T>>);
+  static_assert(cuda::std::is_same_v<cuda::std::mdspan<T, E>,
+                                     cuda::std::mdspan<T, E, cuda::std::layout_right, cuda::std::default_accessor<T>>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::std::mdspan<T, E, L>, cuda::std::mdspan<T, E, L, cuda::std::default_accessor<T>>>);
 
   // check triviality
   using DH = typename MDS::data_handle_type;

@@ -82,29 +82,29 @@ static_assert(CheckCommonReferenceWith<const volatile int*, volatile void*>(), "
 static_assert(CheckCommonReferenceWith<const volatile int*, const volatile void*>(), "");
 
 static_assert(CheckCommonReferenceWith<int (*)(), int (*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (*)(), int (*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
 struct S
 {};
 static_assert(CheckCommonReferenceWith<int S::*, int S::*>(), "");
 static_assert(CheckCommonReferenceWith<int S::*, const int S::*>(), "");
 static_assert(CheckCommonReferenceWith<int (S::*)(), int (S::*)()>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)(), int (S::*)() noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const, int (S::*)() const>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const, int (S::*)() const noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() volatile, int (S::*)() volatile>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() volatile, int (S::*)() volatile noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const volatile, int (S::*)() const volatile>(), "");
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
 static_assert(CheckCommonReferenceWith<int (S::*)() const volatile, int (S::*)() const volatile noexcept>(), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
 
 // nonsense
 static_assert(!common_reference_with<double, float*>, "");

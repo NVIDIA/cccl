@@ -29,7 +29,7 @@ __host__ __device__ constexpr void test_runtime_observers(E ext, AllExtents expe
 {
   for (typename E::rank_type r = 0; r < ext.rank(); r++)
   {
-    ASSERT_SAME_TYPE(decltype(ext.extent(0)), typename E::index_type);
+    static_assert(cuda::std::is_same_v<decltype(ext.extent(0)), typename E::index_type>);
     static_assert(noexcept(ext.extent(0)));
     assert(ext.extent(r) == static_cast<typename E::index_type>(expected[r]));
   }

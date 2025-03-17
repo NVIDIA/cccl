@@ -31,7 +31,7 @@ struct is_odd
 };
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   // check mixed
   int ia[]          = {1, 2, 3, 4, 5, 6, 7, 8, 9};
@@ -129,7 +129,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<bidirectional_iterator<int*>>();
   test<random_access_iterator<int*>>();

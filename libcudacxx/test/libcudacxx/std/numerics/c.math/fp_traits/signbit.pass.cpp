@@ -50,7 +50,7 @@ __host__ __device__ constexpr void test_signbit(const T pos)
 template <class T>
 __host__ __device__ constexpr void test_type()
 {
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::signbit(T{})));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::signbit(T{}))>);
 
   // __nv_fp8_e8m0 cannot represent 0
 #if _CCCL_HAS_NVFP8_E8M0()
@@ -93,12 +93,12 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
   test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   test_type<__nv_fp8_e4m3>();
 #endif // _CCCL_HAS_NVFP8_E4M3
@@ -138,12 +138,12 @@ __host__ __device__ constexpr bool test()
 
 __host__ __device__ constexpr bool test_constexpr()
 {
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
   test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   test_type<__nv_fp8_e4m3>();
 #endif // _CCCL_HAS_NVFP8_E4M3

@@ -21,12 +21,8 @@
 
 #include "test_macros.h"
 
-// MSVC warns about unsigned/signed comparisons and addition/subtraction
-// Silence these warnings, but not the ones within the header itself.
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4307)
-#  pragma warning(disable : 4308)
-#endif
+TEST_DIAG_SUPPRESS_MSVC(4307) // potential overflow
+TEST_DIAG_SUPPRESS_MSVC(4308) // unsigned/signed comparisons
 
 template <typename D, typename Ds>
 __host__ __device__ constexpr bool testConstexpr()
@@ -52,8 +48,8 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<day>() - cuda::std::declval<days>()));
   static_assert(noexcept(cuda::std::declval<day>() - cuda::std::declval<day>()));
 
-  ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<day>() - cuda::std::declval<days>()));
-  ASSERT_SAME_TYPE(days, decltype(cuda::std::declval<day>() - cuda::std::declval<day>()));
+  static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<day>() - cuda::std::declval<days>())>);
+  static_assert(cuda::std::is_same_v<days, decltype(cuda::std::declval<day>() - cuda::std::declval<day>())>);
 
   static_assert(testConstexpr<day, days>(), "");
 

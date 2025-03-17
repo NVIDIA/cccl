@@ -288,7 +288,8 @@ struct AgentReduce
     // Load items as vector items
     InputT input_items[ITEMS_PER_THREAD];
     VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < WORDS; ++i)
     {
       vec_items[i] = d_vec_in[BLOCK_THREADS * i];
@@ -296,7 +297,8 @@ struct AgentReduce
 
     // Convert from input type to output type
     AccumT items[ITEMS_PER_THREAD];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       items[i] = transform_op(input_items[i]);

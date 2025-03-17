@@ -26,9 +26,9 @@ static_assert(!cuda::std::weakly_incrementable<int&>, "");
 static_assert(!cuda::std::weakly_incrementable<int()>, "");
 static_assert(!cuda::std::weakly_incrementable<int (*)()>, "");
 static_assert(!cuda::std::weakly_incrementable<int (&)()>, "");
-#ifndef TEST_COMPILER_GCC
+#if !TEST_COMPILER(GCC)
 static_assert(!cuda::std::weakly_incrementable<bool>, "");
-#endif
+#endif // !TEST_COMPILER(GCC)
 
 struct S
 {};

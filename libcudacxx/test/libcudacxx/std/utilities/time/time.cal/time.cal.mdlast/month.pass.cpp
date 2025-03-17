@@ -24,7 +24,7 @@ int main(int, char**)
   using month_day_last = cuda::std::chrono::month_day_last;
 
   static_assert(noexcept(cuda::std::declval<const month_day_last>().month()));
-  ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<const month_day_last>().month()));
+  static_assert(cuda::std::is_same_v<month, decltype(cuda::std::declval<const month_day_last>().month())>);
 
   static_assert(month_day_last{month{}}.month() == month{}, "");
 

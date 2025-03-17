@@ -22,7 +22,7 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
   static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");
@@ -44,7 +44,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 }
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_moveonly()
+__host__ __device__ constexpr bool test_moveonly()
 {
   static_assert(!cuda::std::is_constructible<cuda::std::move_iterator<It>, const It&>::value, "");
   static_assert(cuda::std::is_constructible<cuda::std::move_iterator<It>, It&&>::value, "");

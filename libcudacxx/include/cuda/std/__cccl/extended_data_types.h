@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/architecture.h>
 #include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
@@ -81,14 +82,15 @@
 #  define _CCCL_HAS_NVFP4() 1
 #endif
 
-// NVC++ supports float128 only in host code
-#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_OS(LINUX)                     \
-  && ((_CCCL_COMPILER(NVRTC) && defined(__CUDACC_RTC_FLOAT128__)) /*NVRTC*/        \
-      || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) /*HOST COMPILERS*/ \
-  && (!defined(__CUDA_ARCH__) || (defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 1000)) /*DEVICE CODE*/
-#  undef _CCCL_HAS_FLOAT128
-#  define _CCCL_HAS_FLOAT128() 1
-#endif
+#if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
+#  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) /*HOST COMPILERS*/
+#    if _CCCL_CUDA_COMPILER(NVHPC) \
+      || ((_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && __CUDA_ARCH__ >= 1000) /*DEVICE CODE*/
+#      undef _CCCL_HAS_FLOAT128
+#      define _CCCL_HAS_FLOAT128() 1
+#    endif // CUDA compiler
+#  endif // Host compiler support
+#endif // !CCCL_DISABLE_FLOAT128_SUPPORT && _CCCL_OS(LINUX)
 
 // gcc does not allow to use 'operator""q' when __STRICT_ANSI__ is defined, it may be allowed by
 // -fext-numeric-literals, but we have no way to detect it. However, from gcc 13, we can use 'operator""f128' and cast

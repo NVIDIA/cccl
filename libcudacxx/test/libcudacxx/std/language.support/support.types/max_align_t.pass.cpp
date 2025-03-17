@@ -13,9 +13,9 @@
 //   is at least as great as that of every scalar type
 #include "test_macros.h"
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  include <stdio.h>
-#endif // TEST_COMPILER_NVRTC
+#endif // TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {

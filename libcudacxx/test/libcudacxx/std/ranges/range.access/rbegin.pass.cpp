@@ -21,7 +21,7 @@
 using RangeRBeginT  = decltype(cuda::std::ranges::rbegin);
 using RangeCRBeginT = decltype(cuda::std::ranges::crbegin);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8];
+TEST_GLOBAL_VARIABLE int globalBuff[8];
 
 static_assert(!cuda::std::is_invocable_v<RangeRBeginT, int (&&)[10]>);
 static_assert(cuda::std::is_invocable_v<RangeRBeginT, int (&)[10]>);
@@ -86,20 +86,22 @@ __host__ __device__ constexpr bool testReturnTypes()
   {
     int* x[2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int**>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<int* const*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int**>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<int* const*>>);
   }
   {
     int x[2][2] = {};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int(*)[2]>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<const int(*)[2]>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), cuda::std::reverse_iterator<int(*)[2]>>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), cuda::std::reverse_iterator<const int(*)[2]>>);
   }
   {
     Different x{};
     unused(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::rbegin(x)), char*);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::crbegin(x)), short*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::rbegin(x)), char*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::crbegin(x)), short*>);
   }
   return true;
 }
@@ -569,7 +571,7 @@ __host__ __device__ constexpr bool testBeginEnd()
 static_assert(noexcept(cuda::std::ranges::rbegin(cuda::std::declval<int (&)[10]>())));
 static_assert(noexcept(cuda::std::ranges::crbegin(cuda::std::declval<int (&)[10]>())));
 
-#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !TEST_COMPILER(MSVC2019) // broken noexcept
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBegin
 {
   __host__ __device__ ThrowingIterator<int> rbegin() const noexcept; // auto(t.rbegin()) doesn't throw
@@ -584,7 +586,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLRBegin
 } ntab;
 static_assert(noexcept(cuda::std::ranges::rbegin(ntab)));
 static_assert(noexcept(cuda::std::ranges::crbegin(ntab)));
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberRBeginReturnsRef
 {
@@ -646,10 +648,10 @@ int main(int, char**)
   testBeginEnd();
   static_assert(testBeginEnd());
 
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
   unused(ntmb);
   unused(ntab);
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
   unused(ntmbrr);
   unused(brar);
   unused(ntbte);
