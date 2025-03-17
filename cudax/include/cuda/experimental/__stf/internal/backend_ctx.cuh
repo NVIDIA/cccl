@@ -37,7 +37,7 @@
 #include <cuda/experimental/__stf/internal/repeat.cuh>
 #include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
-#include <cuda/experimental/__stf/internal/task_state.cuh> // backend_ctx_untyped::impl has-a ctx_stack
+#include <cuda/experimental/__stf/internal/task_state.cuh> // backend_ctx_untyped::impl has-a ctx_state
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
@@ -715,7 +715,7 @@ protected:
     block_allocator_untyped custom_allocator;
     block_allocator_untyped default_allocator;
     block_allocator_untyped uncached_allocator;
-    reserved::ctx_stack stack;
+    reserved::ctx_state stack;
 
     // A vector of all allocators used in this ctx, so that they are
     // destroyed when calling finalize()

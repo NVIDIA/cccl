@@ -29,12 +29,7 @@ namespace cuda::experimental::stf::reserved
 
 class logical_data_untyped_impl; // TODO: this should never be used outside logical_data_untyped
 
-/* To support task nesting, we create a stack of task contexts. Every time a
- * new task is executed (between acquire and release), a new task_state is pushed
- * on the stack. There is always a "root ctx" which corresponds to the state of
- * the library when there is no task under execution.
- */
-class ctx_stack
+class ctx_state
 {
 public:
   /* Add one task to the leaf tasks */
@@ -118,10 +113,10 @@ public:
     }
   }
 
-  ctx_stack()
+  ctx_state()
   {
     // This forces us to call the dtor of the singleton AFTER the destructor of the CUDA runtime.
-    // If all resources are cleaned up by the time we destroy this ctx_stack singleton, we are "safe"
+    // If all resources are cleaned up by the time we destroy this ctx_state singleton, we are "safe"
     cudaError_t ret = cudaFree(0);
 
     // If we are running the task in the context of a CUDA callback, we are
@@ -129,7 +124,7 @@ public:
     EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
   }
 
-  ~ctx_stack()
+  ~ctx_state()
   {
     // Make sure everything is clean before leaving that context
     assert(dangling_events.size() == 0);
@@ -138,8 +133,8 @@ public:
     assert(leaf_tasks.size() == 0);
   }
 
-  ctx_stack(const ctx_stack&)            = delete;
-  ctx_stack& operator=(const ctx_stack&) = delete;
+  ctx_state(const ctx_state&)            = delete;
+  ctx_state& operator=(const ctx_state&) = delete;
 
   // Insert a fence with all pending asynchronous operations on the current context
   [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
