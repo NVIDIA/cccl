@@ -30,6 +30,8 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
+#include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 
 namespace cuda::experimental::stf
 {
