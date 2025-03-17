@@ -186,13 +186,13 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_host_accessible_pointer(__p);), (return false;))
@@ -217,10 +217,32 @@ class __device_accessor : public _Accessor
   static constexpr bool __is_offset_noexcept =
     noexcept(_CUDA_VSTD::declval<_Accessor>().offset(_CUDA_VSTD::declval<__data_handle_type>(), 0));
 
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  __is_device_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
+  {
+    if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
+    {
+      ::cudaPointerAttributes __ptr_attrib{};
+      auto __p1 = _CUDA_VSTD::to_address(__p);
+      _CCCL_ASSERT_CUDA_API(::cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__ptr_attrib, __p1);
+      return __ptr_attrib.devicePointer != nullptr || __ptr_attrib.type == ::cudaMemoryTypeUnregistered;
+    }
+    else
+    {
+      return true; // cannot be verified
+    }
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void
+  __check_device_pointer([[maybe_unused]] __data_handle_type __p) noexcept
+  {
+    _CCCL_ASSERT(__is_device_accessible_pointer(__p), "cuda::__host_accessor data handle is not a HOST pointer");
+  }
+
   template <typename _Sp = bool> // lazy evaluation
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __prevent_host_instantiation() noexcept
   {
-    static_assert(_CUDA_VSTD::__always_false<_Sp>, "cuda::__device_accessor cannot be used in HOST code");
+    static_assert(_CUDA_VSTD::__always_false_v<_Sp>, "cuda::__device_accessor cannot be used in HOST code");
   }
 
 public:
@@ -284,15 +306,16 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __detectably_invalid(data_handle_type, size_t) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  __detectably_invalid(data_handle_type __p, size_t) const noexcept
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return false;), (return true;))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_device_accessible_pointer(__p);), (return false;))
   }
 };
 
@@ -382,16 +405,16 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
   {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_managed_pointer(__p);), (return true;))
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_managed_pointer(__p);), (return false;))
   }
 };
 
