@@ -165,23 +165,23 @@ public:
   }
 
   template <typename T>
-  void add_read_prereq(T&& prereq)
+  void add_read_prereq(backend_ctx_untyped& bctx, T&& prereq)
   {
     read_prereq.merge(::std::forward<T>(prereq));
 
     if (read_prereq.size() > 16)
     {
-      read_prereq.optimize();
+      read_prereq.optimize(bctx);
     }
   }
   template <typename T>
-  void add_write_prereq(T&& prereq)
+  void add_write_prereq(backend_ctx_untyped& bctx, T&& prereq)
   {
     write_prereq.merge(::std::forward<T>(prereq));
 
     if (write_prereq.size() > 16)
     {
-      write_prereq.optimize();
+      write_prereq.optimize(bctx);
     }
   }
 
