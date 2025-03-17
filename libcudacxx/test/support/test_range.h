@@ -105,10 +105,14 @@ using BorrowedView = cuda::std::ranges::empty_view<int>;
 static_assert(cuda::std::ranges::view<BorrowedView>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedView>, "");
 
-#if _LIBCUDACXX_HAS_RANGES
 using NonBorrowedView = cuda::std::ranges::single_view<int>;
 static_assert(cuda::std::ranges::view<NonBorrowedView>, "");
 static_assert(!cuda::std::ranges::borrowed_range<NonBorrowedView>, "");
-#endif // _LIBCUDACXX_HAS_RANGES
+
+template <class Range>
+inline constexpr bool simple_view =
+  cuda::std::ranges::view<Range> && cuda::std::ranges::range<const Range>
+  && cuda::std::same_as<cuda::std::ranges::iterator_t<Range>, cuda::std::ranges::iterator_t<const Range>>
+  && cuda::std::same_as<cuda::std::ranges::sentinel_t<Range>, cuda::std::ranges::sentinel_t<const Range>>;
 
 #endif // LIBCXX_TEST_SUPPORT_TEST_RANGE_H
