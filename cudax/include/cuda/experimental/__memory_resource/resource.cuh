@@ -29,11 +29,10 @@ namespace cuda::experimental
 {
 
 #if _CCCL_STD_VER >= 2020
-//! @brief Equality comparison between two resources.
+//! @brief Equality comparison between two resources of different types.
 //! @param __lhs The left-hand side resource.
 //! @param __rhs The right-hand side resource.
-//! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
-//! resources. Otherwise, returns false.
+//! @returns Always returns false.
 template <class _Resource, class _OtherResource>
   requires _CUDA_VMR::resource<_Resource> && _CUDA_VMR::resource<_OtherResource>
         && _CUDA_VMR::__different_resource<_Resource, _OtherResource> && __non_polymorphic<_Resource>
@@ -45,6 +44,10 @@ operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResou
 }
 
 #else // ^^^ C++20 ^^^ / vvv C++17
+//! @brief Equality comparison between two resources of different types.
+//! @param __lhs The left-hand side resource.
+//! @param __rhs The right-hand side resource.
+//! @returns Always returns false.
 template <class _Resource, class _OtherResource>
 _CCCL_NODISCARD auto
 operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResource const& __rhs) noexcept
@@ -55,6 +58,10 @@ operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResou
   return false;
 }
 
+//! @brief Inequality comparison between two resources of different types.
+//! @param __lhs The left-hand side resource.
+//! @param __rhs The right-hand side resource.
+//! @returns Always returns true.
 template <class _Resource, class _OtherResource>
 _CCCL_NODISCARD auto
 operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResource const& __rhs) noexcept
