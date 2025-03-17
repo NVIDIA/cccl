@@ -25,7 +25,6 @@
 #include <cuda/std/__type_traits/is_object.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_object, _Tp))
@@ -53,8 +52,6 @@ public:
     return true;
   }
 };
-
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<empty_view<_Tp>> = true;

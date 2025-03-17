@@ -83,7 +83,7 @@ __host__ __device__ constexpr bool test()
   test<long long>();
   test<unsigned long long>();
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   // cstdint types:
   test<cuda::std::size_t>();
   test<cuda::std::ptrdiff_t>();
@@ -99,7 +99,7 @@ __host__ __device__ constexpr bool test()
   test<cuda::std::uint16_t>();
   test<cuda::std::uint32_t>();
   test<cuda::std::uint64_t>();
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 #if _CCCL_HAS_INT128()
   test<__int128_t>();

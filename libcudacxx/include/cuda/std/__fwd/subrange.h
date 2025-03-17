@@ -30,7 +30,6 @@ enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
   sized
 };
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 #if !defined(_CCCL_NO_CONCEPTS)
 template <input_or_output_iterator _Iter,
           sentinel_for<_Iter> _Sent = _Iter,
@@ -47,7 +46,6 @@ template <class _Iter,
 class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
 #endif // _CCCL_NO_CONCEPTS
 
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
 #endif // _LIBCUDACXX___FWD_SUBRANGE_H
