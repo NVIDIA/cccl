@@ -29,19 +29,19 @@
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/internal/ctx_state.cuh> // backend_ctx_untyped::impl has-a ctx_state
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/hooks.cuh>
+#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
 #include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
 #include <cuda/experimental/__stf/internal/repeat.cuh>
 #include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
-#include <cuda/experimental/__stf/internal/ctx_state.cuh> // backend_ctx_untyped::impl has-a ctx_state
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
-#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 
 // XXX there is currently a dependency on this header for places.h
 // Until we find a solution we need to include this
