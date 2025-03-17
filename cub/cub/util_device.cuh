@@ -170,7 +170,7 @@ struct PerDeviceAttributeCache
   };
 
 private:
-  std::array<DeviceEntry, CUB_MAX_DEVICES> entries_;
+  std::array<DeviceEntry, max_devices> entries_;
 
 public:
   /**
@@ -179,7 +179,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    assert(DeviceCount() <= CUB_MAX_DEVICES);
+    assert(DeviceCount() <= max_devices);
   }
 
   /**

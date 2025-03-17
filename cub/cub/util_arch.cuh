@@ -73,29 +73,14 @@ CUB_NAMESPACE_BEGIN
 #    endif
 #  endif
 
-/// Maximum number of devices supported.
-#  ifndef CUB_MAX_DEVICES
-#    define CUB_MAX_DEVICES (128)
-#  endif
-
-static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
-
+inline constexpr int max_devices       = 128;
 inline constexpr int warp_threads      = 32;
 inline constexpr int log2_warp_threads = 5;
 inline constexpr int smem_banks        = 32;
 inline constexpr int log2_smem_banks   = 5;
 
-/// Oversubscription factor
-#  ifndef CUB_SUBSCRIPTION_FACTOR
-#    define CUB_SUBSCRIPTION_FACTOR(unused) (5)
-#    define CUB_PTX_SUBSCRIPTION_FACTOR     CUB_SUBSCRIPTION_FACTOR(0)
-#  endif
-
-/// Prefer padding overhead vs X-way conflicts greater than this threshold
-#  ifndef CUB_PREFER_CONFLICT_OVER_PADDING
-#    define CUB_PREFER_CONFLICT_OVER_PADDING(unused) (1)
-#    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING     CUB_PREFER_CONFLICT_OVER_PADDING(0)
-#  endif
+inline constexpr int subscription_factor           = 5;
+inline constexpr bool prefer_conflict_over_padding = true;
 
 namespace detail
 {
