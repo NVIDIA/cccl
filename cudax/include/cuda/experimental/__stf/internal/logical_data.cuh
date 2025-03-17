@@ -1737,7 +1737,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     unfreeze(frozen_fake_task.value(), event_list());
   }
 
-  auto& cs = ctx.get_stack();
+  auto& cs     = ctx.get_stack();
   auto& ctx_st = ctx.get_state();
 
   auto wb_prereqs = event_list();
