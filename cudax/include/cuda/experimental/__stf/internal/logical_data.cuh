@@ -1793,7 +1793,7 @@ inline void reserved::logical_data_untyped_impl::erase()
       if (track_dangling_events)
       {
         // nobody waits for these events, so we put them in the list of dangling events
-        cs.add_dangling_events(ctx, reqs);
+        ctx_st.add_dangling_events(ctx, reqs);
       }
     }
   }
@@ -1823,7 +1823,7 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       if (track_dangling_events)
       {
-        cs.add_dangling_events(ctx, inst_prereqs);
+        ctx_st.add_dangling_events(ctx, inst_prereqs);
       }
     }
 
@@ -1835,7 +1835,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     if (wb_prereqs.size() > 0)
     {
       // nobody waits for these events, so we put them in the list of dangling events
-      cs.add_dangling_events(ctx, wb_prereqs);
+      ctx_st.add_dangling_events(ctx, wb_prereqs);
     }
   }
 
@@ -2364,7 +2364,6 @@ inline void reclaim_memory(
 {
   const auto memory_node = to_index(place);
 
-  auto& cs = ctx.get_stack();
   auto& ctx_state = ctx.get_state();
 
   reclaimed_s = 0;
