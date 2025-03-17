@@ -3,6 +3,7 @@
 
 #include <cub/device/device_segmented_radix_sort.cuh>
 
+#include "cub/device/dispatch/dispatch_common.cuh"
 #include <nvbench_helper.cuh>
 
 template <class T, typename OffsetT>
@@ -11,7 +12,6 @@ void seg_radix_sort(nvbench::state& state,
                     const thrust::device_vector<OffsetT>& offsets,
                     bit_entropy entropy)
 {
-  constexpr bool is_descending   = false;
   constexpr bool is_overwrite_ok = false;
 
   using offset_t          = OffsetT;
@@ -19,8 +19,8 @@ void seg_radix_sort(nvbench::state& state,
   using end_offset_it_t   = const offset_t*;
   using key_t             = T;
   using value_t           = cub::NullType;
-  using dispatch_t =
-    cub::DispatchSegmentedRadixSort<is_descending, key_t, value_t, begin_offset_it_t, end_offset_it_t, offset_t>;
+  using dispatch_t        = cub::
+    DispatchSegmentedRadixSort<cub::SortOrder::Ascending, key_t, value_t, begin_offset_it_t, end_offset_it_t, offset_t>;
 
   constexpr int begin_bit = 0;
   constexpr int end_bit   = sizeof(key_t) * 8;
@@ -84,7 +84,11 @@ void seg_radix_sort(nvbench::state& state,
   });
 }
 
+#ifdef TUNE_OffsetT
+using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
+#else
 using some_offset_types = nvbench::type_list<int32_t, int64_t>;
+#endif
 
 template <class T, typename OffsetT>
 void power_law(nvbench::state& state, nvbench::type_list<T, OffsetT> ts)
