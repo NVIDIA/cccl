@@ -63,7 +63,7 @@ __host__ __device__ void test_const_array(const T (&array)[Sz])
   assert(!cuda::std::empty(array));
 }
 
-STATIC_TEST_GLOBAL_VAR constexpr int arrA[]{1, 2, 3};
+TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
 
 int main(int, char**)
 {

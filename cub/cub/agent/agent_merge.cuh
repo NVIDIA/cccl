@@ -184,7 +184,7 @@ struct agent_t
       __syncthreads();
 
       // gather items from shared mem
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
       {
         items_loc[i] = storage.items_shared[indices[i]];

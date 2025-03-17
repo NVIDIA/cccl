@@ -379,10 +379,11 @@ ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
-#  pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 2)
   {
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j + i < length; j += i * 2)
     {
       array[j] = reduction_op(array[j], array[j + i]);
@@ -397,10 +398,11 @@ ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
-#  pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 3)
   {
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j + i < length; j += i * 3)
     {
       auto value = reduction_op(array[j], array[j + i]);
@@ -548,8 +550,14 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
   constexpr int length = cub::detail::static_size_v<Input>;
   // copy to a temporary array of type AccumT
-  AccumT array[length + 1] = {prefix};
-  cub::UnrolledCopy<length>(input, array + 1);
+  AccumT array[length + 1];
+  array[0] = prefix;
+
+  _CCCL_PRAGMA_UNROLL_FULL()
+  for (int i = 0; i < length; ++i)
+  {
+    array[i + 1] = input[i];
+  }
   return cub::ThreadReduce<decltype(array), ReductionOp, AccumT, AccumT>(array, reduction_op);
 }
 

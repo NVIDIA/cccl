@@ -22,23 +22,23 @@
 template <class T, class U>
 __host__ __device__ void test_add_pointer()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::add_pointer<T>::type);
-  ASSERT_SAME_TYPE(U, cuda::std::add_pointer_t<T>);
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::add_pointer<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::add_pointer_t<T>>);
 }
 
 template <class F>
 __host__ __device__ void test_function0()
 {
-  ASSERT_SAME_TYPE(F*, typename cuda::std::add_pointer<F>::type);
+  static_assert(cuda::std::is_same_v<F*, typename cuda::std::add_pointer<F>::type>);
 
-  ASSERT_SAME_TYPE(F*, cuda::std::add_pointer_t<F>);
+  static_assert(cuda::std::is_same_v<F*, cuda::std::add_pointer_t<F>>);
 }
 
 template <class F>
 __host__ __device__ void test_function1()
 {
-  ASSERT_SAME_TYPE(F, typename cuda::std::add_pointer<F>::type);
-  ASSERT_SAME_TYPE(F, cuda::std::add_pointer_t<F>);
+  static_assert(cuda::std::is_same_v<F, typename cuda::std::add_pointer<F>::type>);
+  static_assert(cuda::std::is_same_v<F, cuda::std::add_pointer_t<F>>);
 }
 
 struct Foo

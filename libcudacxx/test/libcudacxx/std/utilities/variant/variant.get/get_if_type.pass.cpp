@@ -34,7 +34,7 @@ __host__ __device__ void test_const_get_if()
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42);
     static_assert(noexcept(cuda::std::get_if<int>(&v)));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), const int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<int>(&v)), const int*>);
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(*cuda::std::get_if<int>(&v) == 42, "");
 #endif // _CCCL_BUILTIN_ADDRESSOF
@@ -43,7 +43,7 @@ __host__ __device__ void test_const_get_if()
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const long>(&v)), const long*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<const long>(&v)), const long*>);
 #if defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(*cuda::std::get_if<const long>(&v) == 42, "");
 #endif // _CCCL_BUILTIN_ADDRESSOF
@@ -55,21 +55,21 @@ __host__ __device__ void test_const_get_if()
     using V = cuda::std::variant<int&>;
     int x   = 42;
     const V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&>(&v)), int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<int&>(&v)), int*>);
     assert(cuda::std::get_if<int&>(&v) == &x);
   }
   {
     using V = cuda::std::variant<int&&>;
     int x   = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&&>(&v)), int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<int&&>(&v)), int*>);
     assert(cuda::std::get_if<int&&>(&v) == &x);
   }
   {
     using V = cuda::std::variant<const int&&>;
     int x   = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int&&>(&v)), const int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<const int&&>(&v)), const int*>);
     assert(cuda::std::get_if<const int&&>(&v) == &x);
   }
 #endif
@@ -86,14 +86,14 @@ __host__ __device__ void test_get_if()
     using V = cuda::std::variant<int, const long>;
     V v(42);
     static_assert(noexcept(cuda::std::get_if<int>(&v)));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int>(&v)), int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<int>(&v)), int*>);
     assert(*cuda::std::get_if<int>(&v) == 42);
     assert(cuda::std::get_if<const long>(&v) == nullptr);
   }
   {
     using V = cuda::std::variant<int, const long>;
     V v(42l);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const long>(&v)), const long*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<const long>(&v)), const long*>);
     assert(*cuda::std::get_if<const long>(&v) == 42);
     assert(cuda::std::get_if<int>(&v) == nullptr);
   }
@@ -103,28 +103,28 @@ __host__ __device__ void test_get_if()
     using V = cuda::std::variant<int&>;
     int x   = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&>(&v)), int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<int&>(&v)), int*>);
     assert(cuda::std::get_if<int&>(&v) == &x);
   }
   {
     using V = cuda::std::variant<const int&>;
     int x   = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int&>(&v)), const int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<const int&>(&v)), const int*>);
     assert(cuda::std::get_if<const int&>(&v) == &x);
   }
   {
     using V = cuda::std::variant<int&&>;
     int x   = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<int&&>(&v)), int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<int&&>(&v)), int*>);
     assert(cuda::std::get_if<int&&>(&v) == &x);
   }
   {
     using V = cuda::std::variant<const int&&>;
     int x   = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get_if<const int&&>(&v)), const int*);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get_if<const int&&>(&v)), const int*>);
     assert(cuda::std::get_if<const int&&>(&v) == &x);
   }
 #endif

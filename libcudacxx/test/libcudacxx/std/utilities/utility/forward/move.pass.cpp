@@ -45,13 +45,13 @@ __device__ int global_var              = 42;
 __device__ const int& global_reference = global_var;
 
 template <class QualInt>
-__host__ __device__ QualInt get() TEST_NOEXCEPT
+__host__ __device__ QualInt get() noexcept
 {
   return static_cast<QualInt>(global_var);
 }
 
-STATIC_TEST_GLOBAL_VAR int copy_ctor = 0;
-STATIC_TEST_GLOBAL_VAR int move_ctor = 0;
+TEST_GLOBAL_VARIABLE int copy_ctor = 0;
+TEST_GLOBAL_VARIABLE int move_ctor = 0;
 
 struct A
 {

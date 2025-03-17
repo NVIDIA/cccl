@@ -9,11 +9,13 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/scan.h>
 #include <thrust/transform.h>
 
 #include <cstdint>
 
 #include "catch2_large_problem_helper.cuh"
+#include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_device_memcpy_batched_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
@@ -226,4 +228,70 @@ C2H_TEST("DeviceCopy::Batched works for non-trivial ctors", "[copy]")
   copy_batched(in_iter.begin(), out_iter.begin(), sizes, num_buffers);
 
   REQUIRE(in == out);
+}
+
+C2H_TEST("DeviceMemcpy::Batched works for a very large number of ranges", "[copy]")
+try
+{
+  using item_t         = uint8_t;
+  using item_offset_t  = uint64_t;
+  using range_offset_t = uint64_t;
+  using range_size_t   = int32_t;
+
+  constexpr auto num_empty_ranges     = static_cast<item_offset_t>(std::numeric_limits<uint32_t>::max()) - (1 << 20);
+  constexpr auto num_non_empty_ranges = item_offset_t{3 << 20};
+  constexpr auto num_ranges           = num_empty_ranges + num_non_empty_ranges;
+
+  // Generate the range sizes for non-empty ranges
+  c2h::device_vector<range_size_t> d_range_sizes(num_non_empty_ranges);
+  c2h::gen(C2H_SEED(2), d_range_sizes, range_size_t{0}, range_size_t{100});
+  const item_offset_t num_total_items = thrust::reduce(d_range_sizes.cbegin(), d_range_sizes.cend());
+
+  // Prepare iterator that returns empty ranges for the first num_empty_ranges
+  prepend_n_constants_op<decltype(d_range_sizes.cbegin()), range_size_t> skip_first_n_sizes_op{
+    d_range_sizes.cbegin(), range_size_t{0}, num_empty_ranges};
+  auto d_range_sizes_it_skipped =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), skip_first_n_sizes_op);
+
+  // Iterator to be used to provide input data
+  auto in_it = thrust::make_transform_iterator(thrust::make_counting_iterator(item_offset_t{42}), mod_n<item_t>{200});
+  using range_it_t = decltype(in_it);
+
+  // Generate the offsets into in_it from range_sizes
+  c2h::device_vector<item_offset_t> d_range_offsets(num_non_empty_ranges);
+  thrust::exclusive_scan(d_range_sizes.cbegin(), d_range_sizes.cend(), d_range_offsets.begin());
+
+  // Use the offsets to generate an iterator over the ranges, where each range is an iterator into in_it
+  offset_to_ptr_op<range_it_t> src_transform_op{in_it};
+  auto d_ranges_src_it =
+    thrust::make_transform_iterator(thrust::raw_pointer_cast(d_range_offsets.data()), src_transform_op);
+
+  // Wrap the iterator into an iterator that returns empty ranges for the first num_empty_ranges
+  prepend_n_constants_op<decltype(d_ranges_src_it), range_it_t> src_skip_first_n_op{
+    d_ranges_src_it, in_it, num_empty_ranges};
+  auto d_ranges_src_it_skipped =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), src_skip_first_n_op);
+
+  // Prepare helper to check results
+  auto check_result_helper = detail::large_problem_test_helper(num_total_items);
+  auto check_result_it     = check_result_helper.get_flagging_output_iterator(in_it);
+  using range_out_it_t     = decltype(check_result_it);
+
+  // Helper iterator that offsets the checking output iterator by the offset for a given range
+  offset_to_ptr_op<decltype(check_result_it)> dst_transform_op{check_result_it};
+  auto ranges_dst_it = thrust::make_transform_iterator(d_range_offsets.cbegin(), dst_transform_op);
+  prepend_n_constants_op<decltype(ranges_dst_it), range_out_it_t> dst_skip_first_n_op{
+    ranges_dst_it, check_result_it, num_empty_ranges};
+  auto d_ranges_dst_it_skipped =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), dst_skip_first_n_op);
+
+  // Invoke device-side algorithm
+  copy_batched(d_ranges_src_it_skipped, d_ranges_dst_it_skipped, d_range_sizes_it_skipped, num_ranges);
+
+  // Verify result
+  check_result_helper.check_all_results_correct();
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }

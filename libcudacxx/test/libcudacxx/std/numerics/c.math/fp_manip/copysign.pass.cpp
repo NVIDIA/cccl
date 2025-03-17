@@ -22,53 +22,58 @@
 
 #include "test_macros.h"
 
-template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
-__host__ __device__ constexpr void test_copysign(const T val)
+template <class T>
+__host__ __device__ constexpr void test_copysign(const T mag, const T sign, bool expected)
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::copysign(T{}, T{})));
+  const auto result = cuda::std::copysign(mag, sign);
+  assert(cuda::std::signbit(result) == expected);
 
-  // 1. positive -> positive
-  const T pos = cuda::std::copysign(val, cuda::std::numeric_limits<T>::max());
-  assert(cuda::std::signbit(pos) == false);
-
-  if constexpr (cuda::std::numeric_limits<T>::is_signed)
+  if constexpr (cuda::std::is_same_v<T, float>)
   {
-    // 2. positive -> negative
-    const T neg = cuda::std::copysign(val, cuda::std::numeric_limits<T>::lowest());
-    assert(cuda::std::signbit(neg) == true);
-
-    // 3. negative -> negative
-    const T neg2 = cuda::std::copysign(neg, cuda::std::numeric_limits<T>::lowest());
-    assert(cuda::std::signbit(neg2) == true);
-
-    // 4. negative -> positive
-    const T pos2 = cuda::std::copysign(val, cuda::std::numeric_limits<T>::max());
-    assert(cuda::std::signbit(pos2) == false);
+    static_assert(cuda::std::is_same_v<T, decltype(cuda::std::copysignf(T{}, T{}))>);
+    const auto resultf = cuda::std::copysignf(mag, sign);
+    assert(cuda::std::signbit(resultf) == expected);
   }
+#if _CCCL_HAS_LONG_DOUBLE()
+  else if constexpr (cuda::std::is_same_v<T, long double>)
+  {
+    static_assert(cuda::std::is_same_v<T, decltype(cuda::std::copysignl(T{}, T{}))>);
+    const auto resultl = cuda::std::copysignl(mag, sign);
+    assert(cuda::std::signbit(resultl) == expected);
+  }
+#endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
-__host__ __device__ constexpr void test_copysign(const T val)
+template <class T>
+__host__ __device__ constexpr void test_copysign(const T pos)
 {
-  ASSERT_SAME_TYPE(double, decltype(cuda::std::copysign(T{}, T{})));
+  using Result = cuda::std::conditional_t<cuda::std::is_integral_v<T>, double, T>;
+
+  static_assert(cuda::std::is_same_v<Result, decltype(cuda::std::copysign(T{}, T{}))>);
 
   // 1. positive -> positive
-  const double pos = cuda::std::copysign(val, cuda::std::numeric_limits<T>::max());
-  assert(cuda::std::signbit(pos) == false);
+  test_copysign<T>(pos, cuda::std::numeric_limits<T>::max(), false);
 
   if constexpr (cuda::std::numeric_limits<T>::is_signed)
   {
+    T neg{};
+    if constexpr (cuda::std::is_integral_v<T>)
+    {
+      neg = -pos;
+    }
+    else
+    {
+      neg = cuda::std::copysign(pos, cuda::std::numeric_limits<T>::lowest());
+    }
+
     // 2. positive -> negative
-    const double neg = cuda::std::copysign(val, cuda::std::numeric_limits<T>::lowest());
-    assert(cuda::std::signbit(neg) == true);
+    test_copysign<T>(pos, cuda::std::numeric_limits<T>::lowest(), true);
 
     // 3. negative -> negative
-    const double neg2 = cuda::std::copysign(static_cast<T>(-val), cuda::std::numeric_limits<T>::lowest());
-    assert(cuda::std::signbit(neg2) == true);
+    test_copysign<T>(neg, cuda::std::numeric_limits<T>::lowest(), true);
 
     // 4. negative -> positive
-    const double pos2 = cuda::std::copysign(static_cast<T>(-val), cuda::std::numeric_limits<T>::max());
-    assert(cuda::std::signbit(pos2) == false);
+    test_copysign<T>(neg, cuda::std::numeric_limits<T>::max(), false);
   }
 }
 
@@ -116,12 +121,12 @@ __host__ __device__ constexpr bool test()
 #if _CCCL_HAS_LONG_DOUBLE()
   test_type<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
   test_type<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16()
-#if _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   test_type<__nv_fp8_e4m3>();
 #endif // _CCCL_HAS_NVFP8_E4M3

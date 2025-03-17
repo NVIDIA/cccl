@@ -374,18 +374,18 @@ __host__ __device__ void noexcept_test()
     CopyThrows arg;
     unused(arg); // suppress unused warning
     static_assert(noexcept(cuda::std::invoke(obj)), "");
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::invoke(obj, arg)), "");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))), "");
   }
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
   {
     ThrowsCallable obj;
     unused(obj); // suppress unused warning
     static_assert(!noexcept(cuda::std::invoke(obj)), "");
   }
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
   {
     MemberObj obj{42};
     unused(obj); // suppress unused warning.

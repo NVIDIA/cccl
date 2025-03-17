@@ -20,7 +20,7 @@
 int main(int, char**)
 {
   using hours = cuda::std::chrono::hours;
-  ASSERT_SAME_TYPE(hours, decltype(cuda::std::chrono::make12(cuda::std::declval<hours>())));
+  static_assert(cuda::std::is_same_v<hours, decltype(cuda::std::chrono::make12(cuda::std::declval<hours>()))>);
   static_assert(noexcept(cuda::std::chrono::make12(cuda::std::declval<hours>())));
 
   static_assert(cuda::std::chrono::make12(hours(0)) == hours(12), "");

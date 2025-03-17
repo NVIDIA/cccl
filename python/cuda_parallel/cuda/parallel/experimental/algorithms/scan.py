@@ -98,8 +98,7 @@ class _Scan:
     def __del__(self):
         if self.build_result is None:
             return
-        bindings = get_bindings()
-        bindings.cccl_device_scan_cleanup(ctypes.byref(self.build_result))
+        self.bindings.cccl_device_scan_cleanup(ctypes.byref(self.build_result))
 
 
 def make_cache_key(

@@ -199,8 +199,8 @@ __host__ __device__ inline constexpr CallType operator|(CallType LHS, CallType R
 
 #if 0
 
-STATIC_TEST_GLOBAL_VAR CallType      ForwardingCallObject_last_call_type = CT_None;
-STATIC_TEST_GLOBAL_VAR TypeID const* ForwardingCallObject_last_call_args = nullptr;
+TEST_GLOBAL_VARIABLE CallType      ForwardingCallObject_last_call_type = CT_None;
+TEST_GLOBAL_VARIABLE TypeID const* ForwardingCallObject_last_call_args = nullptr;
 
 struct ForwardingCallObject {
 
@@ -261,7 +261,7 @@ struct ForwardingCallObject {
 //                        BOOL TEST TYPES
 ///////////////////////////////////////////////////////////////////////////////
 
-STATIC_TEST_GLOBAL_VAR int EvilBool_bang_called = 0;
+TEST_GLOBAL_VARIABLE int EvilBool_bang_called = 0;
 struct EvilBool
 {
   EvilBool(EvilBool const&) = default;
@@ -540,7 +540,7 @@ __host__ __device__ void call_operator_sfinae_test()
   }
   // NVRTC appears to be unhappy about... the lambda?
   // but doesn't let me fix it with annotations
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   { // returns bad type with no operator!
     auto fn = [](auto x) {
       return x;
@@ -550,7 +550,7 @@ __host__ __device__ void call_operator_sfinae_test()
     // static_assert(!cuda::std::is_invocable<T, cuda::std::string>::value, "");
     unused(fn);
   }
-#endif // TEST_COMPILER_NVRTC
+#endif // TEST_COMPILER(NVRTC)
 }
 
 #if 0
@@ -647,13 +647,13 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = ConstCallable<bool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     auto const& cret = ret;
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     unused(cret);
   }
   {
@@ -692,18 +692,18 @@ __host__ __device__ void call_operator_noexcept_test()
     using T = NoExceptCallable<EvilBool>;
     T value(true);
     auto ret = cuda::std::not_fn(value);
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(ret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     auto const& cret = ret;
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cret()), "call should not be noexcept");
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     unused(cret);
   }
 }
 
-#ifndef TEST_COMPILER_CLANG_CUDA // https://github.com/llvm/llvm-project/issues/67533
+#if !TEST_CUDA_COMPILER(CLANG) // https://github.com/llvm/llvm-project/issues/67533
 __host__ __device__ void test_lwg2767()
 {
   // See https://cplusplus.github.io/LWG/lwg-defects.html#2767
@@ -729,7 +729,7 @@ __host__ __device__ void test_lwg2767()
     assert(b);
   }
 }
-#endif // TEST_COMPILER_CLANG_CUDA
+#endif // TEST_CUDA_COMPILER(CLANG)
 
 int main(int, char**)
 {
@@ -742,9 +742,9 @@ int main(int, char**)
   call_operator_sfinae_test(); // somewhat of an extension
   // call_operator_forwarding_test();
   call_operator_noexcept_test();
-#ifndef TEST_COMPILER_CLANG_CUDA
+#if !TEST_CUDA_COMPILER(CLANG)
   test_lwg2767();
-#endif // TEST_COMPILER_CLANG_CUDA
+#endif // TEST_CUDA_COMPILER(CLANG)
 
   return 0;
 }

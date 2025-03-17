@@ -54,7 +54,7 @@ int main(int, char**)
     constexpr year_month Feb2018{year{2018}, February};
 
     static_assert(noexcept(Feb2018 / weekday_indexed{Tuesday, 2}));
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(Feb2018 / weekday_indexed{Tuesday, 2}));
+    static_assert(cuda::std::is_same_v<year_month_weekday, decltype(Feb2018 / weekday_indexed{Tuesday, 2})>);
 
     static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).year() == year{2018}, "");
     static_assert((Feb2018 / weekday_indexed{Tuesday, 2}).month() == February, "");
@@ -84,9 +84,9 @@ int main(int, char**)
   { // operator/(const year& y, const month_weekday& mwd) (and switched)
     constexpr month_weekday Feb1stTues{February, weekday_indexed{Tuesday, 1}};
     static_assert(noexcept(year{2018} / Feb1stTues));
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(year{2018} / Feb1stTues));
+    static_assert(cuda::std::is_same_v<year_month_weekday, decltype(year{2018} / Feb1stTues)>);
     static_assert(noexcept(Feb1stTues / year{2018}));
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(Feb1stTues / year{2018}));
+    static_assert(cuda::std::is_same_v<year_month_weekday, decltype(Feb1stTues / year{2018})>);
 
     static_assert((year{2018} / Feb1stTues).year() == year{2018}, "");
     static_assert((year{2018} / Feb1stTues).month() == February, "");
@@ -122,9 +122,9 @@ int main(int, char**)
   { // operator/(int y, const month_weekday& mwd) (and switched)
     constexpr month_weekday Feb1stTues{February, weekday_indexed{Tuesday, 1}};
     static_assert(noexcept(2018 / Feb1stTues));
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(2018 / Feb1stTues));
+    static_assert(cuda::std::is_same_v<year_month_weekday, decltype(2018 / Feb1stTues)>);
     static_assert(noexcept(Feb1stTues / 2018));
-    ASSERT_SAME_TYPE(year_month_weekday, decltype(Feb1stTues / 2018));
+    static_assert(cuda::std::is_same_v<year_month_weekday, decltype(Feb1stTues / 2018)>);
 
     static_assert((2018 / Feb1stTues).year() == year{2018}, "");
     static_assert((2018 / Feb1stTues).month() == February, "");

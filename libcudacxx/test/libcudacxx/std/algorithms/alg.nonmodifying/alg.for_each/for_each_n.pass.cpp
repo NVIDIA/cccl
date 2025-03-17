@@ -48,7 +48,7 @@ struct for_each_test
   __host__ __device__ constexpr for_each_test(int c)
       : count(c)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()(int& i)
+  __host__ __device__ constexpr void operator()(int& i)
   {
     ++i;
     ++count;

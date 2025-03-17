@@ -66,7 +66,8 @@ template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_array(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   ::cuda::std::array<T, NUM_ITEMS> thread_data;
-#pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -78,7 +79,8 @@ template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_span(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   T thread_data[NUM_ITEMS];
-#pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];
@@ -93,7 +95,8 @@ template <int NUM_ITEMS, typename T, typename ReduceOperator>
 __global__ void thread_reduce_kernel_mdspan(const T* d_in, T* d_out, ReduceOperator reduce_operator)
 {
   T thread_data[NUM_ITEMS];
-#  pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < NUM_ITEMS; ++i)
   {
     thread_data[i] = d_in[i];

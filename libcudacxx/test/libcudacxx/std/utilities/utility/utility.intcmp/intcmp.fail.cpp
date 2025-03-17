@@ -64,7 +64,7 @@ struct EmptyT
 {};
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 10-11 {{no matching function for call to 'cmp_equal'}}
@@ -92,7 +92,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 }
 #if _LIBCUDACXX_HAS_CHAR8_T()
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_char8t()
+__host__ __device__ constexpr void test_char8t()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 1 {{no matching function for call to 'cmp_equal'}}
@@ -118,7 +118,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_char8t()
 #endif // _LIBCUDACXX_HAS_CHAR8_T()
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_uchars()
+__host__ __device__ constexpr void test_uchars()
 {
   cuda::std::cmp_equal(T(), T()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}
   cuda::std::cmp_equal(T(), int()); // expected-error 2 {{no matching function for call to 'cmp_equal'}}

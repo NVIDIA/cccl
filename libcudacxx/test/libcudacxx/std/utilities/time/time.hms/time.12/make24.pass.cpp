@@ -23,7 +23,7 @@
 int main(int, char**)
 {
   using hours = cuda::std::chrono::hours;
-  ASSERT_SAME_TYPE(hours, decltype(cuda::std::chrono::make24(cuda::std::declval<hours>(), false)));
+  static_assert(cuda::std::is_same_v<hours, decltype(cuda::std::chrono::make24(cuda::std::declval<hours>(), false))>);
   static_assert(noexcept(cuda::std::chrono::make24(cuda::std::declval<hours>(), false)));
 
   static_assert(cuda::std::chrono::make24(hours(1), false) == hours(1), "");
