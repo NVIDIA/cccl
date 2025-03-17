@@ -27,6 +27,7 @@
 
 #include <cuda/functional>
 #include <cuda/ptx>
+#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/bit>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
@@ -200,7 +201,7 @@ void compute_host_reference(
   int items_per_logical_warp = 0,
   int items_per_thread1      = 1)
 {
-  constexpr auto identity = operator_identity_v<T, predefined_op>;
+  constexpr auto identity = operator_identity_v<cuda::std::__accumulator_t<predefined_op, T>, predefined_op>;
   items_per_logical_warp  = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
   for (unsigned i = 0; i < total_warps; ++i)
   {
