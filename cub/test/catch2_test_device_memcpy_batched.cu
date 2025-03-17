@@ -87,12 +87,12 @@ try
   c2h::host_vector<byte_offset_t> h_dst_offsets(d_buffer_dst_offsets);
 
   // Prepare d_buffer_srcs
-  prepend_n_constants_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
+  offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
   auto d_buffer_srcs =
     thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
   // Prepare d_buffer_dsts
-  prepend_n_constants_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
+  offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
   auto d_buffer_dsts =
     thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
@@ -181,29 +181,31 @@ try
   c2h::host_vector<byte_offset_t> h_dst_offsets(d_buffer_dst_offsets);
 
   // Prepare d_buffer_srcs
-  prepend_n_constants_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
+  offset_to_ptr_op<src_ptr_t> src_transform_op{thrust::raw_pointer_cast(d_in.data())};
   auto d_buffer_srcs =
     thrust::make_transform_iterator(thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
   // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
-  skip_first_n_op<decltype(d_buffer_srcs), src_ptr_t> src_skip_first_n_op{d_buffer_srcs, nullptr, num_empty_buffers};
+  prepend_n_constants_op<decltype(d_buffer_srcs), src_ptr_t> src_skip_first_n_op{
+    d_buffer_srcs, nullptr, num_empty_buffers};
   auto d_buffer_srcs_skipped =
     thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), src_skip_first_n_op);
 
   // Prepare d_buffer_dsts
-  prepend_n_constants_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
-  thrust::transform_iterator<prepend_n_constants_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
+  offset_to_ptr_op<dst_ptr_t> dst_transform_op{thrust::raw_pointer_cast(d_out.data())};
+  thrust::transform_iterator<offset_to_ptr_op<dst_ptr_t>, byte_offset_t*> d_buffer_dsts(
     thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
   // Return nullptr for the first num_empty_buffers and only the actual destination pointers for the rest
-  skip_first_n_op<decltype(d_buffer_dsts), dst_ptr_t> dst_skip_first_n_op{d_buffer_dsts, nullptr, num_empty_buffers};
+  prepend_n_constants_op<decltype(d_buffer_dsts), dst_ptr_t> dst_skip_first_n_op{
+    d_buffer_dsts, nullptr, num_empty_buffers};
   auto d_buffer_dsts_skipped =
     thrust::make_transform_iterator(thrust::make_counting_iterator(buffer_offset_t{0}), dst_skip_first_n_op);
 
   // Return 0 for the first num_empty_buffers and only the actual buffer sizes for the rest
   auto d_buffer_sizes_skipped = thrust::make_transform_iterator(
     thrust::make_counting_iterator(buffer_offset_t{0}),
-    skip_first_n_op<decltype(d_buffer_sizes.cbegin()), buffer_size_t>{
+    prepend_n_constants_op<decltype(d_buffer_sizes.cbegin()), buffer_size_t>{
       d_buffer_sizes.cbegin(), buffer_size_t{0}, num_empty_buffers});
 
   // Invoke device-side algorithm
