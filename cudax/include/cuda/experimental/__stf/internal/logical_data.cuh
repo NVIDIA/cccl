@@ -1952,7 +1952,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(cw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(cw_id);
+      cs.leaves.remove(cw_id);
 
       // Replace previous writer
       ctx_.previous_writer = cw;
@@ -1971,7 +1971,7 @@ inline event_list enforce_stf_deps_before(
         {
           dot.add_edge(reader_task_id, task.get_unique_id());
         }
-        cs.remove_leaf_task(reader_task_id);
+        cs.leaves.remove(reader_task_id);
       }
 
       current_readers.clear();
@@ -2000,7 +2000,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(pw_id);
+      cs.leaves.remove(pw_id);
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
@@ -2016,7 +2016,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(pw_id);
+      cs.leaves.remove(pw_id);
     }
 
     // Note : the task will later be added to the list of readers

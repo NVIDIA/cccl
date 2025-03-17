@@ -30,10 +30,10 @@
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/ctx_state.cuh> // backend_ctx_untyped::impl has-a ctx_state
+#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/hooks.cuh>
 #include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
-#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
 #include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
@@ -84,35 +84,62 @@ class logical_data_untyped_impl;
 class ctx_state
 {
 public:
-  /* Add one task to the leaf tasks */
-  void add_leaf_task(const task& t)
+  class leaf_tasks
   {
-    // this will create a new key in the map
-    leaf_tasks_mutex.lock();
-    event_list& done_prereqs = leaf_tasks[t.get_unique_id()];
-    leaf_tasks_mutex.unlock();
+  public:
+    /* Add one task to the leaf tasks */
+    void add(const task& t)
+    {
+      // this will create a new key in the map
+      leaf_tasks_mutex.lock();
+      event_list& done_prereqs = leaf_tasks[t.get_unique_id()];
+      leaf_tasks_mutex.unlock();
 
-    // XXX we need a copy method for event_list
-    done_prereqs.merge(t.get_done_prereqs());
-  }
+      // XXX we need a copy method for event_list
+      done_prereqs.merge(t.get_done_prereqs());
+    }
 
-  /* Remove one task (if it is still a leaf task, otherwise do nothing) */
-  void remove_leaf_task(int task_id)
-  {
-    // Erase that leaf task if it is found, or do nothing
-    auto guard = ::std::lock_guard(leaf_tasks_mutex);
-    leaf_tasks.erase(task_id);
-  }
+    /* Remove one task (if it is still a leaf task, otherwise do nothing) */
+    void remove(int task_id)
+    {
+      // Erase that leaf task if it is found, or do nothing
+      auto guard = ::std::lock_guard(leaf_tasks_mutex);
+      leaf_tasks.erase(task_id);
+    }
 
-  const auto& get_leaf_tasks() const
-  {
-    return leaf_tasks;
-  }
+    const auto& get_leaf_tasks() const
+    {
+      return leaf_tasks;
+    }
 
-  auto& get_leaf_tasks()
-  {
-    return leaf_tasks;
-  }
+    auto& get_leaf_tasks()
+    {
+      return leaf_tasks;
+    }
+
+    size_t size() const
+    {
+      return leaf_tasks.size();
+    }
+
+    void clear()
+    {
+      leaf_tasks.clear();
+    }
+
+    ::std::mutex leaf_tasks_mutex;
+
+  private:
+    // To synchronize with all work submitted in this context, we need to
+    // synchronize will all "leaf tasks". Leaf tasks are task that have no
+    // outgoing dependencies. Leaf tasks will eventually depend on tasks which
+    // are not leaf, so it is sufficient to wait for leaf tasks.
+    //
+    // Instead of storing tasks, we store a map of id to event lists
+    ::std::unordered_map<int /* task_id */, event_list> leaf_tasks;
+  };
+
+  leaf_tasks leaves;
 
   void add_pending_freeze(const task& fake_t, const event_list& events)
   {
@@ -182,7 +209,7 @@ public:
     assert(dangling_events.size() == 0);
 
     // Otherwise there are tasks which were not completed
-    assert(leaf_tasks.size() == 0);
+    assert(leaves.size() == 0);
   }
 
   ctx_state(const ctx_state&)            = delete;
@@ -202,10 +229,10 @@ public:
     }
 
     {
-      auto guard = ::std::lock_guard(leaf_tasks_mutex);
+      auto guard = ::std::lock_guard(leaves.leaf_tasks_mutex);
 
       // Sync with the events of all leaf tasks
-      for (auto& [t_id, t_done_prereqs] : get_leaf_tasks())
+      for (auto& [t_id, t_done_prereqs] : leaves.get_leaf_tasks())
       {
         // Add the events associated with the termination of that leaf tasks to the list of events
         prereqs.merge(mv(t_done_prereqs));
@@ -218,12 +245,12 @@ public:
       }
 
       /* Remove all leaf tasks */
-      leaf_tasks.clear();
+      leaves.clear();
 
       /* Erase start events if any */
       start_events.clear();
 
-      assert(get_leaf_tasks().size() == 0);
+      _CCCL_ASSERT(leaves.get_leaf_tasks().size() == 0, "");
     }
 
     {
@@ -267,16 +294,6 @@ public:
 public:
   ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
   ::std::mutex logical_data_ids_mutex;
-
-private:
-  // To synchronize with all work submitted in this context, we need to
-  // synchronize will all "leaf tasks". Leaf tasks are task that have no
-  // outgoing dependencies. Leaf tasks will eventually depend on tasks which
-  // are not leaf, so it is sufficient to wait for leaf tasks.
-  //
-  // Instead of storing tasks, we store a map of id to event lists
-  ::std::unordered_map<int /* task_id */, event_list> leaf_tasks;
-  ::std::mutex leaf_tasks_mutex;
 
   // Some asynchronous operations cannot be waited on when they occur.
   // For example, when destroying a logical data, it is possible that
