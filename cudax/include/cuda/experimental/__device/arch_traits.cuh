@@ -176,6 +176,28 @@ inline constexpr arch_traits_t sm_600_traits = []() constexpr {
   return __traits;
 }();
 
+inline constexpr arch_traits_t sm_610_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 6;
+  __traits.compute_capability_minor             = 1;
+  __traits.compute_capability                   = 610;
+  __traits.max_shared_memory_per_multiprocessor = 96 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor =
+    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block  = 0;
+  __traits.max_shared_memory_per_block_optin = 48 * 1024;
+
+  __traits.cluster_supported  = false;
+  __traits.redux_intrinisic   = false;
+  __traits.elect_intrinsic    = false;
+  __traits.cp_async_supported = false;
+  __traits.tma_supported      = false;
+
+  return __traits;
+}();
+
 inline constexpr arch_traits_t sm_700_traits = []() constexpr {
   arch_traits_t __traits{};
   __traits.compute_capability_major             = 7;
@@ -314,7 +336,30 @@ inline constexpr arch_traits_t sm_900_traits = []() constexpr {
   return __traits;
 }();
 
-inline constexpr unsigned int __highest_known_arch = 900;
+inline constexpr arch_traits_t sm_1000_traits = []() constexpr {
+  arch_traits_t __traits{};
+  __traits.compute_capability_major             = 10;
+  __traits.compute_capability_minor             = 0;
+  __traits.compute_capability                   = 1000;
+  __traits.max_shared_memory_per_multiprocessor = 228 * 1024;
+  __traits.max_blocks_per_multiprocessor        = 32;
+  __traits.max_threads_per_multiprocessor       = 2048;
+  __traits.max_warps_per_multiprocessor =
+    __traits.max_threads_per_multiprocessor / detail::arch_common_traits::warp_size;
+  __traits.reserved_shared_memory_per_block = 1024;
+  __traits.max_shared_memory_per_block_optin =
+    __traits.max_shared_memory_per_multiprocessor - __traits.reserved_shared_memory_per_block;
+
+  __traits.cluster_supported  = true;
+  __traits.redux_intrinisic   = true;
+  __traits.elect_intrinsic    = true;
+  __traits.cp_async_supported = true;
+  __traits.tma_supported      = true;
+
+  return __traits;
+}();
+
+inline constexpr unsigned int __highest_known_arch = 1000;
 
 } // namespace detail
 
@@ -330,6 +375,8 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
   {
     case 600:
       return detail::sm_600_traits;
+    case 610:
+      return detail::sm_610_traits;
     case 700:
       return detail::sm_700_traits;
     case 750:
@@ -342,6 +389,8 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
       return detail::sm_890_traits;
     case 900:
       return detail::sm_900_traits;
+    case 1000:
+      return detail::sm_1000_traits;
     default:
       __throw_cuda_error(cudaErrorInvalidValue, "Traits requested for an unknown architecture");
       break;

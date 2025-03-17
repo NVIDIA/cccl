@@ -4,9 +4,7 @@ if(NOT CCCL_ENABLE_CUB)
   message(FATAL_ERROR "Thrust benchmarks depend on CUB: set CCCL_ENABLE_CUB.")
 endif()
 
-if(NOT CUB_ENABLE_BENCHMARKS)
-  message(FATAL_ERROR "Thrust benchmarks depend on CUB benchmarks: set CUB_ENABLE_BENCHMARKS.")
-endif()
+cccl_get_nvbench()
 
 set(benches_root "${CMAKE_CURRENT_LIST_DIR}")
 

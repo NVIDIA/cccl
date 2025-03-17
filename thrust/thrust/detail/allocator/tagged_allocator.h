@@ -60,8 +60,8 @@ public:
   using value_type      = T;
   using pointer         = typename thrust::detail::pointer_traits<Pointer>::template rebind<T>::other;
   using const_pointer   = typename thrust::detail::pointer_traits<Pointer>::template rebind<const T>::other;
-  using reference       = typename thrust::iterator_reference<pointer>::type;
-  using const_reference = typename thrust::iterator_reference<const_pointer>::type;
+  using reference       = thrust::detail::it_reference_t<pointer>;
+  using const_reference = thrust::detail::it_reference_t<const_pointer>;
   using size_type       = std::size_t;
   using difference_type = typename thrust::detail::pointer_traits<pointer>::difference_type;
   using system_type     = Tag;

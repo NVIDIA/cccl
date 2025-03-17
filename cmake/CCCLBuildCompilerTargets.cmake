@@ -20,6 +20,10 @@ set(CCCL_KNOWN_CXX_DIALECTS 11 14 17 20)
 # sccache cannot handle the -Fd option generating pdb files
 set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
+option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
+option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
+option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
   add_library(${interface_target} INTERFACE)
 
@@ -47,11 +51,21 @@ function(cccl_build_compiler_targets)
   set(cxx_compile_definitions)
 
   list(APPEND cuda_compile_options "-Xcudafe=--display_error_number")
-  list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   list(APPEND cuda_compile_options "-Wno-deprecated-gpu-targets")
+  if (CCCL_ENABLE_WERROR)
+    list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
+  endif()
 
   # Ensure that we build our tests without treating ourself as system header
   list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
+
+  if (NOT CCCL_ENABLE_EXCEPTIONS)
+    list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
+  endif()
+
+  if (NOT CCCL_ENABLE_RTTI)
+    list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
+  endif()
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
@@ -64,8 +78,10 @@ function(cccl_build_compiler_targets)
     # as `nv_exec_check_disable` doesn't seem to work with MSVC debug iterators
     # and spurious warnings are emitted.
     # See NVIDIA/thrust#1273, NVBug 3129879.
-    if (CMAKE_BUILD_TYPE STREQUAL "Release")
-      append_option_if_available("/WX" cxx_compile_options)
+    if (CCCL_ENABLE_WERROR)
+      if (CMAKE_BUILD_TYPE STREQUAL "Release")
+        append_option_if_available("/WX" cxx_compile_options)
+      endif()
     endif()
 
     # Suppress overly-pedantic/unavoidable warnings brought in with /W4:
@@ -100,7 +116,10 @@ function(cccl_build_compiler_targets)
   else()
     list(APPEND cuda_compile_options "-Wreorder")
 
-    append_option_if_available("-Werror" cxx_compile_options)
+    if (CCCL_ENABLE_WERROR)
+      append_option_if_available("-Werror" cxx_compile_options)
+    endif()
+
     append_option_if_available("-Wall" cxx_compile_options)
     append_option_if_available("-Wextra" cxx_compile_options)
     append_option_if_available("-Wreorder" cxx_compile_options)
@@ -131,16 +150,6 @@ function(cccl_build_compiler_targets)
     endif()
   endif()
 
-  if ("Intel" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    # Do not flush denormal floats to zero
-    append_option_if_available("-no-ftz" cxx_compile_options)
-    # Disable warning that inlining is inhibited by compiler thresholds.
-    append_option_if_available("-diag-disable=11074" cxx_compile_options)
-    append_option_if_available("-diag-disable=11076" cxx_compile_options)
-    # Disable warning about deprecated classic compiler
-    append_option_if_available("-diag-disable=10441" cxx_compile_options)
-  endif()
-
   cccl_build_compiler_interface(cccl.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
@@ -152,20 +161,6 @@ function(cccl_build_compiler_targets)
     add_library(cccl.compiler_interface_cpp${dialect} INTERFACE)
     target_link_libraries(cccl.compiler_interface_cpp${dialect} INTERFACE cccl.compiler_interface)
   endforeach()
-
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    # C4127: conditional expression is constant
-    # Disable this MSVC warning for C++11/C++14. In C++17+, we can use
-    # _CCCL_IF_CONSTEXPR to address these warnings.
-    target_compile_options(cccl.compiler_interface_cpp11 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-    target_compile_options(cccl.compiler_interface_cpp14 INTERFACE
-      $<$<COMPILE_LANGUAGE:CXX>:/wd4127>
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=/wd4127>
-    )
-  endif()
 
   # Some of our unit tests unconditionally throw exceptions, and compilers will
   # detect that the following instructions are unreachable. This is intentional

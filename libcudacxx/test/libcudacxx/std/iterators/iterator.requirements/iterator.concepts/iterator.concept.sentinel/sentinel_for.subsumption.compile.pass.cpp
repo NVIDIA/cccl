@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class S, class I>
 // concept sentinel_for;
@@ -28,7 +28,7 @@ __host__ __device__ constexpr bool check_subsumption() {
 }
 // clang-format on
 
-static_assert(check_subsumption<cuda::std::array<int, 4>::iterator, cuda::std::array<int, 4>::iterator>());
+static_assert(check_subsumption<cuda::std::array<int, 4>::iterator, cuda::std::array<int, 4>::iterator>(), "");
 
 int main(int, char**)
 {

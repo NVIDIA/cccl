@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <cuda/std/iterator>
 //
 // reverse_iterator
@@ -18,10 +16,6 @@
 //     iter_swap(const reverse_iterator& x,
 //               const reverse_iterator<Iterator2>& y) noexcept(see below);
 
-#ifdef __clang__
-#  pragma clang diagnostic ignored "-Wunevaluated-expression"
-#endif
-
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
@@ -29,6 +23,8 @@
 
 #include "test_iterators.h"
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_CLANG("-Wunevaluated-expression")
 
 struct ThrowingCopyNoexceptDecrement
 {
@@ -148,20 +144,16 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     {
       static_assert(cuda::std::bidirectional_iterator<ThrowingCopyNoexceptDecrement>);
 
-#ifndef TEST_COMPILER_ICC
       static_assert(!cuda::std::is_nothrow_copy_constructible_v<ThrowingCopyNoexceptDecrement>);
-#endif // TEST_COMPILER_ICC
       static_assert(cuda::std::is_nothrow_copy_constructible_v<int*>);
 #if TEST_STD_VER > 2017
-      ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(
-        --cuda::std::declval<ThrowingCopyNoexceptDecrement&>(), --cuda::std::declval<int*&>()));
+      static_assert(noexcept(cuda::std::ranges::iter_swap(
+        --cuda::std::declval<ThrowingCopyNoexceptDecrement&>(), --cuda::std::declval<int*&>())));
 #endif
       using RI1 = cuda::std::reverse_iterator<ThrowingCopyNoexceptDecrement>;
       using RI2 = cuda::std::reverse_iterator<int*>;
-#ifndef TEST_COMPILER_ICC
-      ASSERT_NOT_NOEXCEPT(iter_swap(cuda::std::declval<RI1>(), cuda::std::declval<RI2>()));
-      ASSERT_NOT_NOEXCEPT(iter_swap(cuda::std::declval<RI2>(), cuda::std::declval<RI1>()));
-#endif // TEST_COMPILER_ICC
+      static_assert(!noexcept(iter_swap(cuda::std::declval<RI1>(), cuda::std::declval<RI2>())));
+      static_assert(!noexcept(iter_swap(cuda::std::declval<RI2>(), cuda::std::declval<RI1>())));
     }
 
     {
@@ -170,15 +162,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       static_assert(cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyThrowingDecrement>);
       static_assert(cuda::std::is_nothrow_copy_constructible_v<int*>);
 #if TEST_STD_VER > 2017
-      ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_swap(
-        --cuda::std::declval<NoexceptCopyThrowingDecrement&>(), --cuda::std::declval<int*&>()));
+      static_assert(!noexcept(cuda::std::ranges::iter_swap(
+        --cuda::std::declval<NoexceptCopyThrowingDecrement&>(), --cuda::std::declval<int*&>())));
 #endif
       using RI1 = cuda::std::reverse_iterator<NoexceptCopyThrowingDecrement>;
       using RI2 = cuda::std::reverse_iterator<int*>;
-#ifndef TEST_COMPILER_ICC
-      ASSERT_NOT_NOEXCEPT(iter_swap(cuda::std::declval<RI1>(), cuda::std::declval<RI2>()));
-      ASSERT_NOT_NOEXCEPT(iter_swap(cuda::std::declval<RI2>(), cuda::std::declval<RI1>()));
-#endif // TEST_COMPILER_ICC
+      static_assert(!noexcept(iter_swap(cuda::std::declval<RI1>(), cuda::std::declval<RI2>())));
+      static_assert(!noexcept(iter_swap(cuda::std::declval<RI2>(), cuda::std::declval<RI1>())));
     }
 
     {
@@ -187,13 +177,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       static_assert(cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyAndDecrement>);
       static_assert(cuda::std::is_nothrow_copy_constructible_v<int*>);
 #if TEST_STD_VER > 2017
-      ASSERT_NOEXCEPT(
-        cuda::std::ranges::iter_swap(--cuda::std::declval<NoexceptCopyAndDecrement&>(), --cuda::std::declval<int*&>()));
+      static_assert(noexcept(cuda::std::ranges::iter_swap(
+        --cuda::std::declval<NoexceptCopyAndDecrement&>(), --cuda::std::declval<int*&>())));
 #endif
       using RI1 = cuda::std::reverse_iterator<NoexceptCopyAndDecrement>;
       using RI2 = cuda::std::reverse_iterator<int*>;
-      ASSERT_NOEXCEPT(iter_swap(cuda::std::declval<RI1>(), cuda::std::declval<RI2>()));
-      ASSERT_NOEXCEPT(iter_swap(cuda::std::declval<RI2>(), cuda::std::declval<RI1>()));
+      static_assert(noexcept(iter_swap(cuda::std::declval<RI1>(), cuda::std::declval<RI2>())));
+      static_assert(noexcept(iter_swap(cuda::std::declval<RI2>(), cuda::std::declval<RI1>())));
     }
   }
 

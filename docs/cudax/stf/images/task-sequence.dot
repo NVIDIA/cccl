@@ -1,0 +1,68 @@
+digraph {
+    compound=true;
+    subgraph cluster_00 {
+      label="";
+      AA [label="Allocate A"];
+    }
+
+    subgraph cluster_01 {
+      label="";
+      CA [label="Copy A H->D"];
+    }
+
+    subgraph cluster_10 {
+      label="";
+      AB [label="Allocate B"];
+    }
+
+    subgraph cluster_11 {
+      label="";
+      CB [label="Copy B H->D"];
+    }
+
+    subgraph cluster_0 {
+      label="T1";
+      K1 [label="K1"];
+      K2 [label="K2"];
+    }
+
+    CA -> K1 [ltail=cluster_01,lhead=cluster_0,minlen=2];
+    AA -> CA [ltail=cluster_00,lhead=cluster_01,minlen=2];
+
+    CB -> K1 [ltail=cluster_11,lhead=cluster_0,minlen=2];
+    AB -> CB [ltail=cluster_10,lhead=cluster_11,minlen=2];
+
+    subgraph cluster_1 {
+      label="T2";
+      K3 [label="K3"];
+    }
+    subgraph cluster_2 {
+      label="T3";
+      K4 [label="K4"];
+    }
+
+    K1 -> K2;
+    K2 -> K3 [ltail=cluster_0,lhead=cluster_1,minlen=2];
+    K2 -> K4 [ltail=cluster_0,lhead=cluster_2,minlen=2];
+
+    subgraph cluster_02 {
+      label="";
+      CA2 [label="Copy A D->A"];
+    }
+
+    subgraph cluster_12 {
+      label="";
+      CB2 [label="Copy B D->A"];
+    }
+
+    subgraph cluster_3 {
+      label="T4";
+      cb [label="callback"];
+    }
+
+    K3 -> CA2 [ltail=cluster_1,lhead=cluster_02,minlen=2];
+    K4 -> CB2 [ltail=cluster_2,lhead=cluster_12,minlen=2];
+
+    CA2 -> cb [ltail=cluster_02,lhead=cluster_3,minlen=2]
+    CB2 -> cb [ltail=cluster_12,lhead=cluster_3,minlen=2]
+}

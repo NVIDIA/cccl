@@ -25,10 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
-#include <cuda/std/detail/libcxx/include/semaphore>
-
-_CCCL_POP_MACROS
+#include <cuda/__semaphore/counting_semaphore.h> // backward compatibility
+#include <cuda/std/__semaphore/counting_semaphore.h>
 
 #endif // _CUDA_STD_SEMAPHORE

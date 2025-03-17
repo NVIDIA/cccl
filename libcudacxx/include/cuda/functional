@@ -21,6 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/address_stability.h>
+#include <cuda/__functional/get_device_address.h>
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
 #include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/std/functional>
 

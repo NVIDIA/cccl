@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
@@ -84,7 +84,7 @@ void _CCCL_HOST_DEVICE
 fill(execution_policy<Derived>& policy, ForwardIterator first, ForwardIterator last, const T& value)
 {
   cuda_cub::fill_n(policy, first, thrust::distance(first, last), value);
-} // func filll
+} // func fill
 
 } // namespace cuda_cub
 THRUST_NAMESPACE_END

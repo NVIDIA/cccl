@@ -66,13 +66,12 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a>, and \p UnaryFunction's \c result_type is convertible to \c OutputType. \tparam OutputType is a model of
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's argument type.
+ *  \tparam UnaryFunction The function's return type must be convertible to \c OutputType.
+ *  \tparam OutputType is a model of
  * <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ * BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p transform_reduce
  *  to compute the maximum value of the absolute value of the elements
@@ -84,7 +83,7 @@ THRUST_NAMESPACE_BEGIN
  *  #include <thrust/execution_policy.h>
  *
  *  template<typename T>
- *  struct absolute_value : public unary_function<T,T>
+ *  struct absolute_value
  *  {
  *    __host__ __device__ T operator()(const T &x) const
  *    {
@@ -141,13 +140,12 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
  *  \return The result of the transformed reduction.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
- * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's \c argument_type. \tparam
- * UnaryFunction is a model of <a href="https://en.cppreference.com/w/cpp/utility/functional/unary_function">Unary
- * Function</a>, and \p UnaryFunction's \c result_type is convertible to \c OutputType. \tparam OutputType is a model of
+ * Iterator</a>, and \p InputIterator's \c value_type is convertible to \p UnaryFunction's argument type.
+ *  \tparam UnaryFunction The function's return type must be convertible to \c OutputType.
+ *  \tparam OutputType is a model of
  * <a href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>, and is convertible to \p
- * BinaryFunction's \c first_argument_type and \c second_argument_type. \tparam BinaryFunction is a model of <a
- * href="https://en.cppreference.com/w/cpp/utility/functional/binary_function">Binary Function</a>, and \p
- * BinaryFunction's \c result_type is convertible to \p OutputType.
+ * BinaryFunction's first and second argument type.
+ *  \tparam BinaryFunction The function's return type must be convertible to \p OutputType.
  *
  *  The following code snippet demonstrates how to use \p transform_reduce
  *  to compute the maximum value of the absolute value of the elements
@@ -158,7 +156,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
  *  #include <thrust/functional.h>
  *
  *  template<typename T>
- *  struct absolute_value : public unary_function<T,T>
+ *  struct absolute_value
  *  {
  *    __host__ __device__ T operator()(const T &x) const
  *    {

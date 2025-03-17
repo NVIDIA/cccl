@@ -45,8 +45,8 @@
 #include <utility>
 #include <vector>
 
-#include "c2h/vector.cuh"
 #include "test_util.h"
+#include <c2h/vector.h>
 
 /**
  * @brief Host-side random data generation
@@ -55,10 +55,10 @@ template <typename T>
 void GenerateRandomData(
   T* rand_out,
   const std::size_t num_items,
-  const T min_rand_val                                                           = std::numeric_limits<T>::min(),
-  const T max_rand_val                                                           = std::numeric_limits<T>::max(),
-  const std::uint_fast32_t seed                                                  = 320981U,
-  typename std::enable_if<std::is_integral<T>::value && (sizeof(T) >= 2)>::type* = nullptr)
+  const T min_rand_val                                         = ::cuda::std::numeric_limits<T>::min(),
+  const T max_rand_val                                         = ::cuda::std::numeric_limits<T>::max(),
+  const std::uint_fast32_t seed                                = 320981U,
+  std::enable_if_t<std::is_integral_v<T> && (sizeof(T) >= 2)>* = nullptr)
 {
   // initialize random number generator
   std::mt19937 rng(seed);
@@ -114,15 +114,15 @@ GetShuffledRangeOffsets(const c2h::host_vector<RangeSizeT>& range_sizes, const s
 }
 
 template <size_t n, typename... T>
-typename std::enable_if<n >= thrust::tuple_size<thrust::tuple<T...>>::value>::type
+std::enable_if_t<n >= thrust::tuple_size<thrust::tuple<T...>>::value>
 print_tuple(std::ostream&, const thrust::tuple<T...>&)
 {}
 
 template <size_t n, typename... T>
-typename std::enable_if<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>::type
+std::enable_if_t<n + 1 <= thrust::tuple_size<thrust::tuple<T...>>::value>
 print_tuple(std::ostream& os, const thrust::tuple<T...>& tup)
 {
-  _CCCL_IF_CONSTEXPR (n != 0)
+  if constexpr (n != 0)
   {
     os << ", ";
   }
@@ -345,7 +345,7 @@ void nontrivial_constructor_test()
 
   cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
 
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < num_buffers; i++)
   {
     object_with_non_trivial_ctor ha(a[i]);
     object_with_non_trivial_ctor hb(b[i]);
@@ -414,9 +414,9 @@ int main(int argc, char** argv)
   {
     // The most granular type being copied.
     using AtomicCopyT         = int64_t;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
+    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
     RangeSizeT max_range_size =
-      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
+      static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
     double average_range_size      = (min_range_size + max_range_size) / 2.0;
     RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
@@ -433,9 +433,9 @@ int main(int argc, char** argv)
   {
     // The most granular type being copied.
     using AtomicCopyT         = thrust::tuple<int64_t, int32_t, int16_t, char, char>;
-    RangeSizeT min_range_size = static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.first, sizeof(AtomicCopyT)));
+    RangeSizeT min_range_size = static_cast<RangeSizeT>(cuda::round_up(size_range.first, sizeof(AtomicCopyT)));
     RangeSizeT max_range_size =
-      static_cast<RangeSizeT>(CUB_ROUND_UP_NEAREST(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
+      static_cast<RangeSizeT>(cuda::round_up(size_range.second, static_cast<RangeSizeT>(sizeof(AtomicCopyT))));
     double average_range_size      = (min_range_size + max_range_size) / 2.0;
     RangeOffsetT target_num_ranges = static_cast<RangeOffsetT>(target_copy_size / average_range_size);
 
@@ -454,7 +454,7 @@ int main(int argc, char** argv)
   using ByteOffset64T = uint64_t;
   using RangeSize64T  = uint64_t;
   ByteOffset64T large_target_copy_size =
-    static_cast<ByteOffset64T>(std::numeric_limits<uint32_t>::max()) + (128ULL * 1024ULL * 1024ULL);
+    static_cast<ByteOffset64T>(::cuda::std::numeric_limits<uint32_t>::max()) + (128ULL * 1024ULL * 1024ULL);
   // Make sure min_range_size is in fact smaller than max range size
   constexpr RangeOffsetT single_range = 1;
 

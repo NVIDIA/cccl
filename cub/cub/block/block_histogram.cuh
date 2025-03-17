@@ -179,16 +179,13 @@ enum BlockHistogramAlgorithm
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <typename T,
           int BLOCK_DIM_X,
           int ITEMS_PER_THREAD,
           int BINS,
           BlockHistogramAlgorithm ALGORITHM = BLOCK_HISTO_SORT,
           int BLOCK_DIM_Y                   = 1,
-          int BLOCK_DIM_Z                   = 1,
-          int LEGACY_PTX_ARCH               = 0>
+          int BLOCK_DIM_Z                   = 1>
 class BlockHistogram
 {
 private:
@@ -202,8 +199,8 @@ private:
   /// Internal specialization.
   using InternalBlockHistogram =
     ::cuda::std::_If<ALGORITHM == BLOCK_HISTO_SORT,
-                     BlockHistogramSort<T, BLOCK_DIM_X, ITEMS_PER_THREAD, BINS, BLOCK_DIM_Y, BLOCK_DIM_Z>,
-                     BlockHistogramAtomic<BINS>>;
+                     detail::BlockHistogramSort<T, BLOCK_DIM_X, ITEMS_PER_THREAD, BINS, BLOCK_DIM_Y, BLOCK_DIM_Z>,
+                     detail::BlockHistogramAtomic<BINS>>;
 
   /// Shared memory storage layout type for BlockHistogram
   using _TempStorage = typename InternalBlockHistogram::TempStorage;
@@ -295,7 +292,7 @@ public:
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
     {
       histogram[histo_offset + linear_tid] = 0;
@@ -358,7 +355,7 @@ public:
     // Initialize histogram bin counts to zeros
     InitHistogram(histogram);
 
-    CTA_SYNC();
+    __syncthreads();
 
     // Composite the histogram
     InternalBlockHistogram(temp_storage).Composite(items, histogram);

@@ -9,7 +9,7 @@
 // <numeric>
 
 // template<class _M, class _N>
-// constexpr __common_type_t<_M,_N> lcm(_M __m, _N __n)
+// constexpr common_type_t<_M,_N> lcm(_M __m, _N __n)
 
 #include <cuda/std/cassert>
 #include <cuda/std/climits>
@@ -27,7 +27,7 @@ struct TestCases
 };
 
 template <typename Input1, typename Input2, typename Output>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test0(int in1, int in2, int out)
+__host__ __device__ constexpr bool test0(int in1, int in2, int out)
 {
   auto value1 = static_cast<Input1>(in1);
   auto value2 = static_cast<Input2>(in2);
@@ -38,19 +38,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test0(int in1, int in2, int out)
 }
 
 template <typename Input1, typename Input2 = Input1>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
-  using S1                    = cuda::std::__make_signed_t<Input1>;
-  using S2                    = cuda::std::__make_signed_t<Input2>;
-  using U1                    = cuda::std::__make_signed_t<Input1>;
-  using U2                    = cuda::std::__make_signed_t<Input2>;
+  using S1                    = cuda::std::make_signed_t<Input1>;
+  using S2                    = cuda::std::make_signed_t<Input2>;
+  using U1                    = cuda::std::make_signed_t<Input1>;
+  using U2                    = cuda::std::make_signed_t<Input2>;
   bool accumulate             = true;
   constexpr TestCases Cases[] = {
     {0, 0, 0}, {1, 0, 0}, {0, 1, 0}, {1, 1, 1}, {2, 3, 6}, {2, 4, 4}, {3, 17, 51}, {36, 18, 36}};
   for (auto TC : Cases)
   {
     { // Test with two signed types
-      using Output = cuda::std::__common_type_t<S1, S2>;
+      using Output = cuda::std::common_type_t<S1, S2>;
       accumulate &= test0<S1, S2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<S1, S2, Output>(-TC.x, TC.y, TC.expect);
       accumulate &= test0<S1, S2, Output>(TC.x, -TC.y, TC.expect);
@@ -61,19 +61,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
       accumulate &= test0<S2, S1, Output>(-TC.x, -TC.y, TC.expect);
     }
     { // test with two unsigned types
-      using Output = cuda::std::__common_type_t<U1, U2>;
+      using Output = cuda::std::common_type_t<U1, U2>;
       accumulate &= test0<U1, U2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<U2, U1, Output>(TC.x, TC.y, TC.expect);
     }
     { // Test with mixed signs
-      using Output = cuda::std::__common_type_t<S1, U2>;
+      using Output = cuda::std::common_type_t<S1, U2>;
       accumulate &= test0<S1, U2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<U2, S1, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<S1, U2, Output>(-TC.x, TC.y, TC.expect);
       accumulate &= test0<U2, S1, Output>(TC.x, -TC.y, TC.expect);
     }
     { // Test with mixed signs
-      using Output = cuda::std::__common_type_t<S2, U1>;
+      using Output = cuda::std::common_type_t<S2, U1>;
       accumulate &= test0<S2, U1, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<U1, S2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<S2, U1, Output>(-TC.x, TC.y, TC.expect);
@@ -83,7 +83,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(accumulate);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<signed char>();
   test<short>();
@@ -111,9 +111,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int argc, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   //  LWG#2837
   {

@@ -33,9 +33,8 @@
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
-#include "catch2/catch.hpp"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 //----------------------------------------------------------------------------
 // Helper section
@@ -88,7 +87,7 @@ struct agent_dummy_algorithm_t
   static constexpr auto items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
   static constexpr auto tile_size        = block_threads * items_per_thread;
 
-  using item_t = cub::detail::value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   using block_load_t = cub::BlockLoad<item_t, block_threads, items_per_thread, cub::BLOCK_LOAD_TRANSPOSE>;
 
@@ -174,10 +173,9 @@ void __global__ __launch_bounds__(
   kernel_test_info->uses_vsmem_ptr =
     (reinterpret_cast<char*>(&temp_storage)
      == (static_cast<char*>(vsmem.gmem_ptr) + (blockIdx.x * vsmem_helper_t::vsmem_per_block)));
-  kernel_test_info->uses_fallback_agent =
-    ::cuda::std::is_same<typename vsmem_helper_t::agent_t, fallback_agent_t>::value;
+  kernel_test_info->uses_fallback_agent = ::cuda::std::is_same_v<typename vsmem_helper_t::agent_t, fallback_agent_t>;
   kernel_test_info->uses_fallback_policy =
-    ::cuda::std::is_same<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>::value;
+    ::cuda::std::is_same_v<typename vsmem_helper_t::agent_policy_t, fallback_policy_t>;
 
   // Instantiate the algorithm's agent
   agent_t agent(temp_storage, d_in, d_out);
@@ -195,11 +193,11 @@ void __global__ __launch_bounds__(
 template <typename InputIteratorT>
 struct device_dummy_algorithm_policy_t
 {
-  using item_t = cub::detail::value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   static constexpr int FALLBACK_BLOCK_THREADS = 64;
 
-  struct policy_350 : cub::ChainedPolicy<350, policy_350, policy_350>
+  struct policy_500 : cub::ChainedPolicy<500, policy_500, policy_500>
   {
     using DummyAlgorithmPolicy = agent_dummy_algorithm_policy_t<256, cub::Nominal4BItemsToItems<item_t>(17)>;
 
@@ -209,7 +207,7 @@ struct device_dummy_algorithm_policy_t
   };
 
   /// MaxPolicy
-  using max_policy_t = policy_350;
+  using max_policy_t = policy_500;
 };
 
 //----------------------------------------------------------------------------
@@ -218,10 +216,10 @@ struct device_dummy_algorithm_policy_t
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename SelectedPolicy = device_dummy_algorithm_policy_t<InputIteratorT>>
-struct dispatch_dummy_algorithm_t : SelectedPolicy
+          typename PolicyHub = device_dummy_algorithm_policy_t<InputIteratorT>>
+struct dispatch_dummy_algorithm_t
 {
-  using item_t = cub::detail::value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   /// Device-accessible allocation of temporary storage. When nullptr, the required
   /// allocation size is written to \p temp_storage_bytes and no work is done.
@@ -274,8 +272,6 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
   {
-    using max_policy_t = typename dispatch_dummy_algorithm_t::max_policy_t;
-
     using vsmem_helper_t = cub::detail::vsmem_helper_fallback_policy_t<
       typename ActivePolicyT::DummyAlgorithmPolicy,
       typename ActivePolicyT::FallbackDummyAlgorithmPolicy,
@@ -311,7 +307,7 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
     // Compute temporary storage requirements
     void* allocations[1]            = {nullptr};
     std::size_t allocation_sizes[1] = {total_vsmem};
-    error = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    error = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (cudaSuccess != error)
     {
       return error;
@@ -326,8 +322,8 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
     launch_config_info->config_assumes_block_threads = static_cast<std::size_t>(block_threads);
     launch_config_info->config_vsmem_per_block       = vsmem_helper_t::vsmem_per_block;
 
-    THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_tiles, block_threads, 0, stream)
-      .doit(dummy_algorithm_kernel<max_policy_t, InputIteratorT, OutputIteratorT, OffsetT>,
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_tiles, block_threads, 0, stream)
+      .doit(dummy_algorithm_kernel<typename PolicyHub::max_policy_t, InputIteratorT, OutputIteratorT, OffsetT>,
             d_in,
             d_out,
             num_items,
@@ -349,8 +345,6 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
     launch_config_test_info_t* launch_config_info,
     cudaStream_t stream = 0)
   {
-    using max_policy_t = typename dispatch_dummy_algorithm_t::max_policy_t;
-
     // Get PTX version
     int ptx_version = 0;
     cudaError error = cub::PtxVersion(ptx_version);
@@ -372,7 +366,7 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
       ptx_version);
 
     // Dispatch to chained policy
-    error = max_policy_t::Invoke(ptx_version, dispatch);
+    error = PolicyHub::max_policy_t::Invoke(ptx_version, dispatch);
     if (cudaSuccess != error)
     {
       return error;
@@ -409,7 +403,7 @@ DECLARE_LAUNCH_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 
 using type_list = c2h::type_list<large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
 
-CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
+C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
 {
   using item_t   = typename c2h::get<0, TestType>;
   using offset_t = int32_t;
@@ -424,15 +418,15 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   auto const out_ptr = reinterpret_cast<item_t*>(thrust::raw_pointer_cast(out.data()));
 
   // Generate some random noise input data
-  c2h::gen(CUB_SEED(1), in);
+  c2h::gen(C2H_SEED(1), in);
 
   // Query default and fallback policies and agents so we can confirm vsmem
-  using default_policy_t  = typename device_dummy_algorithm_policy_t<item_t*>::policy_350::DummyAlgorithmPolicy;
+  using default_policy_t  = typename device_dummy_algorithm_policy_t<item_t*>::policy_500::DummyAlgorithmPolicy;
   using default_agent_t   = agent_dummy_algorithm_t<default_policy_t, item_t*, item_t*, offset_t>;
-  using fallback_policy_t = typename device_dummy_algorithm_policy_t<item_t*>::policy_350::FallbackDummyAlgorithmPolicy;
+  using fallback_policy_t = typename device_dummy_algorithm_policy_t<item_t*>::policy_500::FallbackDummyAlgorithmPolicy;
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, item_t*, item_t*, offset_t>;
 
-  // Get the information as it is expected from the vsmem helper to work as epxected
+  // Get the information as it is expected from the vsmem helper to work as expected
   std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
   std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
   bool expected_to_use_fallback =

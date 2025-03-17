@@ -3,6 +3,11 @@
 Changelog
 =========
 
+.. warning::
+    This changelog is no longer maintained since Thrust was merged into the CCCL project.
+    For the latest changes, see the release notes for each CCCL release
+    on `GitHub <https://github.com/NVIDIA/cccl/releases>`_.
+
 Thrust 2.1.0
 ------------
 
@@ -317,7 +322,7 @@ earlier calls to complete:
    // Do other work while kernels execute:
    do_something();
 
-   // Must explictly synchronize before accessing `for_each` results:
+   // Must explicitly synchronize before accessing `for_each` results:
    cudaDeviceSynchronize();
 
 Thanks to @fkallen for this contribution.
@@ -896,7 +901,7 @@ Bug Fixes
    asynchronous algorithms.
 -  NVIDIA/thrust#1190: Make ``out_of_memory_recovery`` test trigger
    faster.
--  NVIDIA/thrust#1187: Elminate superfluous iterators specific to the
+-  NVIDIA/thrust#1187: Eliminate superfluous iterators specific to the
    CUDA backend.
 -  NVIDIA/thrust#1181: Various fixes for GoUDA. Thanks to Andrei
    Tchouprakov for this contribution.
@@ -1856,7 +1861,7 @@ Bug Fixes
    policies with streams attached,
    i.e. ``thrust::::cuda::par.on(stream)``.
 -  #664: ``thrust::for_each`` and algorithms based on it no longer
-   ignore streams attached to execution policys.
+   ignore streams attached to execution policies.
 
 .. _known-issues-1:
 

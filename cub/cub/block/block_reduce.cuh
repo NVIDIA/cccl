@@ -207,6 +207,7 @@ enum BlockReduceAlgorithm
 //!
 //!        // Compute the block-wide sum for thread0
 //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+//!    }
 //!
 //! Re-using dynamically allocating shared memory
 //! +++++++++++++++++++++++++++++++++++++++++++++
@@ -232,14 +233,11 @@ enum BlockReduceAlgorithm
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <typename T,
           int BLOCK_DIM_X,
           BlockReduceAlgorithm ALGORITHM = BLOCK_REDUCE_WARP_REDUCTIONS,
           int BLOCK_DIM_Y                = 1,
-          int BLOCK_DIM_Z                = 1,
-          int LEGACY_PTX_ARCH            = 0>
+          int BLOCK_DIM_Z                = 1>
 class BlockReduce
 {
 private:
@@ -250,9 +248,9 @@ private:
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
   };
 
-  using WarpReductions        = BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-  using RakingCommutativeOnly = BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-  using Raking                = BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpReductions        = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using RakingCommutativeOnly = detail::BlockReduceRakingCommutativeOnly<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using Raking                = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// Internal specialization type
   using InternalBlockReduce =
@@ -338,7 +336,8 @@ public:
   //!        ...
   //!
   //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
+  //!    }
   //!
   //! @endrst
   //!
@@ -388,7 +387,7 @@ public:
   //!        ...
   //!
   //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
   //!
   //! @endrst
   //!
@@ -407,7 +406,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T (&inputs)[ITEMS_PER_THREAD], ReductionOp reduction_op)
   {
     // Reduce partials
-    T partial = internal::ThreadReduce(inputs, reduction_op);
+    T partial = cub::ThreadReduce(inputs, reduction_op);
     return Reduce(partial, reduction_op);
   }
 
@@ -442,7 +441,8 @@ public:
   //!        if (threadIdx.x < num_valid) thread_data = ...
   //!
   //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max(), num_valid);
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{}, num_valid);
+  //!    }
   //!
   //! @endrst
   //!
@@ -507,6 +507,7 @@ public:
   //!
   //!        // Compute the block-wide sum for thread0
   //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!    }
   //!
   //! @endrst
   //!
@@ -550,6 +551,7 @@ public:
   //!
   //!        // Compute the block-wide sum for thread0
   //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data);
+  //!    }
   //!
   //! @endrst
   //!
@@ -562,7 +564,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
   {
     // Reduce partials
-    T partial = internal::ThreadReduce(inputs, cub::Sum());
+    T partial = cub::ThreadReduce(inputs, ::cuda::std::plus<>{});
     return Sum(partial);
   }
 
@@ -599,6 +601,7 @@ public:
   //!
   //!        // Compute the block-wide sum for thread0
   //!        int aggregate = BlockReduce(temp_storage).Sum(thread_data, num_valid);
+  //!    }
   //!
   //! @endrst
   //!

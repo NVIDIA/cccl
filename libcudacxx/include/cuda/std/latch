@@ -25,10 +25,10 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__latch/latch.h>
+#include <cuda/std/version>
 
-#include <cuda/std/detail/libcxx/include/latch>
-
-_CCCL_POP_MACROS
+// TODO: drop transitive cuda only include
+#include <cuda/__latch/latch.h>
 
 #endif // _CUDA_STD_LATCH

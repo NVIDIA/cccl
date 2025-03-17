@@ -26,6 +26,9 @@ if (NOT TARGET CCCL::CCCL)
   add_library(CCCL::CCCL INTERFACE IMPORTED GLOBAL)
 endif()
 
+message(STATUS "Finding CCCL components: ${components}")
+message(STATUS "cccl_cmake_dir: ${cccl_cmake_dir}")
+
 foreach(component IN LISTS components)
   string(TOLOWER "${component}" component_lower)
 
@@ -39,9 +42,7 @@ foreach(component IN LISTS components)
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
-      HINTS
-        "${cccl_cmake_dir}/../../../libcudacxx/lib/cmake/" # Source layout (GitHub)
-        "${cccl_cmake_dir}/.."                             # Install layout
+      HINTS "${cccl_cmake_dir}/../libcudacxx/"
     )
     # Can't alias other alias targets, so use the uglified target name instead
     # of libcudacxx::libcudacxx:
@@ -54,9 +55,7 @@ foreach(component IN LISTS components)
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
-      HINTS
-        "${cccl_cmake_dir}/../../../cub/cub/cmake/" # Source layout (GitHub)
-        "${cccl_cmake_dir}/.."                      # Install layout
+      HINTS "${cccl_cmake_dir}/../cub/"
     )
     # Can't alias other alias targets, so use the uglified target name instead
     # of CUB::CUB:
@@ -69,9 +68,7 @@ foreach(component IN LISTS components)
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
-      HINTS
-        "${cccl_cmake_dir}/../../../thrust/thrust/cmake/" # Source layout (GitHub)
-        "${cccl_cmake_dir}/.."                            # Install layout
+      HINTS "${cccl_cmake_dir}/../thrust/"
     )
 
     if (TARGET Thrust::Thrust AND NOT TARGET CCCL::Thrust)
@@ -100,9 +97,7 @@ foreach(component IN LISTS components)
       ${cccl_quiet_flag}
       ${cccl_comp_required_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
-      HINTS
-        "${cccl_cmake_dir}/../../../cudax/lib/cmake/" # Source layout (GitHub)
-        "${cccl_cmake_dir}/.."                            # Install layout
+      HINTS "${cccl_cmake_dir}/../cudax/"
     )
     if (TARGET cudax::cudax AND NOT TARGET CCCL::cudax)
       add_library(CCCL::cudax ALIAS cudax::cudax)

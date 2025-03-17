@@ -13,8 +13,6 @@
 // template <class Alloc, class... UTypes>
 //   tuple(allocator_arg_t, const Alloc& a, UTypes&&...);
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
@@ -44,7 +42,7 @@ struct DerivedFromAllocArgT : cuda::std::allocator_arg_t
 
 // Make sure the _Up... constructor SFINAEs out when the number of initializers
 // is less that the number of elements in the tuple. Previously libc++ would
-// offer these constructers as an extension but they broke conforming code.
+// offer these constructors as an extension but they broke conforming code.
 __host__ __device__ void test_uses_allocator_sfinae_evaluation()
 {
   using BadDefault = DefaultCtorBlowsUp<>;

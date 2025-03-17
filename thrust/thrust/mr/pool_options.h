@@ -100,7 +100,7 @@ struct pool_options
 
   /*! Checks if the options are self-consistent.
    *
-   *  /returns true if the options are self-consitent, false otherwise.
+   *  /returns true if the options are self-consistent, false otherwise.
    */
   bool validate() const
   {

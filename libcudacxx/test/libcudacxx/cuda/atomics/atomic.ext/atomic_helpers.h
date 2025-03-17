@@ -18,7 +18,9 @@ struct UserAtomicType
 {
   int i;
 
-  __host__ __device__ explicit UserAtomicType(int d = 0) TEST_NOEXCEPT : i(d) {}
+  __host__ __device__ explicit UserAtomicType(int d = 0) noexcept
+      : i(d)
+  {}
 
   __host__ __device__ friend bool operator==(const UserAtomicType& x, const UserAtomicType& y)
   {
@@ -27,8 +29,7 @@ struct UserAtomicType
 };
 
 template <template <class, template <typename, typename> class, cuda::thread_scope> class TestFunctor,
-          template <typename, typename>
-          class Selector,
+          template <typename, typename> class Selector,
           cuda::thread_scope Scope
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
           = cuda::thread_scope_system
@@ -66,8 +67,7 @@ struct TestEachIntegralType
 };
 
 template <template <class, template <typename, typename> class, cuda::thread_scope> class TestFunctor,
-          template <typename, typename>
-          class Selector,
+          template <typename, typename> class Selector,
           cuda::thread_scope Scope
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
           = cuda::thread_scope_system
@@ -83,8 +83,7 @@ struct TestEachFloatingPointType
 };
 
 template <template <class, template <typename, typename> class, cuda::thread_scope> class TestFunctor,
-          template <typename, typename>
-          class Selector,
+          template <typename, typename> class Selector,
           cuda::thread_scope Scope
 #if !defined(__CUDA_ARCH__) || __CUDA_ARCH__ >= 600
           = cuda::thread_scope_system

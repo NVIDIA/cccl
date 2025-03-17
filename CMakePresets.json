@@ -21,10 +21,34 @@
         "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
+        "CCCL_ENABLE_C": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
-        "THRUST_ENABLE_INSTALL_RULES": true,
+        "Thrust_ENABLE_INSTALL_RULES": true,
         "cudax_ENABLE_INSTALL_RULES": true
+      }
+    },
+    {
+      "name": "install",
+      "displayName": "Installation / Packaging (only stable libraries)",
+      "inherits": "base",
+      "cacheVariables": {
+        "cudax_ENABLE_INSTALL_RULES": false
+      }
+    },
+    {
+      "name": "install-unstable",
+      "displayName": "Installation / Packaging (includes experimental libraries)",
+      "inherits": "base"
+    },
+    {
+      "name": "install-unstable-only",
+      "displayName": "Installation / Packaging (*only* experimental libraries)",
+      "inherits": "base",
+      "cacheVariables": {
+        "libcudacxx_ENABLE_INSTALL_RULES": false,
+        "CUB_ENABLE_INSTALL_RULES": false,
+        "Thrust_ENABLE_INSTALL_RULES": false
       }
     },
     {
@@ -39,20 +63,14 @@
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
         "CCCL_ENABLE_C": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
-        "CUB_SEPARATE_CATCH2": true,
-        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
-        "CUB_ENABLE_DIALECT_CPP11": true,
-        "CUB_ENABLE_DIALECT_CPP14": true,
         "CUB_ENABLE_DIALECT_CPP17": true,
         "CUB_ENABLE_DIALECT_CPP20": true,
         "THRUST_ENABLE_MULTICONFIG": true,
         "THRUST_MULTICONFIG_WORKLOAD": "LARGE",
-        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CPP": true,
@@ -61,8 +79,15 @@
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
+        "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_CUDASTF": true,
+        "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
+        "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
+        "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": true,
-        "cudax_ENABLE_DIALECT_CPP20": true
+        "cudax_ENABLE_DIALECT_CPP20": true,
+        "CCCL_C_Parallel_ENABLE_TESTING": true,
+        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
       }
     },
     {
@@ -70,9 +95,10 @@
       "displayName": "all-dev debug",
       "inherits": "all-dev",
       "cacheVariables": {
-        "CCCL_ENABLE_BENCHMARKS": false,
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CUDA_FLAGS": "-G"
+        "CMAKE_CUDA_FLAGS": "-G",
+        "CCCL_ENABLE_BENCHMARKS": false,
+        "cudax_ENABLE_CUDASTF_BOUNDSCHECK": true
       }
     },
     {
@@ -81,8 +107,8 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
-        "libcudacxx_ENABLE_CMAKE_TESTS": false,
         "libcudacxx_ENABLE_CODEGEN": true,
         "LIBCUDACXX_ENABLE_CUDA": false
       }
@@ -97,27 +123,6 @@
       }
     },
     {
-      "name": "libcudacxx-cpp11",
-      "displayName": "libcu++: C++11",
-      "inherits": "libcudacxx-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "11",
-        "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
-      }
-    },
-    {
-      "name": "libcudacxx-cpp14",
-      "displayName": "libcu++: C++14",
-      "inherits": "libcudacxx-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "14",
-        "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
-
-      }
-    },
-    {
       "name": "libcudacxx-cpp17",
       "displayName": "libcu++: C++17",
       "inherits": "libcudacxx-base",
@@ -125,7 +130,6 @@
         "CMAKE_CXX_STANDARD": "17",
         "CMAKE_CUDA_STANDARD": "17",
         "LIBCUDACXX_TEST_STANDARD_VER": "c++17"
-
       }
     },
     {
@@ -145,26 +149,6 @@
       "cacheVariables": {
         "LIBCUDACXX_TEST_WITH_NVRTC": true,
         "CMAKE_CUDA_ARCHITECTURES": "70"
-      }
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp11",
-      "displayName": "libcu++ NVRTC: C++11",
-      "inherits": "libcudacxx-nvrtc-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "11",
-        "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
-      }
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp14",
-      "displayName": "libcu++ NVRTC: C++14",
-      "inherits": "libcudacxx-nvrtc-base",
-      "cacheVariables": {
-        "CMAKE_CXX_STANDARD": "14",
-        "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
       }
     },
     {
@@ -195,29 +179,8 @@
         "CCCL_ENABLE_CUB": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
-        "CUB_SEPARATE_CATCH2": true,
-        "CUB_ENABLE_DIALECT_CPP11": false,
-        "CUB_ENABLE_DIALECT_CPP14": false,
         "CUB_ENABLE_DIALECT_CPP17": false,
         "CUB_ENABLE_DIALECT_CPP20": false
-      }
-    },
-    {
-      "name": "cub-cpp11",
-      "displayName": "CUB: C++11",
-      "inherits": "cub-base",
-      "cacheVariables": {
-        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
-        "CUB_ENABLE_DIALECT_CPP11": true
-      }
-    },
-    {
-      "name": "cub-cpp14",
-      "displayName": "CUB: C++14",
-      "inherits": "cub-base",
-      "cacheVariables": {
-        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
-        "CUB_ENABLE_DIALECT_CPP14": true
       }
     },
     {
@@ -247,28 +210,8 @@
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_CUDA": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_OMP": true,
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": false,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": false,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": false,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP20": false
-      }
-    },
-    {
-      "name": "thrust-cpp11",
-      "displayName": "Thrust: C++11",
-      "inherits": "thrust-base",
-      "cacheVariables": {
-        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": true
-      }
-    },
-    {
-      "name": "thrust-cpp14",
-      "displayName": "Thrust: C++14",
-      "inherits": "thrust-base",
-      "cacheVariables": {
-        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
-        "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true
       }
     },
     {
@@ -295,6 +238,11 @@
         "CCCL_ENABLE_CUDAX": true,
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
+        "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_CUDASTF": true,
+        "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
+        "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
+        "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": false,
         "cudax_ENABLE_DIALECT_CPP20": false
       }
@@ -316,6 +264,16 @@
       }
     },
     {
+      "name": "cccl-c-parallel",
+      "displayName": "CCCL C Parallel Library",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_C": true,
+        "CCCL_C_Parallel_ENABLE_TESTING": true,
+        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
+      }
+    },
+    {
       "name": "cccl-infra",
       "displayName": "CCCL Infrastructure",
       "inherits": "base",
@@ -323,6 +281,44 @@
         "CMAKE_CUDA_COMPILER": "nvcc",
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
+      }
+    },
+    {
+      "name": "cub-benchmark",
+      "displayName": "CUB benchmarking",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_CUB": true,
+        "CCCL_ENABLE_THRUST": false,
+        "CCCL_ENABLE_LIBCUDACXX": false,
+        "CCCL_ENABLE_CUDAX": false,
+        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_TESTING": false,
+        "CCCL_ENABLE_EXAMPLES": false,
+        "CUB_ENABLE_EXAMPLES": false,
+        "CUB_ENABLE_TESTING": false,
+        "CUB_ENABLE_HEADER_TESTING": false
+      }
+    },
+    {
+      "name": "cub-tune",
+      "displayName": "CUB tuning",
+      "inherits": "cub-benchmark",
+      "cacheVariables": {
+        "CUB_ENABLE_TUNING": true
+      }
+    },
+    {
+      "name": "benchmark",
+      "displayName": "CUB/Thrust benchmarking",
+      "inherits": "cub-benchmark",
+      "cacheVariables": {
+        "CCCL_ENABLE_THRUST": true,
+        "THRUST_ENABLE_EXAMPLES": false,
+        "THRUST_ENABLE_TESTING": false,
+        "THRUST_ENABLE_HEADER_TESTING": false
       }
     }
   ],
@@ -336,19 +332,29 @@
       "configurePreset": "all-dev-debug"
     },
     {
+      "name": "install",
+      "configurePreset": "install"
+    },
+    {
       "name": "libcudacxx-codegen",
       "configurePreset": "libcudacxx-codegen",
-      "targets": ["libcudacxx.atomics.codegen"]
+      "targets": [
+        "libcudacxx.atomics.codegen"
+      ]
     },
     {
       "name": "libcudacxx-codegen-install",
       "configurePreset": "libcudacxx-codegen",
-      "targets": ["libcudacxx.atomics.codegen.install"]
+      "targets": [
+        "libcudacxx.atomics.codegen.install"
+      ]
     },
     {
       "name": "libcudacxx-nvrtcc",
       "hidden": true,
-      "targets": ["libcudacxx.nvrtcc"]
+      "targets": [
+        "libcudacxx.nvrtcc"
+      ]
     },
     {
       "name": "libcudacxx-base",
@@ -357,60 +363,39 @@
         "libcudacxx.test.internal_headers",
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
-        "libcudacxx.test.lit.precompile"
+        "libcudacxx.test.lit.precompile",
+        "libcudacxx.test.atomics.ptx"
       ]
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp11",
-      "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
-      "configurePreset": "libcudacxx-nvrtc-cpp11"
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp14",
-      "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
-      "configurePreset": "libcudacxx-nvrtc-cpp14"
     },
     {
       "name": "libcudacxx-nvrtc-cpp17",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp17"
     },
     {
       "name": "libcudacxx-nvrtc-cpp20",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp20"
-    },
-    {
-      "name": "libcudacxx-cpp11",
-      "configurePreset": "libcudacxx-cpp11",
-      "inherits": ["libcudacxx-base"]
-    },
-    {
-      "name": "libcudacxx-cpp14",
-      "configurePreset": "libcudacxx-cpp14",
-      "inherits": ["libcudacxx-base"]
     },
     {
       "name": "libcudacxx-cpp17",
       "configurePreset": "libcudacxx-cpp17",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "libcudacxx-cpp20",
       "configurePreset": "libcudacxx-cpp20",
-      "inherits": ["libcudacxx-base"]
-    },
-    {
-      "name": "cub-cpp11",
-      "configurePreset": "cub-cpp11"
-    },
-    {
-      "name": "cub-cpp14",
-      "configurePreset": "cub-cpp14"
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "cub-cpp17",
@@ -419,14 +404,6 @@
     {
       "name": "cub-cpp20",
       "configurePreset": "cub-cpp20"
-    },
-    {
-      "name": "thrust-cpp11",
-      "configurePreset": "thrust-cpp11"
-    },
-    {
-      "name": "thrust-cpp14",
-      "configurePreset": "thrust-cpp14"
     },
     {
       "name": "thrust-cpp17",
@@ -443,6 +420,10 @@
     {
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20"
+    },
+    {
+      "name": "cccl-c-parallel",
+      "configurePreset": "cccl-c-parallel"
     },
     {
       "name": "cccl-infra",
@@ -479,7 +460,7 @@
       ],
       "filter": {
         "exclude": {
-          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.diff)$"
+          "name": "^libcudacxx\\.test\\.lit$"
         }
       }
     },
@@ -491,34 +472,6 @@
           "name": "^libcudacxx\\.test\\.atomics\\.codegen.*$"
         }
       }
-    },
-    {
-      "name": "libcudacxx-ctest-cpp11",
-      "configurePreset": "libcudacxx-cpp11",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp14",
-      "configurePreset": "libcudacxx-cpp14",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp17",
-      "configurePreset": "libcudacxx-cpp17",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp20",
-      "configurePreset": "libcudacxx-cpp20",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
     },
     {
       "name": "libcudacxx-lit-base",
@@ -535,20 +488,6 @@
         "verbosity": "extra",
         "outputOnFailure": false
       }
-    },
-    {
-      "name": "libcudacxx-lit-cpp11",
-      "configurePreset": "libcudacxx-cpp11",
-      "inherits": [
-        "libcudacxx-lit-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-lit-cpp14",
-      "configurePreset": "libcudacxx-cpp14",
-      "inherits": [
-        "libcudacxx-lit-base"
-      ]
     },
     {
       "name": "libcudacxx-lit-cpp17",
@@ -569,20 +508,6 @@
       "hidden": true,
       "inherits": [
         "libcudacxx-lit-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp11",
-      "configurePreset": "libcudacxx-nvrtc-cpp11",
-      "inherits": [
-        "libcudacxx-nvrtc-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-nvrtc-cpp14",
-      "configurePreset": "libcudacxx-nvrtc-cpp14",
-      "inherits": [
-        "libcudacxx-nvrtc-base"
       ]
     },
     {
@@ -645,16 +570,6 @@
       }
     },
     {
-      "name": "cub-nolid-cpp11",
-      "configurePreset": "cub-cpp11",
-      "inherits": "cub-nolid-base"
-    },
-    {
-      "name": "cub-nolid-cpp14",
-      "configurePreset": "cub-cpp14",
-      "inherits": "cub-nolid-base"
-    },
-    {
       "name": "cub-nolid-cpp17",
       "configurePreset": "cub-cpp17",
       "inherits": "cub-nolid-base"
@@ -663,16 +578,6 @@
       "name": "cub-nolid-cpp20",
       "configurePreset": "cub-cpp20",
       "inherits": "cub-nolid-base"
-    },
-    {
-      "name": "cub-lid0-cpp11",
-      "configurePreset": "cub-cpp11",
-      "inherits": "cub-lid0-base"
-    },
-    {
-      "name": "cub-lid0-cpp14",
-      "configurePreset": "cub-cpp14",
-      "inherits": "cub-lid0-base"
     },
     {
       "name": "cub-lid0-cpp17",
@@ -685,16 +590,6 @@
       "inherits": "cub-lid0-base"
     },
     {
-      "name": "cub-lid1-cpp11",
-      "configurePreset": "cub-cpp11",
-      "inherits": "cub-lid1-base"
-    },
-    {
-      "name": "cub-lid1-cpp14",
-      "configurePreset": "cub-cpp14",
-      "inherits": "cub-lid1-base"
-    },
-    {
       "name": "cub-lid1-cpp17",
       "configurePreset": "cub-cpp17",
       "inherits": "cub-lid1-base"
@@ -705,16 +600,6 @@
       "inherits": "cub-lid1-base"
     },
     {
-      "name": "cub-lid2-cpp11",
-      "configurePreset": "cub-cpp11",
-      "inherits": "cub-lid2-base"
-    },
-    {
-      "name": "cub-lid2-cpp14",
-      "configurePreset": "cub-cpp14",
-      "inherits": "cub-lid2-base"
-    },
-    {
       "name": "cub-lid2-cpp17",
       "configurePreset": "cub-cpp17",
       "inherits": "cub-lid2-base"
@@ -723,16 +608,6 @@
       "name": "cub-lid2-cpp20",
       "configurePreset": "cub-cpp20",
       "inherits": "cub-lid2-base"
-    },
-    {
-      "name": "cub-cpp11",
-      "configurePreset": "cub-cpp11",
-      "inherits": "cub-base"
-    },
-    {
-      "name": "cub-cpp14",
-      "configurePreset": "cub-cpp14",
-      "inherits": "cub-base"
     },
     {
       "name": "cub-cpp17",
@@ -775,16 +650,6 @@
       }
     },
     {
-      "name": "thrust-gpu-cpp11",
-      "configurePreset": "thrust-cpp11",
-      "inherits": "thrust-gpu-base"
-    },
-    {
-      "name": "thrust-gpu-cpp14",
-      "configurePreset": "thrust-cpp14",
-      "inherits": "thrust-gpu-base"
-    },
-    {
       "name": "thrust-gpu-cpp17",
       "configurePreset": "thrust-cpp17",
       "inherits": "thrust-gpu-base"
@@ -795,16 +660,6 @@
       "inherits": "thrust-gpu-base"
     },
     {
-      "name": "thrust-cpu-cpp11",
-      "configurePreset": "thrust-cpp11",
-      "inherits": "thrust-cpu-base"
-    },
-    {
-      "name": "thrust-cpu-cpp14",
-      "configurePreset": "thrust-cpp14",
-      "inherits": "thrust-cpu-base"
-    },
-    {
       "name": "thrust-cpu-cpp17",
       "configurePreset": "thrust-cpp17",
       "inherits": "thrust-cpu-base"
@@ -813,16 +668,6 @@
       "name": "thrust-cpu-cpp20",
       "configurePreset": "thrust-cpp20",
       "inherits": "thrust-cpu-base"
-    },
-    {
-      "name": "thrust-cpp11",
-      "configurePreset": "thrust-cpp11",
-      "inherits": "thrust-base"
-    },
-    {
-      "name": "thrust-cpp14",
-      "configurePreset": "thrust-cpp14",
-      "inherits": "thrust-base"
     },
     {
       "name": "thrust-cpp17",
@@ -848,6 +693,11 @@
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20",
       "inherits": "cudax-base"
+    },
+    {
+      "name": "cccl-c-parallel",
+      "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
     },
     {
       "name": "cccl-infra",

@@ -8,36 +8,15 @@ if(CMAKE_GENERATOR MATCHES "^Visual Studio")
   endif()
 endif()
 
-if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-  # NVBugs 200770766
-  set(CUB_SEPARATE_CATCH2 ON)
-else()
-  option(CUB_SEPARATE_CATCH2
-    "Build each catch2 test as a separate executable."
-    OFF
-  )
-endif()
-
-include("${CUB_SOURCE_DIR}/cmake/CPM.cmake")
-CPMAddPackage("gh:catchorg/Catch2@2.13.9")
-
-CPMAddPackage(
-  NAME NVTX
-  GITHUB_REPOSITORY NVIDIA/NVTX
-  GIT_TAG release-v3
-  DOWNLOAD_ONLY
-  SYSTEM
-)
-include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
+cccl_get_c2h()
+cccl_get_nvtx()
 
 find_package(CUDAToolkit)
 
-set(curand_default OFF)
-if (CUDA_curand_LIBRARY)
-  set(curand_default ON)
+set(build_nvrtc_tests ON)
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(build_nvrtc_tests OFF)
 endif()
-
-option(CUB_C2H_ENABLE_CURAND "Use CUDA CURAND library" ${curand_default})
 
 # The function below reads the filepath `src`, extracts the %PARAM% comments,
 # and fills `labels_var` with a list of `label1_value1.label2_value2...`
@@ -113,7 +92,7 @@ foreach(cub_target IN LISTS CUB_TARGETS)
   add_dependencies(${config_prefix}.all ${config_meta_target})
 endforeach()
 
-file(GLOB test_srcs
+file(GLOB_RECURSE test_srcs
   RELATIVE "${CUB_SOURCE_DIR}/test"
   CONFIGURE_DEPENDS
   test_*.cu
@@ -185,70 +164,27 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     # Per config helper library:
     set(config_c2h_target ${config_prefix}.test.catch2_helper.lid_${launcher_id})
     if (NOT TARGET ${config_c2h_target})
-      add_library(${config_c2h_target} STATIC c2h/generators.cu)
-      target_include_directories(${config_c2h_target} PUBLIC "${CUB_SOURCE_DIR}/test")
+      add_library(${config_c2h_target} INTERFACE)
+      target_include_directories(${config_c2h_target} INTERFACE "${CUB_SOURCE_DIR}/test")
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
-      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target}
-                                                 PUBLIC CUDA::nvrtc CUDA::cuda_driver)
-      if (CUB_C2H_ENABLE_CURAND)
-        target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
-        target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=1)
-      else()
-        target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=0)
-      endif()
+      target_link_libraries(${config_c2h_target} INTERFACE
+        ${cub_target}
+        cccl.c2h
+        CUDA::nvrtc
+        CUDA::cuda_driver
+      )
     endif() # config_c2h_target
 
-    if (CUB_SEPARATE_CATCH2)
-      set(catch2_main_objects ${config_prefix}.catch2_main_objects)
-      if (NOT TARGET ${catch2_main_objects})
-        add_library(${catch2_main_objects} OBJECT catch2_runner.cpp catch2_runner_helper.cu)
-        target_link_libraries(${catch2_main_objects} PUBLIC Catch2::Catch2)
-      endif()
+    add_executable(${test_target} "${test_src}")
+    target_link_libraries(${test_target} PRIVATE cccl.c2h.main)
+    add_dependencies(${config_meta_target} ${test_target})
 
-      add_executable(${test_target} "${test_src}")
-      target_link_libraries(${test_target} PRIVATE ${catch2_main_objects})
-      add_dependencies(${config_meta_target} ${test_target})
-
-      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
-    else() # Not CUB_SEPARATE_CATCH2
-      # Per config catch2 runner
-      set(config_c2run_target ${config_prefix}.catch2_test.lid_${launcher_id})
-      if (NOT TARGET ${config_c2run_target})
-        add_executable(${config_c2run_target} catch2_runner.cpp catch2_runner_helper.cu)
-        target_link_libraries(${config_c2run_target} PRIVATE
-          ${cub_target}
-          ${config_c2h_target}
-          Catch2::Catch2)
-        cub_clone_target_properties(${config_c2run_target} ${cub_target})
-        cub_configure_cuda_target(${config_c2run_target} RDC ${cdp_val})
-        add_dependencies(${config_meta_target} ${config_c2run_target})
-        target_include_directories(${config_c2run_target} PRIVATE
-          "${CUB_SOURCE_DIR}/test"
-        )
-        if ("NVHPC" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-          target_link_options(${config_c2run_target} PRIVATE "-cuda")
-        endif()
-
-        add_test(NAME ${config_c2run_target}
-          COMMAND "$<TARGET_FILE:${config_c2run_target}>"
-        )
-      endif() # per config catch2 runner
-
-      add_library(${test_target} OBJECT "${test_src}")
-
-      if(CMAKE_GENERATOR MATCHES "^Visual Studio")
-        target_link_libraries(${config_c2run_target} PRIVATE $<TARGET_OBJECTS:${test_target}>)
-      else()
-        target_link_libraries(${config_c2run_target} PRIVATE ${test_target})
-      endif()
-    endif() # CUB_SEPARATE_CATCH2
+    add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
 
     if ("${test_target}" MATCHES "nvrtc")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_CUB_PATH="-I${CMAKE_SOURCE_DIR}/cub")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_THRUST_PATH="-I${CMAKE_SOURCE_DIR}/thrust")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_LIBCUDACXX_PATH="-I${CMAKE_SOURCE_DIR}/libcudacxx/include")
-      target_compile_definitions(${test_target} PRIVATE NVRTC_CTK_PATH="-I${CUDAToolkit_INCLUDE_DIRS}")
+      configure_file("cmake/nvrtc_args.h.in" ${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h)
+      target_include_directories(${test_target} PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
     endif()
 
     if ("${test_target}" MATCHES "test.iterator")
@@ -274,15 +210,17 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     set(test_meta_target cub.all.test.${test_name})
 
     add_executable(${test_target} "${test_src}")
-    target_link_libraries(${test_target} ${cub_target})
+    target_link_libraries(${test_target} PRIVATE
+      ${cub_target}
+      cccl.c2h
+    )
     cub_clone_target_properties(${test_target} ${cub_target})
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
-    target_compile_definitions(${test_target} PRIVATE CUB_DETAIL_DEBUG_ENABLE_SYNC)
+    target_compile_definitions(${test_target} PRIVATE CUB_DEBUG_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
-      target_link_libraries(${test_target} nvtx3-cpp)
+      target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
     endif()
-
 
     _cub_is_fail_test(is_fail_test "${test_src}")
     if (is_fail_test)
@@ -324,6 +262,9 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
     endif()
   endif() # Not catch2 test
+
+  # Ensure that we test with assertions enabled
+  target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 endfunction()
 
 # Sets out_var to launch id if the label contains launch variants
@@ -355,6 +296,12 @@ foreach (test_src IN LISTS test_srcs)
   cub_get_test_params("${test_src}" variant_labels variant_defs)
   list(LENGTH variant_labels num_variants)
 
+  if ("${test_name}" MATCHES "nvrtc")
+    if (NOT build_nvrtc_tests)
+      continue()
+    endif()
+  endif()
+
   # Subtract 1 to support the inclusive endpoint of foreach(...RANGE...):
   math(EXPR range_end "${num_variants} - 1")
 
@@ -377,6 +324,15 @@ foreach (test_src IN LISTS test_srcs)
         set(launcher 1)
       else()
         set(launcher 0)
+      endif()
+
+      # FIXME: There are a few remaining device algorithm tests that have not been ported to
+      # use Catch2 and lid variants. Mark these as `lid_0/1` so they'll run in the appropriate
+      # CI configs:
+      string(REGEX MATCH "^device_" is_device_test "${test_name}")
+      _cub_is_fail_test(is_fail_test "%{test_name}")
+      if (is_device_test AND NOT is_fail_test)
+        string(APPEND test_name ".lid_${launcher}")
       endif()
 
       # Only one version of this test.

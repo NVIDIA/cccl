@@ -20,9 +20,10 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
+#  include <memory>
 #  include <utility>
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 struct CopyOnly
 {
@@ -74,8 +75,8 @@ private:
 };
 
 template <class Tp>
-__host__ __device__ auto
-can_swap_test(int) -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
+__host__ __device__ auto can_swap_test(int)
+  -> decltype(cuda::std::swap(cuda::std::declval<Tp>(), cuda::std::declval<Tp>()));
 
 template <class Tp>
 __host__ __device__ auto can_swap_test(...) -> cuda::std::false_type;
@@ -86,7 +87,6 @@ __host__ __device__ constexpr bool can_swap()
   return cuda::std::is_same<decltype(can_swap_test<Tp>(0)), void>::value;
 }
 
-#if TEST_STD_VER >= 2014
 __host__ __device__ constexpr bool test_swap_constexpr()
 {
   int i = 1;
@@ -94,7 +94,6 @@ __host__ __device__ constexpr bool test_swap_constexpr()
   cuda::std::swap(i, j);
   return i == 2 && j == 1;
 }
-#endif // TEST_STD_VER >= 2014
 
 template <class T>
 struct swap_with_friend
@@ -102,27 +101,59 @@ struct swap_with_friend
   __host__ __device__ friend void swap(swap_with_friend&, swap_with_friend&) {}
 };
 
+template <typename T>
 __host__ __device__ void test_ambiguous_std()
 {
-#if !defined(TEST_COMPILER_NVRTC)
   // clang-format off
   NV_IF_TARGET(NV_IS_HOST, (
+    // fully qualified calls
     {
-      cuda::std::pair<::std::pair<int, int>, int> i = {};
-      cuda::std::pair<::std::pair<int, int>, int> j = {};
+      T i = {};
+      T j = {};
+      cuda::std::swap(i,j);
+    }
+  ))
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (
+    {
+      T i = {};
+      T j = {};
+      std::swap(i,j);
+    }
+  ))
+#endif // !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (
+    // ADL calls
+    {
+      T i = {};
+      T j = {};
       swap(i,j);
     }
-    { // Ensure that we do not SFINAE swap out if there is a free function as that will take precedent
-      swap_with_friend<::std::pair<int, int>> with_friend;
-      cuda::std::swap(with_friend, with_friend);
+  ))
+#if !TEST_COMPILER(NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (
+    {
+      T i = {};
+      T j = {};
+      using cuda::std::swap;
+      swap(i,j);
+    }
+    {
+      T i = {};
+      T j = {};
+      using std::swap;
+      swap(i,j);
+    }
+    {
+      T i = {};
+      T j = {};
+      using std::swap;
+      using cuda::std::swap;
+      swap(i,j);
     }
   ))
   // clang-format on
-#  if TEST_STD_VER >= 2014
-  static_assert(cuda::std::is_swappable<cuda::std::pair<::std::pair<int, int>, int>>::value, "");
-  static_assert(cuda::std::is_swappable<swap_with_friend<::std::pair<int, int>>>::value, "");
-#  endif // TEST_STD_VER >= 2014
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 int main(int, char**)
@@ -158,11 +189,22 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::swap(nm, nm)), "");
   }
 
-#if TEST_STD_VER >= 2014
   static_assert(test_swap_constexpr(), "");
-#endif // TEST_STD_VER >= 2014
 
-  test_ambiguous_std();
+  test_ambiguous_std<cuda::std::pair<int, int>>(); // has cuda::std::swap overload
+#if !TEST_COMPILER(NVRTC)
+  test_ambiguous_std<::std::pair<int, int>>(); // has std::swap overload
+  test_ambiguous_std<cuda::std::pair<::std::pair<int, int>, int>>(); // has std:: and cuda::std as associated namespaces
+  test_ambiguous_std<::std::allocator<char>>(); // no std::swap overload
+
+  // Ensure that we do not SFINAE swap out if there is a free function as that will take precedent
+  test_ambiguous_std<swap_with_friend<::std::pair<int, int>>>();
+#endif // !TEST_COMPILER(NVRTC)
+
+#if !TEST_COMPILER(NVRTC)
+  static_assert(cuda::std::is_swappable<cuda::std::pair<::std::pair<int, int>, int>>::value, "");
+  static_assert(cuda::std::is_swappable<swap_with_friend<::std::pair<int, int>>>::value, "");
+#endif // !TEST_COMPILER(NVRTC)
 
   return 0;
 }

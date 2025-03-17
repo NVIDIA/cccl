@@ -30,6 +30,7 @@
 #include <cuda/std/__functional/invoke.h>
 
 #include <look_back_helper.cuh>
+#include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
@@ -42,7 +43,7 @@
 
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
+#  elif TUNE_LOAD == 1
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
@@ -64,7 +65,7 @@ struct policy_hub_t
     LOAD_MODIFIER,
     STORE_ALGORITHM,
     SCAN_ALGORITHM,
-    cub::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
+    cub::detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
     delay_constructor_t>;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
@@ -86,17 +87,18 @@ struct policy_hub_t
 template <typename T, typename OffsetT>
 static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using init_t      = cub::detail::InputValue<T>;
-  using accum_t     = ::cuda::std::__accumulator_t<op_t, T, T>;
-  using input_it_t  = const T*;
-  using output_it_t = T*;
-  using offset_t    = OffsetT;
+  using init_t         = T;
+  using wrapped_init_t = cub::detail::InputValue<init_t>;
+  using accum_t        = ::cuda::std::__accumulator_t<op_t, init_t, T>;
+  using input_it_t     = const T*;
+  using output_it_t    = T*;
+  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;
-  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, init_t, offset_t, accum_t, policy_t>;
+  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t, policy_t>;
 #else
-  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, init_t, offset_t, accum_t>;
+  using dispatch_t = cub::DispatchScan<input_it_t, output_it_t, op_t, wrapped_init_t, offset_t, accum_t>;
 #endif
 
   const auto elements = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -113,7 +115,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   size_t tmp_size;
   dispatch_t::Dispatch(
-    nullptr, tmp_size, d_input, d_output, op_t{}, init_t{T{}}, static_cast<int>(input.size()), 0 /* stream */);
+    nullptr, tmp_size, d_input, d_output, op_t{}, wrapped_init_t{T{}}, static_cast<int>(input.size()), 0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
@@ -125,15 +127,13 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
       d_input,
       d_output,
       op_t{},
-      init_t{T{}},
+      wrapped_init_t{T{}},
       static_cast<int>(input.size()),
       launch.get_stream());
   });
 }
 
-using some_offset_types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
-
-NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, some_offset_types))
+NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

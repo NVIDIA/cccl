@@ -63,7 +63,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
                            num_active_channels,
                            sample_iterator_t,
                            CounterT,
-                           SampleT,
+                           /* LevelT = */ SampleT,
                            OffsetT>;
 #endif // TUNE_BASE
 
@@ -88,14 +88,10 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   SampleT* d_input      = thrust::raw_pointer_cast(input.data());
   CounterT* d_histogram = thrust::raw_pointer_cast(hist.data());
 
-  CounterT* d_histogram1[1] = {d_histogram};
-  int num_levels1[1]        = {num_levels};
-  SampleT* d_levels1[1]     = {d_levels};
-
   std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
-  cub::Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+  cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
   OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
   OffsetT num_rows           = 1;
   OffsetT row_stride_samples = num_row_pixels;
@@ -108,9 +104,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
     d_temp_storage,
     temp_storage_bytes,
     d_input,
-    d_histogram1,
-    num_levels1,
-    d_levels1,
+    {d_histogram},
+    {num_levels},
+    {d_levels},
     num_row_pixels,
     num_rows,
     row_stride_samples,
@@ -125,9 +121,9 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
       d_temp_storage,
       temp_storage_bytes,
       d_input,
-      d_histogram1,
-      num_levels1,
-      d_levels1,
+      {d_histogram},
+      {num_levels},
+      {d_levels},
       num_row_pixels,
       num_rows,
       row_stride_samples,
@@ -136,7 +132,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   });
 }
 
-using bin_types         = nvbench::type_list<int32_t>;
+using counter_types     = nvbench::type_list<int32_t>;
 using some_offset_types = nvbench::type_list<int32_t>;
 
 #ifdef TUNE_SampleT
@@ -145,9 +141,9 @@ using sample_types = nvbench::type_list<TUNE_SampleT>;
 using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
 #endif // TUNE_SampleT
 
-NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, bin_types, some_offset_types))
+NVBENCH_BENCH_TYPES(range, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
-  .set_type_axes_names({"SampleT{ct}", "BinT{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_axis("Bins", {32, 128, 2048, 2097152})
   .add_string_axis("Entropy", {"0.201", "1.000"});

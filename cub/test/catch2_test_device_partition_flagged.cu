@@ -31,13 +31,22 @@
 #include <cub/device/device_partition.cuh>
 
 #include <thrust/count.h>
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/reverse_iterator.h>
+#include <thrust/iterator/tabulate_output_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/cmath>
+
 #include <algorithm>
 
-#include "catch2_test_helper.h"
+#include "catch2_large_problem_helper.cuh"
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -78,14 +87,27 @@ using all_types =
                  std::uint32_t,
                  std::uint64_t,
                  ulonglong2,
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
                  ulonglong4,
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
                  int,
                  long2,
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-using types = c2h::type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::equal_comparable_t>>;
+using types =
+  c2h::type_list<std::uint8_t,
+                 std::uint32_t,
+// WAR bug in vec type handling in NVCC 12.0 + GCC 11.4 + C++20
+#if !(_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0) && _CCCL_COMPILER(GCC, ==, 11, 4) && _CCCL_STD_VER == 2020)
+                 ulonglong4,
+#endif // !(NVCC 12.0 and GCC 11.4 and C++20)
+                 c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-CUB_TEST("DevicePartition::Flagged can run with empty input", "[device][partition_flagged]", types)
+// List of offset types to be used for testing large number of items
+using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
+
+C2H_TEST("DevicePartition::Flagged can run with empty input", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -95,7 +117,7 @@ CUB_TEST("DevicePartition::Flagged can run with empty input", "[device][partitio
   c2h::device_vector<char> flags(num_items);
 
   // Needs to be device accessible
-  c2h::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   partition_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
@@ -103,14 +125,14 @@ CUB_TEST("DevicePartition::Flagged can run with empty input", "[device][partitio
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DevicePartition::Flagged handles all matched", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged handles all matched", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<char> flags(num_items, static_cast<char>(1));
 
@@ -124,14 +146,14 @@ CUB_TEST("DevicePartition::Flagged handles all matched", "[device][partition_fla
   REQUIRE(out == in);
 }
 
-CUB_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<char> flags(num_items, static_cast<char>(0));
 
@@ -148,17 +170,17 @@ CUB_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flag
   REQUIRE(out == in);
 }
 
-CUB_TEST("DevicePartition::Flagged does not change input", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged does not change input", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
 
@@ -175,17 +197,17 @@ CUB_TEST("DevicePartition::Flagged does not change input", "[device][partition_f
   REQUIRE(reference == in);
 }
 
-CUB_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -200,17 +222,17 @@ CUB_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DevicePartition::Flagged works with iterators", "[device][partition_flagged]", all_types)
+C2H_TEST("DevicePartition::Flagged works with iterators", "[device][partition_flagged]", all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -225,17 +247,17 @@ CUB_TEST("DevicePartition::Flagged works with iterators", "[device][partition_fl
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DevicePartition::Flagged works with pointers", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged works with pointers", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -278,17 +300,17 @@ struct convertible_to_bool
   }
 };
 
-CUB_TEST("DevicePartition::Flagged works with flags that are convertible to bool", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged works with flags that are convertible to bool", "[device][partition_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> iflags(num_items);
-  c2h::gen(CUB_SEED(1), iflags, 0, 1);
+  c2h::gen(C2H_SEED(1), iflags, 0, 1);
 
   c2h::device_vector<convertible_to_bool> flags = iflags;
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
@@ -304,7 +326,7 @@ CUB_TEST("DevicePartition::Flagged works with flags that are convertible to bool
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DevicePartition::Flagged works with flags that alias input", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged works with flags that alias input", "[device][partition_flagged]")
 {
   using type = int;
 
@@ -312,7 +334,7 @@ CUB_TEST("DevicePartition::Flagged works with flags that alias input", "[device]
   c2h::device_vector<type> out(num_items);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(flags, flags);
@@ -347,17 +369,17 @@ struct convertible_from_T
   }
 };
 
-CUB_TEST("DevicePartition::Flagged works with different output type", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged works with different output type", "[device][partition_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<convertible_from_T<type>> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -370,4 +392,57 @@ CUB_TEST("DevicePartition::Flagged works with different output type", "[device][
 
   REQUIRE(num_selected == num_selected_out[0]);
   REQUIRE(reference == out);
+}
+
+C2H_TEST("DevicePartition::Flagged works for very large number of items", "[device][partition_flagged]", offset_types)
+try
+{
+  using type     = std::int64_t;
+  using offset_t = typename c2h::get<0, TestType>;
+
+  auto num_items_max_ull =
+    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
+             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
+  offset_t num_items_min =
+    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  offset_t num_items = GENERATE_COPY(
+    values(
+      {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
+    take(2, random(num_items_min, num_items_max)));
+
+  // We select the first <cut_off_index> items and reject the rest
+  const offset_t cut_off_index = num_items / 4;
+
+  auto in       = thrust::make_counting_iterator(offset_t{0});
+  auto in_flags = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(offset_t{0}), less_than_t<type>{static_cast<type>(cut_off_index)});
+
+  // Prepare expected data
+  auto expected_selected_it = thrust::make_counting_iterator(offset_t{0});
+  auto expected_rejected_it = thrust::make_reverse_iterator(
+    thrust::make_counting_iterator(offset_t{cut_off_index}) + (num_items - cut_off_index));
+  auto expected_result_op =
+    make_index_to_expected_partition_op(expected_selected_it, expected_rejected_it, cut_off_index);
+  auto expected_result_it =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(offset_t{0}), expected_result_op);
+
+  // Prepare helper to check results
+  auto check_result_helper = detail::large_problem_test_helper(num_items);
+  auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+  // Needs to be device accessible
+  c2h::device_vector<offset_t> num_selected_out(1, 0);
+  offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  partition_flagged(in, in_flags, check_result_it, d_first_num_selected_out, num_items);
+
+  // Ensure that we created the correct output
+  REQUIRE(num_selected_out[0] == cut_off_index);
+  check_result_helper.check_all_results_correct();
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }

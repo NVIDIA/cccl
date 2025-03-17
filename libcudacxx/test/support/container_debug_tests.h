@@ -15,7 +15,7 @@
 #  error This header may only be used for libc++ tests
 #endif
 
-#ifndef _LIBCUDACXX_ENABLE_DEBUG_MODE
+#ifndef _CCCL_ENABLE_DEBUG_MODE
 #  error The library must be built with the debug mode enabled in order to use this header
 #endif
 
@@ -29,11 +29,6 @@
 #include "check_assertion.h"
 #include "test_allocator.h"
 #include "test_macros.h"
-
-// These test make use of 'if constexpr'.
-#if TEST_STD_VER <= 2014
-#  error This header may only be used in C++17 and greater
-#endif
 
 namespace IteratorDebugChecks
 {

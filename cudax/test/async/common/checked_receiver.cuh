@@ -10,7 +10,8 @@
 
 #pragma once
 
-#include "cuda/experimental/__async/async.cuh"
+#include <cuda/experimental/__async/sender.cuh>
+
 #include "testing.cuh"
 
 namespace
@@ -28,7 +29,7 @@ struct checked_value_receiver
   // pack is not visible within the scope of a lambda.
   _CCCL_HOST_DEVICE void set_value() && noexcept
   {
-    if constexpr (!_CUDA_VSTD::is_same_v<cudax_async::__mlist<Values...>, cudax_async::__mlist<>>)
+    if constexpr (!_CUDA_VSTD::is_same_v<_CUDA_VSTD::__type_list<Values...>, _CUDA_VSTD::__type_list<>>)
     {
       CUDAX_FAIL("expected a value completion; got a different value");
     }
@@ -37,7 +38,7 @@ struct checked_value_receiver
   template <class... As>
   _CCCL_HOST_DEVICE void set_value(As... as) && noexcept
   {
-    if constexpr (_CUDA_VSTD::is_same_v<cudax_async::__mlist<Values...>, cudax_async::__mlist<As...>>)
+    if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::__type_list<Values...>, _CUDA_VSTD::__type_list<As...>>)
     {
       _values.__apply(
         [&](auto const&... vs) {

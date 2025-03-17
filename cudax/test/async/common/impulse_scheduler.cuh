@@ -10,12 +10,12 @@
 
 #pragma once
 
+#include <cuda/experimental/__async/sender.cuh>
+
 #include <condition_variable>
 #include <functional>
 #include <memory>
 #include <mutex>
-
-#include "cuda/experimental/__async/async.cuh"
 
 #if !defined(__CUDA_ARCH__)
 

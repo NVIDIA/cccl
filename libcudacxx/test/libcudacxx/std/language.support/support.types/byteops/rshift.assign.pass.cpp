@@ -10,8 +10,6 @@
 
 #include <test_macros.h>
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-
 // template <class IntegerType>
 //   constexpr byte& operator>>=(byte& b, IntegerType shift) noexcept;
 // This function shall not participate in overload resolution unless
@@ -29,6 +27,9 @@ int main(int, char**)
   constexpr cuda::std::byte b192{static_cast<cuda::std::byte>(192)};
 
   static_assert(noexcept(b >>= 2), "");
+
+  assert(cuda::std::to_integer<int>(test(b16)) == 4);
+  assert(cuda::std::to_integer<int>(test(b192)) == 48);
 
   static_assert(cuda::std::to_integer<int>(test(b16)) == 4, "");
   static_assert(cuda::std::to_integer<int>(test(b192)) == 48, "");

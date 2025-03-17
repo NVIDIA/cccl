@@ -16,7 +16,7 @@ version_compare() {
     fi
 }
 
-ENABLE_CUB_BENCHMARKS="false"
+ENABLE_CCCL_BENCHMARKS="false"
 ENABLE_CUB_RDC="false"
 
 if [[ "$CUDA_COMPILER" == *nvcc* ]]; then
@@ -25,7 +25,7 @@ if [[ "$CUDA_COMPILER" == *nvcc* ]]; then
     if [[ -n "${DISABLE_CUB_BENCHMARKS}" ]]; then
         echo "Benchmarks have been forcefully disabled."
     elif [[ $(version_compare $NVCC_VERSION 11.5) == "true" ]]; then
-        ENABLE_CUB_BENCHMARKS="true"
+        ENABLE_CCCL_BENCHMARKS="true"
         echo "nvcc version is $NVCC_VERSION. Building CUB benchmarks."
     else
         echo "nvcc version is $NVCC_VERSION. Not building CUB benchmarks because nvcc version is less than 11.5."
@@ -34,14 +34,14 @@ else
     echo "Not building with NVCC, disabling RDC and benchmarks."
 fi
 
-if [[ "$HOST_COMPILER" == *icpc* ]]; then
-    ENABLE_CUB_BENCHMARKS="false"
+if [[ "$HOST_COMPILER" == *icpc* || "$HOST_COMPILER" == *nvhpc* ]]; then
+    ENABLE_CCCL_BENCHMARKS="false"
 fi
 
 PRESET="cub-cpp$CXX_STANDARD"
 
 CMAKE_OPTIONS="
-    -DCUB_ENABLE_BENCHMARKS="$ENABLE_CUB_BENCHMARKS"\
+    -DCCCL_ENABLE_BENCHMARKS="$ENABLE_CCCL_BENCHMARKS"\
     -DCUB_ENABLE_RDC_TESTS="$ENABLE_CUB_RDC" \
 "
 

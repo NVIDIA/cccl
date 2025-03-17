@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // <span>
 
@@ -18,6 +17,7 @@
 //   — remove_pointer_t<decltype(data(arr))>(*)[] is convertible to ElementType(*)[].
 //
 
+#include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/span>
 
@@ -78,10 +78,10 @@ __host__ __device__ constexpr bool testSpan()
 {
   T val[2] = {};
 
-  ASSERT_NOEXCEPT(cuda::std::span<T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<T, 2>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<const T>{val});
-  ASSERT_NOEXCEPT(cuda::std::span<const T, 2>{val});
+  static_assert(noexcept(cuda::std::span<T>{val}));
+  static_assert(noexcept(cuda::std::span<T, 2>{val}));
+  static_assert(noexcept(cuda::std::span<const T>{val}));
+  static_assert(noexcept(cuda::std::span<const T, 2>{val}));
 
   cuda::std::span<T> s1          = val;
   cuda::std::span<T, 2> s2       = val;
@@ -92,8 +92,8 @@ __host__ __device__ constexpr bool testSpan()
   assert(s3.data() == val && s3.size() == 2);
   assert(s4.data() == val && s4.size() == 2);
 
-  cuda::std::span<const int> s5    = {{1, 2}};
-  cuda::std::span<const int, 2> s6 = {{1, 2}};
+  cuda::std::span<const int> s5    = {cuda::std::array<int, 2>{1, 2}};
+  cuda::std::span<const int, 2> s6 = {cuda::std::array<int, 2>{1, 2}};
   assert(s5.size() == 2); // and it dangles
   assert(s6.size() == 2); // and it dangles
 

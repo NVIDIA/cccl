@@ -71,7 +71,7 @@ __host__ __device__ int my_popc(unsigned int v)
     return __builtin_popc(v); // Is host, use GCC builtin
   )
 }
-// Note the commas seperating statements, if preprocessed code is written out the macro will be preprocessed into the
+// Note the commas separating statements, if preprocessed code is written out the macro will be preprocessed into the
 // below:
 /*
   my_popc(unsigned int v) {
@@ -94,7 +94,7 @@ __host__ __device__ void some_algorithm()
 __host__ __device__ void my_memset(void* p, uint8_t v, uint64_t c)
 {
   // Target dispatch accepts pairs of queries and statements.
-  // The first postive query encountered will be emitted while others are ignored.
+  // The first positive query encountered will be emitted while others are ignored.
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_80,
     // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async

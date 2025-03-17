@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: gcc-6
 
 // Older Clangs do not support the C++20 feature to constrain destructors
@@ -51,7 +50,6 @@ struct MoveMayThrow
 };
 static_assert(cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, int>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, MoveMayThrow>>, "");
 
@@ -60,7 +58,6 @@ struct SwapMayThrow
   __host__ __device__ friend void swap(SwapMayThrow&, SwapMayThrow&) noexcept(false) {}
 };
 static_assert(!cuda::std::is_nothrow_swappable_v<cuda::std::expected<void, SwapMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -167,9 +164,9 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test());
-#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

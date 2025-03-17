@@ -28,13 +28,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2020
+template <class _Ap, class _Bp>
+using _CopyConst = _If<_CCCL_TRAIT(is_const, _Ap), const _Bp, _Bp>;
 
 template <class _Ap, class _Bp>
-using _CopyConst = _If<is_const_v<_Ap>, const _Bp, _Bp>;
-
-template <class _Ap, class _Bp>
-using _OverrideRef = _If<is_rvalue_reference_v<_Ap>, remove_reference_t<_Bp>&&, _Bp&>;
+using _OverrideRef = _If<_CCCL_TRAIT(is_rvalue_reference, _Ap), remove_reference_t<_Bp>&&, _Bp&>;
 
 template <class _Ap, class _Bp>
 using _ForwardLike = _OverrideRef<_Ap&&, _CopyConst<remove_reference_t<_Ap>, remove_reference_t<_Bp>>>;
@@ -44,8 +42,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto forward_like(_Up&& __ux
 {
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }
-
-#endif // _CCCL_STD_VER > 2020
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -14,10 +14,10 @@ how many threads participate,
 and on which thread(s) the result is valid.
 
 These layers naturally build on each other.
-For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`,
+For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::ThreadReduce>`,
 :cpp:struct:`BlockReduce <cub::BlockReduce>` uses :cpp:struct:`WarpReduce <cub::WarpReduce>`, etc.
 
-:cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+:cpp:func:`ThreadReduce <cub::ThreadReduce>`
 
    - A normal function invoked and executed sequentially by a single thread that returns a valid result on that thread
    - Single thread functions are usually an implementation detail and not exposed in CUB's public API
@@ -46,7 +46,7 @@ The table below provides a summary of these functions:
       - parallel execution
       - max threads
       - valid result in
-    * - :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+    * - :cpp:func:`ThreadReduce <cub::ThreadReduce>`
       - :math:`-`
       - :math:`-`
       - :math:`1`
@@ -157,8 +157,7 @@ For example, :cpp:struct:`cub::WarpReduce` is a class template:
 .. code-block:: c++
 
     template <typename T,
-              int LOGICAL_WARP_THREADS = 32,
-              int LEGACY_PTX_ARCH = 0>
+              int      LOGICAL_WARP_THREADS = 32>
     class WarpReduce {
       // ...
       // (1)   define `_TempStorage` type
@@ -192,10 +191,6 @@ There is a vital difference in the behavior of warp-level algorithms that depend
   That is, only the first logical warp executes algorithm.
 
 .. TODO: Add diagram showing non-power of two logical warps.
-
-It's important to note that ``LEGACY_PTX_ARCH`` has been recently deprecated.
-This parameter used to affect specialization selection (see below).
-It was conflicting with the PTX dispatch refactoring and limited NVHPC support.
 
 Temporary storage usage
 ====================================
@@ -239,8 +234,8 @@ For example, :cpp:struct:`cub::WarpReduce` dispatches to two different implement
 
     using InternalWarpReduce = cuda::std::conditional_t<
       IS_POW_OF_TWO,
-      WarpReduceShfl<T, LOGICAL_WARP_THREADS>,  // shuffle-based implementation
-      WarpReduceSmem<T, LOGICAL_WARP_THREADS>>; // smem-based implementation
+      detail::WarpReduceShfl<T, LOGICAL_WARP_THREADS>,  // shuffle-based implementation
+      detail::WarpReduceSmem<T, LOGICAL_WARP_THREADS>>; // smem-based implementation
 
 Specializations provide different shared memory requirements,
 so the actual ``_TempStorage`` type is defined as:
@@ -255,16 +250,18 @@ and algorithm implementation look like:
 
     __device__ __forceinline__ T Sum(T input, int valid_items) {
       return InternalWarpReduce(temp_storage)
-          .Reduce(input, valid_items, cub::Sum());
+          .Reduce(input, valid_items, ::cuda::std::plus<>{});
     }
 
-Due to ``LEGACY_PTX_ARCH`` issues described above,
-we can't specialize on the PTX version.
+
+
+``__CUDA_ARCH__`` cannot be used because it is conflicting with the PTX dispatch refactoring and limited NVHPC support.
+Due to  this limitation, we can't specialize on the PTX version.
 ``NV_IF_TARGET`` shall be used by specializations instead:
 
 .. code-block:: c++
 
-    template <typename T, int LOGICAL_WARP_THREADS, int LEGACY_PTX_ARCH = 0>
+    template <typename T, int LOGICAL_WARP_THREADS>
     struct WarpReduceShfl
     {
 
@@ -278,19 +275,19 @@ we can't specialize on the PTX version.
 
     template <class U = T>
     __device__ __forceinline__
-      typename std::enable_if<std::is_same<int, U>::value ||
-                              std::is_same<unsigned int, U>::value,
+      typename std::enable_if<std::is_same_v<int, U> ||
+                              std::is_same_v<unsigned int, U>,
                               T>::type
         ReduceImpl(T input,
-                  int,      // valid_items
-                  cub::Sum) // reduction_op
+                  int,               // valid_items
+                  ::cuda::std::plus<>) // reduction_op
     {
       T output = input;
 
       NV_IF_TARGET(NV_PROVIDES_SM_80,
                   (output = __reduce_add_sync(member_mask, input);),
-                  (output = ReduceImpl<cub::Sum>(
-                        input, LOGICAL_WARP_THREADS, cub::Sum{});));
+                  (output = ReduceImpl<::cuda::std::plus<>>(
+                        input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});));
 
       return output;
     }
@@ -314,8 +311,7 @@ Block-scope algorithms are provided by structures as well:
               int BLOCK_DIM_X,
               BlockReduceAlgorithm ALGORITHM = BLOCK_REDUCE_WARP_REDUCTIONS,
               int BLOCK_DIM_Y = 1,
-              int BLOCK_DIM_Z = 1,
-              int LEGACY_PTX_ARCH = 0>
+              int BLOCK_DIM_Z = 1>
     class BlockReduce {
     public:
       struct TempStorage : Uninitialized<_TempStorage> {};
@@ -501,8 +497,8 @@ and passes it to the ``ChainedPolicy::Invoke`` function:
 .. code-block:: c++
 
     template <..., // algorithm specific compile-time parameters
-              typename SelectedPolicy> // also called: PolicyHub
-    struct DispatchAlgorithm : SelectedPolicy { // TODO(bgruber): I see no need for inheritance, can we remove it?
+              typename PolicyHub>
+    struct DispatchAlgorithm {
       CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static
       cudaError_t Dispatch(void *d_temp_storage, size_t &temp_storage_bytes, ..., cudaStream stream) {
         if (/* no items to process */) {
@@ -518,9 +514,8 @@ and passes it to the ``ChainedPolicy::Invoke`` function:
         {
           return error;
         }
-        using MaxPolicy = typename SelectedPolicy::MaxPolicy;
         DispatchAlgorithm dispatch(..., stream);
-        return CubDebug(MaxPolicy::Invoke(ptx_version, dispatch));
+        return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       }
     };
 
@@ -555,7 +550,7 @@ The dispatch object's ``Invoke`` function is then called with the best policy fo
 
 .. code-block:: c++
 
-    template <..., typename SelectedPolicy = DefaultTuning>
+    template <..., typename PolicyHub = detail::algorithm::policy_hub>
     struct DispatchAlgorithm {
       template <typename ActivePolicy>
       CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
@@ -597,7 +592,15 @@ The kernels in the dispatch layer shouldn't contain a lot of code.
 Usually, the functionality is extracted into the agent layer.
 All the kernel does is derive the proper policy type,
 unwrap the policy to initialize the agent and call one of its ``Consume`` / ``Process`` functions.
-Agents are frequently reused by unrelated device-scope algorithms.
+Agents hold kernel bodies and are frequently reused by unrelated device-scope algorithms.
+
+.. _cub-developer-policies:
+
+Policies
+====================================
+
+Policies describe the configuration of agents wrt. to their execution.
+They do not change functional behavior, but usually affect how work is mapped to the hardware by defining certain compile-time parameters (items per thread, block size, etc.).
 
 An agent policy could look like this:
 
@@ -617,37 +620,100 @@ An agent policy could look like this:
 
 It's typically a collection of configuration values for the kernel launch configuration,
 work distribution setting, load and store algorithms to use, as well as load instruction cache modifiers.
+A CUB algorithm can have multiple agents and thus use multiple agent policies.
 
-Finally, the tuning looks like:
+Since the device code of CUB algorithms is compiled for each PTX version, a different agent policy may be used.
+Therefore, all agent policies of a CUB algorithm, called a policy, may be replicated for several minimum PTX versions.
+A chained collection of such policies finally forms a policy hub:
 
 .. code-block:: c++
 
     template <typename... TuningRelevantParams /* ... */>
-    struct DeviceAlgorithmPolicy // also called tuning hub
-    {
+    struct policy_hub {
       // TuningRelevantParams... could be used for decision making, like element types used, iterator category, etc.
 
-      // for SM35
-      struct Policy350 : ChainedPolicy<350, Policy350, Policy300> {
+      // for SM50
+      struct Policy500 : ChainedPolicy<500, Policy500, Policy500> {
         using AlgorithmPolicy = AgentAlgorithmPolicy<256, 20, BLOCK_LOAD_DIRECT, LOAD_LDG>;
         // ... additional policies may exist, often one per agent
       };
 
       // for SM60
-      struct Policy600 : ChainedPolicy<600, Policy600, Policy350> {
+      struct Policy600 : ChainedPolicy<600, Policy600, Policy500> {
         using AlgorithmPolicy = AgentAlgorithmPolicy<256, 16, BLOCK_LOAD_DIRECT, LOAD_LDG>;
       };
 
       using MaxPolicy = Policy600; // alias where policy selection is started by ChainedPolicy
     };
 
-The tuning (hub) consists of a class template, possibly parameterized by tuning-relevant compile-time parameters,
-containing a list of policies.
-These policies are chained by inheriting from ChainedPolicy
+The policy hub is a class template, possibly parameterized by tuning-relevant compile-time parameters,
+containing a list of policies, one per minimum PTX version (i.e., SM architecture) they target.
+These policies are chained by inheriting from ``ChainedPolicy``
 and passing the minimum PTX version where they should be used,
-as well as their own policy type and next lower policy type.
+as well as their own policy type and the next lower policy type.
 An alias ``MaxPolicy`` serves as entry point into the chain of tuning policies.
-Each policy then defines sub policies for each agent, since a CUB algorithm may use multiple kernels/agents.
+
+
+Tunings
+====================================
+
+Because the values to parameterize an agent may vary a lot for different compile-time parameters,
+the selection of values can be further delegated to tunings.
+Often, such tunings are found by experimentation or heuristic search.
+See also :ref:`cub-tuning`.
+
+Tunings are usually organized as a class template, one per PTX version,
+with a template specialization for each combination of the compile-time parameters,
+for which better values for an agent policy are known.
+An example set of tunings could look like this:
+
+.. code-block:: c++
+
+    template <int ValueSize, bool IsPlus>
+    struct sm60_tuning { // default tuning
+        static constexpr int threads = 128;
+        static constexpr int items = 16;
+    };
+
+    template <>
+    struct sm60_tuning<4, true> { // tuning for summing 4-byte values
+        static constexpr int threads = 256;
+        static constexpr int items = 20;
+    };
+
+    template <int ValueSize>
+    struct sm60_tuning<ValueSize, true> { // tuning for summing values of other sizes
+        static constexpr int threads = 128;
+        static constexpr int items = 12;
+    };
+
+    ...
+
+    template <typename ValueType, typename Operation>
+    struct policy_hub {
+      struct Policy600 : ChainedPolicy<600, Policy600, Policy500> {
+
+        using tuning = sm60_tuning<sizeof(ValueType), is_same_v<Operation, plus>>;
+        using AlgorithmPolicy = AgentAlgorithmPolicy<tuning::threads, tuning::items, BLOCK_LOAD_DIRECT, LOAD_LDG>;
+      };
+    };
+
+Here, ``sm60_tuning`` provides defaults for the tuning values ``threads`` and ``items``.
+``sm60_tuning`` is instantiated with the size of the value type and with a boolean indicating whether the operation is a sum.
+Template specializations of ``sm60_tuning`` then provide different tuning values for summing value types of 4-byte size,
+and for summing any other value types.
+Notice how partial template specializations are used to pattern match the compile-time parameters.
+Independent of which template specializations (or the base template) of the tuning is chose,
+the agent policy is then parameterized by the nested ``threads`` and ``items`` values from this tuning.
+
+The logic to select tunings varies, and different mechanisms are used for different algorithms.
+Some algorithms provide a generic default policy if no tuning is available,
+others implement a fallback logic to select the previous PTX version's agent policy,
+if no tuning is available for the current PTX version.
+In general, tunings are not exhaustive and usually only apply for specific combinations of parameter values and a single PTX version,
+falling back to generic policies when no tuning matches.
+Tunings for CUB algorithms reside in ``cub/device/dispatch/tuning/tuning_<algorithm>.cuh``.
+
 
 Temporary storage usage
 ====================================
@@ -722,7 +788,7 @@ To eliminate the symbol visibility issues on our end, we follow the following ru
        it's important that kernels compiled for a given GPU architecture are always used by the host
        API compiled for that architecture.
 
-To satisfy (1), the visibility of ``thrust::cuda_cub::launcher::triple_chevron`` is hidden.
+To satisfy (1), the visibility of ``thrust::cuda_cub::detail::triple_chevron`` is hidden.
 
 To satisfy (2), instead of annotating kernels as ``__global__`` we annotate them as
 ``CUB_DETAIL_KERNEL_ATTRIBUTES``. Apart from annotating a kernel as global function, the macro also

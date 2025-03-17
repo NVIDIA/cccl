@@ -286,7 +286,8 @@ void TestPairSwap()
   thrust::pair<int, int> a(x, y);
   thrust::pair<int, int> b(z, w);
 
-  thrust::swap(a, b);
+  using ::cuda::std::swap;
+  swap(a, b);
 
   ASSERT_EQUAL(z, a.first);
   ASSERT_EQUAL(w, a.second);
@@ -310,7 +311,6 @@ void TestPairSwap()
 }
 DECLARE_UNITTEST(TestPairSwap);
 
-#if _CCCL_STD_VER >= 2017
 void TestPairStructuredBindings()
 {
   const int a = 42;
@@ -334,4 +334,3 @@ void TestPairCTAD(void)
   ASSERT_EQUAL(b, b2);
 }
 DECLARE_UNITTEST(TestPairCTAD);
-#endif // _CCCL_STD_VER >= 2017

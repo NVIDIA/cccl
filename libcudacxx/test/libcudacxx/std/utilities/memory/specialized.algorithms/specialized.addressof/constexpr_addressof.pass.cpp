@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
-
 // <memory>
 
 // template <ObjectType T> constexpr T* addressof(T& r);
@@ -18,7 +16,7 @@
 
 #include "test_macros.h"
 
-#if defined(_LIBCUDACXX_ADDRESSOF) || defined(__NVCOMPILER)
+#if defined(_CCCL_BUILTIN_ADDRESSOF) || defined(__NVCOMPILER)
 struct Pointer
 {
   __host__ __device__ constexpr Pointer(void* v)

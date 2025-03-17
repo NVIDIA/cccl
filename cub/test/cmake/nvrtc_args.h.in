@@ -1,0 +1,6 @@
+#pragma once
+
+const char* NVRTC_CUB_PATH        = "-I@CMAKE_SOURCE_DIR@/cub";
+const char* NVRTC_THRUST_PATH     = "-I@CMAKE_SOURCE_DIR@/thrust";
+const char* NVRTC_LIBCUDACXX_PATH = "-I@CMAKE_SOURCE_DIR@/libcudacxx/include";
+const char* NVRTC_CTK_PATH        = "-I@CUDAToolkit_INCLUDE_DIRS@";

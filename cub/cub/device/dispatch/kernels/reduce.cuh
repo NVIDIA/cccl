@@ -64,6 +64,18 @@ struct empty_problem_init_t
   }
 };
 
+template <class InitT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(InitT init)
+{
+  return init;
+}
+
+template <class InitT>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE InitT unwrap_empty_problem_init(empty_problem_init_t<InitT> empty_problem_init)
+{
+  return empty_problem_init.init;
+}
+
 /**
  * @brief Applies initial value to the block aggregate and stores the result to the output iterator.
  *
@@ -91,8 +103,6 @@ finalize_and_store_aggregate(OutputIteratorT d_out, ReductionOpT, empty_problem_
 {
   *d_out = block_aggregate;
 }
-} // namespace reduce
-} // namespace detail
 
 /**
  * @brief Reduce region kernel entry point (multi-block). Computes privatized
@@ -149,14 +159,14 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::ReducePolicy,
-                InputIteratorT,
-                AccumT*,
-                OffsetT,
-                ReductionOpT,
-                AccumT,
-                TransformOpT>;
+  using AgentReduceT = detail::reduce::AgentReduce<
+    typename ChainedPolicyT::ActivePolicy::ReducePolicy,
+    InputIteratorT,
+    AccumT*,
+    OffsetT,
+    ReductionOpT,
+    AccumT,
+    TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -231,14 +241,14 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT =
-    AgentReduce<typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
-                InputIteratorT,
-                OutputIteratorT,
-                OffsetT,
-                ReductionOpT,
-                AccumT,
-                TransformOpT>;
+  using AgentReduceT = detail::reduce::AgentReduce<
+    typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ReductionOpT,
+    AccumT,
+    TransformOpT>;
 
   // Shared memory storage
   __shared__ typename AgentReduceT::TempStorage temp_storage;
@@ -248,7 +258,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     if (threadIdx.x == 0)
     {
-      *d_out = init;
+      *d_out = detail::reduce::unwrap_empty_problem_init(init);
     }
 
     return;
@@ -264,5 +274,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
     detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
   }
 }
+} // namespace reduce
+} // namespace detail
 
 CUB_NAMESPACE_END

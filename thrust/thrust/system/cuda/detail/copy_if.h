@@ -35,7 +35,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <thrust/system/cuda/config.h>
 
@@ -87,16 +87,7 @@ namespace cuda_cub
 namespace detail
 {
 
-/**
- * Enum class to indicate whether the memory of input and output iterators potentially alias one another.
- */
-enum class InputMayAliasOutput
-{
-  no,
-  yes
-};
-
-template <InputMayAliasOutput MayAlias,
+template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
           typename StencilIt,
@@ -124,34 +115,24 @@ struct DispatchCopyIf
     std::size_t allocation_sizes[2] = {0, sizeof(OffsetT)};
     void* allocations[2]            = {nullptr, nullptr};
 
-    // drop rejected items (i.e., this is not a partition, but a selection)
-    constexpr bool keep_rejects = false;
-    constexpr bool may_alias    = (MayAlias == InputMayAliasOutput::yes);
-
     // Query algorithm memory requirements
-    status = cub::DispatchSelectIf<
-      InputIt,
-      StencilIt,
-      OutputIt,
-      num_selected_out_it_t,
-      Predicate,
-      equality_op_t,
-      OffsetT,
-      keep_rejects,
-      may_alias>::Dispatch(nullptr,
-                           allocation_sizes[0],
-                           first,
-                           stencil,
-                           output,
-                           static_cast<num_selected_out_it_t>(nullptr),
-                           predicate,
-                           equality_op_t{},
-                           num_items,
-                           stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    status = cub::
+      DispatchSelectIf<InputIt, StencilIt, OutputIt, num_selected_out_it_t, Predicate, equality_op_t, OffsetT, SelectionOpt>::
+        Dispatch(
+          nullptr,
+          allocation_sizes[0],
+          first,
+          stencil,
+          output,
+          static_cast<num_selected_out_it_t>(nullptr),
+          predicate,
+          equality_op_t{},
+          num_items,
+          stream);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
-    status = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
+    status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
     if (d_temp_storage == nullptr)
@@ -169,37 +150,31 @@ struct DispatchCopyIf
     OffsetT* d_num_selected_out = thrust::detail::aligned_reinterpret_cast<OffsetT*>(allocations[1]);
 
     // Run algorithm
-    status = cub::DispatchSelectIf<
-      InputIt,
-      StencilIt,
-      OutputIt,
-      num_selected_out_it_t,
-      Predicate,
-      equality_op_t,
-      OffsetT,
-      keep_rejects,
-      may_alias>::Dispatch(allocations[0],
-                           allocation_sizes[0],
-                           first,
-                           stencil,
-                           output,
-                           d_num_selected_out,
-                           predicate,
-                           equality_op_t{},
-                           num_items,
-                           stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    status = cub::
+      DispatchSelectIf<InputIt, StencilIt, OutputIt, num_selected_out_it_t, Predicate, equality_op_t, OffsetT, SelectionOpt>::
+        Dispatch(
+          allocations[0],
+          allocation_sizes[0],
+          first,
+          stencil,
+          output,
+          d_num_selected_out,
+          predicate,
+          equality_op_t{},
+          num_items,
+          stream);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Get number of selected items
     status = cuda_cub::synchronize(policy);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
     OffsetT num_selected = get_value(policy, d_num_selected_out);
     thrust::advance(output, num_selected);
     return status;
   }
 };
 
-template <InputMayAliasOutput MayAlias,
+template <cub::SelectImpl SelectionOpt,
           typename Derived,
           typename InputIt,
           typename StencilIt,
@@ -213,25 +188,22 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
 
   size_type num_items       = static_cast<size_type>(thrust::distance(first, last));
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
 
-  // 32-bit offset-type dispatch
-  using dispatch32_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int32_t>;
-
   // 64-bit offset-type dispatch
-  using dispatch64_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int64_t>;
+  // Since https://github.com/NVIDIA/cccl/pull/2400, cub::DeviceSelect is using a streaming approach that splits up
+  // inputs larger than INT_MAX into partitions of up to `INT_MAX` items each, repeatedly invoking the respective
+  // algorithm. With that approach, we can always use i64 offset types for DispatchSelectIf, because there's only very
+  // limited performance upside for using i32 offset types. This avoids potentially duplicate kernel compilation.
+  using dispatch64_t = DispatchCopyIf<SelectionOpt, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int64_t>;
 
   // Query temporary storage requirements
-  THRUST_INDEX_TYPE_DISPATCH2(
-    status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
-    num_items,
-    (policy, nullptr, temp_storage_bytes, first, stencil, output, predicate, num_items_fixed));
+  status = dispatch64_t::dispatch(
+    policy, nullptr, temp_storage_bytes, first, stencil, output, predicate, static_cast<std::int64_t>(num_items));
   cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
 
   // Allocate temporary storage.
@@ -239,12 +211,8 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
-  THRUST_INDEX_TYPE_DISPATCH2(
-    status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
-    num_items,
-    (policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, num_items_fixed));
+  status = dispatch64_t::dispatch(
+    policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, static_cast<std::int64_t>(num_items));
   cuda_cub::throw_on_error(status, "copy_if failed on 2nd step");
 
   return output;
@@ -260,7 +228,7 @@ template <class Derived, class InputIterator, class OutputIterator, class Predic
 OutputIterator _CCCL_HOST_DEVICE copy_if(
   execution_policy<Derived>& policy, InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
-  THRUST_CDP_DISPATCH((return detail::copy_if<detail::InputMayAliasOutput::no>(
+  THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(
                                 policy, first, last, static_cast<cub::NullType*>(nullptr), result, pred);),
                       (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, result, pred);));
 }
@@ -275,9 +243,8 @@ OutputIterator _CCCL_HOST_DEVICE copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  THRUST_CDP_DISPATCH(
-    (return detail::copy_if<detail::InputMayAliasOutput::no>(policy, first, last, stencil, result, pred);),
-    (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
+  THRUST_CDP_DISPATCH((return detail::copy_if<cub::SelectImpl::Select>(policy, first, last, stencil, result, pred);),
+                      (return thrust::copy_if(cvt_to_seq(derived_cast(policy)), first, last, stencil, result, pred);));
 }
 
 } // namespace cuda_cub

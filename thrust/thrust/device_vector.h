@@ -271,6 +271,15 @@ public:
       : Parent(first, last, alloc)
   {}
 
+  /*! Exchanges the values of two vectors.
+   *  \p x The first \p device_vector of interest.
+   *  \p y The second \p device_vector of interest.
+   */
+  friend void swap(device_vector& a, device_vector& b) noexcept(noexcept(a.swap(b)))
+  {
+    a.swap(b);
+  }
+
 // declare these members for the purpose of Doxygenating them
 // they actually exist in a base class
 #if 0
@@ -526,21 +535,11 @@ public:
     void assign(InputIterator first, InputIterator last);
 
     /*! This method returns a copy of this vector's allocator.
-     *  \return A copy of the alloctor used by this vector.
+     *  \return A copy of the allocator used by this vector.
      */
     allocator_type get_allocator() const;
 #endif // end doxygen-only members
 };
-
-/*! Exchanges the values of two vectors.
- *  \p x The first \p device_vector of interest.
- *  \p y The second \p device_vector of interest.
- */
-template <typename T, typename Alloc>
-void swap(device_vector<T, Alloc>& a, device_vector<T, Alloc>& b)
-{
-  a.swap(b);
-}
 
 /*! \} // containres
  */

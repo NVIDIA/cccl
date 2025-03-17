@@ -32,11 +32,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
-__rotate_left(_ForwardIterator __first, _ForwardIterator __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 {
-  typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
-  using _Ops = _IterOps<_AlgPolicy>;
+  using value_type = typename iterator_traits<_ForwardIterator>::value_type;
+  using _Ops       = _IterOps<_AlgPolicy>;
 
   value_type __tmp       = _Ops::__iter_move(__first);
   _ForwardIterator __lm1 = _CUDA_VSTD::__move<_AlgPolicy>(_Ops::next(__first), __last, __first).second;
@@ -45,11 +44,11 @@ __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator
 __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
-  typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
-  using _Ops = _IterOps<_AlgPolicy>;
+  using value_type = typename iterator_traits<_BidirectionalIterator>::value_type;
+  using _Ops       = _IterOps<_AlgPolicy>;
 
   _BidirectionalIterator __lm1 = _Ops::prev(__last);
   value_type __tmp             = _Ops::__iter_move(__lm1);
@@ -60,7 +59,7 @@ __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
   _ForwardIterator __i = __middle;
@@ -103,7 +102,7 @@ __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIt
 }
 
 template <typename _Integral>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Integral __algo_gcd(_Integral __x, _Integral __y)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Integral __algo_gcd(_Integral __x, _Integral __y)
 {
   do
   {
@@ -115,12 +114,12 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Integral __algo_gcd(_Integral _
 }
 
 template <class _AlgPolicy, typename _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
 __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
 {
-  typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
-  typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
-  using _Ops = _IterOps<_AlgPolicy>;
+  using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
+  using value_type      = typename iterator_traits<_RandomAccessIterator>::value_type;
+  using _Ops            = _IterOps<_AlgPolicy>;
 
   const difference_type __m1 = __middle - __first;
   const difference_type __m2 = _Ops::distance(__middle, __last);
@@ -155,10 +154,10 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __rotate_impl(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __rotate_impl(
   _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _CUDA_VSTD::forward_iterator_tag)
 {
-  typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
+  using value_type = typename iterator_traits<_ForwardIterator>::value_type;
   if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
@@ -170,13 +169,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __rotate_impl(
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator __rotate_impl(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator __rotate_impl(
   _BidirectionalIterator __first,
   _BidirectionalIterator __middle,
   _BidirectionalIterator __last,
   bidirectional_iterator_tag)
 {
-  typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
+  using value_type = typename iterator_traits<_BidirectionalIterator>::value_type;
   if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
@@ -192,13 +191,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator __rotate_
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __rotate_impl(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator __rotate_impl(
   _RandomAccessIterator __first,
   _RandomAccessIterator __middle,
   _RandomAccessIterator __last,
   random_access_iterator_tag)
 {
-  typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+  using value_type = typename iterator_traits<_RandomAccessIterator>::value_type;
   if (_CCCL_TRAIT(is_trivially_move_assignable, value_type))
   {
     if (_IterOps<_AlgPolicy>::next(__first) == __middle)
@@ -215,7 +214,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __rotate_i
 }
 
 template <class _AlgPolicy, class _Iterator, class _Sentinel>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Iterator, _Iterator>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Iterator, _Iterator>
 __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
 {
   using _Ret            = pair<_Iterator, _Iterator>;
@@ -238,7 +237,7 @@ __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
 }
 
 template <class _ForwardIterator>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 rotate(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
   return _CUDA_VSTD::__rotate<_ClassicAlgPolicy>(

@@ -26,14 +26,8 @@
  *
  ******************************************************************************/
 
-/**
- * \file
- * Properties of a given CUDA device and the corresponding PTX bundle.
- *
- * \note
- * This file contains __host__ only functions and utilities, and should not be
- * included in code paths that could be online-compiled (ex: using NVRTC).
- */
+//! \file
+//! Properties of a given CUDA device and the corresponding PTX bundle.
 
 #pragma once
 
@@ -47,42 +41,31 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/device_synchronize.cuh> // IWYU pragma: export
 #include <cub/util_debug.cuh>
+#include <cub/util_policy_wrapper_t.cuh>
 #include <cub/util_type.cuh>
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
-#include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <array>
-#include <atomic>
-#include <cassert>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
+
+#  include <array>
+#  include <atomic>
+#  include <cassert>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
-/**
- * @brief Helper class template that allows overwriting the `BLOCK_THREAD` and `ITEMS_PER_THREAD`
- * configurations of a given policy.
- */
-// TODO(bgruber): this should be called something like "override_policy"
-template <typename PolicyT, int BLOCK_THREADS_, int ITEMS_PER_THREAD_ = PolicyT::ITEMS_PER_THREAD>
-struct policy_wrapper_t : PolicyT
-{
-  static constexpr int ITEMS_PER_THREAD = ITEMS_PER_THREAD_;
-  static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
-  static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
-};
-} // namespace detail
-
 /**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
  */
@@ -90,8 +73,11 @@ template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+} // namespace detail
 
+#endif // _CCCL_DOXYGEN_INVOKED
+
+#if !_CCCL_COMPILER(NVRTC)
 /**
  * \brief Returns the current device or -1 if an error occurred.
  */
@@ -105,13 +91,13 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
   return device;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
 using SwitchDevice = ::cuda::__ensure_current_device;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the number of CUDA devices available or -1 if an error
@@ -129,24 +115,6 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
   }
   return count;
 }
-
-/**
- * \brief Cache for an arbitrary value produced by a nullary function.
- * deprecated [Since 2.6.0]
- */
-template <typename T, T (*Function)()>
-struct CUB_DEPRECATED ValueCache
-{
-  T const value;
-
-  /**
-   * \brief Call the nullary function to produce the value and construct the
-   *        cache.
-   */
-  _CCCL_HOST inline ValueCache()
-      : value(Function())
-  {}
-};
 
 // Host code. This is a separate function to avoid defining a local static in a host/device function.
 _CCCL_HOST inline int DeviceCountCachedValue()
@@ -171,7 +139,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -286,7 +254,7 @@ public:
     return entry.payload;
   }
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
@@ -296,7 +264,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
   using EmptyKernelPtr        = void (*)();
-  EmptyKernelPtr empty_kernel = EmptyKernel<void>;
+  EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
 
   // This is necessary for unused variable warnings in host compilers. The
   // usual syntax of (void)empty_kernel; was not sufficient on MSVC2015.
@@ -306,11 +274,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // in device code.
   // <nv/target> may provide an abstraction for this eventually. For now,
   // we have to keep this usage of __CUDA_ARCH__.
-#if defined(_NVHPC_CUDA)
-#  define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#else
-#  define CUB_TEMP_GET_PTX __CUDA_ARCH__
-#endif
+#  if defined(_NVHPC_CUDA)
+#    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
+#  else
+#    define CUB_TEMP_GET_PTX __CUDA_ARCH__
+#  endif
 
   cudaError_t result = cudaSuccess;
   NV_IF_TARGET(
@@ -330,7 +298,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 
       ptx_version = CUB_TEMP_GET_PTX;));
 
-#undef CUB_TEMP_GET_PTX
+#  undef CUB_TEMP_GET_PTX
 
   return result;
 }
@@ -358,13 +326,16 @@ struct SmVersionCacheTag
 {};
 
 /**
- * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10).
+ * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10). If
+ * __CUDA_ARCH_LIST__ is defined, this value is one of __CUDA_ARCH_LIST__.
  *
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
 _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 {
+  // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
+  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
@@ -388,6 +359,8 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 {
+  // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
+  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
   NV_IF_TARGET(NV_IS_HOST,
                (result = PtxVersion(ptx_version, CurrentDevice());),
@@ -450,72 +423,28 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
   return result;
 }
 
-/**
- * Synchronize the specified \p stream.
- */
+//! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream(cudaStream_t stream)
 {
-  cudaError_t result = cudaErrorNotSupported;
-
-  NV_IF_TARGET(NV_IS_HOST,
-               (result = CubDebug(cudaStreamSynchronize(stream));),
-               ((void) stream; result = CubDebug(cub::detail::device_synchronize());));
-
-  return result;
+  NV_IF_TARGET(
+    NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), ((void) stream; return cudaErrorNotSupported;));
 }
 
 namespace detail
 {
-
-/**
- * Same as SyncStream, but intended for use with the debug_synchronous flags
- * in device algorithms. This should not be used if synchronization is required
- * for correctness.
- *
- * If `debug_synchronous` is false, this function will immediately return
- * cudaSuccess. If true, one of the following will occur:
- *
- * If synchronization is supported by the current compilation target and
- * settings, the sync is performed and the sync result is returned.
- *
- * If syncs are not supported then no sync is performed, but a message is logged
- * via _CubLog and cudaSuccess is returned.
- */
+//! If CUB_DEBUG_SYNC is defined and this function is called from host code, a sync is performed and the
+//! sync result is returned. Otherwise, does nothing.
 CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream(cudaStream_t stream)
 {
-#ifndef CUB_DETAIL_DEBUG_ENABLE_SYNC
-
+#  ifndef CUB_DEBUG_SYNC
   (void) stream;
   return cudaSuccess;
-
-#else // CUB_DETAIL_DEBUG_ENABLE_SYNC:
-
-#  define CUB_TMP_SYNC_AVAILABLE         \
-    _CubLog("%s\n", "Synchronizing..."); \
-    return SyncStream(stream)
-
-#  define CUB_TMP_DEVICE_SYNC_UNAVAILABLE                                        \
-    (void) stream;                                                               \
-    _CubLog("WARNING: Skipping CUB `debug_synchronous` synchronization (%s).\n", \
-            "device-side sync requires <sm_90, RDC, and CDPv1");                 \
-    return cudaSuccess
-
-#  ifdef CUB_DETAIL_CDPv1
-
-  // Can sync everywhere but SM_90+
-  NV_IF_TARGET(NV_PROVIDES_SM_90, (CUB_TMP_DEVICE_SYNC_UNAVAILABLE;), (CUB_TMP_SYNC_AVAILABLE;));
-
-#  else // CDPv2 or no CDP:
-
-  // Can only sync on host
-  NV_IF_TARGET(NV_IS_HOST, (CUB_TMP_SYNC_AVAILABLE;), (CUB_TMP_DEVICE_SYNC_UNAVAILABLE;));
-
-#  endif // CDP version
-
-#  undef CUB_TMP_DEVICE_SYNC_UNAVAILABLE
-#  undef CUB_TMP_SYNC_AVAILABLE
-
-#endif // CUB_DETAIL_DEBUG_ENABLE_SYNC
+#  else // CUB_DEBUG_SYNC
+  NV_IF_TARGET(
+    NV_IS_HOST,
+    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+    ((void) stream; _CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+#  endif // CUB_DEBUG_SYNC
 }
 
 /** \brief Gets whether the current device supports unified addressing */
@@ -595,34 +524,78 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 /******************************************************************************
  * Policy management
  ******************************************************************************/
+// PolicyWrapper
+
+namespace detail
+{
+
+template <typename PolicyT, typename = void>
+struct PolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION PolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct PolicyWrapper<
+  StaticPolicyT,
+  _CUDA_VSTD::void_t<decltype(StaticPolicyT::BLOCK_THREADS), decltype(StaticPolicyT::ITEMS_PER_THREAD)>> : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION PolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::BLOCK_THREADS;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread()
+  {
+    return StaticPolicyT::ITEMS_PER_THREAD;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerTile()
+  {
+    return StaticPolicyT::ITEMS_PER_TILE;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+{
+  return PolicyWrapper<PolicyT>{policy};
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// ChainedPolicy
+
+struct TripleChevronFactory;
 
 /**
  * Kernel dispatch configuration
  */
 struct KernelConfig
 {
-  int block_threads;
-  int items_per_thread;
-  int tile_size;
-  int sm_occupancy;
+  int block_threads{0};
+  int items_per_thread{0};
+  int tile_size{0};
+  int sm_occupancy{0};
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE KernelConfig()
-      : block_threads(0)
-      , items_per_thread(0)
-      , tile_size(0)
-      , sm_occupancy(0)
-  {}
-
-  template <typename AgentPolicyT, typename KernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t Init(KernelPtrT kernel_ptr)
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads      = AgentPolicyT::BLOCK_THREADS;
-    items_per_thread   = AgentPolicyT::ITEMS_PER_THREAD;
-    tile_size          = block_threads * items_per_thread;
-    cudaError_t retval = MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
-    return retval;
+    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size        = block_threads * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
+
+} // namespace detail
+#endif // !_CCCL_COMPILER(NVRTC)
 
 /// Helper for dispatching into a policy chain
 template <int PolicyPtxVersion, typename PolicyT, typename PrevPolicyT>
@@ -631,31 +604,90 @@ struct ChainedPolicy
   /// The policy for the active compiler pass
   using ActivePolicy = ::cuda::std::_If<(CUB_PTX_ARCH < PolicyPtxVersion), typename PrevPolicyT::ActivePolicy, PolicyT>;
 
+#if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
+    // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
+#  ifdef __CUDA_ARCH_LIST__
+    return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
+    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
+    // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
+#  elif defined(NV_TARGET_SM_INTEGER_LIST)
+    return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
+#  else
     if (device_ptx_version < PolicyPtxVersion)
     {
       return PrevPolicyT::Invoke(device_ptx_version, op);
     }
     return op.template Invoke<PolicyT>();
+#  endif
   }
+#endif // !_CCCL_COMPILER(NVRTC)
+
+private:
+  template <int, typename, typename>
+  friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
+
+#if !_CCCL_COMPILER(NVRTC)
+  template <int ArchMult, int... CudaArches, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
+  {
+    // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
+    // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
+    // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
+    // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
+    // is set and different TUs are compiled for different sets of architecture.
+    cudaError_t e = cudaErrorInvalidDeviceFunction;
+    (..., (device_ptx_version == CudaArches * ArchMult ? (e = invoke_static<CudaArches * ArchMult>(op)) : cudaSuccess));
+    return e;
+  }
+
+  template <int DevicePtxVersion, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
+  {
+    if constexpr (DevicePtxVersion < PolicyPtxVersion)
+    {
+      return PrevPolicyT::template invoke_static<DevicePtxVersion>(op);
+    }
+    else
+    {
+      return op.template Invoke<PolicyT>();
+    }
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 /// Helper for dispatching into a policy chain (end-of-chain specialization)
-template <int PTX_VERSION, typename PolicyT>
-struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
+template <int PolicyPtxVersion, typename PolicyT>
+struct ChainedPolicy<PolicyPtxVersion, PolicyT, PolicyT>
 {
+  template <int, typename, typename>
+  friend struct ChainedPolicy; // befriend primary template, so it can call invoke_static
+
   /// The policy for the active compiler pass
   using ActivePolicy = PolicyT;
 
+#if !_CCCL_COMPILER(NVRTC)
   /// Specializes and dispatches op in accordance to the first policy in the chain of adequate PTX version
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int /*ptx_version*/, FunctorT& op)
   {
     return op.template Invoke<PolicyT>();
   }
+
+private:
+  template <int, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op)
+  {
+    return op.template Invoke<PolicyT>();
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 CUB_NAMESPACE_END
+
+#if _CCCL_HAS_CUDA_COMPILER && !_CCCL_COMPILER(NVRTC)
+#  include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#endif // _CCCL_HAS_CUDA_COMPILER && !_CCCL_COMPILER(NVRTC)

@@ -306,7 +306,7 @@ OutputIterator gather_if(
  * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c
  * difference_type. \tparam InputIterator2 must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c
- * value_type must be convertible to \c Predicate's \c argument_type. \tparam RandomAccessIterator must be a model of <a
+ * value_type must be convertible to \c Predicate's argument type. \tparam RandomAccessIterator must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a> and \c
  * RandomAccessIterator's \c value_type must be convertible to \c OutputIterator's \c value_type. \tparam OutputIterator
  * must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam
@@ -392,7 +392,7 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
  * Iterator</a> and \c InputIterator1's \c value_type must be convertible to \c RandomAccessIterator's \c
  * difference_type. \tparam InputIterator2 must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input Iterator</a> and \c InputIterator2's \c
- * value_type must be convertible to \c Predicate's \c argument_type. \tparam RandomAccessIterator must be a model of <a
+ * value_type must be convertible to \c Predicate's argument type. \tparam RandomAccessIterator must be a model of <a
  * href="https://en.cppreference.com/w/cpp/iterator/random_access_iterator">Random Access iterator</a> and \c
  * RandomAccessIterator's \c value_type must be convertible to \c OutputIterator's \c value_type. \tparam OutputIterator
  * must be a model of <a href="https://en.cppreference.com/w/cpp/iterator/output_iterator">Output Iterator</a>. \tparam

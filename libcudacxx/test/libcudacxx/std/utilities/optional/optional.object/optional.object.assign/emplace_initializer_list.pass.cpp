@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // <cuda/std/optional>
 
 // template <class U, class... Args>
@@ -94,7 +93,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_X()
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_Y()
 {
-  optional<Y> opt;
+  optional<Y> opt{};
   auto& v = opt.emplace({1, 2});
   static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
   assert(static_cast<bool>(opt) == true);
@@ -159,13 +158,13 @@ int main(int, char**)
 {
   {
     check_X();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(check_X());
 #endif
   }
 #ifdef _LIBCUDACXX_HAS_VECTOR
   {
-    optional<cuda::std::vector<int>> opt;
+    optional<cuda::std::vector<int>> opt{};
     auto& v = opt.emplace({1, 2, 3}, cuda::std::allocator<int>());
     static_assert(cuda::std::is_same_v<cuda::std::vector<int>&, decltype(v)>, "");
     assert(static_cast<bool>(opt) == true);
@@ -175,7 +174,7 @@ int main(int, char**)
 #endif
   {
     check_Y();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(check_Y());
 #endif
   }

@@ -167,7 +167,7 @@ void TestForEach(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
-  thrust::host_vector<T> h_input = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input = unittest::random_integers<size_t>(n);
 
   for (size_t i = 0; i < n; i++)
   {
@@ -199,7 +199,7 @@ void TestForEachN(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
-  thrust::host_vector<T> h_input = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input = unittest::random_integers<size_t>(n);
 
   for (size_t i = 0; i < n; i++)
   {
@@ -277,7 +277,7 @@ void TestForEachWithLargeTypes()
   _TestForEachWithLargeTypes<int, 256>();
   _TestForEachWithLargeTypes<int, 512>();
 
-  // XXX parallel_for doens't support large types
+  // XXX parallel_for doesn't support large types
   //    _TestForEachWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
 DECLARE_UNITTEST(TestForEachWithLargeTypes);
@@ -318,7 +318,7 @@ void TestForEachNWithLargeTypes()
   _TestForEachNWithLargeTypes<int, 256>();
   _TestForEachNWithLargeTypes<int, 512>();
 
-  // XXX parallel_for doens't support large types
+  // XXX parallel_for doesn't support large types
   //    _TestForEachNWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
 DECLARE_UNITTEST(TestForEachNWithLargeTypes);

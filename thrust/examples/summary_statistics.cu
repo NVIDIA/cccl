@@ -78,7 +78,7 @@ struct summary_stats_unary_op
 // summary_stats_binary_op is a functor that accepts two summary_stats_data
 // structs and returns a new summary_stats_data which are an
 // approximation to the summary_stats for
-// all values that have been agregated so far
+// all values that have been aggregated so far
 template <typename T>
 struct summary_stats_binary_op
 {

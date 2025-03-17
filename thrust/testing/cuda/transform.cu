@@ -80,7 +80,7 @@ void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
   transform_if_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::identity<T>(), iter_vec.begin());
+    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), ::cuda::std::identity{}, iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
 
@@ -144,7 +144,7 @@ void TestTransformIfUnaryDevice(ExecutionPolicy exec)
     stencil.begin(),
     output.begin(),
     thrust::negate<T>(),
-    thrust::identity<T>(),
+    ::cuda::std::identity{},
     iter_vec.begin());
   cudaError_t const err = cudaDeviceSynchronize();
   ASSERT_EQUAL(cudaSuccess, err);
@@ -259,7 +259,7 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
   Vector output{1, 2, 3};
   Vector result{5, 2, -3};
 
-  thrust::identity<T> identity;
+  ::cuda::std::identity identity;
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -344,3 +344,77 @@ void TestTransformBinaryCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestTransformBinaryCudaStreams);
+
+struct sum_five
+{
+  _CCCL_HOST_DEVICE auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
+    -> double
+  {
+    return a + b + c + d + e;
+  }
+};
+
+// we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
+// zip_function is actually called (and not unwrapped)
+THRUST_NAMESPACE_BEGIN
+template <>
+class zip_function<sum_five>
+{
+public:
+  _CCCL_HOST_DEVICE zip_function(sum_five func)
+      : func(func)
+  {}
+
+  _CCCL_HOST_DEVICE sum_five& underlying_function() const
+  {
+    return func;
+  }
+
+  template <typename Tuple>
+  _CCCL_HOST_DEVICE auto operator()(Tuple&& t) const
+    -> decltype(detail::zip_detail::apply(std::declval<sum_five>(), THRUST_FWD(t)))
+  {
+    // not calling func, so we would get a wrong result if we were called
+    return {};
+  }
+
+private:
+  mutable sum_five func;
+};
+THRUST_NAMESPACE_END
+
+// test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
+void TestTransformZipIteratorUnwrapping()
+{
+  constexpr int num_items = 100;
+  thrust::device_vector<std::int8_t> a(num_items, 1);
+  thrust::device_vector<std::int16_t> b(num_items, 2);
+  thrust::device_vector<std::int32_t> c(num_items, 3);
+  thrust::device_vector<std::int64_t> d(num_items, 4);
+  thrust::device_vector<float> e(num_items, 5);
+
+  thrust::device_vector<double> result(num_items);
+  // SECTION("once") // TODO(bgruber): enable sections when we migrate to Catch2
+  {
+    const auto z = thrust::make_zip_iterator(a.begin(), b.begin(), c.begin(), d.begin(), e.begin());
+    thrust::transform(z, z + num_items, result.begin(), thrust::make_zip_function(sum_five{}));
+
+    // compute reference and verify
+    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    ASSERT_EQUAL(reference, result);
+  }
+  // SECTION("trice")
+  {
+    const auto z = thrust::make_zip_iterator(
+      thrust::make_zip_iterator(thrust::make_zip_iterator(a.begin(), b.begin(), c.begin(), d.begin(), e.begin())));
+    thrust::transform(z,
+                      z + num_items,
+                      result.begin(),
+                      thrust::make_zip_function(thrust::make_zip_function(thrust::make_zip_function(sum_five{}))));
+
+    // compute reference and verify
+    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    ASSERT_EQUAL(reference, result);
+  }
+}
+DECLARE_UNITTEST(TestTransformZipIteratorUnwrapping);

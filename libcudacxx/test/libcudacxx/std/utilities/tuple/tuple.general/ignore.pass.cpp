@@ -10,17 +10,40 @@
 
 // constexpr unspecified ignore;
 
-// UNSUPPORTED: c++98, c++03
-
 #include <cuda/std/cassert>
 #include <cuda/std/tuple>
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::ignore)>::value
+                && cuda::std::is_empty<decltype(cuda::std::ignore)>::value,
+              "");
+
+// constexpr variables are unavailable before 11.3
+[[nodiscard]] __host__ __device__ constexpr int test_nodiscard()
 {
-  { // Test that std::ignore provides constexpr converting assignment.
+  return 8294;
+}
+
+__host__ __device__ constexpr bool test()
+{
+  {
+    auto& ignore_v = cuda::std::ignore;
+    unused(ignore_v);
+  }
+
+  { // Test that cuda::std::ignore provides converting assignment.
     auto& res = (cuda::std::ignore = 42);
+    static_assert(noexcept(res = (cuda::std::ignore = 42)), "");
+    assert(&res == &cuda::std::ignore);
+  }
+  { // Test bit-field binding.
+    struct S
+    {
+      unsigned int bf : 3;
+    };
+    S s{3};
+    auto& res = (cuda::std::ignore = s.bf);
     assert(&res == &cuda::std::ignore);
   }
   { // Test that cuda::std::ignore provides constexpr copy/move constructors
@@ -35,20 +58,18 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     moved      = cuda::std::move(copy);
     unused(moved);
   }
+
+  {
+    cuda::std::ignore = test_nodiscard();
+  }
+
   return true;
 }
-static_assert(cuda::std::is_trivial<decltype(cuda::std::ignore)>::value, "");
 
 int main(int, char**)
 {
-  {
-    constexpr auto& ignore_v = cuda::std::ignore;
-    unused(ignore_v);
-  }
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

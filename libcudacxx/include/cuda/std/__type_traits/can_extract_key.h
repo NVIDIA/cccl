@@ -39,12 +39,12 @@ struct __extract_key_first_tag
 
 template <class _ValTy, class _Key, class _RawValTy = __remove_const_ref_t<_ValTy>>
 struct __can_extract_key
-    : __conditional_t<_IsSame<_RawValTy, _Key>::value, __extract_key_self_tag, __extract_key_fail_tag>
+    : conditional_t<_IsSame<_RawValTy, _Key>::value, __extract_key_self_tag, __extract_key_fail_tag>
 {};
 
 template <class _Pair, class _Key, class _First, class _Second>
 struct __can_extract_key<_Pair, _Key, pair<_First, _Second>>
-    : __conditional_t<_IsSame<__remove_const_t<_First>, _Key>::value, __extract_key_first_tag, __extract_key_fail_tag>
+    : conditional_t<_IsSame<remove_const_t<_First>, _Key>::value, __extract_key_first_tag, __extract_key_fail_tag>
 {};
 
 // __can_extract_map_key uses true_type/false_type instead of the tags.

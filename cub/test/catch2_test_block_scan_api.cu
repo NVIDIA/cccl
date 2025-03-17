@@ -33,7 +33,7 @@
 
 #include <cuda/std/numeric>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 constexpr int num_items_per_thread = 2;
 constexpr int block_num_threads    = 64;
@@ -56,7 +56,7 @@ __global__ void InclusiveBlockScanKernel(int* output)
   //  input: {[0, -1], [2, -3],[4, -5], ... [126, -127]}
 
   // Collectively compute the block-wide inclusive scan max
-  block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cub::Max());
+  block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, ::cuda::maximum<>{});
 
   // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
   // ...
@@ -65,7 +65,7 @@ __global__ void InclusiveBlockScanKernel(int* output)
   output[threadIdx.x * 2 + 1] = thread_data[1];
 }
 
-CUB_TEST("Block array-based inclusive scan works with initial value", "[scan][block]")
+C2H_TEST("Block array-based inclusive scan works with initial value", "[scan][block]")
 {
   thrust::device_vector<int> d_out(block_num_threads * num_items_per_thread);
 
@@ -107,7 +107,8 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
 
   // Collectively compute the block-wide inclusive scan max
   int block_aggregate;
-  block_scan_t(temp_storage).InclusiveScan(thread_data, thread_data, initial_value, cub::Max(), block_aggregate);
+  block_scan_t(temp_storage)
+    .InclusiveScan(thread_data, thread_data, initial_value, ::cuda::maximum<>{}, block_aggregate);
 
   // output: {[1, 1], [2, 2],[3, 3], ... [126, 126]}
   // block_aggregate = 126;
@@ -119,7 +120,7 @@ __global__ void InclusiveBlockScanKernelAggregate(int* output, int* d_block_aggr
   output[threadIdx.x * 2 + 1] = thread_data[1];
 }
 
-CUB_TEST("Block array-based inclusive scan with block aggregate works with initial value", "[scan][block]")
+C2H_TEST("Block array-based inclusive scan with block aggregate works with initial value", "[scan][block]")
 {
   thrust::device_vector<int> d_out(block_num_threads * num_items_per_thread);
 

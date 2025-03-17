@@ -41,30 +41,31 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
-[Try it live on Godbolt!](https://godbolt.org/z/x4G73af9a)
+[Try it live on Godbolt!](https://godbolt.org/z/aMx4j9f4T)
 
 ```cpp
 #include <thrust/execution_policy.h>
 #include <thrust/device_vector.h>
 #include <cub/block/block_reduce.cuh>
 #include <cuda/atomic>
+#include <cuda/cmath>
+#include <cuda/std/span>
 #include <cstdio>
 
-constexpr int block_size = 256;
-
-__global__ void reduce(int const* data, int* result, int N) {
+template <int block_size>
+__global__ void reduce(cuda::std::span<int const> data, cuda::std::span<int> result) {
   using BlockReduce = cub::BlockReduce<int, block_size>;
   __shared__ typename BlockReduce::TempStorage temp_storage;
 
   int const index = threadIdx.x + blockIdx.x * blockDim.x;
   int sum = 0;
-  if (index < N) {
+  if (index < data.size()) {
     sum += data[index];
   }
   sum = BlockReduce(temp_storage).Sum(sum);
 
   if (threadIdx.x == 0) {
-    cuda::atomic_ref<int, cuda::thread_scope_device> atomic_result(*result);
+    cuda::atomic_ref<int, cuda::thread_scope_device> atomic_result(result.front());
     atomic_result.fetch_add(sum, cuda::memory_order_relaxed);
   }
 }
@@ -80,10 +81,10 @@ int main() {
   thrust::device_vector<int> kernel_result(1);
 
   // Compute the sum reduction of `data` using a custom kernel
-  int const num_blocks = (N + block_size - 1) / block_size;
-  reduce<<<num_blocks, block_size>>>(thrust::raw_pointer_cast(data.data()),
-                                     thrust::raw_pointer_cast(kernel_result.data()),
-                                     N);
+  constexpr int block_size = 256;
+  int const num_blocks = cuda::ceil_div(N, block_size);
+  reduce<block_size><<<num_blocks, block_size>>>(cuda::std::span<int const>(thrust::raw_pointer_cast(data.data()), data.size()),
+                                                 cuda::std::span<int>(thrust::raw_pointer_cast(kernel_result.data()), 1));
 
   auto const err = cudaDeviceSynchronize();
   if (err != cudaSuccess) {
@@ -137,6 +138,21 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 > **Note**
 > Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information.
 
+##### Installation
+
+A minimal build that only generates installation rules can be configured using the `install` CMake preset:
+```bash
+git clone https://github.com/NVIDIA/cccl.git
+cd cccl
+cmake --preset install -DCMAKE_INSTALL_PREFIX=/usr/local/
+cd build/install
+ninja install
+```
+
+To include experimental libraries in the installation, use the `install-unstable` preset and build directory.
+
+To install **only** the experimental libraries, use the `install-unstable-only` preset and build directory.
+
 #### Conda
 
 CCCL also provides conda packages of each release via the `conda-forge` channel:
@@ -176,7 +192,7 @@ conda install -c conda-forge cccl
 CCCL uses [CMake](https://cmake.org/) for all build and installation infrastructure, including tests as well as targets to link against in other CMake projects.
 Therefore, CMake is the recommended way to integrate CCCL into another project.
 
-For a complete example of how to do this using CMake Package Manager see [our example project](examples/example_project).
+For a complete example of how to do this using CMake Package Manager see [our basic example project](examples/basic).
 
 Other build systems should work, but only CMake is tested.
 Contributions to simplify integrating CCCL into other build systems are welcome.
@@ -203,18 +219,16 @@ CCCL users are encouraged to capitalize on the latest enhancements and ["live at
 For a seamless experience, you can upgrade CCCL independently of the entire CUDA Toolkit.
 This is possible because CCCL maintains backward compatibility with the latest patch release of every minor CTK release from both the current and previous major version series.
 In some exceptional cases, the minimum supported minor version of the CUDA Toolkit release may need to be newer than the oldest release within its major version series.
-For instance, CCCL requires a minimum supported version of 11.1 from the 11.x series due to an unavoidable compiler issue present in CTK 11.0.
 
 When a new major CTK is released, we drop support for the oldest supported major version.
 
 | CCCL Version | Supports CUDA Toolkit Version                  |
 |--------------|------------------------------------------------|
 | 2.x          | 11.1 - 11.8, 12.x (only latest patch releases) |
-| 3.x (Future) | 12.x, 13.x  (only latest patch releases)       |
+| 3.x          | 12.x, 13.x  (only latest patch releases)       |
 
 [Well-behaved code](#compatibility-guidelines) using the latest CCCL should compile and run successfully with any supported CTK version.
 Exceptions may occur for new features that depend on new CTK features, so those features would not work on older versions of the CTK.
-For example, C++20 support was not added to `nvcc` until CUDA 12.0, so CCCL features that depend on C++20 would not work with CTK 11.x.
 
 Users can integrate a newer version of CCCL into an older CTK, but not the other way around.
 This means an older version of CCCL is not compatible with a newer CTK.
@@ -240,15 +254,21 @@ Unless otherwise specified, CCCL supports all the same operating systems as the 
 
 ### Host Compilers
 
-Unless otherwise specified, CCCL supports all the same host compilers as the CUDA Toolkit, which are documented here:
+Unless otherwise specified, CCCL supports the same host compilers as the latest CUDA Toolkit, which are documented here:
 - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
-In the spirit of "You only support what you test",  see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
+For GCC on Linux, at least 7.x is required.
+
+When using older CUDA Toolkits, we also only support the host compilers of the latest CUDA Toolkit,
+but at least the most recent host compiler of any supported older CUDA Toolkit.
+
+We may retain support of additional compilers and will accept corresponding patches from the community with reasonable fixes.
+But we will not invest significant time in triaging or fixing issues for older compilers.
+
+In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
 ### C++ Dialects
-- C++11 (Deprecated in Thrust/CUB, to be removed in next major version)
-- C++14 (Deprecated in Thrust/CUB, to be removed in next major version)
 - C++17
 - C++20
 
@@ -263,7 +283,7 @@ Note that some features may only support certain architectures/Compute Capabilit
 CCCL's testing strategy strikes a balance between testing as many configurations as possible and maintaining reasonable CI times.
 
 For CUDA Toolkit versions, testing is done against both the oldest and the newest supported versions.
-For instance, if the latest version of the CUDA Toolkit is 12.3, tests are conducted against 11.1 and 12.3.
+For instance, if the latest version of the CUDA Toolkit is 12.6, tests are conducted against 11.1 and 12.6.
 For each CUDA version, builds are completed against all supported host compilers with all supported C++ dialects.
 
 The testing strategy and matrix are constantly evolving.
@@ -405,7 +425,27 @@ The deprecation period will depend on the impact of the change, but will usually
 
 ## Mapping to CTK Versions
 
-Coming soon!
+| CCCL version | CTK version |
+|--------------|-------------|
+| 3.0          | 13.0        |
+| ...          | ...         |
+| 2.8          | 12.9        |
+| 2.7          | 12.8        |
+| 2.5          | 12.6        |
+| 2.4          | 12.5        |
+| 2.3          | 12.4        |
+
+Test yourself: https://cuda.godbolt.org/z/K818M4Y9f
+
+CTKs before 12.4 shipped Thrust, CUB and libcudacxx as individual libraries.
+
+| Thrust/CUB/libcudacxx version | CTK version |
+|-------------------------------|-------------|
+| 2.2                           | 12.3        |
+| 2.1                           | 12.2        |
+| 2.0/2.0/1.9                   | 12.1        |
+| 2.0/2.0/1.9                   | 12.0        |
+
 
 ## CI Pipeline Overview
 

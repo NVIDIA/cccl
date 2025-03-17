@@ -6,7 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++03, c++11
 
 // <span>
 
@@ -22,18 +21,14 @@
 
 #include "test_macros.h"
 
-#ifdef TEST_COMPILER_MSVC_2017
-#  pragma warning(disable : 4307) // integral constant overflow
-#endif // TEST_COMPILER_MSVC_2017
-
 template <typename Span>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(cuda::std::as_writable_bytes(sp));
+  static_assert(noexcept(cuda::std::as_writable_bytes(sp)));
 
   auto spBytes = cuda::std::as_writable_bytes(sp);
   using SB     = decltype(spBytes);
-  ASSERT_SAME_TYPE(cuda::std::byte, typename SB::element_type);
+  static_assert(cuda::std::is_same_v<cuda::std::byte, typename SB::element_type>);
 
   if (sp.extent == cuda::std::dynamic_extent)
   {
@@ -45,9 +40,7 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   }
 
   assert(static_cast<void*>(spBytes.data()) == static_cast<void*>(sp.data()));
-#ifndef TEST_COMPILER_MSVC_2017
   assert(spBytes.size() == sp.size_bytes());
-#endif // !TEST_COMPILER_MSVC_2017
 }
 
 struct A

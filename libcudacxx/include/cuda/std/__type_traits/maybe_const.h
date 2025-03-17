@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <bool _Const, class _Tp>
-using __maybe_const = __conditional_t<_Const, const _Tp, _Tp>;
+using __maybe_const = conditional_t<_Const, const _Tp, _Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

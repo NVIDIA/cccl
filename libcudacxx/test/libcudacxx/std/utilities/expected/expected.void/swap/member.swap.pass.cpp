@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // constexpr void swap(expected& rhs) noexcept(see below);
@@ -30,10 +29,8 @@
 
 // Test Constraints:
 template <class E>
-_LIBCUDACXX_CONCEPT_FRAGMENT(HasMemberSwap_,
-                             requires(cuda::std::expected<void, E> x, cuda::std::expected<void, E> y)((x.swap(y))));
-template <class E>
-_LIBCUDACXX_CONCEPT HasMemberSwap = _LIBCUDACXX_FRAGMENT(HasMemberSwap_, E);
+_CCCL_CONCEPT HasMemberSwap =
+  _CCCL_REQUIRES_EXPR((E), cuda::std::expected<void, E> x, cuda::std::expected<void, E> y)((x.swap(y)));
 
 static_assert(HasMemberSwap<int>, "");
 
@@ -69,7 +66,6 @@ constexpr bool MemberSwapNoexcept<E, true> = noexcept(
 
 static_assert(MemberSwapNoexcept<int>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<E>
 static_assert(!MemberSwapNoexcept<MoveMayThrow>, "");
 
@@ -80,7 +76,6 @@ struct SwapMayThrow
 
 // !is_nothrow_swappable_v<E>
 static_assert(!MemberSwapNoexcept<SwapMayThrow>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -187,9 +182,9 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test());
-#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

@@ -29,10 +29,8 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
-  typedef cuda::std::equal_to<int> EQ;
-
   int ia[]         = {0, 1, 2, 3, 4, 5};
   const unsigned s = sizeof(ia) / sizeof(ia[0]);
   int ib[s]        = {0, 1, 2, 5, 4, 5};
@@ -41,7 +39,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     cpp17_input_iterator<const int*>(ia + s),
     cpp17_input_iterator<const int*>(ia),
     cuda::std::equal_to<int>()));
-#if TEST_STD_VER >= 2014
   assert(cuda::std::equal(
     cpp17_input_iterator<const int*>(ia),
     cpp17_input_iterator<const int*>(ia + s),
@@ -55,6 +52,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     random_access_iterator<const int*>(ia + s),
     cuda::std::equal_to<int>()));
 
+  typedef cuda::std::equal_to<int> EQ;
   int comparison_count = 0;
   counting_predicate<EQ> counting_equals(EQ(), comparison_count);
   assert(!cuda::std::equal(
@@ -72,13 +70,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     random_access_iterator<const int*>(ia + s - 1),
     counting_equals));
   assert(comparison_count == 0);
-#endif // TEST_STD_VER >= 2014
+
   assert(!cuda::std::equal(
     cpp17_input_iterator<const int*>(ia),
     cpp17_input_iterator<const int*>(ia + s),
     cpp17_input_iterator<const int*>(ib),
     cuda::std::equal_to<int>()));
-#if TEST_STD_VER >= 2014
+
   assert(!cuda::std::equal(
     cpp17_input_iterator<const int*>(ia),
     cpp17_input_iterator<const int*>(ia + s),
@@ -91,7 +89,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     random_access_iterator<const int*>(ib),
     random_access_iterator<const int*>(ib + s),
     cuda::std::equal_to<int>()));
-#endif // TEST_STD_VER >= 2014
 
   return true;
 }
@@ -99,9 +96,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
 
   return 0;
 }

@@ -25,6 +25,7 @@ config.test_compiler_flags      = "@LIBCUDACXX_TEST_COMPILER_FLAGS@"
 
 config.compute_archs            = "@LIBCUDACXX_COMPUTE_ARCHS_STRING@"
 config.nvcc_host_compiler       = "@CMAKE_CUDA_HOST_COMPILER@"
+config.cuda_path                = "@CMAKE_CUDA_COMPILER_TOOLKIT_ROOT@"
 
 config.executor                 = "@LIBCUDACXX_EXECUTOR@"
 config.llvm_unwinder            = False

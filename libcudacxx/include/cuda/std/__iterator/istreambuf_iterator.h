@@ -31,23 +31,23 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _CharT, class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT istreambuf_iterator
-#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<input_iterator_tag, _CharT, typename _Traits::off_type, _CharT*, _CharT>
-#endif
+#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
   _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
-  typedef input_iterator_tag iterator_category;
-  typedef _CharT value_type;
-  typedef typename _Traits::off_type difference_type;
-  typedef _CharT* pointer;
-  typedef _CharT reference;
-  typedef _CharT char_type;
-  typedef _Traits traits_type;
-  typedef typename _Traits::int_type int_type;
-  typedef basic_streambuf<_CharT, _Traits> streambuf_type;
-  typedef basic_istream<_CharT, _Traits> istream_type;
+  using iterator_category = input_iterator_tag;
+  using value_type        = _CharT;
+  using difference_type   = typename _Traits::off_type;
+  using pointer           = _CharT*;
+  using reference         = _CharT;
+  using char_type         = _CharT;
+  using traits_type       = _Traits;
+  using int_type          = typename _Traits::int_type;
+  using streambuf_type    = basic_streambuf<_CharT, _Traits>;
+  using istream_type      = basic_istream<_CharT, _Traits>;
 
 private:
   mutable streambuf_type* __sbuf_;
@@ -116,12 +116,11 @@ public:
     return __test_for_eof() == __b.__test_for_eof();
   }
 
-#if _CCCL_STD_VER > 2014
   friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const istreambuf_iterator& __i, default_sentinel_t)
   {
     return __i.__test_for_eof();
   }
-#  if _CCCL_STD_VER < 2020
+#if _CCCL_STD_VER < 2020
   friend _LIBCUDACXX_HIDE_FROM_ABI bool operator==(default_sentinel_t, const istreambuf_iterator& __i)
   {
     return __i.__test_for_eof();
@@ -134,8 +133,7 @@ public:
   {
     return !__i.__test_for_eof();
   }
-#  endif // _CCCL_STD_VER < 2020
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER < 2020
 };
 
 template <class _CharT, class _Traits>

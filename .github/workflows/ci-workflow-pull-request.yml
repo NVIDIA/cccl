@@ -191,7 +191,7 @@ jobs:
           upload_pages_artifact: "false"
 
   build-rapids:
-    name: Build RAPIDS
+    name: Build RAPIDS (optional)
     if: ${{ !contains(github.event.head_commit.message, '[skip-rapids]') }}
     secrets: inherit
     permissions:
@@ -201,6 +201,15 @@ jobs:
       contents: read
       pull-requests: read
     uses: ./.github/workflows/build-rapids.yml
+
+  build-matx:
+    name: Build MatX (optional)
+    if: ${{ !contains(github.event.head_commit.message, '[skip-matx]') }}
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-matx.yml
 
   # Check all other job statuses. This job gates branch protection checks.
   ci:

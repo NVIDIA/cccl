@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 // XFAIL: nvcc-12.0 || nvcc-12.1 || nvcc-12.2 || nvcc-12.3
 // nvbug 3885350
 
@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool check_subsumption() {
 }
 // clang-format on
 
-static_assert(check_subsumption<int*>());
+static_assert(check_subsumption<int*>(), "");
 
 int main(int, char**)
 {

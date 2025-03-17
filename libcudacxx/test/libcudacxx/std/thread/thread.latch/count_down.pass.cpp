@@ -11,13 +11,14 @@
 
 // <cuda/std/latch>
 
+#include <cuda/latch>
 #include <cuda/std/latch>
 
 #include "concurrent_agents.h"
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <typename Latch, template <typename, typename> typename Selector, typename Initializer = constructor_initializer>
+template <typename Latch, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
 __host__ __device__ void test()
 {
   Selector<Latch, Initializer> sel;

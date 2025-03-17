@@ -26,7 +26,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/copy_if.h>
-#include <thrust/detail/integer_traits.h>
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/temporary_array.h>
 #include <thrust/detail/type_traits.h>
@@ -38,6 +37,8 @@
 #include <thrust/scatter.h>
 #include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/transform.h>
+
+#include <cuda/std/limits>
 
 #include <limits>
 
@@ -83,8 +84,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
     thrust::plus<IndexType>());
 
   // scatter the true elements
-  thrust::scatter_if(
-    exec, first, last, scatter_indices.begin(), predicates.begin(), result, thrust::identity<IndexType>());
+  thrust::scatter_if(exec, first, last, scatter_indices.begin(), predicates.begin(), result);
 
   // find the end of the new sequence
   IndexType output_size = scatter_indices[n - 1] + predicates[n - 1];
@@ -122,7 +122,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  using difference_type = typename thrust::iterator_traits<InputIterator1>::difference_type;
+  using difference_type = thrust::detail::it_difference_t<InputIterator1>;
 
   // empty sequence
   if (first == last)
@@ -134,11 +134,10 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
   // create an unsigned version of n (we know n is positive from the comparison above)
   // to avoid a warning in the compare below
-  ::cuda::std::__make_unsigned_t<difference_type> unsigned_n(n);
+  ::cuda::std::make_unsigned_t<difference_type> unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
-  if (sizeof(difference_type) > sizeof(unsigned int)
-      && unsigned_n > thrust::detail::integer_traits<unsigned int>::const_max)
+  if (sizeof(difference_type) > sizeof(unsigned int) && unsigned_n > ::cuda::std::numeric_limits<unsigned int>::max())
   {
     result = detail::copy_if<difference_type>(exec, first, last, stencil, result, pred);
   } // end if

@@ -17,7 +17,7 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <typename Barrier, template <typename, typename> typename Selector, typename Initializer = constructor_initializer>
+template <typename Barrier, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
 __host__ __device__ void test(bool add_delay = false)
 {
   Selector<Barrier, Initializer> sel;

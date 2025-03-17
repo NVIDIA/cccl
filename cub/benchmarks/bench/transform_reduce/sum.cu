@@ -86,15 +86,21 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
   using output_t       = T;
   using init_t         = T;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<T>;
 
+  using dispatch_t = cub::DispatchReduce<
+    input_it_t,
+    output_it_t,
+    offset_t,
+    reduction_op_t,
+    init_t,
+    accum_t
 #  if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t, offset_t>;
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, reduction_op_t, init_t, accum_t, policy_t>;
-#  else // TUNE_BASE
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, reduction_op_t, init_t, accum_t>;
+    ,
+    policy_hub_t<accum_t, offset_t>
 #  endif // TUNE_BASE
+    >;
 
   // Retrieve axis parameters
   const auto elements         = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -139,7 +145,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
   using output_t       = T;
   using init_t         = T;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<T>;
 
 #  if !TUNE_BASE

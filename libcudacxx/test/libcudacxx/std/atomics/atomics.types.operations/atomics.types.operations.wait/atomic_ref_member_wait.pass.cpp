@@ -7,7 +7,6 @@
 //===----------------------------------------------------------------------===//
 //
 // UNSUPPORTED: libcpp-has-no-threads
-// UNSUPPORTED: c++98, c++03
 // UNSUPPORTED: pre-sm-70
 
 // <cuda/std/atomic>
@@ -21,7 +20,7 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <class T, template <typename, typename> typename Selector, cuda::thread_scope Scope>
+template <class T, template <typename, typename> class Selector, cuda::thread_scope Scope>
 struct TestFn
 {
   __host__ __device__ void operator()() const

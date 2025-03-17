@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class I1, class I2, class Out,
 //     class R = ranges::less, class P1 = identity, class P2 = identity>
@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool test_subsumption()
   return true;
 }
 
-static_assert(test_subsumption<int*, int*, int*>());
+static_assert(test_subsumption<int*, int*, int*>(), "");
 
 int main(int, char**)
 {

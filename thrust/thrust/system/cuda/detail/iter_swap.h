@@ -26,13 +26,15 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/detail/raw_pointer_cast.h>
 #  include <thrust/swap.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
+
+#  include <cuda/std/utility>
 
 #  include <nv/target>
 
@@ -53,7 +55,7 @@ inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPo
 
     _CCCL_DEVICE inline static void device_path(Pointer1 a, Pointer2 b)
     {
-      using thrust::swap;
+      using ::cuda::std::swap;
       swap(*thrust::raw_pointer_cast(a), *thrust::raw_pointer_cast(b));
     }
   };

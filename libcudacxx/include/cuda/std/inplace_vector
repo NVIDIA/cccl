@@ -20,56 +20,53 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2014
-
-#  include <cuda/std/__algorithm/copy.h>
-#  include <cuda/std/__algorithm/equal.h>
-#  include <cuda/std/__algorithm/fill.h>
-#  include <cuda/std/__algorithm/lexicographical_compare.h>
-#  include <cuda/std/__algorithm/move.h>
-#  include <cuda/std/__algorithm/move_backward.h>
-#  include <cuda/std/__algorithm/remove.h>
-#  include <cuda/std/__algorithm/remove_if.h>
-#  include <cuda/std/__algorithm/rotate.h>
-#  include <cuda/std/__algorithm/swap_ranges.h>
-#  include <cuda/std/__exception/terminate.h>
-#  include <cuda/std/__iterator/advance.h>
-#  include <cuda/std/__iterator/concepts.h>
-#  include <cuda/std/__iterator/distance.h>
-#  include <cuda/std/__iterator/iter_move.h>
-#  include <cuda/std/__iterator/next.h>
-#  include <cuda/std/__iterator/reverse_iterator.h>
-#  include <cuda/std/__memory/construct_at.h>
-#  include <cuda/std/__memory/uninitialized_algorithms.h>
-#  include <cuda/std/__new/bad_alloc.h>
-#  include <cuda/std/__new/launder.h>
-#  include <cuda/std/__ranges/access.h>
-#  include <cuda/std/__ranges/concepts.h>
-#  include <cuda/std/__ranges/from_range.h>
-#  include <cuda/std/__ranges/size.h>
-#  include <cuda/std/__ranges/unwrap_end.h>
-#  include <cuda/std/__type_traits/conditional.h>
-#  include <cuda/std/__type_traits/is_constant_evaluated.h>
-#  include <cuda/std/__type_traits/is_nothrow_constructible.h>
-#  include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
-#  include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
-#  include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
-#  include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
-#  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#  include <cuda/std/__type_traits/is_swappable.h>
-#  include <cuda/std/__type_traits/is_trivial.h>
-#  include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#  include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
-#  include <cuda/std/__type_traits/is_trivially_destructible.h>
-#  include <cuda/std/__type_traits/is_trivially_move_assignable.h>
-#  include <cuda/std/__type_traits/is_trivially_move_constructible.h>
-#  include <cuda/std/__utility/forward.h>
-#  include <cuda/std/__utility/move.h>
-#  include <cuda/std/cstdint>
-#  include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#  include <cuda/std/detail/libcxx/include/stdexcept>
-#  include <cuda/std/initializer_list>
-#  include <cuda/std/limits>
+#include <cuda/std/__algorithm/copy.h>
+#include <cuda/std/__algorithm/equal.h>
+#include <cuda/std/__algorithm/fill.h>
+#include <cuda/std/__algorithm/lexicographical_compare.h>
+#include <cuda/std/__algorithm/move.h>
+#include <cuda/std/__algorithm/move_backward.h>
+#include <cuda/std/__algorithm/remove.h>
+#include <cuda/std/__algorithm/remove_if.h>
+#include <cuda/std/__algorithm/rotate.h>
+#include <cuda/std/__algorithm/swap_ranges.h>
+#include <cuda/std/__exception/terminate.h>
+#include <cuda/std/__iterator/advance.h>
+#include <cuda/std/__iterator/concepts.h>
+#include <cuda/std/__iterator/distance.h>
+#include <cuda/std/__iterator/iter_move.h>
+#include <cuda/std/__iterator/next.h>
+#include <cuda/std/__iterator/reverse_iterator.h>
+#include <cuda/std/__memory/construct_at.h>
+#include <cuda/std/__memory/uninitialized_algorithms.h>
+#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/__new/launder.h>
+#include <cuda/std/__ranges/access.h>
+#include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__ranges/from_range.h>
+#include <cuda/std/__ranges/size.h>
+#include <cuda/std/__ranges/unwrap_end.h>
+#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
+#include <cuda/std/__type_traits/is_nothrow_move_assignable.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__type_traits/is_trivial.h>
+#include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
+#include <cuda/std/__type_traits/is_trivially_copy_constructible.h>
+#include <cuda/std/__type_traits/is_trivially_destructible.h>
+#include <cuda/std/__type_traits/is_trivially_move_assignable.h>
+#include <cuda/std/__type_traits/is_trivially_move_constructible.h>
+#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/move.h>
+#include <cuda/std/cstdint>
+#include <cuda/std/detail/libcxx/include/stdexcept>
+#include <cuda/std/initializer_list>
+#include <cuda/std/limits>
 
 _CCCL_PUSH_MACROS
 
@@ -231,8 +228,8 @@ protected:
     this->__size_ -= static_cast<__size_type>(__last - __first);
   }
 
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _CCCL_REQUIRES(_IsNothrow)
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_value_construct(iterator __first, iterator __last) noexcept
   {
     iterator __idx = __first;
@@ -243,8 +240,8 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_default_constructible, _Tp))
+  _CCCL_REQUIRES((!_IsNothrow))
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_value_construct(iterator __first, iterator __last)
   {
     iterator __idx = __first;
@@ -257,8 +254,8 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_REQUIRES(_IsNothrow)
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value) noexcept
   {
     iterator __idx = __first;
@@ -269,8 +266,8 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _LIBCUDACXX_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_TEMPLATE(bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_REQUIRES((!_IsNothrow))
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_fill(iterator __first, iterator __last, const _Tp& __value)
   {
     iterator __idx = __first;
@@ -283,8 +280,8 @@ protected:
     this->__size_ += static_cast<__size_type>(__last - __first);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_REQUIRES(_IsNothrow)
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     iterator __curr = __dest;
@@ -295,8 +292,8 @@ protected:
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_copy_constructible, _Tp))
+  _CCCL_REQUIRES((!_IsNothrow))
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
@@ -309,35 +306,27 @@ protected:
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES(_IsNothrow)
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_REQUIRES(_IsNothrow)
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     iterator __curr = __dest;
     for (; __first != __last; ++__curr, (void) ++__first)
     {
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
-#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
-#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
     this->__size_ += static_cast<__size_type>(__curr - __dest);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
-  _LIBCUDACXX_REQUIRES((!_IsNothrow))
+  _CCCL_TEMPLATE(class _Iter, bool _IsNothrow = _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
+  _CCCL_REQUIRES((!_IsNothrow))
   _LIBCUDACXX_HIDE_FROM_ABI void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest)
   {
     iterator __curr = __dest;
     auto __guard    = __make_exception_guard(_Rollback_change_size<__inplace_vector_storage>{this, __dest, __curr});
     for (; __first != __last; ++__curr, (void) ++__first)
     {
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
       ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VRANGES::iter_move(__first));
-#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-      ::new (_CUDA_VSTD::__voidify(*__curr)) _Tp(_CUDA_VSTD::move(*__first));
-#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
     }
     __guard.__complete();
     this->__size_ += static_cast<__size_type>(__curr - __dest);
@@ -591,22 +580,14 @@ protected:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_copy(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
     __size_ += static_cast<__size_type>(_CUDA_VRANGES::distance(__first, __last));
-#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-    __size_ += static_cast<__size_type>(_CUDA_VSTD::distance(__first, __last));
-#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
   }
 
   template <class _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_move(_Iter __first, _Iter __last, iterator __dest) noexcept
   {
     _CUDA_VSTD::copy(__first, __last, __dest);
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
     __size_ += static_cast<__size_type>(_CUDA_VRANGES::distance(__first, __last));
-#  else // ^^^ C++17 ^^^ / vvv C++14 vvv
-    __size_ += static_cast<__size_type>(_CUDA_VSTD::distance(__first, __last));
-#  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
   }
 };
 
@@ -671,9 +652,9 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& unchecked_emplace_back(_Args&&...) noexcept
   {
     _CCCL_UNREACHABLE();
-#  if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     return *begin();
-#  endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
   }
 
 protected:
@@ -759,9 +740,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(
-    __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value _CCCL_AND(!__is_cpp17_forward_iterator<_Iter>::value))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(_Iter __first, _Iter __last)
       : __base()
   {
@@ -771,8 +751,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(_Iter __first, _Iter __last)
       : __base()
   {
@@ -802,10 +782,9 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
@@ -817,9 +796,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
+                   _CUDA_VRANGES::forward_range<_Range> _CCCL_AND _CUDA_VRANGES::sized_range<_Range>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
@@ -835,9 +814,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
+                   _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(!_CUDA_VRANGES::sized_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
@@ -853,7 +832,6 @@ public:
       this->__uninitialized_move(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), this->begin());
     }
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
   {
@@ -899,9 +877,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(
-    __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value _CCCL_AND(!__is_cpp17_forward_iterator<_Iter>::value))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(_Iter __first, _Iter __last)
   {
     iterator __end = this->end();
@@ -921,8 +898,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(_Iter __first, _Iter __last)
   {
     const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
@@ -964,10 +941,9 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
   {
     auto __first      = _CUDA_VRANGES::begin(__range);
@@ -989,9 +965,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
+                   _CUDA_VRANGES::forward_range<_Range> _CCCL_AND _CUDA_VRANGES::sized_range<_Range>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
   {
     const auto __size = _CUDA_VRANGES::size(__range);
@@ -1015,9 +991,9 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
+                   _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(!_CUDA_VRANGES::sized_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
   {
     const auto __first = _CUDA_VRANGES::begin(__range);
@@ -1040,7 +1016,6 @@ public:
       this->__uninitialized_copy(__middle, __last, this->end());
     }
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   // [containers.sequences.inplace.vector.access], element access
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
@@ -1204,9 +1179,8 @@ public:
     return __first;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(
-    __is_cpp17_input_iterator<_Iter>::value _LIBCUDACXX_AND(!__is_cpp17_forward_iterator<_Iter>::value))
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value _CCCL_AND(!__is_cpp17_forward_iterator<_Iter>::value))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
     // add all new elements to the back then rotate
@@ -1221,8 +1195,8 @@ public:
     return __res;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_forward_iterator<_Iter>::value)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator __cpos, _Iter __first, _Iter __last)
   {
     const auto __pos   = static_cast<size_type>(__cpos - this->cbegin());
@@ -1311,10 +1285,9 @@ public:
     return __res;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     // add all new elements to the back then rotate
@@ -1331,18 +1304,17 @@ public:
     return __pos;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND _CUDA_VRANGES::forward_range<_Range>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     return insert(__cpos, __first, _CUDA_VRANGES::__unwrap_end(__range));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void append_range(_Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
@@ -1353,15 +1325,13 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND _CUDA_VRANGES::forward_range<_Range>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND _CUDA_VRANGES::forward_range<_Range>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void append_range(_Range&& __range)
   {
     auto __first = _CUDA_VRANGES::begin(__range);
     insert(this->end(), __first, _CUDA_VRANGES::__unwrap_end(__range));
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator emplace(const_iterator __cpos, _Args&&... __args)
@@ -1457,10 +1427,9 @@ public:
     return _CUDA_VSTD::addressof(this->unchecked_emplace_back(_CUDA_VSTD::move(__value)));
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(
-    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND(!_CUDA_VRANGES::forward_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(
+    _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
@@ -1473,9 +1442,9 @@ public:
     return __first;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND _CUDA_VRANGES::sized_range<_Range>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
+                   _CUDA_VRANGES::forward_range<_Range> _CCCL_AND _CUDA_VRANGES::sized_range<_Range>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
@@ -1489,9 +1458,9 @@ public:
     return __middle;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _LIBCUDACXX_AND
-                         _CUDA_VRANGES::forward_range<_Range> _LIBCUDACXX_AND(!_CUDA_VRANGES::sized_range<_Range>))
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND
+                   _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(!_CUDA_VRANGES::sized_range<_Range>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range>
   try_append_range(_Range&& __range) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
@@ -1504,7 +1473,6 @@ public:
     this->__uninitialized_move(__first, __middle, this->end());
     return __middle;
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   using __base::unchecked_emplace_back;
 
@@ -1628,8 +1596,8 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void shrink_to_fit() noexcept {}
 
-  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _CCCL_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(inplace_vector& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2))
   {
@@ -1647,8 +1615,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp2 = _Tp)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _LIBCUDACXX_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
+  _CCCL_TEMPLATE(class _Tp2 = _Tp)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Tp2) _CCCL_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void swap(inplace_vector& __lhs, inplace_vector& __rhs) noexcept(
     _Capacity == 0 || (_CCCL_TRAIT(is_nothrow_swappable, _Tp2) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp2)))
   {
@@ -1662,23 +1630,23 @@ public:
   {
     return _CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return !_CUDA_VSTD::equal(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
-#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __synth_three_way_result_t<_Tp>
   operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
-#  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator<(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
@@ -1703,7 +1671,7 @@ public:
   {
     return !(__lhs < __rhs);
   }
-#  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   // [containers.sequences.inplace.vector.erasure]
   _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
@@ -1772,8 +1740,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(_Iter __first, _Iter __last)
       : __base()
   {
@@ -1792,9 +1760,8 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
       : __base()
   {
@@ -1803,7 +1770,6 @@ public:
       _CUDA_VSTD::__throw_bad_alloc();
     }
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector& operator=(initializer_list<_Tp> __ilist)
   {
@@ -1824,8 +1790,8 @@ public:
     return;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign(_Iter __first, _Iter __last)
   {
     if (__first != __last)
@@ -1844,9 +1810,8 @@ public:
     return;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
   {
     if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
@@ -1855,7 +1820,6 @@ public:
     }
     return;
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   // [containers.sequences.inplace.vector.access], element access
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
@@ -1982,8 +1946,8 @@ public:
     return nullptr;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(__is_cpp17_input_iterator<_Iter>::value)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert(const_iterator, _Iter __first, _Iter __last)
   {
     if (__first != __last)
@@ -2002,9 +1966,8 @@ public:
     return nullptr;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
   {
     if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
@@ -2014,8 +1977,8 @@ public:
     return nullptr;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void append_range(_Range&& __range)
   {
     if (_CUDA_VRANGES::begin(__range) != _CUDA_VRANGES::end(__range))
@@ -2023,7 +1986,6 @@ public:
       _CUDA_VSTD::__throw_bad_alloc();
     }
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator emplace(const_iterator, _Args&&...)
@@ -2067,14 +2029,12 @@ public:
     return nullptr;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
-  _LIBCUDACXX_TEMPLATE(class _Range)
-  _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range> try_append_range(_Range&& __range) noexcept
   {
     return _CUDA_VRANGES::begin(__range);
   }
-#  endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
   using __base::unchecked_emplace_back;
 
@@ -2144,22 +2104,22 @@ public:
   {
     return true;
   }
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const inplace_vector&, const inplace_vector&) noexcept
   {
     return false;
   }
-#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017
 
-#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __synth_three_way_result_t<_Tp>
   operator<=>(const inplace_vector& __lhs, const inplace_vector& __rhs) noexcept(
     noexcept(_CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end())))
   {
     return _CUDA_VSTD::lexicographical_compare_three_way(__lhs.begin(), __lhs.end(), __rhs.begin(), __rhs.end());
   }
-#  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator<(const inplace_vector&, const inplace_vector&) noexcept
   {
@@ -2180,7 +2140,7 @@ public:
   {
     return true;
   }
-#  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   // [containers.sequences.inplace.vector.erasure]
   _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type __erase(const _Tp&) noexcept
@@ -2213,7 +2173,5 @@ erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(_CCCL_TR
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_POP_MACROS
-
-#endif // _CCCL_STD_VER >= 2014
 
 #endif // _CUDA_STD_INPLACE_VECTOR

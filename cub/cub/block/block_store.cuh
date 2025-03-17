@@ -81,8 +81,8 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + (linear_tid * ITEMS_PER_THREAD);
 
-// Store directly in thread-blocked order
-#pragma unroll
+  // Store directly in thread-blocked order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     thread_itr[ITEM] = items[ITEM];
@@ -124,8 +124,8 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + (linear_tid * ITEMS_PER_THREAD);
 
-// Store directly in thread-blocked order
-#pragma unroll
+  // Store directly in thread-blocked order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     if (ITEM + (linear_tid * ITEMS_PER_THREAD) < valid_items)
@@ -175,7 +175,7 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   enum
   {
     // Maximum CUDA vector size is 4 elements
-    MAX_VEC_SIZE = CUB_MIN(4, ITEMS_PER_THREAD),
+    MAX_VEC_SIZE = _CUDA_VSTD::min(4, ITEMS_PER_THREAD),
 
     // Vector size must be a power of two and an even divisor of the items per thread
     VEC_SIZE =
@@ -194,8 +194,8 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   Vector raw_vector[VECTORS_PER_THREAD];
   T* raw_items = reinterpret_cast<T*>(raw_vector);
 
-// Copy
-#pragma unroll
+  // Copy
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     raw_items[ITEM] = items[ITEM];
@@ -244,8 +244,8 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
 
-// Store directly in striped order
-#pragma unroll
+  // Store directly in striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
@@ -290,8 +290,8 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
 
-// Store directly in striped order
-#pragma unroll
+  // Store directly in striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     if ((ITEM * BLOCK_THREADS) + linear_tid < valid_items)
@@ -346,8 +346,8 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
-// Store directly in warp-striped order
-#pragma unroll
+  // Store directly in warp-striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     thread_itr[(ITEM * CUB_PTX_WARP_THREADS)] = items[ITEM];
@@ -398,8 +398,8 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
-// Store directly in warp-striped order
-#pragma unroll
+  // Store directly in warp-striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     if (warp_offset + tid + (ITEM * CUB_PTX_WARP_THREADS) < valid_items)
@@ -639,15 +639,12 @@ enum BlockStoreAlgorithm
 //! @tparam BLOCK_DIM_Z
 //!   **[optional]** The thread block length in threads along the Z dimension (default: 1)
 //!
-//! @tparam LEGACY_PTX_ARCH
-//!   **[optional]** Unused.
 template <typename T,
           int BLOCK_DIM_X,
           int ITEMS_PER_THREAD,
           BlockStoreAlgorithm ALGORITHM = BLOCK_STORE_DIRECT,
           int BLOCK_DIM_Y               = 1,
-          int BLOCK_DIM_Z               = 1,
-          int LEGACY_PTX_ARCH           = 0>
+          int BLOCK_DIM_Z               = 1>
 class BlockStore
 {
 private:
@@ -897,7 +894,7 @@ private:
         // subsequent loads
         temp_storage.valid_items = valid_items;
       }
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectStriped<BLOCK_THREADS>(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   };
@@ -980,7 +977,7 @@ private:
         // subsequent loads
         temp_storage.valid_items = valid_items;
       }
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   };
@@ -1063,7 +1060,7 @@ private:
         // subsequent loads
         temp_storage.valid_items = valid_items;
       }
-      CTA_SYNC();
+      __syncthreads();
       StoreDirectWarpStriped(linear_tid, block_itr, items, temp_storage.valid_items);
     }
   };
@@ -1229,12 +1226,12 @@ public:
   //! @}  end member group
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-template <class Policy, class It, class T = cub::detail::value_t<It>>
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+template <class Policy, class It, class T = cub::detail::it_value_t<It>>
 struct BlockStoreType
 {
   using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

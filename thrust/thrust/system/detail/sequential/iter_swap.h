@@ -26,8 +26,9 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/detail/swap.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
+
+#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -40,7 +41,7 @@ namespace sequential
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
 _CCCL_HOST_DEVICE void iter_swap(sequential::execution_policy<DerivedPolicy>&, Pointer1 a, Pointer2 b)
 {
-  using thrust::swap;
+  using ::cuda::std::swap;
   swap(*thrust::raw_pointer_cast(a), *thrust::raw_pointer_cast(b));
 } // end iter_swap()
 

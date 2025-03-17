@@ -23,11 +23,9 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#ifdef TEST_COMPILER_MSVC
-#  pragma warning(disable : 4018) // signed/unsigned mismatch
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4018) // signed/unsigned mismatch
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   int ia[]          = {0, 1, 2, 2, 0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -42,7 +40,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
   assert(cuda::std::mismatch(RAI(ia), RAI(ia + sa), RAI(ib)) == (cuda::std::pair<RAI, RAI>(RAI(ia + 3), RAI(ib + 3))));
 
-#if TEST_STD_VER > 2011 // We have the four iteration version
   assert(cuda::std::mismatch(II(ia), II(ia + sa), II(ib), II(ib + sb))
          == (cuda::std::pair<II, II>(II(ia + 3), II(ib + 3))));
 
@@ -51,7 +48,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 
   assert(cuda::std::mismatch(II(ia), II(ia + sa), II(ib), II(ib + 2))
          == (cuda::std::pair<II, II>(II(ia + 2), II(ib + 2))));
-#endif
 
   return true;
 }
@@ -59,9 +55,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2011
   static_assert(test(), "");
-#endif
 
   return 0;
 }

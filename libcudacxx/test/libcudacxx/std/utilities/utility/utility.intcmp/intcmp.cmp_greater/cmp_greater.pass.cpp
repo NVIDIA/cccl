@@ -6,11 +6,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
-
 // <utility>
 
-//   constexpr bool cmp_greater(T t, U u) noexcept;       // C++20
+//   constexpr bool cmp_greater(T t, U u) noexcept;
 
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
@@ -22,28 +20,17 @@
 template <typename T>
 struct Tuple
 {
-  T min;
-  T max;
-  T mid;
-  __host__ __device__ constexpr Tuple()
-  {
-    min = cuda::std::numeric_limits<T>::min();
-    max = cuda::std::numeric_limits<T>::max();
-    if constexpr (cuda::std::is_signed_v<T>)
-    {
-      mid = T(-1);
-    }
-    else
-    {
-      mid = max >> 1;
-    }
-  }
+  T min = cuda::std::numeric_limits<T>::min();
+  T max = cuda::std::numeric_limits<T>::max();
+  T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
+
+  __host__ __device__ constexpr Tuple() noexcept {}
 };
 
 template <typename T>
-__host__ __device__ constexpr void test_cmp_greater1()
+__host__ __device__ constexpr void test1()
 {
-  constexpr Tuple<T> tup;
+  constexpr Tuple<T> tup{};
   assert(!cuda::std::cmp_greater(T(0), T(1)));
   assert(!cuda::std::cmp_greater(T(1), T(2)));
   assert(!cuda::std::cmp_greater(tup.min, tup.max));
@@ -59,64 +46,62 @@ __host__ __device__ constexpr void test_cmp_greater1()
   assert(cuda::std::cmp_greater(tup.max, 1));
   assert(cuda::std::cmp_greater(1, tup.min));
   assert(!cuda::std::cmp_greater(T(-1), T(-1)));
-  assert(cuda::std::cmp_greater(-2, tup.min) == cuda::std::is_signed_v<T>);
-  assert(!cuda::std::cmp_greater(tup.min, -2) == cuda::std::is_signed_v<T>);
+  assert(cuda::std::cmp_greater(-2, tup.min) == cuda::std::is_signed<T>::value);
+  assert(!cuda::std::cmp_greater(tup.min, -2) == cuda::std::is_signed<T>::value);
   assert(!cuda::std::cmp_greater(-2, tup.max));
   assert(cuda::std::cmp_greater(tup.max, -2));
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr void test_cmp_greater2()
+__host__ __device__ constexpr void test2()
 {
   assert(!cuda::std::cmp_greater(T(0), U(1)));
   assert(cuda::std::cmp_greater(T(1), U(0)));
 }
 
-template <class... Ts>
-__host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&)
+template <class T>
+__host__ __device__ constexpr void test()
 {
-  (test_cmp_greater1<Ts>(), ...);
-}
-
-template <class T, class... Us>
-__host__ __device__ constexpr void test2_impl(const cuda::std::tuple<Us...>&)
-{
-  (test_cmp_greater2<T, Us>(), ...);
-}
-
-template <class... Ts, class UTuple>
-__host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&, const UTuple& utuple)
-{
-  (test2_impl<Ts>(utuple), ...);
+  test1<T>();
+#if _CCCL_HAS_INT128()
+  test2<T, __int128_t>();
+  test2<T, __uint128_t>();
+#endif // _CCCL_HAS_INT128()
+  test2<T, unsigned long long>();
+  test2<T, long long>();
+  test2<T, unsigned long>();
+  test2<T, long>();
+  test2<T, unsigned int>();
+  test2<T, int>();
+  test2<T, unsigned short>();
+  test2<T, short>();
+  test2<T, unsigned char>();
+  test2<T, signed char>();
 }
 
 __host__ __device__ constexpr bool test()
 {
-  cuda::std::tuple<
-#ifndef TEST_HAS_NO_INT128_T
-    __int128_t,
-    __uint128_t,
-#endif
-    unsigned long long,
-    long long,
-    unsigned long,
-    long,
-    unsigned int,
-    int,
-    unsigned short,
-    short,
-    unsigned char,
-    signed char>
-    types;
-  test1(types);
-  test2(types, types);
+#if _CCCL_HAS_INT128()
+  test<__int128_t>();
+  test<__uint128_t>();
+#endif // _CCCL_HAS_INT128()
+  test<unsigned long long>();
+  test<long long>();
+  test<unsigned long>();
+  test<long>();
+  test<unsigned int>();
+  test<int>();
+  test<unsigned short>();
+  test<short>();
+  test<unsigned char>();
+  test<signed char>();
   return true;
 }
 
 int main(int, char**)
 {
-  ASSERT_NOEXCEPT(cuda::std::cmp_greater(1, 0));
+  static_assert(noexcept(cuda::std::cmp_greater(1, 0)));
   test();
-  static_assert(test());
+  static_assert(test(), "");
   return 0;
 }

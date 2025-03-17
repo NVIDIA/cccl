@@ -26,7 +26,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // generic implementation
 template <class _Iter, class _Sent, class _Tp, class _Proj>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter
 __find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
 {
   for (; __first != __last; ++__first)
@@ -40,7 +40,7 @@ __find_impl(_Iter __first, _Sent __last, const _Tp& __value, _Proj& __proj)
 }
 
 template <class _InputIterator, class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _InputIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _InputIterator
 find(_InputIterator __first, _InputIterator __last, const _Tp& __value_)
 {
   for (; __first != __last; ++__first)

@@ -3,6 +3,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/unique.h>
 
+#include <cuda/std/array>
+
 #include <unittest/unittest.h>
 
 template <typename ForwardIterator>
@@ -77,7 +79,7 @@ void TestUniqueCopyDispatchImplicit()
 DECLARE_UNITTEST(TestUniqueCopyDispatchImplicit);
 
 template <typename ForwardIterator>
-typename thrust::iterator_traits<ForwardIterator>::difference_type
+typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
 unique_count(my_system& system, ForwardIterator, ForwardIterator)
 {
   system.validate_dispatch();
@@ -96,7 +98,8 @@ void TestUniqueCountDispatchExplicit()
 DECLARE_UNITTEST(TestUniqueCountDispatchExplicit);
 
 template <typename ForwardIterator>
-typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(my_tag, ForwardIterator, ForwardIterator)
+typename ::cuda::std::iterator_traits<ForwardIterator>::difference_type
+unique_count(my_tag, ForwardIterator, ForwardIterator)
 {
   return 13;
 }
@@ -237,7 +240,6 @@ struct TestUniqueCopyToDiscardIterator
 
     thrust::discard_iterator<> reference(h_unique.size());
 
-    typename thrust::host_vector<T>::iterator h_new_last;
     typename thrust::device_vector<T>::iterator d_new_last;
 
     thrust::discard_iterator<> h_result =
@@ -287,3 +289,14 @@ struct TestUniqueCount
   }
 };
 VariableUnitTest<TestUniqueCount, IntegralTypes> TestUniqueCountInstance;
+
+template <typename T>
+struct TestUniqueMemoryAccess
+{
+  void operator()(void)
+  {
+    thrust::device_vector<cuda::std::array<T, 100>> v(10);
+    thrust::unique(v.begin(), v.end());
+  }
+};
+SimpleUnitTest<TestUniqueMemoryAccess, unittest::type_list<int>> TestUniqueMemoryAccessInstance;

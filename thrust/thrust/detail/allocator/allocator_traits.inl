@@ -26,10 +26,11 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/allocator/allocator_traits.h>
-#include <thrust/detail/integer_traits.h>
 #include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/type_deduction.h>
 #include <thrust/detail/type_traits/is_call_possible.h>
+
+#include <cuda/std/limits>
 
 #include <new>
 
@@ -138,8 +139,8 @@ public:
 };
 
 template <typename Alloc>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<has_member_allocate_with_hint<Alloc>::value,
-                                             typename allocator_traits<Alloc>::pointer>
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<has_member_allocate_with_hint<Alloc>::value,
+                                           typename allocator_traits<Alloc>::pointer>
 allocate(Alloc& a,
          typename allocator_traits<Alloc>::size_type n,
          typename allocator_traits<Alloc>::const_void_pointer hint)
@@ -148,8 +149,8 @@ allocate(Alloc& a,
 }
 
 template <typename Alloc>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_allocate_with_hint<Alloc>::value,
-                                             typename allocator_traits<Alloc>::pointer>
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!has_member_allocate_with_hint<Alloc>::value,
+                                           typename allocator_traits<Alloc>::pointer>
 allocate(Alloc& a, typename allocator_traits<Alloc>::size_type n, typename allocator_traits<Alloc>::const_void_pointer)
 {
   return a.allocate(n);
@@ -163,14 +164,14 @@ struct has_member_construct1 : has_member_construct1_impl<Alloc, void(T*)>
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<has_member_construct1<Alloc, T>::value> construct(Alloc& a, T* p)
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<has_member_construct1<Alloc, T>::value> construct(Alloc& a, T* p)
 {
   a.construct(p);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_construct1<Alloc, T>::value> construct(Alloc&, T* p)
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!has_member_construct1<Alloc, T>::value> construct(Alloc&, T* p)
 {
   ::new (static_cast<void*>(p)) T();
 }
@@ -183,7 +184,7 @@ struct has_member_construct2 : has_member_construct2_impl<Alloc, void(T*, const 
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T, typename Arg1>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<has_member_construct2<Alloc, T, Arg1>::value>
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<has_member_construct2<Alloc, T, Arg1>::value>
 construct(Alloc& a, T* p, const Arg1& arg1)
 {
   a.construct(p, arg1);
@@ -191,7 +192,7 @@ construct(Alloc& a, T* p, const Arg1& arg1)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T, typename Arg1>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_construct2<Alloc, T, Arg1>::value>
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!has_member_construct2<Alloc, T, Arg1>::value>
 construct(Alloc&, T* p, const Arg1& arg1)
 {
   ::new (static_cast<void*>(p)) T(arg1);
@@ -205,7 +206,7 @@ struct has_member_constructN : has_member_constructN_impl<Alloc, void(T*, Args..
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T, typename... Args>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<has_member_constructN<Alloc, T, Args...>::value>
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<has_member_constructN<Alloc, T, Args...>::value>
 construct(Alloc& a, T* p, Args&&... args)
 {
   a.construct(p, THRUST_FWD(args)...);
@@ -213,7 +214,7 @@ construct(Alloc& a, T* p, Args&&... args)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T, typename... Args>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_constructN<Alloc, T, Args...>::value>
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!has_member_constructN<Alloc, T, Args...>::value>
 construct(Alloc&, T* p, Args&&... args)
 {
   ::new (static_cast<void*>(p)) T(THRUST_FWD(args)...);
@@ -227,14 +228,14 @@ struct has_member_destroy : has_member_destroy_impl<Alloc, void(T*)>
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<has_member_destroy<Alloc, T>::value> destroy(Alloc& a, T* p)
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<has_member_destroy<Alloc, T>::value> destroy(Alloc& a, T* p)
 {
   a.destroy(p);
 }
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename Alloc, typename T>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_destroy<Alloc, T>::value> destroy(Alloc&, T* p)
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!has_member_destroy<Alloc, T>::value> destroy(Alloc&, T* p)
 {
   p->~T();
 }
@@ -252,24 +253,23 @@ public:
 };
 
 template <typename Alloc>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<has_member_max_size<Alloc>::value,
-                                             typename allocator_traits<Alloc>::size_type>
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<has_member_max_size<Alloc>::value, typename allocator_traits<Alloc>::size_type>
 max_size(const Alloc& a)
 {
   return a.max_size();
 }
 
 template <typename Alloc>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_max_size<Alloc>::value,
-                                             typename allocator_traits<Alloc>::size_type>
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!has_member_max_size<Alloc>::value,
+                                           typename allocator_traits<Alloc>::size_type>
 max_size(const Alloc&)
 {
   using size_type = typename allocator_traits<Alloc>::size_type;
-  return thrust::detail::integer_traits<size_type>::const_max;
+  return ::cuda::std::numeric_limits<size_type>::max();
 }
 
 template <typename Alloc>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<has_member_system<Alloc>::value, typename allocator_system<Alloc>::type&>
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<has_member_system<Alloc>::value, typename allocator_system<Alloc>::type&>
 system(Alloc& a)
 {
   // return the allocator's system
@@ -277,7 +277,7 @@ system(Alloc& a)
 }
 
 template <typename Alloc>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!has_member_system<Alloc>::value, typename allocator_system<Alloc>::type>
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!has_member_system<Alloc>::value, typename allocator_system<Alloc>::type>
 system(Alloc&)
 {
   // return a copy of a value-initialized system

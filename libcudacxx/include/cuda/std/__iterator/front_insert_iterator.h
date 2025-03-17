@@ -32,9 +32,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Container>
 class _CCCL_TYPE_VISIBILITY_DEFAULT front_insert_iterator
-#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
-#endif
+#endif // !_LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
   _CCCL_SUPPRESS_DEPRECATED_POP
 
@@ -42,16 +42,16 @@ protected:
   _Container* container;
 
 public:
-  typedef output_iterator_tag iterator_category;
-  typedef void value_type;
+  using iterator_category = output_iterator_tag;
+  using value_type        = void;
 #if _CCCL_STD_VER > 2017
-  typedef ptrdiff_t difference_type;
+  using difference_type = ptrdiff_t;
 #else
-  typedef void difference_type;
+  using difference_type = void;
 #endif
-  typedef void pointer;
-  typedef void reference;
-  typedef _Container container_type;
+  using pointer        = void;
+  using reference      = void;
+  using container_type = _Container;
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit front_insert_iterator(_Container& __x)
       : container(_CUDA_VSTD::addressof(__x))

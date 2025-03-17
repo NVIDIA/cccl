@@ -47,16 +47,13 @@
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
 
-#include <iostream>
-#include <iterator>
+#include <thrust/iterator/iterator_facade.h>
 
 #include <nv/target>
 
-#if (THRUST_VERSION >= 100700)
-// This iterator is compatible with Thrust API 1.7 and newer
-#  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
-#endif // THRUST_VERSION
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -128,19 +125,12 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = T;
 
-#if (THRUST_VERSION >= 100700)
-  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-
   /// The iterator category
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::device_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
     reference>::type;
-#else
-  /// The iterator category
-  using iterator_category = std::random_access_iterator_tag;
-#endif // THRUST_VERSION
 
 private:
   // Largest texture word we can use in device
@@ -165,6 +155,7 @@ public:
       , tex_obj(0)
   {}
 
+#if !_CCCL_COMPILER(NVRTC)
   /**
    * @brief Use this iterator to bind @p ptr with a texture reference
    *
@@ -180,7 +171,7 @@ public:
   template <typename QualifiedT>
   cudaError_t BindTexture(QualifiedT* ptr, size_t bytes, size_t tex_offset = 0)
   {
-    this->ptr        = const_cast<typename std::remove_cv<QualifiedT>::type*>(ptr);
+    this->ptr        = const_cast<std::remove_cv_t<QualifiedT>*>(ptr);
     this->tex_offset = static_cast<difference_type>(tex_offset);
 
     cudaChannelFormatDesc channel_desc = cudaCreateChannelDesc<TextureWord>();
@@ -201,6 +192,7 @@ public:
   {
     return CubDebug(cudaDestroyTextureObject(tex_obj));
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
   /// Postfix increment
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_type operator++(int)
@@ -293,6 +285,7 @@ public:
     return ((ptr != rhs.ptr) || (tex_offset != rhs.tex_offset) || (tex_obj != rhs.tex_obj));
   }
 
+#if !_CCCL_COMPILER(NVRTC)
   /// ostream operator
   friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
   {
@@ -300,6 +293,7 @@ public:
        << " )";
     return os;
   }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 private:
   // This is hoisted out of operator* because #pragma can't be used inside of
@@ -312,7 +306,7 @@ private:
 
     const auto tex_idx_base = tex_offset * TEXTURE_MULTIPLE;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < TEXTURE_MULTIPLE; ++i)
     {
       words[i] = tex1Dfetch<TextureWord>(tex_obj, tex_idx_base + i);

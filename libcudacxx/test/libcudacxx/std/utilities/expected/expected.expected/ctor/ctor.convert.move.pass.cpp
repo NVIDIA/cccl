@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 //  template<class U, class G>
 //    constexpr explicit(see below) expected(expected<U, G>&&);
 //
@@ -74,8 +72,8 @@ static_assert(!canCstrFromExpected<int, NoCtorFromInt, int, int>, "");
 template <class T>
 struct CtorFrom
 {
-  _LIBCUDACXX_TEMPLATE(class T2 = T)
-  _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>) )
+  _CCCL_TEMPLATE(class T2 = T)
+  _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
   __host__ __device__ explicit CtorFrom(int);
   __host__ __device__ explicit CtorFrom(T);
   template <class U>
@@ -100,8 +98,8 @@ static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int> const&
 template <class T>
 struct ConvertFrom
 {
-  _LIBCUDACXX_TEMPLATE(class T2 = T)
-  _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>) )
+  _CCCL_TEMPLATE(class T2 = T)
+  _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
   __host__ __device__ ConvertFrom(int);
   __host__ __device__ ConvertFrom(T);
   template <class U>
@@ -228,9 +226,9 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

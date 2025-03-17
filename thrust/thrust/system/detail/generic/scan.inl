@@ -27,7 +27,6 @@
 #endif // no system header
 #include <thrust/detail/static_assert.h>
 #include <thrust/detail/type_traits.h>
-#include <thrust/detail/type_traits/iterator/is_output_iterator.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/scan.h>
@@ -54,7 +53,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, OutputIterator result)
 {
   // Use the input iterator's value type per https://wg21.link/P0571
-  using ValueType = typename thrust::iterator_value<InputIterator>::type;
+  using ValueType = thrust::detail::it_value_t<InputIterator>;
   return thrust::exclusive_scan(exec, first, last, result, ValueType{});
 } // end exclusive_scan()
 
@@ -74,8 +73,7 @@ template <typename ExecutionPolicy, typename InputIterator, typename OutputItera
 _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
   thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, OutputIterator result, BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
   return result;
 } // end inclusive_scan
 
@@ -83,8 +81,7 @@ template <typename ExecutionPolicy, typename InputIterator, typename OutputItera
 _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>&, InputIterator, InputIterator, OutputIterator result, T, BinaryFunction)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<InputIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<InputIterator, false>::value, "unimplemented for this system");
   return result;
 } // end exclusive_scan()
 

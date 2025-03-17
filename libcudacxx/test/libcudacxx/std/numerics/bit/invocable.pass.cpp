@@ -5,12 +5,12 @@
 // Source Licenses. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03
 
 // Test the ability of each <bit> function to be invoked
 
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #if (defined(__cplusplus) && __cplusplus >= 201703L) || (defined(_MSC_VER) && _MSVC_LANG >= 201703L)
 #  define CPP17_PERFORM_INVOCABLE_TEST
@@ -138,10 +138,10 @@ __host__ __device__ void test_invocable()
   static_assert(!cuda::std::is_invocable_v<L, char16_t>, "");
   static_assert(!cuda::std::is_invocable_v<L, char32_t>, "");
 
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
+#  if _CCCL_HAS_INT128()
   static_assert(cuda::std::is_invocable_v<L, __uint128_t>, "");
   static_assert(!cuda::std::is_invocable_v<L, __int128_t>, "");
-#  endif
+#  endif // _CCCL_HAS_INT128()
 
   static_assert(!cuda::std::is_invocable_v<L, A, unsigned>, "");
   static_assert(!cuda::std::is_invocable_v<L, E1, unsigned>, "");

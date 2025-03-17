@@ -36,14 +36,13 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #  include <cub/util_type.cuh>
 
-#  include <thrust/detail/minmax.h>
 #  include <thrust/detail/mpl/math.h>
 #  include <thrust/detail/temporary_array.h>
 #  include <thrust/distance.h>
@@ -54,6 +53,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 #  include <thrust/type_traits/is_contiguous_iterator.h>
+#  include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
 #  include <cstdint>
 
@@ -89,7 +89,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   using KeysInUnwrapIt    = thrust::try_unwrap_contiguous_iterator_t<KeysInIt>;
   using ValuesInUnwrapIt  = thrust::try_unwrap_contiguous_iterator_t<ValuesInIt>;
   using ValuesOutUnwrapIt = thrust::try_unwrap_contiguous_iterator_t<ValuesOutIt>;
-  using AccumT            = typename thrust::iterator_traits<ValuesInUnwrapIt>::value_type;
+  using AccumT            = thrust::detail::it_value_t<ValuesInUnwrapIt>;
 
   auto keys_unwrap   = thrust::try_unwrap_contiguous_iterator(keys);
   auto values_unwrap = thrust::try_unwrap_contiguous_iterator(values);
@@ -102,7 +102,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     cub::NullType,
-    std::int32_t,
+    std::uint32_t,
     AccumT>;
   using Dispatch64 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     cub::NullType,
-    std::int64_t,
+    std::uint64_t,
     AccumT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -146,7 +146,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -211,7 +211,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     InitValueT,
-    std::int32_t,
+    std::uint32_t,
     InitValueT>;
   using Dispatch64 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -220,7 +220,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     InitValueT,
-    std::int64_t,
+    std::uint64_t,
     InitValueT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
@@ -229,7 +229,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -255,7 +255,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -395,7 +395,7 @@ ValOutputIt _CCCL_HOST_DEVICE exclusive_scan_by_key(
   ValInputIt value_first,
   ValOutputIt value_result)
 {
-  using value_type = typename thrust::iterator_traits<ValInputIt>::value_type;
+  using value_type = thrust::detail::it_value_t<ValInputIt>;
   return cuda_cub::exclusive_scan_by_key(policy, key_first, key_last, value_first, value_result, value_type{});
 }
 

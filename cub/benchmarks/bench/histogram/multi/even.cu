@@ -61,7 +61,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
                            num_active_channels,
                            sample_iterator_t,
                            CounterT,
-                           SampleT,
+                           /* LevelT = */ SampleT,
                            OffsetT>;
 #endif // TUNE_BASE
 
@@ -89,15 +89,10 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   CounterT* d_histogram_g = thrust::raw_pointer_cast(hist_g.data());
   CounterT* d_histogram_b = thrust::raw_pointer_cast(hist_b.data());
 
-  CounterT* d_histogram[num_active_channels] = {d_histogram_r, d_histogram_g, d_histogram_b};
-  int num_levels[num_active_channels]        = {num_levels_r, num_levels_g, num_levels_b};
-  SampleT lower_level[num_active_channels]   = {lower_level_r, lower_level_g, lower_level_b};
-  SampleT upper_level[num_active_channels]   = {upper_level_r, upper_level_g, upper_level_b};
-
   std::uint8_t* d_temp_storage = nullptr;
   std::size_t temp_storage_bytes{};
 
-  cub::Int2Type<sizeof(SampleT) == 1> is_byte_sample;
+  cuda::std::bool_constant<sizeof(SampleT) == 1> is_byte_sample;
   OffsetT num_row_pixels     = static_cast<OffsetT>(elements);
   OffsetT num_rows           = 1;
   OffsetT row_stride_samples = num_row_pixels;
@@ -110,10 +105,10 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
     d_temp_storage,
     temp_storage_bytes,
     d_input,
-    d_histogram,
-    num_levels,
-    lower_level,
-    upper_level,
+    {d_histogram_r, d_histogram_g, d_histogram_b},
+    {num_levels_r, num_levels_g, num_levels_b},
+    {lower_level_r, lower_level_g, lower_level_b},
+    {upper_level_r, upper_level_g, upper_level_b},
     num_row_pixels,
     num_rows,
     row_stride_samples,
@@ -128,10 +123,10 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
       d_temp_storage,
       temp_storage_bytes,
       d_input,
-      d_histogram,
-      num_levels,
-      lower_level,
-      upper_level,
+      {d_histogram_r, d_histogram_g, d_histogram_b},
+      {num_levels_r, num_levels_g, num_levels_b},
+      {lower_level_r, lower_level_g, lower_level_b},
+      {upper_level_r, upper_level_g, upper_level_b},
       num_row_pixels,
       num_rows,
       row_stride_samples,
@@ -140,7 +135,7 @@ static void even(nvbench::state& state, nvbench::type_list<SampleT, CounterT, Of
   });
 }
 
-using bin_types         = nvbench::type_list<int32_t>;
+using counter_types     = nvbench::type_list<int32_t>;
 using some_offset_types = nvbench::type_list<int32_t>;
 
 #ifdef TUNE_SampleT
@@ -149,9 +144,9 @@ using sample_types = nvbench::type_list<TUNE_SampleT>;
 using sample_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t, float, double>;
 #endif // TUNE_SampleT
 
-NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, bin_types, some_offset_types))
+NVBENCH_BENCH_TYPES(even, NVBENCH_TYPE_AXES(sample_types, counter_types, some_offset_types))
   .set_name("base")
-  .set_type_axes_names({"SampleT{ct}", "BinT{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"SampleT{ct}", "CounterT{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_axis("Bins", {32, 128, 2048, 2097152})
   .add_string_axis("Entropy", {"0.201", "1.000"});

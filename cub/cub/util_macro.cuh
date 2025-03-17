@@ -49,55 +49,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-#  define CUB_PREVENT_MACRO_SUBSTITUTION
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u))
-{
-  return t < u ? ::cuda::std::forward<T>(t) : ::cuda::std::forward<U>(u);
-}
-
-template <typename T, typename U>
-constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)
-  -> decltype(t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t))
-{
-  return t < u ? ::cuda::std::forward<U>(u) : ::cuda::std::forward<T>(t);
-}
-#  undef CUB_PREVENT_MACRO_SUBSTITUTION
-#endif
-
-#ifndef CUB_MAX
-/// Select maximum(a, b)
-#  define CUB_MAX(a, b) (((b) > (a)) ? (b) : (a))
-#endif
-
-#ifndef CUB_MIN
-/// Select minimum(a, b)
-#  define CUB_MIN(a, b) (((b) < (a)) ? (b) : (a))
-#endif
-
-#ifndef CUB_QUOTIENT_FLOOR
-/// Quotient of x/y rounded down to nearest integer
-#  define CUB_QUOTIENT_FLOOR(x, y) ((x) / (y))
-#endif
-
-#ifndef CUB_QUOTIENT_CEILING
-/// Quotient of x/y rounded up to nearest integer
-// FIXME(bgruber): the following computation can overflow, use cuda::ceil_div instead
-#  define CUB_QUOTIENT_CEILING(x, y) (((x) + (y) - 1) / (y))
-#endif
-
-#ifndef CUB_ROUND_UP_NEAREST
-/// x rounded up to the nearest multiple of y
-#  define CUB_ROUND_UP_NEAREST(x, y) (CUB_QUOTIENT_CEILING(x, y) * y)
-#endif
-
-#ifndef CUB_ROUND_DOWN_NEAREST
-/// x rounded down to the nearest multiple of y
-#  define CUB_ROUND_DOWN_NEAREST(x, y) (((x) / (y)) * y)
-#endif
-
 #ifndef CUB_DETAIL_KERNEL_ATTRIBUTES
 #  define CUB_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
 #endif
@@ -109,15 +60,25 @@ constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u
 #if !defined(CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
-#  if !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  if !_CCCL_CUDA_COMPILER(NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
-#  endif // !_CCCL_CUDA_COMPILER_NVHPC
-#  if defined(_CCCL_COMPILER_ICC)
-#    pragma nv_diag_suppress 1407 // the "__visibility__" attribute can only appear on functions and
-                                  // variables with external linkage'
-#    pragma warning(disable : 1890) // the "__visibility__" attribute can only appear on functions and
-                                    // variables with external linkage'
-#  endif // _CCCL_COMPILER_ICC
+#  endif // !_CCCL_CUDA_COMPILER(NVHPC)
 #endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
+
+#ifndef CUB_DEFINE_KERNEL_GETTER
+#  define CUB_DEFINE_KERNEL_GETTER(name, ...)                                               \
+    _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr decltype(&__VA_ARGS__) name() \
+    {                                                                                       \
+      return &__VA_ARGS__;                                                                  \
+    }
+#endif
+
+#ifndef CUB_DEFINE_SUB_POLICY_GETTER
+#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                                                                 \
+    CUB_RUNTIME_FUNCTION static constexpr detail::PolicyWrapper<typename StaticPolicyT::name##Policy> name() \
+    {                                                                                                        \
+      return detail::MakePolicyWrapper(typename StaticPolicyT::name##Policy());                              \
+    }
+#endif
 
 CUB_NAMESPACE_END

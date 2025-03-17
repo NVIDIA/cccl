@@ -214,7 +214,7 @@ struct DeathTest
 
 private:
   template <class Func>
-  TEST_NORETURN void RunForChild(Func&& f)
+  [[noreturn]] void RunForChild(Func&& f)
   {
     close(GetStdOutReadFD()); // don't need to read from the pipe in the child.
     close(GetStdErrReadFD());
@@ -312,7 +312,7 @@ private:
   std::string stderr_from_child_;
 };
 
-void std::__libcpp_verbose_abort(char const* format, ...)
+void std::__cccl_verbose_abort(char const* format, ...)
 {
   assert(!GlobalMatcher().empty());
 
@@ -391,12 +391,12 @@ inline bool ExpectDeath(const char* stmt, Func&& func)
     },                                     \
     Matcher)))
 
-#define TEST_LIBCUDACXX_ASSERT_FAILURE(expr, message) \
-  assert((ExpectDeath(                                \
-    #expr,                                            \
-    [&]() {                                           \
-      (void) (expr);                                  \
-    },                                                \
+#define TEST_CCCL_ASSERT_FAILURE(expr, message) \
+  assert((ExpectDeath(                          \
+    #expr,                                      \
+    [&]() {                                     \
+      (void) (expr);                            \
+    },                                          \
     AssertionInfoMatcher(message))))
 
 #endif // TEST_SUPPORT_CHECK_ASSERTION_H

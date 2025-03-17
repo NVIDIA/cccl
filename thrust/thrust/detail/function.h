@@ -39,7 +39,7 @@ struct wrapped_function
 
   _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
-  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE Result operator()(Ts&&... args) const
+  inline _CCCL_HOST_DEVICE Result operator()(Ts&&... args) const
   {
     return static_cast<Result>(m_f(thrust::raw_reference_cast(::cuda::std::forward<Ts>(args))...));
   }

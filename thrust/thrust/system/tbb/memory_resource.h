@@ -62,8 +62,9 @@ using memory_resource = detail::native_resource;
  *  \p mr::new_delete_resource and tags it with \p tbb::universal_pointer.
  */
 using universal_memory_resource = detail::universal_native_resource;
+
 /*! An alias for \p tbb::universal_memory_resource. */
-using universal_host_pinned_memory_resource = detail::native_resource;
+using universal_host_pinned_memory_resource = universal_memory_resource;
 
 /*! \} // memory_resources
  */

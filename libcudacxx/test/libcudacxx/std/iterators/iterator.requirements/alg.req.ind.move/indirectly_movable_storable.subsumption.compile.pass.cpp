@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class In, class Out>
 // concept indirectly_movable_storable;
@@ -28,7 +28,7 @@ __host__ __device__ constexpr bool indirectly_movable_storable_subsumption()
   return true;
 }
 
-static_assert(indirectly_movable_storable_subsumption<int*, int*>());
+static_assert(indirectly_movable_storable_subsumption<int*, int*>(), "");
 
 int main(int, char**)
 {

@@ -3,40 +3,32 @@
 # 3.27.5 is the minimum for MSVC build with RDC=true.
 cmake_minimum_required(VERSION 3.15)
 
-project(CUB LANGUAGES NONE)
-
-# Determine whether CUB is the top-level project or included into
-# another project via add_subdirectory().
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(CUB_TOPLEVEL_PROJECT ON)
-endif ()
-
 # This must be done before any languages are enabled:
-if (CUB_TOPLEVEL_PROJECT)
+if (CCCL_ENABLE_CUB)
   cmake_minimum_required(VERSION 3.21)
 endif()
+
+project(CUB LANGUAGES NONE)
 
 # This must appear before the installation rules, as it is required by the
 # GNUInstallDirs CMake module.
 enable_language(CXX)
 
-option(CUB_ENABLE_INSTALL_RULES "Enable installation of CUB" ${CUB_TOPLEVEL_PROJECT})
-if (CUB_ENABLE_INSTALL_RULES)
-  include(cmake/CubInstallRules.cmake)
-endif()
-
 # Support adding CUB to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
-if (NOT CUB_TOPLEVEL_PROJECT)
+if (NOT CCCL_ENABLE_CUB)
   include(cmake/CubAddSubdir.cmake)
   return()
 endif()
 
 option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)
-option(CUB_ENABLE_BENCHMARKS "Build CUB benchmarking suite." "${CCCL_ENABLE_BENCHMARKS}")
-option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
 option(CUB_ENABLE_EXAMPLES "Build CUB examples." ON)
+
+option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(CUB_ENABLE_TUNING OFF)
+endif()
 
 # This is needed for NVCXX QA, which requires a static set of executable names.
 # Only a single dialect may be enabled when this is off.
@@ -46,19 +38,13 @@ option(CUB_ENABLE_CPP_DIALECT_IN_NAMES
 )
 mark_as_advanced(CUB_ENABLE_CPP_DIALECT_IN_NAMES)
 
-# This option is only used when CUB is built stand-alone; otherwise the Thrust
-# option has the same effect.
-option(CUB_IGNORE_DEPRECATED_API
-  "Suppress warnings about deprecated Thrust/CUB API."
-  OFF
-)
-
 # Check if we're actually building anything before continuing. If not, no need
 # to search for deps, etc. This is a common approach for packagers that just
 # need the install rules. See GH issue NVIDIA/thrust#1211.
 if (NOT (CUB_ENABLE_HEADER_TESTING OR
          CUB_ENABLE_TESTING OR
-         CUB_ENABLE_EXAMPLES))
+         CUB_ENABLE_EXAMPLES OR
+         CCCL_ENABLE_BENCHMARKS))
   return()
 endif()
 
@@ -99,6 +85,6 @@ if (CUB_ENABLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-if (CUB_ENABLE_BENCHMARKS OR CUB_ENABLE_TUNING)
+if (CCCL_ENABLE_BENCHMARKS OR CUB_ENABLE_TUNING)
   add_subdirectory(benchmarks)
 endif()

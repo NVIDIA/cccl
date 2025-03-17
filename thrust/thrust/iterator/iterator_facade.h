@@ -41,10 +41,20 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_traits.h>
-#include <thrust/iterator/detail/distance_from_result.h>
 #include <thrust/iterator/detail/iterator_facade_category.h>
 
 THRUST_NAMESPACE_BEGIN
+
+namespace detail
+{
+// since both arguments are known to be specializations of iterator_facade,
+// it's legal to access IteratorFacade2::difference_type
+template <typename IteratorFacade1, typename IteratorFacade2>
+using distance_from_result =
+  ::cuda::std::_If<::cuda::std::is_convertible_v<IteratorFacade2, IteratorFacade1>,
+                   typename IteratorFacade1::difference_type,
+                   typename IteratorFacade2::difference_type>;
+} // namespace detail
 
 /*! \addtogroup iterators
  *  \{
@@ -182,9 +192,9 @@ class iterator_core_access
             typename Traversal2,
             typename Reference2,
             typename Difference2>
-  inline _CCCL_HOST_DEVICE friend typename thrust::detail::distance_from_result<
+  inline _CCCL_HOST_DEVICE friend detail::distance_from_result<
     iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
-    iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>::type
+    iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>
   operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs);
 
@@ -252,7 +262,7 @@ class iterator_core_access
   }
 
   template <class Facade1, class Facade2>
-  _CCCL_HOST_DEVICE static typename thrust::detail::distance_from_result<Facade1, Facade2>::type
+  _CCCL_HOST_DEVICE static typename detail::distance_from_result<Facade1, Facade2>
   distance_from(Facade1 const& f1, Facade2 const& f2)
   {
     // dispatch the implementation of this method upon whether or not
@@ -306,7 +316,7 @@ template <typename Derived,
           typename System,
           typename Traversal,
           typename Reference,
-          typename Difference = std::ptrdiff_t>
+          typename Difference = ::cuda::std::ptrdiff_t>
 class iterator_facade
 {
 private:
@@ -331,7 +341,7 @@ private:
 public:
   /*! The type of element pointed to by \p iterator_facade.
    */
-  using value_type = ::cuda::std::__remove_const_t<Value>;
+  using value_type = ::cuda::std::remove_const_t<Value>;
 
   /*! The return type of \p iterator_facade::operator*().
    */
@@ -429,7 +439,7 @@ public:
   }
 
   /*! \p operator-= decrements this \p iterator_facade to refer to an element a given distance before its current
-   * postition. \param n The quantity to decrement. \return <tt>*this</tt>
+   * position. \param n The quantity to decrement. \return <tt>*this</tt>
    */
   _CCCL_HOST_DEVICE Derived& operator-=(difference_type n)
   {
@@ -610,9 +620,8 @@ template <typename Derived1,
 inline _CCCL_HOST_DEVICE
 
 // divine the type this operator returns
-typename thrust::detail::distance_from_result<
-  iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
-  iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>::type
+detail::distance_from_result<iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1>,
+                             iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2>>
 
 operator-(iterator_facade<Derived1, Value1, System1, Traversal1, Reference1, Difference1> const& lhs,
           iterator_facade<Derived2, Value2, System2, Traversal2, Reference2, Difference2> const& rhs)

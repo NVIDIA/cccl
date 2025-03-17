@@ -52,30 +52,7 @@ template <>
 struct __is_identity<reference_wrapper<const __identity>> : true_type
 {};
 
-#if _CCCL_STD_VER > 2011
-
-struct identity
-{
-  template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& operator()(_Tp&& __t) const noexcept
-  {
-    return _CUDA_VSTD::forward<_Tp>(__t);
-  }
-
-  using is_transparent = void;
-};
-
-template <>
-struct __is_identity<identity> : true_type
-{};
-template <>
-struct __is_identity<reference_wrapper<identity>> : true_type
-{};
-template <>
-struct __is_identity<reference_wrapper<const identity>> : true_type
-{};
-
-#endif // _CCCL_STD_VER > 2011
+using identity = __identity;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

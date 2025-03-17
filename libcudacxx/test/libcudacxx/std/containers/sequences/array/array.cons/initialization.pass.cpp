@@ -15,11 +15,9 @@
 
 #include "test_macros.h"
 
-TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
-
 struct NoDefault
 {
-  __host__ __device__ TEST_CONSTEXPR NoDefault(int) {}
+  __host__ __device__ constexpr NoDefault(int) {}
 };
 
 // Test default initialization
@@ -47,7 +45,7 @@ struct test_default_initialization
 struct test_nondefault_initialization
 {
   template <typename T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()() const
+  __host__ __device__ constexpr void operator()() const
   {
     // Check direct-list-initialization syntax (introduced in C++11)
     {
@@ -158,7 +156,7 @@ struct test_nondefault_initialization
 };
 
 // Test construction from an initializer-list
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_initializer_list()
+__host__ __device__ constexpr bool test_initializer_list()
 {
   {
     cuda::std::array<double, 3> const a3_0 = {};
@@ -197,32 +195,34 @@ struct Trivial
 };
 struct NonTrivial
 {
-  __host__ __device__ TEST_CONSTEXPR NonTrivial() {}
-  __host__ __device__ TEST_CONSTEXPR NonTrivial(NonTrivial const&) {}
+  __host__ __device__ constexpr NonTrivial() {}
+  __host__ __device__ constexpr NonTrivial(NonTrivial const&) {}
 };
 struct NonEmptyNonTrivial
 {
   int i;
   int j;
-  __host__ __device__ TEST_CONSTEXPR NonEmptyNonTrivial()
+  __host__ __device__ constexpr NonEmptyNonTrivial()
       : i(22)
       , j(33)
   {}
-  __host__ __device__ TEST_CONSTEXPR NonEmptyNonTrivial(NonEmptyNonTrivial const&)
+  __host__ __device__ constexpr NonEmptyNonTrivial(NonEmptyNonTrivial const&)
       : i(22)
       , j(33)
   {}
 };
 
 template <typename F>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool with_all_types()
+__host__ __device__ constexpr bool with_all_types()
 {
   F().template operator()<char>();
   F().template operator()<int>();
   F().template operator()<long>();
   F().template operator()<float>();
   F().template operator()<double>();
+#if _CCCL_HAS_LONG_DOUBLE()
   F().template operator()<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
   F().template operator()<Empty>();
   F().template operator()<Trivial>();
   F().template operator()<NonTrivial>();
@@ -235,10 +235,8 @@ int main(int, char**)
   with_all_types<test_nondefault_initialization>();
   with_all_types<test_default_initialization>(); // not constexpr
   test_initializer_list();
-#if TEST_STD_VER >= 2014
   static_assert(with_all_types<test_nondefault_initialization>(), "");
   static_assert(test_initializer_list(), "");
-#endif
 
   return 0;
 }

@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class year_month_day;
@@ -35,7 +34,7 @@ int main(int, char**)
   using year_month_day_last = cuda::std::chrono::year_month_day_last;
   using year_month_day      = cuda::std::chrono::year_month_day;
 
-  ASSERT_NOEXCEPT(year_month_day{cuda::std::declval<const year_month_day_last>()});
+  static_assert(noexcept(year_month_day{cuda::std::declval<const year_month_day_last>()}));
 
   {
     constexpr year_month_day_last ymdl{year{2019}, month_day_last{month{1}}};

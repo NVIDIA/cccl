@@ -43,6 +43,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -58,14 +60,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE OffsetT
 MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, OffsetT diag, BinaryPred binary_pred)
 {
   OffsetT keys1_begin = diag < keys2_count ? 0 : diag - keys2_count;
-  OffsetT keys1_end   = (cub::min)(diag, keys1_count);
+  OffsetT keys1_end   = (::cuda::std::min)(diag, keys1_count);
 
   while (keys1_begin < keys1_end)
   {
     const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
-    const detail::value_t<KeyIt1> key1 = keys1[mid];
-    const detail::value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
+    const detail::it_value_t<KeyIt1> key1 = keys1[mid];
+    const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
     if (binary_pred(key2, key1))
     {
       keys1_end = mid;
@@ -95,7 +97,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyT key1 = keys_shared[keys1_beg];
   KeyT key2 = keys_shared[keys2_beg];
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
@@ -173,16 +175,16 @@ private:
   static constexpr int ITEMS_PER_TILE = ITEMS_PER_THREAD * NUM_THREADS;
 
   // Whether or not there are values to be trucked along with keys
-  static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   /// Shared memory type required by this thread block
   union _TempStorage
   {
     KeyT keys_shared[ITEMS_PER_TILE + 1];
     ValueT items_shared[ITEMS_PER_TILE + 1];
   }; // union TempStorage
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -374,7 +376,7 @@ public:
       //
       KeyT max_key = oob_default;
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 1; item < ITEMS_PER_THREAD; ++item)
       {
         if (ITEMS_PER_THREAD * linear_tid + item < valid_items)
@@ -406,9 +408,9 @@ public:
 
       Sync();
 
-// store keys in shmem
-//
-#pragma unroll
+      // store keys in shmem
+      //
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ITEMS_PER_THREAD; ++item)
       {
         int idx                       = ITEMS_PER_THREAD * linear_tid + item;
@@ -425,12 +427,12 @@ public:
 
       int thread_idx_in_thread_group_being_merged = mask & linear_tid;
 
-      int diag = (cub::min)(valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
+      int diag = (::cuda::std::min)(valid_items, ITEMS_PER_THREAD * thread_idx_in_thread_group_being_merged);
 
-      int keys1_beg = (cub::min)(valid_items, start);
-      int keys1_end = (cub::min)(valid_items, keys1_beg + size);
+      int keys1_beg = (::cuda::std::min)(valid_items, start);
+      int keys1_end = (::cuda::std::min)(valid_items, keys1_beg + size);
       int keys2_beg = keys1_end;
-      int keys2_end = (cub::min)(valid_items, keys2_beg + size);
+      int keys2_end = (::cuda::std::min)(valid_items, keys2_beg + size);
 
       int keys1_count = keys1_end - keys1_beg;
       int keys2_count = keys2_end - keys2_beg;
@@ -463,9 +465,9 @@ public:
       {
         Sync();
 
-// store keys in shmem
-//
-#pragma unroll
+        // store keys in shmem
+        //
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
           int idx                        = ITEMS_PER_THREAD * linear_tid + item;
@@ -474,9 +476,9 @@ public:
 
         Sync();
 
-// gather items from shmem
-//
-#pragma unroll
+        // gather items from shmem
+        //
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
           items[item] = temp_storage.items_shared[indices[item]];
@@ -760,7 +762,7 @@ public:
 private:
   _CCCL_DEVICE _CCCL_FORCEINLINE void SyncImplementation() const
   {
-    CTA_SYNC();
+    __syncthreads();
   }
 
   friend BlockMergeSortStrategyT;

@@ -10,7 +10,6 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
-// UNSUPPORTED: nvcc-11
 
 // <cuda/barrier>
 
@@ -26,7 +25,7 @@ using barrier = cuda::barrier<cuda::thread_scope_block>;
 namespace cde = cuda::device::experimental;
 
 static constexpr int buf_len = 1024;
-__device__ int gmem_buffer[buf_len];
+__device__ alignas(128) int gmem_buffer[buf_len];
 
 __device__ void test()
 {
@@ -42,7 +41,12 @@ __device__ void test()
 
   // TEST: Add i to buffer[i]
   alignas(16) __shared__ int smem_buffer[buf_len];
+#if _CCCL_CUDA_COMPILER(CLANG)
+  __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   if (threadIdx.x == 0)
   {
     init(&bar, blockDim.x);

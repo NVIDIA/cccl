@@ -38,6 +38,7 @@
 #include <thrust/iterator/reverse_iterator.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/utility>
 
 #include <initializer_list>
 #include <vector>
@@ -189,7 +190,7 @@ public:
    *  \param last The end of the range.
    */
   template <typename InputIterator,
-            ::cuda::std::__enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
+            ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
   vector_base(InputIterator first, InputIterator last);
 
   /*! This constructor builds a vector_base from a range.
@@ -198,7 +199,7 @@ public:
    *  \param alloc The allocator to use by this vector_base.
    */
   template <typename InputIterator,
-            ::cuda::std::__enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
+            ::cuda::std::enable_if_t<::cuda::std::__is_cpp17_input_iterator<InputIterator>::value, int> = 0>
   vector_base(InputIterator first, InputIterator last, const Alloc& alloc);
 
   /*! The destructor erases the elements.
@@ -406,7 +407,12 @@ public:
   /*! This method swaps the contents of this vector_base with another vector_base.
    *  \param v The vector_base with which to swap.
    */
-  void swap(vector_base& v);
+  void swap(vector_base& v)
+  {
+    using ::cuda::std::swap;
+    swap(m_storage, v.m_storage);
+    swap(m_size, v.m_size);
+  }
 
   /*! This method removes the element at position pos.
    *  \param pos The position of the element of interest.
@@ -470,7 +476,7 @@ public:
   void assign(InputIterator first, InputIterator last);
 
   /*! This method returns a copy of this vector's allocator.
-   *  \return A copy of the alloctor used by this vector.
+   *  \return A copy of the allocator used by this vector.
    */
   allocator_type get_allocator() const;
 
@@ -494,12 +500,6 @@ private:
 
   template <typename InputIterator>
   void range_init(InputIterator first, InputIterator last);
-
-  template <typename InputIterator>
-  void range_init(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag);
-
-  template <typename ForwardIterator>
-  void range_init(ForwardIterator first, ForwardIterator last, thrust::random_access_traversal_tag);
 
   void value_init(size_type n);
 
@@ -536,14 +536,6 @@ private:
   template <typename InputIterator>
   void range_assign(InputIterator first, InputIterator last);
 
-  // this method performs assignment from a range of RandomAccessIterators
-  template <typename RandomAccessIterator>
-  void range_assign(RandomAccessIterator first, RandomAccessIterator last, thrust::random_access_traversal_tag);
-
-  // this method performs assignment from a range of InputIterators
-  template <typename InputIterator>
-  void range_assign(InputIterator first, InputIterator last, thrust::incrementable_traversal_tag);
-
   // this method performs assignment from a fill value
   void fill_assign(size_type n, const T& x);
 
@@ -551,18 +543,20 @@ private:
   template <typename ForwardIterator>
   void
   allocate_and_copy(size_type requested_size, ForwardIterator first, ForwardIterator last, storage_type& new_storage);
-}; // end vector_base
 
-/*! This function assigns the contents of vector a to vector b and the
- *  contents of vector b to vector a.
- *
- *  \param a The first vector of interest. After completion, the contents
- *           of b will be returned here.
- *  \param b The second vector of interest. After completion, the contents
- *           of a will be returned here.
- */
-template <typename T, typename Alloc>
-void swap(vector_base<T, Alloc>& a, vector_base<T, Alloc>& b);
+  /*! This function assigns the contents of vector a to vector b and the
+   *  contents of vector b to vector a.
+   *
+   *  \param a The first vector of interest. After completion, the contents
+   *           of b will be returned here.
+   *  \param b The second vector of interest. After completion, the contents
+   *           of a will be returned here.
+   */
+  friend void swap(vector_base& a, vector_base& b) noexcept(noexcept(a.swap(b)))
+  {
+    a.swap(b);
+  }
+}; // end vector_base
 
 /*! This operator allows comparison between two vectors.
  *  \param lhs The first \p vector to compare.

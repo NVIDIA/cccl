@@ -50,7 +50,8 @@
 #include <cub/warp/warp_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
-
+namespace detail
+{
 /**
  * @brief BlockReduceRakingCommutativeOnly provides raking-based methods of parallel reduction
  *        across a CUDA thread block. Does not support non-commutative reduction operators. Does not
@@ -67,11 +68,8 @@ CUB_NAMESPACE_BEGIN
  *
  * @tparam BLOCK_DIM_Z
  *   The thread block length in threads along the Z dimension
- *
- * @tparam LEGACY_PTX_ARCH
- *   The PTX compute capability for which to to specialize this collective
  */
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z, int LEGACY_PTX_ARCH = 0>
+template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
 struct BlockReduceRakingCommutativeOnly
 {
   /// Constants
@@ -83,7 +81,7 @@ struct BlockReduceRakingCommutativeOnly
 
   // The fall-back implementation to use when BLOCK_THREADS is not a multiple of the warp size or not all threads have
   // valid values
-  using FallBack = BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using FallBack = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// Constants
   enum
@@ -98,7 +96,7 @@ struct BlockReduceRakingCommutativeOnly
     RAKING_THREADS = WARP_THREADS,
 
     /// Number of threads actually sharing items with the raking threads
-    SHARING_THREADS = CUB_MAX(1, BLOCK_THREADS - RAKING_THREADS),
+    SHARING_THREADS = _CUDA_VSTD::max(1, BLOCK_THREADS - RAKING_THREADS),
 
     /// Number of raking elements per warp synchronous raking thread
     SEGMENT_LENGTH = SHARING_THREADS / WARP_THREADS,
@@ -167,14 +165,14 @@ struct BlockReduceRakingCommutativeOnly
           partial;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)
       {
         // Raking reduction in grid
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
-        partial           = internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, cub::Sum(), partial);
+        partial           = cub::internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, ::cuda::std::plus<>{}, partial);
 
         // Warp reduction
         partial = WarpReduce(temp_storage.default_storage.warp_storage).Sum(partial);
@@ -214,14 +212,14 @@ struct BlockReduceRakingCommutativeOnly
           partial;
       }
 
-      CTA_SYNC();
+      __syncthreads();
 
       // Reduce parallelism to one warp
       if (linear_tid < RAKING_THREADS)
       {
         // Raking reduction in grid
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
-        partial           = internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, reduction_op, partial);
+        partial           = cub::internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, reduction_op, partial);
 
         // Warp reduction
         partial = WarpReduce(temp_storage.default_storage.warp_storage).Reduce(partial, reduction_op);
@@ -231,5 +229,6 @@ struct BlockReduceRakingCommutativeOnly
     return partial;
   }
 };
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -31,26 +31,26 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _CharT, class _Traits>
 class _CCCL_TYPE_VISIBILITY_DEFAULT ostreambuf_iterator
-#if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
+#if !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
-#endif
+#endif // _LIBCUDACXX_ABI_NO_ITERATOR_BASES
 {
   _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
-  typedef output_iterator_tag iterator_category;
-  typedef void value_type;
+  using iterator_category = output_iterator_tag;
+  using value_type        = void;
 #if _CCCL_STD_VER > 2017
-  typedef ptrdiff_t difference_type;
+  using difference_type = ptrdiff_t;
 #else
-  typedef void difference_type;
+  using difference_type = void;
 #endif
-  typedef void pointer;
-  typedef void reference;
-  typedef _CharT char_type;
-  typedef _Traits traits_type;
-  typedef basic_streambuf<_CharT, _Traits> streambuf_type;
-  typedef basic_ostream<_CharT, _Traits> ostream_type;
+  using pointer        = void;
+  using reference      = void;
+  using char_type      = _CharT;
+  using traits_type    = _Traits;
+  using streambuf_type = basic_streambuf<_CharT, _Traits>;
+  using ostream_type   = basic_ostream<_CharT, _Traits>;
 
 private:
   streambuf_type* __sbuf_;

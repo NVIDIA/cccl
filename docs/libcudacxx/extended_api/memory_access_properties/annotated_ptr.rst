@@ -333,7 +333,7 @@ With ``cuda::annotated_ptr``, the caller can then specify the temporal locality 
    update_template<<<grid, block>>>(x_s, a_p, b_p, N);
    update_template<<<grid, block>>>(y_s, a_p, b_p, N);
 
-   // Infrequent accesses to "a" and "b"; frequent acceses to "z":
+   // Infrequent accesses to "a" and "b"; frequent accesses to "z":
    cuda::annotated_ptr<int const, cuda::access_property::streaming> a_s {a}, b_s{b};
    cuda::annotated_ptr<int, cuda::access_property::persisting> z_p{z};
    update_template<<<grid, block>>>(z_p, a_s, b_s, N);

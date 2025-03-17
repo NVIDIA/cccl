@@ -45,12 +45,12 @@ __host__ __device__ constexpr bool comp(const Tag& rhs, const Tag& lhs)
 }
 
 template <class T, class C>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const T& v, const T& lo, const T& hi, C c, const T& x)
+__host__ __device__ constexpr void test(const T& v, const T& lo, const T& hi, C c, const T& x)
 {
   assert(&cuda::std::clamp(v, lo, hi, c) == &x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     int x = 0;
@@ -133,9 +133,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
 
   return 0;
 }

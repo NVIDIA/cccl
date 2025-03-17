@@ -49,9 +49,6 @@
 #include <cub/block/block_scan.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <iterator>
-#include <type_traits>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -92,6 +89,11 @@ struct AgentUniqueByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
+namespace detail
+{
+namespace unique_by_key
+{
+
 /**
  * @brief AgentUniqueByKey implements a stateful abstraction of CUDA thread blocks for participating
  * in device-wide unique-by-key
@@ -131,8 +133,8 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // The input key and value type
-  using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-  using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
+  using KeyT   = cub::detail::it_value_t<KeyInputIteratorT>;
+  using ValueT = cub::detail::it_value_t<ValueInputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;
@@ -146,20 +148,20 @@ struct AgentUniqueByKey
   };
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for keys
-  using WrappedKeyInputIteratorT = typename std::conditional<
-    std::is_pointer<KeyInputIteratorT>::value,
+  using WrappedKeyInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<KeyInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>, // Wrap the native input pointer
                                                                                        // with
                                                                                        // CacheModifiedValuesInputIterator
-    KeyInputIteratorT>::type; // Directly use the supplied input iterator type
+    KeyInputIteratorT>; // Directly use the supplied input iterator type
 
   // Cache-modified Input iterator wrapper type (for applying cache modifier) for values
-  using WrappedValueInputIteratorT = typename std::conditional<
-    std::is_pointer<ValueInputIteratorT>::value,
+  using WrappedValueInputIteratorT = ::cuda::std::conditional_t<
+    ::cuda::std::is_pointer_v<ValueInputIteratorT>,
     CacheModifiedInputIterator<AgentUniqueByKeyPolicyT::LOAD_MODIFIER, ValueT, OffsetT>, // Wrap the native input
                                                                                          // pointer with
                                                                                          // CacheModifiedValuesInputIterator
-    ValueInputIteratorT>::type; // Directly use the supplied input iterator type
+    ValueInputIteratorT>; // Directly use the supplied input iterator type
 
   // Parameterized BlockLoad type for input data
   using BlockLoadKeys = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentUniqueByKeyPolicyT::LOAD_ALGORITHM>;
@@ -175,7 +177,7 @@ struct AgentUniqueByKey
 
   // Parameterized BlockDiscontinuity type for items
   using DelayConstructorT  = typename AgentUniqueByKeyPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallback = cub::TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+  using TilePrefixCallback = cub::TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, ScanTileStateT, DelayConstructorT>;
 
   // Key exchange type
   using KeyExchangeT = KeyT[ITEMS_PER_TILE];
@@ -275,7 +277,7 @@ struct AgentUniqueByKey
     OffsetT num_selections_prefix,
     OffsetT /*num_selections*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -285,17 +287,17 @@ struct AgentUniqueByKey
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
-// Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
-// types
-#pragma unroll 1
+    // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
+    // types
+    _CCCL_PRAGMA_NOUNROLL()
     for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
       items_out[num_selections_prefix + item] = GetShared(tag)[item];
     }
 
-    CTA_SYNC();
+    __syncthreads();
   }
 
   //---------------------------------------------------------------------
@@ -336,7 +338,7 @@ struct AgentUniqueByKey
       BlockLoadKeys(temp_storage.load_keys).Load(d_keys_in + tile_offset, keys);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
     if (IS_LAST_TILE)
@@ -351,10 +353,11 @@ struct AgentUniqueByKey
       BlockLoadValues(temp_storage.load_values).Load(d_values_in + tile_offset, values);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, keys, inequality_op);
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -364,7 +367,7 @@ struct AgentUniqueByKey
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     OffsetT num_tile_selections   = 0;
     OffsetT num_selections        = 0;
@@ -389,7 +392,7 @@ struct AgentUniqueByKey
     }
     num_selections = num_tile_selections;
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(KeyTagT(),
             d_keys_out,
@@ -401,7 +404,7 @@ struct AgentUniqueByKey
             num_selections_prefix,
             num_selections);
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(ValueTagT(),
             d_values_out,
@@ -453,7 +456,7 @@ struct AgentUniqueByKey
       BlockLoadKeys(temp_storage.load_keys).Load(d_keys_in + tile_offset, keys);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     ValueT values[ITEMS_PER_THREAD];
     if (IS_LAST_TILE)
@@ -468,13 +471,13 @@ struct AgentUniqueByKey
       BlockLoadValues(temp_storage.load_values).Load(d_values_in + tile_offset, values);
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     KeyT tile_predecessor = d_keys_in[tile_offset - 1];
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
       .FlagHeads(selection_flags, keys, inequality_op, tile_predecessor);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -484,13 +487,13 @@ struct AgentUniqueByKey
       }
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     OffsetT num_tile_selections   = 0;
     OffsetT num_selections        = 0;
     OffsetT num_selections_prefix = 0;
 
-    TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+    TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_idx, prefix_cb);
 
     num_selections        = prefix_cb.GetInclusivePrefix();
@@ -504,7 +507,7 @@ struct AgentUniqueByKey
       num_selections -= num_discount;
     }
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(KeyTagT(),
             d_keys_out,
@@ -516,7 +519,7 @@ struct AgentUniqueByKey
             num_selections_prefix,
             num_selections);
 
-    CTA_SYNC();
+    __syncthreads();
 
     Scatter(ValueTagT(),
             d_values_out,
@@ -604,5 +607,8 @@ struct AgentUniqueByKey
     }
   }
 };
+
+} // namespace unique_by_key
+} // namespace detail
 
 CUB_NAMESPACE_END

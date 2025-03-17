@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 // <cuda/std/iterator>
 // template <class C> constexpr auto empty(const C& c) -> decltype(c.empty());       // C++17
 // template <class T, size_t N> constexpr bool empty(const T (&array)[N]) noexcept;  // C++17
@@ -28,9 +26,7 @@
 #include "test_macros.h"
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  if TEST_STD_VER > 2014
-#    include <cuda/std/string_view>
-#  endif
+#  include <cuda/std/string_view>
 #endif
 
 template <typename C>
@@ -56,18 +52,18 @@ __host__ __device__ void test_container(C& c)
 template <typename T>
 __host__ __device__ void test_container(cuda::std::initializer_list<T>& c)
 {
-  ASSERT_NOEXCEPT(cuda::std::empty(c));
+  static_assert(noexcept(cuda::std::empty(c)));
   assert(!cuda::std::empty(c));
 }
 
 template <typename T, size_t Sz>
 __host__ __device__ void test_const_array(const T (&array)[Sz])
 {
-  ASSERT_NOEXCEPT(cuda::std::empty(array));
+  static_assert(noexcept(cuda::std::empty(array)));
   assert(!cuda::std::empty(array));
 }
 
-STATIC_TEST_GLOBAL_VAR TEST_CONSTEXPR_GLOBAL int arrA[]{1, 2, 3};
+TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
 
 int main(int, char**)
 {
@@ -102,11 +98,9 @@ int main(int, char**)
   test_const_container(il);
 
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
-#  if TEST_STD_VER > 2014
   cuda::std::string_view sv{"ABC"};
   test_container(sv);
   test_const_container(sv);
-#  endif
 #endif
 
   test_const_array(arrA);

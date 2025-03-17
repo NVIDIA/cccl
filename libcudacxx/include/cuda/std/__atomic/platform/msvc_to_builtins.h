@@ -21,21 +21,27 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 
 #  include <cuda/std/__atomic/order.h>
+#  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/cassert>
 
 #  include <intrin.h>
+
+// MSVC exposed __iso_volatile intrinsics beginning on 1924 for x86
+#  if _CCCL_COMPILER(MSVC, <, 19, 24)
+#    define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 24)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
 
-#  if defined(_M_ARM) || defined(_M_ARM64)
+#  if _CCCL_ARCH(ARM64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __dmb(0xB) // inner shared data memory barrier
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_MEMORY_BARRIER()
-#  elif defined(_M_IX86) || defined(_M_X64)
+#  elif _CCCL_ARCH(X86_64)
 #    define _LIBCUDACXX_MEMORY_BARRIER()             __faststorefence()
 // x86/x64 hardware only emits memory barriers inside _Interlocked intrinsics
 #    define _LIBCUDACXX_COMPILER_OR_MEMORY_BARRIER() _LIBCUDACXX_COMPILER_BARRIER()
@@ -72,9 +78,9 @@ static inline void __atomic_thread_fence(int __memorder)
 }
 
 template <typename _Type, size_t _Size>
-using _enable_if_sized_as = typename enable_if<sizeof(_Type) == _Size, int>::type;
+using __enable_if_sized_as = enable_if_t<sizeof(_Type) == _Size, int>;
 
-template <class _Type, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
 #  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
@@ -84,7 +90,7 @@ void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 #  endif
   *__ret = reinterpret_cast<_Type&>(__tmp);
 }
-template <class _Type, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 2> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
 #  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
@@ -94,7 +100,7 @@ void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 #  endif
   *__ret = reinterpret_cast<_Type&>(__tmp);
 }
-template <class _Type, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 4> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
 #  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
@@ -104,7 +110,7 @@ void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 #  endif
   *__ret = reinterpret_cast<_Type&>(__tmp);
 }
-template <class _Type, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 8> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
 {
 #  ifdef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
@@ -136,7 +142,7 @@ void __atomic_load(const volatile _Type* __ptr, _Type* __ret, int __memorder)
   }
 }
 
-template <class _Type, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int8*>(__val);
@@ -147,7 +153,7 @@ void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
   __iso_volatile_store8(__d, *__t);
 #  endif
 }
-template <class _Type, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 2> = 0>
 void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int16*>(__val);
@@ -158,7 +164,7 @@ void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
   __iso_volatile_store16(__d, *__t);
 #  endif
 }
-template <class _Type, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 4> = 0>
 void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int32*>(__val);
@@ -170,7 +176,7 @@ void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
   __iso_volatile_store32(__d, *__t);
 #  endif
 }
-template <class _Type, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 8> = 0>
 void __atomic_store_relaxed(volatile _Type* __ptr, _Type* __val)
 {
   auto __t = reinterpret_cast<__int64*>(__val);
@@ -202,7 +208,7 @@ void __atomic_store(volatile _Type* __ptr, _Type* __val, int __memorder)
   }
 }
 
-template <class _Type, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 1> = 0>
 bool __atomic_compare_exchange_relaxed(const volatile _Type* __ptr, _Type* __expected, const _Type* __desired)
 {
   auto __tmp_desired  = reinterpret_cast<const char&>(*__desired);
@@ -215,7 +221,7 @@ bool __atomic_compare_exchange_relaxed(const volatile _Type* __ptr, _Type* __exp
   *__expected = reinterpret_cast<const _Type&>(__old);
   return false;
 }
-template <class _Type, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 2> = 0>
 bool __atomic_compare_exchange_relaxed(const volatile _Type* __ptr, _Type* __expected, const _Type* __desired)
 {
   auto __tmp_desired  = reinterpret_cast<const short&>(*__desired);
@@ -228,7 +234,7 @@ bool __atomic_compare_exchange_relaxed(const volatile _Type* __ptr, _Type* __exp
   *__expected = reinterpret_cast<const _Type&>(__old);
   return false;
 }
-template <class _Type, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 4> = 0>
 bool __atomic_compare_exchange_relaxed(const volatile _Type* __ptr, _Type* __expected, const _Type* __desired)
 {
   auto __tmp_desired  = reinterpret_cast<const long&>(*__desired);
@@ -241,7 +247,7 @@ bool __atomic_compare_exchange_relaxed(const volatile _Type* __ptr, _Type* __exp
   *__expected = reinterpret_cast<const _Type&>(__old);
   return false;
 }
-template <class _Type, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 8> = 0>
 bool __atomic_compare_exchange_relaxed(const volatile _Type* __ptr, _Type* __expected, const _Type* __desired)
 {
   auto __tmp_desired  = reinterpret_cast<const __int64&>(*__desired);
@@ -287,25 +293,25 @@ bool __atomic_compare_exchange(
   return success;
 }
 
-template <class _Type, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_exchange_relaxed(const volatile _Type* __ptr, const _Type* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchange8((volatile char*) __ptr, reinterpret_cast<char const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 2> = 0>
 void __atomic_exchange_relaxed(const volatile _Type* __ptr, const _Type* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchange16((volatile short*) __ptr, reinterpret_cast<short const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 4> = 0>
 void __atomic_exchange_relaxed(const volatile _Type* __ptr, const _Type* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchange((volatile long*) __ptr, reinterpret_cast<long const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, __enable_if_sized_as<_Type, 8> = 0>
 void __atomic_exchange_relaxed(const volatile _Type* __ptr, const _Type* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchange64((volatile __int64*) __ptr, reinterpret_cast<__int64 const&>(*__val));
@@ -341,25 +347,25 @@ void __atomic_exchange(_Type volatile* __ptr, const _Type* __val, _Type* __ret, 
   }
 }
 
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_fetch_add_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchangeAdd8((volatile char*) __ptr, reinterpret_cast<char const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 2> = 0>
 void __atomic_fetch_add_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchangeAdd16((volatile short*) __ptr, reinterpret_cast<short const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 4> = 0>
 void __atomic_fetch_add_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchangeAdd((volatile long*) __ptr, reinterpret_cast<long const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 8> = 0>
 void __atomic_fetch_add_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedExchangeAdd64((volatile __int64*) __ptr, reinterpret_cast<__int64 const&>(*__val));
@@ -404,25 +410,25 @@ _Type __atomic_fetch_sub(_Type volatile* __ptr, _Delta __val, int __memorder)
   return __atomic_fetch_add(__ptr, 0 - __val, __memorder);
 }
 
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_fetch_and_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedAnd8((volatile char*) __ptr, reinterpret_cast<char const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 2> = 0>
 void __atomic_fetch_and_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedAnd16((volatile short*) __ptr, reinterpret_cast<short const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 4> = 0>
 void __atomic_fetch_and_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedAnd((volatile long*) __ptr, reinterpret_cast<long const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 8> = 0>
 void __atomic_fetch_and_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedAnd64((volatile __int64*) __ptr, reinterpret_cast<__int64 const&>(*__val));
@@ -462,25 +468,25 @@ _Type __atomic_fetch_and(_Type volatile* __ptr, _Delta __val, int __memorder)
   return *__dest;
 }
 
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_fetch_xor_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedXor8((volatile char*) __ptr, reinterpret_cast<char const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 2> = 0>
 void __atomic_fetch_xor_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedXor16((volatile short*) __ptr, reinterpret_cast<short const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 4> = 0>
 void __atomic_fetch_xor_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedXor((volatile long*) __ptr, reinterpret_cast<long const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 8> = 0>
 void __atomic_fetch_xor_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedXor64((volatile __int64*) __ptr, reinterpret_cast<__int64 const&>(*__val));
@@ -520,25 +526,25 @@ _Type __atomic_fetch_xor(_Type volatile* __ptr, _Delta __val, int __memorder)
   return *__dest;
 }
 
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 1> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_fetch_or_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedOr8((volatile char*) __ptr, reinterpret_cast<char const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 2> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 2> = 0>
 void __atomic_fetch_or_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedOr16((volatile short*) __ptr, reinterpret_cast<short const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 4> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 4> = 0>
 void __atomic_fetch_or_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedOr((volatile long*) __ptr, reinterpret_cast<long const&>(*__val));
   *__ret           = reinterpret_cast<_Type const&>(__old);
 }
-template <class _Type, class _Delta, _enable_if_sized_as<_Type, 8> = 0>
+template <class _Type, class _Delta, __enable_if_sized_as<_Type, 8> = 0>
 void __atomic_fetch_or_relaxed(const volatile _Type* __ptr, const _Delta* __val, _Type* __ret)
 {
   auto const __old = _InterlockedOr64((volatile __int64*) __ptr, reinterpret_cast<__int64 const&>(*__val));
@@ -637,6 +643,8 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(_CCCL_COMPILER_MSVC)
+#  undef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+
+#endif // _CCCL_COMPILER(MSVC)
 
 #endif // __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H

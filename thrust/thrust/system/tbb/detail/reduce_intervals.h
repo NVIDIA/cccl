@@ -25,12 +25,13 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/minmax.h>
 #include <thrust/detail/seq.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/cpp/memory.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
+
+#include <cuda/std/__algorithm/min.h>
 
 #include <cassert>
 #include <type_traits>
@@ -76,7 +77,7 @@ struct body
     Size interval_idx = r.begin();
 
     Size offset_to_first = interval_size * interval_idx;
-    Size offset_to_last  = (thrust::min)(n, offset_to_first + interval_size);
+    Size offset_to_last  = (::cuda::std::min)(n, offset_to_first + interval_size);
 
     RandomAccessIterator1 my_first = first + offset_to_first;
     RandomAccessIterator1 my_last  = first + offset_to_last;
@@ -111,7 +112,7 @@ void reduce_intervals(
   RandomAccessIterator2 result,
   BinaryFunction binary_op)
 {
-  typename thrust::iterator_difference<RandomAccessIterator1>::type n = last - first;
+  thrust::detail::it_difference_t<RandomAccessIterator1> n = last - first;
 
   Size num_intervals = reduce_intervals_detail::divide_ri(n, interval_size);
 
@@ -128,7 +129,7 @@ void reduce_intervals(
   Size interval_size,
   RandomAccessIterator2 result)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   return thrust::system::tbb::detail::reduce_intervals(
     exec, first, last, interval_size, result, thrust::plus<value_type>());

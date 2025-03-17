@@ -1,0 +1,132 @@
+name: "Branch Version Update"
+description: "Creates a PR to update the version of a specific branch."
+
+# The target branch when starting this workflow should be:
+#   "branch/{major}.{minor}.x" if it exists, or "main"
+
+inputs:
+  new_version:
+    description: "Version 'X.Y.Z' for the release branch."
+    type: string
+    required: true
+    default: "0.0.0"
+  target_branch:
+    description: "Target branch for the version update"
+    type: string
+    required: false
+    default: "main"
+  force:
+    description: "Enable overwriting existing PR branches (this does not force overwrite the target branch or skip creating a PR)"
+    type: boolean
+    required: true
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+
+    - name: Checkout the repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ inputs.target_branch }}
+
+    - name: Prepare environment
+      id: prepare-env
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        log_and_export_vars() {
+          for var in "$@"; do
+            printf "%-15s %s\n" "$var:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
+            echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+          done
+        }
+
+        full_version=${{ inputs.new_version }}
+        major_version=$(echo ${full_version} | cut -d. -f1)
+        minor_version=$(echo ${full_version} | cut -d. -f2)
+        patch_version=$(echo ${full_version} | cut -d. -f3)
+        branch_name=${{ inputs.target_branch }}
+        enable_force_push="${{ inputs.force }}"
+        pr_title="[Version] Update ${branch_name} to v${full_version}"
+        pr_body="Bump ${branch_name} to ${full_version}."
+        pr_branch="pr/ver/${branch_name}-v${full_version}"
+
+        log_and_export_vars \
+          full_version major_version minor_version patch_version \
+          branch_name pr_title pr_branch pr_body enable_force_push
+
+        echo "Branch ref: $GITHUB_REF" | tee -a $GITHUB_STEP_SUMMARY
+        echo "Branch SHA: $GITHUB_SHA" | tee -a $GITHUB_STEP_SUMMARY
+        echo "Branch commit: $(git show --oneline --no-patch ${GITHUB_SHA})" | tee -a $GITHUB_STEP_SUMMARY
+
+    - name: Verify environment
+      id: verify-env
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        # Target branch must already exist
+        if ! git ls-remote --exit-code origin ${branch_name}; then
+          echo "  Target branch must already exist" | tee -a $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+
+        #Ensure that target branch version is compatible.
+        if [[ "${branch_name}" =~ ^branch/[0-9]+\.[0-9]+\.x$ ]]; then
+          branch_version=$(echo ${branch_name} | cut -d/ -f1 --complement)
+          branch_major=$(echo ${branch_version} | cut -d. -f1)
+          branch_minor=$(echo ${branch_version} | cut -d. -f2)
+          if [ "${branch_major}" != "${major_version}" ]; then
+            echo "  Target branch major version mismatch"
+            exit 1
+          fi;
+          if [ "${branch_minor}" != "${minor_version}" ]; then
+            echo "  Target branch minor version mismatch"
+            exit 1
+          fi
+        fi
+
+        # PR branch must *not* exist
+        if [ "${enable_force_push}" == "false" ]; then
+          if git ls-remote --exit-code origin ${pr_branch}; then
+            echo "  PR branch cannot already exist - Delete branch and retry workflow or enable 'force'" | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+        fi
+
+        if [[ ! $full_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "Invalid version number: $full_version"
+          exit 1
+        fi
+
+    - name: Update version numbers in target branch
+      id: create-pr-branch
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        git checkout -b ${pr_branch}
+        echo "::group::Running update_version.sh"
+        ./ci/update_version.sh ${major_version} ${minor_version} ${patch_version}
+        echo "::endgroup::"
+
+        if ! git diff --quiet; then
+          echo "::group::Diff"
+          git diff
+          echo "::endgroup::"
+
+          git add .
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "${pr_body}"
+
+          # Push the changes to the release branch:
+          git push --force origin ${pr_branch}
+        fi
+
+    - name: Create pull request for target branch
+      id: create-pr
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        gh pr create \
+            -B "${branch_name}" \
+            -b "${pr_body}" \
+            -t "${pr_title}" \
+            -H "${pr_branch}"

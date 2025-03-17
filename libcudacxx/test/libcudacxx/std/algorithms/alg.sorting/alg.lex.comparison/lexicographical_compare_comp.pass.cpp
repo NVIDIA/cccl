@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]          = {1, 2, 3, 4};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -38,7 +38,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(cuda::std::lexicographical_compare(Iter1(ib + 1), Iter1(ib + 3), Iter2(ia), Iter2(ia + sa), c));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<const int*>>();
@@ -76,9 +76,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

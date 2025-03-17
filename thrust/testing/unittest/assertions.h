@@ -106,7 +106,7 @@ double const DEFAULT_ABSOLUTE_TOL = 1e-4;
 template <typename T>
 struct value_type
 {
-  using type = ::cuda::std::__remove_const_t<::cuda::std::__libcpp_remove_reference_t<T>>;
+  using type = ::cuda::std::remove_const_t<::cuda::std::remove_reference_t<T>>;
 };
 
 template <typename T>
@@ -297,7 +297,7 @@ void assert_gequal(char a, char b, const std::string& filename = "unknown", int 
   }
 }
 
-// will catch everything implicitly convertable to a double
+// will catch everything implicitly convertible to a double
 bool almost_equal(double a, double b, double a_tol, double r_tol)
 {
   if (std::abs(a - b) > r_tol * (std::abs(a) + std::abs(b)) + a_tol)
@@ -328,7 +328,7 @@ struct is_complex<std::complex<T>> : public THRUST_NS_QUALIFIER::true_type
 } // namespace
 
 template <typename T1, typename T2>
-inline ::cuda::std::__enable_if_t<is_complex<T1>::value && is_complex<T2>::value, bool>
+inline ::cuda::std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value, bool>
 almost_equal(const T1& a, const T2& b, double a_tol, double r_tol)
 {
   return almost_equal(a.real(), b.real(), a_tol, r_tol) && almost_equal(a.imag(), b.imag(), a_tol, r_tol);
@@ -409,8 +409,8 @@ void assert_equal(
   const std::string& filename = "unknown",
   int lineno                  = -1)
 {
-  using difference_type = typename THRUST_NS_QUALIFIER::iterator_difference<ForwardIterator1>::type;
-  using InputType       = typename THRUST_NS_QUALIFIER::iterator_value<ForwardIterator1>::type;
+  using difference_type = THRUST_NS_QUALIFIER::detail::it_difference_t<ForwardIterator1>;
+  using InputType       = THRUST_NS_QUALIFIER::detail::it_value_t<ForwardIterator1>;
 
   bool failure = false;
 
@@ -486,7 +486,7 @@ void assert_equal(
   const std::string& filename = "unknown",
   int lineno                  = -1)
 {
-  using InputType = typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type;
+  using InputType = typename ::cuda::std::iterator_traits<ForwardIterator1>::value_type;
   assert_equal(first1, last1, first2, last2, THRUST_NS_QUALIFIER::equal_to<InputType>(), filename, lineno);
 }
 
@@ -501,7 +501,7 @@ void assert_almost_equal(
   const double a_tol          = DEFAULT_ABSOLUTE_TOL,
   const double r_tol          = DEFAULT_RELATIVE_TOL)
 {
-  using InputType = typename THRUST_NS_QUALIFIER::iterator_traits<ForwardIterator1>::value_type;
+  using InputType = typename ::cuda::std::iterator_traits<ForwardIterator1>::value_type;
   assert_equal(first1, last1, first2, last2, almost_equal_to<InputType>(a_tol, r_tol), filename, lineno);
 }
 

@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // Older Clangs do not support the C++20 feature to constrain destructors
 
 // template<class U, class... Args>
@@ -53,11 +51,8 @@ template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                             requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
-
-template <class T, class... Args>
-constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+_CCCL_CONCEPT ImplicitlyConstructible = _CCCL_REQUIRES_EXPR((T, variadic Args), T t, Args&&... args)(
+  (conversion_test<T>({cuda::std::forward<Args>(args)...})));
 static_assert(ImplicitlyConstructible<int, int>, "");
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
@@ -73,8 +68,8 @@ struct Data
   int vec_[N] = {};
   cuda::std::tuple<Ts...> tuple_;
 
-  _LIBCUDACXX_TEMPLATE(class... Us)
-  _LIBCUDACXX_REQUIRES(cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
+  _CCCL_TEMPLATE(class... Us)
+  _CCCL_REQUIRES(cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
   __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us)
       : tuple_(cuda::std::forward<Us>(us)...)
   {
@@ -165,11 +160,9 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-#if defined(_LIBCUDACXX_ADDRESSOF)
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test(), "");
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif // defined(_LIBCUDACXX_ADDRESSOF)
+#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

@@ -18,9 +18,9 @@
 
 #include "test_macros.h"
 #include <cmpxchg_loop.h>
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 template <class A, class T, template <typename, typename> class Selector>
@@ -82,10 +82,9 @@ __host__ __device__ __noinline__ void test()
   do_test<A, T, Selector>();
 }
 
-template <template <typename, cuda::thread_scope> typename Atomic,
+template <template <typename, cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
-          template <typename, typename>
-          class Selector>
+          template <typename, typename> class Selector>
 __host__ __device__ void test_for_all_types()
 {
   test<Atomic<float, Scope>, float, Selector>();

@@ -78,8 +78,7 @@ constexpr bool has_value_member(long)
 
 // Assert that an 'any' object stores the specified 'Type' and 'value'.
 template <class Type>
-std::enable_if_t<has_value_member<Type>(0)>
-  _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST assertContains(std::any const& a, int value)
+std::enable_if_t<has_value_member<Type>(0)> assertContains(std::any const& a, int value)
 {
   assert(a.has_value());
   assert(containsType<Type>(a));
@@ -87,8 +86,7 @@ std::enable_if_t<has_value_member<Type>(0)>
 }
 
 template <class Type, class Value>
-std::enable_if_t<!has_value_member<Type>(0)>
-  _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST assertContains(std::any const& a, Value value)
+std::enable_if_t<!has_value_member<Type>(0)> assertContains(std::any const& a, Value value)
 {
   assert(a.has_value());
   assert(containsType<Type>(a));
@@ -98,7 +96,7 @@ std::enable_if_t<!has_value_member<Type>(0)>
 // Modify the value of a "test type" stored within an any to the specified
 // 'value'.
 template <class Type>
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST void modifyValue(std::any& a, int value)
+void modifyValue(std::any& a, int value)
 {
   using namespace std;
   using namespace std::experimental;

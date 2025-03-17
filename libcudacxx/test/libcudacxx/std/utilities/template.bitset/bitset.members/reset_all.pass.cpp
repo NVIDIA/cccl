@@ -14,26 +14,23 @@
 
 #include "test_macros.h"
 
-_CCCL_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_reset_all()
+__host__ __device__ constexpr void test_reset_all()
 {
   cuda::std::bitset<N> v;
   v.set();
   v.reset();
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186)
   for (cuda::std::size_t i = 0; i < v.size(); ++i)
   {
-    _CCCL_DIAG_POP
     {
       assert(!v[i]);
     }
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_reset_all<0>();
   test_reset_all<1>();
@@ -51,9 +48,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

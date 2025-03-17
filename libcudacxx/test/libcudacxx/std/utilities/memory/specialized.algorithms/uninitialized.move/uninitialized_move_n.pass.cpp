@@ -13,16 +13,16 @@
 // template <class InputIt, class Size, class ForwardIt>
 // pair<InputIt, ForwardIt> uninitialized_move_n(InputIt, Size, ForwardIt);
 
-#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
+#include <cuda/std/memory>
 
 #include "../overload_compare_iterator.h"
 #include "test_iterators.h"
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR int Counted_count       = 0;
-STATIC_TEST_GLOBAL_VAR int Counted_constructed = 0;
+TEST_GLOBAL_VARIABLE int Counted_count       = 0;
+TEST_GLOBAL_VARIABLE int Counted_constructed = 0;
 struct Counted
 {
   __host__ __device__ static void reset()

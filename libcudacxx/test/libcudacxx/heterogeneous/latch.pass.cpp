@@ -11,8 +11,8 @@
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
 
+#include <cuda/latch>
 #include <cuda/std/cassert>
-#include <cuda/std/latch>
 
 #include "helpers.h"
 

@@ -6,30 +6,28 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
-
 // <utility>
 
 // template<class T, class U>
-//   constexpr bool cmp_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_not_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_not_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_less(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_less(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_less_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_less_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_greater(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_greater(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_greater_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_greater_equal(T t, U u) noexcept;
 
 // template<class R, class T>
-//   constexpr bool in_range(T t) noexcept;      // C++20
+//   constexpr bool in_range(T t) noexcept;
 
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>
@@ -92,7 +90,7 @@ __host__ __device__ constexpr void test()
   cuda::std::in_range<T>(int()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
   cuda::std::in_range<int>(T()); // expected-error 10-11 {{no matching function for call to 'in_range'}}
 }
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _LIBCUDACXX_HAS_CHAR8_T()
 template <class T>
 __host__ __device__ constexpr void test_char8t()
 {
@@ -117,7 +115,7 @@ __host__ __device__ constexpr void test_char8t()
   cuda::std::in_range<T>(int()); // expected-error 1 {{no matching function for call to 'in_range'}}
   cuda::std::in_range<int>(T()); // expected-error 1 {{no matching function for call to 'in_range'}}
 }
-#endif // TEST_HAS_NO_CHAR8_T
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
 
 template <class T>
 __host__ __device__ constexpr void test_uchars()
@@ -160,9 +158,9 @@ int main(int, char**)
   test<cuda::std::nullptr_t>();
   test<EmptyT>();
 
-#ifndef TEST_HAS_NO_CHAR8_T
+#if _LIBCUDACXX_HAS_CHAR8_T()
   test_char8t<char8_t>();
-#endif // TEST_HAS_NO_CHAR8_T
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
 
   test_uchars<char16_t>();
   test_uchars<char32_t>();

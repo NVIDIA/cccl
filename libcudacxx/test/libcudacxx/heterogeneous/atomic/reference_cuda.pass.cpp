@@ -175,19 +175,14 @@ using bitwise_atomic_testers =
 
 void kernel_invoker()
 {
-// todo
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
   validate_pinned<signed char, arithmetic_atomic_testers>();
   validate_pinned<signed short, arithmetic_atomic_testers>();
-#endif
   validate_pinned<signed int, arithmetic_atomic_testers>();
   validate_pinned<signed long, arithmetic_atomic_testers>();
   validate_pinned<signed long long, arithmetic_atomic_testers>();
 
-#ifdef _LIBCUDACXX_ATOMIC_REF_SUPPORTS_SMALL_INTEGRAL
   validate_pinned<unsigned char, bitwise_atomic_testers>();
   validate_pinned<unsigned short, bitwise_atomic_testers>();
-#endif
   validate_pinned<unsigned int, bitwise_atomic_testers>();
   validate_pinned<unsigned long, bitwise_atomic_testers>();
   validate_pinned<unsigned long long, bitwise_atomic_testers>();

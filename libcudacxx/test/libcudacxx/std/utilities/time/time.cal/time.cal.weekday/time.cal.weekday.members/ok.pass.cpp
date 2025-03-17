@@ -5,7 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03, c++11
 
 // <chrono>
 // class weekday;
@@ -23,8 +22,8 @@ int main(int, char**)
 {
   using weekday = cuda::std::chrono::weekday;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const weekday>().ok());
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const weekday>().ok()));
+  static_assert(noexcept(cuda::std::declval<const weekday>().ok()));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const weekday>().ok())>);
 
   static_assert(weekday{0}.ok(), "");
   static_assert(weekday{1}.ok(), "");

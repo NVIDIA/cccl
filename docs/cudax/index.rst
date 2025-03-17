@@ -5,10 +5,11 @@ CUDA Experimental
 
 .. toctree::
    :hidden:
-   :maxdepth: 3
+   :maxdepth: 1
 
    container
    memory_resource
+   stf
    ${repo_docs_api_path}/cudax_api
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
@@ -19,6 +20,7 @@ Specifically, ``cudax`` provides:
    - :ref:`an owning type erased memory resource <cudax-memory-resource-any-async-resource>`
    - :ref:`stream-ordered memory resources <cudax-memory-resource-async>`
    - dimensions description functionality
+   - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`
 
 Stability Guarantees
 ---------------------

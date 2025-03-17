@@ -180,6 +180,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type* __ptr, _Type& __
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   const __proxy_t* __ptr_proxy = reinterpret_cast<const __proxy_t*>(__ptr);
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  if (__cuda_load_weak_if_local(__ptr_proxy, __dst_proxy, sizeof(__proxy_t))) {{return;}}
   __cuda_atomic_bind_load<__proxy_t, __proxy_tag, _Sco, __atomic_cuda_mmio_disable> __bound_load{__ptr_proxy, __dst_proxy};
   __cuda_atomic_load_memory_order_dispatch(__bound_load, __memorder, _Sco{});
 }
@@ -190,6 +191,7 @@ static inline _CCCL_DEVICE void __atomic_load_cuda(const _Type volatile* __ptr, 
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   const __proxy_t* __ptr_proxy = reinterpret_cast<const __proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __dst_proxy = reinterpret_cast<__proxy_t*>(&__dst);
+  if (__cuda_load_weak_if_local(__ptr_proxy, __dst_proxy, sizeof(__proxy_t))) {{return;}}
   __cuda_atomic_bind_load<__proxy_t, __proxy_tag, _Sco, __atomic_cuda_mmio_disable> __bound_load{__ptr_proxy, __dst_proxy};
   __cuda_atomic_load_memory_order_dispatch(__bound_load, __memorder, _Sco{});
 }
@@ -334,6 +336,7 @@ static inline _CCCL_DEVICE void __atomic_store_cuda(_Type* __ptr, _Type& __val, 
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(__ptr);
   __proxy_t* __val_proxy = reinterpret_cast<__proxy_t*>(&__val);
+  if (__cuda_store_weak_if_local(__ptr_proxy, __val_proxy, sizeof(__proxy_t))) {{return;}}
   __cuda_atomic_bind_store<__proxy_t, __proxy_tag, _Sco, __atomic_cuda_mmio_disable> __bound_store{__ptr_proxy, __val_proxy};
   __cuda_atomic_store_memory_order_dispatch(__bound_store, __memorder, _Sco{});
 }
@@ -344,6 +347,7 @@ static inline _CCCL_DEVICE void __atomic_store_cuda(volatile _Type* __ptr, _Type
   using __proxy_tag      = typename __atomic_cuda_deduce_bitwise<_Type>::__tag;
   __proxy_t* __ptr_proxy = reinterpret_cast<__proxy_t*>(const_cast<_Type*>(__ptr));
   __proxy_t* __val_proxy = reinterpret_cast<__proxy_t*>(&__val);
+  if (__cuda_store_weak_if_local(__ptr_proxy, __val_proxy, sizeof(__proxy_t))) {{return;}}
   __cuda_atomic_bind_store<__proxy_t, __proxy_tag, _Sco, __atomic_cuda_mmio_disable> __bound_store{__ptr_proxy, __val_proxy};
   __cuda_atomic_store_memory_order_dispatch(__bound_store, __memorder, _Sco{});
 }

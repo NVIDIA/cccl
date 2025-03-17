@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03
-
 // <algorithm>
 
 // template<class T, class Compare>
@@ -33,20 +31,18 @@ struct all_equal
   } // everything is equal
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_all_equal(cuda::std::initializer_list<int> il)
+__host__ __device__ constexpr void test_all_equal(cuda::std::initializer_list<int> il)
 {
   binary_counting_predicate<all_equal, int, int> pred(all_equal{});
   cuda::std::pair<int, int> p = cuda::std::minmax(il, pred);
   const int* ptr              = il.end();
   assert(p.first == *il.begin());
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && TEST_STD_VER == 2011 // strange miscompilation
   assert(p.second == *--ptr);
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && TEST_STD_VER == 2011
   assert(pred.count() <= ((3 * il.size()) / 2));
   unused(ptr);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   assert((cuda::std::minmax({1, 2, 3}, cuda::std::greater<int>()) == cuda::std::pair<int, int>(3, 1)));
   assert((cuda::std::minmax({1, 3, 2}, cuda::std::greater<int>()) == cuda::std::pair<int, int>(3, 1)));
@@ -79,9 +75,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

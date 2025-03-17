@@ -130,7 +130,7 @@ public:
 
   /*! This constructor initializes a new \p discard_block_engine with a given seed.
    *
-   *  \param s The seed used to intialize this \p discard_block_engine's adapted base engine.
+   *  \param s The seed used to initialize this \p discard_block_engine's adapted base engine.
    */
   _CCCL_HOST_DEVICE explicit discard_block_engine(result_type s);
 
@@ -142,7 +142,7 @@ public:
   /*! This method initializes the state of this \p discard_block_engine's adapted base engine
    *  by using the given seed.
    *
-   *  \param s The seed with which to intialize this \p discard_block_engine's adapted base engine.
+   *  \param s The seed with which to initialize this \p discard_block_engine's adapted base engine.
    */
   _CCCL_HOST_DEVICE void seed(result_type s);
 

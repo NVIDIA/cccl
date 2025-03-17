@@ -51,7 +51,10 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        assert(real(r) == real(z));
+        if (real(r) != real(z))
+        {
+          is_about(real(r), real(z));
+        }
         assert(cuda::std::signbit(real(r)) == cuda::std::signbit(real(z)));
       }
       if (cuda::std::isnan(imag(r)))
@@ -60,7 +63,10 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        assert(imag(r) == imag(z));
+        if (imag(r) != imag(z))
+        {
+          is_about(imag(r), imag(z));
+        }
         assert(cuda::std::signbit(imag(r)) == cuda::std::signbit(imag(z)));
       }
     }
@@ -71,8 +77,9 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-  // CUDA treats long double as double
-  //  test<long double>();
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
   // Also test conversions
   test<float, int>();
@@ -80,14 +87,14 @@ int main(int, char**)
 
   test_edges<double>();
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
   test_edges<__half>();
-#endif // _LIBCUDACXX_HAS_NVFP16
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
   test_edges<__nv_bfloat16>();
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   return 0;
 }

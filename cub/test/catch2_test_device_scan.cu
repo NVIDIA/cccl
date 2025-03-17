@@ -32,11 +32,11 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
@@ -64,12 +64,12 @@ using full_type_list = c2h::type_list<type_pair<uchar3>, type_pair<ulonglong4>>;
 // clang-format off
 using full_type_list = c2h::type_list<
 type_pair<custom_t>
-#if TEST_HALF_T
+#if TEST_HALF_T()
 , type_pair<half_t> // testing half
-#endif
-#if TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
 , type_pair<bfloat16_t> // testing bf16
-#endif
+#endif // TEST_BF_T()
 >;
 // clang-format on
 #endif
@@ -85,7 +85,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
+C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;
@@ -110,7 +110,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   c2h::device_vector<input_t> in_items(num_items);
   if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
   {
-    c2h::gen(CUB_SEED(2), in_items);
+    c2h::gen(C2H_SEED(2), in_items);
   }
   else
   {
@@ -126,7 +126,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 #if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
@@ -143,7 +143,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -154,7 +154,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive sum")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
@@ -171,7 +171,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_sum(d_in_it, d_in_it, num_items);
 
@@ -183,14 +183,18 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan")
   {
-    using op_t    = cub::Min;
+    using op_t    = ::cuda::minimum<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
     c2h::host_vector<input_t> host_items(in_items);
     c2h::host_vector<output_t> expected_result(num_items);
     compute_inclusive_scan_reference(
-      host_items.cbegin(), host_items.cend(), expected_result.begin(), op_t{}, cub::NumericTraits<accum_t>::Max());
+      host_items.cbegin(),
+      host_items.cend(),
+      expected_result.begin(),
+      op_t{},
+      ::cuda::std::numeric_limits<accum_t>::max());
 
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
@@ -201,7 +205,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), op_t{}, num_items);
 
@@ -212,7 +216,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan with init value")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
@@ -236,7 +240,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_inclusive_scan_with_init(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_value, num_items);
 
@@ -247,7 +251,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive scan")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
@@ -262,14 +266,14 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_out_it), scan_op, init_t{}, num_items);
 
     // Verify result
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, init_t{}, num_items);
 
@@ -280,7 +284,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive scan with future-init value")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
@@ -297,7 +301,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     // Run test
     c2h::device_vector<output_t> out_result(num_items);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    using init_t  = cub::detail::value_t<decltype(unwrap_it(d_out_it))>;
+    using init_t  = cub::detail::it_value_t<decltype(unwrap_it(d_out_it))>;
     c2h::device_vector<init_t> d_initial_value(1);
     d_initial_value[0]     = static_cast<init_t>(*unwrap_it(&init_value));
     auto future_init_value = cub::FutureValue<init_t>(thrust::raw_pointer_cast(d_initial_value.data()));
@@ -307,7 +311,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
     REQUIRE(expected_result == out_result);
 
     // Run test in-place
-    _CCCL_IF_CONSTEXPR (std::is_same<input_t, output_t>::value)
+    if constexpr (std::is_same<input_t, output_t>::value)
     {
       device_exclusive_scan(unwrap_it(d_in_it), unwrap_it(d_in_it), scan_op, future_init_value, num_items);
 

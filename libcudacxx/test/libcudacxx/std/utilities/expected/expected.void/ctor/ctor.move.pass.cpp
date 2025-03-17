@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-
 // constexpr expected(expected&& rhs) noexcept(is_nothrow_move_constructible_v<E>);
 //
 // Constraints: is_move_constructible_v<E> is true.
@@ -75,13 +73,11 @@ static_assert(!cuda::std::is_move_constructible_v<cuda::std::expected<void, NonM
 static_assert(cuda::std::is_trivially_move_constructible_v<cuda::std::expected<void, int>>, "");
 static_assert(!cuda::std::is_trivially_move_constructible_v<cuda::std::expected<void, MovableNonTrivial>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // Test: noexcept(is_nothrow_move_constructible_v<E>)
 static_assert(cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, int>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, int>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<int, MoveMayThrow>>, "");
 static_assert(!cuda::std::is_nothrow_move_constructible_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -139,9 +135,9 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

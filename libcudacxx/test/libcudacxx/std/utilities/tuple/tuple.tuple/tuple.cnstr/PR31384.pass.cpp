@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // Some early versions (cl.exe 14.16 / VC141) do not identify correct constructors
 // UNSUPPORTED: msvc
 
@@ -22,7 +20,7 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR int count = 0;
+TEST_GLOBAL_VARIABLE int count = 0;
 
 struct Explicit
 {

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
+// UNSUPPORTED: c++17
 
 // template<class In, class Out>
 // concept indirectly_copyable_storable;
@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool indirectly_copyable_storable_subsumption()
 }
 
 #ifndef __NVCOMPILER // nvbug 3885350
-static_assert(indirectly_copyable_storable_subsumption<int*, int*>());
+static_assert(indirectly_copyable_storable_subsumption<int*, int*>(), "");
 #endif
 
 int main(int, char**)

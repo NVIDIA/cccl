@@ -39,14 +39,16 @@
 
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
+#include <cub/device/dispatch/dispatch_for_each_in_extents.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
 #include <thrust/distance.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
+#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -102,7 +104,7 @@ struct op_wrapper_vectorized_t
     { // Case of fully filled vector
       const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; j++)
       {
         (void) op(*(reinterpret_cast<const T*>(&vec) + j));
@@ -130,7 +132,7 @@ private:
   template <class VectorT, class T>
   CUB_RUNTIME_FUNCTION static bool is_aligned(const T* ptr)
   {
-    return (reinterpret_cast<std::size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
+    return (reinterpret_cast<size_t>(ptr) & (sizeof(VectorT) - 1)) == 0;
   }
 
   template <class RandomAccessIteratorT, class OffsetT, class OpT>
@@ -150,7 +152,8 @@ private:
     ContiguousIteratorT first, OffsetT num_items, OpT op, cudaStream_t stream, ::cuda::std::true_type /* vectorize */)
   {
     auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
-    using wrapped_op_t = detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::value_t<ContiguousIteratorT>>;
+    using wrapped_op_t =
+      detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<ContiguousIteratorT>>;
 
     if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
     { // Vectorize loads
@@ -224,7 +227,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   Bulk(void* d_temp_storage, size_t& temp_storage_bytes, ShapeT shape, OpT op, cudaStream_t stream = {})
   {
-    static_assert(::cuda::std::is_integral<ShapeT>::value, "ShapeT must be an integral type");
+    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
 
     if (d_temp_storage == nullptr)
     {
@@ -575,7 +578,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
-    static_assert(::cuda::std::is_integral<ShapeT>::value, "ShapeT must be an integral type");
+    static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
     using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }
@@ -589,7 +592,7 @@ private:
     using offset_t = NumItemsT;
     // Disable auto-vectorization for now:
     // constexpr bool use_vectorization =
-    //   detail::for_each::can_regain_copy_freedom<detail::value_t<RandomAccessIteratorT>, OpT>::value
+    //   detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value
     //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
     using use_vectorization_t = ::cuda::std::bool_constant<false>;
     return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
@@ -701,10 +704,8 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
 
-    using offset_t = typename THRUST_NS_QUALIFIER::iterator_traits<RandomAccessIteratorT>::difference_type;
-
+    using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
-
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
@@ -830,9 +831,159 @@ public:
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
-    using offset_t       = typename THRUST_NS_QUALIFIER::iterator_traits<RandomAccessIteratorT>::difference_type;
+    using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
+  }
+
+  /*********************************************************************************************************************
+   * ForEachInExtents
+   ********************************************************************************************************************/
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Iterate through a multi-dimensional extents into
+  //!
+  //! - a single linear index that represents the current iteration
+  //! - indices of each extent dimension
+  //!
+  //! Then apply a function object to the results.
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! **Note**: ``DeviceFor::ForEachInExtents`` supports integral index type up to 64-bits.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInExtents`` to tabulate a 3D array with its
+  //! coordinates.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-extents-op
+  //!     :end-before: example-end for-each-in-extents-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-extents-example
+  //!     :end-before: example-end for-each-in-extents-example
+  //!
+  //! @endrst
+  //!
+  //! @tparam IndexType
+  //!   is an integral type that represents the extent index space (automatically deduced)
+  //!
+  //! @tparam Extents
+  //!   are the extent sizes for each rank index (automatically deduced)
+  //!
+  //! @tparam OpType
+  //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`,
+  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] extents
+  //!   Extents object that represents a multi-dimensional index space
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within. Default stream is `NULL`
+  //!
+  //! @return cudaError_t
+  //!   error status
+  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  CUB_RUNTIME_FUNCTION static cudaError_t ForEachInExtents(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const ::cuda::std::extents<IndexType, Extents...>& extents,
+    OpType op,
+    cudaStream_t stream = {})
+  {
+    // TODO: check dimensions overflows
+    // TODO: check tha arity of OpType is equal to sizeof...(ExtentsType)
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    return ForEachInExtents(extents, op, stream);
+  }
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Iterate through a multi-dimensional extents producing
+  //!
+  //! - a single linear index that represents the current iteration
+  //! - list of indices containing the coordinates for each extent dimension
+  //!
+  //! Then apply a function object to each tuple of linear index and multidimensional coordinate list.
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! **Note**: ``DeviceFor::ForEachInExtents`` supports integral index type up to 64-bits.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInExtents`` to tabulate a 3D array with its
+  //! coordinates.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-extents-op
+  //!     :end-before: example-end for-each-in-extents-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-extents-example
+  //!     :end-before: example-end for-each-in-extents-example
+  //!
+  //! @endrst
+  //!
+  //! @tparam IndexType
+  //!   is an integral type that represents the extent index space (automatically deduced)
+  //!
+  //! @tparam Extents
+  //!   are the extent sizes for each rank index (automatically deduced)
+  //!
+  //! @tparam OpType
+  //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
+  //!
+  //! @param[in] extents
+  //!   Extents object that represents a multi-dimensional index space
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within. Default stream is `NULL`
+  //!
+  //! @return cudaError_t
+  //!   error status
+  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  {
+    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
+    // TODO: check dimensions overflows
+    // TODO: check tha arity of OpType is equal to sizeof...(extents_type)
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
   }
 };
 

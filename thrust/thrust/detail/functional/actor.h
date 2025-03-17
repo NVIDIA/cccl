@@ -35,7 +35,6 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/type_deduction.h>
-#include <thrust/detail/type_traits/result_of_adaptable_function.h>
 #include <thrust/tuple.h>
 
 #include <cuda/std/type_traits>
@@ -82,8 +81,8 @@ template <unsigned int Pos>
 struct argument
 {
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto
-  eval(Ts&&... args) const -> decltype(thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...}))
+  _CCCL_HOST_DEVICE auto eval(Ts&&... args) const
+    -> decltype(thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...}))
   {
     return thrust::get<Pos>(thrust::tuple<Ts&&...>{THRUST_FWD(args)...});
   }
@@ -182,7 +181,7 @@ struct value
 };
 
 template <typename T>
-_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::__decay_t<T>>>
+_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::decay_t<T>>>
 {
   return {{THRUST_FWD(x)}};
 }
@@ -211,11 +210,5 @@ _CCCL_HOST_DEVICE auto compose(Eval e, const SubExpr1& subexpr1, const SubExpr2&
     {{::cuda::std::move(e)}, make_actor(subexpr1), make_actor(subexpr2)}};
 }
 } // namespace functional
-
-template <typename Eval, typename... Args>
-struct result_of_adaptable_function<functional::actor<Eval>(Args...)>
-{
-  using type = decltype(::cuda::std::declval<functional::actor<Eval>>()(::cuda::std::declval<Args>()...));
-};
 } // namespace detail
 THRUST_NAMESPACE_END

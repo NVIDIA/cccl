@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
 
 // template<class T>
@@ -46,34 +45,34 @@ namespace std
 namespace ranges
 {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
+_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
 }
 } // namespace std
 } // namespace cuda
 
-static_assert(!cuda::std::ranges::borrowed_range<NotRange>);
-static_assert(!cuda::std::ranges::borrowed_range<NotRange&>);
-static_assert(!cuda::std::ranges::borrowed_range<const NotRange>);
-static_assert(!cuda::std::ranges::borrowed_range<const NotRange&>);
-static_assert(!cuda::std::ranges::borrowed_range<NotRange&&>);
+static_assert(!cuda::std::ranges::borrowed_range<NotRange>, "");
+static_assert(!cuda::std::ranges::borrowed_range<NotRange&>, "");
+static_assert(!cuda::std::ranges::borrowed_range<const NotRange>, "");
+static_assert(!cuda::std::ranges::borrowed_range<const NotRange&>, "");
+static_assert(!cuda::std::ranges::borrowed_range<NotRange&&>, "");
 
-static_assert(!cuda::std::ranges::borrowed_range<Range>);
-static_assert(cuda::std::ranges::borrowed_range<Range&>);
-static_assert(!cuda::std::ranges::borrowed_range<const Range>);
-static_assert(!cuda::std::ranges::borrowed_range<const Range&>);
-static_assert(!cuda::std::ranges::borrowed_range<Range&&>);
+static_assert(!cuda::std::ranges::borrowed_range<Range>, "");
+static_assert(cuda::std::ranges::borrowed_range<Range&>, "");
+static_assert(!cuda::std::ranges::borrowed_range<const Range>, "");
+static_assert(!cuda::std::ranges::borrowed_range<const Range&>, "");
+static_assert(!cuda::std::ranges::borrowed_range<Range&&>, "");
 
-static_assert(!cuda::std::ranges::borrowed_range<ConstRange>);
-static_assert(cuda::std::ranges::borrowed_range<ConstRange&>);
-static_assert(!cuda::std::ranges::borrowed_range<const ConstRange>);
-static_assert(cuda::std::ranges::borrowed_range<const ConstRange&>);
-static_assert(!cuda::std::ranges::borrowed_range<ConstRange&&>);
+static_assert(!cuda::std::ranges::borrowed_range<ConstRange>, "");
+static_assert(cuda::std::ranges::borrowed_range<ConstRange&>, "");
+static_assert(!cuda::std::ranges::borrowed_range<const ConstRange>, "");
+static_assert(cuda::std::ranges::borrowed_range<const ConstRange&>, "");
+static_assert(!cuda::std::ranges::borrowed_range<ConstRange&&>, "");
 
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>);
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange&>);
-static_assert(cuda::std::ranges::borrowed_range<const BorrowedRange>);
-static_assert(cuda::std::ranges::borrowed_range<const BorrowedRange&>);
-static_assert(cuda::std::ranges::borrowed_range<BorrowedRange&&>);
+static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");
+static_assert(cuda::std::ranges::borrowed_range<BorrowedRange&>, "");
+static_assert(cuda::std::ranges::borrowed_range<const BorrowedRange>, "");
+static_assert(cuda::std::ranges::borrowed_range<const BorrowedRange&>, "");
+static_assert(cuda::std::ranges::borrowed_range<BorrowedRange&&>, "");
 
 int main(int, char**)
 {

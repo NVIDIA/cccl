@@ -21,15 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_LIBCUDACXX_HAS_NVBF16)
+#if _LIBCUDACXX_HAS_NVBF16()
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-
+#  include <cuda/std/__cmath/nvbf16.h>
 #  include <cuda/std/__complex/vector_support.h>
-#  include <cuda/std/__cuda/cmath_nvbf16.h>
+#  include <cuda/std/__floating_point/nvfp_types.h>
+#  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
@@ -37,9 +34,37 @@ _CCCL_DIAG_POP
 #  include <cuda/std/cmath>
 #  include <cuda/std/complex>
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 #    include <sstream> // for std::basic_ostringstream
-#  endif // !_CCCL_COMPILER_NVRTC
+#  endif // !_CCCL_COMPILER(NVRTC)
+
+// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
+namespace __cccl_internal
+{
+template <>
+struct __is_non_narrowing_convertible<__nv_bfloat16, float>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<__nv_bfloat16, double>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<float, __nv_bfloat16>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<double, __nv_bfloat16>
+{
+  static constexpr bool value = true;
+};
+} // namespace __cccl_internal
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -54,28 +79,11 @@ struct __type_to_vector<__nv_bfloat16>
 };
 
 template <>
-struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
+struct __cccl_complex_overload_traits<__nv_bfloat16, false, false>
 {
-  typedef __nv_bfloat16 _ValueType;
-  typedef complex<__nv_bfloat16> _ComplexType;
+  using _ValueType   = __nv_bfloat16;
+  using _ComplexType = complex<__nv_bfloat16>;
 };
-
-// This is a workaround against the user defining macros __CUDA_NO_BFLOAT16_CONVERSIONS__ __CUDA_NO_BFLOAT16_OPERATORS__
-template <>
-struct __complex_can_implicitly_construct<__nv_bfloat16, float> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<__nv_bfloat16, double> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<float, __nv_bfloat16> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<double, __nv_bfloat16> : true_type
-{};
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
@@ -101,6 +109,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) compl
   template <class _Up>
   friend class complex;
 
+  template <class _Up>
+  friend struct __get_complex_impl;
+
 public:
   using value_type = __nv_bfloat16;
 
@@ -108,14 +119,14 @@ public:
       : __repr_(__re, __im)
   {}
 
-  template <class _Up, __enable_if_t<__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0>
+  template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const complex<_Up>& __c)
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
   template <class _Up,
-            __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
-            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>              = 0>
+            enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
+            enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>                           = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit complex(const complex<_Up>& __c)
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
@@ -135,7 +146,7 @@ public:
     return *this;
   }
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
@@ -153,7 +164,7 @@ public:
   {
     return {__repr_.x, __repr_.y};
   }
-#  endif // !_CCCL_COMPILER_NVRTC
+#  endif // !_CCCL_COMPILER(NVRTC)
 
   _LIBCUDACXX_HIDE_FROM_ABI value_type real() const
   {
@@ -284,7 +295,35 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acos(const complex<__nv_bfloat1
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+template <>
+struct __get_complex_impl<__nv_bfloat16>
+{
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16& get(complex<__nv_bfloat16>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16&& get(complex<__nv_bfloat16>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16& get(const complex<__nv_bfloat16>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16&& get(const complex<__nv_bfloat16>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+  }
+};
+
+#  if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>&
 operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__nv_bfloat16>& __x)
@@ -301,10 +340,10 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloa
 {
   return __os << complex<float>{__x};
 }
-#  endif // !_CCCL_COMPILER_NVRTC
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif /// _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
 #endif // _LIBCUDACXX___COMPLEX_NVBF16_H

@@ -34,7 +34,7 @@ function usage {
     echo "  $ PARALLEL_LEVEL=8 $0"
     echo "  $ PARALLEL_LEVEL=8 $0 -cxx g++-9"
     echo "  $ $0 -cxx clang++-8"
-    echo "  $ $0 -configure -arch=80"
+    echo "  $ $0 -configure -arch 80"
     echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
     echo "  $ $0 -cmake-options \"-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-Wfatal-errors\""
     exit 1
@@ -126,12 +126,13 @@ print_environment_details() {
       NVCC_VERSION \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
+      CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
       GLOBAL_CMAKE_OPTIONS \
       TBB_ROOT
 
   echo "Current commit is:"
-  git log -1 || echo "Not a repository"
+  git log -1 --format=short || echo "Not a repository"
 
   if command -v nvidia-smi &> /dev/null; then
     nvidia-smi

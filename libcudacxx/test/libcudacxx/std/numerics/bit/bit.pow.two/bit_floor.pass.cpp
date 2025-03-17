@@ -6,7 +6,6 @@
 // Source Licenses. See LICENSE.TXT for details.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++98, c++03
 
 // template <class T>
 //   constexpr T bit_floor(T x) noexcept;
@@ -45,8 +44,8 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ void runtime_test()
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::bit_floor(T(0))));
-  ASSERT_NOEXCEPT(cuda::std::bit_floor(T(0)));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::bit_floor(T(0)))>);
+  static_assert(noexcept(cuda::std::bit_floor(T(0))));
 
   assert(cuda::std::bit_floor(T(121)) == T(64));
   assert(cuda::std::bit_floor(T(122)) == T(64));
@@ -76,9 +75,9 @@ int main(int, char**)
   static_assert(constexpr_test<uintmax_t>(), "");
   static_assert(constexpr_test<uintptr_t>(), "");
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   static_assert(constexpr_test<__uint128_t>(), "");
-#endif
+#endif // _CCCL_HAS_INT128()
 
   runtime_test<unsigned char>();
   runtime_test<unsigned>();
@@ -94,7 +93,7 @@ int main(int, char**)
   runtime_test<uintmax_t>();
   runtime_test<uintptr_t>();
 
-#ifndef _LIBCUDACXX_HAS_NO_INT128
+#if _CCCL_HAS_INT128()
   runtime_test<__uint128_t>();
 
   {
@@ -112,7 +111,7 @@ int main(int, char**)
     assert(cuda::std::bit_floor(val) == val);
     assert(cuda::std::bit_floor(val + 1) == val);
   }
-#endif
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }

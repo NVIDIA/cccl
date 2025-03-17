@@ -44,21 +44,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/agent/agent_radix_sort_downsweep.cuh>
-#include <cub/agent/agent_radix_sort_histogram.cuh>
-#include <cub/agent/agent_radix_sort_onesweep.cuh>
-#include <cub/agent/agent_radix_sort_upsweep.cuh>
-#include <cub/agent/agent_scan.cuh>
-#include <cub/block/block_radix_sort.cuh>
-#include <cub/grid/grid_even_share.cuh>
+#include <cub/device/dispatch/kernels/radix_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -74,1602 +69,14 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wpass-failed")
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
- * Kernel entry points
- *****************************************************************************/
-
-/**
- * @brief Upsweep digit-counting kernel entry point (multi-block).
- *        Computes privatized digit histograms, one per block.
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam ALT_DIGIT_BITS
- *   Whether or not to use the alternate (lower-bits) policy
- *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
- *
- * @tparam KeyT
- *   Key type
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @param[in] d_keys
- *   Input keys buffer
- *
- * @param[out] d_spine
- *   Privatized (per block) digit histograms (striped, i.e., 0s counts from each block,
- *   then 1s counts from each block, etc.)
- *
- * @param[in] num_items
- *   Total number of input data items
- *
- * @param[in] current_bit
- *   Bit position of current radix digit
- *
- * @param[in] num_bits
- *   Number of bits of current radix digit
- *
- * @param[in] even_share
- *   Even-share descriptor for mapan equal number of tiles onto each thread block
- */
-template <typename ChainedPolicyT,
-          bool ALT_DIGIT_BITS,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltUpsweepPolicy::BLOCK_THREADS)
-                                       : int(ChainedPolicyT::ActivePolicy::UpsweepPolicy::BLOCK_THREADS)))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortUpsweepKernel(
-    const KeyT* d_keys,
-    OffsetT* d_spine,
-    OffsetT /*num_items*/,
-    int current_bit,
-    int num_bits,
-    GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
-{
-  using ActiveUpsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
-
-  using ActiveDownsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
-
-  enum
-  {
-    TILE_ITEMS = CUB_MAX(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                         ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
-  };
-
-  // Parameterize AgentRadixSortUpsweep type for the current configuration
-  using AgentRadixSortUpsweepT = AgentRadixSortUpsweep<ActiveUpsweepPolicyT, KeyT, OffsetT, DecomposerT>;
-
-  // Shared memory storage
-  __shared__ typename AgentRadixSortUpsweepT::TempStorage temp_storage;
-
-  // Initialize GRID_MAPPING_RAKE even-share descriptor for this thread block
-  even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_RAKE>();
-
-  AgentRadixSortUpsweepT upsweep(temp_storage, d_keys, current_bit, num_bits, decomposer);
-
-  upsweep.ProcessRegion(even_share.block_offset, even_share.block_end);
-
-  CTA_SYNC();
-
-  // Write out digit counts (striped)
-  upsweep.template ExtractCounts<IS_DESCENDING>(d_spine, gridDim.x, blockIdx.x);
-}
-
-/**
- * @brief Spine scan kernel entry point (single-block).
- *        Computes an exclusive prefix sum over the privatized digit histograms
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @param[in,out] d_spine
- *   Privatized (per block) digit histograms (striped, i.e., 0s counts from each block,
- *   then 1s counts from each block, etc.)
- *
- * @param[in] num_counts
- *   Total number of bin-counts
- */
-template <typename ChainedPolicyT, typename OffsetT>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void RadixSortScanBinsKernel(OffsetT* d_spine, int num_counts)
-{
-  // Parameterize the AgentScan type for the current configuration
-  using AgentScanT =
-    AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy, OffsetT*, OffsetT*, cub::Sum, OffsetT, OffsetT, OffsetT>;
-
-  // Shared memory storage
-  __shared__ typename AgentScanT::TempStorage temp_storage;
-
-  // Block scan instance
-  AgentScanT block_scan(temp_storage, d_spine, d_spine, cub::Sum(), OffsetT(0));
-
-  // Process full input tiles
-  int block_offset = 0;
-  BlockScanRunningPrefixOp<OffsetT, Sum> prefix_op(0, Sum());
-  while (block_offset + AgentScanT::TILE_ITEMS <= num_counts)
-  {
-    block_scan.template ConsumeTile<false, false>(block_offset, prefix_op);
-    block_offset += AgentScanT::TILE_ITEMS;
-  }
-
-  // Process the remaining partial tile (if any).
-  if (block_offset < num_counts)
-  {
-    block_scan.template ConsumeTile<false, true>(block_offset, prefix_op, num_counts - block_offset);
-  }
-}
-
-/**
- * @brief Downsweep pass kernel entry point (multi-block).
- *        Scatters keys (and values) into corresponding bins for the current digit place.
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam ALT_DIGIT_BITS
- *   Whether or not to use the alternate (lower-bits) policy
- *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
- *
- * @tparam KeyT
- *   Key type
- *
- * @tparam ValueT
- *   Value type
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @param[in] d_keys_in
- *   Input keys buffer
- *
- * @param[in] d_keys_out
- *   Output keys buffer
- *
- * @param[in] d_values_in
- *   Input values buffer
- *
- * @param[in] d_values_out
- *   Output values buffer
- *
- * @param[in] d_spine
- *   Scan of privatized (per block) digit histograms (striped, i.e., 0s counts from each block,
- *   then 1s counts from each block, etc.)
- *
- * @param[in] num_items
- *   Total number of input data items
- *
- * @param[in] current_bit
- *   Bit position of current radix digit
- *
- * @param[in] num_bits
- *   Number of bits of current radix digit
- *
- * @param[in] even_share
- *   Even-share descriptor for mapan equal number of tiles onto each thread block
- */
-template <typename ChainedPolicyT,
-          bool ALT_DIGIT_BITS,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int((ALT_DIGIT_BITS) ? int(ChainedPolicyT::ActivePolicy::AltDownsweepPolicy::BLOCK_THREADS)
-                                       : int(ChainedPolicyT::ActivePolicy::DownsweepPolicy::BLOCK_THREADS)))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortDownsweepKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    OffsetT* d_spine,
-    OffsetT num_items,
-    int current_bit,
-    int num_bits,
-    GridEvenShare<OffsetT> even_share,
-    DecomposerT decomposer = {})
-{
-  using ActiveUpsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltUpsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::UpsweepPolicy>;
-
-  using ActiveDownsweepPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltDownsweepPolicy,
-                     typename ChainedPolicyT::ActivePolicy::DownsweepPolicy>;
-
-  enum
-  {
-    TILE_ITEMS = CUB_MAX(ActiveUpsweepPolicyT::BLOCK_THREADS * ActiveUpsweepPolicyT::ITEMS_PER_THREAD,
-                         ActiveDownsweepPolicyT::BLOCK_THREADS * ActiveDownsweepPolicyT::ITEMS_PER_THREAD)
-  };
-
-  // Parameterize AgentRadixSortDownsweep type for the current configuration
-  using AgentRadixSortDownsweepT =
-    AgentRadixSortDownsweep<ActiveDownsweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
-
-  // Shared memory storage
-  __shared__ typename AgentRadixSortDownsweepT::TempStorage temp_storage;
-
-  // Initialize even-share descriptor for this thread block
-  even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_RAKE>();
-
-  // Process input tiles
-  AgentRadixSortDownsweepT(
-    temp_storage, num_items, d_spine, d_keys_in, d_keys_out, d_values_in, d_values_out, current_bit, num_bits, decomposer)
-    .ProcessRegion(even_share.block_offset, even_share.block_end);
-}
-
-/**
- * @brief Single pass kernel entry point (single-block).
- *        Fully sorts a tile of input.
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
- *
- * @tparam KeyT
- *   Key type
- *
- * @tparam ValueT
- *   Value type
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @param[in] d_keys_in
- *   Input keys buffer
- *
- * @param[in] d_keys_out
- *   Output keys buffer
- *
- * @param[in] d_values_in
- *   Input values buffer
- *
- * @param[in] d_values_out
- *   Output values buffer
- *
- * @param[in] num_items
- *   Total number of input data items
- *
- * @param[in] current_bit
- *   Bit position of current radix digit
- *
- * @param[in] end_bit
- *   The past-the-end (most-significant) bit index needed for key comparison
- */
-template <typename ChainedPolicyT,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS), 1)
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortSingleTileKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    OffsetT num_items,
-    int current_bit,
-    int end_bit,
-    DecomposerT decomposer = {})
-{
-  // Constants
-  enum
-  {
-    BLOCK_THREADS    = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS,
-    ITEMS_PER_THREAD = ChainedPolicyT::ActivePolicy::SingleTilePolicy::ITEMS_PER_THREAD,
-    KEYS_ONLY        = std::is_same<ValueT, NullType>::value,
-  };
-
-  // BlockRadixSort type
-  using BlockRadixSortT =
-    BlockRadixSort<KeyT,
-                   BLOCK_THREADS,
-                   ITEMS_PER_THREAD,
-                   ValueT,
-                   ChainedPolicyT::ActivePolicy::SingleTilePolicy::RADIX_BITS,
-                   (ChainedPolicyT::ActivePolicy::SingleTilePolicy::RANK_ALGORITHM == RADIX_RANK_MEMOIZE),
-                   ChainedPolicyT::ActivePolicy::SingleTilePolicy::SCAN_ALGORITHM>;
-
-  // BlockLoad type (keys)
-  using BlockLoadKeys =
-    BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>;
-
-  // BlockLoad type (values)
-  using BlockLoadValues =
-    BlockLoad<ValueT, BLOCK_THREADS, ITEMS_PER_THREAD, ChainedPolicyT::ActivePolicy::SingleTilePolicy::LOAD_ALGORITHM>;
-
-  // Unsigned word for key bits
-  using traits           = detail::radix::traits_t<KeyT>;
-  using bit_ordered_type = typename traits::bit_ordered_type;
-
-  // Shared memory storage
-  __shared__ union TempStorage
-  {
-    typename BlockRadixSortT::TempStorage sort;
-    typename BlockLoadKeys::TempStorage load_keys;
-    typename BlockLoadValues::TempStorage load_values;
-
-  } temp_storage;
-
-  // Keys and values for the block
-  KeyT keys[ITEMS_PER_THREAD];
-  ValueT values[ITEMS_PER_THREAD];
-
-  // Get default (min/max) value for out-of-bounds keys
-  bit_ordered_type default_key_bits =
-    IS_DESCENDING ? traits::min_raw_binary_key(decomposer) : traits::max_raw_binary_key(decomposer);
-
-  KeyT default_key = reinterpret_cast<KeyT&>(default_key_bits);
-
-  // Load keys
-  BlockLoadKeys(temp_storage.load_keys).Load(d_keys_in, keys, num_items, default_key);
-
-  CTA_SYNC();
-
-  // Load values
-  if (!KEYS_ONLY)
-  {
-    // Register pressure work-around: moving num_items through shfl prevents compiler
-    // from reusing guards/addressing from prior guarded loads
-    num_items = ShuffleIndex<CUB_PTX_WARP_THREADS>(num_items, 0, 0xffffffff);
-
-    BlockLoadValues(temp_storage.load_values).Load(d_values_in, values, num_items);
-
-    CTA_SYNC();
-  }
-
-  // Sort tile
-  BlockRadixSortT(temp_storage.sort)
-    .SortBlockedToStriped(
-      keys, values, current_bit, end_bit, Int2Type<IS_DESCENDING>(), Int2Type<KEYS_ONLY>(), decomposer);
-
-// Store keys and values
-#pragma unroll
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
-  {
-    int item_offset = ITEM * BLOCK_THREADS + threadIdx.x;
-    if (item_offset < num_items)
-    {
-      d_keys_out[item_offset] = keys[ITEM];
-      if (!KEYS_ONLY)
-      {
-        d_values_out[item_offset] = values[ITEM];
-      }
-    }
-  }
-}
-
-/**
- * @brief Segmented radix sorting pass (one block per segment)
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam ALT_DIGIT_BITS
- *   Whether or not to use the alternate (lower-bits) policy
- *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
- *
- * @tparam KeyT
- *   Key type
- *
- * @tparam ValueT
- *   Value type
- *
- * @tparam BeginOffsetIteratorT
- *   Random-access input iterator type for reading segment beginning offsets @iterator
- *
- * @tparam EndOffsetIteratorT
- *   Random-access input iterator type for reading segment ending offsets @iterator
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @param[in] d_keys_in
- *   Input keys buffer
- *
- * @param[in] d_keys_out
- *   Output keys buffer
- *
- * @param[in] d_values_in
- *   Input values buffer
- *
- * @param[in] d_values_out
- *   Output values buffer
- *
- * @param[in] d_begin_offsets
- *   Random-access input iterator to the sequence of beginning offsets of length `num_segments`,
- *   such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
- *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>
- *
- * @param[in] d_end_offsets
- *   Random-access input iterator to the sequence of ending offsets of length `num_segments`,
- *   such that <tt>d_end_offsets[i]-1</tt> is the last element of the <em>i</em><sup>th</sup>
- *   data segment in <tt>d_keys_*</tt> and <tt>d_values_*</tt>.
- *   If <tt>d_end_offsets[i]-1</tt> <= <tt>d_begin_offsets[i]</tt>,
- *   the <em>i</em><sup>th</sup> is considered empty.
- *
- * @param[in] num_segments
- *   The number of segments that comprise the sorting data
- *
- * @param[in] current_bit
- *   Bit position of current radix digit
- *
- * @param[in] pass_bits
- *   Number of bits of current radix digit
- */
-template <typename ChainedPolicyT,
-          bool ALT_DIGIT_BITS,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-__launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmentedPolicy::BLOCK_THREADS
-                                       : ChainedPolicyT::ActivePolicy::SegmentedPolicy::BLOCK_THREADS))
-  CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedRadixSortKernel(
-    const KeyT* d_keys_in,
-    KeyT* d_keys_out,
-    const ValueT* d_values_in,
-    ValueT* d_values_out,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int /*num_segments*/,
-    int current_bit,
-    int pass_bits,
-    DecomposerT decomposer = {})
-{
-  //
-  // Constants
-  //
-
-  using SegmentedPolicyT =
-    ::cuda::std::_If<ALT_DIGIT_BITS,
-                     typename ChainedPolicyT::ActivePolicy::AltSegmentedPolicy,
-                     typename ChainedPolicyT::ActivePolicy::SegmentedPolicy>;
-
-  enum
-  {
-    BLOCK_THREADS    = SegmentedPolicyT::BLOCK_THREADS,
-    ITEMS_PER_THREAD = SegmentedPolicyT::ITEMS_PER_THREAD,
-    RADIX_BITS       = SegmentedPolicyT::RADIX_BITS,
-    TILE_ITEMS       = BLOCK_THREADS * ITEMS_PER_THREAD,
-    RADIX_DIGITS     = 1 << RADIX_BITS,
-    KEYS_ONLY        = std::is_same<ValueT, NullType>::value,
-  };
-
-  // Upsweep type
-  using BlockUpsweepT = AgentRadixSortUpsweep<SegmentedPolicyT, KeyT, OffsetT, DecomposerT>;
-
-  // Digit-scan type
-  using DigitScanT = BlockScan<OffsetT, BLOCK_THREADS>;
-
-  // Downsweep type
-  using BlockDownsweepT = AgentRadixSortDownsweep<SegmentedPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>;
-
-  enum
-  {
-    /// Number of bin-starting offsets tracked per thread
-    BINS_TRACKED_PER_THREAD = BlockDownsweepT::BINS_TRACKED_PER_THREAD
-  };
-
-  //
-  // Process input tiles
-  //
-
-  // Shared memory storage
-  __shared__ union
-  {
-    typename BlockUpsweepT::TempStorage upsweep;
-    typename BlockDownsweepT::TempStorage downsweep;
-    struct
-    {
-      volatile OffsetT reverse_counts_in[RADIX_DIGITS];
-      volatile OffsetT reverse_counts_out[RADIX_DIGITS];
-      typename DigitScanT::TempStorage scan;
-    };
-
-  } temp_storage;
-
-  OffsetT segment_begin = d_begin_offsets[blockIdx.x];
-  OffsetT segment_end   = d_end_offsets[blockIdx.x];
-  OffsetT num_items     = segment_end - segment_begin;
-
-  // Check if empty segment
-  if (num_items <= 0)
-  {
-    return;
-  }
-
-  // Upsweep
-  BlockUpsweepT upsweep(temp_storage.upsweep, d_keys_in, current_bit, pass_bits, decomposer);
-  upsweep.ProcessRegion(segment_begin, segment_end);
-
-  CTA_SYNC();
-
-  // The count of each digit value in this pass (valid in the first RADIX_DIGITS threads)
-  OffsetT bin_count[BINS_TRACKED_PER_THREAD];
-  upsweep.ExtractCounts(bin_count);
-
-  CTA_SYNC();
-
-  if (IS_DESCENDING)
-  {
-// Reverse bin counts
-#pragma unroll
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
-    {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
-      {
-        temp_storage.reverse_counts_in[bin_idx] = bin_count[track];
-      }
-    }
-
-    CTA_SYNC();
-
-#pragma unroll
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
-    {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
-      {
-        bin_count[track] = temp_storage.reverse_counts_in[RADIX_DIGITS - bin_idx - 1];
-      }
-    }
-  }
-
-  // Scan
-  OffsetT bin_offset[BINS_TRACKED_PER_THREAD]; // The global scatter base offset for each digit value in this pass
-                                               // (valid in the first RADIX_DIGITS threads)
-  DigitScanT(temp_storage.scan).ExclusiveSum(bin_count, bin_offset);
-
-#pragma unroll
-  for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
-  {
-    bin_offset[track] += segment_begin;
-  }
-
-  if (IS_DESCENDING)
-  {
-// Reverse bin offsets
-#pragma unroll
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
-    {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
-      {
-        temp_storage.reverse_counts_out[threadIdx.x] = bin_offset[track];
-      }
-    }
-
-    CTA_SYNC();
-
-#pragma unroll
-    for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
-    {
-      int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
-
-      if ((BLOCK_THREADS == RADIX_DIGITS) || (bin_idx < RADIX_DIGITS))
-      {
-        bin_offset[track] = temp_storage.reverse_counts_out[RADIX_DIGITS - bin_idx - 1];
-      }
-    }
-  }
-
-  CTA_SYNC();
-
-  // Downsweep
-  BlockDownsweepT downsweep(
-    temp_storage.downsweep,
-    bin_offset,
-    num_items,
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
-    current_bit,
-    pass_bits,
-    decomposer);
-  downsweep.ProcessRegion(segment_begin, segment_end);
-}
-
-/******************************************************************************
- * Onesweep kernels
- ******************************************************************************/
-
-/**
- * Kernel for computing multiple histograms
- */
-
-/**
- * Histogram kernel
- */
-template <typename ChainedPolicyT,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename OffsetT,
-          typename DecomposerT = detail::identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(ChainedPolicyT::ActivePolicy::HistogramPolicy::BLOCK_THREADS) void DeviceRadixSortHistogramKernel(
-  OffsetT* d_bins_out, const KeyT* d_keys_in, OffsetT num_items, int start_bit, int end_bit, DecomposerT decomposer = {})
-{
-  using HistogramPolicyT = typename ChainedPolicyT::ActivePolicy::HistogramPolicy;
-  using AgentT           = AgentRadixSortHistogram<HistogramPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
-  __shared__ typename AgentT::TempStorage temp_storage;
-  AgentT agent(temp_storage, d_bins_out, d_keys_in, num_items, start_bit, end_bit, decomposer);
-  agent.Process();
-}
-
-template <typename ChainedPolicyT,
-          bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename OffsetT,
-          typename PortionOffsetT,
-          typename AtomicOffsetT = PortionOffsetT,
-          typename DecomposerT   = detail::identity_decomposer_t>
-CUB_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(ChainedPolicyT::ActivePolicy::OnesweepPolicy::BLOCK_THREADS)
-  DeviceRadixSortOnesweepKernel(
-    AtomicOffsetT* d_lookback,
-    AtomicOffsetT* d_ctrs,
-    OffsetT* d_bins_out,
-    const OffsetT* d_bins_in,
-    KeyT* d_keys_out,
-    const KeyT* d_keys_in,
-    ValueT* d_values_out,
-    const ValueT* d_values_in,
-    PortionOffsetT num_items,
-    int current_bit,
-    int num_bits,
-    DecomposerT decomposer = {})
-{
-  using OnesweepPolicyT = typename ChainedPolicyT::ActivePolicy::OnesweepPolicy;
-  using AgentT =
-    AgentRadixSortOnesweep<OnesweepPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, PortionOffsetT, DecomposerT>;
-  __shared__ typename AgentT::TempStorage s;
-
-  AgentT agent(
-    s,
-    d_lookback,
-    d_ctrs,
-    d_bins_out,
-    d_bins_in,
-    d_keys_out,
-    d_keys_in,
-    d_values_out,
-    d_values_in,
-    num_items,
-    current_bit,
-    num_bits,
-    decomposer);
-  agent.Process();
-}
-
-/**
- * Exclusive sum kernel
- */
-template <typename ChainedPolicyT, typename OffsetT>
-CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_bins)
-{
-  using ExclusiveSumPolicyT     = typename ChainedPolicyT::ActivePolicy::ExclusiveSumPolicy;
-  constexpr int RADIX_BITS      = ExclusiveSumPolicyT::RADIX_BITS;
-  constexpr int RADIX_DIGITS    = 1 << RADIX_BITS;
-  constexpr int BLOCK_THREADS   = ExclusiveSumPolicyT::BLOCK_THREADS;
-  constexpr int BINS_PER_THREAD = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS;
-  using BlockScan               = cub::BlockScan<OffsetT, BLOCK_THREADS>;
-  __shared__ typename BlockScan::TempStorage temp_storage;
-
-  // load the bins
-  OffsetT bins[BINS_PER_THREAD];
-  int bin_start = blockIdx.x * RADIX_DIGITS;
-#pragma unroll
-  for (int u = 0; u < BINS_PER_THREAD; ++u)
-  {
-    int bin = threadIdx.x * BINS_PER_THREAD + u;
-    if (bin >= RADIX_DIGITS)
-    {
-      break;
-    }
-    bins[u] = d_bins[bin_start + bin];
-  }
-
-  // compute offsets
-  BlockScan(temp_storage).ExclusiveSum(bins, bins);
-
-// store the offsets
-#pragma unroll
-  for (int u = 0; u < BINS_PER_THREAD; ++u)
-  {
-    int bin = threadIdx.x * BINS_PER_THREAD + u;
-    if (bin >= RADIX_DIGITS)
-    {
-      break;
-    }
-    d_bins[bin_start + bin] = bins[u];
-  }
-}
-
-namespace detail
-{
-namespace radix
-{
-
-// default
-template <std::size_t KeySize, std::size_t ValueSize, std::size_t OffsetSize>
-struct sm90_small_key_tuning
-{
-  static constexpr int threads = 384;
-  static constexpr int items   = 23;
-};
-
-// clang-format off
-
-// keys
-template <> struct sm90_small_key_tuning<1,  0, 4> { static constexpr int threads = 512; static constexpr int items = 19; };
-template <> struct sm90_small_key_tuning<1,  0, 8> { static constexpr int threads = 512; static constexpr int items = 19; };
-template <> struct sm90_small_key_tuning<2,  0, 4> { static constexpr int threads = 512; static constexpr int items = 19; };
-template <> struct sm90_small_key_tuning<2,  0, 8> { static constexpr int threads = 512; static constexpr int items = 19; };
-
-// pairs  8:xx
-template <> struct sm90_small_key_tuning<1,  1, 4> { static constexpr int threads = 512; static constexpr int items = 15; };
-template <> struct sm90_small_key_tuning<1,  1, 8> { static constexpr int threads = 448; static constexpr int items = 16; };
-template <> struct sm90_small_key_tuning<1,  2, 4> { static constexpr int threads = 512; static constexpr int items = 17; };
-template <> struct sm90_small_key_tuning<1,  2, 8> { static constexpr int threads = 512; static constexpr int items = 14; };
-template <> struct sm90_small_key_tuning<1,  4, 4> { static constexpr int threads = 512; static constexpr int items = 17; };
-template <> struct sm90_small_key_tuning<1,  4, 8> { static constexpr int threads = 512; static constexpr int items = 14; };
-template <> struct sm90_small_key_tuning<1,  8, 4> { static constexpr int threads = 384; static constexpr int items = 23; };
-template <> struct sm90_small_key_tuning<1,  8, 8> { static constexpr int threads = 384; static constexpr int items = 18; };
-template <> struct sm90_small_key_tuning<1, 16, 4> { static constexpr int threads = 512; static constexpr int items = 22; };
-template <> struct sm90_small_key_tuning<1, 16, 8> { static constexpr int threads = 512; static constexpr int items = 22; };
-
-// pairs 16:xx
-template <> struct sm90_small_key_tuning<2,  1, 4> { static constexpr int threads = 384; static constexpr int items = 14; };
-template <> struct sm90_small_key_tuning<2,  1, 8> { static constexpr int threads = 384; static constexpr int items = 16; };
-template <> struct sm90_small_key_tuning<2,  2, 4> { static constexpr int threads = 384; static constexpr int items = 15; };
-template <> struct sm90_small_key_tuning<2,  2, 8> { static constexpr int threads = 448; static constexpr int items = 16; };
-template <> struct sm90_small_key_tuning<2,  4, 4> { static constexpr int threads = 512; static constexpr int items = 17; };
-template <> struct sm90_small_key_tuning<2,  4, 8> { static constexpr int threads = 512; static constexpr int items = 12; };
-template <> struct sm90_small_key_tuning<2,  8, 4> { static constexpr int threads = 384; static constexpr int items = 23; };
-template <> struct sm90_small_key_tuning<2,  8, 8> { static constexpr int threads = 512; static constexpr int items = 23; };
-template <> struct sm90_small_key_tuning<2, 16, 4> { static constexpr int threads = 512; static constexpr int items = 21; };
-template <> struct sm90_small_key_tuning<2, 16, 8> { static constexpr int threads = 576; static constexpr int items = 22; };
-// clang-format on
-
-} // namespace radix
-} // namespace detail
-
-/******************************************************************************
- * Policy
- ******************************************************************************/
-
-/**
- * @brief Tuning policy for kernel specialization
- *
- * @tparam KeyT
- *   Key type
- *
- * @tparam ValueT
- *   Value type
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- */
-template <typename KeyT, typename ValueT, typename OffsetT>
-struct DeviceRadixSortPolicy
-{
-  //------------------------------------------------------------------------------
-  // Constants
-  //------------------------------------------------------------------------------
-
-  // Whether this is a keys-only (or key-value) sort
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
-
-  // Dominant-sized key/value type
-  using DominantT = ::cuda::std::_If<(sizeof(ValueT) > sizeof(KeyT)), ValueT, KeyT>;
-
-  //------------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //------------------------------------------------------------------------------
-
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5, // 1.72B 32b keys/s, 1.17B 32b pairs/s, 1.55B 32b segmented
-                                                       // keys/s (K40m)
-      ONESWEEP            = false,
-      ONESWEEP_RADIX_BITS = 8,
-    };
-
-    // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
-
-    // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
-      256,
-      21,
-      DominantT,
-      1,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // Scan policy
-    using ScanPolicy =
-      AgentScanPolicy<1024, 4, OffsetT, BLOCK_LOAD_VECTORIZE, LOAD_DEFAULT, BLOCK_STORE_VECTORIZE, BLOCK_SCAN_WARP_SCANS>;
-
-    // Keys-only downsweep policies
-    using DownsweepPolicyKeys = AgentRadixSortDownsweepPolicy<
-      128,
-      9,
-      DominantT,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_LDG,
-      RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicyKeys = AgentRadixSortDownsweepPolicy<
-      64,
-      18,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS - 1>;
-
-    // Key-value pairs downsweep policies
-    using DownsweepPolicyPairs    = DownsweepPolicyKeys;
-    using AltDownsweepPolicyPairs = AgentRadixSortDownsweepPolicy<
-      128,
-      15,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS - 1>;
-
-    // Downsweep policies
-    using DownsweepPolicy = ::cuda::std::_If<KEYS_ONLY, DownsweepPolicyKeys, DownsweepPolicyPairs>;
-
-    using AltDownsweepPolicy = ::cuda::std::_If<KEYS_ONLY, AltDownsweepPolicyKeys, AltDownsweepPolicyPairs>;
-
-    // Upsweep policies
-    using UpsweepPolicy    = DownsweepPolicy;
-    using AltUpsweepPolicy = AltDownsweepPolicy;
-
-    // Single-tile policy
-    using SingleTilePolicy = DownsweepPolicy;
-
-    // Segmented policies
-    using SegmentedPolicy    = DownsweepPolicy;
-    using AltSegmentedPolicy = AltDownsweepPolicy;
-  };
-
-  /// SM50
-  struct Policy500 : ChainedPolicy<500, Policy500, Policy350>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 3.5B 32b keys/s, 1.92B 32b pairs/s (TitanX)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 3.1B 32b segmented keys/s (TitanX)
-      ONESWEEP               = false,
-      ONESWEEP_RADIX_BITS    = 8,
-    };
-
-    // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 1, KeyT, ONESWEEP_RADIX_BITS>;
-
-    // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
-      256,
-      21,
-      DominantT,
-      1,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // ScanPolicy
-    using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      160,
-      39,
-      DominantT,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_BASIC,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      16,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      PRIMARY_RADIX_BITS - 1>;
-
-    // Upsweep policies
-    using UpsweepPolicy    = DownsweepPolicy;
-    using AltUpsweepPolicy = AltDownsweepPolicy;
-
-    // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SINGLE_TILE_RADIX_BITS>;
-
-    // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      192,
-      31,
-      DominantT,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      11,
-      DominantT,
-      BLOCK_LOAD_WARP_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS - 1>;
-  };
-
-  /// SM60 (GP100)
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 6.9B 32b keys/s (Quadro P100)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 5.9B 32b segmented keys/s (Quadro P100)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t), // 10.0B 32b keys/s (GP100, 64M random keys)
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
-
-    // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
-
-    // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
-      256,
-      OFFSET_64BIT ? 29 : 30,
-      DominantT,
-      2,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // ScanPolicy
-    using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      25,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      192,
-      OFFSET_64BIT ? 32 : 39,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS - 1>;
-
-    // Upsweep policies
-    using UpsweepPolicy    = DownsweepPolicy;
-    using AltUpsweepPolicy = AltDownsweepPolicy;
-
-    // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SINGLE_TILE_RADIX_BITS>;
-
-    // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      192,
-      39,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      384,
-      11,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS - 1>;
-  };
-
-  /// SM61 (GP104)
-  struct Policy610 : ChainedPolicy<610, Policy610, Policy600>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 3.4B 32b keys/s, 1.83B 32b pairs/s (1080)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 3.3B 32b segmented keys/s (1080)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS    = 8,
-    };
-
-    // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
-
-    // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
-      256,
-      30,
-      DominantT,
-      2,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // ScanPolicy
-    using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      384,
-      31,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MATCH,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      35,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      PRIMARY_RADIX_BITS - 1>;
-
-    // Upsweep policies
-    using UpsweepPolicy    = AgentRadixSortUpsweepPolicy<128, 16, DominantT, LOAD_LDG, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy = AgentRadixSortUpsweepPolicy<128, 16, DominantT, LOAD_LDG, PRIMARY_RADIX_BITS - 1>;
-
-    // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SINGLE_TILE_RADIX_BITS>;
-
-    // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      192,
-      39,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      384,
-      11,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS - 1>;
-  };
-
-  /// SM62 (Tegra, less RF)
-  struct Policy620 : ChainedPolicy<620, Policy620, Policy610>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS  = 5,
-      ALT_RADIX_BITS      = PRIMARY_RADIX_BITS - 1,
-      ONESWEEP            = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS = 8,
-    };
-
-    // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
-
-    // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
-      256,
-      30,
-      DominantT,
-      2,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // ScanPolicy
-    using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      16,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      16,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      ALT_RADIX_BITS>;
-
-    // Upsweep policies
-    using UpsweepPolicy    = DownsweepPolicy;
-    using AltUpsweepPolicy = AltDownsweepPolicy;
-
-    // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS>;
-
-    // Segmented policies
-    using SegmentedPolicy    = DownsweepPolicy;
-    using AltSegmentedPolicy = AltDownsweepPolicy;
-  };
-
-  /// SM70 (GV100)
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy620>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5, // 7.62B 32b keys/s (GV100)
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5, // 8.7B 32b segmented keys/s (GV100)
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t), // 15.8B 32b keys/s (V100-SXM2, 64M random keys)
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
-
-    // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<256, 8, 8, KeyT, ONESWEEP_RADIX_BITS>;
-
-    // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
-      256,
-      sizeof(KeyT) == 4 && sizeof(ValueT) == 4 ? 46 : 23,
-      DominantT,
-      4,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_WARP_SCANS,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // ScanPolicy
-    using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      512,
-      23,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      (sizeof(KeyT) > 1) ? 256 : 128,
-      OFFSET_64BIT ? 46 : 47,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS - 1>;
-
-    // Upsweep policies
-    using UpsweepPolicy = AgentRadixSortUpsweepPolicy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy =
-      AgentRadixSortUpsweepPolicy<256, OFFSET_64BIT ? 46 : 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
-
-    // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SINGLE_TILE_RADIX_BITS>;
-
-    // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      192,
-      39,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      384,
-      11,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS - 1>;
-  };
-
-  /// SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy700>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5,
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5,
-      ONESWEEP               = sizeof(KeyT) >= sizeof(uint32_t),
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8,
-    };
-
-    // Histogram policy
-    using HistogramPolicy = AgentRadixSortHistogramPolicy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
-
-    // Exclusive sum policy
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    // Onesweep policy
-    using OnesweepPolicy = AgentRadixSortOnesweepPolicy<
-      384,
-      OFFSET_64BIT && sizeof(KeyT) == 4 && !KEYS_ONLY ? 17 : 21,
-      DominantT,
-      1,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    // ScanPolicy
-    using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    // Downsweep policies
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      512,
-      23,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS>;
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      (sizeof(KeyT) > 1) ? 256 : 128,
-      47,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS - 1>;
-
-    // Upsweep policies
-    using UpsweepPolicy    = AgentRadixSortUpsweepPolicy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy = AgentRadixSortUpsweepPolicy<256, 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
-
-    // Single-tile policy
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SINGLE_TILE_RADIX_BITS>;
-
-    // Segmented policies
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      192,
-      39,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS>;
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      384,
-      11,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS - 1>;
-  };
-
-  /// SM90
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy800>
-  {
-    enum
-    {
-      PRIMARY_RADIX_BITS     = (sizeof(KeyT) > 1) ? 7 : 5,
-      SINGLE_TILE_RADIX_BITS = (sizeof(KeyT) > 1) ? 6 : 5,
-      SEGMENTED_RADIX_BITS   = (sizeof(KeyT) > 1) ? 6 : 5,
-      ONESWEEP               = true,
-      ONESWEEP_RADIX_BITS    = 8,
-      OFFSET_64BIT           = sizeof(OffsetT) == 8 ? 1 : 0,
-      FLOAT_KEYS             = std::is_same<KeyT, float>::value ? 1 : 0,
-    };
-
-    using HistogramPolicy    = AgentRadixSortHistogramPolicy<128, 16, 1, KeyT, ONESWEEP_RADIX_BITS>;
-    using ExclusiveSumPolicy = AgentRadixSortExclusiveSumPolicy<256, ONESWEEP_RADIX_BITS>;
-
-    using OnesweepPolicyKey32 = AgentRadixSortOnesweepPolicy<
-      384,
-      KEYS_ONLY ? 20 - OFFSET_64BIT - FLOAT_KEYS
-                : (sizeof(ValueT) < 8 ? (OFFSET_64BIT ? 17 : 23) : (OFFSET_64BIT ? 29 : 30)),
-      DominantT,
-      1,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    using OnesweepPolicyKey64 = AgentRadixSortOnesweepPolicy<
-      384,
-      sizeof(ValueT) < 8 ? 30 : 24,
-      DominantT,
-      1,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT,
-      ONESWEEP_RADIX_BITS>;
-
-    using OnesweepLargeKeyPolicy = //
-      ::cuda::std::_If<sizeof(KeyT) == 4, OnesweepPolicyKey32, OnesweepPolicyKey64>;
-
-    using OnesweepSmallKeyPolicySizes = //
-      detail::radix::sm90_small_key_tuning<sizeof(KeyT), KEYS_ONLY ? 0 : sizeof(ValueT), sizeof(OffsetT)>;
-    using OnesweepSmallKeyPolicy = AgentRadixSortOnesweepPolicy<
-      OnesweepSmallKeyPolicySizes::threads,
-      OnesweepSmallKeyPolicySizes::items,
-      DominantT,
-      1,
-      RADIX_RANK_MATCH_EARLY_COUNTS_ANY,
-      BLOCK_SCAN_RAKING_MEMOIZE,
-      RADIX_SORT_STORE_DIRECT,
-      8>;
-    using OnesweepPolicy = //
-      ::cuda::std::_If<sizeof(KeyT) < 4, //
-                       OnesweepSmallKeyPolicy, //
-                       OnesweepLargeKeyPolicy>;
-
-    using ScanPolicy =
-      AgentScanPolicy<512,
-                      23,
-                      OffsetT,
-                      BLOCK_LOAD_WARP_TRANSPOSE,
-                      LOAD_DEFAULT,
-                      BLOCK_STORE_WARP_TRANSPOSE,
-                      BLOCK_SCAN_RAKING_MEMOIZE>;
-
-    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      512,
-      23,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MATCH,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS>;
-
-    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
-      (sizeof(KeyT) > 1) ? 256 : 128,
-      47,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      PRIMARY_RADIX_BITS - 1>;
-
-    using UpsweepPolicy    = AgentRadixSortUpsweepPolicy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
-    using AltUpsweepPolicy = AgentRadixSortUpsweepPolicy<256, 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
-
-    using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
-      256,
-      19,
-      DominantT,
-      BLOCK_LOAD_DIRECT,
-      LOAD_LDG,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SINGLE_TILE_RADIX_BITS>;
-
-    using SegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      192,
-      39,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS>;
-
-    using AltSegmentedPolicy = AgentRadixSortDownsweepPolicy<
-      384,
-      11,
-      DominantT,
-      BLOCK_LOAD_TRANSPOSE,
-      LOAD_DEFAULT,
-      RADIX_RANK_MEMOIZE,
-      BLOCK_SCAN_WARP_SCANS,
-      SEGMENTED_RADIX_BITS - 1>;
-  };
-
-  using MaxPolicy = Policy900;
-};
-
-/******************************************************************************
  * Single-problem dispatch
  ******************************************************************************/
 
 /**
  * Utility class for dispatching the appropriately-tuned kernels for device-wide radix sort
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether to sort in ascending or descending order
  *
  * @tparam KeyT
  *   Key type
@@ -1684,20 +91,22 @@ struct DeviceRadixSortPolicy
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename SelectedPolicy = DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>,
-          typename DecomposerT    = detail::identity_decomposer_t>
-struct DispatchRadixSort : SelectedPolicy
+          typename DecomposerT = detail::identity_decomposer_t,
+          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>>
+struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
   // Constants
   //------------------------------------------------------------------------------
 
   // Whether this is a keys-only (or key-value) sort
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
+
+  using max_policy_t = typename PolicyHub::MaxPolicy;
 
   //------------------------------------------------------------------------------
   // Problem state
@@ -1769,33 +178,6 @@ struct DispatchRadixSort : SelectedPolicy
       , decomposer(decomposer)
   {}
 
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchRadixSort(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys(d_keys)
-      , d_values(d_values)
-      , num_items(num_items)
-      , begin_bit(begin_bit)
-      , end_bit(end_bit)
-      , stream(stream)
-      , ptx_version(ptx_version)
-      , is_overwrite_okay(is_overwrite_okay)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-
   //------------------------------------------------------------------------------
   // Small-problem (single tile) invocation
   //------------------------------------------------------------------------------
@@ -1827,7 +209,7 @@ struct DispatchRadixSort : SelectedPolicy
       }
 
 // Log single_tile_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
               "%d, bit_grain %d\n",
               1,
@@ -1840,8 +222,7 @@ struct DispatchRadixSort : SelectedPolicy
 #endif
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel,
               d_keys.Current(),
               d_keys.Alternate(),
@@ -1895,10 +276,10 @@ struct DispatchRadixSort : SelectedPolicy
     cudaError error = cudaSuccess;
     do
     {
-      int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
+      int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, end_bit - current_bit);
 
 // Log upsweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking upsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit %d, "
               "bit_grain %d\n",
               pass_config.even_share.grid_size,
@@ -1914,7 +295,7 @@ struct DispatchRadixSort : SelectedPolicy
       int pass_spine_length = pass_config.even_share.grid_size * pass_config.radix_digits;
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         pass_config.even_share.grid_size, pass_config.upsweep_config.block_threads, 0, stream)
         .doit(pass_config.upsweep_kernel,
               d_keys_in,
@@ -1940,7 +321,7 @@ struct DispatchRadixSort : SelectedPolicy
       }
 
 // Log scan_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking scan_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread\n",
               1,
               pass_config.scan_config.block_threads,
@@ -1949,7 +330,7 @@ struct DispatchRadixSort : SelectedPolicy
 #endif
 
       // Invoke scan_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, pass_config.scan_config.block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, pass_config.scan_config.block_threads, 0, stream)
         .doit(pass_config.scan_kernel, d_spine, pass_spine_length);
 
       // Check for failure to launch
@@ -1967,7 +348,7 @@ struct DispatchRadixSort : SelectedPolicy
       }
 
 // Log downsweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking downsweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy\n",
               pass_config.even_share.grid_size,
               pass_config.downsweep_config.block_threads,
@@ -1977,7 +358,7 @@ struct DispatchRadixSort : SelectedPolicy
 #endif
 
       // Invoke downsweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         pass_config.even_share.grid_size, pass_config.downsweep_config.block_threads, 0, stream)
         .doit(pass_config.downsweep_kernel,
               d_keys_in,
@@ -2017,11 +398,11 @@ struct DispatchRadixSort : SelectedPolicy
   struct PassConfig
   {
     UpsweepKernelT upsweep_kernel;
-    KernelConfig upsweep_config;
+    detail::KernelConfig upsweep_config;
     ScanKernelT scan_kernel;
-    KernelConfig scan_config;
+    detail::KernelConfig scan_config;
     DownsweepKernelT downsweep_kernel;
-    KernelConfig downsweep_config;
+    detail::KernelConfig downsweep_config;
     int radix_bits;
     int radix_digits;
     int max_downsweep_grid_size;
@@ -2067,7 +448,7 @@ struct DispatchRadixSort : SelectedPolicy
         max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * CUB_SUBSCRIPTION_FACTOR(0);
 
         even_share.DispatchInit(
-          num_items, max_downsweep_grid_size, CUB_MAX(downsweep_config.tile_size, upsweep_config.tile_size));
+          num_items, max_downsweep_grid_size, _CUDA_VSTD::max(downsweep_config.tile_size, upsweep_config.tile_size));
 
       } while (0);
       return error;
@@ -2077,7 +458,6 @@ struct DispatchRadixSort : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeOnesweep()
   {
-    using MaxPolicyT = typename DispatchRadixSort::MaxPolicy;
     // PortionOffsetT is used for offsets within a portion, and must be signed.
     using PortionOffsetT = int;
     using AtomicOffsetT  = PortionOffsetT;
@@ -2093,8 +473,8 @@ struct DispatchRadixSort : SelectedPolicy
     constexpr PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
     int num_passes                        = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
     OffsetT num_portions                  = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
-    PortionOffsetT max_num_blocks =
-      ::cuda::ceil_div(static_cast<int>(CUB_MIN(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
+    PortionOffsetT max_num_blocks         = ::cuda::ceil_div(
+      static_cast<int>(_CUDA_VSTD::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : sizeof(ValueT);
     size_t allocation_sizes[] = {
@@ -2111,7 +491,7 @@ struct DispatchRadixSort : SelectedPolicy
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
-    AliasTemporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    detail::AliasTemporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 
     // just return if no temporary storage is provided
     cudaError_t error = cudaSuccess;
@@ -2158,7 +538,8 @@ struct DispatchRadixSort : SelectedPolicy
 
       constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
       int histo_blocks_per_sm           = 1;
-      auto histogram_kernel = DeviceRadixSortHistogramKernel<MaxPolicyT, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+      auto histogram_kernel =
+        detail::radix_sort::DeviceRadixSortHistogramKernel<max_policy_t, Order, KeyT, OffsetT, DecomposerT>;
 
       error = CubDebug(
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
@@ -2168,7 +549,7 @@ struct DispatchRadixSort : SelectedPolicy
       }
 
 // log histogram_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking histogram_kernel<<<%d, %d, 0, %lld>>>(), %d items per iteration, "
               "%d SM occupancy, bit_grain %d\n",
               histo_blocks_per_sm * num_sms,
@@ -2179,7 +560,7 @@ struct DispatchRadixSort : SelectedPolicy
               ActivePolicyT::HistogramPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
                 histo_blocks_per_sm * num_sms, HISTO_BLOCK_THREADS, 0, stream)
                 .doit(histogram_kernel, d_bins, d_keys.Current(), num_items, begin_bit, end_bit, decomposer);
       error = CubDebug(error);
@@ -2198,7 +579,7 @@ struct DispatchRadixSort : SelectedPolicy
       constexpr int SCAN_BLOCK_THREADS = ActivePolicyT::ExclusiveSumPolicy::BLOCK_THREADS;
 
 // log exclusive_sum_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking exclusive_sum_kernel<<<%d, %d, 0, %lld>>>(), bit_grain %d\n",
               num_passes,
               SCAN_BLOCK_THREADS,
@@ -2206,8 +587,8 @@ struct DispatchRadixSort : SelectedPolicy
               ActivePolicyT::ExclusiveSumPolicy::RADIX_BITS);
 #endif
 
-      error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
-                .doit(DeviceRadixSortExclusiveSumKernel<MaxPolicyT, OffsetT>, d_bins);
+      error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
+                .doit(detail::radix_sort::DeviceRadixSortExclusiveSumKernel<max_policy_t, OffsetT>, d_bins);
       error = CubDebug(error);
       if (cudaSuccess != error)
       {
@@ -2231,11 +612,11 @@ struct DispatchRadixSort : SelectedPolicy
 
       for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
       {
-        int num_bits = CUB_MIN(end_bit - current_bit, RADIX_BITS);
+        int num_bits = _CUDA_VSTD::min(end_bit - current_bit, RADIX_BITS);
         for (OffsetT portion = 0; portion < num_portions; ++portion)
         {
-          PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
-            CUB_MIN(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
+          PortionOffsetT portion_num_items =
+            static_cast<PortionOffsetT>(_CUDA_VSTD::min(num_items - portion * PORTION_SIZE, OffsetT{PORTION_SIZE}));
 
           PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
 
@@ -2246,7 +627,7 @@ struct DispatchRadixSort : SelectedPolicy
           }
 
 // log onesweep_kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
           _CubLog("Invoking onesweep_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, "
                   "current bit %d, bit_grain %d, portion %d/%d\n",
                   num_blocks,
@@ -2259,9 +640,9 @@ struct DispatchRadixSort : SelectedPolicy
                   static_cast<int>(num_portions));
 #endif
 
-          auto onesweep_kernel = DeviceRadixSortOnesweepKernel<
-            MaxPolicyT,
-            IS_DESCENDING,
+          auto onesweep_kernel = detail::radix_sort::DeviceRadixSortOnesweepKernel<
+            max_policy_t,
+            Order,
             KeyT,
             ValueT,
             OffsetT,
@@ -2270,7 +651,7 @@ struct DispatchRadixSort : SelectedPolicy
             DecomposerT>;
 
           error =
-            THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
+            THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_blocks, ONESWEEP_BLOCK_THREADS, 0, stream)
               .doit(onesweep_kernel,
                     d_lookback,
                     d_ctrs + portion * num_passes + pass,
@@ -2397,7 +778,7 @@ struct DispatchRadixSort : SelectedPolicy
       }
 
       // Get maximum spine length
-      int max_grid_size = CUB_MAX(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
+      int max_grid_size = _CUDA_VSTD::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
       int spine_length  = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
 
       // Temporary storage allocation requirements
@@ -2414,7 +795,7 @@ struct DispatchRadixSort : SelectedPolicy
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -2432,7 +813,7 @@ struct DispatchRadixSort : SelectedPolicy
       int num_passes         = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
-      int alt_end_bit        = CUB_MIN(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
+      int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
 
       // Alias the temporary storage allocations
       OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
@@ -2506,20 +887,19 @@ struct DispatchRadixSort : SelectedPolicy
   //------------------------------------------------------------------------------
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(Int2Type<false>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::false_type)
   {
     // Invoke upsweep-downsweep
-    using MaxPolicyT = typename DispatchRadixSort::MaxPolicy;
     return InvokePasses<ActivePolicyT>(
-      DeviceRadixSortUpsweepKernel<MaxPolicyT, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      DeviceRadixSortUpsweepKernel<MaxPolicyT, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      RadixSortScanBinsKernel<MaxPolicyT, OffsetT>,
-      DeviceRadixSortDownsweepKernel<MaxPolicyT, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
-      DeviceRadixSortDownsweepKernel<MaxPolicyT, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, false, Order, KeyT, OffsetT, DecomposerT>,
+      detail::radix_sort::DeviceRadixSortUpsweepKernel<max_policy_t, true, Order, KeyT, OffsetT, DecomposerT>,
+      detail::radix_sort::RadixSortScanBinsKernel<max_policy_t, OffsetT>,
+      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, false, Order, KeyT, ValueT, OffsetT, DecomposerT>,
+      detail::radix_sort::DeviceRadixSortDownsweepKernel<max_policy_t, true, Order, KeyT, ValueT, OffsetT, DecomposerT>);
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(Int2Type<true>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(::cuda::std::true_type)
   {
     // Invoke onesweep
     return InvokeOnesweep<ActivePolicyT>();
@@ -2536,7 +916,7 @@ struct DispatchRadixSort : SelectedPolicy
     }
 
 // Copy keys
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking async copy of %lld keys on stream %lld\n", (long long) num_items, (long long) stream);
 #endif
     cudaError_t error = cudaSuccess;
@@ -2558,7 +938,7 @@ struct DispatchRadixSort : SelectedPolicy
     // Copy values if necessary
     if (!KEYS_ONLY)
     {
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif
       error = CubDebug(cudaMemcpyAsync(
@@ -2583,7 +963,6 @@ struct DispatchRadixSort : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT        = typename DispatchRadixSort::MaxPolicy;
     using SingleTilePolicyT = typename ActivePolicyT::SingleTilePolicy;
 
     // Return if empty problem, or if no bits to sort and double-buffering is used
@@ -2616,12 +995,12 @@ struct DispatchRadixSort : SelectedPolicy
     {
       // Small, single tile size
       return InvokeSingleTile<ActivePolicyT>(
-        DeviceRadixSortSingleTileKernel<MaxPolicyT, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+        detail::radix_sort::DeviceRadixSortSingleTileKernel<max_policy_t, Order, KeyT, ValueT, OffsetT, DecomposerT>);
     }
     else
     {
       // Regular size
-      return InvokeManyTiles<ActivePolicyT>(Int2Type<ActivePolicyT::ONESWEEP>());
+      return InvokeManyTiles<ActivePolicyT>(detail::bool_constant_v<ActivePolicyT::ONESWEEP>);
     }
   }
 
@@ -2674,8 +1053,6 @@ struct DispatchRadixSort : SelectedPolicy
     cudaStream_t stream,
     DecomposerT decomposer = {})
   {
-    using MaxPolicyT = typename DispatchRadixSort::MaxPolicy;
-
     cudaError_t error;
     do
     {
@@ -2703,7 +1080,7 @@ struct DispatchRadixSort : SelectedPolicy
         decomposer);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -2711,25 +1088,6 @@ struct DispatchRadixSort : SelectedPolicy
     } while (0);
 
     return error;
-  }
-
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage, temp_storage_bytes, d_keys, d_values, num_items, begin_bit, end_bit, is_overwrite_okay, stream);
   }
 };
 
@@ -2741,8 +1099,8 @@ struct DispatchRadixSort : SelectedPolicy
  * @brief Utility class for dispatching the appropriately-tuned kernels for segmented device-wide
  * radix sort
  *
- * @tparam IS_DESCENDING
- *   Whether or not the sorted-order is high-to-low
+ * @tparam SortOrder
+ *   Whether to sort in ascending or descending order
  *
  * @tparam KeyT
  *   Key type
@@ -2759,22 +1117,24 @@ struct DispatchRadixSort : SelectedPolicy
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <bool IS_DESCENDING,
+template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT,
-          typename SelectedPolicy = DeviceRadixSortPolicy<KeyT, ValueT, OffsetT>,
-          typename DecomposerT    = detail::identity_decomposer_t>
-struct DispatchSegmentedRadixSort : SelectedPolicy
+          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename DecomposerT = detail::identity_decomposer_t>
+struct DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
   // Constants
   //------------------------------------------------------------------------------
 
   // Whether this is a keys-only (or key-value) sort
-  static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+  static constexpr bool KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
+
+  using max_policy_t = typename PolicyHub::MaxPolicy;
 
   //------------------------------------------------------------------------------
   // Parameter members
@@ -2865,39 +1225,6 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
       , decomposer(decomposer)
   {}
 
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchSegmentedRadixSort(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    OffsetT num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_keys(d_keys)
-      , d_values(d_values)
-      , num_items(num_items)
-      , num_segments(num_segments)
-      , d_begin_offsets(d_begin_offsets)
-      , d_end_offsets(d_end_offsets)
-      , begin_bit(begin_bit)
-      , end_bit(end_bit)
-      , stream(stream)
-      , ptx_version(ptx_version)
-      , is_overwrite_okay(is_overwrite_okay)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
-
   //------------------------------------------------------------------------------
   // Multi-segment invocation
   //------------------------------------------------------------------------------
@@ -2915,10 +1242,10 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     cudaError error = cudaSuccess;
     do
     {
-      int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
+      int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, (end_bit - current_bit));
 
 // Log kernel configuration
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
       _CubLog("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
               "%lld items per thread, %lld SM occupancy, "
               "current bit %d, bit_grain %d\n",
@@ -2931,7 +1258,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
               pass_bits);
 #endif
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_segments, pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
@@ -2971,7 +1298,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
   struct PassConfig
   {
     SegmentedKernelT segmented_kernel;
-    KernelConfig segmented_config;
+    detail::KernelConfig segmented_config;
     int radix_bits;
     int radix_digits;
 
@@ -3034,7 +1361,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -3055,10 +1382,10 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
       int radix_bits         = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
       int alt_radix_bits     = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
       int num_bits           = end_bit - begin_bit;
-      int num_passes         = CUB_MAX(::cuda::ceil_div(num_bits, radix_bits), 1);
+      int num_passes         = _CUDA_VSTD::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * radix_bits) - num_bits;
-      int alt_end_bit        = CUB_MIN(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
+      int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
 
       DoubleBuffer<KeyT> d_keys_remaining_passes(
         (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
@@ -3128,8 +1455,6 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename DispatchSegmentedRadixSort::MaxPolicy;
-
     // Return if empty problem, or if no bits to sort and double-buffering is used
     if (num_items == 0 || num_segments == 0 || (begin_bit == end_bit && is_overwrite_okay))
     {
@@ -3142,20 +1467,20 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
 
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
-      DeviceSegmentedRadixSortKernel<
-        MaxPolicyT,
+      detail::radix_sort::DeviceSegmentedRadixSortKernel<
+        max_policy_t,
         false,
-        IS_DESCENDING,
+        Order,
         KeyT,
         ValueT,
         BeginOffsetIteratorT,
         EndOffsetIteratorT,
         OffsetT,
         DecomposerT>,
-      DeviceSegmentedRadixSortKernel<
-        MaxPolicyT,
+      detail::radix_sort::DeviceSegmentedRadixSortKernel<
+        max_policy_t,
         true,
-        IS_DESCENDING,
+        Order,
         KeyT,
         ValueT,
         BeginOffsetIteratorT,
@@ -3230,8 +1555,6 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     bool is_overwrite_okay,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchSegmentedRadixSort::MaxPolicy;
-
     cudaError_t error;
     do
     {
@@ -3261,7 +1584,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
         ptx_version);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -3269,39 +1592,6 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
     } while (0);
 
     return error;
-  }
-
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    DoubleBuffer<KeyT>& d_keys,
-    DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
-    BeginOffsetIteratorT d_begin_offsets,
-    EndOffsetIteratorT d_end_offsets,
-    int begin_bit,
-    int end_bit,
-    bool is_overwrite_okay,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
-    return Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      stream);
   }
 };
 

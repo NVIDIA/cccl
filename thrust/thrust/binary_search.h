@@ -756,8 +756,8 @@ bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, 
  *  thrust::equal_range(thrust::device, input.begin(), input.end(), 1); // returns [input.begin() + 1, input.begin() +
  * 1) thrust::equal_range(thrust::device, input.begin(), input.end(), 2); // returns [input.begin() + 1, input.begin() +
  * 2) thrust::equal_range(thrust::device, input.begin(), input.end(), 3); // returns [input.begin() + 2, input.begin() +
- * 2) thrust::equal_range(thrust::device, input.begin(), input.end(), 8); // returns [input.begin() + 4, input.end)
- *  thrust::equal_range(thrust::device, input.begin(), input.end(), 9); // returns [input.end(), input.end)
+ * 2) thrust::equal_range(thrust::device, input.begin(), input.end(), 8); // returns [input.begin() + 4, input.end())
+ *  thrust::equal_range(thrust::device, input.begin(), input.end(), 9); // returns [input.end(), input.end())
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal_range
@@ -821,8 +821,8 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
  *  thrust::equal_range(input.begin(), input.end(), 1); // returns [input.begin() + 1, input.begin() + 1)
  *  thrust::equal_range(input.begin(), input.end(), 2); // returns [input.begin() + 1, input.begin() + 2)
  *  thrust::equal_range(input.begin(), input.end(), 3); // returns [input.begin() + 2, input.begin() + 2)
- *  thrust::equal_range(input.begin(), input.end(), 8); // returns [input.begin() + 4, input.end)
- *  thrust::equal_range(input.begin(), input.end(), 9); // returns [input.end(), input.end)
+ *  thrust::equal_range(input.begin(), input.end(), 8); // returns [input.begin() + 4, input.end())
+ *  thrust::equal_range(input.begin(), input.end(), 9); // returns [input.end(), input.end())
  *  \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal_range
@@ -893,8 +893,8 @@ equal_range(ForwardIterator first, ForwardIterator last, const LessThanComparabl
  * thrust::less<int>()); // returns [input.begin() + 1, input.begin() + 2) thrust::equal_range(thrust::device,
  * input.begin(), input.end(), 3, thrust::less<int>()); // returns [input.begin() + 2, input.begin() + 2)
  *  thrust::equal_range(thrust::device, input.begin(), input.end(), 8, thrust::less<int>()); // returns [input.begin() +
- * 4, input.end) thrust::equal_range(thrust::device, input.begin(), input.end(), 9, thrust::less<int>()); // returns
- * [input.end(), input.end) \endcode
+ * 4, input.end()) thrust::equal_range(thrust::device, input.begin(), input.end(), 9, thrust::less<int>()); // returns
+ * [input.end(), input.end()) \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal_range
  *  \see \p lower_bound
@@ -962,8 +962,8 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
  * input.begin() + 1) thrust::equal_range(input.begin(), input.end(), 2, thrust::less<int>()); // returns [input.begin()
  * + 1, input.begin() + 2) thrust::equal_range(input.begin(), input.end(), 3, thrust::less<int>()); // returns
  * [input.begin() + 2, input.begin() + 2) thrust::equal_range(input.begin(), input.end(), 8, thrust::less<int>()); //
- * returns [input.begin() + 4, input.end) thrust::equal_range(input.begin(), input.end(), 9, thrust::less<int>()); //
- * returns [input.end(), input.end) \endcode
+ * returns [input.begin() + 4, input.end()) thrust::equal_range(input.begin(), input.end(), 9, thrust::less<int>()); //
+ * returns [input.end(), input.end()) \endcode
  *
  *  \see https://en.cppreference.com/w/cpp/algorithm/equal_range
  *  \see \p lower_bound

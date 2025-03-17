@@ -52,7 +52,7 @@ struct body
   bool first_call; // TBB can invoke operator() multiple times on the same body
   thrust::detail::wrapped_function<BinaryFunction, OutputType> binary_op;
 
-  // note: we only initalize sum with init to avoid calling OutputType's default constructor
+  // note: we only initialize sum with init to avoid calling OutputType's default constructor
   body(RandomAccessIterator first, OutputType init, BinaryFunction binary_op)
       : first(first)
       , sum(init)
@@ -60,7 +60,7 @@ struct body
       , binary_op{binary_op}
   {}
 
-  // note: we only initalize sum with b.sum to avoid calling OutputType's default constructor
+  // note: we only initialize sum with b.sum to avoid calling OutputType's default constructor
   body(body& b, ::tbb::split)
       : first(b.first)
       , sum(b.sum)
@@ -114,7 +114,7 @@ template <typename DerivedPolicy, typename InputIterator, typename OutputType, t
 OutputType reduce(
   execution_policy<DerivedPolicy>&, InputIterator begin, InputIterator end, OutputType init, BinaryFunction binary_op)
 {
-  using Size = typename thrust::iterator_difference<InputIterator>::type;
+  using Size = thrust::detail::it_difference_t<InputIterator>;
 
   Size n = thrust::distance(begin, end);
 

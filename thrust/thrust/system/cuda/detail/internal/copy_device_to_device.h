@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/distance.h>
@@ -50,6 +50,10 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+// Need a forward declaration here to work around a cyclic include, since "cuda/detail/transform.h" includes this header
+template <class Derived, class InputIt, class OutputIt, class TransformOp>
+OutputIt THRUST_FUNCTION
+transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op);
 
 namespace __copy
 {
@@ -57,7 +61,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
   execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::true_type)
 {
-  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
+  using InputTy = thrust::detail::it_value_t<InputIt>;
   const auto n  = thrust::distance(first, last);
   if (n > 0)
   {
@@ -77,8 +81,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt THRUST_RUNTIME_FUNCTION device_to_device(
   execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, thrust::detail::false_type)
 {
-  using InputTy = typename thrust::iterator_traits<InputIt>::value_type;
-  return cuda_cub::transform(policy, first, last, result, thrust::identity<InputTy>());
+  return cuda_cub::transform(policy, first, last, result, ::cuda::std::identity{});
 }
 
 template <class Derived, class InputIt, class OutputIt>

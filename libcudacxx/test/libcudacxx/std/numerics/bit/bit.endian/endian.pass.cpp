@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03
-
 // enum class endian;
 // <cuda/std/bit>
 
@@ -15,6 +13,7 @@
 // #include <cuda/std/cstring>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 

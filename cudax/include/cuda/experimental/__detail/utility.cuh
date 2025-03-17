@@ -11,7 +11,7 @@
 #ifndef __CUDAX_DETAIL_UTILITY_H
 #define __CUDAX_DETAIL_UTILITY_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -20,6 +20,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__utility/declval.h>
 
 namespace cuda::experimental
 {
@@ -30,8 +32,8 @@ struct [[maybe_unused]] __ignore
 {
   __ignore() = default;
 
-  template <typename _Arg>
-  _CCCL_HOST_DEVICE constexpr __ignore(_Arg&&) noexcept
+  template <typename... _Args>
+  _CCCL_HOST_DEVICE constexpr __ignore(_Args&&...) noexcept
   {}
 };
 
@@ -42,7 +44,23 @@ struct __immovable
   __immovable(__immovable&&)            = delete;
   __immovable& operator=(__immovable&&) = delete;
 };
+
+template <class... _Types>
+struct _CCCL_DECLSPEC_EMPTY_BASES __inherit : _Types...
+{};
+
+template <class _Type, template <class...> class _Template>
+inline constexpr bool __is_specialization_of = false;
+
+template <template <class...> class _Template, class... _Args>
+inline constexpr bool __is_specialization_of<_Template<_Args...>, _Template> = true;
+
 } // namespace detail
+
+template <class _Tp>
+using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
+
+using _CUDA_VSTD::declval;
 
 struct uninit_t
 {

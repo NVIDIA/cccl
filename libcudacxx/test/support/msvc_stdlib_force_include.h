@@ -47,14 +47,14 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 // MSVC frontend only configurations
 #if !defined(__clang__)
 // Simulate feature-test macros.
-#  define __has_feature(X)                    _MSVC_HAS_FEATURE_##X
+#  define _CCCL_HAS_FEATURE(X)                _MSVC_HAS_FEATURE_##X
 #  define _MSVC_HAS_FEATURE_cxx_exceptions    1
 #  define _MSVC_HAS_FEATURE_cxx_rtti          1
 #  define _MSVC_HAS_FEATURE_address_sanitizer 0
 #  define _MSVC_HAS_FEATURE_memory_sanitizer  0
 #  define _MSVC_HAS_FEATURE_thread_sanitizer  0
 
-#  define __has_attribute(X)              _MSVC_HAS_ATTRIBUTE_##X
+#  define _CCCL_HAS_ATTRIBUTE(X)          _MSVC_HAS_ATTRIBUTE_##X
 #  define _MSVC_HAS_ATTRIBUTE_vector_size 0
 
 // Silence compiler warnings.
@@ -64,12 +64,6 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 #  pragma warning(disable : 4702) // unreachable code
 #  pragma warning(disable : 28251) // Inconsistent annotation for 'new': this instance has no annotations.
 #endif // !defined(__clang__)
-
-// MSVC doesn't have __int128_t.
-#define _LIBCUDACXX_HAS_NO_INT128
-
-// MSVC has quick_exit() and at_quick_exit().
-#define _LIBCUDACXX_HAS_QUICK_EXIT
 
 #ifndef _LIBCXX_IN_DEVCRT
 // atomic_is_lock_free.pass.cpp needs this VS 2015 Update 2 fix.
@@ -91,7 +85,5 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 #else // !(_HAS_CXX20 || _HAS_CXX17)
 #  define TEST_STD_VER 14
 #endif
-
-#define _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST
 
 #endif // SUPPORT_MSVC_STDLIB_FORCE_INCLUDE_H

@@ -31,49 +31,11 @@
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
 
+#include <cuda/std/utility>
+
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup utility
- *  \{
- */
-
-/*! \addtogroup swap
- *  \{
- */
-
-/*! \p swap assigns the contents of \c a to \c b and the
- *  contents of \c b to \c a. This is used as a primitive operation
- *  by many other algorithms.
- *
- *  \param a The first value of interest. After completion,
- *           the value of b will be returned here.
- *  \param b The second value of interest. After completion,
- *           the value of a will be returned here.
- *
- *  \tparam Assignable is a model of <a
- * href="https://en.cppreference.com/w/cpp/named_req/CopyAssignable">Assignable</a>.
- *
- *  The following code snippet demonstrates how to use \p swap to
- *  swap the contents of two variables.
- *
- *  \code
- *  #include <thrust/swap.h>
- *  ...
- *  int x = 1;
- *  int y = 2;
- *  thrust::swap(x,h);
- *
- *  // x == 2, y == 1
- *  \endcode
- */
-template <typename Assignable1, typename Assignable2>
-_CCCL_HOST_DEVICE inline void swap(Assignable1& a, Assignable2& b);
-
-/*! \} // swap
- */
-
-/*! \} // utility
- */
+using ::cuda::std::swap;
 
 /*! \addtogroup copying
  *  \{
@@ -182,4 +144,4 @@ ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, Fo
 
 THRUST_NAMESPACE_END
 
-#include <thrust/detail/swap.inl>
+#include <thrust/detail/swap_ranges.inl>

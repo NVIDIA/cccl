@@ -96,10 +96,10 @@ DECLARE_UNITTEST(TestAdjacentDifferenceCudaStreams);
 struct detect_wrong_difference
 {
   using difference_type   = void;
-  using value_type        = void;
+  using value_type        = long long;
   using pointer           = void;
-  using reference         = void;
-  using iterator_category = std::output_iterator_tag;
+  using reference         = detect_wrong_difference;
+  using iterator_category = ::cuda::std::output_iterator_tag;
 
   bool* flag;
 
@@ -153,8 +153,10 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
 void TestAdjacentDifferenceWithBigIndexes()
 {
   TestAdjacentDifferenceWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestAdjacentDifferenceWithBigIndexesHelper(31);
   TestAdjacentDifferenceWithBigIndexesHelper(32);
   TestAdjacentDifferenceWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);

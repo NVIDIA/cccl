@@ -217,7 +217,7 @@ int main()
   timer t;
 
   // Host vector to encode a 2D image
-  std::cout << "[Inititialize " << m << "x" << n << " Image]" << std::endl;
+  std::cout << "[Initialize " << m << "x" << n << " Image]" << std::endl;
   t.restart();
   thrust::host_vector<int> seeds_host(m * n, m * n);
   generate_random_sites(seeds_host, s, m, n);

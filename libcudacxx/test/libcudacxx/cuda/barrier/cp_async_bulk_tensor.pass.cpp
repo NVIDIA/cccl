@@ -10,7 +10,7 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads
 // UNSUPPORTED: pre-sm-90
-// UNSUPPORTED: nvcc-11
+
 // UNSUPPORTED: nvrtc
 // NVRTC_SKIP_KERNEL_RUN // This will have effect once PR 433 is merged (line above should be removed.)
 
@@ -22,9 +22,9 @@
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
 // NVRTC does not support cuda.h (due to import of stdlib.h)
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  include <cudaTypedefs.h> // PFN_cuTensorMapEncodeTiled, CUtensorMap
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
@@ -57,7 +57,7 @@ __device__ void test(int base_i, int base_j)
   CUtensorMap* global_tensor_map = reinterpret_cast<CUtensorMap*>(&global_fake_tensor_map);
 
   // SETUP: fill global memory buffer
-  for (int i = threadIdx.x; i < gmem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(gmem_len); i += blockDim.x)
   {
     gmem_tensor[i] = i;
   }
@@ -68,7 +68,12 @@ __device__ void test(int base_i, int base_j)
 
   // TEST: Add i to buffer[i]
   alignas(128) __shared__ int smem_buffer[buf_len];
+#if _CCCL_CUDA_COMPILER(CLANG)
+  __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   if (threadIdx.x == 0)
   {
     init(&bar, blockDim.x);
@@ -134,7 +139,7 @@ __device__ void test(int base_i, int base_j)
   __syncthreads();
 }
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -143,7 +148,7 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
-#endif // ! TEST_COMPILER_NVRTC
+#endif // ! TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {

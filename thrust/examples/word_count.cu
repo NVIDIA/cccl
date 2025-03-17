@@ -16,7 +16,7 @@
 // determines whether the character is alphabetical
 __host__ __device__ bool is_alpha(const char c)
 {
-  return (c >= 'A' && c <= 'z');
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
 }
 
 // determines whether the right character begins a new word

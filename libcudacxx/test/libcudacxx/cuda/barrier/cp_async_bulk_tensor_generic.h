@@ -14,17 +14,20 @@
 #define TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 #include <cuda/std/array>
 #include <cuda/std/utility> // cuda::std::move
+
+namespace ptx = cuda::ptx;
 
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
 // NVRTC does not support cuda.h (due to import of stdlib.h)
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  include <cudaTypedefs.h> // PFN_cuTensorMapEncodeTiled, CUtensorMap
 
 #  include <cstdio>
-#endif // ! TEST_COMPILER_NVRTC
+#endif // ! TEST_COMPILER(NVRTC)
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
@@ -173,12 +176,21 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   }
   // Ensure that writes to global memory are visible to others, including
   // those in the async proxy.
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // TEST: Add i to buffer[i]
   alignas(128) __shared__ int smem_buffer[smem_len];
+#if _CCCL_CUDA_COMPILER(CLANG)
+  __shared__ char barrier_data[sizeof(barrier)];
+  barrier& bar = cuda::std::bit_cast<barrier>(barrier_data);
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG)
   __shared__ barrier bar;
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
   if (threadIdx.x == 0)
   {
     init(&bar, blockDim.x);
@@ -200,7 +212,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   bar.wait(cuda::std::move(token));
 
   // Check smem
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     int gmem_lin_idx = smem_lin_idx_to_gmem_lin_idx(i, smem_coord, smem_dims, gmem_dims);
     assert(smem_buffer[i] == gmem_lin_idx);
@@ -209,7 +221,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 
   // Update smem
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     smem_buffer[i] = 2 * smem_buffer[i] + 1;
   }
@@ -223,11 +235,15 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
     cde::cp_async_bulk_commit_group();
     cde::cp_async_bulk_wait_group_read<0>();
   }
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // // TEAR-DOWN: check that global memory is correct
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     int gmem_lin_idx = smem_lin_idx_to_gmem_lin_idx(i, smem_coord, smem_dims, gmem_dims);
 
@@ -236,7 +252,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 }
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -245,9 +261,9 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 template <typename T, size_t num_dims>
 CUtensorMap map_encode(T* tensor_ptr,
                        const cuda::std::array<uint64_t, num_dims>& gmem_dims,
@@ -258,7 +274,7 @@ CUtensorMap map_encode(T* tensor_ptr,
 
   // The stride is the number of bytes to traverse from the first element of one row to the next.
   // It must be a multiple of 16.
-  // cuTensorMapEncodeTiled requies that the stride array is a valid pointer, so we add one superfluous element
+  // cuTensorMapEncodeTiled requires that the stride array is a valid pointer, so we add one superfluous element
   // This is necessary for num_dims == 1
   cuda::std::array<uint64_t, num_dims> stride;
   uint64_t base_stride = sizeof(T);
@@ -316,6 +332,6 @@ void init_tensor_map(const T& gmem_tensor_symbol,
   code = cudaMemcpyToSymbol(global_fake_tensor_map, &local_tensor_map, sizeof(CUtensorMap));
   assert(code == cudaSuccess && "Could not copy symbol to device.");
 }
-#endif // ! TEST_COMPILER_NVRTC
+#endif // ! TEST_COMPILER(NVRTC)
 
 #endif // TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_

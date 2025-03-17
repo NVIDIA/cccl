@@ -43,10 +43,8 @@ union U
 template <typename T, typename Expected>
 __host__ __device__ void check()
 {
-  ASSERT_SAME_TYPE(Expected, typename cuda::std::underlying_type<T>::type);
-#if TEST_STD_VER > 2011
-  ASSERT_SAME_TYPE(Expected, typename cuda::std::underlying_type_t<T>);
-#endif
+  static_assert(cuda::std::is_same_v<Expected, typename cuda::std::underlying_type<T>::type>);
+  static_assert(cuda::std::is_same_v<Expected, typename cuda::std::underlying_type_t<T>>);
 }
 
 enum E

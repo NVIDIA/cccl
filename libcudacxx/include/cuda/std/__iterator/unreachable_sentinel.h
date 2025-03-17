@@ -24,8 +24,6 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
-#if _CCCL_STD_VER > 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
@@ -35,56 +33,54 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 // are only ever found through ADL
 
 struct unreachable_sentinel_t
-#  ifdef _CCCL_COMPILER_MSVC
+#if _CCCL_COMPILER(MSVC)
   ;
 namespace __unreachable_sentinel_detail
 {
 struct __unreachable_base
-#  endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 {
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(weakly_incrementable<_Iter>)
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(const unreachable_sentinel_t&, const _Iter&) noexcept
   {
     return false;
   }
-#  if _CCCL_STD_VER < 2020
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
+#if _CCCL_STD_VER < 2020
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(weakly_incrementable<_Iter>)
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(const _Iter&, const unreachable_sentinel_t&) noexcept
   {
     return false;
   }
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(weakly_incrementable<_Iter>)
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const unreachable_sentinel_t&, const _Iter&) noexcept
   {
     return true;
   }
-  _LIBCUDACXX_TEMPLATE(class _Iter)
-  _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
+  _CCCL_TEMPLATE(class _Iter)
+  _CCCL_REQUIRES(weakly_incrementable<_Iter>)
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const _Iter&, const unreachable_sentinel_t&) noexcept
   {
     return true;
   }
-#  endif // _CCCL_STD_VER < 2020
+#endif // _CCCL_STD_VER < 2020
 };
 
-#  ifdef _CCCL_COMPILER_MSVC
+#if _CCCL_COMPILER(MSVC)
 } // namespace __unreachable_sentinel_detail
 struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_base
 {};
-#  endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 _CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER > 2014
 
 #endif // _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H

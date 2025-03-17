@@ -38,7 +38,7 @@ struct TestTupleReduce
 
     // zip up the data
     host_vector<tuple<T, T>> h_tuples(n);
-    transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_tuples.begin(), MakeTupleFunctor());
+    thrust::transform(h_t1.begin(), h_t1.end(), h_t2.begin(), h_tuples.begin(), MakeTupleFunctor());
 
     // copy to device
     device_vector<tuple<T, T>> d_tuples = h_tuples;
@@ -46,10 +46,10 @@ struct TestTupleReduce
     tuple<T, T> zero(0, 0);
 
     // sum on host
-    tuple<T, T> h_result = reduce(h_tuples.begin(), h_tuples.end(), zero, SumTupleFunctor());
+    tuple<T, T> h_result = thrust::reduce(h_tuples.begin(), h_tuples.end(), zero, SumTupleFunctor());
 
     // sum on device
-    tuple<T, T> d_result = reduce(d_tuples.begin(), d_tuples.end(), zero, SumTupleFunctor());
+    tuple<T, T> d_result = thrust::reduce(d_tuples.begin(), d_tuples.end(), zero, SumTupleFunctor());
 
     ASSERT_EQUAL_QUIET(h_result, d_result);
   }

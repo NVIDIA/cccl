@@ -21,7 +21,7 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <template <typename, typename> typename Selector>
+template <template <typename, typename> class Selector>
 struct TestFn
 {
   __host__ __device__ void operator()() const

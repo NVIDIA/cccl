@@ -1,6 +1,5 @@
-find_package(Thrust REQUIRED CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CMAKE_CURRENT_LIST_DIR}/.."
-  COMPONENTS ${THRUST_REQUIRED_SYSTEMS}
+cccl_add_subdir_helper(Thrust
+  # These component lists may be set by users to explicitly request subprojects:
+  REQUIRED_COMPONENTS ${THRUST_REQUIRED_SYSTEMS}
   OPTIONAL_COMPONENTS ${THRUST_OPTIONAL_SYSTEMS}
 )

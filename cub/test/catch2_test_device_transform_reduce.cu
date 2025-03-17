@@ -32,11 +32,11 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
@@ -53,12 +53,12 @@ struct square_t
   }
 };
 
-CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", types)
+C2H_TEST("Device transform reduce works with pointers", "[reduce][device]", types)
 {
   using item_t         = c2h::get<0, TestType>;
   using init_t         = item_t;
   using offset_t       = std::int32_t;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
 
   constexpr int max_items = 5000000;
@@ -69,7 +69,7 @@ CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   item_t init{42};
   c2h::device_vector<item_t> out(1);
   c2h::device_vector<item_t> in(num_items + 1);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   item_t* d_in  = thrust::raw_pointer_cast(in.data());
   item_t* d_out = thrust::raw_pointer_cast(out.data());
@@ -100,12 +100,12 @@ CUB_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   }
 }
 
-CUB_TEST("Device transform reduce works with iterators", "[reduce][device]", types)
+C2H_TEST("Device transform reduce works with iterators", "[reduce][device]", types)
 {
   using item_t         = c2h::get<0, TestType>;
   using init_t         = item_t;
   using offset_t       = std::int32_t;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
 
   constexpr int max_items = 5000000;
@@ -212,7 +212,7 @@ struct reduction_op_t
   }
 };
 
-CUB_TEST("Device transform reduce doesn't let input type into reduction op", "[reduce][device]")
+C2H_TEST("Device transform reduce doesn't let input type into reduction op", "[reduce][device]")
 {
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;

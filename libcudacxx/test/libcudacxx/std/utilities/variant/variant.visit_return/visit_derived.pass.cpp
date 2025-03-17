@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 // UNSUPPORTED: clang-7, clang-8
 
@@ -96,7 +95,7 @@ struct EvilVariant2
 
 __host__ __device__ void test_derived_from_variant()
 {
-  cuda::std::visit<bool>(visitor_42{}, MyVariant{42});
+  cuda::std::visit<bool>(visitor_42{}, MyVariant{short(42)});
   cuda::std::visit<bool>(visitor_float{}, MyVariant{-1.3f});
 
   cuda::std::visit<bool>(visitor_42{}, EvilVariant1{42});

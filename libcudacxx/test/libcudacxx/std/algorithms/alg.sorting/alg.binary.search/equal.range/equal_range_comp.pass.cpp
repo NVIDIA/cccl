@@ -24,7 +24,7 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, const T& value)
+__host__ __device__ constexpr void test(Iter first, Iter last, const T& value)
 {
   cuda::std::pair<Iter, Iter> i = cuda::std::equal_range(first, last, value, cuda::std::less<int>());
   for (Iter j = first; j != i.first; ++j)
@@ -46,7 +46,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, const 
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   constexpr int M = 10;
   auto v          = get_data(M);
@@ -57,7 +57,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   int d[] = {0, 1, 2, 3};
   for (int* e = d; e < d + 4; ++e)
@@ -79,11 +79,8 @@ int main(int, char**)
 {
   test();
   test<const int*>();
-
-#if TEST_STD_VER >= 2014 && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(test(), "");
   static_assert(test<const int*>(), ""); // clang otherwise hits the evaluation limit
-#endif // TEST_STD_VER >= 2014 && !TEST_COMPILER_MSVC_2017
 
   return 0;
 }

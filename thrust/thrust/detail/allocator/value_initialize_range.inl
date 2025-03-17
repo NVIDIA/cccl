@@ -71,7 +71,7 @@ struct needs_default_construct_via_allocator<std::allocator<U>, T>
 {};
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<
   needs_default_construct_via_allocator<Allocator, typename pointer_element<Pointer>::type>::value>
 value_initialize_range(Allocator& a, Pointer p, Size n)
 {

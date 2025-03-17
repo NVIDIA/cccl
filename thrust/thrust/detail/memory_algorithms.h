@@ -17,11 +17,12 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/addressof.h>
 #include <thrust/detail/allocator/allocator_traits.h>
 #include <thrust/detail/memory_wrapper.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/iterator_traits.h>
+
+#include <cuda/std/__memory/addressof.h>
 
 #include <new>
 #include <utility>
@@ -42,7 +43,7 @@ template <typename Allocator, typename T>
 _CCCL_HOST_DEVICE void destroy_at(Allocator const& alloc, T* location) noexcept
 {
   using traits = typename detail::allocator_traits<
-    ::cuda::std::__remove_cv_t<::cuda::std::__libcpp_remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
+    ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
 
   typename traits::allocator_type alloc_T(alloc);
 
@@ -54,7 +55,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy(ForwardIt first, ForwardIt last) noexcept
 {
   for (; first != last; ++first)
   {
-    destroy_at(addressof(*first));
+    destroy_at(::cuda::std::addressof(*first));
   }
 
   return first;
@@ -63,15 +64,15 @@ _CCCL_HOST_DEVICE ForwardIt destroy(ForwardIt first, ForwardIt last) noexcept
 template <typename Allocator, typename ForwardIt>
 _CCCL_HOST_DEVICE ForwardIt destroy(Allocator const& alloc, ForwardIt first, ForwardIt last) noexcept
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
-    ::cuda::std::__remove_cv_t<::cuda::std::__libcpp_remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
+    ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
 
   typename traits::allocator_type alloc_T(alloc);
 
   for (; first != last; ++first)
   {
-    destroy_at(alloc_T, addressof(*first));
+    destroy_at(alloc_T, ::cuda::std::addressof(*first));
   }
 
   return first;
@@ -82,7 +83,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(ForwardIt first, Size n) noexcept
 {
   for (; n > 0; (void) ++first, --n)
   {
-    destroy_at(addressof(*first));
+    destroy_at(::cuda::std::addressof(*first));
   }
 
   return first;
@@ -91,15 +92,15 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(ForwardIt first, Size n) noexcept
 template <typename Allocator, typename ForwardIt, typename Size>
 _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, Size n) noexcept
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
-    ::cuda::std::__remove_cv_t<::cuda::std::__libcpp_remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
+    ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Allocator>>>::template rebind_traits<T>::other;
 
   typename traits::allocator_type alloc_T(alloc);
 
   for (; n > 0; (void) ++first, --n)
   {
-    destroy_at(alloc_T, addressof(*first));
+    destroy_at(alloc_T, ::cuda::std::addressof(*first));
   }
 
   return first;
@@ -108,7 +109,7 @@ _CCCL_HOST_DEVICE ForwardIt destroy_n(Allocator const& alloc, ForwardIt first, S
 template <typename ForwardIt, typename... Args>
 _CCCL_HOST_DEVICE void uninitialized_construct(ForwardIt first, ForwardIt last, Args const&... args)
 {
-  using T = typename iterator_traits<ForwardIt>::value_type;
+  using T = detail::it_value_t<ForwardIt>;
 
   ForwardIt current = first;
 
@@ -119,19 +120,19 @@ _CCCL_HOST_DEVICE void uninitialized_construct(ForwardIt first, ForwardIt last, 
       try {
         for (; current != last; ++current)
         {
-          ::new (static_cast<void*>(addressof(*current))) T(args...);
+          ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...);
         }
       } catch (...) {
         destroy(first, current);
         throw;
       }),
-    (for (; current != last; ++current) { ::new (static_cast<void*>(addressof(*current))) T(args...); }));
+    (for (; current != last; ++current) { ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...); }));
 }
 
 template <typename Allocator, typename ForwardIt, typename... Args>
 void uninitialized_construct_with_allocator(Allocator const& alloc, ForwardIt first, ForwardIt last, Args const&... args)
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
     typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type>::template rebind_traits<T>;
 
@@ -146,19 +147,19 @@ void uninitialized_construct_with_allocator(Allocator const& alloc, ForwardIt fi
       try {
         for (; current != last; ++current)
         {
-          traits::construct(alloc_T, addressof(*current), args...);
+          traits::construct(alloc_T, ::cuda::std::addressof(*current), args...);
         }
       } catch (...) {
         destroy(alloc_T, first, current);
         throw;
       }),
-    (for (; current != last; ++current) { traits::construct(alloc_T, addressof(*current), args...); }));
+    (for (; current != last; ++current) { traits::construct(alloc_T, ::cuda::std::addressof(*current), args...); }));
 }
 
 template <typename ForwardIt, typename Size, typename... Args>
 void uninitialized_construct_n(ForwardIt first, Size n, Args const&... args)
 {
-  using T = typename iterator_traits<ForwardIt>::value_type;
+  using T = detail::it_value_t<ForwardIt>;
 
   ForwardIt current = first;
 
@@ -169,19 +170,19 @@ void uninitialized_construct_n(ForwardIt first, Size n, Args const&... args)
       try {
         for (; n > 0; ++current, --n)
         {
-          ::new (static_cast<void*>(addressof(*current))) T(args...);
+          ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...);
         }
       } catch (...) {
         destroy(first, current);
         throw;
       }),
-    (for (; n > 0; ++current, --n) { ::new (static_cast<void*>(addressof(*current))) T(args...); }));
+    (for (; n > 0; ++current, --n) { ::new (static_cast<void*>(::cuda::std::addressof(*current))) T(args...); }));
 }
 
 template <typename Allocator, typename ForwardIt, typename Size, typename... Args>
 void uninitialized_construct_n_with_allocator(Allocator const& alloc, ForwardIt first, Size n, Args const&... args)
 {
-  using T      = typename iterator_traits<ForwardIt>::value_type;
+  using T      = detail::it_value_t<ForwardIt>;
   using traits = typename detail::allocator_traits<
     typename std::remove_cv<typename std::remove_reference<Allocator>::type>::type>::template rebind_traits<T>;
 
@@ -196,13 +197,13 @@ void uninitialized_construct_n_with_allocator(Allocator const& alloc, ForwardIt 
       try {
         for (; n > 0; (void) ++current, --n)
         {
-          traits::construct(alloc_T, addressof(*current), args...);
+          traits::construct(alloc_T, ::cuda::std::addressof(*current), args...);
         }
       } catch (...) {
         destroy(alloc_T, first, current);
         throw;
       }),
-    (for (; n > 0; (void) ++current, --n) { traits::construct(alloc_T, addressof(*current), args...); }));
+    (for (; n > 0; (void) ++current, --n) { traits::construct(alloc_T, ::cuda::std::addressof(*current), args...); }));
 }
 
 ///////////////////////////////////////////////////////////////////////////////

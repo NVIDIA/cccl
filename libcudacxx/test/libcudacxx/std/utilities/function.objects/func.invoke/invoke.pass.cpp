@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++98, c++03, c++11
-
 // <cuda/std/functional>
 
 // template <class F, class ...Args>
@@ -122,7 +120,7 @@ template <class Signature, class Expect, class Functor>
 __host__ __device__ void test_b12(Functor&& f)
 {
   // Create the callable object.
-  typedef Signature TestClass::*ClassFunc;
+  typedef Signature TestClass::* ClassFunc;
   ClassFunc func_ptr = &TestClass::operator();
 
   // Create the dummy arg.
@@ -145,7 +143,7 @@ template <class Expect, class Functor>
 __host__ __device__ void test_b34(Functor&& f)
 {
   // Create the callable object.
-  typedef int TestClass::*ClassFunc;
+  typedef int TestClass::* ClassFunc;
   ClassFunc func_ptr = &TestClass::data;
 
   // Check that the deduced return type of invoke is what is expected.
@@ -376,18 +374,18 @@ __host__ __device__ void noexcept_test()
     CopyThrows arg;
     unused(arg); // suppress unused warning
     static_assert(noexcept(cuda::std::invoke(obj)), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::invoke(obj, arg)), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))), "");
   }
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
   {
     ThrowsCallable obj;
     unused(obj); // suppress unused warning
     static_assert(!noexcept(cuda::std::invoke(obj)), "");
   }
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
   {
     MemberObj obj{42};
     unused(obj); // suppress unused warning.

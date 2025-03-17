@@ -10,11 +10,18 @@ add_custom_target(thrust.all.headers)
 function(thrust_add_header_test thrust_target label definitions)
   thrust_get_target_property(config_host ${thrust_target} HOST)
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
+  thrust_get_target_property(config_dialect ${thrust_target} DIALECT)
   thrust_get_target_property(config_prefix ${thrust_target} PREFIX)
   set(config_systems ${config_host} ${config_device})
 
   string(TOLOWER "${config_host}" host_lower)
   string(TOLOWER "${config_device}" device_lower)
+
+  if (config_device STREQUAL "CUDA")
+    set(lang CUDA)
+  else()
+    set(lang CXX)
+  endif()
 
   # GLOB ALL THE THINGS
   set(headers_globs thrust/*.h)
@@ -31,14 +38,14 @@ function(thrust_add_header_test thrust_target label definitions)
 
   # Get all .h files...
   file(GLOB_RECURSE headers
-    RELATIVE "${Thrust_SOURCE_DIR}/thrust"
+    RELATIVE "${Thrust_SOURCE_DIR}"
     CONFIGURE_DEPENDS
     ${headers_globs}
   )
 
   # ...then remove all system specific headers...
   file(GLOB_RECURSE headers_exclude_systems
-    RELATIVE "${Thrust_SOURCE_DIR}/thrust"
+    RELATIVE "${Thrust_SOURCE_DIR}"
     CONFIGURE_DEPENDS
     ${headers_exclude_systems_globs}
   )
@@ -46,7 +53,7 @@ function(thrust_add_header_test thrust_target label definitions)
 
   # ...then add all headers specific to the selected host and device systems back again...
   file(GLOB_RECURSE headers_systems
-    RELATIVE ${Thrust_SOURCE_DIR}/thrust
+    RELATIVE "${Thrust_SOURCE_DIR}"
     CONFIGURE_DEPENDS
     ${headers_systems_globs}
   )
@@ -54,7 +61,7 @@ function(thrust_add_header_test thrust_target label definitions)
 
   # ...and remove all the detail headers (also removing the detail headers from the selected systems).
   file(GLOB_RECURSE headers_exclude_details
-    RELATIVE "${Thrust_SOURCE_DIR}/thrust"
+    RELATIVE "${Thrust_SOURCE_DIR}"
     CONFIGURE_DEPENDS
     ${headers_exclude_details_globs}
   )
@@ -62,14 +69,6 @@ function(thrust_add_header_test thrust_target label definitions)
 
   # List of headers that aren't implemented for all backends, but are implemented for CUDA.
   set(partially_implemented_CUDA
-    async/copy.h
-    async/for_each.h
-    async/reduce.h
-    async/scan.h
-    async/sort.h
-    async/transform.h
-    event.h
-    future.h
   )
 
   # List of headers that aren't implemented for all backends, but are implemented for CPP.
@@ -93,9 +92,10 @@ function(thrust_add_header_test thrust_target label definitions)
   )
   list(REMOVE_DUPLICATES partially_implemented)
 
-  set(headertest_srcs)
-
-  foreach (header IN LISTS headers)
+  # Filter the partially implemented headers:
+  set(headers_tmp ${headers})
+  set(headers)
+  foreach (header IN LISTS headers_tmp)
     if ("${header}" IN_LIST partially_implemented)
       # This header is partially implemented on _some_ backends...
       if (NOT "${header}" IN_LIST partially_implemented_${config_device})
@@ -103,22 +103,16 @@ function(thrust_add_header_test thrust_target label definitions)
         continue()
       endif()
     endif()
-
-    set(headertest_src_ext .cpp)
-    if ("CUDA" STREQUAL "${config_device}")
-      set(headertest_src_ext .cu)
-    endif()
-
-    set(headertest_src "headers/${config_prefix}/${header}${headertest_src_ext}")
-    configure_file("${Thrust_SOURCE_DIR}/cmake/header_test.in" "${headertest_src}")
-
-    list(APPEND headertest_srcs "${headertest_src}")
+    list(APPEND headers ${header})
   endforeach()
 
   set(headertest_target ${config_prefix}.headers.${label})
-  add_library(${headertest_target} OBJECT ${headertest_srcs})
+  cccl_generate_header_tests(${headertest_target} thrust
+    DIALECT ${config_dialect}
+    LANGUAGE ${lang}
+    HEADERS ${headers}
+  )
   target_link_libraries(${headertest_target} PUBLIC ${thrust_target})
-  target_compile_definitions(${headertest_target} PRIVATE ${header_definitions})
   thrust_clone_target_properties(${headertest_target} ${thrust_target})
 
   if ("CUDA" STREQUAL "${config_device}")
@@ -128,10 +122,15 @@ function(thrust_add_header_test thrust_target label definitions)
   # Disable macro checks on TBB; the TBB atomic implementation uses `I` and
   # our checks will issue false errors.
   if ("TBB" IN_LIST config_systems)
-    target_compile_definitions(${headertest_target}
-      PRIVATE THRUST_IGNORE_MACRO_CHECKS
-    )
+    target_compile_definitions(${headertest_target} PRIVATE CCCL_IGNORE_HEADER_MACRO_CHECKS)
   endif()
+
+  # nvcc < 11.5 generates "error #186-D: pointless comparison of unsigned integer with zero"
+  # when including <cuda_pipeline_primitives.h> in CUB's dispatch_transform.h,
+  # despite explicitly suppressing the warning there
+  if ("NVIDIA" STREQUAL "${CMAKE_CUDA_COMPILER_ID}" AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 11.5.0)
+    target_compile_options(${headertest_target} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe=--diag_suppress=186>)
+  endif ()
 
   thrust_fix_clang_nvcc_build_for(${headertest_target})
 
@@ -140,39 +139,22 @@ function(thrust_add_header_test thrust_target label definitions)
 endfunction()
 
 foreach(thrust_target IN LISTS THRUST_TARGETS)
+  thrust_add_header_test(${thrust_target} base "")
+
   # Wrap Thrust/CUB in a custom namespace to check proper use of ns macros:
   set(header_definitions
     "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
     "CUB_WRAPPED_NAMESPACE=wrapped_cub")
-  thrust_add_header_test(${thrust_target} base "${header_definitions}")
-
-  # We need to ensure that the different dispatch mechanisms work
-  set(header_definitions
-    "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
-    "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-    "THRUST_FORCE_32_BIT_OFFSET_TYPE")
-  thrust_add_header_test(${thrust_target} offset_32 "${header_definitions}")
-
-  set(header_definitions
-    "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
-    "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-    "THRUST_FORCE_64_BIT_OFFSET_TYPE")
-  thrust_add_header_test(${thrust_target} offset_64 "${header_definitions}")
+  thrust_add_header_test(${thrust_target} wrap "${header_definitions}")
 
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
   if ("CUDA" STREQUAL "${config_device}")
     # Check that BF16 support can be disabled
-    set(header_definitions
-      "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
-      "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-      "CCCL_DISABLE_BF16_SUPPORT")
-    thrust_add_header_test(${thrust_target} bf16 "${header_definitions}")
+    set(header_definitions "CCCL_DISABLE_BF16_SUPPORT")
+    thrust_add_header_test(${thrust_target} no_bf16 "${header_definitions}")
 
     # Check that half support can be disabled
-    set(header_definitions
-      "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
-      "CUB_WRAPPED_NAMESPACE=wrapped_cub"
-      "CCCL_DISABLE_FP16_SUPPORT")
-    thrust_add_header_test(${thrust_target} half "${header_definitions}")
+    set(header_definitions "CCCL_DISABLE_FP16_SUPPORT")
+    thrust_add_header_test(${thrust_target} no_half "${header_definitions}")
   endif()
 endforeach ()

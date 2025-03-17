@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class It, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(U u)
+__host__ __device__ constexpr void test(U u)
 {
   const cuda::std::reverse_iterator<U> r2(u);
   cuda::std::reverse_iterator<It> r1;
@@ -43,20 +43,20 @@ struct ToIter
   typedef char value_type;
   typedef value_type difference_type;
 
-  __host__ __device__ explicit TEST_CONSTEXPR_CXX14 ToIter()
+  __host__ __device__ explicit constexpr ToIter()
       : m_value(0)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter(const ToIter& src)
+  __host__ __device__ constexpr ToIter(const ToIter& src)
       : m_value(src.m_value)
   {}
   // Intentionally not defined, must not be called.
   __host__ __device__ ToIter(char* src);
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter& operator=(char* src)
+  __host__ __device__ constexpr ToIter& operator=(char* src)
   {
     m_value = src;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter& operator=(const ToIter& src)
+  __host__ __device__ constexpr ToIter& operator=(const ToIter& src)
   {
     m_value = src.m_value;
     return *this;
@@ -70,7 +70,7 @@ struct ToIter
   __host__ __device__ ToIter operator--(int);
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   Derived d{};
   test<bidirectional_iterator<Base*>>(bidirectional_iterator<Derived*>(&d));
@@ -90,8 +90,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER > 2011
   static_assert(tests(), "");
-#endif
   return 0;
 }

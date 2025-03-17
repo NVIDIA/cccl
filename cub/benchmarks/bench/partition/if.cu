@@ -27,6 +27,11 @@
 
 #include <cub/device/device_partition.cuh>
 
+#include <thrust/count.h>
+
+#include <cuda/std/__algorithm_>
+#include <cuda/std/type_traits>
+
 #include <look_back_helper.cuh>
 #include <nvbench_helper.cuh>
 
@@ -37,9 +42,6 @@
 // %RANGE% TUNE_MAGIC_NS ns 0:2048:4
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
-
-constexpr bool keep_rejects = true;
-constexpr bool may_alias    = false;
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
@@ -59,14 +61,9 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = TUNE_ITEMS_PER_THREAD;
-
-    static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
-
     using SelectIfPolicyT =
       cub::AgentSelectIfPolicy<TUNE_THREADS_PER_BLOCK,
-                               ITEMS_PER_THREAD,
+                               TUNE_ITEMS_PER_THREAD,
                                TUNE_LOAD_ALGORITHM,
                                TUNE_LOAD_MODIFIER,
                                cub::BLOCK_SCAN_WARP_SCANS,
@@ -93,51 +90,60 @@ T value_from_entropy(double percentage)
 {
   if (percentage == 1)
   {
-    return std::numeric_limits<T>::max();
+    return ::cuda::std::numeric_limits<T>::max();
   }
 
-  const auto max_val = static_cast<double>(std::numeric_limits<T>::max());
-  const auto min_val = static_cast<double>(std::numeric_limits<T>::lowest());
+  const auto max_val = static_cast<double>(::cuda::std::numeric_limits<T>::max());
+  const auto min_val = static_cast<double>(::cuda::std::numeric_limits<T>::lowest());
   const auto result  = min_val + percentage * max_val - percentage * min_val;
   return static_cast<T>(result);
 }
 
-template <typename T, typename OffsetT>
-void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename InItT, typename T, typename OffsetT, typename SelectOpT>
+void init_output_partition_buffer(
+  InItT d_in,
+  OffsetT num_items,
+  T* d_out,
+  SelectOpT select_op,
+  cub::detail::select::partition_distinct_output_t<T*, T*>& d_partition_out_buffer)
 {
-  using input_it_t        = const T*;
-  using flag_it_t         = cub::NullType*;
-  using output_it_t       = T*;
-  using num_selected_it_t = OffsetT*;
-  using select_op_t       = less_then_t<T>;
-  using equality_op_t     = cub::NullType;
-  using offset_t          = OffsetT;
+  const auto selected_elements = thrust::count_if(d_in, d_in + num_items, select_op);
+  d_partition_out_buffer = cub::detail::select::partition_distinct_output_t<T*, T*>{d_out, d_out + selected_elements};
+}
 
+template <typename InItT, typename T, typename OffsetT, typename SelectOpT>
+void init_output_partition_buffer(InItT, OffsetT, T* d_out, SelectOpT, T*& d_partition_out_buffer)
+{
+  d_partition_out_buffer = d_out;
+}
+
+template <typename T, typename OffsetT, typename UseDistinctPartitionT>
+void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinctPartitionT>)
+{
+  using input_it_t                           = const T*;
+  using flag_it_t                            = cub::NullType*;
+  using num_selected_it_t                    = OffsetT*;
+  using select_op_t                          = less_then_t<T>;
+  using equality_op_t                        = cub::NullType;
+  using offset_t                             = OffsetT;
+  constexpr bool use_distinct_out_partitions = UseDistinctPartitionT::value;
+  using output_it_t                          = typename ::cuda::std::
+    conditional<use_distinct_out_partitions, cub::detail::select::partition_distinct_output_t<T*, T*>, T*>::type;
+
+  using dispatch_t = cub::DispatchSelectIf<
+    input_it_t,
+    flag_it_t,
+    output_it_t,
+    num_selected_it_t,
+    select_op_t,
+    equality_op_t,
+    offset_t,
+    cub::SelectImpl::Partition
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<T>;
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias,
-    policy_t>;
-#else // TUNE_BASE
-  using dispatch_t = cub::DispatchSelectIf<
-    input_it_t,
-    flag_it_t,
-    output_it_t,
-    num_selected_it_t,
-    select_op_t,
-    equality_op_t,
-    offset_t,
-    keep_rejects,
-    may_alias>;
+    ,
+    policy_hub_t<T>
 #endif // !TUNE_BASE
+    >;
 
   // Retrieve axis parameters
   const auto elements       = static_cast<std::size_t>(state.get_int64("Elements{io}"));
@@ -153,8 +159,9 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   input_it_t d_in                  = thrust::raw_pointer_cast(in.data());
   flag_it_t d_flags                = nullptr;
-  output_it_t d_out                = thrust::raw_pointer_cast(out.data());
   num_selected_it_t d_num_selected = thrust::raw_pointer_cast(num_selected.data());
+  output_it_t d_out{};
+  init_output_partition_buffer(in.cbegin(), elements, thrust::raw_pointer_cast(out.data()), select_op, d_out);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
@@ -183,8 +190,16 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-NVBENCH_BENCH_TYPES(partition, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
+using ::cuda::std::false_type;
+using ::cuda::std::true_type;
+#ifdef TUNE_DistinctPartitions
+using distinct_partitions = nvbench::type_list<TUNE_DistinctPartitions>; // expands to "false_type" or "true_type"
+#else // !defined(TUNE_DistinctPartitions)
+using distinct_partitions = nvbench::type_list<false_type, true_type>;
+#endif // TUNE_DistinctPartitions
+
+NVBENCH_BENCH_TYPES(partition, NVBENCH_TYPE_AXES(fundamental_types, offset_types, distinct_partitions))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "DistinctPartitions{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.000"});

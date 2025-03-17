@@ -1,5 +1,5 @@
-## CUDA Experimental: Library for experimental features in CUDA C++ Core Libraries.
-CUDA Experimental serves as a distribution channel for features that are considered experimental in the CUDA C++ Core Libraries.
+## CUDA Experimental: Library for experimental features in CUDA Core Compute Libraries.
+CUDA Experimental serves as a distribution channel for features that are considered experimental in the CUDA Core Compute Libraries.
 Some of them are still actively designed or developed and their API is evolving.
 Some of them are specific to one hardware architecture and are still looking for a generic and forward compatible exposure.
 Finally, some of them need to prove useful enough to deserve long term support.
@@ -10,7 +10,7 @@ Features are exposed here for the CUDA C++ community to experiment with and prov
 Once we become confident a feature is ready and would be a great permanent addition in CCCL, it will become a part of some other CCCL library with a stable API.
 
 ## Installation
-CUDA Experimental library is **not** distributed with the CUDA Toolkit like the rest of CCCL. It is only avaiable on the [CCCL GitHub repository](https://github.com/NVIDIA/cccl).
+CUDA Experimental library is **not** distributed with the CUDA Toolkit like the rest of CCCL. It is only available on the [CCCL GitHub repository](https://github.com/NVIDIA/cccl).
 
 CUDA Experimental compilation requires C++17 standard or newer. Supported compilers are:
 

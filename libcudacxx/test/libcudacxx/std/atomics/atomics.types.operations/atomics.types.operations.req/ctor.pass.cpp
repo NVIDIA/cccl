@@ -8,7 +8,6 @@
 //
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
-// UNSUPPORTED: c++98, c++03
 
 // NOTE: atomic<> of a TriviallyCopyable class is wrongly rejected by older
 // clang versions. It was fixed right before the llvm 3.5 release. See PR18097.
@@ -60,7 +59,7 @@ struct TestFunc
       constexpr Atomic a{t};
       assert(a == t);
     }
-#if !defined(_GNUC_VER) || _GNUC_VER >= 409
+#if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 4, 9)
     // TODO: Figure out why this is failing with GCC 4.8.2 on CentOS 7 only.
     {
       constexpr Atomic a = LIBCUDACXX_ATOMIC_VAR_INIT(t);

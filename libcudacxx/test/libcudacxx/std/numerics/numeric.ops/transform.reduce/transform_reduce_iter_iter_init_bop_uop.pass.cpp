@@ -27,7 +27,7 @@
 struct identity
 {
   template <class T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 T operator()(T&& x) const
+  __host__ __device__ constexpr T operator()(T&& x) const
   {
     return cuda::std::forward<T>(x);
   }
@@ -36,21 +36,21 @@ struct identity
 struct twice
 {
   template <class T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 T operator()(const T& x) const
+  __host__ __device__ constexpr T operator()(const T& x) const
   {
     return 2 * x;
   }
 };
 
 template <class Iter1, class T, class BOp, class UOp>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter1 first1, Iter1 last1, T init, BOp bOp, UOp uOp, T x)
+__host__ __device__ constexpr void test(Iter1 first1, Iter1 last1, T init, BOp bOp, UOp uOp, T x)
 {
   static_assert(cuda::std::is_same<T, decltype(cuda::std::transform_reduce(first1, last1, init, bOp, uOp))>::value, "");
   assert(cuda::std::transform_reduce(first1, last1, init, bOp, uOp) == x);
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]    = {1, 2, 3, 4, 5, 6};
   unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -75,7 +75,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 }
 
 template <typename T, typename Init>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_return_type()
+__host__ __device__ constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
@@ -86,7 +86,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_return_type()
 
 struct SumMoveOnly
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator()(const MoveOnly& lhs, const MoveOnly& rhs) const noexcept
+  __host__ __device__ constexpr MoveOnly operator()(const MoveOnly& lhs, const MoveOnly& rhs) const noexcept
   {
     return MoveOnly{lhs.get() + rhs.get()};
   }
@@ -94,13 +94,13 @@ struct SumMoveOnly
 
 struct TimesTen
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnly operator()(const MoveOnly& target) const noexcept
+  __host__ __device__ constexpr MoveOnly operator()(const MoveOnly& target) const noexcept
   {
     return MoveOnly{target.get() * 10};
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_move_only_types()
+__host__ __device__ constexpr void test_move_only_types()
 {
   MoveOnly ia[] = {{1}, {2}, {3}};
   assert(
@@ -109,7 +109,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_move_only_types()
          .get());
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_return_type<char, int>();
   test_return_type<int, int>();
@@ -142,8 +142,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }

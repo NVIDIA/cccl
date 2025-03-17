@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/__async/async.cuh>
+#include <cuda/experimental/__async/sender.cuh>
 
 #include "common/checked_receiver.cuh"
 #include "common/error_scheduler.cuh"

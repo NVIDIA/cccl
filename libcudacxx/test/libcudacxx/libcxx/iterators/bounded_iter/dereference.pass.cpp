@@ -13,8 +13,8 @@
 // Dereference and indexing operators
 
 // REQUIRES: has-unix-headers
-// UNSUPPORTED: c++03
-// ADDITIONAL_COMPILE_FLAGS: -D_LIBCUDACXX_ENABLE_ASSERTIONS=1
+
+// ADDITIONAL_COMPILE_FLAGS: -D_CCCL_ENABLE_ASSERTIONS
 
 #include <cuda/std/iterator>
 
@@ -25,14 +25,14 @@
 struct Foo
 {
   int x;
-  __host__ __device__ TEST_CONSTEXPR bool operator==(Foo const& other) const
+  __host__ __device__ constexpr bool operator==(Foo const& other) const
   {
     return x == other.x;
   }
 };
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   Foo array[]                                 = {Foo{40}, Foo{41}, Foo{42}, Foo{43}, Foo{44}};
   Foo* b                                      = array + 0;
@@ -64,30 +64,28 @@ __host__ __device__ void test_death()
   cuda::std::__bounded_iter<Iter> const oob  = cuda::std::__make_bounded_iter(Iter(e), Iter(b), Iter(e));
 
   // operator*
-  TEST_LIBCUDACXX_ASSERT_FAILURE(*oob, "__bounded_iter::operator*: Attempt to dereference an out-of-range iterator");
+  TEST_CCCL_ASSERT_FAILURE(*oob, "__bounded_iter::operator*: Attempt to dereference an out-of-range iterator");
   // operator->
-  TEST_LIBCUDACXX_ASSERT_FAILURE(oob->x, "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
+  TEST_CCCL_ASSERT_FAILURE(oob->x, "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
   // operator[]
-  TEST_LIBCUDACXX_ASSERT_FAILURE(iter[-1], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
-  TEST_LIBCUDACXX_ASSERT_FAILURE(iter[5], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
-  TEST_LIBCUDACXX_ASSERT_FAILURE(oob[0], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
-  TEST_LIBCUDACXX_ASSERT_FAILURE(oob[1], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
-  TEST_LIBCUDACXX_ASSERT_FAILURE(oob[-6], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
+  TEST_CCCL_ASSERT_FAILURE(iter[-1], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
+  TEST_CCCL_ASSERT_FAILURE(iter[5], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
+  TEST_CCCL_ASSERT_FAILURE(oob[0], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
+  TEST_CCCL_ASSERT_FAILURE(oob[1], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
+  TEST_CCCL_ASSERT_FAILURE(oob[-6], "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
 }
 
 int main(int, char**)
 {
   tests<Foo*>();
   test_death<Foo*>();
-#if TEST_STD_VER > 2011
   static_assert(tests<Foo*>(), "");
-#endif
 
 #if TEST_STD_VER > 2017
   tests<contiguous_iterator<Foo*>>();
   test_death<contiguous_iterator<Foo*>>();
   static_assert(tests<contiguous_iterator<Foo*>>(), "");
-#endif
+#endif // TEST_STD_VER > 2017
 
   return 0;
 }

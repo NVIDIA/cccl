@@ -20,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/predicate.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [concept.relation]
 
@@ -43,10 +43,10 @@ concept equivalence_relation = relation<_Rp, _Tp, _Up>;
 template <class _Rp, class _Tp, class _Up>
 concept strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#elif _CCCL_STD_VER > 2011
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Rp, class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __relation_,
   requires()(requires(predicate<_Rp, _Tp, _Tp>),
              requires(predicate<_Rp, _Up, _Up>),
@@ -54,19 +54,19 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(predicate<_Rp, _Up, _Tp>)));
 
 template <class _Rp, class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT relation = _LIBCUDACXX_FRAGMENT(__relation_, _Rp, _Tp, _Up);
+_CCCL_CONCEPT relation = _CCCL_FRAGMENT(__relation_, _Rp, _Tp, _Up);
 
 // [concept.equiv]
 
 template <class _Rp, class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT equivalence_relation = relation<_Rp, _Tp, _Up>;
+_CCCL_CONCEPT equivalence_relation = relation<_Rp, _Tp, _Up>;
 
 // [concept.strictweakorder]
 
 template <class _Rp, class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT strict_weak_order = relation<_Rp, _Tp, _Up>;
+_CCCL_CONCEPT strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

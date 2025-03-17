@@ -156,6 +156,18 @@ ArgPair argHandlers[] = {
      nvrtcArguments.emplace_back("-std=" + match[1].str());
      return NORMAL;
    }},
+  {// Matches -G/--device-debug
+   std::regex("^(?:-G|--device-debug)$"),
+   [](const std::smatch&) {
+     nvrtcArguments.emplace_back("-G");
+     return NORMAL;
+   }},
+  {// Matches -D
+   std::regex("^-D.+$"),
+   [](const std::smatch& match) {
+     nvrtcArguments.emplace_back(match[0].str());
+     return NORMAL;
+   }},
   {// Capture an argument that is just '-'. If no input file is listed input is on stdin
    std::regex("^-$"),
    [](const std::smatch& match) {
@@ -268,6 +280,7 @@ int main(int argc, char** argv)
   // Write any needed kernel launch data to file for later
   RunConfig runConfig = parse_run_config(testCu);
 
+  nvrtcArguments.emplace_back("-DCCCL_ENABLE_ASSERTIONS");
   if (!skipOutput)
   {
     std::ofstream ostr(outputTemplate + ".build.yml");

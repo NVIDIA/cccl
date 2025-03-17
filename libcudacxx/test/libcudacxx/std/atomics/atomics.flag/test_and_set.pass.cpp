@@ -39,7 +39,6 @@ __host__ __device__ void test()
     assert(f.test_and_set(cuda::std::memory_order_relaxed) == 0);
     assert(f.test_and_set(cuda::std::memory_order_relaxed) == 1);
   }
-#ifndef TEST_COMPILER_ICC
   {
     Selector<cuda::std::atomic_flag, default_initializer> sel;
     cuda::std::atomic_flag& f = *sel.construct();
@@ -47,7 +46,6 @@ __host__ __device__ void test()
     assert(f.test_and_set(cuda::std::memory_order_consume) == 0);
     assert(f.test_and_set(cuda::std::memory_order_consume) == 1);
   }
-#endif
   {
     Selector<cuda::std::atomic_flag, default_initializer> sel;
     cuda::std::atomic_flag& f = *sel.construct();
@@ -90,7 +88,6 @@ __host__ __device__ void test()
     assert(f.test_and_set(cuda::std::memory_order_relaxed) == 0);
     assert(f.test_and_set(cuda::std::memory_order_relaxed) == 1);
   }
-#ifndef TEST_COMPILER_ICC
   {
     Selector<volatile cuda::std::atomic_flag, default_initializer> sel;
     volatile cuda::std::atomic_flag& f = *sel.construct();
@@ -98,7 +95,6 @@ __host__ __device__ void test()
     assert(f.test_and_set(cuda::std::memory_order_consume) == 0);
     assert(f.test_and_set(cuda::std::memory_order_consume) == 1);
   }
-#endif
   {
     Selector<volatile cuda::std::atomic_flag, default_initializer> sel;
     volatile cuda::std::atomic_flag& f = *sel.construct();

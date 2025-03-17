@@ -46,8 +46,9 @@
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/extended_types.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -70,12 +71,12 @@ using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_
 using key_types = c2h::type_list<
     cuda::std::uint16_t
   , cuda::std::int16_t
-#ifdef TEST_HALF_T
+#if TEST_HALF_T()
   , half_t
-#endif
-#ifdef TEST_BF_T
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
   , bfloat16_t
-#endif
+#endif // TEST_BF_T()
   >;
 // clang-format on
 using bit_window_key_types = c2h::type_list<cuda::std::uint16_t, cuda::std::int16_t>;
@@ -96,7 +97,7 @@ using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 // Index types used for NumItemsT testing. cub::detail::ChooseOffsetT only selects 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
-CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", key_types)
+C2H_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", key_types)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -109,7 +110,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device
   c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 3;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -136,7 +137,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device
   REQUIRE(ref_keys == out_keys);
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]", bit_window_key_types)
+C2H_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]", bit_window_key_types)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -157,7 +158,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
   c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -186,7 +187,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: bit windows", "[keys][radix][sort][device]"
 
 #ifndef NO_FP_KEY_TYPES
 
-CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sort][device]", fp_key_types)
+C2H_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sort][device]", fp_key_types)
 {
   using key_t  = c2h::get<0, TestType>;
   using bits_t = typename cub::Traits<key_t>::UnsignedBits;
@@ -201,7 +202,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   // Sprinkle some positive and negative zeros randomly throughout the keys:
   {
@@ -209,7 +210,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
     c2h::device_vector<std::size_t> indices(num_indices);
     for (int i = 0; i < 2; ++i)
     {
-      c2h::gen(CUB_SEED(1), indices, std::size_t(0), num_items);
+      c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
       auto begin = thrust::make_constant_iterator(i == 0 ? positive_zero : negative_zero);
       auto end   = begin + num_indices;
       thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
@@ -242,7 +243,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: negative zero handling", "[keys][radix][sor
   REQUIRE_BITWISE_EQ(ref_keys, out_keys);
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]", fp_key_types)
+C2H_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]", fp_key_types)
 {
   using key_t    = c2h::get<0, TestType>;
   using limits_t = cuda::std::numeric_limits<key_t>;
@@ -253,7 +254,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
   c2h::device_vector<key_t> out_keys(num_items);
 
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   // Sprinkle some NaNs randomly throughout the keys:
   {
@@ -268,7 +269,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
       if (supported)
       {
         has_nans = true;
-        c2h::gen(CUB_SEED(1), indices, std::size_t(0), num_items);
+        c2h::gen(C2H_SEED(1), indices, std::size_t(0), num_items);
         auto begin = thrust::make_constant_iterator(nan_val);
         auto end   = begin + num_indices;
         thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), in_keys.begin());
@@ -308,7 +309,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NaN handling", "[keys][radix][sort][device]
 
 #endif // !NO_FP_KEY_TYPES
 
-CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][device]", single_key_type)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -317,16 +318,16 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
   c2h::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
-  // Repeatedly bitwise-and random keys together. This increases the likelyhood
+  // Repeatedly bitwise-and random keys together. This increases the likelihood
   // of duplicate keys.
   const int entropy_reduction = GENERATE(1, 3, 9, 15);
   {
     c2h::device_vector<key_t> tmp(num_items);
     for (int i = 0; i < entropy_reduction; ++i)
     {
-      c2h::gen(CUB_SEED(1), tmp);
+      c2h::gen(C2H_SEED(1), tmp);
       thrust::transform(
         c2h::device_policy, in_keys.cbegin(), in_keys.cend(), tmp.cbegin(), in_keys.begin(), thrust::bit_and<key_t>{});
     }
@@ -358,7 +359,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
   REQUIRE(ref_keys == out_keys);
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][device]", key_types)
+C2H_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][device]", key_types)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -392,7 +393,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: uniform values", "[keys][radix][sort][devic
   REQUIRE(ref_keys == out_keys);
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", single_key_type, num_items_types)
+C2H_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", single_key_type, num_items_types)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = c2h::get<1, TestType>;
@@ -405,7 +406,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", 
   c2h::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -433,7 +434,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: NumItemsT", "[keys][radix][sort][device]", 
   REQUIRE(ref_keys == out_keys);
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][device]", single_key_type)
 {
   using key_t = c2h::get<0, TestType>;
 
@@ -442,7 +443,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: DoubleBuffer API", "[keys][radix][sort][dev
   c2h::device_vector<key_t> in_keys(num_items);
 
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -474,7 +475,7 @@ void do_large_offset_test(std::size_t num_items)
   try
   {
     large_array_sort_helper<key_t> arrays;
-    arrays.initialize_for_unstable_key_sort(CUB_SEED(1), num_items, is_descending);
+    arrays.initialize_for_unstable_key_sort(C2H_SEED(1), num_items, is_descending);
 
     TIME(c2h::cpu_timer timer);
 
@@ -503,14 +504,14 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radix][sort][device]", single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint32_t;
 
   // Test problem sizes near and at the maximum offset value to ensure that internal calculations
   // do not overflow.
-  constexpr std::size_t max_offset    = std::numeric_limits<num_items_t>::max();
+  constexpr std::size_t max_offset    = ::cuda::std::numeric_limits<num_items_t>::max();
   constexpr std::size_t min_num_items = max_offset - 5;
   constexpr std::size_t max_num_items = max_offset;
   const std::size_t num_items         = GENERATE_COPY(min_num_items, max_num_items);
@@ -518,7 +519,7 @@ CUB_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radi
   do_large_offset_test<key_t, num_items_t>(num_items);
 }
 
-CUB_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort][device]", single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint64_t;

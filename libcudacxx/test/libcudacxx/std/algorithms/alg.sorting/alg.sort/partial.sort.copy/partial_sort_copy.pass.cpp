@@ -20,13 +20,14 @@
 
 #include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "MoveOnly.h"
 #include "test_iterators.h"
 #include "test_macros.h"
 
 template <class T, class Iter, class OutIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int orig[15] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
   T work[15]   = {};
@@ -68,7 +69,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   int i = 42;
   int j = 75;
@@ -77,14 +78,20 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(j == 75);
 
   test<int, random_access_iterator<int*>, random_access_iterator<int*>>();
-  test<int, random_access_iterator<int*>, int*>();
-  test<int, int*, random_access_iterator<int*>>();
-  test<int, int*, int*>();
+  if (!cuda::std::is_constant_evaluated()) // This breaks some compilers due to excessive constant folding
+  {
+    test<int, random_access_iterator<int*>, int*>();
+    test<int, int*, random_access_iterator<int*>>();
+    test<int, int*, int*>();
+  }
 
   test<MoveOnly, random_access_iterator<int*>, random_access_iterator<MoveOnly*>>();
-  test<MoveOnly, random_access_iterator<int*>, MoveOnly*>();
-  test<MoveOnly, int*, random_access_iterator<MoveOnly*>>();
-  test<MoveOnly, int*, MoveOnly*>();
+  if (!cuda::std::is_constant_evaluated()) // This breaks some compilers due to excessive constant folding
+  {
+    test<MoveOnly, random_access_iterator<int*>, MoveOnly*>();
+    test<MoveOnly, int*, random_access_iterator<MoveOnly*>>();
+    test<MoveOnly, int*, MoveOnly*>();
+  }
 
   return true;
 }
@@ -92,11 +99,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if !defined(TEST_COMPILER_CLANG) && !defined(TEST_COMPILER_MSVC) // Over constexpr evaluation limit
-#  if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#  endif // TEST_STD_VER >= 2014
-#endif // !TEST_COMPILER_CLANG && !TEST_COMPILER_MSVC
 
   return 0;
 }

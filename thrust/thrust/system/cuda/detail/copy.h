@@ -84,7 +84,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 // D->D copy requires NVCC compiler
 
 _CCCL_EXEC_CHECK_DISABLE

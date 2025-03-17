@@ -51,15 +51,12 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-namespace for_each
+namespace detail::for_each
 {
 
 // The dispatch layer is in the detail namespace until we figure out tuning API
 template <class OffsetT, class OpT, class PolicyHubT = policy_hub_t>
-struct dispatch_t : PolicyHubT
+struct dispatch_t
 {
   OffsetT num_items;
   OpT op;
@@ -75,7 +72,7 @@ struct dispatch_t : PolicyHubT
   CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::false_type /* block size is not known at compile time */)
   {
-    using max_policy_t = typename dispatch_t::MaxPolicy;
+    using max_policy_t = typename PolicyHubT::MaxPolicy;
 
     if (num_items == 0)
     {
@@ -101,7 +98,7 @@ struct dispatch_t : PolicyHubT
     const auto tile_size = static_cast<OffsetT>(block_threads * items_per_thread);
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each::dynamic_kernel<<<%d, %d, 0, %lld>>>(), "
             "%d items per thread\n",
             static_cast<int>(num_tiles),
@@ -110,7 +107,7 @@ struct dispatch_t : PolicyHubT
             static_cast<int>(items_per_thread));
 #endif
 
-    error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
               static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(block_threads), 0, stream)
               .doit(detail::for_each::dynamic_kernel<max_policy_t, OffsetT, OpT>, num_items, op);
     error = CubDebug(error);
@@ -132,8 +129,6 @@ struct dispatch_t : PolicyHubT
   CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::true_type /* block size is known at compile time */)
   {
-    using max_policy_t = typename dispatch_t::MaxPolicy;
-
     if (num_items == 0)
     {
       return cudaSuccess;
@@ -146,7 +141,7 @@ struct dispatch_t : PolicyHubT
     const auto tile_size = static_cast<OffsetT>(block_threads * items_per_thread);
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each::static_kernel<<<%d, %d, 0, %lld>>>(), "
             "%d items per thread\n",
             static_cast<int>(num_tiles),
@@ -155,9 +150,9 @@ struct dispatch_t : PolicyHubT
             static_cast<int>(items_per_thread));
 #endif
 
-    error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
               static_cast<unsigned int>(num_tiles), static_cast<unsigned int>(block_threads), 0, stream)
-              .doit(detail::for_each::static_kernel<max_policy_t, OffsetT, OpT>, num_items, op);
+              .doit(detail::for_each::static_kernel<typename PolicyHubT::MaxPolicy, OffsetT, OpT>, num_items, op);
     error = CubDebug(error);
     if (cudaSuccess != error)
     {
@@ -182,8 +177,6 @@ struct dispatch_t : PolicyHubT
 
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch(OffsetT num_items, OpT op, cudaStream_t stream)
   {
-    using max_policy_t = typename dispatch_t::MaxPolicy;
-
     int ptx_version   = 0;
     cudaError_t error = CubDebug(PtxVersion(ptx_version));
     if (cudaSuccess != error)
@@ -193,14 +186,12 @@ struct dispatch_t : PolicyHubT
 
     dispatch_t dispatch(num_items, op, stream);
 
-    error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
+    error = CubDebug(PolicyHubT::MaxPolicy::Invoke(ptx_version, dispatch));
 
     return error;
   }
 };
 
-} // namespace for_each
-
-} // namespace detail
+} // namespace detail::for_each
 
 CUB_NAMESPACE_END

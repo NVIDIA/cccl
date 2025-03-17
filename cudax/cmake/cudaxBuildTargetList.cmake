@@ -141,7 +141,7 @@ function(cudax_build_target_list)
   # Set up the cudax::cudax target while testing out our find_package scripts.
   find_package(cudax REQUIRED CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-    HINTS "${cudax_SOURCE_DIR}"
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
   )
 
   # Build cudax_TARGETS

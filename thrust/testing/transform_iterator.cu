@@ -2,6 +2,7 @@
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
+#include <thrust/logical.h>
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 
@@ -9,6 +10,34 @@
 #include <vector>
 
 #include <unittest/unittest.h>
+
+// ensure that we properly support thrust::reverse_iterator from cuda::std
+void TestTransformIteratorTraits()
+{
+  using func    = thrust::negate<int>;
+  using base_it = thrust::host_vector<int>::iterator;
+
+  using it     = thrust::transform_iterator<func, base_it>;
+  using traits = cuda::std::iterator_traits<it>;
+
+  static_assert(cuda::std::is_same_v<traits::difference_type, ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<traits::value_type, int>);
+  static_assert(cuda::std::is_same_v<traits::pointer, void>);
+  static_assert(cuda::std::is_same_v<traits::reference, int>);
+  static_assert(cuda::std::is_same_v<traits::iterator_category, ::cuda::std::random_access_iterator_tag>);
+
+  static_assert(cuda::std::is_same_v<thrust::iterator_traversal_t<it>, thrust::random_access_traversal_tag>);
+
+  static_assert(cuda::std::__is_cpp17_random_access_iterator<it>::value);
+
+  static_assert(!cuda::std::output_iterator<it, int>);
+  static_assert(cuda::std::input_iterator<it>);
+  static_assert(cuda::std::forward_iterator<it>);
+  static_assert(cuda::std::bidirectional_iterator<it>);
+  static_assert(cuda::std::random_access_iterator<it>);
+  static_assert(!cuda::std::contiguous_iterator<it>);
+}
+DECLARE_UNITTEST(TestTransformIteratorTraits);
 
 template <class Vector>
 void TestTransformIterator()
@@ -122,7 +151,7 @@ struct pass_ref
   }
 };
 
-// TODO(bgruber): replace by libc++ with C++14
+// a user provided functor that forwards its argument
 struct forward
 {
   template <class _Tp>
@@ -157,6 +186,12 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, "");
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
+
+    auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
+    static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
+                                                                             // transform_iterator_reference
+    static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value, "");
+    (void) it_tr_cid;
   }
 
   {
@@ -180,6 +215,12 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, ""); // wrapped reference is decayed
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
+
+    auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
+    static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
+                                                                             // transform_iterator_reference
+    static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value, "");
+    (void) it_tr_cid;
   }
 
   {
@@ -203,6 +244,23 @@ void TestTransformIteratorReferenceAndValueType()
     static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, ""); // proxy reference is decayed
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
+
+    auto it_tr_cid = thrust::make_transform_iterator(it, cuda::std::identity{});
+    static_assert(is_same<decltype(it_tr_cid)::reference, bool>::value, ""); // special handling by
+                                                                             // transform_iterator_reference
+    static_assert(is_same<decltype(it_tr_cid)::value_type, bool>::value, "");
+    (void) it_tr_cid;
   }
 }
 DECLARE_UNITTEST(TestTransformIteratorReferenceAndValueType);
+
+void TestTransformIteratorIdentity()
+{
+  thrust::device_vector<int> v(3, 42);
+
+  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), cuda::std::identity{}), 42);
+  using namespace thrust::placeholders;
+  ASSERT_EQUAL(*thrust::make_transform_iterator(v.begin(), _1), 42);
+}
+
+DECLARE_UNITTEST(TestTransformIteratorIdentity);

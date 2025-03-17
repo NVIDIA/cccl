@@ -36,7 +36,7 @@
 #include <cuda/std/__type_traits/aligned_storage.h>
 #include <cuda/std/__type_traits/aligned_union.h>
 #include <cuda/std/__type_traits/alignment_of.h>
-#include <cuda/std/__type_traits/apply_cv.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/can_extract_key.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
@@ -49,6 +49,7 @@
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
 #include <cuda/std/__type_traits/has_virtual_destructor.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -81,6 +82,7 @@
 #include <cuda/std/__type_traits/is_function.h>
 #include <cuda/std/__type_traits/is_fundamental.h>
 #include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
+#include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_literal_type.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
@@ -131,8 +133,8 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__type_traits/lazy.h>
-#include <cuda/std/__type_traits/make_32_64_or_128_bit.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
+#include <cuda/std/__type_traits/make_nbit_int.h>
 #include <cuda/std/__type_traits/make_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/maybe_const.h>
@@ -140,6 +142,8 @@
 #include <cuda/std/__type_traits/negation.h>
 #include <cuda/std/__type_traits/promote.h>
 #include <cuda/std/__type_traits/rank.h>
+#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
+#include <cuda/std/__type_traits/reference_converts_from_temporary.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_const_ref.h>
@@ -161,7 +165,6 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/version>
 
 #endif // _CUDA_STD_TYPE_TRAITS

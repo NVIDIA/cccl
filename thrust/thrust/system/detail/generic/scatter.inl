@@ -25,11 +25,11 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/copy.h>
 #include <thrust/functional.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/permutation_iterator.h>
 #include <thrust/system/detail/generic/scatter.h>
-#include <thrust/transform.h>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -47,12 +47,7 @@ scatter(thrust::execution_policy<DerivedPolicy>& exec,
         InputIterator2 map,
         RandomAccessIterator output)
 {
-  thrust::transform(
-    exec,
-    first,
-    last,
-    thrust::make_permutation_iterator(output, map),
-    thrust::identity<typename thrust::iterator_value<InputIterator1>::type>());
+  thrust::copy(exec, first, last, thrust::make_permutation_iterator(output, map));
 } // end scatter()
 
 template <typename DerivedPolicy,
@@ -68,9 +63,7 @@ _CCCL_HOST_DEVICE void scatter_if(
   InputIterator3 stencil,
   RandomAccessIterator output)
 {
-  // default predicate is identity
-  using StencilType = typename thrust::iterator_value<InputIterator3>::type;
-  thrust::scatter_if(exec, first, last, map, stencil, output, thrust::identity<StencilType>());
+  thrust::scatter_if(exec, first, last, map, stencil, output, ::cuda::std::identity{});
 } // end scatter_if()
 
 template <typename DerivedPolicy,
@@ -88,9 +81,8 @@ _CCCL_HOST_DEVICE void scatter_if(
   RandomAccessIterator output,
   Predicate pred)
 {
-  using InputType = typename thrust::iterator_value<InputIterator1>::type;
   thrust::transform_if(
-    exec, first, last, stencil, thrust::make_permutation_iterator(output, map), thrust::identity<InputType>(), pred);
+    exec, first, last, stencil, thrust::make_permutation_iterator(output, map), ::cuda::std::identity{}, pred);
 } // end scatter_if()
 
 } // end namespace generic

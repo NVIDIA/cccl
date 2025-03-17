@@ -26,8 +26,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
 {
   _CCCL_HIDE_FROM_ABI explicit in_place_t() = default;
@@ -40,7 +38,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_type_t
   _CCCL_HIDE_FROM_ABI explicit in_place_type_t() = default;
 };
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr in_place_type_t<_Tp> in_place_type{};
+_CCCL_INLINE_VAR constexpr in_place_type_t<_Tp> in_place_type{};
 
 template <size_t _Idx>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_index_t
@@ -48,7 +46,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_index_t
   _CCCL_HIDE_FROM_ABI explicit in_place_index_t() = default;
 };
 template <size_t _Idx>
-_LIBCUDACXX_INLINE_VAR constexpr in_place_index_t<_Idx> in_place_index{};
+_CCCL_INLINE_VAR constexpr in_place_index_t<_Idx> in_place_index{};
 
 template <class _Tp>
 struct __is_inplace_type_imp : false_type
@@ -58,7 +56,7 @@ struct __is_inplace_type_imp<in_place_type_t<_Tp>> : true_type
 {};
 
 template <class _Tp>
-using __is_inplace_type = __is_inplace_type_imp<__remove_cvref_t<_Tp>>;
+using __is_inplace_type = __is_inplace_type_imp<remove_cvref_t<_Tp>>;
 
 template <class _Tp>
 struct __is_inplace_index_imp : false_type
@@ -68,9 +66,7 @@ struct __is_inplace_index_imp<in_place_index_t<_Idx>> : true_type
 {};
 
 template <class _Tp>
-using __is_inplace_index = __is_inplace_index_imp<__remove_cvref_t<_Tp>>;
-
-#endif // _CCCL_STD_VER > 2011
+using __is_inplace_index = __is_inplace_index_imp<remove_cvref_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

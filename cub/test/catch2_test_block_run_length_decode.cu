@@ -29,13 +29,14 @@
 #include <cub/block/block_run_length_decode.cuh>
 #include <cub/block/block_store.cuh>
 #include <cub/device/device_scan.cuh>
-#include <cub/iterator/counting_input_iterator.cuh>
-#include <cub/iterator/transform_input_iterator.cuh>
 #include <cub/util_allocator.cuh>
+
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 /******************************************************************************
  * HELPER CLASS FOR RUN-LENGTH DECODING TESTS
@@ -73,8 +74,8 @@ public:
   static constexpr bool TEST_RELATIVE_OFFSETS = TEST_RELATIVE_OFFSETS_;
 
 private:
-  using RunItemT   = cub::detail::value_t<ItemItT>;
-  using RunLengthT = cub::detail::value_t<RunLengthsItT>;
+  using RunItemT   = cub::detail::it_value_t<ItemItT>;
+  using RunLengthT = cub::detail::it_value_t<RunLengthsItT>;
 
   using BlockRunOffsetScanT = cub::BlockScan<RunLengthT, BLOCK_DIM_X, cub::BLOCK_SCAN_RAKING, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
@@ -87,28 +88,24 @@ private:
   using BlockLoadRunLengthsT =
     cub::BlockLoad<RunLengthT, BLOCK_DIM_X, RUNS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
-  using BlockStoreDecodedItemT = cub::
-    BlockStore<RunItemT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_WARP_TRANSPOSE, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-
+  // These must both use BLOCK_STORE_DIRECT. They're called in a loop with RunLengthDecode and must not
+  // use shmem so that we can test repeatedly calling RLD without synchronizing.
+  using BlockStoreDecodedItemT =
+    cub::BlockStore<RunItemT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_DIRECT, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using BlockStoreRelativeOffsetT =
-    cub::BlockStore<RunLengthT,
-                    BLOCK_DIM_X,
-                    DECODED_ITEMS_PER_THREAD,
-                    cub::BLOCK_STORE_WARP_TRANSPOSE,
-                    BLOCK_DIM_Y,
-                    BLOCK_DIM_Z>;
+    cub::BlockStore<RunLengthT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_DIRECT, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   __device__ __forceinline__ BlockRunLengthDecodeT InitBlockRunLengthDecode(
     RunItemT (&unique_items)[RUNS_PER_THREAD],
     RunLengthT (&run_lengths)[RUNS_PER_THREAD],
     RunLengthT& decoded_size,
-    cub::Int2Type<true> /*test_run_offsets*/)
+    cuda::std::true_type /*test_run_offsets*/)
   {
     RunLengthT run_offsets[RUNS_PER_THREAD];
     BlockRunOffsetScanT(temp_storage.run_offsets_scan_storage).ExclusiveSum(run_lengths, run_offsets, decoded_size);
 
     // Ensure temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
 
     // Construct BlockRunLengthDecode and initialize with the run offsets
     return BlockRunLengthDecodeT(temp_storage.decode.run_length_decode_storage, unique_items, run_offsets);
@@ -118,7 +115,7 @@ private:
     RunItemT (&unique_items)[RUNS_PER_THREAD],
     RunLengthT (&run_lengths)[RUNS_PER_THREAD],
     RunLengthT& decoded_size,
-    cub::Int2Type<false> /*test_run_offsets*/)
+    cuda::std::false_type /*test_run_offsets*/)
   {
     // Construct BlockRunLengthDecode and initialize with the run lengths
     return BlockRunLengthDecodeT(temp_storage.decode.run_length_decode_storage, unique_items, run_lengths, decoded_size);
@@ -141,7 +138,7 @@ private:
     }
 
     // Ensure BlockLoad's temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
 
     // Load this block's tile of run lengths
     if (num_valid_items < RUNS_PER_BLOCK)
@@ -155,7 +152,7 @@ private:
     }
 
     // Ensure temporary shared memory can be repurposed
-    cub::CTA_SYNC();
+    __syncthreads();
   }
 
 public:
@@ -195,7 +192,7 @@ public:
     // "decompressed" size)
     uint32_t decoded_size = 0U;
     BlockRunLengthDecodeT run_length_decode =
-      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cub::Int2Type<TEST_RUN_OFFSETS_>());
+      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cuda::std::bool_constant<TEST_RUN_OFFSETS_>{});
     return decoded_size;
   }
 
@@ -220,7 +217,7 @@ public:
     // "decompressed" size)
     uint32_t decoded_size = 0U;
     BlockRunLengthDecodeT run_length_decode =
-      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cub::Int2Type<TEST_RUN_OFFSETS_>());
+      InitBlockRunLengthDecode(unique_items, run_lengths, decoded_size, cuda::std::bool_constant<TEST_RUN_OFFSETS_>{});
 
     // Run-length decode ("decompress") the runs into a window buffer of limited size. This is
     // repeated until all runs have been decoded.
@@ -234,6 +231,7 @@ public:
       // decoding
       uint32_t num_valid_items = decoded_size - decoded_window_offset;
       run_length_decode.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
+
       BlockStoreDecodedItemT(temp_storage.decode.store_decoded_runs_storage)
         .Store(d_block_decoded_out + decoded_window_offset, decoded_items, num_valid_items);
 
@@ -335,11 +333,11 @@ void TestAlgorithmSpecialisation()
 
   using RunItemT      = float;
   using RunLengthT    = uint32_t;
-  using ItemItT       = cub::CountingInputIterator<RunItemT>;
-  using RunLengthsItT = cub::TransformInputIterator<RunLengthT, ModOp, cub::CountingInputIterator<RunLengthT>>;
+  using ItemItT       = thrust::counting_iterator<RunItemT>;
+  using RunLengthsItT = thrust::transform_iterator<ModOp, thrust::counting_iterator<RunLengthT>>;
 
   ItemItT d_unique_items(1000U);
-  RunLengthsItT d_run_lengths(cub::CountingInputIterator<RunLengthT>(0), ModOp{});
+  RunLengthsItT d_run_lengths(thrust::counting_iterator<RunLengthT>(0), ModOp{});
 
   constexpr uint32_t num_runs   = 10000;
   constexpr uint32_t num_blocks = (num_runs + (RUNS_PER_BLOCK - 1U)) / RUNS_PER_BLOCK;
@@ -496,7 +494,7 @@ struct params_t
   static constexpr int block_dim_z              = BlockDimZ;
 };
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run lengths and offsets relative to each run",
   "[rld][block]",
   params_t<1, 1, 64>,
@@ -520,7 +518,7 @@ CUB_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run lengths and performs normal run-length "
   "decoding",
   "[rld][block]",
@@ -545,7 +543,7 @@ CUB_TEST_LIST(
                               DO_NOT_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run offsets and generates offsets relative to "
   "each run",
   "[rld][block]",
@@ -570,7 +568,7 @@ CUB_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run offsets and performs normal run-length "
   "decoding",
   "[rld][block]",

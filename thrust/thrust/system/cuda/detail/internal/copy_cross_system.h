@@ -85,7 +85,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
   thrust::detail::true_type) // trivial copy
 
 {
-  using InputTy = typename iterator_traits<InputIt>::value_type;
+  using InputTy = thrust::detail::it_value_t<InputIt>;
   if (n > 0)
   {
     trivial_device_copy(
@@ -110,7 +110,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
   thrust::detail::false_type) // non-trivial copy
 {
   // get type of the input data
-  using InputTy = typename thrust::iterator_value<InputIt>::type;
+  using InputTy = thrust::detail::it_value_t<InputIt>;
 
   // copy input data into host temp storage
   InputIt last = first;
@@ -137,7 +137,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
   return ret;
 }
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 // non-trivial copy D->H, only supported with NVCC compiler
 // because copy ctor must have  __device__ annotations, which is nvcc-only
 // feature
@@ -152,7 +152,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
 
 {
   // get type of the input data
-  using InputTy = typename thrust::iterator_value<InputIt>::type;
+  using InputTy = thrust::detail::it_value_t<InputIt>;
 
   // allocate device temp storage
   thrust::detail::temporary_array<InputTy, D> d_in_ptr(device_s, num_items);

@@ -55,7 +55,7 @@ namespace detail
 //
 
 // return the smaller/larger element making sure to prefer the
-// first occurance of the minimum/maximum element
+// first occurrence of the minimum/maximum element
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct min_element_reduction
 {
@@ -123,7 +123,7 @@ struct max_element_reduction
 }; // end max_element_reduction
 
 // return the smaller & larger element making sure to prefer the
-// first occurance of the minimum/maximum element
+// first occurrence of the minimum/maximum element
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct minmax_element_reduction
 {
@@ -159,7 +159,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
 min_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  using value_type = typename thrust::iterator_value<ForwardIterator>::type;
+  using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
   return thrust::min_element(exec, first, last, thrust::less<value_type>());
 } // end min_element()
@@ -173,8 +173,8 @@ _CCCL_HOST_DEVICE ForwardIterator min_element(
     return last;
   }
 
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
-  using IndexType = typename thrust::iterator_traits<ForwardIterator>::difference_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
+  using IndexType = thrust::detail::it_difference_t<ForwardIterator>;
 
   thrust::tuple<InputType, IndexType> result = thrust::reduce(
     exec,
@@ -190,7 +190,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
 max_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  using value_type = typename thrust::iterator_value<ForwardIterator>::type;
+  using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
   return thrust::max_element(exec, first, last, thrust::less<value_type>());
 } // end max_element()
@@ -204,8 +204,8 @@ _CCCL_HOST_DEVICE ForwardIterator max_element(
     return last;
   }
 
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
-  using IndexType = typename thrust::iterator_traits<ForwardIterator>::difference_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
+  using IndexType = thrust::detail::it_difference_t<ForwardIterator>;
 
   thrust::tuple<InputType, IndexType> result = thrust::reduce(
     exec,
@@ -221,7 +221,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator>
 minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  using value_type = typename thrust::iterator_value<ForwardIterator>::type;
+  using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
   return thrust::minmax_element(exec, first, last, thrust::less<value_type>());
 } // end minmax_element()
@@ -235,8 +235,8 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> minmax_element(
     return thrust::make_pair(last, last);
   }
 
-  using InputType = typename thrust::iterator_traits<ForwardIterator>::value_type;
-  using IndexType = typename thrust::iterator_traits<ForwardIterator>::difference_type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
+  using IndexType = thrust::detail::it_difference_t<ForwardIterator>;
 
   thrust::tuple<thrust::tuple<InputType, IndexType>, thrust::tuple<InputType, IndexType>> result =
     thrust::transform_reduce(

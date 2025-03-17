@@ -8,7 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 // <cuda/std/optional>
-// UNSUPPORTED: c++03, c++11, c++14
+
 //
 // GCC 7 seems to be extremely broken when it comes to deduction here.
 // It fails the test on all the ctor calls, but if the template argument to optional
@@ -34,7 +34,7 @@ int main(int, char**)
   {
     //  optional(T)
     cuda::std::optional opt(5);
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<int>>);
     assert(static_cast<bool>(opt));
     assert(*opt == 5);
   }
@@ -42,7 +42,7 @@ int main(int, char**)
   {
     //  optional(T)
     cuda::std::optional opt(A{});
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<A>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<A>>);
     assert(static_cast<bool>(opt));
   }
 
@@ -50,7 +50,7 @@ int main(int, char**)
     //  optional(const T&);
     const int& source = 5;
     cuda::std::optional opt(source);
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<int>>);
     assert(static_cast<bool>(opt));
     assert(*opt == 5);
   }
@@ -59,7 +59,7 @@ int main(int, char**)
     //  optional(T*);
     const int* source = nullptr;
     cuda::std::optional opt(source);
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<const int*>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<const int*>>);
     assert(static_cast<bool>(opt));
     assert(*opt == nullptr);
   }
@@ -68,7 +68,7 @@ int main(int, char**)
     //  optional(T[]);
     int source[] = {1, 2, 3};
     cuda::std::optional opt(source);
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<int*>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<int*>>);
     assert(static_cast<bool>(opt));
     assert((*opt)[0] == 1);
   }
@@ -78,7 +78,7 @@ int main(int, char**)
     //  optional(optional);
     cuda::std::optional<char> source('A');
     cuda::std::optional opt(source);
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<char>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<char>>);
     assert(static_cast<bool>(opt) == static_cast<bool>(source));
     assert(*opt == *source);
   }

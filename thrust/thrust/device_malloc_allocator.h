@@ -40,12 +40,12 @@
 THRUST_NAMESPACE_BEGIN
 
 // forward declarations to WAR circular #includes
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename>
 class device_ptr;
 template <typename T>
 device_ptr<T> device_malloc(const std::size_t n);
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \addtogroup allocators Allocators
  *  \ingroup memory_management
