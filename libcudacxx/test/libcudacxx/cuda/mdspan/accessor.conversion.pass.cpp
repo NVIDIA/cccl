@@ -332,11 +332,10 @@ __host__ __device__ void test_aligned_to_default()
   using WrapperDefault = Wrapper<cuda::std::default_accessor<float>>;
   using WrapperAligned = Wrapper<cuda::std::aligned_accessor<float, 16>>;
   WrapperAligned wrapper_align_acc{cuda::std::aligned_accessor<float, 16>{}};
-  WrapperDefault wrapper_default_acc{wrapper_align_acc};
   auto f = [](const WrapperAligned& w) -> WrapperDefault {
     return w;
   };
-  unused(f(wrapper_default_acc));
+  unused(f(wrapper_align_acc));
 }
 
 // Application: Explicit conversion of Wrapper<default_accessor<T>>
