@@ -62,7 +62,7 @@ class WarpExchangeSmem
 
   static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
 
-  static constexpr int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
+  static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
   // Insert padding if the number of items per thread is a power of two
   // and > 4 (otherwise we can typically use 128b loads)

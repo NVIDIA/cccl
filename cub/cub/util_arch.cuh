@@ -85,24 +85,6 @@ inline constexpr int log2_warp_threads = 5;
 inline constexpr int smem_banks        = 32;
 inline constexpr int log2_smem_banks   = 5;
 
-/// Number of threads per warp
-// #  ifndef CUB_LOG_WARP_THREADS
-// #    define CUB_LOG_WARP_THREADS(unused) (5)
-// #    define CUB_WARP_THREADS(unused)     (1 << CUB_LOG_WARP_THREADS(0))
-//
-// #    define CUB_PTX_WARP_THREADS     CUB_WARP_THREADS(0)
-// #    define CUB_PTX_LOG_WARP_THREADS CUB_LOG_WARP_THREADS(0)
-// #  endif
-
-/// Number of smem banks
-#  ifndef CUB_LOG_SMEM_BANKS
-#    define CUB_LOG_SMEM_BANKS(unused) (5)
-#    define CUB_SMEM_BANKS(unused)     (1 << CUB_LOG_SMEM_BANKS(0))
-
-#    define CUB_PTX_LOG_SMEM_BANKS CUB_LOG_SMEM_BANKS(0)
-#    define CUB_PTX_SMEM_BANKS     CUB_SMEM_BANKS
-#  endif
-
 /// Oversubscription factor
 #  ifndef CUB_SUBSCRIPTION_FACTOR
 #    define CUB_SUBSCRIPTION_FACTOR(unused) (5)

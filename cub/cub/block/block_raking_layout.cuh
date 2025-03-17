@@ -91,10 +91,10 @@ struct BlockRakingLayout
     RAKING_THREADS = (SHARED_ELEMENTS + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH,
 
     /// Whether we will have bank conflicts (technically we should find out if the GCD is > 1)
-    HAS_CONFLICTS = (CUB_SMEM_BANKS(0) % SEGMENT_LENGTH == 0),
+    HAS_CONFLICTS = (smem_banks % SEGMENT_LENGTH == 0),
 
     /// Degree of bank conflicts (e.g., 4-way)
-    CONFLICT_DEGREE = (HAS_CONFLICTS) ? (MAX_RAKING_THREADS * SEGMENT_LENGTH) / CUB_SMEM_BANKS(0) : 1,
+    CONFLICT_DEGREE = (HAS_CONFLICTS) ? (MAX_RAKING_THREADS * SEGMENT_LENGTH) / smem_banks : 1,
 
     /// Pad each segment length with one element if segment length is not relatively prime to warp size and can't be
     /// optimized as a vector load

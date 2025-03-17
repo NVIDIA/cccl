@@ -149,7 +149,7 @@ class BlockExchange
   static constexpr int WARP_THREADS  = warp_threads;
   static constexpr int WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS; // TODO(bgruber): use ceil_div in
                                                                                   // C++14
-  static constexpr int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
+  static constexpr int LOG_SMEM_BANKS = log2_smem_banks;
 
   static constexpr int TILE_ITEMS  = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TIME_SLICES = WARP_TIME_SLICING ? WARPS : 1;
