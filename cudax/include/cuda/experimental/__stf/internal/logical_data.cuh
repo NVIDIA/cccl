@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -1884,8 +1884,8 @@ inline event_list enforce_stf_deps_before(
   const access_mode mode,
   const ::std::optional<exec_place> eplace)
 {
-  auto result = event_list();
-  auto& cs    = bctx.get_stack();
+  auto result  = event_list();
+  auto& ctx_st = bctx.get_state();
   // Get the context in which we store previous writer, readers, ...
   auto& ctx_ = handle.get_state();
 
@@ -1951,7 +1951,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(cw_id, task.get_unique_id());
       }
 
-      cs.leaves.remove(cw_id);
+      ctx_st.leaves.remove(cw_id);
 
       // Replace previous writer
       ctx_.previous_writer = cw;
@@ -1970,7 +1970,7 @@ inline event_list enforce_stf_deps_before(
         {
           dot.add_edge(reader_task_id, task.get_unique_id());
         }
-        cs.leaves.remove(reader_task_id);
+        ctx_st.leaves.remove(reader_task_id);
       }
 
       current_readers.clear();
@@ -1999,7 +1999,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.leaves.remove(pw_id);
+      ctx_st.leaves.remove(pw_id);
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
@@ -2015,7 +2015,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.leaves.remove(pw_id);
+      ctx_st.leaves.remove(pw_id);
     }
 
     // Note : the task will later be added to the list of readers

@@ -84,115 +84,6 @@ class cuda_kernel_scope;
 // We need to have a map of logical data stored in the ctx.
 class logical_data_untyped_impl;
 
-class ctx_state
-{
-public:
-  class leaf_tasks
-  {
-  public:
-    /* Add one task to the leaf tasks */
-    void add(const task& t)
-    {
-      // this will create a new key in the map
-      leaf_tasks_mutex.lock();
-      event_list& done_prereqs = leaf_tasks[t.get_unique_id()];
-      leaf_tasks_mutex.unlock();
-
-      // XXX we need a copy method for event_list
-      done_prereqs.merge(t.get_done_prereqs());
-    }
-
-    /* Remove one task (if it is still a leaf task, otherwise do nothing) */
-    void remove(int task_id)
-    {
-      // Erase that leaf task if it is found, or do nothing
-      auto guard = ::std::lock_guard(leaf_tasks_mutex);
-      leaf_tasks.erase(task_id);
-    }
-
-    const auto& get_leaf_tasks() const
-    {
-      return leaf_tasks;
-    }
-
-    auto& get_leaf_tasks()
-    {
-      return leaf_tasks;
-    }
-
-    size_t size() const
-    {
-      return leaf_tasks.size();
-    }
-
-    void clear()
-    {
-      leaf_tasks.clear();
-    }
-
-    ::std::mutex leaf_tasks_mutex;
-
-  private:
-    // To synchronize with all work submitted in this context, we need to
-    // synchronize will all "leaf tasks". Leaf tasks are task that have no
-    // outgoing dependencies. Leaf tasks will eventually depend on tasks which
-    // are not leaf, so it is sufficient to wait for leaf tasks.
-    //
-    // Instead of storing tasks, we store a map of id to event lists
-    ::std::unordered_map<int /* task_id */, event_list> leaf_tasks;
-  };
-
-  leaf_tasks leaves;
-
-  void add_pending_freeze(const task& fake_t, const event_list& events)
-  {
-    auto guard = ::std::lock_guard(pending_freeze_mutex);
-
-    // This creates an entry if necessary (there can be multiple gets)
-    event_list& prereqs = pending_freeze[fake_t.get_unique_id()];
-
-    // Add these events to the stored list
-    prereqs.merge(events);
-  }
-
-  // When we unfreeze a logical data, there is no need to automatically sync
-  // with the get events because unfreezing implies the get events where
-  // sync'ed with
-  void remove_pending_freeze(const task& fake_t)
-  {
-    auto guard = ::std::lock_guard(pending_freeze_mutex);
-    pending_freeze.erase(fake_t.get_unique_id());
-  }
-
-  ctx_state()
-  {
-    // This forces us to call the dtor of the singleton AFTER the destructor of the CUDA runtime.
-    // If all resources are cleaned up by the time we destroy this ctx_state singleton, we are "safe"
-    cudaError_t ret = cudaFree(0);
-
-    // If we are running the task in the context of a CUDA callback, we are
-    // not allowed to issue any CUDA API call.
-    EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
-  }
-
-  ~ctx_state()
-  {
-    // Otherwise there are tasks which were not completed
-    assert(leaves.size() == 0);
-  }
-
-  ctx_state(const ctx_state&)            = delete;
-  ctx_state& operator=(const ctx_state&) = delete;
-
-public:
-  // To automatically synchronize with pending get() operartion for
-  // frozen_logical_data, we keep track of the events. The freeze operation
-  // is identified by the id of the "fake" task, and this map should be
-  // cleaned when unfreezing which means it has been synchronized with.
-  ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
-  ::std::mutex pending_freeze_mutex;
-};
-
 } // end namespace reserved
 
 /**
@@ -232,6 +123,13 @@ protected:
         , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
     {
+      // Forces init
+      cudaError_t ret = cudaFree(0);
+
+      // If we are running the task in the context of a CUDA callback, we are
+      // not allowed to issue any CUDA API call.
+      EXPECT((ret == cudaSuccess || ret == cudaErrorNotPermitted));
+
       // Enable peer memory accesses (if not done already)
       reserved::machine::instance().enable_peer_accesses();
 
@@ -259,6 +157,9 @@ protected:
     {
       // Make sure everything is clean before leaving that context
       _CCCL_ASSERT(dangling_events.size() == 0, "");
+
+      // Otherwise there are tasks which were not completed
+      _CCCL_ASSERT(leaves.size() == 0, "");
 
 #ifndef NDEBUG
       _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
@@ -420,7 +321,6 @@ protected:
     block_allocator_untyped custom_allocator;
     block_allocator_untyped default_allocator;
     block_allocator_untyped uncached_allocator;
-    reserved::ctx_state state;
 
     // A vector of all allocators used in this ctx, so that they are
     // destroyed when calling finalize()
@@ -529,6 +429,61 @@ protected:
     event_list dangling_events;
     mutable ::std::mutex dangling_events_mutex;
 
+    class leaf_tasks
+    {
+    public:
+      /* Add one task to the leaf tasks */
+      void add(const task& t)
+      {
+        // this will create a new key in the map
+        leaf_tasks_mutex.lock();
+        event_list& done_prereqs = leaf_tasks[t.get_unique_id()];
+        leaf_tasks_mutex.unlock();
+
+        // XXX we need a copy method for event_list
+        done_prereqs.merge(t.get_done_prereqs());
+      }
+
+      /* Remove one task (if it is still a leaf task, otherwise do nothing) */
+      void remove(int task_id)
+      {
+        // Erase that leaf task if it is found, or do nothing
+        auto guard = ::std::lock_guard(leaf_tasks_mutex);
+        leaf_tasks.erase(task_id);
+      }
+
+      const auto& get_leaf_tasks() const
+      {
+        return leaf_tasks;
+      }
+
+      auto& get_leaf_tasks()
+      {
+        return leaf_tasks;
+      }
+
+      size_t size() const
+      {
+        return leaf_tasks.size();
+      }
+
+      void clear()
+      {
+        leaf_tasks.clear();
+      }
+
+      ::std::mutex leaf_tasks_mutex;
+
+    private:
+      // To synchronize with all work submitted in this context, we need to
+      // synchronize will all "leaf tasks". Leaf tasks are task that have no
+      // outgoing dependencies. Leaf tasks will eventually depend on tasks which
+      // are not leaf, so it is sufficient to wait for leaf tasks.
+      //
+      // Instead of storing tasks, we store a map of id to event lists
+      ::std::unordered_map<int /* task_id */, event_list> leaf_tasks;
+    };
+
     // Insert a fence with all pending asynchronous operations on the current context
     [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
     {
@@ -543,10 +498,10 @@ protected:
       }
 
       {
-        auto guard = ::std::lock_guard(state.leaves.leaf_tasks_mutex);
+        auto guard = ::std::lock_guard(leaves.leaf_tasks_mutex);
 
         // Sync with the events of all leaf tasks
-        for (auto& [t_id, t_done_prereqs] : state.leaves.get_leaf_tasks())
+        for (auto& [t_id, t_done_prereqs] : leaves.get_leaf_tasks())
         {
           // Add the events associated with the termination of that leaf tasks to the list of events
           prereqs.merge(mv(t_done_prereqs));
@@ -559,19 +514,19 @@ protected:
         }
 
         /* Remove all leaf tasks */
-        state.leaves.clear();
+        leaves.clear();
 
         /* Erase start events if any */
         start_events.clear();
 
-        _CCCL_ASSERT(state.leaves.get_leaf_tasks().size() == 0, "");
+        _CCCL_ASSERT(leaves.get_leaf_tasks().size() == 0, "");
       }
 
       {
         // Wait for all pending get() operations associated to frozen logical data
-        auto guard = ::std::lock_guard(state.pending_freeze_mutex);
+        auto guard = ::std::lock_guard(pending_freeze_mutex);
 
-        for (auto& [fake_t_id, get_prereqs] : state.pending_freeze)
+        for (auto& [fake_t_id, get_prereqs] : pending_freeze)
         {
           // Depend on the get() operation
           prereqs.merge(mv(get_prereqs));
@@ -583,7 +538,7 @@ protected:
           }
         }
 
-        state.pending_freeze.clear();
+        pending_freeze.clear();
       }
 
       // Sync with events which have not been synchronized with, and which are
@@ -605,12 +560,41 @@ protected:
       return prereqs;
     }
 
+    void add_pending_freeze(const task& fake_t, const event_list& events)
+    {
+      auto guard = ::std::lock_guard(pending_freeze_mutex);
+
+      // This creates an entry if necessary (there can be multiple gets)
+      event_list& prereqs = pending_freeze[fake_t.get_unique_id()];
+
+      // Add these events to the stored list
+      prereqs.merge(events);
+    }
+
+    // When we unfreeze a logical data, there is no need to automatically sync
+    // with the get events because unfreezing implies the get events where
+    // sync'ed with
+    void remove_pending_freeze(const task& fake_t)
+    {
+      auto guard = ::std::lock_guard(pending_freeze_mutex);
+      pending_freeze.erase(fake_t.get_unique_id());
+    }
+
+    leaf_tasks leaves;
+
   private:
     // Used if we print the task graph using DOT
     ::std::shared_ptr<reserved::per_ctx_dot> dot;
 
     backend_ctx_untyped::phase ctx_phase = backend_ctx_untyped::phase::setup;
     ::std::optional<::std::function<bool()>> cache_policy;
+
+    // To automatically synchronize with pending get() operartion for
+    // frozen_logical_data, we keep track of the events. The freeze operation
+    // is identified by the id of the "fake" task, and this map should be
+    // cleaned when unfreezing which means it has been synchronized with.
+    ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
+    ::std::mutex pending_freeze_mutex;
   };
 
 public:
@@ -642,12 +626,6 @@ public:
     assert(pimpl);
     assert(pimpl->async_resources);
     return pimpl->async_resources;
-  }
-
-  auto& get_stack()
-  {
-    assert(pimpl);
-    return pimpl->state;
   }
 
   bool reordering_tasks() const
