@@ -77,7 +77,7 @@ namespace rfa_detail
 {
 
 template <typename ReductionOpT, typename InitT, typename InputIteratorT>
-using AccumT = cub::detail::accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>;
+using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>;
 
 template <typename OutputIteratorT, typename InputIteratorT>
 using InitT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;

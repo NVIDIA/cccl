@@ -275,26 +275,31 @@ private:
           {
             return data[0];
           }
+          [[fallthrough]];
         case 1:
           if (FOLD >= 2)
           {
             return data[1];
           }
+          [[fallthrough]];
         case 2:
           if (FOLD >= 3)
           {
             return data[2];
           }
+          [[fallthrough]];
         case 3:
           if (FOLD >= 4)
           {
             return data[3];
           }
+          [[fallthrough]];
         case 4:
           if (FOLD >= 5)
           {
             return data[4];
           }
+          [[fallthrough]];
         default:
           return data[FOLD - 1];
       }
@@ -317,26 +322,31 @@ private:
           {
             return data[FOLD + 0];
           }
+          [[fallthrough]];
         case 1:
           if (FOLD >= 2)
           {
             return data[FOLD + 1];
           }
+          [[fallthrough]];
         case 2:
           if (FOLD >= 3)
           {
             return data[FOLD + 2];
           }
+          [[fallthrough]];
         case 3:
           if (FOLD >= 4)
           {
             return data[FOLD + 3];
           }
+          [[fallthrough]];
         case 4:
           if (FOLD >= 5)
           {
             return data[FOLD + 4];
           }
+          [[fallthrough]];
         default:
           return data[2 * FOLD - 1];
       }
