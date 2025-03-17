@@ -157,7 +157,7 @@ template <size_t _Np, typename _Tp, size_t _Align, _EvictionPolicyEnum _Ep, bool
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_array(
   _CUDA_VSTD::array<_Tp, _Np> __data,
   _Tp* __ptr,
-  ::cuda::aligned_size_t<_Align>,
+  aligned_size_t<_Align>,
   __eviction_policy_t<_Ep> __eviction_policy,
   [[maybe_unused]] _CacheHint<_Enable> __cache_hint) noexcept
 {
@@ -203,7 +203,7 @@ template <size_t _Np, typename _Tp, size_t _Align = alignof(_Tp), _EvictionPolic
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(const _CUDA_VSTD::array<_Tp, _Np>& __data,
       _Tp* __ptr,
-      ::cuda::aligned_size_t<_Align> __align     = ::cuda::aligned_size_t<_Align>{alignof(_Tp)},
+      aligned_size_t<_Align> __align             = aligned_size_t<_Align>{alignof(_Tp)},
       __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
   _CUDA_VDEV::__store_array<_Np>(__data, __ptr, __align, __eviction_policy, __no_cache_hint);
@@ -217,7 +217,7 @@ template <size_t _Np,
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(const _CUDA_VSTD::array<_Tp, _Np>& __data,
       annotated_ptr<_Tp, _Prop> __ptr,
-      ::cuda::aligned_size_t<_Align> __align     = ::cuda::aligned_size_t<_Align>{alignof(_Tp)},
+      aligned_size_t<_Align> __align             = aligned_size_t<_Align>{alignof(_Tp)},
       __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
 {
   auto __cache_hint = _CacheHint<true>{static_cast<uint64_t>(__ptr.__property())};
