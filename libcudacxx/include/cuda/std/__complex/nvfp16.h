@@ -161,9 +161,9 @@ public:
     return *this;
   }
 
-  _CCCL_HOST operator ::std::complex<value_type>() const
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS operator ::std::complex<value_type>() const
   {
-    return {__repr_.x, __repr_.y};
+    return _CUDA_VSTD::__make_std_complex(real(), imag());
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
 

@@ -57,6 +57,26 @@ __get_std_complex_imag(const ::std::complex<_Tp>& __v) noexcept
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS ::std::complex<_Tp>
+__make_std_complex(const _Tp& __r = _Tp{}, const _Tp& __i = _Tp()) noexcept
+{
+  if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    return ::std::complex<_Tp>{__r, __i};
+  }
+  else
+  {
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      (return ::std::complex<_Tp>{__r, __i};),
+      (::std::complex<_Tp> __ret; reinterpret_cast<_Tp(&)[2]>(__ret)[0] = __r;
+       reinterpret_cast<_Tp(&)[2]>(__ret)[1]                            = __i;
+       return __ret;))
+  }
+}
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // !_CCCL_COMPILER(NVRTC)

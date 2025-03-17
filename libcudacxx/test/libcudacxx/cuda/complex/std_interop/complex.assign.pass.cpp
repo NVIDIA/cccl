@@ -17,15 +17,7 @@
 #include "test_macros.h"
 #include <nv/target>
 
-template <class T>
-_CCCL_GLOBAL_CONSTANT ::std::complex<T> only_real{static_cast<T>(42.0), T{}};
-
-template <class T>
-_CCCL_GLOBAL_CONSTANT ::std::complex<T> only_imag{T{}, static_cast<T>(42.0)};
-
-template <class T>
-_CCCL_GLOBAL_CONSTANT ::std::complex<T> real_imag{static_cast<T>(42.0), static_cast<T>(1337.0)};
-
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class U>
 __host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS void test_assignment()
 {
@@ -33,9 +25,13 @@ __host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS void test_assignmen
   ::cuda::std::complex<T> from_only_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
   ::cuda::std::complex<T> from_real_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
 
-  from_only_real = only_real<U>;
-  from_only_imag = only_imag<U>;
-  from_real_imag = real_imag<U>;
+  constexpr ::std::complex<U> only_real{static_cast<U>(42.0), U{}};
+  constexpr ::std::complex<U> only_imag{U{}, static_cast<U>(42.0)};
+  constexpr ::std::complex<U> real_imag{static_cast<U>(42.0), static_cast<U>(1337.0)};
+
+  from_only_real = only_real;
+  from_only_imag = only_imag;
+  from_real_imag = real_imag;
 
   assert(from_only_real.real() == static_cast<T>(42.0));
   assert(from_only_real.imag() == 0);

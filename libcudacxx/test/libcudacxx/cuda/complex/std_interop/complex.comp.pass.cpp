@@ -17,27 +17,23 @@
 #include "test_macros.h"
 #include <nv/target>
 
-template <class T>
-_CCCL_GLOBAL_CONSTANT ::std::complex<T> not_equal_real{static_cast<T>(-1.0), T{}};
-
-template <class T>
-_CCCL_GLOBAL_CONSTANT ::std::complex<T> not_equal_imag{T{}, static_cast<T>(1.0)};
-
-template <class T>
-_CCCL_GLOBAL_CONSTANT ::std::complex<T> equal{static_cast<T>(-1.0), static_cast<T>(1.0)};
-
+_CCCL_EXEC_CHECK_DISABLE
 template <class T, class U>
 __host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS void test_comparison()
 {
   const ::cuda::std::complex<T> input{static_cast<T>(-1.0), static_cast<T>(1.0)};
 
-  assert(!(input == not_equal_real<U>) );
-  assert(!(input == not_equal_imag<U>) );
-  assert(input == equal<U>);
+  constexpr ::std::complex<U> not_equal_real{static_cast<U>(-1.0), U{}};
+  constexpr ::std::complex<U> not_equal_imag{U{}, static_cast<U>(1.0)};
+  constexpr ::std::complex<U> equal{static_cast<U>(-1.0), static_cast<U>(1.0)};
 
-  assert(input != not_equal_real<U>);
-  assert(input != not_equal_imag<U>);
-  assert(!(input != equal<U>) );
+  assert(!(input == not_equal_real));
+  assert(!(input == not_equal_imag));
+  assert(input == equal);
+
+  assert(input != not_equal_real);
+  assert(input != not_equal_imag);
+  assert(!(input != equal));
 }
 
 __host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool test()
