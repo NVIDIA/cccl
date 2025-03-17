@@ -13,10 +13,6 @@
 
 #include <cuda/__cccl_config>
 
-#include <cstdint>
-
-#include "cuda/std/__internal/namespaces.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
