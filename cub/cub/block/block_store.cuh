@@ -340,9 +340,9 @@ template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
 {
-  int tid         = linear_tid & (warp_threads - 1);
-  int wid         = linear_tid >> log2_warp_threads;
-  int warp_offset = wid * warp_threads * ITEMS_PER_THREAD;
+  int tid         = linear_tid & (detail::warp_threads - 1);
+  int wid         = linear_tid >> detail::log2_warp_threads;
+  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -350,7 +350,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
-    thread_itr[(ITEM * warp_threads)] = items[ITEM];
+    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
   }
 }
 
@@ -392,9 +392,9 @@ template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
 {
-  int tid         = linear_tid & (warp_threads - 1);
-  int wid         = linear_tid >> log2_warp_threads;
-  int warp_offset = wid * warp_threads * ITEMS_PER_THREAD;
+  int tid         = linear_tid & (detail::warp_threads - 1);
+  int wid         = linear_tid >> detail::log2_warp_threads;
+  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -402,9 +402,9 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
-    if (warp_offset + tid + (ITEM * warp_threads) < valid_items)
+    if (warp_offset + tid + (ITEM * detail::warp_threads) < valid_items)
     {
-      thread_itr[(ITEM * warp_threads)] = items[ITEM];
+      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
     }
   }
 }
@@ -907,7 +907,7 @@ private:
   {
     enum
     {
-      WARP_THREADS = warp_threads
+      WARP_THREADS = detail::warp_threads
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
@@ -990,7 +990,7 @@ private:
   {
     enum
     {
-      WARP_THREADS = warp_threads
+      WARP_THREADS = detail::warp_threads
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
