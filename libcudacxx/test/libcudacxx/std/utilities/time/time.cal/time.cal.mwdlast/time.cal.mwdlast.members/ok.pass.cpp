@@ -30,7 +30,7 @@ int main(int, char**)
   constexpr weekday_last lastTuesday = weekday_last{Tuesday};
 
   static_assert(noexcept(cuda::std::declval<const month_weekday_last>().ok()));
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::declval<const month_weekday_last>().ok()));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::declval<const month_weekday_last>().ok())>);
 
   static_assert(!month_weekday_last{month{}, lastTuesday}.ok(), ""); // Bad month
   static_assert(!month_weekday_last{January, weekday_last{weekday{12}}}.ok(), ""); // Bad month

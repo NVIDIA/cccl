@@ -19,7 +19,7 @@
 
 struct NonSwappable
 {
-  __host__ __device__ TEST_CONSTEXPR NonSwappable() {}
+  __host__ __device__ constexpr NonSwappable() {}
 
 private:
   __host__ __device__ NonSwappable(NonSwappable const&);
@@ -36,7 +36,7 @@ template <class Tp>
 struct can_swap : cuda::std::is_same<decltype(can_swap_imp<Tp>(0)), void>
 {};
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   {
     typedef double T;

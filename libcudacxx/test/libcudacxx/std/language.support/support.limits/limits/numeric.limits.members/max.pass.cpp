@@ -35,9 +35,9 @@ __host__ __device__ void test(T expected)
 
 int main(int, char**)
 {
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   test<wchar_t>(WCHAR_MAX);
-#endif
+#endif // !TEST_COMPILER(NVRTC)
   test<bool>(true);
   test<char>(CHAR_MAX);
   test<signed char>(SCHAR_MAX);

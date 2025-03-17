@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR int Nasty_count = 0;
+TEST_GLOBAL_VARIABLE int Nasty_count = 0;
 struct Nasty
 {
   __host__ __device__ Nasty()

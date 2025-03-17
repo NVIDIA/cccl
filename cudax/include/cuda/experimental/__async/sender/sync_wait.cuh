@@ -26,6 +26,7 @@
 // run_loop isn't supported on-device yet, so neither can sync_wait be.
 #if !defined(__CUDA_ARCH__)
 
+#  include <cuda/std/__type_traits/always_false.h>
 #  include <cuda/std/__type_traits/type_identity.h>
 #  include <cuda/std/optional>
 #  include <cuda/std/tuple>
@@ -134,14 +135,10 @@ private:
     run_loop __loop_;
   };
 
-  template <class _Type>
-  struct __always_false : _CUDA_VSTD::false_type
-  {};
-
   template <class _Diagnostic>
   struct __bad_sync_wait
   {
-    static_assert(__always_false<_Diagnostic>(),
+    static_assert(_CUDA_VSTD::__always_false_v<_Diagnostic>(),
                   "sync_wait cannot compute the completions of the sender passed to it.");
     static __bad_sync_wait __result();
 

@@ -41,13 +41,13 @@ struct member_three_way_comparable
   auto operator<=>(member_three_way_comparable const&) const = default;
 };
 
-#    ifndef __NVCC__ // nvbug3908399
+#    if !TEST_CUDA_COMPILER(NVCC) // nvbug3908399
 struct friend_three_way_comparable
 {
   __host__ __device__ friend auto
   operator<=>(friend_three_way_comparable const&, friend_three_way_comparable const&) = default;
 };
-#    endif // !__NVCC__
+#    endif // !TEST_CUDA_COMPILER(NVCC)
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #endif // TEST_STD_VER > 2017
 
@@ -270,7 +270,7 @@ struct friend_three_way_comparable_with_deleted_eq
                                              friend_three_way_comparable_with_deleted_eq const&)  = delete;
 };
 
-#    ifndef __NVCC__ // nvbug3908399
+#    if !TEST_CUDA_COMPILER(NVCC) // nvbug3908399
 struct friend_three_way_comparable_with_deleted_ne
 {
   __host__ __device__ friend auto operator<=>(friend_three_way_comparable_with_deleted_ne const&,
@@ -278,7 +278,7 @@ struct friend_three_way_comparable_with_deleted_ne
   __host__ __device__ friend bool operator!=(friend_three_way_comparable_with_deleted_ne const&,
                                              friend_three_way_comparable_with_deleted_ne const&)  = delete;
 };
-#    endif // !__NVCC__
+#    endif // !TEST_CUDA_COMPILER(NVCC)
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 struct one_way_eq

@@ -54,7 +54,7 @@ int main(int, char**)
 
   { // operator/(const year_month& ym, const day& d)
     static_assert(noexcept(Feb2018 / day{2}));
-    ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / day{2}));
+    static_assert(cuda::std::is_same_v<year_month_day, decltype(Feb2018 / day{2})>);
 
     static_assert((Feb2018 / day{2}).month() == February, "");
     static_assert((Feb2018 / day{2}).day() == day{2}, "");
@@ -80,7 +80,7 @@ int main(int, char**)
 
   { // operator/(const year_month& ym, int d)
     static_assert(noexcept(Feb2018 / 2));
-    ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / 2));
+    static_assert(cuda::std::is_same_v<year_month_day, decltype(Feb2018 / 2)>);
 
     static_assert((Feb2018 / 2).month() == February, "");
     static_assert((Feb2018 / 2).day() == day{2}, "");
@@ -106,7 +106,7 @@ int main(int, char**)
 
   { // operator/(const year_month& ym, int d)
     static_assert(noexcept(Feb2018 / 2));
-    ASSERT_SAME_TYPE(year_month_day, decltype(Feb2018 / 2));
+    static_assert(cuda::std::is_same_v<year_month_day, decltype(Feb2018 / 2)>);
 
     static_assert((Feb2018 / 2).month() == February, "");
     static_assert((Feb2018 / 2).day() == day{2}, "");
@@ -132,9 +132,9 @@ int main(int, char**)
 
   { // operator/(const year& y, const month_day& md) (and switched)
     static_assert(noexcept(year{2018} / month_day{February, day{2}}));
-    ASSERT_SAME_TYPE(year_month_day, decltype(year{2018} / month_day{February, day{2}}));
+    static_assert(cuda::std::is_same_v<year_month_day, decltype(year{2018} / month_day{February, day{2}})>);
     static_assert(noexcept(month_day{February, day{2}} / year{2018}));
-    ASSERT_SAME_TYPE(year_month_day, decltype(month_day{February, day{2}} / year{2018}));
+    static_assert(cuda::std::is_same_v<year_month_day, decltype(month_day{February, day{2}} / year{2018})>);
 
     static_assert((year{2018} / month_day{February, day{2}}).month() == February, "");
     static_assert((year{2018} / month_day{February, day{2}}).day() == day{2}, "");
@@ -167,9 +167,9 @@ int main(int, char**)
 
   { // operator/(const month_day& md, int y) (and switched)
     static_assert(noexcept(2018 / month_day{February, day{2}}));
-    ASSERT_SAME_TYPE(year_month_day, decltype(2018 / month_day{February, day{2}}));
+    static_assert(cuda::std::is_same_v<year_month_day, decltype(2018 / month_day{February, day{2}})>);
     static_assert(noexcept(month_day{February, day{2}} / 2018));
-    ASSERT_SAME_TYPE(year_month_day, decltype(month_day{February, day{2}} / 2018));
+    static_assert(cuda::std::is_same_v<year_month_day, decltype(month_day{February, day{2}} / 2018)>);
 
     static_assert((2018 / month_day{February, day{2}}).month() == February, "");
     static_assert((2018 / month_day{February, day{2}}).day() == day{2}, "");

@@ -28,7 +28,7 @@ struct TestCase
 };
 
 template <typename Input1, typename Input2, typename Output>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test0(int in1, int in2, int out)
+__host__ __device__ constexpr bool test0(int in1, int in2, int out)
 {
   auto value1 = static_cast<Input1>(in1);
   auto value2 = static_cast<Input2>(in2);
@@ -39,7 +39,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test0(int in1, int in2, int out)
 }
 
 template <typename Input1, typename Input2 = Input1>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   using S1                   = cuda::std::make_signed_t<Input1>;
   using S2                   = cuda::std::make_signed_t<Input2>;
@@ -84,7 +84,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(accumulate);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<signed char>();
   test<short>();

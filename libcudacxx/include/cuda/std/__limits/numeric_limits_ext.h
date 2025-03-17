@@ -23,7 +23,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cmath/fp_utils.h>
+#include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__limits/numeric_limits.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -45,15 +45,15 @@ public:
   static constexpr int max_digits10 = 5;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x0400u);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x0400u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x7bffu);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x7bffu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0xfbffu);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0xfbffu);
   }
 
   static constexpr bool is_integer = false;
@@ -61,11 +61,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x1400u);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x1400u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x3800u);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x3800u);
   }
 
   static constexpr int min_exponent   = -13;
@@ -80,19 +80,19 @@ public:
   static constexpr bool has_denorm_loss          = false;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x7c00u);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x7c00u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x7e00u);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x7e00u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x7d00u);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x7d00u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp16_from_storage(0x0001u);
+    return _CUDA_VSTD::__fp_from_storage<__half>(0x0001u);
   }
 
   static constexpr bool is_iec559  = true;
@@ -122,15 +122,15 @@ public:
   static constexpr int max_digits10 = 4;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x0080u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x0080u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x7f7fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x7f7fu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0xff7fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0xff7fu);
   }
 
   static constexpr bool is_integer = false;
@@ -138,11 +138,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x3c00u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x3c00u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x3f00u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x3f00u);
   }
 
   static constexpr int min_exponent   = -125;
@@ -157,19 +157,19 @@ public:
   static constexpr bool has_denorm_loss          = false;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x7f80u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x7f80u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x7fc0u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x7fc0u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x7fa0u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x7fa0u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvbf16_from_storage(0x0001u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_bfloat16>(0x0001u);
   }
 
   static constexpr bool is_iec559  = true;
@@ -194,20 +194,20 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 3;
+  static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
-  static constexpr int max_digits10 = 2;
+  static constexpr int max_digits10 = 3;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0x08u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(0x08u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0x7eu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(0x7eu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0xfeu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(0xfeu);
   }
 
   static constexpr bool is_integer = false;
@@ -215,11 +215,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0x20u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(0x20u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0x30u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(0x30u);
   }
 
   static constexpr int min_exponent   = -6;
@@ -238,7 +238,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0x7fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(0x7fu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
   {
@@ -246,7 +246,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e4m3_from_storage(0x01u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e4m3>(0x01u);
   }
 
   static constexpr bool is_iec559  = false;
@@ -271,20 +271,20 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 2;
+  static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x04u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x04u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x7bu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x7bu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0xfbu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0xfbu);
   }
 
   static constexpr bool is_integer = false;
@@ -292,11 +292,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x34u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x34u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x38u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x38u);
   }
 
   static constexpr int min_exponent   = -15;
@@ -311,19 +311,19 @@ public:
   static constexpr bool has_denorm_loss          = false;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x7cu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x7cu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x7eu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x7eu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x7du);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x7du);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e5m2_from_storage(0x01u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e5m2>(0x01u);
   }
 
   static constexpr bool is_iec559  = false;
@@ -348,20 +348,20 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = false;
-  static constexpr int digits       = 0;
+  static constexpr int digits       = 1;
   static constexpr int digits10     = 0;
-  static constexpr int max_digits10 = 1;
+  static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e8m0_from_storage(0x00u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(0x00u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e8m0_from_storage(0xfeu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(0xfeu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e8m0_from_storage(0x00u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(0x00u);
   }
 
   static constexpr bool is_integer = false;
@@ -369,11 +369,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e8m0_from_storage(0x7fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(0x7fu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e8m0_from_storage(0x7fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(0x7fu);
   }
 
   static constexpr int min_exponent   = -127;
@@ -392,7 +392,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp8_e8m0_from_storage(0xffu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp8_e8m0>(0xffu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
   {
@@ -425,20 +425,20 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 3;
+  static constexpr int digits       = 4;
   static constexpr int digits10     = 0;
-  static constexpr int max_digits10 = 2;
+  static constexpr int max_digits10 = 3;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e2m3_from_storage(0x08u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(0x08u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e2m3_from_storage(0x1fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(0x1fu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e2m3_from_storage(0x3fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(0x3fu);
   }
 
   static constexpr bool is_integer = false;
@@ -446,11 +446,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e2m3_from_storage(0x01u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(0x01u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e2m3_from_storage(0x04u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(0x04u);
   }
 
   static constexpr int min_exponent   = 0;
@@ -477,7 +477,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e2m3_from_storage(0x01u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e2m3>(0x01u);
   }
 
   static constexpr bool is_iec559  = false;
@@ -502,20 +502,20 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 2;
+  static constexpr int digits       = 3;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e3m2_from_storage(0x04u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(0x04u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e3m2_from_storage(0x1fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(0x1fu);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e3m2_from_storage(0x3fu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(0x3fu);
   }
 
   static constexpr bool is_integer = false;
@@ -523,11 +523,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e3m2_from_storage(0x04u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(0x04u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e3m2_from_storage(0x08u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(0x08u);
   }
 
   static constexpr int min_exponent   = -2;
@@ -554,7 +554,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp6_e3m2_from_storage(0x01u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp6_e3m2>(0x01u);
   }
 
   static constexpr bool is_iec559  = false;
@@ -579,20 +579,20 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = 1;
+  static constexpr int digits       = 2;
   static constexpr int digits10     = 0;
   static constexpr int max_digits10 = 2;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp4_e2m1_from_storage(0x2u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(0x2u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp4_e2m1_from_storage(0x7u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(0x7u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp4_e2m1_from_storage(0xfu);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(0xfu);
   }
 
   static constexpr bool is_integer = false;
@@ -600,11 +600,11 @@ public:
   static constexpr int radix       = __FLT_RADIX__;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp4_e2m1_from_storage(0x1u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(0x1u);
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp4_e2m1_from_storage(0x1u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(0x1u);
   }
 
   static constexpr int min_exponent   = 0;
@@ -631,7 +631,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
-    return _CUDA_VSTD::__cccl_make_nvfp4_e2m1_from_storage(0x1u);
+    return _CUDA_VSTD::__fp_from_storage<__nv_fp4_e2m1>(0x1u);
   }
 
   static constexpr bool is_iec559  = false;

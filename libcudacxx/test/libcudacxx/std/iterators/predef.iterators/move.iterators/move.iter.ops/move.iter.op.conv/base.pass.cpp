@@ -30,7 +30,7 @@ struct MoveOnlyIterator
   using difference_type   = cuda::std::ptrdiff_t;
   using reference         = int&;
 
-  __host__ __device__ TEST_CONSTEXPR explicit MoveOnlyIterator(It it)
+  __host__ __device__ constexpr explicit MoveOnlyIterator(It it)
       : it_(it)
   {}
   MoveOnlyIterator(MoveOnlyIterator&&)                 = default;
@@ -38,31 +38,31 @@ struct MoveOnlyIterator
   MoveOnlyIterator(const MoveOnlyIterator&)            = delete;
   MoveOnlyIterator& operator=(const MoveOnlyIterator&) = delete;
 
-  __host__ __device__ TEST_CONSTEXPR reference operator*() const
+  __host__ __device__ constexpr reference operator*() const
   {
     return *it_;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator& operator++()
+  __host__ __device__ constexpr MoveOnlyIterator& operator++()
   {
     ++it_;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 MoveOnlyIterator operator++(int)
+  __host__ __device__ constexpr MoveOnlyIterator operator++(int)
   {
     return MoveOnlyIterator(it_++);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  __host__ __device__ friend constexpr bool operator==(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ == y.it_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
+  __host__ __device__ friend constexpr bool operator!=(const MoveOnlyIterator& x, const MoveOnlyIterator& y)
   {
     return x.it_ != y.it_;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR It base(const MoveOnlyIterator& i)
+  __host__ __device__ friend constexpr It base(const MoveOnlyIterator& i)
   {
     return i.it_;
   }
@@ -72,14 +72,14 @@ static_assert(cuda::std::input_iterator<MoveOnlyIterator>, "");
 static_assert(!cuda::std::is_copy_constructible<MoveOnlyIterator>::value, "");
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
+__host__ __device__ constexpr void test_one()
 {
   // Non-const lvalue.
   {
     int a[] = {1, 2, 3};
 
     auto i = cuda::std::move_iterator<It>(It(a));
-    ASSERT_SAME_TYPE(decltype(i.base()), const It&);
+    static_assert(cuda::std::is_same_v<decltype(i.base()), const It&>);
     static_assert(noexcept(i.base()));
 
     assert(i.base() == It(a));
@@ -93,7 +93,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
     int a[] = {1, 2, 3};
 
     const auto i = cuda::std::move_iterator<It>(It(a));
-    ASSERT_SAME_TYPE(decltype(i.base()), const It&);
+    static_assert(cuda::std::is_same_v<decltype(i.base()), const It&>);
     static_assert(noexcept(i.base()));
     assert(i.base() == It(a));
   }
@@ -103,12 +103,12 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_one()
     int a[] = {1, 2, 3};
 
     auto i = cuda::std::move_iterator<It>(It(a));
-    ASSERT_SAME_TYPE(decltype(cuda::std::move(i).base()), It);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(i).base()), It>);
     assert(cuda::std::move(i).base() == It(a));
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_one<cpp17_input_iterator<int*>>();
   test_one<forward_iterator<int*>>();

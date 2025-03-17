@@ -10,16 +10,14 @@
 // template<class T>
 // concept totally_ordered;
 
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wc++17-extensions"
-#  pragma clang diagnostic ignored "-Wordered-compare-function-pointers"
-#endif
+#include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_CLANG("-Wordered-compare-function-pointers")
 
 #include <cuda/std/array>
 #include <cuda/std/concepts>
 
 #include "compare_types.h"
-#include "test_macros.h"
 
 using cuda::std::totally_ordered;
 
@@ -75,7 +73,7 @@ static_assert(models_totally_ordered<int (&)(int)>(), "");
 static_assert(models_totally_ordered<int (*)(int) noexcept>(), "");
 static_assert(models_totally_ordered<int (&)(int) noexcept>(), "");
 
-#if !defined(TEST_COMPILER_GCC) && defined(INVESTIGATE_COMPILER_BUG)
+#if !TEST_COMPILER(GCC) && defined(INVESTIGATE_COMPILER_BUG)
 static_assert(!totally_ordered<cuda::std::nullptr_t>, "");
 #endif
 
@@ -121,9 +119,9 @@ namespace types_fit_for_purpose
 #if TEST_STD_VER > 2017
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(models_totally_ordered<member_three_way_comparable>(), "");
-#    ifndef __NVCC__ // nvbug3908399
+#    if !TEST_CUDA_COMPILER(NVCC) // nvbug3908399
 static_assert(models_totally_ordered<friend_three_way_comparable>(), "");
-#    endif // !__NVCC__
+#    endif // !TEST_CUDA_COMPILER(NVCC)
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 static_assert(models_totally_ordered<explicit_operators>(), "");
@@ -156,9 +154,9 @@ static_assert(!totally_ordered<cxx20_friend_eq_operator_with_deleted_ne>, "");
 static_assert(!totally_ordered<member_three_way_comparable_with_deleted_eq>, "");
 static_assert(!totally_ordered<member_three_way_comparable_with_deleted_ne>, "");
 static_assert(!totally_ordered<friend_three_way_comparable_with_deleted_eq>, "");
-#    ifndef __NVCC__ // nvbug3908399
+#    if !TEST_CUDA_COMPILER(NVCC) // nvbug3908399
 static_assert(!totally_ordered<friend_three_way_comparable_with_deleted_ne>, "");
-#    endif // !__NVCC__
+#    endif // !TEST_CUDA_COMPILER(NVCC)
 
 static_assert(!totally_ordered<eq_returns_explicit_bool>, "");
 static_assert(!totally_ordered<ne_returns_explicit_bool>, "");

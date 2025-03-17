@@ -28,7 +28,7 @@ __host__ __device__ void testRuntimeSpan(Span sp)
 
   auto spBytes = cuda::std::as_writable_bytes(sp);
   using SB     = decltype(spBytes);
-  ASSERT_SAME_TYPE(cuda::std::byte, typename SB::element_type);
+  static_assert(cuda::std::is_same_v<cuda::std::byte, typename SB::element_type>);
 
   if (sp.extent == cuda::std::dynamic_extent)
   {

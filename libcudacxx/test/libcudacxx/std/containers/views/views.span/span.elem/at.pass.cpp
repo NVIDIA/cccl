@@ -31,14 +31,14 @@ __host__ __device__ constexpr void testSpanAt(SpanT&& anySpan, int index, int ex
   // non-const
   {
     auto elem = anySpan.at(index);
-    ASSERT_SAME_TYPE(ReferenceT, decltype(anySpan.at(index)));
+    static_assert(cuda::std::is_same_v<ReferenceT, decltype(anySpan.at(index))>);
     assert(elem == expectedValue);
   }
 
   // const
   {
     auto elem = cuda::std::as_const(anySpan).at(index);
-    ASSERT_SAME_TYPE(ReferenceT, decltype(cuda::std::as_const(anySpan).at(index)));
+    static_assert(cuda::std::is_same_v<ReferenceT, decltype(cuda::std::as_const(anySpan).at(index))>);
     assert(elem == expectedValue);
   }
 }

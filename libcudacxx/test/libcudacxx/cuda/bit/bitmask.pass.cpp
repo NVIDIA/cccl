@@ -20,7 +20,9 @@ __host__ __device__ constexpr bool test()
   using nl             = cuda::std::numeric_limits<T>;
   constexpr T all_ones = static_cast<T>(~T{0});
   unused(all_ones);
+  assert(cuda::bitmask<T>(0, 0) == 0);
   assert(cuda::bitmask<T>(0, 1) == 1);
+  assert(cuda::bitmask<T>(1, 0) == 0);
   assert(cuda::bitmask<T>(1, 1) == 0b10);
   assert(cuda::bitmask<T>(0, 2) == 0b11);
   assert(cuda::bitmask<T>(2, 2) == 0b1100);
@@ -29,6 +31,7 @@ __host__ __device__ constexpr bool test()
   assert(cuda::bitmask<T>(3, 2) == 0b11000);
   assert(cuda::bitmask<T>(nl::digits - 1, 1) == (T{1} << (nl::digits - 1u)));
   assert(cuda::bitmask<T>(0, nl::digits) == all_ones);
+  assert(cuda::bitmask<T>(nl::digits, 0) == 0);
   return true;
 }
 

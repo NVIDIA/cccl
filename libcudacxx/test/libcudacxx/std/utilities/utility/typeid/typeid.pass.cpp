@@ -27,13 +27,13 @@ struct a_dummy_class_type
 
 int main(int, char**)
 {
-  ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
+  static_assert(cuda::std::is_same_v<decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref>);
   static_assert(noexcept(_CCCL_TYPEID(int)));
   static_assert(!::cuda::std::is_default_constructible<::cuda::std::type_info>::value, "");
   static_assert(!::cuda::std::is_copy_constructible<::cuda::std::type_info>::value, "");
   // assert(_CCCL_TYPEID(int).name()[0] == 'i');
 
-  ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
+  static_assert(cuda::std::is_same_v<decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref>);
   static_assert(noexcept(_CCCL_TYPEID(int)));
   // assert(_CCCL_TYPEID(int).name()[0] == 'i');
 
