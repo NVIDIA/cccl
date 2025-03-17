@@ -80,3 +80,50 @@ C2H_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]")
   STATIC_REQUIRE(cat_detect<HasCat>::value);
   STATIC_REQUIRE(!cat_detect<HasDog>::value);
 }
+
+// Lots of libraries (like pytorch or tensorflow) bring their own half types and customize cub::Traits for them.
+struct CustomHalf
+{
+  int16_t payload;
+};
+
+C2H_TEST("Test CustomHalf", "[util][type]")
+{
+  // type not registered with cub::Traits
+  STATIC_REQUIRE(!cub::detail::is_primitive<CustomHalf>::value);
+  STATIC_REQUIRE(!cuda::std::is_floating_point<CustomHalf>::value);
+  STATIC_REQUIRE(!cuda::std::is_floating_point_v<CustomHalf>);
+  STATIC_REQUIRE(!cuda::is_floating_point<CustomHalf>::value);
+  STATIC_REQUIRE(!cuda::is_floating_point_v<CustomHalf>);
+  STATIC_REQUIRE(!cuda::std::numeric_limits<CustomHalf>::is_specialized);
+
+  // type registered with cub::Traits (specializes NumericTraits, numeric_limits, and is_floating_point)
+  STATIC_REQUIRE(cub::detail::is_primitive<half_t>::value);
+  STATIC_REQUIRE(!cuda::std::is_floating_point<half_t>::value); // the std traits are not affected
+  STATIC_REQUIRE(!cuda::std::is_floating_point_v<half_t>);
+  STATIC_REQUIRE(cuda::is_floating_point<half_t>::value);
+  STATIC_REQUIRE(cuda::is_floating_point_v<half_t>);
+  STATIC_REQUIRE(cuda::std::numeric_limits<half_t>::is_specialized);
+  CHECK(cuda::std::numeric_limits<half_t>::max() == half_t::max());
+  CHECK(cuda::std::numeric_limits<half_t>::lowest() == half_t::lowest());
+}
+
+C2H_TEST("Test FutureValue", "[util][type]")
+{
+  // read
+  int value;
+  cub::FutureValue<int> fv{&value};
+  value = 42;
+  CHECK(fv == 42);
+  value = 43;
+  CHECK(fv == 43);
+
+  // CTAD
+  cub::FutureValue fv2{&value};
+  STATIC_REQUIRE(::cuda::std::is_same_v<decltype(fv2), cub::FutureValue<int, int*>>);
+
+  c2h::device_vector<int> v(0);
+  cub::FutureValue fv3{v.begin()};
+  STATIC_REQUIRE(
+    ::cuda::std::is_same_v<decltype(fv3), cub::FutureValue<int, typename c2h::device_vector<int>::iterator>>);
+}

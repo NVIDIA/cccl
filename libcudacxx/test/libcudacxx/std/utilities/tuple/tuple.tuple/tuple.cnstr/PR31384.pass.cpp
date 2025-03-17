@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR int count = 0;
+TEST_GLOBAL_VARIABLE int count = 0;
 
 struct Explicit
 {

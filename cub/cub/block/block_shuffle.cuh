@@ -230,7 +230,7 @@ public:
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = ITEMS_PER_THREAD - 1; ITEM > 0; --ITEM)
     {
       prev[ITEM] = input[ITEM - 1];
@@ -298,7 +298,7 @@ public:
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ITEM++)
     {
       prev[ITEM] = input[ITEM + 1];

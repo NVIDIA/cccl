@@ -13,21 +13,16 @@
 //   bool
 //   operator!=(const complex<T>& lhs, const T& rhs);
 
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wliteral-conversion"
-#endif
-
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif
-
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_CLANG("-Wliteral-conversion")
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
+
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
+__host__ __device__ constexpr void test_constexpr()
 {
   {
     constexpr cuda::std::complex<T> lhs(1.5, 2.5);
@@ -52,7 +47,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_nonconstexpr()
+__host__ __device__ constexpr void test_nonconstexpr()
 {
   {
     cuda::std::complex<T> lhs(1.5, 2.5);
@@ -77,7 +72,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();
@@ -89,18 +84,20 @@ int main(int, char**)
 {
   test<float>();
   test<double>();
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test_nonconstexpr<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_nonconstexpr<__nv_bfloat16>();
-#endif
-  // CUDA treats long double as double
-  //  test<long double>();
+#endif // _LIBCUDACXX_HAS_NVBF16()
   static_assert(test<float>(), "");
   static_assert(test<double>(), "");
-  // CUDA treats long double as double
-  //  static_assert(test<long double>(), "");
+#if _CCCL_HAS_LONG_DOUBLE()
+  static_assert(test<long double>(), "");
+#endif // _CCCL_HAS_LONG_DOUBLE()
   test_constexpr<int>();
 
   return 0;

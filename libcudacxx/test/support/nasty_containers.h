@@ -67,70 +67,70 @@ public:
     v_.assign(il);
   }
 
-  iterator begin() TEST_NOEXCEPT
+  iterator begin() noexcept
   {
     return v_.begin();
   }
-  const_iterator begin() const TEST_NOEXCEPT
+  const_iterator begin() const noexcept
   {
     return v_.begin();
   }
-  iterator end() TEST_NOEXCEPT
+  iterator end() noexcept
   {
     return v_.end();
   }
-  const_iterator end() const TEST_NOEXCEPT
+  const_iterator end() const noexcept
   {
     return v_.end();
   }
 
-  reverse_iterator rbegin() TEST_NOEXCEPT
+  reverse_iterator rbegin() noexcept
   {
     return v_.rbegin();
   }
-  const_reverse_iterator rbegin() const TEST_NOEXCEPT
+  const_reverse_iterator rbegin() const noexcept
   {
     return v_.rbegin();
   }
-  reverse_iterator rend() TEST_NOEXCEPT
+  reverse_iterator rend() noexcept
   {
     return v_.rend();
   }
-  const_reverse_iterator rend() const TEST_NOEXCEPT
+  const_reverse_iterator rend() const noexcept
   {
     return v_.rend();
   }
 
-  const_iterator cbegin() const TEST_NOEXCEPT
+  const_iterator cbegin() const noexcept
   {
     return v_.cbegin();
   }
-  const_iterator cend() const TEST_NOEXCEPT
+  const_iterator cend() const noexcept
   {
     return v_.cend();
   }
-  const_reverse_iterator crbegin() const TEST_NOEXCEPT
+  const_reverse_iterator crbegin() const noexcept
   {
     return v_.crbegin();
   }
-  const_reverse_iterator crend() const TEST_NOEXCEPT
+  const_reverse_iterator crend() const noexcept
   {
     return v_.crend();
   }
 
-  size_type size() const TEST_NOEXCEPT
+  size_type size() const noexcept
   {
     return v_.size();
   }
-  size_type max_size() const TEST_NOEXCEPT
+  size_type max_size() const noexcept
   {
     return v_.max_size();
   }
-  size_type capacity() const TEST_NOEXCEPT
+  size_type capacity() const noexcept
   {
     return v_.capacity();
   }
-  bool empty() const TEST_NOEXCEPT
+  bool empty() const noexcept
   {
     return v_.empty();
   }
@@ -138,7 +138,7 @@ public:
   {
     v_.reserve(n);
   };
-  void shrink_to_fit() TEST_NOEXCEPT
+  void shrink_to_fit() noexcept
   {
     v_.shrink_to_fit();
   }
@@ -177,11 +177,11 @@ public:
     return v_.back();
   }
 
-  value_type* data() TEST_NOEXCEPT
+  value_type* data() noexcept
   {
     return v_.data();
   }
-  const value_type* data() const TEST_NOEXCEPT
+  const value_type* data() const noexcept
   {
     return v_.data();
   }
@@ -242,7 +242,7 @@ public:
     return v_.erase(first, last);
   }
 
-  void clear() TEST_NOEXCEPT
+  void clear() noexcept
   {
     v_.clear();
   }
@@ -338,53 +338,53 @@ public:
     l_.assign(il);
   }
 
-  iterator begin() TEST_NOEXCEPT
+  iterator begin() noexcept
   {
     return l_.begin();
   }
-  const_iterator begin() const TEST_NOEXCEPT
+  const_iterator begin() const noexcept
   {
     return l_.begin();
   }
-  iterator end() TEST_NOEXCEPT
+  iterator end() noexcept
   {
     return l_.end();
   }
-  const_iterator end() const TEST_NOEXCEPT
+  const_iterator end() const noexcept
   {
     return l_.end();
   }
 
-  reverse_iterator rbegin() TEST_NOEXCEPT
+  reverse_iterator rbegin() noexcept
   {
     return l_.rbegin();
   }
-  const_reverse_iterator rbegin() const TEST_NOEXCEPT
+  const_reverse_iterator rbegin() const noexcept
   {
     return l_.rbegin();
   }
-  reverse_iterator rend() TEST_NOEXCEPT
+  reverse_iterator rend() noexcept
   {
     return l_.rend();
   }
-  const_reverse_iterator rend() const TEST_NOEXCEPT
+  const_reverse_iterator rend() const noexcept
   {
     return l_.rend();
   }
 
-  const_iterator cbegin() const TEST_NOEXCEPT
+  const_iterator cbegin() const noexcept
   {
     return l_.cbegin();
   }
-  const_iterator cend() const TEST_NOEXCEPT
+  const_iterator cend() const noexcept
   {
     return l_.cend();
   }
-  const_reverse_iterator crbegin() const TEST_NOEXCEPT
+  const_reverse_iterator crbegin() const noexcept
   {
     return l_.crbegin();
   }
-  const_reverse_iterator crend() const TEST_NOEXCEPT
+  const_reverse_iterator crend() const noexcept
   {
     return l_.crend();
   }
@@ -406,15 +406,15 @@ public:
     return l_.back();
   }
 
-  size_type size() const TEST_NOEXCEPT
+  size_type size() const noexcept
   {
     return l_.size();
   }
-  size_type max_size() const TEST_NOEXCEPT
+  size_type max_size() const noexcept
   {
     return l_.max_size();
   }
-  bool empty() const TEST_NOEXCEPT
+  bool empty() const noexcept
   {
     return l_.empty();
   }
@@ -506,7 +506,7 @@ public:
     l_.swap(nl.l_);
   }
 
-  void clear() TEST_NOEXCEPT
+  void clear() noexcept
   {
     l_.clear();
   }
@@ -560,7 +560,7 @@ bool operator==(const nasty_list<T>& x, const nasty_list<T>& y)
 class nasty_mutex
 {
 public:
-  nasty_mutex() TEST_NOEXCEPT {}
+  nasty_mutex() noexcept {}
   ~nasty_mutex() {}
 
   nasty_mutex* operator&()
@@ -587,11 +587,11 @@ private:
 
 public:
   void lock() {}
-  bool try_lock() TEST_NOEXCEPT
+  bool try_lock() noexcept
   {
     return true;
   }
-  void unlock() TEST_NOEXCEPT {}
+  void unlock() noexcept {}
 
   // Shared ownership
   void lock_shared() {}

@@ -29,18 +29,18 @@
 
 int main(int, char**)
 {
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::January));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::February));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::March));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::April));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::May));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::June));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::July));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::August));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::September));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::October));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::November));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::month, decltype(cuda::std::chrono::December));
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::January)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::February)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::March)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::April)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::May)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::June)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::July)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::August)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::September)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::October)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::November)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::month, decltype(cuda::std::chrono::December)>);
 
   static_assert(cuda::std::chrono::January == cuda::std::chrono::month(1), "");
   static_assert(cuda::std::chrono::February == cuda::std::chrono::month(2), "");

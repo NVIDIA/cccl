@@ -253,13 +253,15 @@ public:
   }
 
   template <class U>
-  CountingAllocator(CountingAllocator<U, ID> const& other) TEST_NOEXCEPT : P(other.P)
+  CountingAllocator(CountingAllocator<U, ID> const& other) noexcept
+      : P(other.P)
   {
     P->copy_constructed += 1;
   }
 
   template <class U>
-  CountingAllocator(CountingAllocator<U, ID>&& other) TEST_NOEXCEPT : P(other.P)
+  CountingAllocator(CountingAllocator<U, ID>&& other) noexcept
+      : P(other.P)
   {
     P->move_constructed += 1;
   }
@@ -335,13 +337,15 @@ public:
   }
 
   template <class U>
-  CountingAllocator(CountingAllocator<U, ID> const& other) TEST_NOEXCEPT : P(other.P)
+  CountingAllocator(CountingAllocator<U, ID> const& other) noexcept
+      : P(other.P)
   {
     P->copy_constructed += 1;
   }
 
   template <class U>
-  CountingAllocator(CountingAllocator<U, ID>&& other) TEST_NOEXCEPT : P(other.P)
+  CountingAllocator(CountingAllocator<U, ID>&& other) noexcept
+      : P(other.P)
   {
     P->move_constructed += 1;
   }
@@ -398,13 +402,15 @@ public:
   }
 
   template <class U>
-  MinAlignedAllocator(MinAlignedAllocator<U> const& other) TEST_NOEXCEPT : P(other.P)
+  MinAlignedAllocator(MinAlignedAllocator<U> const& other) noexcept
+      : P(other.P)
   {
     P->copy_constructed += 1;
   }
 
   template <class U>
-  MinAlignedAllocator(MinAlignedAllocator<U>&& other) TEST_NOEXCEPT : P(other.P)
+  MinAlignedAllocator(MinAlignedAllocator<U>&& other) noexcept
+      : P(other.P)
   {
     P->move_constructed += 1;
   }
@@ -522,13 +528,15 @@ public:
   }
 
   template <class U>
-  NullAllocator(NullAllocator<U> const& other) TEST_NOEXCEPT : P(other.P)
+  NullAllocator(NullAllocator<U> const& other) noexcept
+      : P(other.P)
   {
     P->copy_constructed += 1;
   }
 
   template <class U>
-  NullAllocator(NullAllocator<U>&& other) TEST_NOEXCEPT : P(other.P)
+  NullAllocator(NullAllocator<U>&& other) noexcept
+      : P(other.P)
   {
     P->move_constructed += 1;
   }

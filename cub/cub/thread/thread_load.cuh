@@ -106,46 +106,11 @@ enum CacheLoadModifier
  *   <b>[inferred]</b> The input's iterator type \iterator
  */
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
 
 //@}  end member group
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-/// Helper structure for templated load iteration (inductive case)
-/// \deprecated [Since 2.6.0] Use UnrolledThreadLoad() or UnrolledCopy() instead.
-template <int COUNT, int MAX>
-struct IterateThreadLoad
-{
-  template <CacheLoadModifier MODIFIER, typename T>
-  CCCL_DEPRECATED_BECAUSE("Use UnrolledThreadLoad() instead")
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T const* ptr, T* vals)
-  {
-    vals[COUNT] = ThreadLoad<MODIFIER>(ptr + COUNT);
-    IterateThreadLoad<COUNT + 1, MAX>::template Load<MODIFIER>(ptr, vals);
-  }
-
-  template <typename RandomAccessIterator, typename T>
-  CCCL_DEPRECATED_BECAUSE("Use UnrolledCopy() instead")
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(RandomAccessIterator itr, T* vals)
-  {
-    vals[COUNT] = itr[COUNT];
-    IterateThreadLoad<COUNT + 1, MAX>::Dereference(itr, vals);
-  }
-};
-
-/// Helper structure for templated load iteration (termination case)
-template <int MAX>
-struct IterateThreadLoad<MAX, MAX>
-{
-  template <CacheLoadModifier MODIFIER, typename T>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T const* /*ptr*/, T* /*vals*/)
-  {}
-
-  template <typename RandomAccessIterator, typename T>
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(RandomAccessIterator /*itr*/, T* /*vals*/)
-  {}
-};
 
 namespace detail
 {
@@ -306,7 +271,7 @@ _CUB_LOAD_ALL(LOAD_LDG, global.nc)
  * ThreadLoad definition for LOAD_DEFAULT modifier on iterator types
  */
 template <typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(
   RandomAccessIterator itr, detail::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
 {
   return *itr;
@@ -374,7 +339,7 @@ ThreadLoad(T const* ptr, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std:
 }
 
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
   return ThreadLoad(
     itr, detail::constant_v<MODIFIER>, detail::bool_constant_v<::cuda::std::is_pointer_v<RandomAccessIterator>>);

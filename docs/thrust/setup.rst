@@ -6,5 +6,4 @@ Setup
 .. toctree::
    :maxdepth: 1
 
-   requirements
    cmake_options

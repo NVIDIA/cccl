@@ -34,7 +34,7 @@ int main(int, char**)
   using days       = cuda::std::chrono::days;
   using weekday    = cuda::std::chrono::weekday;
 
-  ASSERT_NOEXCEPT(weekday{cuda::std::declval<local_days>()});
+  static_assert(noexcept(weekday{cuda::std::declval<local_days>()}));
 
   {
     constexpr local_days sd{}; // 1-Jan-1970 was a Thursday

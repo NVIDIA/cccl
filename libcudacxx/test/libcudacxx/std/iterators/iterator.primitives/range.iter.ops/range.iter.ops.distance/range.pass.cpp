@@ -39,7 +39,8 @@ __host__ __device__ constexpr void test_ordinary()
   assert(cuda::std::ranges::distance(static_cast<R&&>(r)) == 3);
   assert(cuda::std::ranges::distance(static_cast<const R&>(r)) == 3);
   assert(cuda::std::ranges::distance(static_cast<const R&&>(r)) == 3);
-  ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(r)), cuda::std::ranges::range_difference_t<R>);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::std::ranges::distance(r)), cuda::std::ranges::range_difference_t<R>>);
 }
 
 __host__ __device__ constexpr bool test()
@@ -51,8 +52,9 @@ __host__ __device__ constexpr bool test()
     assert(cuda::std::ranges::distance(static_cast<R&&>(a)) == 3);
     assert(cuda::std::ranges::distance(static_cast<const R&>(a)) == 3);
     assert(cuda::std::ranges::distance(static_cast<const R&&>(a)) == 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(a)), cuda::std::ptrdiff_t);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::distance(a)), cuda::std::ranges::range_difference_t<R>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::distance(a)), cuda::std::ptrdiff_t>);
+    static_assert(
+      cuda::std::is_same_v<decltype(cuda::std::ranges::distance(a)), cuda::std::ranges::range_difference_t<R>>);
   }
   {
     // Unsized range, non-copyable iterator type, rvalue-ref-qualified begin()

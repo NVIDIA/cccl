@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -44,6 +44,37 @@ def test_block_exclusive_sum():
     # example-end exclusive-sum
 
     tile_size = threads_per_block * items_per_thread
+
+    h_keys = np.ones(tile_size, dtype=np.int32)
+    d_keys = cuda.to_device(h_keys)
+    kernel[1, threads_per_block](d_keys)
+    h_keys = d_keys.copy_to_host()
+    for i in range(tile_size):
+        assert h_keys[i] == i
+
+
+def test_block_exclusive_sum_single_input_per_thread():
+    # example-begin exclusive-sum-single-input-per-thread
+    threads_per_block = 128
+
+    # Specialize exclusive sum for a 1D block of 128 threads.  Each thread
+    # owns a single integer item.
+    block_exclusive_sum = cudax.block.exclusive_sum(numba.int32, threads_per_block)
+
+    # Link the exclusive sum to a CUDA kernel
+    @cuda.jit(link=block_exclusive_sum.files)
+    def kernel(data):
+        thread_data = 1
+
+        # Collectively compute the block-wide exclusive prefix sum.
+        result = block_exclusive_sum(thread_data)
+
+        # Copy the result back to the output.
+        data[cuda.threadIdx.x] = result
+
+    # example-end exclusive-sum-single-input-per-thread
+
+    tile_size = threads_per_block
 
     h_keys = np.ones(tile_size, dtype=np.int32)
     d_keys = cuda.to_device(h_keys)

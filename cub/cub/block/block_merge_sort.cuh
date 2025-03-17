@@ -66,8 +66,8 @@ MergePath(KeyIt1 keys1, KeyIt2 keys2, OffsetT keys1_count, OffsetT keys2_count, 
   {
     const OffsetT mid = cub::MidPoint<OffsetT>(keys1_begin, keys1_end);
     // pull copies of the keys before calling binary_pred so proxy references are unwrapped
-    const detail::value_t<KeyIt1> key1 = keys1[mid];
-    const detail::value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
+    const detail::it_value_t<KeyIt1> key1 = keys1[mid];
+    const detail::it_value_t<KeyIt2> key2 = keys2[diag - 1 - mid];
     if (binary_pred(key2, key1))
     {
       keys1_end = mid;
@@ -97,7 +97,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyT key1 = keys_shared[keys1_beg];
   KeyT key2 = keys_shared[keys2_beg];
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
@@ -376,7 +376,7 @@ public:
       //
       KeyT max_key = oob_default;
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 1; item < ITEMS_PER_THREAD; ++item)
       {
         if (ITEMS_PER_THREAD * linear_tid + item < valid_items)
@@ -408,9 +408,9 @@ public:
 
       Sync();
 
-// store keys in shmem
-//
-#pragma unroll
+      // store keys in shmem
+      //
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ITEMS_PER_THREAD; ++item)
       {
         int idx                       = ITEMS_PER_THREAD * linear_tid + item;
@@ -465,9 +465,9 @@ public:
       {
         Sync();
 
-// store keys in shmem
-//
-#pragma unroll
+        // store keys in shmem
+        //
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
           int idx                        = ITEMS_PER_THREAD * linear_tid + item;
@@ -476,9 +476,9 @@ public:
 
         Sync();
 
-// gather items from shmem
-//
-#pragma unroll
+        // gather items from shmem
+        //
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int item = 0; item < ITEMS_PER_THREAD; ++item)
         {
           items[item] = temp_storage.items_shared[indices[item]];

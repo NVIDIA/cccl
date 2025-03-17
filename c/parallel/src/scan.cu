@@ -1,4 +1,13 @@
-#include <cub/agent/single_pass_scan_operators.cuh>
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/dispatch/dispatch_scan.cuh>
@@ -10,7 +19,6 @@
 #include <format>
 #include <iostream>
 #include <optional>
-#include <regex>
 #include <string>
 #include <type_traits>
 
@@ -20,10 +28,12 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/scan_tile_state.h"
 #include "util/types.h"
 #include <cccl/c/scan.h>
 #include <nvrtc.h>
 #include <nvrtc/command_list.h>
+#include <nvrtc/ltoir_list_appender.h>
 
 struct op_wrapper;
 struct device_scan_policy;
@@ -131,11 +141,11 @@ std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
   const cccl_type_info accum_t  = scan::get_accumulator_type(op, input_it, init);
   const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
   const std::string input_iterator_t =
-    (input_it.type == cccl_iterator_kind_t::pointer //
+    (input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
        ? cccl_type_enum_to_name(input_it.value_type.type, true) //
        : scan::get_input_iterator_name());
   const std::string output_iterator_t =
-    output_it.type == cccl_iterator_kind_t::pointer //
+    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
       ? cccl_type_enum_to_name(output_it.value_type.type, true) //
       : scan::get_output_iterator_name();
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
@@ -160,74 +170,6 @@ std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
     "false", // 8 - for now, always exclusive
     init_t); // 9
 }
-
-// TODO: NVRTC doesn't currently support extracting basic type
-// information (e.g., type sizes and alignments) from compiled
-// LTO-IR. So we separately compile a small PTX file that defines the
-// necessary types and constants and grep it for the required
-// information. If/when NVRTC adds these features, we can remove this
-// extra compilation step and get the information directly from the
-// LTO-IR.
-static constexpr auto ptx_u64_assignment_regex = R"(\.visible\s+\.global\s+\.align\s+\d+\s+\.u64\s+{}\s*=\s*(\d+);)";
-
-std::optional<size_t> find_size_t(char* ptx, std::string_view name)
-{
-  std::regex regex(std::format(ptx_u64_assignment_regex, name));
-  std::cmatch match;
-  if (std::regex_search(ptx, match, regex))
-  {
-    auto result = std::stoi(match[1].str());
-    return result;
-  }
-  return std::nullopt;
-}
-
-struct scan_tile_state
-{
-  // scan_tile_state implements the same (host) interface as cub::ScanTileStateT, except
-  // that it accepts the acummulator type as a runtime parameter rather than being
-  // templated on it.
-  //
-  // Both specializations ScanTileStateT<T, true> and ScanTileStateT<T, false> - where the
-  // bool parameter indicates whether `T` is primitive - are combined into a single type.
-
-  void* d_tile_status; // d_tile_descriptors
-  void* d_tile_partial;
-  void* d_tile_inclusive;
-
-  size_t description_bytes_per_tile;
-  size_t payload_bytes_per_tile;
-
-  scan_tile_state(size_t description_bytes_per_tile, size_t payload_bytes_per_tile)
-      : d_tile_status(nullptr)
-      , d_tile_partial(nullptr)
-      , d_tile_inclusive(nullptr)
-      , description_bytes_per_tile(description_bytes_per_tile)
-      , payload_bytes_per_tile(payload_bytes_per_tile)
-  {}
-
-  cudaError_t Init(int num_tiles, void* d_temp_storage, size_t temp_storage_bytes)
-  {
-    void* allocations[3] = {};
-    auto status          = cub::detail::tile_state_init(
-      description_bytes_per_tile, payload_bytes_per_tile, num_tiles, d_temp_storage, temp_storage_bytes, allocations);
-    if (status != cudaSuccess)
-    {
-      return status;
-    }
-    d_tile_status    = allocations[0];
-    d_tile_partial   = allocations[1];
-    d_tile_inclusive = allocations[2];
-    return cudaSuccess;
-  }
-
-  cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes) const
-  {
-    temp_storage_bytes =
-      cub::detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
-    return cudaSuccess;
-  }
-};
 
 template <auto* GetPolicy>
 struct dynamic_scan_policy_t
@@ -264,11 +206,10 @@ struct scan_kernel_source
     return {build.description_bytes_per_tile, build.payload_bytes_per_tile};
   }
 };
-
 } // namespace scan
 
-extern "C" CCCL_C_API CUresult cccl_device_scan_build(
-  cccl_device_scan_build_result_t* build,
+CUresult cccl_device_scan_build(
+  cccl_device_scan_build_result_t* build_ptr,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
   cccl_op_t op,
@@ -278,7 +219,7 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -289,9 +230,9 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
     const int cc                 = cc_major * 10 + cc_minor;
     const cccl_type_info accum_t = scan::get_accumulator_type(op, input_it, init);
     const auto policy            = scan::get_policy(cc, accum_t);
-    const auto accum_cpp         = cccl_type_enum_to_string(accum_t.type);
-    const auto input_it_value_t  = cccl_type_enum_to_string(input_it.value_type.type);
-    const auto offset_t          = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+    const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
+    const auto input_it_value_t  = cccl_type_enum_to_name(input_it.value_type.type);
+    const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
     const std::string input_iterator_src =
       make_kernel_input_iterator(offset_t, "input_iterator_state_t", input_it_value_t, input_it);
@@ -300,32 +241,36 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
-    const std::string src = std::format(
-      "#include <cub/block/block_scan.cuh>\n"
-      "#include <cub/device/dispatch/kernels/scan.cuh>\n"
-      "#include <cub/agent/single_pass_scan_operators.cuh>\n"
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "{4}\n"
-      "{5}\n"
-      "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_THREAD = {2};\n"
-      "  static constexpr int BLOCK_THREADS = {3};\n"
-      "  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;\n"
-      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;\n"
-      "  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;\n"
-      "  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;\n"
-      "  struct detail {{\n"
-      "    using delay_constructor_t = cub::detail::default_delay_constructor_t<{7}>;\n"
-      "  }};\n"
-      "}};\n"
-      "struct device_scan_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    using ScanPolicyT = agent_policy_t;\n"
-      "  }};\n"
-      "}};\n"
-      "{6};\n",
+    constexpr std::string_view src_template = R"XXX(
+#include <cub/block/block_scan.cuh>
+#include <cub/device/dispatch/kernels/scan.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+struct __align__({1}) storage_t {{
+  char data[{0}];
+}};
+{4}
+{5}
+struct agent_policy_t {{
+  static constexpr int ITEMS_PER_THREAD = {2};
+  static constexpr int BLOCK_THREADS = {3};
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
+  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
+  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
+  struct detail {{
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<{7}>;
+  }};
+}};
+struct device_scan_policy {{
+  struct ActivePolicy {{
+    using ScanPolicyT = agent_policy_t;
+  }};
+}};
+{6}
+)XXX";
+
+    const std::string& src = std::format(
+      src_template,
       input_it.value_type.size, // 0
       input_it.value_type.alignment, // 1
       policy.items_per_thread, // 2
@@ -356,23 +301,11 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
 
     // Collect all LTO-IRs to be linked.
     nvrtc_ltoir_list ltoir_list;
-    auto ltoir_list_append = [&ltoir_list](nvrtc_ltoir lto) {
-      if (lto.ltsz)
-      {
-        ltoir_list.push_back(std::move(lto));
-      }
-    };
-    ltoir_list_append({op.ltoir, op.ltoir_size});
-    if (cccl_iterator_kind_t::iterator == input_it.type)
-    {
-      ltoir_list_append({input_it.advance.ltoir, input_it.advance.ltoir_size});
-      ltoir_list_append({input_it.dereference.ltoir, input_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == output_it.type)
-    {
-      ltoir_list_append({output_it.advance.ltoir, output_it.advance.ltoir_size});
-      ltoir_list_append({output_it.dereference.ltoir, output_it.dereference.ltoir_size});
-    }
+    nvrtc_ltoir_list_appender appender{ltoir_list};
+
+    appender.append({op.ltoir, op.ltoir_size});
+    appender.add_iterator_definition(input_it);
+    appender.add_iterator_definition(output_it);
 
     nvrtc_link_result result =
       make_nvrtc_command_list()
@@ -386,54 +319,19 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->init_kernel, build->library, init_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->scan_kernel, build->library, scan_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->scan_kernel, build_ptr->library, scan_kernel_lowered_name.c_str()));
 
-    constexpr size_t num_ptx_args      = 7;
-    const char* ptx_args[num_ptx_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
-    constexpr size_t num_ptx_lto_args       = 3;
-    const char* ptx_lopts[num_ptx_lto_args] = {"-lto", arch.c_str(), "-ptx"};
+    auto [description_bytes_per_tile,
+          payload_bytes_per_tile] = get_tile_state_bytes_per_tile(accum_t, accum_cpp, args, num_args, arch);
 
-    std::string ptx_src = std::format(
-      "#include <cub/agent/single_pass_scan_operators.cuh>\n"
-      "#include <cub/util_type.cuh>\n"
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "__device__ size_t description_bytes_per_tile = cub::ScanTileState<{2}>::description_bytes_per_tile;\n"
-      "__device__ size_t payload_bytes_per_tile = cub::ScanTileState<{2}>::payload_bytes_per_tile;\n",
-      accum_t.size,
-      accum_t.alignment,
-      accum_cpp);
-    auto compile_result =
-      make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{ptx_src.c_str(), "tile_state_info"})
-        .compile_program({ptx_args, num_ptx_args})
-        .cleanup_program()
-        .finalize_program(num_ptx_lto_args, ptx_lopts);
-    auto ptx_code = compile_result.data.get();
-
-    size_t description_bytes_per_tile;
-    size_t payload_bytes_per_tile;
-    auto maybe_description_bytes_per_tile = scan::find_size_t(ptx_code, "description_bytes_per_tile");
-    if (maybe_description_bytes_per_tile)
-    {
-      description_bytes_per_tile = maybe_description_bytes_per_tile.value();
-    }
-    else
-    {
-      throw std::runtime_error("Failed to find description_bytes_per_tile in PTX");
-    }
-    payload_bytes_per_tile = scan::find_size_t(ptx_code, "payload_bytes_per_tile").value_or(0);
-
-    build->cc                         = cc;
-    build->cubin                      = (void*) result.data.release();
-    build->cubin_size                 = result.size;
-    build->accumulator_type           = accum_t;
-    build->description_bytes_per_tile = description_bytes_per_tile;
-    build->payload_bytes_per_tile     = payload_bytes_per_tile;
+    build_ptr->cc                         = cc;
+    build_ptr->cubin                      = (void*) result.data.release();
+    build_ptr->cubin_size                 = result.size;
+    build_ptr->accumulator_type           = accum_t;
+    build_ptr->description_bytes_per_tile = description_bytes_per_tile;
+    build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   }
   catch (const std::exception& exc)
   {
@@ -446,16 +344,16 @@ extern "C" CCCL_C_API CUresult cccl_device_scan_build(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_scan(
+CUresult cccl_device_scan(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   cccl_value_t init,
-  CUstream stream) noexcept
+  CUstream stream)
 {
   bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
@@ -509,16 +407,16 @@ extern "C" CCCL_C_API CUresult cccl_device_scan(
   return error;
 }
 
-extern "C" CCCL_C_API CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* bld_ptr) noexcept
+CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)
 {
   try
   {
-    if (bld_ptr == nullptr)
+    if (build_ptr == nullptr)
     {
       return CUDA_ERROR_INVALID_VALUE;
     }
-    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
-    check(cuLibraryUnload(bld_ptr->library));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
   {

@@ -42,13 +42,15 @@
 
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/cuda/detail/execution_policy.h>
-#include <thrust/system/cuda/error.h>
-#include <thrust/system_error.h>
-
-#include <cstdio>
-#include <exception>
 
 #include <nv/target>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <thrust/system/cuda/error.h>
+#  include <thrust/system_error.h>
+
+#  include <cstdio>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
@@ -132,6 +134,7 @@ _CCCL_HOST_DEVICE cudaError_t synchronize_optional(Policy& policy)
   return synchronize_stream_optional(derived_cast(policy));
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class Type>
 THRUST_HOST_FUNCTION cudaError_t trivial_copy_from_device(Type* dst, Type const* src, size_t count, cudaStream_t stream)
 {
@@ -176,6 +179,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   cuda_cub::synchronize_optional(policy);
   return status;
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status)
 {
@@ -242,349 +246,6 @@ _CCCL_HOST_DEVICE inline void throw_on_error(cudaError_t status, char const* msg
 #undef THRUST_TEMP_DEVICE_CODE
   }
 }
-
-// deprecated [Since 2.8]
-template <class ValueType, class InputIt, class UnaryOp>
-struct CCCL_DEPRECATED_BECAUSE("Use thrust::transform_iterator") transform_input_iterator_t
-{
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  using self_t = transform_input_iterator_t;
-  _CCCL_SUPPRESS_DEPRECATED_POP
-  using difference_type   = typename iterator_traits<InputIt>::difference_type;
-  using value_type        = ValueType;
-  using pointer           = void;
-  using reference         = value_type;
-  using iterator_category = ::cuda::std::random_access_iterator_tag;
-
-  InputIt input;
-  mutable UnaryOp op;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE transform_input_iterator_t(InputIt input, UnaryOp op)
-      : input(input)
-      , op(op)
-  {}
-
-  transform_input_iterator_t(const self_t&) = default;
-
-  // UnaryOp might not be copy assignable, such as when it is a lambda.  Define
-  // an explicit copy assignment operator that doesn't try to assign it.
-  _CCCL_HOST_DEVICE self_t& operator=(const self_t& o)
-  {
-    input = o.input;
-    return *this;
-  }
-
-  /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++(int)
-  {
-    self_t retval = *this;
-    ++input;
-    return retval;
-  }
-
-  /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++()
-  {
-    ++input;
-    return *this;
-  }
-
-  /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
-  {
-    typename thrust::iterator_value<InputIt>::type x = *input;
-    return op(x);
-  }
-  /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*()
-  {
-    typename thrust::iterator_value<InputIt>::type x = *input;
-    return op(x);
-  }
-
-  /// Addition
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator+(difference_type n) const
-  {
-    return self_t(input + n, op);
-  }
-
-  /// Addition assignment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator+=(difference_type n)
-  {
-    input += n;
-    return *this;
-  }
-
-  /// Subtraction
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator-(difference_type n) const
-  {
-    return self_t(input - n, op);
-  }
-
-  /// Subtraction assignment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator-=(difference_type n)
-  {
-    input -= n;
-    return *this;
-  }
-
-  /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_t other) const
-  {
-    return input - other.input;
-  }
-
-  /// Array subscript
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](difference_type n) const
-  {
-    return op(input[n]);
-  }
-
-  /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_t& rhs) const
-  {
-    return (input == rhs.input);
-  }
-
-  /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_t& rhs) const
-  {
-    return (input != rhs.input);
-  }
-}; // struct transform_input_iterarot_t
-
-// deprecated [Since 2.8]
-template <class ValueType, class InputIt1, class InputIt2, class BinaryOp>
-struct CCCL_DEPRECATED_BECAUSE("Use thrust::transform_iterator of a thrust::zip_iterator")
-  transform_pair_of_input_iterators_t
-{
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  using self_t = transform_pair_of_input_iterators_t;
-  _CCCL_SUPPRESS_DEPRECATED_POP
-  using difference_type   = typename iterator_traits<InputIt1>::difference_type;
-  using value_type        = ValueType;
-  using pointer           = void;
-  using reference         = value_type;
-  using iterator_category = ::cuda::std::random_access_iterator_tag;
-
-  InputIt1 input1;
-  InputIt2 input2;
-  mutable BinaryOp op;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  transform_pair_of_input_iterators_t(InputIt1 input1_, InputIt2 input2_, BinaryOp op_)
-      : input1(input1_)
-      , input2(input2_)
-      , op(op_)
-  {}
-
-  transform_pair_of_input_iterators_t(const self_t&) = default;
-
-  // BinaryOp might not be copy assignable, such as when it is a lambda.
-  // Define an explicit copy assignment operator that doesn't try to assign it.
-  _CCCL_HOST_DEVICE self_t& operator=(const self_t& o)
-  {
-    input1 = o.input1;
-    input2 = o.input2;
-    return *this;
-  }
-
-  /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++(int)
-  {
-    self_t retval = *this;
-    ++input1;
-    ++input2;
-    return retval;
-  }
-
-  /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++()
-  {
-    ++input1;
-    ++input2;
-    return *this;
-  }
-
-  /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
-  {
-    return op(*input1, *input2);
-  }
-  /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*()
-  {
-    return op(*input1, *input2);
-  }
-
-  /// Addition
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator+(difference_type n) const
-  {
-    return self_t(input1 + n, input2 + n, op);
-  }
-
-  /// Addition assignment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator+=(difference_type n)
-  {
-    input1 += n;
-    input2 += n;
-    return *this;
-  }
-
-  /// Subtraction
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator-(difference_type n) const
-  {
-    return self_t(input1 - n, input2 - n, op);
-  }
-
-  /// Subtraction assignment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator-=(difference_type n)
-  {
-    input1 -= n;
-    input2 -= n;
-    return *this;
-  }
-
-  /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_t other) const
-  {
-    return input1 - other.input1;
-  }
-
-  /// Array subscript
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](difference_type n) const
-  {
-    return op(input1[n], input2[n]);
-  }
-
-  /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_t& rhs) const
-  {
-    return (input1 == rhs.input1) && (input2 == rhs.input2);
-  }
-
-  /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_t& rhs) const
-  {
-    return (input1 != rhs.input1) || (input2 != rhs.input2);
-  }
-
-}; // struct transform_pair_of_input_iterators_t
-
-// deprecated [Since 2.8]
-struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::identity") identity
-{
-  template <class T>
-  _CCCL_HOST_DEVICE T const& operator()(T const& t) const
-  {
-    return t;
-  }
-
-  template <class T>
-  _CCCL_HOST_DEVICE T& operator()(T& t) const
-  {
-    return t;
-  }
-};
-
-// deprecated [Since 2.8]
-template <class T>
-struct CCCL_DEPRECATED_BECAUSE("Use thrust::counting_iterator") counting_iterator_t
-{
-  _CCCL_SUPPRESS_DEPRECATED_PUSH
-  using self_t = counting_iterator_t;
-  _CCCL_SUPPRESS_DEPRECATED_POP
-  using difference_type   = T;
-  using value_type        = T;
-  using pointer           = void;
-  using reference         = T;
-  using iterator_category = ::cuda::std::random_access_iterator_tag;
-
-  T count;
-
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE counting_iterator_t(T count_)
-      : count(count_)
-  {}
-
-  /// Postfix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++(int)
-  {
-    self_t retval = *this;
-    ++count;
-    return retval;
-  }
-
-  /// Prefix increment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++()
-  {
-    ++count;
-    return *this;
-  }
-
-  /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
-  {
-    return count;
-  }
-
-  /// Indirection
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*()
-  {
-    return count;
-  }
-
-  /// Addition
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator+(difference_type n) const
-  {
-    return self_t(count + n);
-  }
-
-  /// Addition assignment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator+=(difference_type n)
-  {
-    count += n;
-    return *this;
-  }
-
-  /// Subtraction
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator-(difference_type n) const
-  {
-    return self_t(count - n);
-  }
-
-  /// Subtraction assignment
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator-=(difference_type n)
-  {
-    count -= n;
-    return *this;
-  }
-
-  /// Distance
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_t other) const
-  {
-    return count - other.count;
-  }
-
-  /// Array subscript
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](difference_type n) const
-  {
-    return count + n;
-  }
-
-  /// Equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_t& rhs) const
-  {
-    return (count == rhs.count);
-  }
-
-  /// Not equal to
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_t& rhs) const
-  {
-    return (count != rhs.count);
-  }
-
-}; // struct count_iterator_t
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

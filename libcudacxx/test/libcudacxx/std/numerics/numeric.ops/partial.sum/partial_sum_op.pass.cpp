@@ -33,26 +33,26 @@ struct rvalue_addable
   bool correctOperatorUsed = false;
 
   // make sure the predicate is passed an rvalue and an lvalue (so check that the first argument was moved)
-  __host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_addable operator()(rvalue_addable&& r, rvalue_addable const&)
+  __host__ __device__ constexpr rvalue_addable operator()(rvalue_addable&& r, rvalue_addable const&)
   {
     r.correctOperatorUsed = true;
     return cuda::std::move(r);
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_addable operator+(rvalue_addable& lhs, rvalue_addable const&)
+__host__ __device__ constexpr rvalue_addable operator+(rvalue_addable& lhs, rvalue_addable const&)
 {
   lhs.correctOperatorUsed = false;
   return lhs;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_addable operator+(rvalue_addable&& lhs, rvalue_addable const&)
+__host__ __device__ constexpr rvalue_addable operator+(rvalue_addable&& lhs, rvalue_addable const&)
 {
   lhs.correctOperatorUsed = true;
   return cuda::std::move(lhs);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_use_move()
+__host__ __device__ constexpr void test_use_move()
 {
   const cuda::std::size_t size = 100;
   rvalue_addable arr[size];
@@ -72,7 +72,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_use_move()
 }
 
 #ifdef _LIBCUDACXX_HAS_STRING
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_string()
+__host__ __device__ constexpr void test_string()
 {
   cuda::std::string sa[] = {"a", "b", "c"};
   cuda::std::string sr[] = {"a", "ba", "cb"};
@@ -86,7 +86,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_string()
 #endif // _LIBCUDACXX_HAS_STRING
 
 template <class InIter, class OutIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]         = {1, 2, 3, 4, 5};
   int ir[]         = {1, -1, -4, -8, -13};
@@ -100,7 +100,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*>>();

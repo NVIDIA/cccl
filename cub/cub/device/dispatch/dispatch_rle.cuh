@@ -54,6 +54,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <cstdio>
 #include <iterator>
 
@@ -194,7 +196,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           typename PolicyHub =
             detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                      cub::detail::value_t<InputIteratorT>>>
+                                                      cub::detail::it_value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************
@@ -351,7 +353,7 @@ struct DeviceRleDispatch
       }
 
       // Log device_scan_init_kernel configuration
-      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = _CUDA_VSTD::max(1, ::cuda::ceil_div(num_tiles, int{INIT_KERNEL_THREADS}));
 
 #ifdef CUB_DEBUG_LOG
       _CubLog("Invoking device_scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",
@@ -406,7 +408,7 @@ struct DeviceRleDispatch
       dim3 scan_grid_size;
       scan_grid_size.z = 1;
       scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
-      scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
+      scan_grid_size.x = _CUDA_VSTD::min(num_tiles, max_dim_x);
 
 // Log device_rle_sweep_kernel configuration
 #ifdef CUB_DEBUG_LOG

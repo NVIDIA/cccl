@@ -92,6 +92,102 @@ struct functor
     }
   }
 };
+
+template <class ValueType, class InputIt, class UnaryOp>
+struct transform_input_iterator_t
+{
+  using self_t            = transform_input_iterator_t;
+  using difference_type   = thrust::detail::it_difference_t<InputIt>;
+  using value_type        = ValueType;
+  using pointer           = void;
+  using reference         = value_type;
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+
+  InputIt input;
+  mutable UnaryOp op;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE transform_input_iterator_t(InputIt input, UnaryOp op)
+      : input(input)
+      , op(op)
+  {}
+
+  transform_input_iterator_t(const self_t&) = default;
+
+  // UnaryOp might not be copy assignable, such as when it is a lambda.  Define
+  // an explicit copy assignment operator that doesn't try to assign it.
+  _CCCL_HOST_DEVICE self_t& operator=(const self_t& o)
+  {
+    input = o.input;
+    return *this;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++(int)
+  {
+    self_t retval = *this;
+    ++input;
+    return retval;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator++()
+  {
+    ++input;
+    return *this;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*() const
+  {
+    thrust::detail::it_value_t<InputIt> x = *input;
+    return op(x);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator*()
+  {
+    thrust::detail::it_value_t<InputIt> x = *input;
+    return op(x);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator+(difference_type n) const
+  {
+    return self_t(input + n, op);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator+=(difference_type n)
+  {
+    input += n;
+    return *this;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t operator-(difference_type n) const
+  {
+    return self_t(input - n, op);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE self_t& operator-=(difference_type n)
+  {
+    input -= n;
+    return *this;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE difference_type operator-(self_t other) const
+  {
+    return input - other.input;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE reference operator[](difference_type n) const
+  {
+    return op(input[n]);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator==(const self_t& rhs) const
+  {
+    return (input == rhs.input);
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const self_t& rhs) const
+  {
+    return (input != rhs.input);
+  }
+};
 } // namespace __find_if
 
 template <class Derived, class InputIt, class Size, class Predicate>
@@ -116,8 +212,10 @@ find_if_n(execution_policy<Derived>& policy, InputIt first, Size num_items, Pred
   const Size interval_threshold = 1 << 20;
   const Size interval_size      = (::cuda::std::min)(interval_threshold, num_items);
 
-  // force transform_iterator output to bool
-  using XfrmIterator  = transform_iterator<Predicate, InputIt, bool, bool>;
+  // FIXME(bgruber): we should also be able to use transform_iterator here, but it makes nvc++ hang. See:
+  // https://github.com/NVIDIA/cccl/issues/3594. The problem does not occur with nvcc, so we could not add a test :/
+  using XfrmIterator = __find_if::transform_input_iterator_t<bool, InputIt, Predicate>;
+  // using XfrmIterator  = transform_iterator<Predicate, InputIt>;
   using IteratorTuple = thrust::tuple<XfrmIterator, counting_iterator<Size>>;
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 

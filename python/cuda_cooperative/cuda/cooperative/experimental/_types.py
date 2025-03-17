@@ -5,6 +5,7 @@
 import re
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
+from typing import Literal
 
 import jinja2
 import numba
@@ -101,7 +102,9 @@ class TypeWrapper:
                 self.lto_irs.append(lto_fn)
 
 
-def numba_type_to_wrapper(numba_type, methods=None):
+def numba_type_to_wrapper(
+    numba_type: numba.types.Type, methods: Literal["construct", "assign"] = None
+):
     if methods is None:
         methods = {}
     for method in methods:

@@ -46,7 +46,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
   thrust::sort(exec, first, last, thrust::less<value_type>());
 } // end sort()
 
@@ -68,7 +68,7 @@ _CCCL_HOST_DEVICE void sort_by_key(
   RandomAccessIterator1 keys_last,
   RandomAccessIterator2 values_first)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator1>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator1>;
   thrust::sort_by_key(exec, keys_first, keys_last, values_first, thrust::less<value_type>());
 } // end sort_by_key()
 
@@ -91,7 +91,7 @@ template <typename DerivedPolicy, typename RandomAccessIterator>
 _CCCL_HOST_DEVICE void
 stable_sort(thrust::execution_policy<DerivedPolicy>& exec, RandomAccessIterator first, RandomAccessIterator last)
 {
-  using value_type = typename thrust::iterator_value<RandomAccessIterator>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator>;
   thrust::stable_sort(exec, first, last, thrust::less<value_type>());
 } // end stable_sort()
 
@@ -102,7 +102,7 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   RandomAccessIterator1 keys_last,
   RandomAccessIterator2 values_first)
 {
-  using value_type = typename iterator_value<RandomAccessIterator1>::type;
+  using value_type = thrust::detail::it_value_t<RandomAccessIterator1>;
   thrust::stable_sort_by_key(exec, keys_first, keys_last, values_first, thrust::less<value_type>());
 } // end stable_sort_by_key()
 
@@ -124,7 +124,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
 is_sorted_until(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  using InputType = typename thrust::iterator_value<ForwardIterator>::type;
+  using InputType = thrust::detail::it_value_t<ForwardIterator>;
 
   return thrust::is_sorted_until(exec, first, last, thrust::less<InputType>());
 } // end is_sorted_until()
@@ -156,8 +156,8 @@ template <typename DerivedPolicy, typename RandomAccessIterator, typename Strict
 _CCCL_HOST_DEVICE void
 stable_sort(thrust::execution_policy<DerivedPolicy>&, RandomAccessIterator, RandomAccessIterator, StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,
+                "unimplemented for this system");
 } // end stable_sort()
 
 template <typename DerivedPolicy,
@@ -171,8 +171,8 @@ _CCCL_HOST_DEVICE void stable_sort_by_key(
   RandomAccessIterator2,
   StrictWeakOrdering)
 {
-  THRUST_STATIC_ASSERT_MSG((thrust::detail::depend_on_instantiation<RandomAccessIterator1, false>::value),
-                           "unimplemented for this system");
+  static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator1, false>::value,
+                "unimplemented for this system");
 } // end stable_sort_by_key()
 
 } // namespace generic

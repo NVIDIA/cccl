@@ -60,7 +60,7 @@ int main()
     cudaMemcpyAsync(sC.data_handle(), sB.data_handle(), sB.extent(0) * sizeof(bool), cudaMemcpyDeviceToDevice, stream);
   };
 
-  ctx.task(exec_place::host, lC.read())->*[](auto stream, auto sC) {
+  ctx.task(exec_place::host(), lC.read())->*[](auto stream, auto sC) {
     cuda_safe_call(cudaStreamSynchronize(stream));
     for (size_t i = 0; i < sC.extent(0); i++)
     {

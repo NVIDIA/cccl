@@ -260,6 +260,36 @@ public:
       payload);
   }
 
+  void set_graph_cache_policy(::std::function<bool()> policy)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [&](auto& self) {
+        self.set_graph_cache_policy(mv(policy));
+      },
+      payload);
+  }
+
+  auto get_graph_cache_policy() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.get_graph_cache_policy();
+      },
+      payload);
+  }
+
+  executable_graph_cache_stat* graph_get_cache_stat()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.graph_get_cache_stat();
+      },
+      payload);
+  }
+
   /**
    * @brief Creates logical data with specified sizes.
    *
@@ -321,7 +351,7 @@ public:
   template <typename T>
   frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid)
+                                data_place where = data_place::invalid())
   {
     return ::std::visit(
       [&](auto& self) {
@@ -340,9 +370,9 @@ public:
    * @return The created logical data.
    */
   template <typename T>
-  auto logical_data(T* p, size_t n, data_place dplace = data_place::host)
+  auto logical_data(T* p, size_t n, data_place dplace = data_place::host())
   {
-    EXPECT(dplace != data_place::invalid);
+    _CCCL_ASSERT(!dplace.is_invalid(), "");
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {

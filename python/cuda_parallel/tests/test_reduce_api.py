@@ -213,3 +213,61 @@ def test_reduce_struct_type():
 
     np.testing.assert_equal(expected["g"], d_out.get()["g"])
     # example-end reduce-struct
+
+
+def test_reduce_struct_type_minmax():
+    # example-begin reduce-minmax
+    import cupy as cp
+    import numpy as np
+
+    import cuda.parallel.experimental.algorithms as algorithms
+    import cuda.parallel.experimental.iterators as iterators
+    from cuda.parallel.experimental.struct import gpu_struct
+
+    @gpu_struct
+    class MinMax:
+        min_val: np.float64
+        max_val: np.float64
+
+    def minmax_op(v1: MinMax, v2: MinMax):
+        c_min = min(v1.min_val, v2.min_val)
+        c_max = max(v1.max_val, v2.max_val)
+        return MinMax(c_min, c_max)
+
+    def transform_op(v):
+        av = abs(v)
+        return MinMax(av, av)
+
+    nelems = 4096
+
+    d_in = cp.random.randn(nelems)
+    # input values must be transformed to MinMax structures
+    # in-place to map computation to data-parallel reduction
+    # algorithm that requires commutative binary operation
+    # with both operands having the same type.
+    tr_it = iterators.TransformIterator(d_in, transform_op)
+
+    d_out = cp.empty(tuple(), dtype=MinMax.dtype)
+
+    # initial value set with identity elements of
+    # minimum and maximum operators
+    h_init = MinMax(np.inf, -np.inf)
+
+    # get algorithm object
+    cccl_sum = algorithms.reduce_into(tr_it, d_out, minmax_op, h_init)
+
+    # allocated needed temporary
+    tmp_sz = cccl_sum(None, tr_it, d_out, nelems, h_init)
+    tmp_storage = cp.empty(tmp_sz, dtype=cp.uint8)
+
+    # invoke the reduction algorithm
+    cccl_sum(tmp_storage, tr_it, d_out, nelems, h_init)
+
+    # display values computed on the device
+    actual = d_out.get()
+
+    h = np.abs(d_in.get())
+    expected = np.asarray([(h.min(), h.max())], dtype=MinMax.dtype)
+
+    assert actual == expected
+    # example-end reduce-minmax

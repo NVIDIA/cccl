@@ -21,7 +21,7 @@ int main(int, char**)
 {
   {
     typedef cuda::std::aligned_union<10, char>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<10, char>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<10, char>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 1, "");
@@ -29,7 +29,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<10, short>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<10, short>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<10, short>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 2, "");
@@ -37,7 +37,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<10, int>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<10, int>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<10, int>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 4, "");
@@ -45,7 +45,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<10, double>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<10, double>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<10, double>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 8, "");
@@ -53,7 +53,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<10, short, char>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<10, short, char>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<10, short, char>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 2, "");
@@ -61,7 +61,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<10, char, short>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<10, char, short>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<10, char, short>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 2, "");
@@ -69,7 +69,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<2, int, char, short>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<2, int, char, short>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<2, int, char, short>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 4, "");
@@ -77,7 +77,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<2, char, int, short>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<2, char, int, short>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<2, char, int, short>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 4, "");
@@ -85,7 +85,7 @@ int main(int, char**)
   }
   {
     typedef cuda::std::aligned_union<2, char, short, int>::type T1;
-    ASSERT_SAME_TYPE(T1, cuda::std::aligned_union_t<2, char, short, int>);
+    static_assert(cuda::std::is_same_v<T1, cuda::std::aligned_union_t<2, char, short, int>>);
     static_assert(cuda::std::is_trivial<T1>::value, "");
     static_assert(cuda::std::is_standard_layout<T1>::value, "");
     static_assert(cuda::std::alignment_of<T1>::value == 4, "");

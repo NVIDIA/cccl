@@ -170,6 +170,7 @@ template <class... Types>
 #include <cuda/std/__tuple_dir/vector_types.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
+#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -186,9 +187,9 @@ template <class... Types>
 #include <cuda/std/version>
 
 // [tuple.syn]
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 _CCCL_PUSH_MACROS
 
@@ -237,15 +238,13 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 {
   _Hp __value_;
 
-  template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __can_bind_reference()
-  {
-#if _CCCL_HAS_KEYWORD(__reference_binds_to_temporary)
-    return !__reference_binds_to_temporary(_Hp, _Tp);
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Up>
+  static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else
-    return true;
-#endif
-  }
+  template <class _Up>
+  static constexpr bool __can_bind_reference = true;
+#endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
@@ -334,15 +333,13 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
 {
   _Hp __value_;
 
-  template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __can_bind_reference()
-  {
-#if _CCCL_HAS_KEYWORD(__reference_binds_to_temporary)
-    return !__reference_binds_to_temporary(_Hp, _Tp);
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Up>
+  static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else
-    return true;
-#endif
-  }
+  template <class _Up>
+  static constexpr bool __can_bind_reference = true;
+#endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
@@ -361,9 +358,9 @@ public:
     _CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {
-    static_assert(__can_bind_reference<_Tp&&>(),
-                  "Attempted construction of reference element binds to a "
-                  "temporary whose lifetime has ended");
+    static_assert(__can_bind_reference<_Tp&&>,
+                  "Attempted construction of reference element "
+                  "binds to a temporary whose lifetime has ended");
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -371,7 +368,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {
-    static_assert(__can_bind_reference<_Tp&&>(),
+    static_assert(__can_bind_reference<_Tp&&>,
                   "Attempted construction of reference element binds to a "
                   "temporary whose lifetime has ended");
   }
@@ -1239,7 +1236,7 @@ template <class... _Types, class _Tuple0, class _Tuple1, class... _Tuples>
 struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0, _Tuple1, _Tuples...>
     : public __tuple_cat_return_1<
         typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type,
-        __tuple_like<remove_reference_t<_Tuple1>>::value,
+        __tuple_like_impl<remove_reference_t<_Tuple1>>::value,
         _Tuple1,
         _Tuples...>
 {};
@@ -1249,7 +1246,7 @@ struct __tuple_cat_return;
 
 template <class _Tuple0, class... _Tuples>
 struct __tuple_cat_return<_Tuple0, _Tuples...>
-    : public __tuple_cat_return_1<tuple<>, __tuple_like<remove_reference_t<_Tuple0>>::value, _Tuple0, _Tuples...>
+    : public __tuple_cat_return_1<tuple<>, __tuple_like_impl<remove_reference_t<_Tuple0>>::value, _Tuple0, _Tuples...>
 {};
 
 template <>

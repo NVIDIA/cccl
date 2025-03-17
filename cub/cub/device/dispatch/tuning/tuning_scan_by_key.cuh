@@ -912,7 +912,7 @@ struct sm100_tuning<KeyT, ValueT, primitive_op::yes, key_size::_8, val_size::_8,
 template <typename KeysInputIteratorT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_hub
 {
-  using key_t                               = value_t<KeysInputIteratorT>;
+  using key_t                               = it_value_t<KeysInputIteratorT>;
   static constexpr int max_input_bytes      = static_cast<int>((::cuda::std::max)(sizeof(key_t), sizeof(AccumT)));
   static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
@@ -1009,10 +1009,5 @@ struct policy_hub
 };
 } // namespace scan_by_key
 } // namespace detail
-
-template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = ::cuda::std::plus<>>
-using DeviceScanByKeyPolicy CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and it will be "
-  "removed.") = detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, ValueT, ScanOpT>;
 
 CUB_NAMESPACE_END

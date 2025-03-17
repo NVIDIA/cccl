@@ -20,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/common_comparison_category.h>
 #  include <cuda/std/__compare/synth_three_way.h>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/get.h>
@@ -549,7 +549,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const pair<_T1, _T2>& __x, c
   return __x.first == __y.first && __x.second == __y.second;
 }
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _T1, class _T2>
@@ -564,7 +564,7 @@ operator<=>(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y)
   return _CUDA_VSTD::__synth_three_way(__x.second, __y.second);
 }
 
-#else // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _T1, class _T2>
@@ -601,7 +601,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<=(const pair<_T1, _T2>& __x, c
   return !(__y < __x);
 }
 
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 #if _CCCL_STD_VER >= 2023
 template <class _T1, class _T2, class _U1, class _U2, template <class> class _TQual, template <class> class _UQual>

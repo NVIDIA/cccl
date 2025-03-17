@@ -38,24 +38,24 @@ __host__ __device__ void testIterator()
 {
   typedef cuda::std::iterator_traits<Iter> ItT;
 
-  ASSERT_SAME_TYPE(typename ItT::iterator_category, cuda::std::random_access_iterator_tag);
-  ASSERT_SAME_TYPE(typename ItT::value_type, typename S::value_type);
-  ASSERT_SAME_TYPE(typename ItT::reference, typename S::reference);
-  ASSERT_SAME_TYPE(typename ItT::pointer, typename S::pointer);
-  ASSERT_SAME_TYPE(typename ItT::difference_type, typename S::difference_type);
+  static_assert(cuda::std::is_same_v<typename ItT::iterator_category, cuda::std::random_access_iterator_tag>);
+  static_assert(cuda::std::is_same_v<typename ItT::value_type, typename S::value_type>);
+  static_assert(cuda::std::is_same_v<typename ItT::reference, typename S::reference>);
+  static_assert(cuda::std::is_same_v<typename ItT::pointer, typename S::pointer>);
+  static_assert(cuda::std::is_same_v<typename ItT::difference_type, typename S::difference_type>);
 }
 
 template <typename S, typename ElementType, cuda::std::size_t Size>
 __host__ __device__ void testSpan()
 {
-  ASSERT_SAME_TYPE(typename S::element_type, ElementType);
-  ASSERT_SAME_TYPE(typename S::value_type, typename cuda::std::remove_cv<ElementType>::type);
-  ASSERT_SAME_TYPE(typename S::size_type, cuda::std::size_t);
-  ASSERT_SAME_TYPE(typename S::difference_type, cuda::std::ptrdiff_t);
-  ASSERT_SAME_TYPE(typename S::pointer, ElementType*);
-  ASSERT_SAME_TYPE(typename S::const_pointer, const ElementType*);
-  ASSERT_SAME_TYPE(typename S::reference, ElementType&);
-  ASSERT_SAME_TYPE(typename S::const_reference, const ElementType&);
+  static_assert(cuda::std::is_same_v<typename S::element_type, ElementType>);
+  static_assert(cuda::std::is_same_v<typename S::value_type, typename cuda::std::remove_cv<ElementType>::type>);
+  static_assert(cuda::std::is_same_v<typename S::size_type, cuda::std::size_t>);
+  static_assert(cuda::std::is_same_v<typename S::difference_type, cuda::std::ptrdiff_t>);
+  static_assert(cuda::std::is_same_v<typename S::pointer, ElementType*>);
+  static_assert(cuda::std::is_same_v<typename S::const_pointer, const ElementType*>);
+  static_assert(cuda::std::is_same_v<typename S::reference, ElementType&>);
+  static_assert(cuda::std::is_same_v<typename S::const_reference, const ElementType&>);
 
   static_assert(S::extent == Size, ""); // check that it exists
 

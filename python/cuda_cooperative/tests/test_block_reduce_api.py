@@ -21,8 +21,8 @@ def test_block_reduction():
     def op(a, b):
         return a if a > b else b
 
-    threads_in_block = 128
-    block_reduce = cudax.block.reduce(numba.int32, threads_in_block, op)
+    threads_per_block = 128
+    block_reduce = cudax.block.reduce(numba.int32, threads_per_block, op)
 
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):
@@ -33,10 +33,10 @@ def test_block_reduction():
 
     # example-end reduce
 
-    h_input = np.random.randint(0, 42, threads_in_block, dtype=np.int32)
+    h_input = np.random.randint(0, 42, threads_per_block, dtype=np.int32)
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(1, dtype=np.int32)
-    kernel[1, threads_in_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output)
     h_output = d_output.copy_to_host()
     h_expected = np.max(h_input)
 
@@ -45,8 +45,8 @@ def test_block_reduction():
 
 def test_block_sum():
     # example-begin sum
-    threads_in_block = 128
-    block_sum = cudax.block.sum(numba.int32, threads_in_block)
+    threads_per_block = 128
+    block_sum = cudax.block.sum(numba.int32, threads_per_block)
 
     @cuda.jit(link=block_sum.files)
     def kernel(input, output):
@@ -57,10 +57,10 @@ def test_block_sum():
 
     # example-end sum
 
-    h_input = np.ones(threads_in_block, dtype=np.int32)
+    h_input = np.ones(threads_per_block, dtype=np.int32)
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(1, dtype=np.int32)
-    kernel[1, threads_in_block](d_input, d_output)
+    kernel[1, threads_per_block](d_input, d_output)
     h_output = d_output.copy_to_host()
 
-    assert h_output[0] == threads_in_block
+    assert h_output[0] == threads_per_block

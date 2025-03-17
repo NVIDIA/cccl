@@ -84,7 +84,7 @@ struct BlockReduceWarpReductions
     WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
     /// The logical warp size for warp reductions
-    LOGICAL_WARP_SIZE = CUB_MIN(BLOCK_THREADS, WARP_THREADS),
+    LOGICAL_WARP_SIZE = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS),
 
     /// Whether or not the logical warp size evenly divides the thread block size
     EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
@@ -255,10 +255,5 @@ struct BlockReduceWarpReductions
   }
 };
 } // namespace detail
-
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
-using BlockReduceWarpReductions CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockReduceWarpReductions<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 CUB_NAMESPACE_END
