@@ -39,8 +39,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-
 template <class _Range>
 struct __conversion_tester
 {
@@ -110,8 +108,6 @@ public:
 
 template <class _Range>
 _CCCL_HOST_DEVICE ref_view(_Range&) -> ref_view<_Range>;
-
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
