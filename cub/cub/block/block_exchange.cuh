@@ -146,7 +146,7 @@ template <typename T,
 class BlockExchange
 {
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z; ///< The thread block size in threads
-  static constexpr int WARP_THREADS  = CUB_WARP_THREADS(0);
+  static constexpr int WARP_THREADS  = warp_threads;
   static constexpr int WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS; // TODO(bgruber): use ceil_div in
                                                                                   // C++14
   static constexpr int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);

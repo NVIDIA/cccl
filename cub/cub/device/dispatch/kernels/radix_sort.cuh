@@ -396,7 +396,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
   {
     // Register pressure work-around: moving num_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    num_items = ShuffleIndex<CUB_PTX_WARP_THREADS>(num_items, 0, 0xffffffff);
+    num_items = ShuffleIndex<warp_threads>(num_items, 0, 0xffffffff);
 
     BlockLoadValues(temp_storage.load_values).Load(d_values_in, values, num_items);
 

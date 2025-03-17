@@ -80,14 +80,19 @@ CUB_NAMESPACE_BEGIN
 
 static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 
-/// Number of threads per warp
-#  ifndef CUB_LOG_WARP_THREADS
-#    define CUB_LOG_WARP_THREADS(unused) (5)
-#    define CUB_WARP_THREADS(unused)     (1 << CUB_LOG_WARP_THREADS(0))
+inline constexpr int warp_threads      = 32;
+inline constexpr int log2_warp_threads = 5;
+inline constexpr int smem_banks        = 32;
+inline constexpr int log2_smem_banks   = 5;
 
-#    define CUB_PTX_WARP_THREADS     CUB_WARP_THREADS(0)
-#    define CUB_PTX_LOG_WARP_THREADS CUB_LOG_WARP_THREADS(0)
-#  endif
+/// Number of threads per warp
+// #  ifndef CUB_LOG_WARP_THREADS
+// #    define CUB_LOG_WARP_THREADS(unused) (5)
+// #    define CUB_WARP_THREADS(unused)     (1 << CUB_LOG_WARP_THREADS(0))
+//
+// #    define CUB_PTX_WARP_THREADS     CUB_WARP_THREADS(0)
+// #    define CUB_PTX_LOG_WARP_THREADS CUB_LOG_WARP_THREADS(0)
+// #  endif
 
 /// Number of smem banks
 #  ifndef CUB_LOG_SMEM_BANKS

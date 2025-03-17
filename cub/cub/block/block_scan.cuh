@@ -243,9 +243,7 @@ private:
    * architectural warp size.
    */
   static constexpr BlockScanAlgorithm SAFE_ALGORITHM =
-    ((ALGORITHM == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % CUB_WARP_THREADS(0) != 0))
-      ? BLOCK_SCAN_RAKING
-      : ALGORITHM;
+    ((ALGORITHM == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % warp_threads != 0)) ? BLOCK_SCAN_RAKING : ALGORITHM;
 
   using WarpScans = detail::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using Raking =
