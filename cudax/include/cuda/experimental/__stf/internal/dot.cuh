@@ -63,6 +63,13 @@ using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimenta
 
 class dot;
 
+enum edge_type
+{
+  plain   = 0,
+  prereqs = 1,
+  fence   = 2
+};
+
 // We have different types of nodes in the graph
 enum vertex_type
 {
@@ -135,7 +142,7 @@ public:
       add_ctx_proxy_vertex(proxy_start_unique_id.value());
     }
 
-    add_edge(prereq_unique_id, proxy_start_unique_id.value(), 1);
+    add_edge(prereq_unique_id, proxy_start_unique_id.value(), edge_type::prereqs);
   }
 
   void ctx_add_output_id(int prereq_unique_id)
@@ -151,7 +158,7 @@ public:
       add_ctx_proxy_vertex(proxy_end_unique_id.value());
     }
 
-    add_edge(proxy_end_unique_id.value(), prereq_unique_id, 1);
+    add_edge(proxy_end_unique_id.value(), prereq_unique_id, edge_type::prereqs);
   }
 
   void add_prereq_vertex(const ::std::string& symbol, int prereq_unique_id)
@@ -203,7 +210,7 @@ public:
   // Note that while tasks are topologically ordered, when we generate graphs
   // which includes internal async events, we may have (prereq) nodes which
   // are not ordered, so we cannot expect "id_from < id_to"
-  void add_edge(int id_from, int id_to, int style = 0)
+  void add_edge(int id_from, int id_to, edge_type style = edge_type::plain)
   {
     if (!is_tracing())
     {
@@ -217,7 +224,7 @@ public:
       return;
     }
 
-    if (style == 2 && !getenv("CUDASTF_DOT_SHOW_FENCE"))
+    if (style == edge_type::fence && !getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
@@ -301,7 +308,7 @@ public:
 
     if (user_freeze)
     {
-      add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), 0);
+      add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), edge_type::plain);
     }
   }
 

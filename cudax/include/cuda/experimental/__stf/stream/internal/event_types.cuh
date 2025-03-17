@@ -335,7 +335,7 @@ public:
     {
       for (int id : joined_ids)
       {
-        dot.add_edge(id, e->unique_prereq_id, 1);
+        dot.add_edge(id, e->unique_prereq_id, reserved::edge_type::prereqs);
       }
     }
 
