@@ -48,28 +48,8 @@ protected:
 
   void remove_duplicates(::std::vector<cudaGraphNode_t>& nodes)
   {
-    fprintf(stderr, "START REMOVING DUPLICATES.\n");
-    for (auto& n : nodes)
-    {
-      fprintf(stderr, "n %p\n", n);
-    }
-    fprintf(stderr, "START 2 REMOVING DUPLICATES.\n");
     ::std::sort(nodes.begin(), nodes.end());
-    fprintf(stderr, "AFTER SORT REMOVING DUPLICATES.\n");
-    for (auto& n : nodes)
-    {
-      fprintf(stderr, "n %p\n", n);
-    }
-    fprintf(stderr, "START 2 REMOVING DUPLICATES.\n");
-
     nodes.erase(::std::unique(nodes.begin(), nodes.end()), nodes.end()); // Remove duplicates
-    fprintf(stderr, "START 2 AFTER REMOVING DUPLICATES.\n");
-    for (auto& n : nodes)
-    {
-      fprintf(stderr, "n %p\n", n);
-    }
-
-    fprintf(stderr, "END REMOVING DUPLICATES.\n");
   }
 
   bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override
