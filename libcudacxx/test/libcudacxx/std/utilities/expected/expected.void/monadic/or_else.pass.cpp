@@ -216,14 +216,14 @@ __host__ __device__ constexpr void test_val_types()
       cuda::std::expected<void, TestError> i{cuda::std::in_place};
       assert(i.or_else(LVal{}) == previous_value);
       assert(i.or_else(NOLVal{}) == previous_value);
-      ASSERT_SAME_TYPE(decltype(i.or_else(LVal{})), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(LVal{})), cuda::std::expected<void, TestError>>);
     }
 
     {
       cuda::std::expected<void, TestError> i{cuda::std::unexpect, 1337};
       assert(i.or_else(LVal{}) == expected_error);
       assert(i.or_else(NOLVal{}) == expected_error);
-      ASSERT_SAME_TYPE(decltype(i.or_else(LVal{})), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(LVal{})), cuda::std::expected<void, TestError>>);
     }
 
     // With & qualifier on F's operator()
@@ -233,7 +233,7 @@ __host__ __device__ constexpr void test_val_types()
       assert(i.or_else(l) == previous_value);
       NORefQual nl{};
       assert(i.or_else(nl) == previous_value);
-      ASSERT_SAME_TYPE(decltype(i.or_else(l)), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(l)), cuda::std::expected<void, TestError>>);
     }
 
     {
@@ -242,7 +242,7 @@ __host__ __device__ constexpr void test_val_types()
       assert(i.or_else(l) == expected_error);
       NORefQual nl{};
       assert(i.or_else(nl) == expected_error);
-      ASSERT_SAME_TYPE(decltype(i.or_else(l)), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(l)), cuda::std::expected<void, TestError>>);
     }
   }
 
@@ -253,14 +253,14 @@ __host__ __device__ constexpr void test_val_types()
       const cuda::std::expected<void, TestError> i{cuda::std::in_place};
       assert(i.or_else(CLVal{}) == previous_value);
       assert(i.or_else(NOCLVal{}) == previous_value);
-      ASSERT_SAME_TYPE(decltype(i.or_else(CLVal{})), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(CLVal{})), cuda::std::expected<void, TestError>>);
     }
 
     {
       const cuda::std::expected<void, TestError> i{cuda::std::unexpect, 1337};
       assert(i.or_else(CLVal{}) == expected_error);
       assert(i.or_else(NOCLVal{}) == expected_error);
-      ASSERT_SAME_TYPE(decltype(i.or_else(CLVal{})), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(CLVal{})), cuda::std::expected<void, TestError>>);
     }
 
     // With & qualifier on F's operator()
@@ -270,7 +270,7 @@ __host__ __device__ constexpr void test_val_types()
       assert(i.or_else(l) == previous_value);
       const NOCRefQual nl{};
       assert(i.or_else(nl) == previous_value);
-      ASSERT_SAME_TYPE(decltype(i.or_else(l)), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(l)), cuda::std::expected<void, TestError>>);
     }
 
     {
@@ -279,7 +279,7 @@ __host__ __device__ constexpr void test_val_types()
       assert(i.or_else(l) == expected_error);
       const NOCRefQual nl{};
       assert(i.or_else(nl) == expected_error);
-      ASSERT_SAME_TYPE(decltype(i.or_else(l)), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(l)), cuda::std::expected<void, TestError>>);
     }
   }
 
@@ -290,14 +290,16 @@ __host__ __device__ constexpr void test_val_types()
       cuda::std::expected<void, TestError> i{cuda::std::in_place};
       assert(cuda::std::move(i).or_else(RVal{}) == previous_value);
       assert(cuda::std::move(i).or_else(NORVal{}) == previous_value);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).or_else(RVal{})), cuda::std::expected<void, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(cuda::std::move(i).or_else(RVal{})), cuda::std::expected<void, TestError>>);
     }
 
     {
       cuda::std::expected<void, TestError> i{cuda::std::unexpect, 1337};
       assert(cuda::std::move(i).or_else(RVal{}) == expected_error);
       assert(cuda::std::move(i).or_else(NORVal{}) == expected_error);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).or_else(RVal{})), cuda::std::expected<void, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(cuda::std::move(i).or_else(RVal{})), cuda::std::expected<void, TestError>>);
     }
 
     // With & qualifier on F's operator()
@@ -305,14 +307,15 @@ __host__ __device__ constexpr void test_val_types()
       cuda::std::expected<void, TestError> i{cuda::std::in_place};
       assert(i.or_else(RVRefQual{}) == previous_value);
       assert(i.or_else(NORVRefQual{}) == previous_value);
-      ASSERT_SAME_TYPE(decltype(i.or_else(RVRefQual{})), cuda::std::expected<void, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.or_else(RVRefQual{})), cuda::std::expected<void, TestError>>);
     }
 
     {
       cuda::std::expected<void, TestError> i{cuda::std::unexpect, 1337};
       assert(cuda::std::move(i).or_else(RVal{}) == expected_error);
       assert(cuda::std::move(i).or_else(NORVal{}) == expected_error);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).or_else(RVal{})), cuda::std::expected<void, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(cuda::std::move(i).or_else(RVal{})), cuda::std::expected<void, TestError>>);
     }
   }
 
@@ -323,14 +326,16 @@ __host__ __device__ constexpr void test_val_types()
       const cuda::std::expected<void, TestError> i{cuda::std::in_place};
       assert(cuda::std::move(i).or_else(CRVal{}) == previous_value);
       assert(cuda::std::move(i).or_else(NOCRVal{}) == previous_value);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).or_else(CRVal{})), cuda::std::expected<void, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(cuda::std::move(i).or_else(CRVal{})), cuda::std::expected<void, TestError>>);
     }
 
     {
       const cuda::std::expected<void, TestError> i{cuda::std::unexpect, 1337};
       assert(cuda::std::move(i).or_else(CRVal{}) == expected_error);
       assert(cuda::std::move(i).or_else(NOCRVal{}) == expected_error);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).or_else(CRVal{})), cuda::std::expected<void, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(cuda::std::move(i).or_else(CRVal{})), cuda::std::expected<void, TestError>>);
     }
 
     // With & qualifier on F's operator()
@@ -340,7 +345,8 @@ __host__ __device__ constexpr void test_val_types()
       assert(i.or_else(cuda::std::move(l)) == previous_value);
       const NORVCRefQual nl{};
       assert(i.or_else(cuda::std::move(nl)) == previous_value);
-      ASSERT_SAME_TYPE(decltype(i.or_else(cuda::std::move(l))), cuda::std::expected<void, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(i.or_else(cuda::std::move(l))), cuda::std::expected<void, TestError>>);
     }
 
     {
@@ -349,7 +355,8 @@ __host__ __device__ constexpr void test_val_types()
       assert(i.or_else(cuda::std::move(l)) == expected_error);
       const NORVCRefQual nl{};
       assert(i.or_else(cuda::std::move(nl)) == expected_error);
-      ASSERT_SAME_TYPE(decltype(i.or_else(cuda::std::move(l))), cuda::std::expected<void, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(i.or_else(cuda::std::move(l))), cuda::std::expected<void, TestError>>);
     }
   }
 }

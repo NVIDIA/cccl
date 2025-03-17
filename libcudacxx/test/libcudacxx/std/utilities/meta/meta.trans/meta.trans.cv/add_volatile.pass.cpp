@@ -17,8 +17,8 @@
 template <class T, class U>
 __host__ __device__ void test_add_volatile_imp()
 {
-  ASSERT_SAME_TYPE(volatile U, typename cuda::std::add_volatile<T>::type);
-  ASSERT_SAME_TYPE(volatile U, cuda::std::add_volatile_t<T>);
+  static_assert(cuda::std::is_same_v<volatile U, typename cuda::std::add_volatile<T>::type>);
+  static_assert(cuda::std::is_same_v<volatile U, cuda::std::add_volatile_t<T>>);
 }
 
 template <class T>

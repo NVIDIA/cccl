@@ -41,14 +41,14 @@ __host__ __device__ constexpr bool test()
     int a[]    = {1, 2, 3};
     using R    = cuda::std::ranges::subrange<It, Sent, cuda::std::ranges::subrange_kind::unsized>;
     R r        = R(It(a), Sent(It(a + 3)));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(r)), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(r)), Sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(static_cast<R&&>(r))), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<R&&>(r))), Sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(static_cast<const R&>(r))), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<const R&>(r))), Sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(static_cast<const R&&>(r))), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<const R&&>(r))), Sent);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(r)), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(r)), Sent>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(static_cast<R&&>(r))), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<R&&>(r))), Sent>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(static_cast<const R&>(r))), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<const R&>(r))), Sent>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(static_cast<const R&&>(r))), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<const R&&>(r))), Sent>);
     assert(base(cuda::std::get<0>(r)) == a); // copy from It
     assert(base(base(cuda::std::get<1>(r))) == a + 3); // copy from Sent
     assert(base(cuda::std::get<0>(cuda::std::move(r))) == a); // copy from It
@@ -60,14 +60,14 @@ __host__ __device__ constexpr bool test()
     int a[]    = {1, 2, 3};
     using R    = cuda::std::ranges::subrange<It, Sent, cuda::std::ranges::subrange_kind::sized>;
     R r        = R(It(a), Sent(It(a + 3)), 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(r)), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(r)), Sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(static_cast<R&&>(r))), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<R&&>(r))), Sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(static_cast<const R&>(r))), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<const R&>(r))), Sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(static_cast<const R&&>(r))), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<const R&&>(r))), Sent);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(r)), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(r)), Sent>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(static_cast<R&&>(r))), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<R&&>(r))), Sent>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(static_cast<const R&>(r))), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<const R&>(r))), Sent>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(static_cast<const R&&>(r))), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<const R&&>(r))), Sent>);
     assert(base(cuda::std::get<0>(r)) == a); // copy from It
     assert(base(base(cuda::std::get<1>(r))) == a + 3); // copy from Sent
     assert(base(cuda::std::get<0>(cuda::std::move(r))) == a); // copy from It
@@ -81,13 +81,13 @@ __host__ __device__ constexpr bool test()
     using R    = cuda::std::ranges::subrange<It, Sent>;
     R r        = R(It(a), Sent(It(a + 3)));
     static_assert(!HasGet<0, R&>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(r)), Sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<0>(static_cast<R&&>(r))), It);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<R&&>(r))), Sent);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(r)), Sent>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<0>(static_cast<R&&>(r))), It>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<R&&>(r))), Sent>);
     static_assert(!HasGet<0, const R&>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<const R&>(r))), Sent);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<const R&>(r))), Sent>);
     static_assert(!HasGet<0, const R&&>);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<1>(static_cast<const R&&>(r))), Sent);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<1>(static_cast<const R&&>(r))), Sent>);
     assert(base(base(cuda::std::get<1>(r))) == a + 3); // copy from Sent
     assert(base(cuda::std::get<0>(cuda::std::move(r))) == a); // move from It
     assert(base(base(cuda::std::get<1>(cuda::std::move(r)))) == a + 3); // copy from Sent

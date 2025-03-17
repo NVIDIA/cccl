@@ -59,7 +59,7 @@ struct MoveOnlyForwardIter
   {
     return lhs.base == rhs;
   }
-#if TEST_STD_VER < 2020 || defined(TEST_COMPILER_CLANG) || defined(TEST_COMPILER_NVRTC) || defined(TEST_COMPILER_MSVC)
+#if TEST_STD_VER < 2020 || TEST_COMPILER(CLANG) || TEST_COMPILER(NVRTC) || TEST_COMPILER(MSVC)
   __host__ __device__ friend constexpr bool operator==(int* rhs, const self& lhs)
   {
     return lhs.base == rhs;

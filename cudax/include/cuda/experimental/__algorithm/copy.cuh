@@ -106,6 +106,12 @@ void __nd_copy_bytes_impl(stream_ref __stream,
   static_assert(_CUDA_VSTD::is_same_v<_SrcLayout, _DstLayout>,
                 "Multidimensional copy requires both source and destination layouts to match");
 
+  // Check only destination, because the layout of destination is the same as source
+  if (!__dst.is_exhaustive())
+  {
+    _CUDA_VSTD::__throw_invalid_argument("copy_bytes supports only exhaustive mdspans");
+  }
+
   if (!__copy_bytes_runtime_extents_match(__src.extents(), __dst.extents()))
   {
     _CUDA_VSTD::__throw_invalid_argument("Copy destination size differs from the source");
@@ -120,8 +126,9 @@ void __nd_copy_bytes_impl(stream_ref __stream,
 //!
 //! Both source and destination needs to either be an instance of `cuda::std::mdspan` or launch transform to
 //! one. They can also implicitly convert to `cuda::std::mdspan`, but the type needs to contain `mdspan` template
-//! arguments as member aliases named `value_type`, `extents_type`, `layout_type` and `accessor_type`. Both source and
-//! destination type is required to be trivially copyable.
+//! arguments as member aliases named `value_type`, `extents_type`, `layout_type` and `accessor_type`.
+//! Resulting mdspan is required to be exhaustive.
+//! Both source and destination type is required to be trivially copyable.
 //!
 //! This call might be synchronous if either source or destination is pagable host memory.
 //! It will be synchronous if both destination and copy is located in host memory.

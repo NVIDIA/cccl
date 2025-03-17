@@ -27,9 +27,9 @@ struct NotEqualityComparable
 };
 
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::not_equal_to, NotEqualityComparable, NotEqualityComparable>);
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC considers implicit conversions in C++17
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC considers implicit conversions in C++17
 static_assert(!cuda::std::is_invocable_v<cuda::std::ranges::not_equal_to, int, MoveOnly>);
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(cuda::std::is_invocable_v<cuda::std::ranges::not_equal_to, explicit_operators, explicit_operators>);
 
 #if TEST_STD_VER > 2017

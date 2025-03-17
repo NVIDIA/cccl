@@ -205,7 +205,7 @@ struct BlockScanWarpScans
     // TODO(bgruber): does that still hold today? This is creating a lot of template instantiations
     ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, constant_v<1>);
     /*
-            #pragma unroll
+            _CCCL_PRAGMA_UNROLL_FULL()
             for (int WARP = 1; WARP < WARPS; ++WARP)
             {
                 if (warp_id == WARP)

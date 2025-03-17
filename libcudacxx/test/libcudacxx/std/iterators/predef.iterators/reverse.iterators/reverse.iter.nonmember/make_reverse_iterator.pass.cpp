@@ -21,13 +21,13 @@
 #include "test_macros.h"
 
 template <class It>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(It i)
+__host__ __device__ constexpr void test(It i)
 {
   const cuda::std::reverse_iterator<It> r = cuda::std::make_reverse_iterator(i);
   assert(r.base() == i);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   const char* s = "1234567890";
   random_access_iterator<const char*> b(s);

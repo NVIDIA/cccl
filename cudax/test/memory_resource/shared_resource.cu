@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/experimental/buffer.cuh>
+#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
 #include "test_resource.cuh"

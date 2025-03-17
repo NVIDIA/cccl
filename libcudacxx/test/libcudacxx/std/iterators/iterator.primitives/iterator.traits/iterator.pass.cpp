@@ -24,14 +24,12 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 #  include <iterator>
 #  include <vector>
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 struct A
 {};
@@ -45,7 +43,7 @@ struct test_iterator
   typedef cuda::std::forward_iterator_tag iterator_category;
 };
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 struct specialized_test_iterator
 {};
 
@@ -65,7 +63,7 @@ struct iterator_traits<specialized_test_iterator>
 static_assert(!cuda::std::__is_primary_std_template<specialized_test_iterator>::value);
 static_assert(cuda::std::__specialized_from_std<specialized_test_iterator>);
 
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {
@@ -78,7 +76,7 @@ int main(int, char**)
     static_assert((cuda::std::is_same<It::iterator_category, cuda::std::forward_iterator_tag>::value), "");
   }
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   { // std::vector
     typedef cuda::std::iterator_traits<typename std::vector<int>::iterator> It;
     static_assert((cuda::std::is_same<It::difference_type, std::ptrdiff_t>::value), "");
@@ -98,7 +96,7 @@ int main(int, char**)
     static_assert((cuda::std::is_same<It::reference, long&>::value), "");
     static_assert((cuda::std::is_same<It::iterator_category, cuda::std::bidirectional_iterator_tag>::value), "");
   }
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
   return 0;
 }

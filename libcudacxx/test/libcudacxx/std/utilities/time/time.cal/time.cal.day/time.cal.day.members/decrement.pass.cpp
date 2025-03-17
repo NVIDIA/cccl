@@ -40,11 +40,11 @@ __host__ __device__ constexpr bool testConstexpr()
 int main(int, char**)
 {
   using day = cuda::std::chrono::day;
-  ASSERT_NOEXCEPT(--(cuda::std::declval<day&>()));
-  ASSERT_NOEXCEPT((cuda::std::declval<day&>())--);
+  static_assert(noexcept(--(cuda::std::declval<day&>())));
+  static_assert(noexcept((cuda::std::declval<day&>())--));
 
-  ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<day&>()--));
-  ASSERT_SAME_TYPE(day&, decltype(--cuda::std::declval<day&>()));
+  static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<day&>()--)>);
+  static_assert(cuda::std::is_same_v<day&, decltype(--cuda::std::declval<day&>())>);
 
   static_assert(testConstexpr<day>(), "");
 

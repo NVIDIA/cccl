@@ -40,8 +40,8 @@ __host__ __device__ void test()
   static_assert(HasTupleElement<0, C>::value, "");
   static_assert(HasTupleElement<1, C>::value, "");
 
-  ASSERT_SAME_TYPE(T, typename cuda::std::tuple_element<0, C>::type);
-  ASSERT_SAME_TYPE(T, typename cuda::std::tuple_element<1, C>::type);
+  static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<0, C>::type>);
+  static_assert(cuda::std::is_same_v<T, typename cuda::std::tuple_element<1, C>::type>);
 }
 
 __host__ __device__ void test()

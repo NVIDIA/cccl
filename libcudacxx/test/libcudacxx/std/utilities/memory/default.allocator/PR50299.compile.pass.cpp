@@ -21,7 +21,7 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR cuda::std::allocator<void> alloc;
+TEST_GLOBAL_VARIABLE cuda::std::allocator<void> alloc;
 
 int main(int, char**)
 {

@@ -75,7 +75,7 @@ public:
     size_t graph_epoch = ctx_.epoch();
     assert(graph && graph_epoch != size_t(-1));
 
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(ctx_, prereqs, graph_epoch);
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;

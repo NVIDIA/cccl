@@ -304,7 +304,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, ::cuda
 
   VolatileWord words[VOLATILE_MULTIPLE];
 
-#  pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < SHUFFLE_MULTIPLE; ++i)
   {
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
@@ -339,7 +339,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
 
   DeviceWord words[DEVICE_MULTIPLE];
 
-#  pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < SHUFFLE_MULTIPLE; ++i)
   {
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];

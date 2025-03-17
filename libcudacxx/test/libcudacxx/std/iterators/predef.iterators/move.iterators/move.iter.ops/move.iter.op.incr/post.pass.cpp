@@ -63,7 +63,7 @@ int main(int, char**)
     using MoveIter = cuda::std::move_iterator<forward_iterator<int*>>;
 
     MoveIter i = MoveIter(forward_iterator<int*>(a));
-    ASSERT_SAME_TYPE(decltype(i++), MoveIter);
+    static_assert(cuda::std::is_same_v<decltype(i++), MoveIter>);
     auto j = i++;
     assert(base(j.base()) == a);
     assert(base(i.base()) == a + 1);
@@ -75,7 +75,7 @@ int main(int, char**)
     using MoveIter = cuda::std::move_iterator<cpp20_input_iterator<int*>>;
 
     MoveIter i = MoveIter(cpp20_input_iterator<int*>(a));
-    ASSERT_SAME_TYPE(decltype(i++), void);
+    static_assert(cuda::std::is_same_v<decltype(i++), void>);
     i++;
     assert(base(i.base()) == a + 1);
   }

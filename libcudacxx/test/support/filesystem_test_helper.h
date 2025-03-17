@@ -534,7 +534,7 @@ struct ExceptionChecker
     TEST_CHECK(ErrorIsImp(Err.code(), {expected_err}));
     TEST_CHECK(Err.path1() == expected_path1);
     TEST_CHECK(Err.path2() == expected_path2);
-    LIBCPP_ONLY(check_libcxx_string(Err));
+    assert(check_libcxx_string(Err));
   }
 
   void check_libcxx_string(fs::filesystem_error const& Err)

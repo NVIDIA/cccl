@@ -53,7 +53,7 @@ int main()
     }
   };
 
-  ctx.parallel_for(exec_place::host, ly.shape(), ly.read())
+  ctx.parallel_for(exec_place::host(), ly.shape(), ly.read())
       ->*[=] __host__(size_t i, size_t j, slice<const double, 2> sy) {
             double expected = y0(i, j);
             for (size_t ii = 0; ii < 2; ii++)

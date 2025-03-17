@@ -22,9 +22,7 @@
 #include "test_convertible.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4244) // conversion from 'const From' to 'short', possible loss of data
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const From' to 'short', possible loss of data
 
 using cuda::std::optional;
 

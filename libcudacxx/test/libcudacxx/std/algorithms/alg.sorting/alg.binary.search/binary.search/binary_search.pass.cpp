@@ -24,13 +24,13 @@
 #include "test_macros.h"
 
 template <class Iter, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, const T& value, bool x)
+__host__ __device__ constexpr void test(Iter first, Iter last, const T& value, bool x)
 {
   assert(cuda::std::binary_search(first, last, value) == x);
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   constexpr int M = 10;
   auto v          = get_data(M);
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test(Iter(cuda::std::begin(v)), Iter(cuda::std::end(v)), M, false);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();

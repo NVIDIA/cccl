@@ -42,7 +42,7 @@ int main()
     add<<<32, 32, 0, stream>>>(s, 42);
   };
 
-  ctx.task(exec_place::host, handle.read())->*[](auto stream, auto s) {
+  ctx.task(exec_place::host(), handle.read())->*[](auto stream, auto s) {
     cuda_safe_call(cudaStreamSynchronize(stream));
 
     for (size_t j = 0; j < s.extent(1); j++)

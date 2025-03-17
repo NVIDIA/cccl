@@ -19,8 +19,8 @@
 int main(int, char**)
 {
   using hours = cuda::std::chrono::hours;
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::chrono::is_pm(cuda::std::declval<hours>())));
-  ASSERT_NOEXCEPT(cuda::std::chrono::is_pm(cuda::std::declval<hours>()));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::chrono::is_pm(cuda::std::declval<hours>()))>);
+  static_assert(noexcept(cuda::std::chrono::is_pm(cuda::std::declval<hours>())));
 
   static_assert(!cuda::std::chrono::is_pm(hours(0)), "");
   static_assert(!cuda::std::chrono::is_pm(hours(11)), "");

@@ -22,9 +22,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4172) // returning address of local variable or temporary
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4172) // returning address of local variable or temporary
 
 template <class It>
 __host__ __device__ void test(It i,
@@ -46,12 +44,12 @@ int main(int, char**)
 {
   {
     char s[] = "1234567890";
-#if defined(TEST_COMPILER_NVHPC)
+#if TEST_COMPILER(NVHPC)
     for (int i = 0; i < 10; ++i)
     {
       s[i] = i == 9 ? '0' : ('1' + i);
     }
-#endif // TEST_COMPILER_NVHPC
+#endif // TEST_COMPILER(NVHPC)
     test(random_access_iterator<char*>(s + 5), 4, '0');
     test(s + 5, 4, '0');
   }

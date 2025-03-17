@@ -39,24 +39,24 @@ int main(int, char**)
 
   constexpr cuda::std::chrono::month January = cuda::std::chrono::January;
 
-  ASSERT_SAME_TYPE(cuda::std::chrono::sys_time<seconds>, sys_seconds);
-  ASSERT_SAME_TYPE(cuda::std::chrono::sys_time<days>, sys_days);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::sys_time<seconds>, sys_seconds>);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::sys_time<days>, sys_days>);
 
   //  Test the long form, too
-  ASSERT_SAME_TYPE(cuda::std::chrono::time_point<system_clock, seconds>, sys_seconds);
-  ASSERT_SAME_TYPE(cuda::std::chrono::time_point<system_clock, minutes>, sys_minutes);
-  ASSERT_SAME_TYPE(cuda::std::chrono::time_point<system_clock, days>, sys_days);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::time_point<system_clock, seconds>, sys_seconds>);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::time_point<system_clock, minutes>, sys_minutes>);
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::time_point<system_clock, days>, sys_days>);
 
   //  Test some well known values
   sys_days d0 = sys_days{year{1970} / January / 1};
   sys_days d1 = sys_days{year{2000} / January / 1};
-  ASSERT_SAME_TYPE(decltype(d0.time_since_epoch()), days);
+  static_assert(cuda::std::is_same_v<decltype(d0.time_since_epoch()), days>);
   assert(d0.time_since_epoch().count() == 0);
   assert(d1.time_since_epoch().count() == 10957);
 
   sys_seconds s0{d0};
   sys_seconds s1{d1};
-  ASSERT_SAME_TYPE(decltype(s0.time_since_epoch()), seconds);
+  static_assert(cuda::std::is_same_v<decltype(s0.time_since_epoch()), seconds>);
   assert(s0.time_since_epoch().count() == 0);
   assert(s1.time_since_epoch().count() == 946684800L);
 

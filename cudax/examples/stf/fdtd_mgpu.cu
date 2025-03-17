@@ -128,7 +128,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
     switch (atoi(argv[3]))
     {
       case 0:
-        where = exec_place::host;
+        where = exec_place::host();
         break;
       case 1:
         where = exec_place::current_device();

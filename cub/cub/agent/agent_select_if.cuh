@@ -396,7 +396,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     constant_t<USE_SELECT_OP> /*select_method*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Out-of-bounds items are selection_flags
@@ -426,7 +426,7 @@ struct AgentSelectIf
     if (IS_LAST_TILE)
     {
       // Initialize the out-of-bounds flags
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         selection_flags[ITEM] = true;
@@ -440,7 +440,7 @@ struct AgentSelectIf
       BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -477,8 +477,8 @@ struct AgentSelectIf
       BlockLoadFlags(temp_storage.load_flags).Load((d_flags_in + streaming_context.input_offset()) + tile_offset, flags);
     }
 
-// Convert flag type to selection_flags type
-#pragma unroll
+    // Convert flag type to selection_flags type
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       selection_flags[ITEM] = static_cast<bool>(flags[ITEM]);
@@ -517,8 +517,8 @@ struct AgentSelectIf
         .FlagHeads(selection_flags, items, inequality_op, tile_predecessor);
     }
 
-// Set selection flags for out-of-bounds items
-#pragma unroll
+    // Set selection flags for out-of-bounds items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -543,8 +543,8 @@ struct AgentSelectIf
     OffsetT (&selection_indices)[ITEMS_PER_THREAD],
     OffsetT num_selections)
   {
-// Scatter flagged items
-#pragma unroll
+    // Scatter flagged items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       if (selection_flags[ITEM])
@@ -585,8 +585,8 @@ struct AgentSelectIf
   {
     __syncthreads();
 
-// Compact and scatter items
-#pragma unroll
+    // Compact and scatter items
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -683,8 +683,8 @@ struct AgentSelectIf
 
     int tile_num_rejections = num_tile_items - num_tile_selections;
 
-// Scatter items to shared memory (rejections first)
-#pragma unroll
+    // Scatter items to shared memory (rejections first)
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx            = (threadIdx.x * ITEMS_PER_THREAD) + ITEM;
@@ -719,7 +719,7 @@ struct AgentSelectIf
     auto selected_out_it = partitioned_out_wrapper.selected_it + streaming_context.num_previously_selected();
     auto rejected_out_it = partitioned_out_wrapper.rejected_it + streaming_context.num_previously_rejected();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
@@ -759,7 +759,7 @@ struct AgentSelectIf
   {
     using total_offset_t = typename StreamingContextT::total_num_items_t;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;

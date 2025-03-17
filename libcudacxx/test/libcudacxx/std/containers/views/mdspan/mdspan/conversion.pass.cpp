@@ -317,10 +317,10 @@ int main(int, char**)
 // FIXME: these tests trigger what appears to be a compiler bug on MINGW32 with --target=x86_64-w64-windows-gnu
 // https://godbolt.org/z/KK8aj5bs7
 // Bug report: https://github.com/llvm/llvm-project/issues/64077
-#ifndef TEST_COMPILER_MSVC
+#if !TEST_COMPILER(MSVC)
   test<t, t, t, o, t, t, t, t, conv_test_accessor_c<int, o, t, t, t>>(conv_test_accessor_nc<int, t, t>());
   test<t, t, t, t, t, t, t, t, conv_test_accessor_c<int, o, o, o, o>>(conv_test_accessor_nc<int, t, o>());
-#endif
+#endif // !TEST_COMPILER(MSVC)
 
   // ElementType convertible, but accessor not constructible
   test<o, o, o, o, o, o, o, o, cuda::std::default_accessor<float>>(cuda::std::default_accessor<int>());

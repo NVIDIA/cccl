@@ -21,16 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-// If the memory resource header was included without the experimental flag,
-// tell the user to define the experimental flag.
-#if defined(_CUDA_MEMORY_RESOURCE) && !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-#  error "To use the experimental memory resource, define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-#endif
-
-#if !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-#  define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-#endif
-
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 

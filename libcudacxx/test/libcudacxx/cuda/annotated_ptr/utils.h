@@ -9,9 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "test_macros.h"
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4505)
-#endif
+
+TEST_DIAG_SUPPRESS_MSVC(4505)
 
 #include <cuda/annotated_ptr>
 #include <cuda/std/cassert>
@@ -34,11 +33,11 @@ __device__ __host__ void assert_rt_wrap(cudaError_t code, const char* file, int 
 {
   if (code != cudaSuccess)
   {
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (printf("assert: %s %s %d\n", cudaGetErrorString(code), file, line);),
                       (printf("assert: error=%d %s %d\n", code, file, line);))
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
     assert(code == cudaSuccess);
   }
 }

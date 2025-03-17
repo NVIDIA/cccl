@@ -23,14 +23,14 @@
 
 struct gen_test
 {
-  TEST_CONSTEXPR_CXX14 __host__ __device__ int operator()() const noexcept
+  constexpr __host__ __device__ int operator()() const noexcept
   {
     return 1;
   }
 };
 
 template <class Iter, class Size>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   constexpr int N = 5;
   int ia[N + 1]   = {0};
@@ -47,7 +47,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
 }
 
 template <class Iter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   test<Iter, int>();
   test<Iter, unsigned int>();
@@ -61,7 +61,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
 #endif // _CCCL_HAS_LONG_DOUBLE()
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+constexpr __host__ __device__ bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();

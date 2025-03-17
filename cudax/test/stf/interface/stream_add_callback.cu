@@ -35,7 +35,7 @@ int main()
     };
 
     // Enqueue a host callback
-    ctx.task(exec_place::host, h_cnt.rw())->*[&](cudaStream_t stream, auto s_cnt) {
+    ctx.task(exec_place::host(), h_cnt.rw())->*[&](cudaStream_t stream, auto s_cnt) {
       cuda_safe_call(cudaStreamAddCallback(stream, host_inc, s_cnt.data_handle(), 0));
       cuda_safe_call(cudaGetLastError());
     };

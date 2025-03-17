@@ -32,7 +32,7 @@ struct count_equal
   {}
   int& count_;
   template <class T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y) const noexcept
+  __host__ __device__ constexpr bool operator()(const T& x, const T& y) const noexcept
   {
     ++count_;
     return x == y;
@@ -40,7 +40,7 @@ struct count_equal
 };
 
 template <class InIter, class OutIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int count_equal_count = 0;
   count_equal count_op{count_equal_count};
@@ -126,7 +126,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(count_equal_count == si - 1);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*>>();

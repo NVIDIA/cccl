@@ -7,6 +7,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+#include <thrust/type_traits/is_contiguous_iterator.h>
+#include <thrust/type_traits/unwrap_contiguous_iterator.h>
+
 #include <cuda/memory_resource>
 #include <cuda/std/__algorithm_>
 #include <cuda/std/array>
@@ -57,6 +60,16 @@ TEMPLATE_TEST_CASE("cudax::async_buffer iterators",
     STATIC_REQUIRE(noexcept(cuda::std::declval<Buffer&>().end()));
     STATIC_REQUIRE(noexcept(cuda::std::declval<const Buffer&>().end()));
     STATIC_REQUIRE(noexcept(cuda::std::declval<Buffer&>().cend()));
+  }
+
+  SECTION("cudax::async_buffer::begin/end thrust properties")
+  {
+    STATIC_REQUIRE(thrust::is_contiguous_iterator<iterator>::value);
+    STATIC_REQUIRE(thrust::is_contiguous_iterator<const_iterator>::value);
+
+    STATIC_REQUIRE(cuda::std::is_same_v<thrust::try_unwrap_contiguous_iterator_t<iterator>, int*>);
+    STATIC_REQUIRE(
+      cuda::std::is_same_v<decltype(thrust::try_unwrap_contiguous_iterator(::cuda::std::declval<iterator>())), int*>);
   }
 
   SECTION("cudax::async_buffer::begin/end no allocation")

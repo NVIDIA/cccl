@@ -136,10 +136,10 @@ int main(int, char**)
   static_assert((!cuda::std::is_convertible<Array, Array&>::value), "");
 #endif // !_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK
   static_assert((cuda::std::is_convertible<Array, const Array&>::value), "");
-#ifndef TEST_COMPILER_MSVC
+#if !TEST_COMPILER(MSVC)
   // TODO: Unclear why this fails.
   static_assert((!cuda::std::is_convertible<Array, const volatile Array&>::value), "");
-#endif
+#endif // !TEST_COMPILER(MSVC)
 
   static_assert((!cuda::std::is_convertible<const Array, Array&>::value), "");
   static_assert((cuda::std::is_convertible<const Array, const Array&>::value), "");
@@ -149,11 +149,11 @@ int main(int, char**)
 
   static_assert((cuda::std::is_convertible<Array, Array&&>::value), "");
   static_assert((cuda::std::is_convertible<Array, const Array&&>::value), "");
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   // No idea why this fails under NVRTC.
   // TODO: File a compiler bug
   static_assert((cuda::std::is_convertible<Array, volatile Array&&>::value), "");
-#endif
+#endif // !TEST_COMPILER(NVRTC)
   static_assert((cuda::std::is_convertible<Array, const volatile Array&&>::value), "");
   static_assert((cuda::std::is_convertible<const Array, const Array&&>::value), "");
 #if !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
@@ -196,10 +196,10 @@ int main(int, char**)
   static_assert((cuda::std::is_convertible<const Array&, const char*>::value), "");
 
   static_assert((cuda::std::is_convertible<Array, StringType>::value), "");
-#if !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
   // TODO: Investigate why this is failing.
   static_assert((cuda::std::is_convertible<char(&)[], StringType>::value), "");
-#endif
+#endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
 
   // char
   test_is_not_convertible<char, void>();
@@ -264,9 +264,9 @@ int main(int, char**)
   // This test requires access control SFINAE which we only have on non-MSVC
   // compilers or when we are using the compiler builtin for
   // is_convertible.
-#if !defined(TEST_COMPILER_MSVC) || !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#if !TEST_COMPILER(MSVC) || !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
   test_is_not_convertible<NonCopyable&, NonCopyable>();
-#endif
+#endif // !TEST_COMPILER(MSVC) || !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
   // Ensure that CannotInstantiate is not instantiated by is_convertible when it is not needed.
   // For example CannotInstantiate is instantiated as a part of ADL lookup for arguments of type CannotInstantiate*.

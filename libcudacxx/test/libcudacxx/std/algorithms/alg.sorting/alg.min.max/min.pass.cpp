@@ -20,12 +20,12 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const T& a, const T& b, const T& x)
+__host__ __device__ constexpr void test(const T& a, const T& b, const T& x)
 {
   assert(&cuda::std::min(a, b) == &x);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     int x = 0;

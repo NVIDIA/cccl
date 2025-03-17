@@ -160,7 +160,7 @@ static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, const 
             // better performance, we use a task and a synchronization
             // because it is easier to break on errors with a debugger
             // when a mismatch is found.
-            ctx->task(exec_place::host, ro_dep).set_symbol("compare " + ::std::to_string(cnt))
+            ctx->task(exec_place::host(), ro_dep).set_symbol("compare " + ::std::to_string(cnt))
                 ->*[filePath](cudaStream_t stream, auto s) {
                       cuda_safe_call(cudaStreamSynchronize(stream));
                       ::std::ifstream f(filePath);

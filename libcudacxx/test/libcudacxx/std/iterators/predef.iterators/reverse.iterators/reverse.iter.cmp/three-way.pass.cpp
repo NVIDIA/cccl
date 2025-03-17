@@ -31,7 +31,7 @@ __host__ __device__ constexpr void test(ItL l, ItR r, Ord x)
 {
   const cuda::std::reverse_iterator<ItL> l1(l);
   const cuda::std::reverse_iterator<ItR> r1(r);
-  ASSERT_SAME_TYPE(decltype(l1 <=> r1), Ord);
+  static_assert(cuda::std::is_same_v<decltype(l1 <=> r1), Ord>);
   assert((l1 <=> r1) == x);
 }
 

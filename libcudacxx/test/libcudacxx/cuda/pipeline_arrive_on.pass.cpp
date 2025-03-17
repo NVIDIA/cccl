@@ -93,7 +93,7 @@ __device__ bool arrive_on_test(char* global_buffer, size_t buffer_size)
   return true;
 }
 
-#ifdef TEST_COMPILER_NVRTC
+#if TEST_COMPILER(NVRTC)
 __device__ void arrive_on_nvrtc(size_t buffer_size)
 {
   auto scramble_buffer = [](char* buffer, size_t buffer_size, size_t base_value) {
@@ -124,7 +124,7 @@ __device__ void arrive_on_nvrtc(size_t buffer_size)
   scramble_buffer(global_buffer, buffer_size, 127);
   assert(arrive_on_test<int4>(global_buffer, buffer_size));
 }
-#else
+#else // ^^^ TEST_COMPILER(NVRTC) ^^^ / vvv !TEST_COMPILER(NVRTC) vvv
 template <typename T>
 __global__ void arrive_on_kernel(char* global_buffer, size_t buffer_size, bool* success)
 {
@@ -204,18 +204,18 @@ void arrive_on()
   CUDA_CALL(result, cudaFree(global_buffer));
   CUDA_CALL(result, cudaFreeHost((void*) success_hptr));
 }
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 int main(int argc, char** argv)
 {
   NV_IF_TARGET(NV_IS_HOST, arrive_on();)
 
-#ifdef TEST_COMPILER_NVRTC
+#if TEST_COMPILER(NVRTC)
   int cuda_thread_count     = 64;
   int cuda_block_shmem_size = 40000;
 
   arrive_on_nvrtc(cuda_block_shmem_size - sizeof(cuda::barrier<cuda::thread_scope_block>) - sizeof(char*));
-#endif // TEST_COMPILER_NVRTC
+#endif // TEST_COMPILER(NVRTC)
 
   return 0;
 }

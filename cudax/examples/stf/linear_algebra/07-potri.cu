@@ -305,7 +305,7 @@ void DTRTRI(cublasFillMode_t uplo, cublasDiagType_t diag, matrix<double>& A, int
   auto devInfo = ctx.logical_data(shape_of<slice<int>>(1));
 
   auto t =
-    ctx.task(A.get_handle(A_row, A_col).rw(), d_buffer.write(), h_buffer.write(data_place::managed), devInfo.write());
+    ctx.task(A.get_handle(A_row, A_col).rw(), d_buffer.write(), h_buffer.write(data_place::managed()), devInfo.write());
   t.set_symbol("DTRTRI");
   t->*[&](auto s, auto sA, auto dbuffer, auto hbuffer, auto info) {
     auto& h = get_cusolver_handle();
@@ -1462,7 +1462,7 @@ void run(int N, int NB)
       get_cusolver_handle();
     };
 
-    ctx.task(exec_place::host, ldummy.write(data_place::managed))->*[](cudaStream_t, auto) {};
+    ctx.task(exec_place::host(), ldummy.write(data_place::managed()))->*[](cudaStream_t, auto) {};
   }
 
   cuda_try(cudaSetDevice(0));

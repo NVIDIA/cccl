@@ -74,7 +74,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shu
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
-#  pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_idx(__array[i], __pred, __src_lane, __clamp_segmask, __lane_mask);
@@ -122,7 +123,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
-#  pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_up(__array[i], __pred, __delta, __clamp_segmask, __lane_mask);
@@ -170,7 +172,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shu
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
-#  pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_down(__array[i], __pred, __delta, __clamp_segmask, __lane_mask);
@@ -218,7 +221,8 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shu
     uint32_t __array[__ratio];
     _CUDA_VSTD::memcpy(
       static_cast<void*>(__array), static_cast<const void*>(_CUDA_VSTD::addressof(__data)), sizeof(_Up));
-#  pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < __ratio; ++i)
     {
       __array[i] = _CUDA_VPTX::shfl_sync_bfly(__array[i], __pred, __xor_mask, __clamp_segmask, __lane_mask);

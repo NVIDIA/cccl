@@ -47,20 +47,20 @@ struct ToIter
   typedef char value_type;
   typedef signed char difference_type;
 
-  __host__ __device__ explicit TEST_CONSTEXPR_CXX14 ToIter()
+  __host__ __device__ explicit constexpr ToIter()
       : m_value(0)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter(const ToIter& src)
+  __host__ __device__ constexpr ToIter(const ToIter& src)
       : m_value(src.m_value)
   {}
   // Intentionally not defined, must not be called.
   __host__ __device__ ToIter(char* src);
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter& operator=(char* src)
+  __host__ __device__ constexpr ToIter& operator=(char* src)
   {
     m_value = src;
     return *this;
   }
-  __host__ __device__ TEST_CONSTEXPR_CXX14 ToIter& operator=(const ToIter& src)
+  __host__ __device__ constexpr ToIter& operator=(const ToIter& src)
   {
     m_value = src.m_value;
     return *this;
@@ -70,7 +70,7 @@ struct ToIter
   __host__ __device__ reference operator*() const;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_conv_assign()
+__host__ __device__ constexpr bool test_conv_assign()
 {
   char c   = '\0';
   char* fi = &c;

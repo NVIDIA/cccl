@@ -5,6 +5,7 @@
 import re
 import tempfile
 from collections import namedtuple
+from enum import Enum
 from typing import TYPE_CHECKING, Union
 
 # Import for type checking only
@@ -16,6 +17,27 @@ version = namedtuple("version", ("major", "minor"))
 code = namedtuple("code", ("kind", "version", "data"))
 symbol = namedtuple("symbol", ("kind", "name"))
 dim3 = namedtuple("dim3", ("x", "y", "z"))
+
+
+CUB_BLOCK_SCAN_ALGOS = {
+    "raking": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING",
+    "raking_memoize": "::cub::BlockScanAlgorithm::BLOCK_SCAN_RAKING_MEMOIZE",
+    "warp_scans": "::cub::BlockScanAlgorithm::BLOCK_SCAN_WARP_SCANS",
+}
+
+
+class CudaSharedMemConfig(Enum):
+    """
+    CUDA shared memory configuration.  This is intended to mirror the C++
+    equivalent `cudaSharedMemConfig` enum.
+    """
+
+    BankSizeDefault = 0
+    BankSizeFourByte = 1
+    BankSizeEightByte = 2
+
+    def __str__(self):
+        return f"cudaSharedMem{self.name}"
 
 
 def make_binary_tempfile(content, suffix):

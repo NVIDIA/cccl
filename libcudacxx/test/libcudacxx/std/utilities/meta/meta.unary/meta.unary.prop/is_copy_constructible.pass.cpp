@@ -80,10 +80,10 @@ int main(int, char**)
   test_is_copy_constructible<NotEmpty>();
   test_is_copy_constructible<bit_zero>();
 
-#if !defined(TEST_COMPILER_GCC) || TEST_STD_VER < 2020
+#if !TEST_COMPILER(GCC) || TEST_STD_VER < 2020
   test_is_not_copy_constructible<char[3]>();
   test_is_not_copy_constructible<char[]>();
-#endif
+#endif // !TEST_COMPILER(GCC) || TEST_STD_VER < 2020
   test_is_not_copy_constructible<void>();
   test_is_not_copy_constructible<Abstract>();
   test_is_not_copy_constructible<C>();

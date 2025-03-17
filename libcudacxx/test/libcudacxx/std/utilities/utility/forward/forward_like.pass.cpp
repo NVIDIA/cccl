@@ -100,7 +100,7 @@ __host__ __device__ void compile_test()
   static_assert(noexcept(cuda::std::forward_like<T>(cuda::std::declval<NoCtorCopyMove>())), "");
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     int val       = 1729;

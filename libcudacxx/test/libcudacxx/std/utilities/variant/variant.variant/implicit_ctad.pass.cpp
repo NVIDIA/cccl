@@ -30,14 +30,14 @@ int main(int, char**)
   {
     cuda::std::variant<int, double> v1(3);
     cuda::std::variant v2 = v1;
-    ASSERT_SAME_TYPE(decltype(v2), cuda::std::variant<int, double>);
+    static_assert(cuda::std::is_same_v<decltype(v2), cuda::std::variant<int, double>>);
     unused(v2);
   }
 
   {
     cuda::std::variant<int, double> v1(3);
     cuda::std::variant v2 = cuda::std::variant(v1); // Technically valid, but intent is ambiguous!
-    ASSERT_SAME_TYPE(decltype(v2), cuda::std::variant<int, double>);
+    static_assert(cuda::std::is_same_v<decltype(v2), cuda::std::variant<int, double>>);
     unused(v2);
   }
 

@@ -26,14 +26,6 @@
  *
  ******************************************************************************/
 
-#include <cuda/__cccl_config>
-
-// with NVHPC we get deprecation warnings originating from instantiations from cudafe1.stub.c, so we have to bulk
-// suppress all deprecation warnings in this file (without a matching pop)
-#if _CCCL_COMPILER(NVHPC)
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#endif
-
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/iterator/cache_modified_output_iterator.cuh>
@@ -43,6 +35,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/__cccl_config>
 #include <cuda/std/__cccl/dialect.h>
 
 #include <cstdint>
@@ -99,10 +92,8 @@ __global__ void test_iterator_kernel(InputIteratorT d_in, T* d_out, InputIterato
   d_itrs[1] = d_in; // Iterator at offset 0
 }
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename InputIteratorT, typename T>
-void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference) //
-  _CCCL_SUPPRESS_DEPRECATED_POP
+void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
 {
   c2h::device_vector<T> d_out(h_reference.size());
   c2h::device_vector<InputIteratorT> d_itrs(2, d_in); // TODO(bgruber): using a raw allocation halves the compile time

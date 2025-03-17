@@ -414,8 +414,8 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THRE
       bool_constant_v<KEYS_ONLY>,
       decomposer);
 
-// Store keys and values
-#pragma unroll
+  // Store keys and values
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
   {
     int item_offset = ITEM * BLOCK_THREADS + threadIdx.x;
@@ -590,8 +590,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
 
   if (Order == SortOrder::Descending)
   {
-// Reverse bin counts
-#pragma unroll
+    // Reverse bin counts
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -604,7 +604,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -621,7 +621,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
                                                // (valid in the first RADIX_DIGITS threads)
   DigitScanT(temp_storage.scan).ExclusiveSum(bin_count, bin_offset);
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
   {
     bin_offset[track] += segment_begin;
@@ -629,8 +629,8 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
 
   if (Order == SortOrder::Descending)
   {
-// Reverse bin offsets
-#pragma unroll
+    // Reverse bin offsets
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -643,7 +643,7 @@ __launch_bounds__(int((ALT_DIGIT_BITS) ? ChainedPolicyT::ActivePolicy::AltSegmen
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -768,7 +768,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_b
   // load the bins
   OffsetT bins[BINS_PER_THREAD];
   int bin_start = blockIdx.x * RADIX_DIGITS;
-#pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int u = 0; u < BINS_PER_THREAD; ++u)
   {
     int bin = threadIdx.x * BINS_PER_THREAD + u;
@@ -782,8 +783,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceRadixSortExclusiveSumKernel(OffsetT* d_b
   // compute offsets
   BlockScan(temp_storage).ExclusiveSum(bins, bins);
 
-// store the offsets
-#pragma unroll
+  // store the offsets
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int u = 0; u < BINS_PER_THREAD; ++u)
   {
     int bin = threadIdx.x * BINS_PER_THREAD + u;

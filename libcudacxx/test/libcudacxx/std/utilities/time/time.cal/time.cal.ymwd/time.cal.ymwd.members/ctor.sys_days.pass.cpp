@@ -27,12 +27,8 @@
 
 #include "test_macros.h"
 
-// MSVC warns about unsigned/signed comparisons and addition/subtraction
-// Silence these warnings, but not the ones within the header itself.
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4307)
-#  pragma warning(disable : 4308)
-#endif
+TEST_DIAG_SUPPRESS_MSVC(4307) // potential overflow
+TEST_DIAG_SUPPRESS_MSVC(4308) // unsigned/signed comparisons
 
 int main(int, char**)
 {
@@ -42,7 +38,7 @@ int main(int, char**)
   using weekday_indexed    = cuda::std::chrono::weekday_indexed;
   using year_month_weekday = cuda::std::chrono::year_month_weekday;
 
-  ASSERT_NOEXCEPT(year_month_weekday{cuda::std::declval<const sys_days>()});
+  static_assert(noexcept(year_month_weekday{cuda::std::declval<const sys_days>()}));
 
   {
     constexpr sys_days sd{}; // 1-Jan-1970 was a Thursday

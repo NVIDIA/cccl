@@ -31,10 +31,9 @@
 #include "test_macros.h"
 
 // GCC warns about comma operator changing its meaning inside [] in C++23
-#if _CCCL_COMPILER(GCC, >=, 10)
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wcomma-subscript"
-#endif // _CCCL_COMPILER(GCC, >=, 10)
+#if TEST_COMPILER(GCC, >=, 10)
+TEST_DIAG_SUPPRESS_GCC("-Wcomma-subscript")
+#endif // TEST_COMPILER(GCC, >=, 10)
 
 template <class MDS>
 __host__ __device__ constexpr auto& access(MDS mds, int64_t i0)
@@ -334,7 +333,3 @@ int main(int, char**)
   // test_large();
   return 0;
 }
-
-#if defined(TEST_COMPILER_GCC)
-#  pragma GCC diagnostic pop
-#endif // TEST_COMPILER_GCC

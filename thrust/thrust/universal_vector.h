@@ -56,12 +56,14 @@ THRUST_NAMESPACE_BEGIN
  *  \see device_vector
  *  \see universal_host_pinned_vector
  */
-using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_vector;
+template <typename T, typename Allocator = universal_allocator<T>>
+using universal_vector = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_vector<T, Allocator>;
 
 //! Like \ref universal_vector but uses pinned memory when the system supports it.
 //! \see device_vector
 //! \see universal_vector
-using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_host_pinned_vector;
+template <typename T>
+using universal_host_pinned_vector = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_host_pinned_vector<T>;
 
 /*! \} // containers
  */

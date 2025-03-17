@@ -239,27 +239,27 @@ int main(int, char**)
 
     auto r = cuda::std::tuple_cat(cuda::std::move(t), cuda::std::move(ct), t2, ct2);
 
-    ASSERT_SAME_TYPE(
-      decltype(r),
-      cuda::std::tuple<
-        int,
-        const int,
-        int&,
-        const int&,
-        int&&,
-        int,
-        const int,
-        int&,
-        const int&,
-        int&&,
-        int,
-        const int,
-        int&,
-        const int&,
-        int,
-        const int,
-        int&,
-        const int&>);
+    static_assert(
+      cuda::std::is_same_v<
+        decltype(r),
+        cuda::std::tuple<int,
+                         const int,
+                         int&,
+                         const int&,
+                         int&&,
+                         int,
+                         const int,
+                         int&,
+                         const int&,
+                         int&&,
+                         int,
+                         const int,
+                         int&,
+                         const int&,
+                         int,
+                         const int,
+                         int&,
+                         const int&>>);
     unused(r);
   }
   return 0;

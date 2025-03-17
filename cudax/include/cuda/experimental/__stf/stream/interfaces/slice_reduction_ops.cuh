@@ -110,7 +110,7 @@ public:
   /// Reconstruct an instance by applying the reduction operator over it and another instance
   void op(const instance_t& in, instance_t& inout, const exec_place& e, cudaStream_t s) override
   {
-    if (e.affine_data_place() == data_place::host)
+    if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
       cuda_safe_call(cudaStreamSynchronize(s));
@@ -155,7 +155,7 @@ public:
   /// Initialize an instance with an appropriate default value for the reduction operator
   void init_op(instance_t& out, const exec_place& e, cudaStream_t s) override
   {
-    if (e.affine_data_place() == data_place::host)
+    if (e.affine_data_place().is_host())
     {
       // TODO make a callback when the situation gets better
       cuda_safe_call(cudaStreamSynchronize(s));

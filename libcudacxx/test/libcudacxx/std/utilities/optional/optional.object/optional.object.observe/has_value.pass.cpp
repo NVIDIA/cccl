@@ -30,7 +30,7 @@ __host__ __device__ constexpr void test()
     opt = one;
     assert(opt.has_value());
 
-    ASSERT_NOEXCEPT(opt.has_value());
+    static_assert(noexcept(opt.has_value()));
   }
 }
 

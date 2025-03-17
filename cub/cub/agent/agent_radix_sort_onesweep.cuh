@@ -222,7 +222,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackPartial(int (&bins)[BINS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin = ThreadBin(u);
@@ -252,7 +252,7 @@ struct AgentRadixSortOnesweep
     {}
     _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(int (&other_bins)[BINS_PER_THREAD])
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < BINS_PER_THREAD; ++u)
       {
         bins[u] = other_bins[u];
@@ -265,7 +265,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LookbackGlobal(int (&bins)[BINS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin = ThreadBin(u);
@@ -312,7 +312,7 @@ struct AgentRadixSortOnesweep
         threadIdx.x, d_keys_in + tile_offset, keys, num_items - tile_offset, Twiddle::DefaultKey(decomposer));
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       keys[u] = Twiddle::In(keys[u], decomposer);
@@ -348,7 +348,8 @@ struct AgentRadixSortOnesweep
   {
     // check if any bin can be short-circuited
     bool short_circuit = false;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       if (FULL_BINS || ThreadBin(u) < RADIX_DIGITS)
@@ -373,7 +374,8 @@ struct AgentRadixSortOnesweep
     // compute offsets
     uint32_t common_bin = Digit(keys[0]);
     int offsets[BINS_PER_THREAD];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin    = ThreadBin(u);
@@ -388,7 +390,8 @@ struct AgentRadixSortOnesweep
 
     // scatter the keys
     OffsetT global_offset = s.global_offsets[common_bin];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       keys[u] = Twiddle::Out(keys[u], decomposer);
@@ -426,8 +429,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterKeysShared(bit_ordered_type (&keys)[ITEMS_PER_THREAD], int (&ranks)[ITEMS_PER_THREAD])
   {
-// write to shared memory
-#pragma unroll
+    // write to shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       s.keys_out[ranks[u]] = keys[u];
@@ -437,8 +440,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ScatterValuesShared(ValueT (&values)[ITEMS_PER_THREAD], int (&ranks)[ITEMS_PER_THREAD])
   {
-// write to shared memory
-#pragma unroll
+    // write to shared memory
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       s.values_out[ranks[u]] = values[u];
@@ -447,8 +450,8 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void LoadBinsToOffsetsGlobal(int (&offsets)[BINS_PER_THREAD])
   {
-// global offset - global part
-#pragma unroll
+    // global offset - global part
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < BINS_PER_THREAD; ++u)
     {
       int bin = ThreadBin(u);
@@ -464,7 +467,7 @@ struct AgentRadixSortOnesweep
     bool last_block = (block_idx + 1) * TILE_ITEMS >= num_items;
     if (d_bins_out != nullptr && last_block)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int u = 0; u < BINS_PER_THREAD; ++u)
       {
         int bin = ThreadBin(u);
@@ -480,7 +483,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterKeysGlobalDirect()
   {
     int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       int idx              = threadIdx.x + u * BLOCK_THREADS;
@@ -498,7 +502,8 @@ struct AgentRadixSortOnesweep
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterValuesGlobalDirect(int (&digits)[ITEMS_PER_THREAD])
   {
     int tile_items = FULL_TILE ? TILE_ITEMS : num_items - block_idx * TILE_ITEMS;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       int idx            = threadIdx.x + u * BLOCK_THREADS;
@@ -588,7 +593,7 @@ struct AgentRadixSortOnesweep
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeKeyDigits(int (&digits)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int u = 0; u < ITEMS_PER_THREAD; ++u)
     {
       int idx   = threadIdx.x + u * BLOCK_THREADS;

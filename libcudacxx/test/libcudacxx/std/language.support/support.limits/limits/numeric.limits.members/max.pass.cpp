@@ -10,6 +10,7 @@
 
 // max()
 
+#include <cuda/std/bit>
 #include <cuda/std/cassert>
 #include <cuda/std/cfloat>
 #include <cuda/std/climits>
@@ -34,9 +35,9 @@ __host__ __device__ void test(T expected)
 
 int main(int, char**)
 {
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   test<wchar_t>(WCHAR_MAX);
-#endif
+#endif // !TEST_COMPILER(NVRTC)
   test<bool>(true);
   test<char>(CHAR_MAX);
   test<signed char>(SCHAR_MAX);
@@ -89,6 +90,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>(make_fp4_e2m1(6.0));
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128>(cuda::std::bit_cast<__float128>((__uint128_t{0x7ffe'ffff'ffff'ffff} << 64) | 0xffff'ffff'ffff'ffff));
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }

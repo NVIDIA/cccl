@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_NVFP_TYPES_H
-#define _LIBCUDACXX___INTERNAL_NVFP_TYPES_H
+#ifndef _LIBCUDACXX___FLOATING_POINT_NVFP_TYPES_H
+#define _LIBCUDACXX___FLOATING_POINT_NVFP_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -55,4 +55,4 @@ _CCCL_DIAG_SUPPRESS_MSVC(4100) // unreferenced formal parameter
 _CCCL_DIAG_POP
 #endif // _CCCL_HAS_NVFP4()
 
-#endif // _LIBCUDACXX___INTERNAL_NVFP_TYPES_H
+#endif // _LIBCUDACXX___FLOATING_POINT_NVFP_TYPES_H

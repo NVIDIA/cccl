@@ -28,7 +28,7 @@
 #include "test_macros.h"
 
 template <class T, class Iter1, class Iter2, class OutIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test4()
+__host__ __device__ constexpr void test4()
 {
   const T a[] = {11, 33, 31, 41};
   const T b[] = {22, 32, 43, 42, 52};
@@ -57,7 +57,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test4()
 }
 
 template <class T, class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test3()
+__host__ __device__ constexpr void test3()
 {
   test4<T, Iter1, Iter2, cpp17_output_iterator<T*>>();
   // test4<T, Iter1, Iter2, forward_iterator<T*> >();
@@ -67,7 +67,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test3()
 }
 
 template <class T, class Iter1>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
+__host__ __device__ constexpr void test2()
 {
   test3<T, Iter1, cpp17_input_iterator<const T*>>();
   // test3<T, Iter1, forward_iterator<const T*> >();
@@ -77,7 +77,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
+__host__ __device__ constexpr void test1()
 {
   test2<T, cpp17_input_iterator<const T*>>();
   // test2<T, forward_iterator<const T*> >();
@@ -86,7 +86,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
   test2<T, const T*>();
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test1<TrivialSortableWithComp>();
   test1<NonTrivialSortableWithComp>();

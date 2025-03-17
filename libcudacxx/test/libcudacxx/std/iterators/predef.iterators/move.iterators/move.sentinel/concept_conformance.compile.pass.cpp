@@ -112,7 +112,7 @@ __host__ __device__ void test()
       cuda::std::sized_sentinel_for<cuda::std::move_sentinel<sized_sentinel<It>>, cuda::std::move_iterator<It>>);
   }
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   // `cuda::std::contiguous_iterator` with the spaceship operator.
   {
     using It = three_way_contiguous_iterator<int*>;

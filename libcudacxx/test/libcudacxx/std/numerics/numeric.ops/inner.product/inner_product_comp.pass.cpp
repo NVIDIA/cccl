@@ -33,7 +33,7 @@
 struct do_nothing_op
 {
   template <class T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 T operator()(T a, T)
+  __host__ __device__ constexpr T operator()(T a, T)
   {
     return a;
   }
@@ -43,32 +43,32 @@ struct rvalue_addable
 {
   bool correctOperatorUsed = false;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_addable operator*(rvalue_addable const&)
+  __host__ __device__ constexpr rvalue_addable operator*(rvalue_addable const&)
   {
     return *this;
   }
 
   // make sure the predicate is passed an rvalue and an lvalue (so check that the first argument was moved)
-  __host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_addable operator()(rvalue_addable&& r, rvalue_addable const&)
+  __host__ __device__ constexpr rvalue_addable operator()(rvalue_addable&& r, rvalue_addable const&)
   {
     r.correctOperatorUsed = true;
     return cuda::std::move(r);
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_addable operator+(rvalue_addable& lhs, rvalue_addable const&)
+__host__ __device__ constexpr rvalue_addable operator+(rvalue_addable& lhs, rvalue_addable const&)
 {
   lhs.correctOperatorUsed = false;
   return lhs;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_addable operator+(rvalue_addable&& lhs, rvalue_addable const&)
+__host__ __device__ constexpr rvalue_addable operator+(rvalue_addable&& lhs, rvalue_addable const&)
 {
   lhs.correctOperatorUsed = true;
   return cuda::std::move(lhs);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_use_move()
+__host__ __device__ constexpr void test_use_move()
 {
   rvalue_addable arr[100];
   auto res1 = cuda::std::inner_product(arr, arr + 100, arr, rvalue_addable());
@@ -80,7 +80,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_use_move()
 }
 
 #ifdef _LIBCUDACXX_HAS_STRING
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_string()
+__host__ __device__ constexpr void test_string()
 {
   cuda::std::string sa[] = {"a", "b", "c"};
   assert(cuda::std::accumulate(sa, sa + 3, cuda::std::string()) == "abc");
@@ -89,14 +89,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_string()
 #endif // _LIBCUDACXX_HAS_STRING
 
 template <class Iter1, class Iter2, class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
+__host__ __device__ constexpr void test(Iter1 first1, Iter1 last1, Iter2 first2, T init, T x)
 {
   assert(cuda::std::inner_product(first1, last1, first2, init, cuda::std::multiplies<int>(), cuda::std::plus<int>())
          == x);
 }
 
 template <class Iter1, class Iter2>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int a[]     = {1, 2, 3, 4, 5, 6};
   int b[]     = {6, 5, 4, 3, 2, 1};
@@ -111,7 +111,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test(Iter1(a), Iter1(a + sa), Iter2(b), 10, 1176490);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_input_iterator<const int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<const int*>>();

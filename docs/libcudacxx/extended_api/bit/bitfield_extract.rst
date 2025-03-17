@@ -28,8 +28,8 @@ The function extracts a bitfield from a value and returns it in the lower bits.
 
 **Preconditions**
 
-    - ``start >= 0 && start < num_bits(T)``
-    - ``width >  0 && width <= num_bits(T)``
+    - ``start >= 0 && start <= num_bits(T)``
+    - ``width >= 0 && width <= num_bits(T)``
     - ``start + width <= num_bits(T)``
 
 **Performance considerations**

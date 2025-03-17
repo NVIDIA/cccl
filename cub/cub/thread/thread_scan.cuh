@@ -70,7 +70,7 @@ template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadScanExclusive(
   T inclusive, T exclusive, T* input, T* output, ScanOp scan_op, detail::constant_t<LENGTH> /*length*/)
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < LENGTH; ++i)
   {
     inclusive = scan_op(exclusive, input[i]);
@@ -178,7 +178,7 @@ template <int LENGTH, typename T, typename ScanOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
 ThreadScanInclusive(T inclusive, T* input, T* output, ScanOp scan_op, detail::constant_t<LENGTH> /*length*/)
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < LENGTH; ++i)
   {
     inclusive = scan_op(inclusive, input[i]);

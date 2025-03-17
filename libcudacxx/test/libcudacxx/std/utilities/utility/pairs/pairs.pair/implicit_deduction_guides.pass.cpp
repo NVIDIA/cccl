@@ -52,41 +52,41 @@ int main(int, char**)
   { // Testing (1)
     int const x = 42;
     cuda::std::pair t1("abc", x);
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::pair<const char*, int>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::pair<const char*, int>>);
     unused(t1);
   }
   { // Testing (2)
     cuda::std::pair p1(E{}, 42);
-    ASSERT_SAME_TYPE(decltype(p1), cuda::std::pair<E, int>);
+    static_assert(cuda::std::is_same_v<decltype(p1), cuda::std::pair<E, int>>);
     unused(p1);
 
     const E t{};
     cuda::std::pair p2(t, E{});
-    ASSERT_SAME_TYPE(decltype(p2), cuda::std::pair<E, E>);
+    static_assert(cuda::std::is_same_v<decltype(p2), cuda::std::pair<E, E>>);
   }
   { // Testing (3, 5)
     cuda::std::pair<double, decltype(nullptr)> const p(0.0, nullptr);
     cuda::std::pair p1(p);
     unused(p1);
-    ASSERT_SAME_TYPE(decltype(p1), cuda::std::pair<double, decltype(nullptr)>);
+    static_assert(cuda::std::is_same_v<decltype(p1), cuda::std::pair<double, decltype(nullptr)>>);
   }
   { // Testing (3, 6)
     cuda::std::pair<E, decltype(nullptr)> const p(E{}, nullptr);
     cuda::std::pair p1(p);
     unused(p1);
-    ASSERT_SAME_TYPE(decltype(p1), cuda::std::pair<E, decltype(nullptr)>);
+    static_assert(cuda::std::is_same_v<decltype(p1), cuda::std::pair<E, decltype(nullptr)>>);
   }
   // cuda::std::string not supported
   /*
   { // Testing (4, 7)
     cuda::std::pair<cuda::std::string, void*> p("abc", nullptr);
     cuda::std::pair p1(cuda::std::move(p));
-    ASSERT_SAME_TYPE(decltype(p1), cuda::std::pair<cuda::std::string, void*>);
+    static_assert(cuda::std::is_same_v<decltype(p1), cuda::std::pair<cuda::std::string, void*>>);
   }
   { // Testing (4, 8)
     cuda::std::pair<cuda::std::string, E> p("abc", E{});
     cuda::std::pair p1(cuda::std::move(p));
-    ASSERT_SAME_TYPE(decltype(p1), cuda::std::pair<cuda::std::string, E>);
+    static_assert(cuda::std::is_same_v<decltype(p1), cuda::std::pair<cuda::std::string, E>>);
   }
   */
   return 0;

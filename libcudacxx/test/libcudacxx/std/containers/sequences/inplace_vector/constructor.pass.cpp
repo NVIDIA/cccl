@@ -104,18 +104,18 @@ __host__ __device__ constexpr void test_size()
   { // inplace_vector<T, 0> can be constructed from a size
     cuda::std::inplace_vector<T, 0> vec(0);
     assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
     static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0)), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N> can be constructed from a size, is empty if zero
     inplace_vector vec(0);
     assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
     static_assert(!noexcept(inplace_vector(0)), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
   { // inplace_vector<T, N> can be constructed from a size, elements are value initialized
@@ -123,9 +123,9 @@ __host__ __device__ constexpr void test_size()
     inplace_vector vec(size);
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(0), T(0), T(0)}));
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
     static_assert(!noexcept(inplace_vector(3)), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 }
 
@@ -135,18 +135,18 @@ __host__ __device__ constexpr void test_size_value()
   { // inplace_vector<T, 0> can be constructed from a size and a const T&
     cuda::std::inplace_vector<T, 0> vec(0, T(42));
     assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
     static_assert(!noexcept(cuda::std::inplace_vector<T, 0>(0, T(42))), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
   using inplace_vector = cuda::std::inplace_vector<T, 42>;
   { // inplace_vector<T, N> can be constructed from a size and a const T&, is empty if zero
     inplace_vector vec(0, T(42));
     assert(vec.empty());
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
     static_assert(!noexcept(inplace_vector(0, T(42))), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 
   { // inplace_vector<T, N> can be constructed from a size and a const T&, elements are copied
@@ -154,9 +154,9 @@ __host__ __device__ constexpr void test_size_value()
     inplace_vector vec(size, T(42));
     assert(!vec.empty());
     assert(equal_range(vec, cuda::std::array<T, size>{T(42), T(42), T(42)}));
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
     static_assert(!noexcept(inplace_vector(3, T(42))), "");
-#endif // !TEST_COMPILER_GCC < 10 && !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(GCC, <, 10) && !TEST_COMPILER(MSVC)
   }
 }
 
@@ -228,7 +228,7 @@ __host__ __device__ constexpr void test_init_list()
   }
 }
 
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
 template <class T, template <class, size_t> class Range>
 __host__ __device__ constexpr void test_range()
 {
@@ -253,14 +253,14 @@ __host__ __device__ constexpr void test_range()
 template <class T>
 __host__ __device__ constexpr void test_range()
 {
-#  if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 8
+#  if !TEST_COMPILER(GCC, <, 8)
   test_range<T, input_range>();
   test_range<T, uncommon_range>();
   test_range<T, sized_uncommon_range>();
-#  endif // !TEST_COMPILER_GCC < 8
+#  endif // !TEST_COMPILER(GCC, <, 8)
   test_range<T, cuda::std::array>();
 }
-#endif // !defined(TEST_COMPILER_MSVC)
+#endif // !TEST_COMPILER(MSVC)
 
 template <class T, cuda::std::enable_if_t<cuda::std::is_trivial<T>::value, int> = 0>
 __host__ __device__ constexpr void test()
@@ -271,9 +271,9 @@ __host__ __device__ constexpr void test()
   test_size_value<T>();
   test_iter<T>();
   test_init_list<T>();
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
   test_range<T>();
-#endif // !defined(TEST_COMPILER_MSVC)
+#endif // !TEST_COMPILER(MSVC)
 }
 
 template <class T, cuda::std::enable_if_t<!cuda::std::is_trivial<T>::value, int> = 0>
@@ -288,9 +288,9 @@ __host__ __device__ constexpr void test()
     test_size_value<T>();
     test_iter<T>();
     test_init_list<T>();
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
     test_range<T>();
-#endif // !defined(TEST_COMPILER_MSVC)
+#endif // !TEST_COMPILER(MSVC)
   }
 }
 
@@ -384,7 +384,7 @@ void test_exceptions()
     assert(false);
   }
 
-#  if !defined(TEST_COMPILER_MSVC)
+#  if !TEST_COMPILER(MSVC)
   try
   {
     input_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
@@ -436,7 +436,7 @@ void test_exceptions()
   {
     assert(false);
   }
-#  endif // !TEST_COMPILER_MSVC
+#  endif // !TEST_COMPILER(MSVC)
 }
 #endif // !TEST_HAS_NO_EXCEPTIONS
 

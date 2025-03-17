@@ -11,17 +11,15 @@
 
 // complex& operator/=(const complex& rhs);
 
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif
-
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
+
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   cuda::std::complex<T> c(-4, 7.5);
   const cuda::std::complex<T> c2(1.5, 2.5);

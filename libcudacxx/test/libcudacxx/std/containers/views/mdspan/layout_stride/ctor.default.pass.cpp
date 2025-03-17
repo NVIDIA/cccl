@@ -30,12 +30,12 @@ template <class E, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
 __host__ __device__ constexpr void test_construction()
 {
   using M = cuda::std::layout_stride::mapping<E>;
-  ASSERT_NOEXCEPT(M{});
+  static_assert(noexcept(M{}));
   M m;
   E e;
 
   // check correct extents are returned
-  ASSERT_NOEXCEPT(m.extents());
+  static_assert(noexcept(m.extents()));
   assert(m.extents() == e);
 
   // check required_span_size()
@@ -48,7 +48,7 @@ __host__ __device__ constexpr void test_construction()
 
   // check strides: node stride function is constrained on rank>0, e.extent(r) is not
   auto strides = m.strides();
-  ASSERT_NOEXCEPT(m.strides());
+  static_assert(noexcept(m.strides()));
   cuda::std::layout_right::mapping<E> m_right{};
   for (typename E::rank_type r = 0; r < E::rank(); r++)
   {
@@ -60,12 +60,12 @@ template <class E, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
 __host__ __device__ constexpr void test_construction()
 {
   using M = cuda::std::layout_stride::mapping<E>;
-  ASSERT_NOEXCEPT(M{});
+  static_assert(noexcept(M{}));
   M m;
   E e;
 
   // check correct extents are returned
-  ASSERT_NOEXCEPT(m.extents());
+  static_assert(noexcept(m.extents()));
   assert(m.extents() == e);
 
   // check required_span_size()
@@ -73,7 +73,7 @@ __host__ __device__ constexpr void test_construction()
   assert(m.required_span_size() == expected_size);
 
   // check strides: node stride function is constrained on rank>0, e.extent(r) is not
-  ASSERT_NOEXCEPT(m.strides());
+  static_assert(noexcept(m.strides()));
 }
 
 __host__ __device__ constexpr bool test()

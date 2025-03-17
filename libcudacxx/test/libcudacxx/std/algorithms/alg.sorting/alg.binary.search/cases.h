@@ -19,7 +19,7 @@
 
 constexpr size_t num_elements = 1000;
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 cuda::std::array<int, num_elements> get_data(const int M)
+__host__ __device__ constexpr cuda::std::array<int, num_elements> get_data(const int M)
 {
   cuda::std::array<int, num_elements> arr{};
   cuda::std::size_t i = 0;

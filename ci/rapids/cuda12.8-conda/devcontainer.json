@@ -3,7 +3,7 @@
   "runArgs": [
     "--rm",
     "--name",
-    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.04-cuda12.5-conda"
+    "${localEnv:USER:anon}-${localWorkspaceFolderBasename}-rapids-25.04-cuda12.8-conda"
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {
@@ -15,7 +15,7 @@
   "containerEnv": {
     "CI": "${localEnv:CI}",
     "CUDAARCHS": "70-real",
-    "CUDA_VERSION": "12.5",
+    "CUDA_VERSION": "12.8",
     "DEFAULT_CONDA_ENV": "rapids",
     "PYTHONSAFEPATH": "1",
     "PYTHONUNBUFFERED": "1",

@@ -31,31 +31,32 @@ __host__ __device__ constexpr bool test()
   static_assert(_CCCL_TRAIT(cuda::std::is_convertible, const unsigned&, int)
                 && _CCCL_TRAIT(cuda::std::is_nothrow_constructible, int, const unsigned&));
 
-  ASSERT_SAME_TYPE(
-    decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int>(), cuda::std::array<unsigned, 0>())),
-    cuda::std::layout_stride::template mapping<cuda::std::extents<int>>);
-  ASSERT_SAME_TYPE(
-    decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int, 4>(), cuda::std::array<char, 1>{1})),
-    cuda::std::layout_stride::template mapping<cuda::std::extents<int, 4>>);
-  ASSERT_SAME_TYPE(
-    decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int, D>(), cuda::std::array<char, 1>{1})),
-    cuda::std::layout_stride::template mapping<cuda::std::extents<int, D>>);
-  ASSERT_SAME_TYPE(decltype(cuda::std::layout_stride::mapping(
-                     cuda::std::extents<unsigned, D, 3>(), cuda::std::array<int64_t, 2>{3, 100})),
-                   cuda::std::layout_stride::template mapping<cuda::std::extents<unsigned, D, 3>>);
+  static_assert(cuda::std::is_same_v<
+                decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int>(), cuda::std::array<unsigned, 0>())),
+                cuda::std::layout_stride::template mapping<cuda::std::extents<int>>>);
+  static_assert(cuda::std::is_same_v<
+                decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int, 4>(), cuda::std::array<char, 1>{1})),
+                cuda::std::layout_stride::template mapping<cuda::std::extents<int, 4>>>);
+  static_assert(cuda::std::is_same_v<
+                decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int, D>(), cuda::std::array<char, 1>{1})),
+                cuda::std::layout_stride::template mapping<cuda::std::extents<int, D>>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::layout_stride::mapping(
+                                       cuda::std::extents<unsigned, D, 3>(), cuda::std::array<int64_t, 2>{3, 100})),
+                                     cuda::std::layout_stride::template mapping<cuda::std::extents<unsigned, D, 3>>>);
 
-  ASSERT_SAME_TYPE(
-    decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int>(), cuda::std::span<unsigned, 0>())),
-    cuda::std::layout_stride::template mapping<cuda::std::extents<int>>);
-  ASSERT_SAME_TYPE(decltype(cuda::std::layout_stride::mapping(
-                     cuda::std::extents<int, 4>(), cuda::std::declval<cuda::std::span<char, 1>>())),
-                   cuda::std::layout_stride::template mapping<cuda::std::extents<int, 4>>);
-  ASSERT_SAME_TYPE(decltype(cuda::std::layout_stride::mapping(
-                     cuda::std::extents<int, D>(), cuda::std::declval<cuda::std::span<char, 1>>())),
-                   cuda::std::layout_stride::template mapping<cuda::std::extents<int, D>>);
-  ASSERT_SAME_TYPE(decltype(cuda::std::layout_stride::mapping(
-                     cuda::std::extents<unsigned, D, 3>(), cuda::std::declval<cuda::std::span<int64_t, 2>>())),
-                   cuda::std::layout_stride::template mapping<cuda::std::extents<unsigned, D, 3>>);
+  static_assert(cuda::std::is_same_v<
+                decltype(cuda::std::layout_stride::mapping(cuda::std::extents<int>(), cuda::std::span<unsigned, 0>())),
+                cuda::std::layout_stride::template mapping<cuda::std::extents<int>>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::layout_stride::mapping(
+                                       cuda::std::extents<int, 4>(), cuda::std::declval<cuda::std::span<char, 1>>())),
+                                     cuda::std::layout_stride::template mapping<cuda::std::extents<int, 4>>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::layout_stride::mapping(
+                                       cuda::std::extents<int, D>(), cuda::std::declval<cuda::std::span<char, 1>>())),
+                                     cuda::std::layout_stride::template mapping<cuda::std::extents<int, D>>>);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::std::layout_stride::mapping(
+                           cuda::std::extents<unsigned, D, 3>(), cuda::std::declval<cuda::std::span<int64_t, 2>>())),
+                         cuda::std::layout_stride::template mapping<cuda::std::extents<unsigned, D, 3>>>);
   return true;
 }
 

@@ -6,8 +6,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: msvc && c++17
-
 #include <cuda/std/cassert>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>

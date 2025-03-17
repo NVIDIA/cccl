@@ -17,8 +17,8 @@
 template <class T>
 __host__ __device__ void test_type_identity()
 {
-  ASSERT_SAME_TYPE(T, typename cuda::std::type_identity<T>::type);
-  ASSERT_SAME_TYPE(T, cuda::std::type_identity_t<T>);
+  static_assert(cuda::std::is_same_v<T, typename cuda::std::type_identity<T>::type>);
+  static_assert(cuda::std::is_same_v<T, cuda::std::type_identity_t<T>>);
 }
 
 int main(int, char**)

@@ -393,7 +393,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
 {
   if constexpr (IS_FULL_TILE)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
       const int idx = BLOCK_THREADS * item + threadIdx.x;
@@ -403,7 +403,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
   }
   else
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int item = 0; item < ITEMS_PER_THREAD; ++item)
     {
       const int idx = BLOCK_THREADS * item + threadIdx.x;
@@ -419,7 +419,7 @@ gmem_to_reg(T (&output)[ITEMS_PER_THREAD], It1 input1, It2 input2, int count1, i
 template <int BLOCK_THREADS, int ITEMS_PER_THREAD, class T, class It>
 _CCCL_DEVICE _CCCL_FORCEINLINE void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
 {
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
     const int idx = BLOCK_THREADS * item + threadIdx.x;
@@ -661,7 +661,7 @@ struct AgentMerge
 
       // gather items from shared mem
       //
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int item = 0; item < ITEMS_PER_THREAD; ++item)
       {
         items_local[item] = storage.items_shared[indices[item]];

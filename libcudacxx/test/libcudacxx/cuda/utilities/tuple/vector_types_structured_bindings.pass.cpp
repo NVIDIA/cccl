@@ -20,7 +20,7 @@ struct get_val;
 template <class VType, class BaseType>
 struct get_val<VType, BaseType, 1>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 VType create()
+  __host__ __device__ static constexpr VType create()
   {
     return VType{static_cast<BaseType>(42)};
   }
@@ -28,7 +28,7 @@ struct get_val<VType, BaseType, 1>
 template <class VType, class BaseType>
 struct get_val<VType, BaseType, 2>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 VType create()
+  __host__ __device__ static constexpr VType create()
   {
     return VType{static_cast<BaseType>(42), static_cast<BaseType>(1337)};
   }
@@ -36,7 +36,7 @@ struct get_val<VType, BaseType, 2>
 template <class VType, class BaseType>
 struct get_val<VType, BaseType, 3>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 VType create()
+  __host__ __device__ static constexpr VType create()
   {
     return VType{static_cast<BaseType>(42), static_cast<BaseType>(1337), static_cast<BaseType>(-1)};
   }
@@ -44,7 +44,7 @@ struct get_val<VType, BaseType, 3>
 template <class VType, class BaseType>
 struct get_val<VType, BaseType, 4>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 VType create()
+  __host__ __device__ static constexpr VType create()
   {
     return VType{
       static_cast<BaseType>(42), static_cast<BaseType>(1337), static_cast<BaseType>(-1), static_cast<BaseType>(0)};
@@ -57,7 +57,7 @@ struct get_expected;
 template <class BaseType>
 struct get_expected<BaseType, 0>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 BaseType create()
+  __host__ __device__ static constexpr BaseType create()
   {
     return BaseType{static_cast<BaseType>(42)};
   }
@@ -65,7 +65,7 @@ struct get_expected<BaseType, 0>
 template <class BaseType>
 struct get_expected<BaseType, 1>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 BaseType create()
+  __host__ __device__ static constexpr BaseType create()
   {
     return BaseType{static_cast<BaseType>(1337)};
   }
@@ -73,7 +73,7 @@ struct get_expected<BaseType, 1>
 template <class BaseType>
 struct get_expected<BaseType, 2>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 BaseType create()
+  __host__ __device__ static constexpr BaseType create()
   {
     return BaseType{static_cast<BaseType>(-1)};
   }
@@ -81,14 +81,14 @@ struct get_expected<BaseType, 2>
 template <class BaseType>
 struct get_expected<BaseType, 3>
 {
-  __host__ __device__ static TEST_CONSTEXPR_CXX14 BaseType create()
+  __host__ __device__ static constexpr BaseType create()
   {
     return BaseType{static_cast<BaseType>(0)};
   }
 };
 
 template <class BaseType, class VType1, class VType2, class VType3, class VType4>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   { // & overload
     { // vec1 structured bindings
@@ -269,7 +269,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 
 #define EXPAND_VECTOR_TYPE(Type, BaseType) test<BaseType, Type##1, Type##2, Type##3, Type##4>();
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   EXPAND_VECTOR_TYPE(char, signed char);
   EXPAND_VECTOR_TYPE(uchar, unsigned char);
@@ -288,9 +288,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 }
 
 __host__ __device__
-#if !defined(TEST_COMPILER_MSVC)
-  TEST_CONSTEXPR_CXX14
-#endif // !TEST_COMPILER_MSVC
+#if !TEST_COMPILER(MSVC)
+  constexpr
+#endif // !TEST_COMPILER(MSVC)
   bool
   test_dim3()
 {
@@ -345,9 +345,9 @@ int main(int arg, char** argv)
   test();
   test_dim3();
   static_assert(test(), "");
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
   static_assert(test_dim3(), "");
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 
   return 0;
 }

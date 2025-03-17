@@ -72,11 +72,11 @@ int main()
 
   double alpha = 3.14;
 
-  auto lX = ctx.logical_data(make_slice(X, N), data_place::managed);
+  auto lX = ctx.logical_data(make_slice(X, N), data_place::managed());
   auto lY = ctx.logical_data(Y);
 
   /* Compute Y = Y + alpha X, but leave X in managed memory */
-  ctx.task(lX.read(data_place::managed), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
+  ctx.task(lX.read(data_place::managed()), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
     axpy<<<16, 128, 0, s>>>(alpha, dX, dY);
   };
 

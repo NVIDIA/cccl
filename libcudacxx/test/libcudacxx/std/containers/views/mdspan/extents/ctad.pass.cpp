@@ -24,7 +24,7 @@
 template <class E, class Expected>
 __host__ __device__ constexpr void test(E e, Expected expected)
 {
-  ASSERT_SAME_TYPE(E, Expected);
+  static_assert(cuda::std::is_same_v<E, Expected>);
   assert(e == expected);
 }
 

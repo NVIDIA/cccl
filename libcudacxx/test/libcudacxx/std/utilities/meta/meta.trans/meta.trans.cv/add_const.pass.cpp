@@ -18,8 +18,8 @@
 template <class T, class U>
 __host__ __device__ void test_add_const_imp()
 {
-  ASSERT_SAME_TYPE(const U, typename cuda::std::add_const<T>::type);
-  ASSERT_SAME_TYPE(const U, cuda::std::add_const_t<T>);
+  static_assert(cuda::std::is_same_v<const U, typename cuda::std::add_const<T>::type>);
+  static_assert(cuda::std::is_same_v<const U, cuda::std::add_const_t<T>>);
 }
 
 template <class T>

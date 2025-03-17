@@ -19,7 +19,7 @@
 #include <cuda/std/utility>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/buffer.cuh>
+#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
 #include "testing.cuh"

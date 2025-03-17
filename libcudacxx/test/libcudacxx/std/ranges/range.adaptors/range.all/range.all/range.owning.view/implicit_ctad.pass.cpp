@@ -28,7 +28,7 @@ int main(int, char**)
   Range r;
   cuda::std::ranges::owning_view view{cuda::std::move(r)};
   unused(view);
-  ASSERT_SAME_TYPE(decltype(view), cuda::std::ranges::owning_view<Range>);
+  static_assert(cuda::std::is_same_v<decltype(view), cuda::std::ranges::owning_view<Range>>);
 
   return 0;
 }

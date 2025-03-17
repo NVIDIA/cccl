@@ -335,14 +335,17 @@ public:
   int destroy_called;
   ConstructController* controller;
 
-  ContainerTestAllocator() TEST_NOEXCEPT : controller(getConstructController()) {}
+  ContainerTestAllocator() noexcept
+      : controller(getConstructController())
+  {}
 
   explicit ContainerTestAllocator(ConstructController* c)
       : controller(c)
   {}
 
   template <class U>
-  ContainerTestAllocator(ContainerTestAllocator<U, AllowConstructT> other) TEST_NOEXCEPT : controller(other.controller)
+  ContainerTestAllocator(ContainerTestAllocator<U, AllowConstructT> other) noexcept
+      : controller(other.controller)
   {}
 
   T* allocate(std::size_t n)

@@ -22,9 +22,9 @@
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
 // NVRTC does not support cuda.h (due to import of stdlib.h)
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  include <cudaTypedefs.h> // PFN_cuTensorMapEncodeTiled, CUtensorMap
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
@@ -139,7 +139,7 @@ __device__ void test(int base_i, int base_j)
   __syncthreads();
 }
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -148,7 +148,7 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
-#endif // ! TEST_COMPILER_NVRTC
+#endif // ! TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {

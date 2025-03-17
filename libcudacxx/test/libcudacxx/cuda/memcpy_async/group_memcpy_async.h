@@ -63,7 +63,7 @@ struct storage
   T data[size];
 };
 
-#if !defined(TEST_COMPILER_NVRTC) && (!defined(__GNUC__) || __GNUC__ >= 5 || defined(__clang__))
+#if !TEST_COMPILER(NVRTC) && !TEST_COMPILER(CLANG)
 static_assert(std::is_trivially_copy_constructible<storage<int8_t>>::value, "");
 static_assert(std::is_trivially_copy_constructible<storage<uint16_t>>::value, "");
 static_assert(std::is_trivially_copy_constructible<storage<int32_t>>::value, "");

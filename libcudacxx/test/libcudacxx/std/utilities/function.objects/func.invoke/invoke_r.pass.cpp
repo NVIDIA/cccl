@@ -126,7 +126,7 @@ __host__ __device__ constexpr bool test()
   }
 
 // https://developercommunity.visualstudio.com/t/ICE-when-forwarding-a-function-to-invoke/10806827
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
   // Make sure invoke_r works with const void return type
   {
     struct F
@@ -145,7 +145,7 @@ __host__ __device__ constexpr bool test()
     assert(was_called);
     static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<const void>(F{was_called}, 3))>::value, "");
   }
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 
   // Make sure invoke_r forwards its arguments
   {

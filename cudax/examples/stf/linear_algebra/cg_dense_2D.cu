@@ -34,7 +34,7 @@ public:
 
   void fill(const std::function<double(int, int)>& f)
   {
-    ctx.task(exec_place::host, handle->write())->*[&f](cudaStream_t stream, auto ds) {
+    ctx.task(exec_place::host(), handle->write())->*[&f](cudaStream_t stream, auto ds) {
       cuda_safe_call(cudaStreamSynchronize(stream));
 
       for (size_t col = 0; col < ds.extent(1); col++)
@@ -109,7 +109,7 @@ public:
     size_t bs = block_size;
     for (size_t b = 0; b < nblocks; b++)
     {
-      ctx.task(exec_place::host, handles[b]->write())->*[&f, b, bs](cudaStream_t stream, auto ds) {
+      ctx.task(exec_place::host(), handles[b]->write())->*[&f, b, bs](cudaStream_t stream, auto ds) {
         cuda_safe_call(cudaStreamSynchronize(stream));
 
         for (size_t local_row = 0; local_row < ds.extent(0); local_row++)
@@ -216,7 +216,7 @@ public:
   double get_value()
   {
     double val;
-    ctx.task(exec_place::host, handle->read())->*[&val](cudaStream_t stream, auto ds) {
+    ctx.task(exec_place::host(), handle->read())->*[&val](cudaStream_t stream, auto ds) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       val = ds(0);
     };
@@ -397,7 +397,7 @@ void cg(matrix& A, vector& X, vector& B)
     // Read the residual on the CPU, and halt the iterative process if we have converged
     {
       double err;
-      ctx.task(exec_place::host, rsnew.handle->read())->*[&err](cudaStream_t stream, auto dres) {
+      ctx.task(exec_place::host(), rsnew.handle->read())->*[&err](cudaStream_t stream, auto dres) {
         cuda_safe_call(cudaStreamSynchronize(stream));
         err = sqrt(dres(0));
       };

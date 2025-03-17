@@ -22,7 +22,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 int factorial(int x)
+__host__ __device__ constexpr int factorial(int x)
 {
   int r = 1;
   for (; x; --x)
@@ -33,7 +33,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 int factorial(int x)
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]     = {6, 5, 4, 3, 2, 1};
   const int sa = sizeof(ia) / sizeof(ia[0]);
@@ -63,7 +63,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<bidirectional_iterator<int*>>();
   test<random_access_iterator<int*>>();

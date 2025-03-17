@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/fp_utils.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/cstdint>
@@ -92,7 +92,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half log(__half __x) noexcept
                       __vf                  = _CUDA_VSTD::logf(__vf);
                       __half_raw __ret_repr = ::__float2half_rn(__vf);
 
-                      _CUDA_VSTD::uint16_t __repr = _CUDA_VSTD::__cccl_fp_get_storage(__x);
+                      _CUDA_VSTD::uint16_t __repr = _CUDA_VSTD::__fp_get_storage(__x);
                       switch (__repr)
                       {
                         case 7544:

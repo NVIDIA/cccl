@@ -19,13 +19,11 @@
 #include "test_macros.h"
 #include <nv/target>
 
-#ifdef TEST_COMPILER_MSVC
-#  pragma warning(disable : 4324) // padding was added at the end of a structure because of an alignment specifier
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4324) // padding was added at the end of a structure because of an alignment specifier
 
 template <class T>
 __host__ __device__ void
-test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = TEST_ALIGNOF(T))
+test_aligned_alloc(bool expect_success, cuda::std::size_t n, cuda::std::size_t align = alignof(T))
 {
   static_assert(noexcept(cuda::std::aligned_alloc(n * sizeof(T), align)), "");
   T* ptr = static_cast<T*>(cuda::std::aligned_alloc(n * sizeof(T), align));
@@ -49,12 +47,12 @@ struct BigStruct
   int data[32];
 };
 
-struct TEST_ALIGNAS(cuda::std::max_align_t) AlignedStruct
+struct alignas(cuda::std::max_align_t) AlignedStruct
 {
   char data[32];
 };
 
-struct TEST_ALIGNAS(128) OverAlignedStruct
+struct alignas(128) OverAlignedStruct
 {
   char data[32];
 };
@@ -62,9 +60,9 @@ struct TEST_ALIGNAS(128) OverAlignedStruct
 __host__ __device__ bool should_expect_success()
 {
   bool host_expect_success = true;
-#if defined(TEST_COMPILER_MSVC)
+#if TEST_COMPILER(MSVC)
   host_expect_success = false;
-#endif // TEST_COMPILER_MSVC
+#endif // TEST_COMPILER(MSVC)
 
   unused(host_expect_success);
 

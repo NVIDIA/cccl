@@ -29,9 +29,7 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4310) // cast truncates constant value
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4310) // cast truncates constant value
 
 constexpr char pattern = (char) 0xDE;
 
@@ -60,7 +58,7 @@ void operator delete[](void* ptr) noexcept
   ::operator delete(ptr);
 }
 
-#ifdef TEST_COMPILER_GCC
+#if TEST_COMPILER(GCC)
 void operator delete(void* ptr, cuda::std::size_t) noexcept
 {
   free(ptr);
@@ -69,7 +67,7 @@ void operator delete[](void* ptr, cuda::std::size_t) noexcept
 {
   ::operator delete(ptr);
 }
-#endif // TEST_COMPILER_GCC
+#endif // TEST_COMPILER(GCC)
 
 __host__ __device__ void test()
 {

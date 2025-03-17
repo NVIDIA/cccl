@@ -154,7 +154,7 @@ public:
   /**
    * @brief Remove implicit dependencies already induced by more recent events using the same stream.
    */
-  bool factorize(reserved::event_vector& events) override
+  bool factorize(backend_ctx_untyped&, reserved::event_vector& events) override
   {
     assert(events.size() >= 2);
     assert([&] {
@@ -355,7 +355,7 @@ private:
   {
     // Make sure we reduce the number of resulting stream/event synchronization
     // API calls to a minimum. If the list was already optimized, this will be a no-op
-    prereq_in.optimize();
+    prereq_in.optimize(bctx);
 
     // Do we have to keep track of dependencies in DOT ?
     bool tracing = bctx.get_dot()->is_tracing_prereqs();
@@ -437,7 +437,7 @@ inline event join_with_stream(
 {
   // Make sure we reduce the number of resulting stream/event synchronization
   // API calls to a minimum. If the list was already optimized, this will be a no-op
-  prereq_in.optimize();
+  prereq_in.optimize(bctx);
 
   auto se = reserved::handle<stream_and_event>(mv(dstream), record_event);
   se->set_symbol(bctx, mv(string));

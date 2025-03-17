@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -67,7 +67,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(float __x) noexce
   {
     return ::isinf(__x);
   }
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_exp_mant_mask) == __cccl_fp32_exp_mask;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<float>) == __fp_exp_mask_v<float>;
 #else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isinf_impl(__x);
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
@@ -89,7 +89,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(double __x) noexc
   {
     return ::isinf(__x);
   }
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_exp_mant_mask) == __cccl_fp64_exp_mask;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<double>) == __fp_exp_mask_v<double>;
 #else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isinf_impl(__x);
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
@@ -106,37 +106,41 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(long double __x) 
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexcept
 {
+#  if _LIBCUDACXX_HAS_NVFP16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-#  if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
+#    if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
     // this is a workaround for nvbug 4362808
     return !::__hisnan(__x) && ::__hisnan(__x - __x);
-#  else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
+#    else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
     return ::__hisinf(__x) != 0;
-#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
+#    endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
   }
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_exp_mant_mask) == __cccl_nvfp16_exp_mask;
+#  endif // _LIBCUDACXX_HAS_NVFP16()
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<__half>) == __fp_exp_mask_v<__half>;
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_bfloat16 __x) noexcept
 {
+#  if _LIBCUDACXX_HAS_NVBF16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-#  if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
+#    if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
     // this is a workaround for nvbug 4362808
     return !::__hisnan(__x) && ::__hisnan(__x - __x);
-#  else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
+#    else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
     return ::__hisinf(__x) != 0;
-#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
+#    endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
   }
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvbf16_exp_mant_mask) == __cccl_nvbf16_exp_mask;
+#  endif // _LIBCUDACXX_HAS_NVBF16()
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<__nv_bfloat16>) == __fp_exp_mask_v<__nv_bfloat16>;
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e4m3) noexcept
@@ -148,7 +152,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e4m3) no
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e5m2 __x) noexcept
 {
-  return (__x.__x & __cccl_nvfp8_e5m2_exp_mant_mask) == __cccl_nvfp8_e5m2_exp_mask;
+  return (__x.__x & __fp_exp_mant_mask_v<__nv_fp8_e5m2>) == __fp_exp_mask_v<__nv_fp8_e5m2>;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 

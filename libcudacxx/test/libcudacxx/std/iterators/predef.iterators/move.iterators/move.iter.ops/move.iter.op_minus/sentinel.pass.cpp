@@ -61,8 +61,8 @@ __host__ __device__ constexpr void test_one()
   const cuda::std::move_sentinel<Sent> sent_b{Sent(It(arr + 1))};
   const cuda::std::move_sentinel<Sent> sent_c{Sent(It(arr + 2))};
 
-  ASSERT_SAME_TYPE(decltype(it_a - sent_a), cuda::std::iter_difference_t<It>);
-  ASSERT_SAME_TYPE(decltype(sent_a - it_a), cuda::std::iter_difference_t<It>);
+  static_assert(cuda::std::is_same_v<decltype(it_a - sent_a), cuda::std::iter_difference_t<It>>);
+  static_assert(cuda::std::is_same_v<decltype(sent_a - it_a), cuda::std::iter_difference_t<It>>);
 
   // it_a
   assert(it_a - sent_a == 0);

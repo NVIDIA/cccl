@@ -39,7 +39,7 @@ __host__ __device__ constexpr void check(int* first, cuda::std::iter_difference_
     It it(first);
     cuda::std::ranges::advance(it, n);
     assert(base(it) == expected);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::advance(it, n)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::advance(it, n)), void>);
   }
 
   // Count operations

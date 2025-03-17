@@ -12,17 +12,15 @@
 // complex& operator=(const complex&);
 // template<class X> complex& operator= (const complex<X>&);
 
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4244) // conversion from 'const double' to 'int', possible loss of data
-#endif
-
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 
 #include "test_macros.h"
 
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const double' to 'int', possible loss of data
+
 template <class T, class X>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   cuda::std::complex<T> c;
   assert(c.real() == T(0));

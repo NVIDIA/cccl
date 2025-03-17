@@ -20,26 +20,18 @@
 #include "test_macros.h"
 #include "user_defined_integral.h"
 
-#ifdef TEST_COMPILER_MSVC
-#  pragma warning(disable : 4018) // signed/unsigned mismatch
-#endif // TEST_COMPILER_MSVC
-
-#ifdef TEST_COMPILER_GCC
-#  pragma GCC diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_GCC
-
-#ifdef TEST_COMPILER_CLANG
-#  pragma clang diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_CLANG
+TEST_DIAG_SUPPRESS_MSVC(4018) // signed/unsigned mismatch
+TEST_DIAG_SUPPRESS_GCC("-Wsign-compare")
+TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 struct count_equal
 {
-  __host__ __device__ TEST_CONSTEXPR_CXX14 count_equal(int& count) noexcept
+  __host__ __device__ constexpr count_equal(int& count) noexcept
       : count(count)
   {}
 
   template <class T>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 bool operator()(const T& x, const T& y)
+  __host__ __device__ constexpr bool operator()(const T& x, const T& y)
   {
     ++count;
     return x == y;
@@ -49,7 +41,7 @@ struct count_equal
 };
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]              = {0, 1, 2, 3, 4, 5};
   const unsigned sa     = sizeof(ia) / sizeof(ia[0]);
@@ -192,7 +184,7 @@ struct Pred
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<forward_iterator<const int*>>();
   test<bidirectional_iterator<const int*>>();

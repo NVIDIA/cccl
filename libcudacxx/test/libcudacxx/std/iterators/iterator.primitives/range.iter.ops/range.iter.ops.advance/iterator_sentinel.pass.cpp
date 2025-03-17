@@ -25,7 +25,7 @@ __host__ __device__ constexpr void check_assignable(int* first, int* last, int* 
     It it(first);
     auto sent = assignable_sentinel(It(last));
     cuda::std::ranges::advance(it, sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::advance(it, sent)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::advance(it, sent)), void>);
     assert(base(it) == expected);
   }
 
@@ -49,7 +49,7 @@ __host__ __device__ constexpr void check_sized_sentinel(int* first, int* last, i
     It it(first);
     auto sent = distance_apriori_sentinel(size);
     cuda::std::ranges::advance(it, sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::advance(it, sent)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::advance(it, sent)), void>);
     assert(base(it) == expected);
   }
 
@@ -80,7 +80,7 @@ __host__ __device__ constexpr void check_sentinel(int* first, int* last, int* ex
     It it(first);
     auto sent = sentinel_wrapper(It(last));
     cuda::std::ranges::advance(it, sent);
-    ASSERT_SAME_TYPE(decltype(cuda::std::ranges::advance(it, sent)), void);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::advance(it, sent)), void>);
     assert(base(it) == expected);
   }
 

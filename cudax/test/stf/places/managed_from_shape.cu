@@ -71,16 +71,16 @@ int main()
   auto lY = ctx.logical_data(Y);
 
   // Make sure X is created automatically in managed memory
-  ctx.parallel_for(lX.shape(), lX.write(data_place::managed))->*[] _CCCL_DEVICE(size_t i, auto X) {
+  ctx.parallel_for(lX.shape(), lX.write(data_place::managed()))->*[] _CCCL_DEVICE(size_t i, auto X) {
     X(i) = X0(i);
   };
 
   /* Compute Y = Y + alpha X, but leave X in managed memory */
-  ctx.task(lX.read(data_place::managed), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
+  ctx.task(lX.read(data_place::managed()), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
     axpy<<<16, 128, 0, s>>>(alpha, dX, dY);
   };
 
-  ctx.host_launch(lX.read(data_place::managed), lY.read())->*[=](auto X, auto Y) {
+  ctx.host_launch(lX.read(data_place::managed()), lY.read())->*[=](auto X, auto Y) {
     for (size_t i = 0; i < N; i++)
     {
       EXPECT(fabs(Y(i) - (Y0(i) + alpha * X0(i))) < 0.0001);

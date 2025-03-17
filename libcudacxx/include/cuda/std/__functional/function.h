@@ -596,7 +596,7 @@ template <typename _Fun>
 struct __use_small_storage
     : public integral_constant<
         bool,
-        sizeof(_Fun) <= sizeof(__policy_storage)&& _LIBCUDACXX_ALIGNOF(_Fun) <= _LIBCUDACXX_ALIGNOF(__policy_storage)
+        sizeof(_Fun) <= sizeof(__policy_storage) && alignof(_Fun) <= alignof(__policy_storage)
           && is_trivially_copy_constructible<_Fun>::value && is_trivially_destructible<_Fun>::value>
 {};
 

@@ -11,14 +11,12 @@
 
 // is_trivially_destructible
 
-// Prevent warning when testing the Abstract test type.
-#if defined(__clang__)
-#  pragma clang diagnostic ignored "-Wdelete-non-virtual-dtor"
-#endif
-
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
+
+// Prevent warning when testing the Abstract test type.
+TEST_DIAG_SUPPRESS_CLANG("-Wdelete-non-virtual-dtor")
 
 template <class T>
 __host__ __device__ void test_is_trivially_destructible()
@@ -147,7 +145,7 @@ int main(int, char**)
   test_is_not_trivially_destructible<PureProtectedDestructor>();
   test_is_not_trivially_destructible<PurePrivateDestructor>();
 
-#if TEST_HAS_BUILTIN_IDENTIFIER(_Atomic)
+#if !_CCCL_IS_IDENTIFIER(_Atomic)
   test_is_trivially_destructible<_Atomic int>();
   test_is_trivially_destructible<_Atomic float>();
   test_is_trivially_destructible<_Atomic int*>();

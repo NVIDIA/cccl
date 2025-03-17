@@ -129,8 +129,8 @@ struct CopyCtorHasMutableRef
 };
 static_assert(!copy_constructible<CopyCtorHasMutableRef>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
-                                                        // constructor
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
+                                                // constructor
 struct CopyCtorProhibitsMutableRef
 {
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&&) noexcept = default;
@@ -138,7 +138,7 @@ struct CopyCtorProhibitsMutableRef
   CopyCtorProhibitsMutableRef(CopyCtorProhibitsMutableRef&)           = delete;
 };
 static_assert(!copy_constructible<CopyCtorProhibitsMutableRef>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 
 struct CopyAssignHasMutableRef
 {
@@ -147,8 +147,8 @@ struct CopyAssignHasMutableRef
 };
 static_assert(!copy_constructible<CopyAssignHasMutableRef>, "");
 
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
-                                                        // assignment
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC chokes on the deleted copy
+                                                // assignment
 struct CopyAssignProhibitsMutableRef
 {
   CopyAssignProhibitsMutableRef& operator=(CopyAssignProhibitsMutableRef&&) noexcept = default;
@@ -156,7 +156,7 @@ struct CopyAssignProhibitsMutableRef
   CopyAssignProhibitsMutableRef& operator=(CopyAssignProhibitsMutableRef&)           = delete;
 };
 static_assert(!copy_constructible<CopyAssignProhibitsMutableRef>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 
 struct CopyCtorOnly
 {

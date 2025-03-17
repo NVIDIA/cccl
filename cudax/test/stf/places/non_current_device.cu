@@ -59,7 +59,7 @@ int main()
   };
 
   // Access Ask to use X, Y and Z on the host
-  ctx.task(exec_place::host, handle_X.read(), handle_Y.read())->*[&](cudaStream_t stream, auto X, auto Y) {
+  ctx.task(exec_place::host(), handle_X.read(), handle_Y.read())->*[&](cudaStream_t stream, auto X, auto Y) {
     cuda_safe_call(cudaStreamSynchronize(stream));
 
     for (int ind = 0; ind < n; ind++)

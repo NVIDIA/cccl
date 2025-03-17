@@ -244,7 +244,7 @@ struct WarpReduceSmem
       next_flag = _CUDA_VSTD::min(next_flag, LOGICAL_WARP_THREADS);
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       const int OFFSET = 1 << STEP;

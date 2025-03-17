@@ -74,7 +74,7 @@ struct BlockHistogramAtomic
   _CCCL_DEVICE _CCCL_FORCEINLINE void Composite(T (&items)[ITEMS_PER_THREAD], CounterT histogram[BINS])
   {
     // Update histogram
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       atomicAdd(histogram + items[i], 1);

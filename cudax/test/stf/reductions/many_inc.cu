@@ -41,7 +41,7 @@ int main()
   }
 
   // Total value should be initial value + K
-  ctx.task(exec_place::host, handle.read())->*[&](auto stream, auto s) {
+  ctx.task(exec_place::host(), handle.read())->*[&](auto stream, auto s) {
     cuda_safe_call(cudaStreamSynchronize(stream));
     EXPECT(s(0) == 17 + K);
     // printf("VALUE %d expected %d\n", s(0), 17 + K);

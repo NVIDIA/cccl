@@ -47,9 +47,9 @@ __host__ __device__ constexpr void test_mdspan_types(const H&, const M&, const A
   static_assert(ac == cuda::std::is_default_constructible<A>::value, "");
 
   MDS m;
-#if !defined(TEST_COMPILER_GCC)
+#if !TEST_COMPILER(GCC)
   static_assert(noexcept(MDS()) == (noexcept(H()) && noexcept(M()) && noexcept(A())), "");
-#endif // !TEST_COMPILER_GCC
+#endif // !TEST_COMPILER(GCC)
   assert(m.extents() == typename MDS::extents_type());
   test_equality_handle(m, H{});
   test_equality_mapping(m, M{});

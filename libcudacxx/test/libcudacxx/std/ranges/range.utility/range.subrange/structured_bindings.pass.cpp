@@ -55,22 +55,22 @@ __host__ __device__ constexpr void test_unsized_subrange()
   {
     auto [first, last] = r;
     assert(first == a);
-    ASSERT_SAME_TYPE(decltype(last), cuda::std::unreachable_sentinel_t);
+    static_assert(cuda::std::is_same_v<decltype(last), cuda::std::unreachable_sentinel_t>);
   }
   {
     auto [first, last] = cuda::std::move(r);
     assert(first == a);
-    ASSERT_SAME_TYPE(decltype(last), cuda::std::unreachable_sentinel_t);
+    static_assert(cuda::std::is_same_v<decltype(last), cuda::std::unreachable_sentinel_t>);
   }
   {
     auto [first, last] = cr;
     assert(first == a);
-    ASSERT_SAME_TYPE(decltype(last), cuda::std::unreachable_sentinel_t);
+    static_assert(cuda::std::is_same_v<decltype(last), cuda::std::unreachable_sentinel_t>);
   }
   {
     auto [first, last] = cuda::std::move(cr);
     assert(first == a);
-    ASSERT_SAME_TYPE(decltype(last), cuda::std::unreachable_sentinel_t);
+    static_assert(cuda::std::is_same_v<decltype(last), cuda::std::unreachable_sentinel_t>);
   }
 }
 
@@ -80,26 +80,26 @@ __host__ __device__ constexpr void test_copies_not_originals()
   {
     auto r               = cuda::std::ranges::subrange<int*>(a, a + 4);
     auto&& [first, last] = r;
-    ASSERT_SAME_TYPE(decltype(first), int*);
-    ASSERT_SAME_TYPE(decltype(last), int*);
+    static_assert(cuda::std::is_same_v<decltype(first), int*>);
+    static_assert(cuda::std::is_same_v<decltype(last), int*>);
     first = a + 2;
     last  = a + 2;
     assert(r.begin() == a);
     assert(r.end() == a + 4);
   }
 // For reasons unknown nvrtc complains that `__begin_` is not accessible here...
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   {
     const auto r         = cuda::std::ranges::subrange<int*>(a, a + 4);
     auto&& [first, last] = r;
-    ASSERT_SAME_TYPE(decltype(first), int*);
-    ASSERT_SAME_TYPE(decltype(last), int*);
+    static_assert(cuda::std::is_same_v<decltype(first), int*>);
+    static_assert(cuda::std::is_same_v<decltype(last), int*>);
     first = a + 2;
     last  = a + 2;
     assert(r.begin() == a);
     assert(r.end() == a + 4);
   }
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 __host__ __device__ constexpr bool test()
@@ -113,9 +113,9 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if !defined(TEST_COMPILER_MSVC) // MSVC gives an ICE here
+#if !TEST_COMPILER(MSVC) // MSVC gives an ICE here
   static_assert(test(), "");
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 
   return 0;
 }

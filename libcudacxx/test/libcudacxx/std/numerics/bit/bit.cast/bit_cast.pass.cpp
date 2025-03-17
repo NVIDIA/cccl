@@ -246,9 +246,9 @@ __host__ __device__ bool tests()
         1e-20f,
         2.71828f,
         3.14159f,
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CLANG_CUDA)
+#if !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::nanf(""),
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_CLANG_CUDA
+#endif // !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
 #if defined(_CCCL_BUILTIN_NANF)
         _CCCL_BUILTIN_NANF("0x55550001"), // NaN with a payload
 #endif // _CCCL_BUILTIN_NANF
@@ -273,9 +273,9 @@ __host__ __device__ bool tests()
         1e-100,
         2.718281828459045,
         3.141592653589793238462643383279502884197169399375105820974944,
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CLANG_CUDA)
+#if !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::nan(""),
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_CLANG_CUDA
+#endif // !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::numeric_limits<double>::signaling_NaN(),
         cuda::std::numeric_limits<double>::quiet_NaN(),
         cuda::std::numeric_limits<double>::infinity()})

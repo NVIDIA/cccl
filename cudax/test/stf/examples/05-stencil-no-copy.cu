@@ -49,7 +49,7 @@ T check_sum(stream_ctx& ctx, data_block<T>& bn)
 {
   T sum = 0.0;
 
-  auto t = ctx.task(exec_place::host, bn.handle.read());
+  auto t = ctx.task(exec_place::host(), bn.handle.read());
   t->*[&](cudaStream_t stream, auto h_center) {
     cuda_safe_call(cudaStreamSynchronize(stream));
     for (size_t offset = bn.ghost_size; offset < bn.ghost_size + bn.block_size; offset++)
@@ -196,7 +196,7 @@ int main(int argc, char** argv)
   {
     size_t beg = b * BLOCK_SIZE;
 
-    auto t = ctx.task(exec_place::host, Un[b].handle.rw(), Un1[b].handle.rw());
+    auto t = ctx.task(exec_place::host(), Un[b].handle.rw(), Un1[b].handle.rw());
     t->*[&](cudaStream_t stream, auto Un_vals, auto Un1_vals) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)

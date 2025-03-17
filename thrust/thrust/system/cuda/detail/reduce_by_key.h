@@ -293,7 +293,7 @@ struct ReduceByKeyAgent
       size_value_pair_t (&scan_items)[ITEMS_PER_THREAD])
     {
       // Zip values and segment_flags
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set segment_flags for first out-of-bounds item, zero for others
@@ -314,7 +314,7 @@ struct ReduceByKeyAgent
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD])
     {
       // Zip values and segment_flags
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         scatter_items[ITEM].key   = keys[ITEM];
@@ -335,7 +335,7 @@ struct ReduceByKeyAgent
       size_type (&segment_indices)[ITEMS_PER_THREAD])
     {
       // Scatter flagged keys and values
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (segment_flags[ITEM])
@@ -363,7 +363,7 @@ struct ReduceByKeyAgent
       __syncthreads();
 
       // Compact and scatter keys
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (segment_flags[ITEM])

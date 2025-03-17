@@ -43,7 +43,6 @@ AttributeMacros: [
                   'CUB_DETAIL_KERNEL_ATTRIBUTES',
                   'THRUST_RUNTIME_FUNCTION',
                   'THRUST_DETAIL_KERNEL_ATTRIBUTES',
-                  '_LIBCUDACXX_ALIGNOF',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX11',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX14',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX17',

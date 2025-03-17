@@ -23,7 +23,7 @@
 
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__internal/nvfp_types.h>
+#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -57,19 +57,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(long double __
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(__half __x) noexcept
 {
   return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(__nv_bfloat16 __x) noexcept
 {
   return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnormal(__nv_fp8_e4m3 __x) noexcept

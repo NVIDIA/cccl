@@ -22,9 +22,9 @@
 
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 #  include <utility>
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 struct CopyOnly
 {
@@ -81,7 +81,7 @@ __host__ __device__ constexpr bool test_swap_constexpr()
 
 __host__ __device__ void test_ambiguous_std()
 {
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   // clang-format off
   NV_IF_TARGET(NV_IS_HOST, (
     cuda::std::pair<::std::pair<int, int>, int> i[3] = {};
@@ -89,7 +89,7 @@ __host__ __device__ void test_ambiguous_std()
     swap(i,j);
   ))
   // clang-format on
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 int main(int, char**)

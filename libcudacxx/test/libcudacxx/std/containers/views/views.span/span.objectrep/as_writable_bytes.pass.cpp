@@ -24,11 +24,11 @@
 template <typename Span>
 __host__ __device__ void testRuntimeSpan(Span sp)
 {
-  ASSERT_NOEXCEPT(cuda::std::as_writable_bytes(sp));
+  static_assert(noexcept(cuda::std::as_writable_bytes(sp)));
 
   auto spBytes = cuda::std::as_writable_bytes(sp);
   using SB     = decltype(spBytes);
-  ASSERT_SAME_TYPE(cuda::std::byte, typename SB::element_type);
+  static_assert(cuda::std::is_same_v<cuda::std::byte, typename SB::element_type>);
 
   if (sp.extent == cuda::std::dynamic_extent)
   {

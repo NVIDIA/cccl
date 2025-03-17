@@ -14,7 +14,7 @@
 
 #include <test_macros.h>
 
-_CCCL_NV_DIAG_SUPPRESS(1046) // Suppress "floating-point value cannot be represented exactly"
+TEST_NV_DIAG_SUPPRESS(1046) // Suppress "floating-point value cannot be represented exactly"
 
 __host__ __device__ constexpr bool test()
 {
@@ -86,7 +86,7 @@ __host__ __device__ constexpr bool test()
 // Extended floating point types are not comparable in constexpr context
 __host__ __device__ void test_ext_fp()
 {
-#ifndef TEST_COMPILER_MSVC
+#if !TEST_COMPILER(MSVC)
   // MSVC errors here because of "error: A __device__ variable template cannot have a const qualified type on Windows"
 #  if _LIBCUDACXX_HAS_NVFP16()
   // __half constants
@@ -120,7 +120,7 @@ __host__ __device__ void test_ext_fp()
   assert(cuda::std::numbers::egamma_v<__nv_bfloat16> == __nv_bfloat16{0.578125f});
   assert(cuda::std::numbers::phi_v<__nv_bfloat16> == __nv_bfloat16{1.6171875f});
 #  endif // _LIBCUDACXX_HAS_NVBF16()
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 }
 
 __global__ void test_kernel()

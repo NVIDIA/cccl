@@ -15,16 +15,16 @@
 #  include "test_macros.h"
 #  include <stddef.h> // Avoid depending on the C++ standard library.
 
-void* operator new(size_t, void* p) TEST_THROW_SPEC()
+void* operator new(size_t, void* p)
 {
   return p;
 }
-void* operator new[](size_t, void* p) TEST_THROW_SPEC()
+void* operator new[](size_t, void* p)
 {
   return p;
 }
-void operator delete(void*, void*) TEST_THROW_SPEC() {}
-void operator delete[](void*, void*) TEST_THROW_SPEC() {}
+void operator delete(void*, void*) {}
+void operator delete[](void*, void*) {}
 
 #endif // !defined(__CUDACC__)
 

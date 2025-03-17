@@ -24,7 +24,7 @@ int main(int, char**)
 {
   using last_spec = cuda::std::chrono::last_spec;
 
-  ASSERT_SAME_TYPE(const last_spec, decltype(cuda::std::chrono::last));
+  static_assert(cuda::std::is_same_v<const last_spec, decltype(cuda::std::chrono::last)>);
 
   static_assert(cuda::std::is_trivially_copyable_v<last_spec>, "");
   static_assert(cuda::std::is_standard_layout_v<last_spec>, "");

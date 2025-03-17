@@ -170,6 +170,7 @@ template <class... Types>
 #include <cuda/std/__tuple_dir/vector_types.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
+#include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/move.h>
@@ -237,15 +238,13 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
 {
   _Hp __value_;
 
-  template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __can_bind_reference()
-  {
-#if _CCCL_HAS_KEYWORD(__reference_binds_to_temporary)
-    return !__reference_binds_to_temporary(_Hp, _Tp);
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Up>
+  static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else
-    return true;
-#endif
-  }
+  template <class _Up>
+  static constexpr bool __can_bind_reference = true;
+#endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
@@ -334,15 +333,13 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
 {
   _Hp __value_;
 
-  template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __can_bind_reference()
-  {
-#if _CCCL_HAS_KEYWORD(__reference_binds_to_temporary)
-    return !__reference_binds_to_temporary(_Hp, _Tp);
+#if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY)
+  template <class _Up>
+  static constexpr bool __can_bind_reference = !reference_constructs_from_temporary_v<_Hp&, _Up>;
 #else
-    return true;
-#endif
-  }
+  template <class _Up>
+  static constexpr bool __can_bind_reference = true;
+#endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 
 public:
   _CCCL_EXEC_CHECK_DISABLE
@@ -361,9 +358,9 @@ public:
     _CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {
-    static_assert(__can_bind_reference<_Tp&&>(),
-                  "Attempted construction of reference element binds to a "
-                  "temporary whose lifetime has ended");
+    static_assert(__can_bind_reference<_Tp&&>,
+                  "Attempted construction of reference element "
+                  "binds to a temporary whose lifetime has ended");
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -371,7 +368,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {
-    static_assert(__can_bind_reference<_Tp&&>(),
+    static_assert(__can_bind_reference<_Tp&&>,
                   "Attempted construction of reference element binds to a "
                   "temporary whose lifetime has ended");
   }

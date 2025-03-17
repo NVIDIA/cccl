@@ -23,11 +23,11 @@ namespace ptx = cuda::ptx;
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
 // NVRTC does not support cuda.h (due to import of stdlib.h)
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  include <cudaTypedefs.h> // PFN_cuTensorMapEncodeTiled, CUtensorMap
 
 #  include <cstdio>
-#endif // ! TEST_COMPILER_NVRTC
+#endif // ! TEST_COMPILER(NVRTC)
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
@@ -252,7 +252,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 }
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
 {
   void* driver_ptr = nullptr;
@@ -261,9 +261,9 @@ PFN_cuTensorMapEncodeTiled get_cuTensorMapEncodeTiled()
   assert(code == cudaSuccess && "Could not get driver API");
   return reinterpret_cast<PFN_cuTensorMapEncodeTiled>(driver_ptr);
 }
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 template <typename T, size_t num_dims>
 CUtensorMap map_encode(T* tensor_ptr,
                        const cuda::std::array<uint64_t, num_dims>& gmem_dims,
@@ -332,6 +332,6 @@ void init_tensor_map(const T& gmem_tensor_symbol,
   code = cudaMemcpyToSymbol(global_fake_tensor_map, &local_tensor_map, sizeof(CUtensorMap));
   assert(code == cudaSuccess && "Could not copy symbol to device.");
 }
-#endif // ! TEST_COMPILER_NVRTC
+#endif // ! TEST_COMPILER(NVRTC)
 
 #endif // TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_

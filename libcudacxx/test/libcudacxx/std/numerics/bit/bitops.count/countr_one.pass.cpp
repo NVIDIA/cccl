@@ -62,8 +62,8 @@ __host__ __device__ inline void assert_countr_one(T val, int expected)
 template <typename T>
 __host__ __device__ void runtime_test()
 {
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::countr_one(T(0))));
-  ASSERT_NOEXCEPT(cuda::std::countr_one(T(0)));
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::countr_one(T(0)))>);
+  static_assert(noexcept(cuda::std::countr_one(T(0))));
 
   assert_countr_one(T(121), 1);
   assert_countr_one(T(122), 0);

@@ -26,7 +26,7 @@ __host__ __device__ constexpr void test_comparison(bool equal, To dest_exts, Fro
 {
   cuda::std::layout_right::mapping<To> dest(dest_exts);
   cuda::std::layout_right::mapping<From> src(src_exts);
-  ASSERT_NOEXCEPT(dest == src);
+  static_assert(noexcept(dest == src));
   assert((dest == src) == equal);
   assert((dest != src) == !equal);
 }

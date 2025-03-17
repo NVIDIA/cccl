@@ -31,7 +31,7 @@ test_required_span_size(E e, cuda::std::array<int, E::rank()> strides, typename 
   using M = cuda::std::layout_stride::mapping<E>;
   const M m(e, strides);
 
-  ASSERT_NOEXCEPT(m.required_span_size());
+  static_assert(noexcept(m.required_span_size()));
   assert(m.required_span_size() == expected_size);
 }
 

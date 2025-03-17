@@ -62,7 +62,7 @@ int main()
         // This throws because you're attempting to run a device lambda on the host
         try
         {
-          ctx.parallel_for(exec_place::host, ly.shape(), lx.read(), ly.rw())
+          ctx.parallel_for(exec_place::host(), ly.shape(), lx.read(), ly.rw())
               ->*[=] _CCCL_DEVICE(size_t pos, auto sx, auto sy) {
                     sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
                   };
@@ -93,7 +93,7 @@ int main()
         break;
       case 3:
         // This works because it dynamically selects the dual function to run on the host
-        ctx.parallel_for(exec_place::host, ly.shape(), lx.read(), ly.rw())
+        ctx.parallel_for(exec_place::host(), ly.shape(), lx.read(), ly.rw())
             ->*[=] __host__ __device__(size_t pos, slice<const double> sx, slice<double> sy) {
                   sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
                 };
@@ -124,7 +124,7 @@ int main()
     }
 
     /* Check the result on the host */
-    ctx.parallel_for(exec_place::host, ly.shape(), lx.read(), ly.read())->*[=](size_t pos, auto sx, auto sy) {
+    ctx.parallel_for(exec_place::host(), ly.shape(), lx.read(), ly.read())->*[=](size_t pos, auto sx, auto sy) {
       EXPECT(fabs(sx(2 * pos) - x0(2 * pos)) < 0.0001);
       EXPECT(fabs(sx(2 * pos + 1) - x0(2 * pos + 1)) < 0.0001);
       EXPECT(fabs(sy(pos) - (y0(pos) + 0.5 * (x0(2 * pos) + x0(2 * pos + 1)))) < 0.0001);

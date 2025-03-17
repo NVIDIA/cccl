@@ -84,13 +84,13 @@ __host__ __device__ constexpr void test_val_types()
     {
       cuda::std::expected<void, TestError> i{cuda::std::in_place};
       assert(i.transform(LVal{}) == expected_value);
-      ASSERT_SAME_TYPE(decltype(i.transform(LVal{})), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(LVal{})), cuda::std::expected<int, TestError>>);
     }
 
     {
       cuda::std::expected<void, TestError> i{cuda::std::unexpect, 42};
       assert(i.transform(LVal{}) == previous_error);
-      ASSERT_SAME_TYPE(decltype(i.transform(LVal{})), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(LVal{})), cuda::std::expected<int, TestError>>);
     }
 
     // With & qualifier on F's operator()
@@ -98,14 +98,14 @@ __host__ __device__ constexpr void test_val_types()
       cuda::std::expected<void, TestError> i{cuda::std::in_place};
       RefQual l{};
       assert(i.transform(l) == expected_value);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::expected<int, TestError>>);
     }
 
     {
       cuda::std::expected<void, TestError> i{cuda::std::unexpect, 42};
       RefQual l{};
       assert(i.transform(l) == previous_error);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::expected<int, TestError>>);
     }
   }
 
@@ -116,14 +116,14 @@ __host__ __device__ constexpr void test_val_types()
       const cuda::std::expected<void, TestError> i{cuda::std::in_place};
       const CRefQual l{};
       assert(i.transform(l) == expected_value);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::expected<int, TestError>>);
     }
 
     {
       const cuda::std::expected<void, TestError> i{cuda::std::unexpect, 42};
       const CRefQual l{};
       assert(i.transform(l) == previous_error);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::expected<int, TestError>>);
     }
   }
 
@@ -133,13 +133,13 @@ __host__ __device__ constexpr void test_val_types()
     {
       cuda::std::expected<void, TestError> i{cuda::std::in_place};
       assert(i.transform(RVRefQual{}) == expected_value);
-      ASSERT_SAME_TYPE(decltype(i.transform(RVRefQual{})), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(RVRefQual{})), cuda::std::expected<int, TestError>>);
     }
 
     {
       cuda::std::expected<void, TestError> i{cuda::std::unexpect, 42};
       assert(i.transform(RVRefQual{}) == previous_error);
-      ASSERT_SAME_TYPE(decltype(i.transform(RVRefQual{})), cuda::std::expected<int, TestError>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(RVRefQual{})), cuda::std::expected<int, TestError>>);
     }
   }
 
@@ -150,14 +150,16 @@ __host__ __device__ constexpr void test_val_types()
       const cuda::std::expected<void, TestError> i{cuda::std::in_place};
       const RVCRefQual l{};
       assert(i.transform(cuda::std::move(l)) == expected_value);
-      ASSERT_SAME_TYPE(decltype(i.transform(cuda::std::move(l))), cuda::std::expected<int, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(i.transform(cuda::std::move(l))), cuda::std::expected<int, TestError>>);
     }
 
     {
       const cuda::std::expected<void, TestError> i{cuda::std::unexpect, 42};
       const RVCRefQual l{};
       assert(i.transform(cuda::std::move(l)) == previous_error);
-      ASSERT_SAME_TYPE(decltype(i.transform(cuda::std::move(l))), cuda::std::expected<int, TestError>);
+      static_assert(
+        cuda::std::is_same_v<decltype(i.transform(cuda::std::move(l))), cuda::std::expected<int, TestError>>);
     }
   }
 }

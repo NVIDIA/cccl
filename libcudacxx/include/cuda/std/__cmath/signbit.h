@@ -21,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/copysign.h>
-#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 
@@ -63,31 +62,44 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __signbit_impl(_Tp __x) noexcept
+{
+  if constexpr (numeric_limits<_Tp>::is_signed)
+  {
+    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_v<_Tp>;
+  }
+  else
+  {
+    return false;
+  }
+}
+
+#if _CCCL_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__half __x) noexcept
 {
-  return _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_sign_mask;
+  return _CUDA_VSTD::__signbit_impl(__x);
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_bfloat16 __x) noexcept
 {
-  return _CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvbf16_sign_mask;
+  return _CUDA_VSTD::__signbit_impl(__x);
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e4m3 __x) noexcept
 {
-  return __x.__x & __cccl_nvfp8_e4m3_sign_mask;
+  return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e5m2 __x) noexcept
 {
-  return __x.__x & __cccl_nvfp8_e5m2_sign_mask;
+  return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
@@ -101,27 +113,27 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e8m0) 
 #if _CCCL_HAS_NVFP6_E2M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e2m3 __x) noexcept
 {
-  return __x.__x & __cccl_nvfp6_e2m3_sign_mask;
+  return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e3m2 __x) noexcept
 {
-  return __x.__x & __cccl_nvfp6_e3m2_sign_mask;
+  return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp4_e2m1 __x) noexcept
 {
-  return __x.__x & __cccl_nvfp4_e2m1_sign_mask;
+  return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(_Tp __x) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit([[maybe_unused]] _Tp __x) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_signed, _Tp))
   {
@@ -129,7 +141,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(_Tp __x) noexce
   }
   else
   {
-    _LIBCUDACXX_UNUSED_VAR(__x);
     return false;
   }
 }

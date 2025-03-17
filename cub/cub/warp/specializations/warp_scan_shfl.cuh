@@ -514,7 +514,7 @@ struct WarpScanShfl
     int segment_first_lane = 0;
 
     // Iterate scan steps
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       inclusive_output = InclusiveScanStep(
@@ -555,7 +555,7 @@ struct WarpScanShfl
     int segment_first_lane = _CUDA_VSTD::max(0, 31 - __clz(ballot));
 
     // Iterate scan steps
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       inclusive_output.value = InclusiveScanStep(

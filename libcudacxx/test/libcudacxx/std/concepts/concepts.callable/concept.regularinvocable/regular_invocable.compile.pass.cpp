@@ -322,12 +322,12 @@ static_assert(regular_invocable<lvalue_qualified, S&>, "");
 static_assert(!regular_invocable<lvalue_qualified, S const&>, "");
 static_assert(!regular_invocable<lvalue_qualified, S volatile&>, "");
 static_assert(!regular_invocable<lvalue_qualified, S const volatile&>, "");
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 static_assert(!regular_invocable<lvalue_qualified, S&&>, "");
 static_assert(!regular_invocable<lvalue_qualified, S const&&>, "");
 static_assert(!regular_invocable<lvalue_qualified, S volatile&&>, "");
 static_assert(!regular_invocable<lvalue_qualified, S const volatile&&>, "");
-#endif // !defined(TEST_COMPILER_MSVC_2019)
+#endif // !TEST_COMPILER(MSVC2019)
 
 #if TEST_STD_VER > 2017
 static_assert(check_member_is_invocable<int (S::*)() const&, S>(), "");
@@ -350,12 +350,12 @@ static_assert(regular_invocable<lvalue_volatile_qualified, S&>, "");
 static_assert(!regular_invocable<lvalue_volatile_qualified, S const&>, "");
 static_assert(regular_invocable<lvalue_volatile_qualified, S volatile&>, "");
 static_assert(!regular_invocable<lvalue_volatile_qualified, S const volatile&>, "");
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 static_assert(!regular_invocable<lvalue_volatile_qualified, S&&>, "");
 static_assert(!regular_invocable<lvalue_volatile_qualified, S const&&>, "");
 static_assert(!regular_invocable<lvalue_volatile_qualified, S volatile&&>, "");
 static_assert(!regular_invocable<lvalue_volatile_qualified, S const volatile&&>, "");
-#endif // !defined(TEST_COMPILER_MSVC_2019)
+#endif // !TEST_COMPILER(MSVC2019)
 
 static_assert(check_member_is_invocable<int (S::*)() const volatile&, S&>(), "");
 using lvalue_cv_qualified = void (S::*)() const volatile&;
@@ -363,60 +363,60 @@ static_assert(regular_invocable<lvalue_cv_qualified, S&>, "");
 static_assert(regular_invocable<lvalue_cv_qualified, S const&>, "");
 static_assert(regular_invocable<lvalue_cv_qualified, S volatile&>, "");
 static_assert(regular_invocable<lvalue_cv_qualified, S const volatile&>, "");
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 static_assert(!regular_invocable<lvalue_cv_qualified, S&&>, "");
 static_assert(!regular_invocable<lvalue_cv_qualified, S const&&>, "");
 static_assert(!regular_invocable<lvalue_cv_qualified, S volatile&&>, "");
 static_assert(!regular_invocable<lvalue_cv_qualified, S const volatile&&>, "");
-#endif // !defined(TEST_COMPILER_MSVC_2019)
+#endif // !TEST_COMPILER(MSVC2019)
 
 using rvalue_unqualified = void (S::*)() &&;
 static_assert(!regular_invocable<rvalue_unqualified, S&>, "");
 static_assert(!regular_invocable<rvalue_unqualified, S const&>, "");
 static_assert(!regular_invocable<rvalue_unqualified, S volatile&>, "");
 static_assert(!regular_invocable<rvalue_unqualified, S const volatile&>, "");
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 static_assert(regular_invocable<rvalue_unqualified, S&&>, "");
 static_assert(!regular_invocable<rvalue_unqualified, S const&&>, "");
 static_assert(!regular_invocable<rvalue_unqualified, S volatile&&>, "");
 static_assert(!regular_invocable<rvalue_unqualified, S const volatile&&>, "");
-#endif // !defined(TEST_COMPILER_MSVC_2019)
+#endif // !TEST_COMPILER(MSVC2019)
 
 using rvalue_const_unqualified = void (S::*)() const&&;
 static_assert(!regular_invocable<rvalue_const_unqualified, S&>, "");
 static_assert(!regular_invocable<rvalue_const_unqualified, S const&>, "");
 static_assert(!regular_invocable<rvalue_const_unqualified, S volatile&>, "");
 static_assert(!regular_invocable<rvalue_const_unqualified, S const volatile&>, "");
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 static_assert(regular_invocable<rvalue_const_unqualified, S&&>, "");
 static_assert(regular_invocable<rvalue_const_unqualified, S const&&>, "");
 static_assert(!regular_invocable<rvalue_const_unqualified, S volatile&&>, "");
 static_assert(!regular_invocable<rvalue_const_unqualified, S const volatile&&>, "");
-#endif // !defined(TEST_COMPILER_MSVC_2019)
+#endif // !TEST_COMPILER(MSVC2019)
 
 using rvalue_volatile_unqualified = void (S::*)() volatile&&;
 static_assert(!regular_invocable<rvalue_volatile_unqualified, S&>, "");
 static_assert(!regular_invocable<rvalue_volatile_unqualified, S const&>, "");
 static_assert(!regular_invocable<rvalue_volatile_unqualified, S volatile&>, "");
 static_assert(!regular_invocable<rvalue_volatile_unqualified, S const volatile&>, "");
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 static_assert(regular_invocable<rvalue_volatile_unqualified, S&&>, "");
 static_assert(!regular_invocable<rvalue_volatile_unqualified, S const&&>, "");
 static_assert(regular_invocable<rvalue_volatile_unqualified, S volatile&&>, "");
 static_assert(!regular_invocable<rvalue_volatile_unqualified, S const volatile&&>, "");
-#endif // !defined(TEST_COMPILER_MSVC_2019)
+#endif // !TEST_COMPILER(MSVC2019)
 
 using rvalue_cv_unqualified = void (S::*)() const volatile&&;
 static_assert(!regular_invocable<rvalue_cv_unqualified, S&>, "");
 static_assert(!regular_invocable<rvalue_cv_unqualified, S const&>, "");
 static_assert(!regular_invocable<rvalue_cv_unqualified, S volatile&>, "");
 static_assert(!regular_invocable<rvalue_cv_unqualified, S const volatile&>, "");
-#if !defined(TEST_COMPILER_MSVC_2019)
+#if !TEST_COMPILER(MSVC2019)
 static_assert(regular_invocable<rvalue_cv_unqualified, S&&>, "");
 static_assert(regular_invocable<rvalue_cv_unqualified, S const&&>, "");
 static_assert(regular_invocable<rvalue_cv_unqualified, S volatile&&>, "");
 static_assert(regular_invocable<rvalue_cv_unqualified, S const volatile&&>, "");
-#endif // !defined(TEST_COMPILER_MSVC_2019)
+#endif // !TEST_COMPILER(MSVC2019)
 } // namespace pointer_to_member_functions
 
 // Check the concept with closure types (and also check for subsumption)
@@ -449,7 +449,7 @@ __host__ __device__ constexpr bool is_regular_invocable(F, Args&&...)
 #endif // TEST_STD_VER > 2017
 
 // execution space annotations on lambda require --extended-lambda flag with nvrtc
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 static_assert(is_regular_invocable([] {}), "");
 static_assert(is_regular_invocable([](int) {}, 0), "");
 static_assert(is_regular_invocable([](int) {}, 0L), "");
@@ -457,7 +457,7 @@ static_assert(!is_regular_invocable([](int) {}, nullptr), "");
 
 int i = 0;
 static_assert(is_regular_invocable([](int&) {}, i), "");
-#endif // TEST_COMPILER_NVRTC
+#endif // TEST_COMPILER(NVRTC)
 
 int main(int, char**)
 {

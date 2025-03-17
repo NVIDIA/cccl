@@ -29,8 +29,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     int* p = newValue<VT>(1);
     U s(p);
     U const& sc = s;
-    ASSERT_SAME_TYPE(decltype(s.get()), int*);
-    ASSERT_SAME_TYPE(decltype(sc.get()), int*);
+    static_assert(cuda::std::is_same_v<decltype(s.get()), int*>);
+    static_assert(cuda::std::is_same_v<decltype(sc.get()), int*>);
     assert(s.get() == p);
     assert(sc.get() == s.get());
   }
@@ -39,8 +39,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     const int* p = newValue<VT>(1);
     U s(p);
     U const& sc = s;
-    ASSERT_SAME_TYPE(decltype(s.get()), const int*);
-    ASSERT_SAME_TYPE(decltype(sc.get()), const int*);
+    static_assert(cuda::std::is_same_v<decltype(s.get()), const int*>);
+    static_assert(cuda::std::is_same_v<decltype(sc.get()), const int*>);
     assert(s.get() == p);
     assert(sc.get() == s.get());
   }

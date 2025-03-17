@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__cmath/isinf.h>
 #include <cuda/std/__cmath/isnan.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
 // MSVC and clang cuda need the host side functions included
@@ -56,7 +56,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(float __x) noe
     return ::isfinite(__x);
   }
 #  if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp32_exp_mask) != __cccl_fp32_exp_mask;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_v<float>) != __fp_exp_mask_v<float>;
 #  else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isfinite_impl(__x);
 #  endif // ^^^ !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^
@@ -73,7 +73,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(double __x) no
     return ::isfinite(__x);
   }
 #  if _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_fp64_exp_mask) != __cccl_fp64_exp_mask;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_v<double>) != __fp_exp_mask_v<double>;
 #  else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isfinite_impl(__x);
 #  endif // ^^^ !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^
@@ -91,38 +91,38 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(long double __
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__half __x) noexcept
 {
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvfp16_exp_mask) != __cccl_nvfp16_exp_mask;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_v<__half>) != __fp_exp_mask_v<__half>;
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_bfloat16 __x) noexcept
 {
-  return (_CUDA_VSTD::__cccl_fp_get_storage(__x) & __cccl_nvbf16_exp_mask) != __cccl_nvbf16_exp_mask;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mask_v<__nv_bfloat16>) != __fp_exp_mask_v<__nv_bfloat16>;
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_fp8_e4m3 __x) noexcept
 {
-  return (__x.__x & __cccl_nvfp8_e4m3_exp_mant_mask) != __cccl_nvfp8_e4m3_exp_mant_mask;
+  return (__x.__x & __fp_exp_mant_mask_v<__nv_fp8_e4m3>) != __fp_exp_mant_mask_v<__nv_fp8_e4m3>;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_fp8_e5m2 __x) noexcept
 {
-  return (__x.__x & __cccl_nvfp8_e5m2_exp_mask) != __cccl_nvfp8_e5m2_exp_mask;
+  return (__x.__x & __fp_exp_mask_v<__nv_fp8_e5m2>) != __fp_exp_mask_v<__nv_fp8_e5m2>;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isfinite(__nv_fp8_e8m0 __x) noexcept
 {
-  return __x.__x != __cccl_nvfp8_e8m0_exp_mask;
+  return __x.__x != __fp_exp_mask_v<__nv_fp8_e8m0>;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 

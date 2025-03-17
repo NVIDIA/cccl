@@ -16,18 +16,18 @@ class Rep
   int data_;
 
 public:
-  __host__ __device__ TEST_CONSTEXPR Rep()
+  __host__ __device__ constexpr Rep()
       : data_(-1)
   {}
-  __host__ __device__ explicit TEST_CONSTEXPR Rep(int i)
+  __host__ __device__ explicit constexpr Rep(int i)
       : data_(i)
   {}
 
-  __host__ __device__ bool TEST_CONSTEXPR operator==(int i) const
+  __host__ __device__ bool constexpr operator==(int i) const
   {
     return data_ == i;
   }
-  __host__ __device__ bool TEST_CONSTEXPR operator==(const Rep& r) const
+  __host__ __device__ bool constexpr operator==(const Rep& r) const
   {
     return data_ == r.data_;
   }

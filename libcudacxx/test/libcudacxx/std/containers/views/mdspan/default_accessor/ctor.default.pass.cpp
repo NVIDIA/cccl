@@ -24,7 +24,7 @@
 template <class T>
 __host__ __device__ constexpr void test_construction()
 {
-  ASSERT_NOEXCEPT(cuda::std::default_accessor<T>{});
+  static_assert(noexcept(cuda::std::default_accessor<T>{}));
   cuda::std::default_accessor<T> acc{};
   static_assert(cuda::std::is_trivially_default_constructible<cuda::std::default_accessor<T>>::value);
   unused(acc);

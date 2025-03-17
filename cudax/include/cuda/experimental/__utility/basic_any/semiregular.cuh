@@ -27,6 +27,7 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -275,11 +276,7 @@ struct __iconvertible_to
 template <class _To>
 struct __iconvertible_to<self&&, _To>
 {
-  template <class>
-  struct __always_false : _CUDA_VSTD::false_type
-  {};
-
-  static_assert(__always_false<_To>::value, "rvalue-qualified conversion operations are not yet supported");
+  static_assert(_CUDA_VSTD::__always_false_v<_To>, "rvalue-qualified conversion operations are not yet supported");
 };
 
 template <class _To>

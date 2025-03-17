@@ -53,9 +53,9 @@
 __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 {
   AssertComparisonsReturnBool<cuda::std::unique_ptr<int>>();
-#if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   AssertOrderReturn<cuda::std::strong_ordering, cuda::std::unique_ptr<int>>();
-#endif // TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   // Pointers of same type
   {
@@ -72,10 +72,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
       assert((p1 <= p2) == (ptr1 <= ptr2));
       assert((p1 > p2) == (ptr1 > ptr2));
       assert((p1 >= p2) == (ptr1 >= ptr2));
-#if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
       assert((p1 <=> p2) != cuda::std::strong_ordering::equal);
       assert((p1 <=> p2) == (ptr1 <=> ptr2));
-#endif // TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     }
   }
   // Pointers of different type
@@ -92,10 +92,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
       assert((p1 <= p2) == (ptr1 <= ptr2));
       assert((p1 > p2) == (ptr1 > ptr2));
       assert((p1 >= p2) == (ptr1 >= ptr2));
-#if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
       assert((p1 <=> p2) != cuda::std::strong_ordering::equal);
       assert((p1 <=> p2) == (ptr1 <=> ptr2));
-#endif // TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     }
   }
   // Pointers of same array type
@@ -112,10 +112,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
       assert((p1 <= p2) == (ptr1 <= ptr2));
       assert((p1 > p2) == (ptr1 > ptr2));
       assert((p1 >= p2) == (ptr1 >= ptr2));
-#if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
       assert((p1 <=> p2) != cuda::std::strong_ordering::equal);
       assert((p1 <=> p2) == (ptr1 <=> ptr2));
-#endif // TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     }
   }
   // Pointers of different array types
@@ -132,10 +132,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
       assert((p1 <= p2) == (ptr1 <= ptr2));
       assert((p1 > p2) == (ptr1 > ptr2));
       assert((p1 >= p2) == (ptr1 >= ptr2));
-#if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
       assert((p1 <=> p2) != cuda::std::strong_ordering::equal);
       assert((p1 <=> p2) == (ptr1 <=> ptr2));
-#endif // TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     }
   }
   // Default-constructed pointers of same type
@@ -143,24 +143,24 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
     const cuda::std::unique_ptr<A, Deleter<A>> p1;
     const cuda::std::unique_ptr<A, Deleter<A>> p2;
     assert(p1 == p2);
-#if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 <=> p2) == cuda::std::strong_ordering::equal);
     }
-#endif // TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
   // Default-constructed pointers of different type
   {
     const cuda::std::unique_ptr<A, Deleter<A>> p1;
     const cuda::std::unique_ptr<B, Deleter<B>> p2;
     assert(p1 == p2);
-#if TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#if TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
     if (!TEST_IS_CONSTANT_EVALUATED_CXX23())
     {
       assert((p1 <=> p2) == cuda::std::strong_ordering::equal);
     }
-#endif // TEST_STD_VER >= 2020 && !defined(TEST_HAS_NO_SPACESHIP_OPERATOR)
+#endif // TEST_STD_VER >= 2020 && _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   }
 
   return true;

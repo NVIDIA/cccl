@@ -21,7 +21,7 @@
 #include "test_macros.h"
 
 template <class InIter, class OutIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]          = {0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -126,7 +126,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<bidirectional_iterator<const int*>, forward_iterator<int*>>();

@@ -14,11 +14,6 @@
 
 // Test the size and alignment matches that of an array of a given type.
 
-// Ignore error about requesting a large alignment not being ABI compatible with older AIX systems.
-#if defined(_AIX)
-#  pragma clang diagnostic ignored "-Waix-compat"
-#endif
-
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/iterator>
@@ -26,9 +21,7 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
 template <class T, cuda::std::size_t Size>
 struct MyArray
@@ -44,7 +37,7 @@ __host__ __device__ void test()
   typedef MyArray<T, Size == 0 ? 1 : Size> MyArrayT;
   static_assert(sizeof(ArrayT) == sizeof(CArrayT), "");
   static_assert(sizeof(ArrayT) == sizeof(MyArrayT), "");
-  static_assert(TEST_ALIGNOF(ArrayT) == TEST_ALIGNOF(MyArrayT), "");
+  static_assert(alignof(ArrayT) == alignof(MyArrayT), "");
 }
 
 template <class T>

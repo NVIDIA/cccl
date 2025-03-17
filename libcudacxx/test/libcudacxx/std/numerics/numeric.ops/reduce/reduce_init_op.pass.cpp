@@ -20,14 +20,14 @@
 #include "test_macros.h"
 
 template <class Iter, class T, class Op>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(Iter first, Iter last, T init, Op op, T x)
+__host__ __device__ constexpr void test(Iter first, Iter last, T init, Op op, T x)
 {
   static_assert(cuda::std::is_same<T, decltype(cuda::std::reduce(first, last, init, op))>::value, "");
   assert(cuda::std::reduce(first, last, init, op) == x);
 }
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]    = {1, 2, 3, 4, 5, 6};
   unsigned sa = sizeof(ia) / sizeof(ia[0]);
@@ -42,14 +42,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 }
 
 template <typename T, typename Init>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_return_type()
+__host__ __device__ constexpr void test_return_type()
 {
   T* p = nullptr;
   unused(p);
   static_assert(cuda::std::is_same<Init, decltype(cuda::std::reduce(p, p, Init{}, cuda::std::plus<>()))>::value, "");
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_return_type<char, int>();
   test_return_type<int, int>();

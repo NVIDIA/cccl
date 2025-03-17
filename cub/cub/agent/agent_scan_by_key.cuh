@@ -271,8 +271,8 @@ struct AgentScanByKey
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
     FlagValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
-// Zip values and segment_flags
-#pragma unroll
+    // Zip values and segment_flags
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set segment_flags for first out-of-bounds item, zero for others
@@ -289,8 +289,8 @@ struct AgentScanByKey
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], FlagValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
-// Unzip values and segment_flags
-#pragma unroll
+    // Unzip values and segment_flags
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       values[ITEM] = scan_items[ITEM].value;
@@ -301,7 +301,7 @@ struct AgentScanByKey
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   AddInitToScan(AccumT (&items)[ITEMS_PER_THREAD], OffsetT (&flags)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       items[ITEM] = flags[ITEM] ? init_value : scan_op(init_value, items[ITEM]);

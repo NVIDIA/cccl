@@ -31,7 +31,7 @@ int main()
 
   auto frozen_buffer = ctx.freeze(buffer);
 
-  auto h_buf = frozen_buffer.get(data_place::host).first;
+  auto h_buf = frozen_buffer.get(data_place::host()).first;
   auto d_buf = frozen_buffer.get(data_place::current_device()).first;
 
   cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
@@ -41,7 +41,7 @@ int main()
     x(i, j) = d_buf(i, j);
   };
 
-  ctx.parallel_for(exec_place::host, lX.shape(), lX.read()).set_symbol("check buf")
+  ctx.parallel_for(exec_place::host(), lX.shape(), lX.read()).set_symbol("check buf")
       ->*[h_buf](size_t i, size_t j, auto x) {
             EXPECT(fabs(x(i, j) - h_buf(i, j)) < 0.0001);
           };

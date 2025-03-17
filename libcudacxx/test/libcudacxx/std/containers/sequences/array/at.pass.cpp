@@ -20,7 +20,7 @@
 #  include <stdexcept>
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   {
     typedef double T;

@@ -114,15 +114,15 @@ public:
     instance_id_t src_instance_id,
     cudaStream_t stream) override
   {
-    assert(src_memory_node != dst_memory_node);
+    _CCCL_ASSERT(src_memory_node != dst_memory_node, "");
 
     cudaMemcpyKind kind = cudaMemcpyDeviceToDevice;
-    if (src_memory_node == data_place::host)
+    if (src_memory_node.is_host())
     {
       kind = cudaMemcpyHostToDevice;
     }
 
-    if (dst_memory_node == data_place::host)
+    if (dst_memory_node.is_host())
     {
       kind = cudaMemcpyDeviceToHost;
     }
@@ -145,7 +145,7 @@ public:
     event_list& prereqs) override
   {
     scalar_view<T>& instance = this->instance(instance_id);
-    _CCCL_ASSERT(memory_node != data_place::invalid, "invalid memory node");
+    _CCCL_ASSERT(!memory_node.is_invalid(), "invalid memory node");
 
     s = sizeof(T);
 

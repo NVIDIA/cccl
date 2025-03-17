@@ -19,7 +19,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   int ia[]          = {0, 1, 2, 2, 0, 1, 2, 3};
   const unsigned sa = sizeof(ia) / sizeof(ia[0]);

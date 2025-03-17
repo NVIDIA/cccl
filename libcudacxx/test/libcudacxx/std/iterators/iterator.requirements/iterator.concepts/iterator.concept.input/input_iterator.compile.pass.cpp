@@ -59,11 +59,11 @@ struct not_weakly_incrementable
 
   __host__ __device__ int operator*() const;
 
-#if defined(TEST_COMPILER_MSVC) // nvbug4119179
+#if TEST_COMPILER(MSVC) // nvbug4119179
   __host__ __device__ void operator++(int);
 #else
   __host__ __device__ not_weakly_incrementable& operator++();
-#endif // TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
 };
 static_assert(!cuda::std::input_or_output_iterator<not_weakly_incrementable>
                 && !cuda::std::input_iterator<not_weakly_incrementable>,

@@ -36,8 +36,8 @@ enum HugeEnum : __uint128_t
 template <class T, class U>
 __host__ __device__ void test_make_signed()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::make_signed<T>::type);
-  ASSERT_SAME_TYPE(U, cuda::std::make_signed_t<T>);
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::make_signed<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::make_signed_t<T>>);
 }
 
 int main(int, char**)

@@ -41,11 +41,11 @@ __host__ __device__ constexpr bool testConstexpr()
 int main(int, char**)
 {
   using weekday = cuda::std::chrono::weekday;
-  ASSERT_NOEXCEPT(++(cuda::std::declval<weekday&>()));
-  ASSERT_NOEXCEPT((cuda::std::declval<weekday&>())++);
+  static_assert(noexcept(++(cuda::std::declval<weekday&>())));
+  static_assert(noexcept((cuda::std::declval<weekday&>())++));
 
-  ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday&>()++));
-  ASSERT_SAME_TYPE(weekday&, decltype(++cuda::std::declval<weekday&>()));
+  static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<weekday&>()++)>);
+  static_assert(cuda::std::is_same_v<weekday&, decltype(++cuda::std::declval<weekday&>())>);
 
   static_assert(testConstexpr<weekday>(), "");
 

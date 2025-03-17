@@ -18,7 +18,7 @@
 template <class T, unsigned A>
 __host__ __device__ void test_alignment_of()
 {
-  const unsigned AlignofResult = TEST_ALIGNOF(T);
+  const unsigned AlignofResult = alignof(T);
   static_assert(AlignofResult == A, "Golden value does not match result of alignof keyword");
   static_assert(cuda::std::alignment_of<T>::value == AlignofResult, "");
   static_assert(cuda::std::alignment_of<T>::value == A, "");
@@ -48,7 +48,7 @@ int main(int, char**)
   // The test case below is a hack. It's hard to detect what golden value
   // we should expect. In most cases it should be 8. But in i386 builds
   // with Clang >= 8 or GCC >= 8 the value is '4'.
-  test_alignment_of<double, TEST_ALIGNOF(double)>();
+  test_alignment_of<double, alignof(double)>();
   test_alignment_of<bool, 1>();
   test_alignment_of<unsigned, 4>();
 

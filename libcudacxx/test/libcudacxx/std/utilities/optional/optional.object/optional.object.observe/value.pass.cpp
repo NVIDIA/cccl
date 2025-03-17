@@ -72,13 +72,13 @@ __host__ __device__ constexpr bool test()
   {
     optional<X> opt{};
     unused(opt);
-    ASSERT_NOT_NOEXCEPT(opt.value());
-    ASSERT_SAME_TYPE(decltype(opt.value()), X&);
+    static_assert(!noexcept(opt.value()));
+    static_assert(cuda::std::is_same_v<decltype(opt.value()), X&>);
 
     optional<X&> optref;
     unused(optref);
-    ASSERT_NOEXCEPT(optref.value());
-    ASSERT_SAME_TYPE(decltype(optref.value()), X&);
+    static_assert(noexcept(optref.value()));
+    static_assert(cuda::std::is_same_v<decltype(optref.value()), X&>);
   }
 
   {

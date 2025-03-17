@@ -37,7 +37,7 @@ struct DefaultCtorTest
     // This function gets called twice: once with Extents being just the dynamic ones, and once with all the extents
     // specified. We only test during the all extent case, since then Indices is the correct number. This allows us to
     // reuse the same testing machinery used in other constructor tests.
-    ASSERT_NOEXCEPT(E{});
+    static_assert(noexcept(E{}));
     // Need to construct new expected values, replacing dynamic values with 0
     cuda::std::array<typename AllExtents::value_type, E::rank()> expected_exts{
       ((E::static_extent(Indices) == cuda::std::dynamic_extent)

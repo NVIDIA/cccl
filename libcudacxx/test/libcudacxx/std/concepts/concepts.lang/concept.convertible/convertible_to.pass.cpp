@@ -201,9 +201,9 @@ int main(int, char**)
   CheckConvertibleTo<Function, Function* const>();
 
   static_assert(convertible_to<Function, Function&&>, "");
-#if !defined(TEST_COMPILER_GCC)
+#if !TEST_COMPILER(GCC)
   static_assert(!convertible_to<Function, NoexceptFunction&&>, "");
-#endif // !TEST_COMPILER_GCC
+#endif // !TEST_COMPILER(GCC)
 
   CheckNotConvertibleTo<Function, Array>();
   CheckNotConvertibleTo<Function, Array&>();

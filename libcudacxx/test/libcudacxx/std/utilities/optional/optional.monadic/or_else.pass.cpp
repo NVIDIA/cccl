@@ -46,7 +46,7 @@ __host__ __device__ void take_int_return_void(int);
 // again. I don't understand why it's just these that fail with has_or_else, not any of the ones above - but MSVC's
 // error messages are so monumentally unhelpful, that I decided to stop wasting time on this and just work around the
 // cases that were giving it trouble.
-#ifdef TEST_COMPILER_MSVC
+#if TEST_COMPILER(MSVC)
 template <class T, class F, class = void>
 struct has_or_else_war : cuda::std::false_type
 {};
@@ -65,7 +65,7 @@ static_assert(!has_or_else<cuda::std::optional<int>&, decltype(take_int_return_v
 static_assert(!has_or_else<cuda::std::optional<int>&, int>, "");
 #endif
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     cuda::std::optional<int> opt{};
@@ -74,7 +74,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
     }) == 0);
     opt = 1;
     opt.or_else([] {
-#if defined(TEST_COMPILER_GCC) && __GNUC__ < 9
+#if TEST_COMPILER(GCC, <, 9)
       _CCCL_UNREACHABLE();
 #else
       assert(false);
@@ -91,7 +91,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
     }) == 42);
     opt = val;
     opt.or_else([] {
-#if defined(TEST_COMPILER_GCC) && __GNUC__ < 9
+#if TEST_COMPILER(GCC, <, 9)
       _CCCL_UNREACHABLE();
 #else
       assert(false);
@@ -103,7 +103,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
   return true;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool test_nontrivial()
+__host__ __device__ constexpr bool test_nontrivial()
 {
   {
     cuda::std::optional<MoveOnly> opt{};
@@ -125,9 +125,9 @@ int main(int, char**)
   test_nontrivial();
 
   // GCC <9 incorrectly trips on the assertions in this, so disable it there
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#if !TEST_COMPILER(GCC, <, 10)
   static_assert(test(), "");
-#endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ < 9)
+#endif // !TEST_COMPILER(GCC, <, 11)
 #if TEST_STD_VER > 2017
 #  if defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test_nontrivial());

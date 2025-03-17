@@ -66,11 +66,11 @@ __host__ __device__ constexpr void test_mdspan_size(const MDS& m)
   typename MDS::size_type size = 1;
   for (typename MDS::rank_type r = 0; r < MDS::rank(); r++)
   {
-    ASSERT_SAME_TYPE(decltype(MDS::static_extent(r)), size_t);
-    ASSERT_NOEXCEPT(MDS::static_extent(r));
+    static_assert(cuda::std::is_same_v<decltype(MDS::static_extent(r)), size_t>);
+    static_assert(noexcept(MDS::static_extent(r)));
     assert(MDS::static_extent(r) == MDS::extents_type::static_extent(r));
-    ASSERT_SAME_TYPE(decltype(m.extent(r)), typename MDS::index_type);
-    ASSERT_NOEXCEPT(m.extent(r));
+    static_assert(cuda::std::is_same_v<decltype(m.extent(r)), typename MDS::index_type>);
+    static_assert(noexcept(m.extent(r)));
     assert(m.extent(r) == m.extents().extent(r));
     size *= m.extent(r);
   }
@@ -90,7 +90,7 @@ __host__ __device__ constexpr void test_mdspan_stride(const MDS& m, const M& map
   {
     for (typename MDS::rank_type r = 0; r < MDS::rank(); r++)
     {
-      ASSERT_SAME_TYPE(decltype(m.stride(r)), typename MDS::index_type);
+      static_assert(cuda::std::is_same_v<decltype(m.stride(r)), typename MDS::index_type>);
       assert(!noexcept(m.stride(r)));
       assert(m.stride(r) == map.stride(r));
     }
@@ -119,8 +119,8 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   // Invariants coming from data handle
   // =====================================
   // data_handle()
-  ASSERT_SAME_TYPE(decltype(m.data_handle()), const H&);
-  ASSERT_NOEXCEPT(m.data_handle());
+  static_assert(cuda::std::is_same_v<decltype(m.data_handle()), const H&>);
+  static_assert(noexcept(m.data_handle()));
   test_equality_handle(m, handle);
 
   // =====================================
@@ -128,28 +128,28 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   // =====================================
 
   // extents()
-  ASSERT_SAME_TYPE(decltype(m.extents()), const typename MDS::extents_type&);
-  ASSERT_NOEXCEPT(m.extents());
+  static_assert(cuda::std::is_same_v<decltype(m.extents()), const typename MDS::extents_type&>);
+  static_assert(noexcept(m.extents()));
   assert(m.extents() == map.extents());
 
   // rank()
-  ASSERT_SAME_TYPE(decltype(m.rank()), typename MDS::rank_type);
-  ASSERT_NOEXCEPT(m.rank());
+  static_assert(cuda::std::is_same_v<decltype(m.rank()), typename MDS::rank_type>);
+  static_assert(noexcept(m.rank()));
   assert(MDS::rank() == MDS::extents_type::rank());
 
   // rank_dynamic()
-  ASSERT_SAME_TYPE(decltype(m.rank_dynamic()), typename MDS::rank_type);
-  ASSERT_NOEXCEPT(m.rank_dynamic());
+  static_assert(cuda::std::is_same_v<decltype(m.rank_dynamic()), typename MDS::rank_type>);
+  static_assert(noexcept(m.rank_dynamic()));
   assert(MDS::rank_dynamic() == MDS::extents_type::rank_dynamic());
 
   // extent(r), static_extent(r), size()
   test_mdspan_size(m);
-  ASSERT_SAME_TYPE(decltype(m.size()), typename MDS::size_type);
-  ASSERT_NOEXCEPT(m.size());
+  static_assert(cuda::std::is_same_v<decltype(m.size()), typename MDS::size_type>);
+  static_assert(noexcept(m.size()));
 
   // empty()
-  ASSERT_SAME_TYPE(decltype(m.empty()), bool);
-  ASSERT_NOEXCEPT(m.empty());
+  static_assert(cuda::std::is_same_v<decltype(m.empty()), bool>);
+  static_assert(noexcept(m.empty()));
   assert(m.empty() == (m.size() == 0));
 
   // =====================================
@@ -157,16 +157,16 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   // =====================================
 
   // mapping()
-  ASSERT_SAME_TYPE(decltype(m.mapping()), const M&);
-  ASSERT_NOEXCEPT(m.mapping());
+  static_assert(cuda::std::is_same_v<decltype(m.mapping()), const M&>);
+  static_assert(noexcept(m.mapping()));
 
   // is_[always_]unique/exhaustive/strided()
-  ASSERT_SAME_TYPE(decltype(MDS::is_always_unique()), bool);
-  ASSERT_SAME_TYPE(decltype(MDS::is_always_exhaustive()), bool);
-  ASSERT_SAME_TYPE(decltype(MDS::is_always_strided()), bool);
-  ASSERT_SAME_TYPE(decltype(m.is_unique()), bool);
-  ASSERT_SAME_TYPE(decltype(m.is_exhaustive()), bool);
-  ASSERT_SAME_TYPE(decltype(m.is_strided()), bool);
+  static_assert(cuda::std::is_same_v<decltype(MDS::is_always_unique()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(MDS::is_always_exhaustive()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(MDS::is_always_strided()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(m.is_unique()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(m.is_exhaustive()), bool>);
+  static_assert(cuda::std::is_same_v<decltype(m.is_strided()), bool>);
   assert(noexcept(MDS::is_always_unique() == noexcept(M::is_always_unique())));
   assert(noexcept(MDS::is_always_exhaustive()) == noexcept(M::is_always_exhaustive()));
   assert(noexcept(MDS::is_always_strided()) == noexcept(M::is_always_strided()));
@@ -188,8 +188,8 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   // =====================================
 
   // accessor()
-  ASSERT_SAME_TYPE(decltype(m.accessor()), const A&);
-  ASSERT_NOEXCEPT(m.accessor());
+  static_assert(cuda::std::is_same_v<decltype(m.accessor()), const A&>);
+  static_assert(noexcept(m.accessor()));
 }
 
 template <class H, class L, class A>

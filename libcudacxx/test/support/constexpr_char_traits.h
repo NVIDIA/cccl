@@ -25,56 +25,56 @@ struct constexpr_char_traits
   typedef std::streampos pos_type;
   typedef std::mbstate_t state_type;
 
-  static TEST_CONSTEXPR_CXX14 void assign(char_type& __c1, const char_type& __c2) TEST_NOEXCEPT
+  static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {
     __c1 = __c2;
   }
 
-  static TEST_CONSTEXPR bool eq(char_type __c1, char_type __c2) TEST_NOEXCEPT
+  static constexpr bool eq(char_type __c1, char_type __c2) noexcept
   {
     return __c1 == __c2;
   }
 
-  static TEST_CONSTEXPR bool lt(char_type __c1, char_type __c2) TEST_NOEXCEPT
+  static constexpr bool lt(char_type __c1, char_type __c2) noexcept
   {
     return __c1 < __c2;
   }
 
-  static TEST_CONSTEXPR_CXX14 int compare(const char_type* __s1, const char_type* __s2, size_t __n);
-  static TEST_CONSTEXPR_CXX14 size_t length(const char_type* __s);
-  static TEST_CONSTEXPR_CXX14 const char_type* find(const char_type* __s, size_t __n, const char_type& __a);
-  static TEST_CONSTEXPR_CXX14 char_type* move(char_type* __s1, const char_type* __s2, size_t __n);
-  static TEST_CONSTEXPR_CXX14 char_type* copy(char_type* __s1, const char_type* __s2, size_t __n);
-  static TEST_CONSTEXPR_CXX14 char_type* assign(char_type* __s, size_t __n, char_type __a);
+  static constexpr int compare(const char_type* __s1, const char_type* __s2, size_t __n);
+  static constexpr size_t length(const char_type* __s);
+  static constexpr const char_type* find(const char_type* __s, size_t __n, const char_type& __a);
+  static constexpr char_type* move(char_type* __s1, const char_type* __s2, size_t __n);
+  static constexpr char_type* copy(char_type* __s1, const char_type* __s2, size_t __n);
+  static constexpr char_type* assign(char_type* __s, size_t __n, char_type __a);
 
-  static TEST_CONSTEXPR int_type not_eof(int_type __c) TEST_NOEXCEPT
+  static constexpr int_type not_eof(int_type __c) noexcept
   {
     return eq_int_type(__c, eof()) ? ~eof() : __c;
   }
 
-  static TEST_CONSTEXPR char_type to_char_type(int_type __c) TEST_NOEXCEPT
+  static constexpr char_type to_char_type(int_type __c) noexcept
   {
     return char_type(__c);
   }
 
-  static TEST_CONSTEXPR int_type to_int_type(char_type __c) TEST_NOEXCEPT
+  static constexpr int_type to_int_type(char_type __c) noexcept
   {
     return int_type(__c);
   }
 
-  static TEST_CONSTEXPR bool eq_int_type(int_type __c1, int_type __c2) TEST_NOEXCEPT
+  static constexpr bool eq_int_type(int_type __c1, int_type __c2) noexcept
   {
     return __c1 == __c2;
   }
 
-  static TEST_CONSTEXPR int_type eof() TEST_NOEXCEPT
+  static constexpr int_type eof() noexcept
   {
     return int_type(EOF);
   }
 };
 
 template <class _CharT>
-TEST_CONSTEXPR_CXX14 int constexpr_char_traits<_CharT>::compare(const char_type* __s1, const char_type* __s2, size_t __n)
+constexpr int constexpr_char_traits<_CharT>::compare(const char_type* __s1, const char_type* __s2, size_t __n)
 {
   for (; __n; --__n, ++__s1, ++__s2)
   {
@@ -91,7 +91,7 @@ TEST_CONSTEXPR_CXX14 int constexpr_char_traits<_CharT>::compare(const char_type*
 }
 
 template <class _CharT>
-TEST_CONSTEXPR_CXX14 size_t constexpr_char_traits<_CharT>::length(const char_type* __s)
+constexpr size_t constexpr_char_traits<_CharT>::length(const char_type* __s)
 {
   size_t __len = 0;
   for (; !eq(*__s, char_type(0)); ++__s)
@@ -102,8 +102,7 @@ TEST_CONSTEXPR_CXX14 size_t constexpr_char_traits<_CharT>::length(const char_typ
 }
 
 template <class _CharT>
-TEST_CONSTEXPR_CXX14 const _CharT*
-constexpr_char_traits<_CharT>::find(const char_type* __s, size_t __n, const char_type& __a)
+constexpr const _CharT* constexpr_char_traits<_CharT>::find(const char_type* __s, size_t __n, const char_type& __a)
 {
   for (; __n; --__n)
   {
@@ -117,7 +116,7 @@ constexpr_char_traits<_CharT>::find(const char_type* __s, size_t __n, const char
 }
 
 template <class _CharT>
-TEST_CONSTEXPR_CXX14 _CharT* constexpr_char_traits<_CharT>::move(char_type* __s1, const char_type* __s2, size_t __n)
+constexpr _CharT* constexpr_char_traits<_CharT>::move(char_type* __s1, const char_type* __s2, size_t __n)
 {
   char_type* __r = __s1;
   if (__s1 < __s2)
@@ -140,7 +139,7 @@ TEST_CONSTEXPR_CXX14 _CharT* constexpr_char_traits<_CharT>::move(char_type* __s1
 }
 
 template <class _CharT>
-TEST_CONSTEXPR_CXX14 _CharT* constexpr_char_traits<_CharT>::copy(char_type* __s1, const char_type* __s2, size_t __n)
+constexpr _CharT* constexpr_char_traits<_CharT>::copy(char_type* __s1, const char_type* __s2, size_t __n)
 {
   assert(__s2 < __s1 || __s2 >= __s1 + __n);
   char_type* __r = __s1;
@@ -152,7 +151,7 @@ TEST_CONSTEXPR_CXX14 _CharT* constexpr_char_traits<_CharT>::copy(char_type* __s1
 }
 
 template <class _CharT>
-TEST_CONSTEXPR_CXX14 _CharT* constexpr_char_traits<_CharT>::assign(char_type* __s, size_t __n, char_type __a)
+constexpr _CharT* constexpr_char_traits<_CharT>::assign(char_type* __s, size_t __n, char_type __a)
 {
   char_type* __r = __s;
   for (; __n; --__n, ++__s)

@@ -56,7 +56,7 @@ __host__ __device__ inline const T& Min(const T& __a, const T& __b)
 struct not_extents_constructible_tag
 {};
 
-STATIC_TEST_GLOBAL_VAR int layout_wrapping_integral_swap_counter = 0;
+TEST_GLOBAL_VARIABLE int layout_wrapping_integral_swap_counter = 0;
 template <size_t Wrap>
 class layout_wrapping_integral
 {
@@ -348,7 +348,7 @@ __host__ __device__ constexpr auto construct_mapping(layout_wrapping_integral<Wr
 
 // This layout does not check convertibility of extents for its conversion ctor
 // Allows triggering mdspan's ctor static assertion on convertibility of extents
-STATIC_TEST_GLOBAL_VAR int always_convertible_layout_swap_counter = 0;
+TEST_GLOBAL_VARIABLE int always_convertible_layout_swap_counter = 0;
 class always_convertible_layout
 {
 public:

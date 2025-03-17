@@ -81,8 +81,8 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + (linear_tid * ITEMS_PER_THREAD);
 
-// Store directly in thread-blocked order
-#pragma unroll
+  // Store directly in thread-blocked order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     thread_itr[ITEM] = items[ITEM];
@@ -124,8 +124,8 @@ StoreDirectBlocked(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + (linear_tid * ITEMS_PER_THREAD);
 
-// Store directly in thread-blocked order
-#pragma unroll
+  // Store directly in thread-blocked order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     if (ITEM + (linear_tid * ITEMS_PER_THREAD) < valid_items)
@@ -194,8 +194,8 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   Vector raw_vector[VECTORS_PER_THREAD];
   T* raw_items = reinterpret_cast<T*>(raw_vector);
 
-// Copy
-#pragma unroll
+  // Copy
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     raw_items[ITEM] = items[ITEM];
@@ -244,8 +244,8 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
 
-// Store directly in striped order
-#pragma unroll
+  // Store directly in striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     thread_itr[(ITEM * BLOCK_THREADS)] = items[ITEM];
@@ -290,8 +290,8 @@ StoreDirectStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_P
 {
   OutputIteratorT thread_itr = block_itr + linear_tid;
 
-// Store directly in striped order
-#pragma unroll
+  // Store directly in striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     if ((ITEM * BLOCK_THREADS) + linear_tid < valid_items)
@@ -346,8 +346,8 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
-// Store directly in warp-striped order
-#pragma unroll
+  // Store directly in warp-striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     thread_itr[(ITEM * CUB_PTX_WARP_THREADS)] = items[ITEM];
@@ -398,8 +398,8 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
-// Store directly in warp-striped order
-#pragma unroll
+  // Store directly in warp-striped order
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
     if (warp_offset + tid + (ITEM * CUB_PTX_WARP_THREADS) < valid_items)

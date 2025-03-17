@@ -28,7 +28,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_basic()
     using U = cuda::std::unique_ptr<VT>;
     U u;
     unused(u);
-    ASSERT_NOEXCEPT(u.release());
+    static_assert(noexcept(u.release()));
   }
   {
     cuda::std::unique_ptr<VT> p(newValue<VT>(expect_alive));

@@ -26,7 +26,7 @@ workflows:
     - {jobs: ['test_lid1', 'test_lid2'],  project: ['cub'], std: 'max', cxx: ['gcc'],           gpu: 'rtxa6000'}
     - {jobs: ['test_nolid', 'test_lid0'], project: ['cub'], std: 'max', cxx: ['clang', 'msvc'], gpu: 'rtxa6000'}
     # Modded builds:
-    - {jobs: ['build'], std: 'all', ctk: '12.5', cxx: 'nvhpc'}
+    - {jobs: ['build'], std: 'all', ctk: '12.6', cxx: 'nvhpc'}
     - {jobs: ['build'], std: 'max', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'max', cxx: 'gcc', sm: ['90;90a;100']}
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',                   std: 'max', gpu: 'h100', sm: 'gpu' }
@@ -47,7 +47,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,    cxx: ['msvc14.39']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.5'], std: 'all', cxx: ['nvhpc']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.6'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['msvc2022']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 17,    cxx: ['gcc'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc'], sm: "90a"}
@@ -58,6 +58,8 @@ workflows:
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    # NVHPC stdpar smoke tests
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.6', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   nightly:
     # Edge-case jobs
@@ -76,7 +78,7 @@ workflows:
     - {jobs: ['test'],      project: 'thrust',     std: 'all', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx4090'}
     - {jobs: ['test'],      project: 'libcudacxx', std: 'all', cxx: ['gcc', 'clang', 'msvc'], gpu: 'rtx2080'}
     # Modded builds:
-    - {jobs: ['build'], std: 'all', ctk: '12.5', cxx: 'nvhpc'}
+    - {jobs: ['build'], std: 'all', ctk: '12.6', cxx: 'nvhpc'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc'], sm: '90a'}
     - {jobs: ['test_nolid', 'test_lid0'], project: 'cub',                   std: 'max', gpu: ['v100', 't4', 'l4', 'h100'], sm: '70;75;89;90;100'}
@@ -90,7 +92,7 @@ workflows:
     # cudax
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10', 'gcc11']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
-    - {jobs: ['build'], project: 'cudax', ctk: [        '12.5'], std: 'all', cxx: ['nvhpc']}
+    - {jobs: ['build'], project: 'cudax', ctk: [        '12.6'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0',       ], std: '20',  cxx: ['msvc14.39']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: '20',  cxx: ['msvc2022']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['gcc12'], sm: "90"}
@@ -110,14 +112,14 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '25.02'
+devcontainer_version: '25.04'
 
 # All supported C++ standards:
 all_stds: [17, 20]
 
 ctk_versions:
   12.0: { stds: [17, 20] }
-  12.5: { stds: [17, 20] }
+  12.6: { stds: [17, 20] }
   12.8: { stds: [17, 20], aka: 'curr' }
 
 device_compilers:
@@ -164,7 +166,7 @@ host_compilers:
     container_tag: 'nvhpc'
     exe: nvc++
     versions:
-      24.7: { stds: [17, 20 ] }
+      25.1: { stds: [17, 20 ] }
 
 # Jobs support the following properties:
 #
@@ -238,6 +240,9 @@ projects:
     stds: [17, 20]
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
+    stds: [17, 20]
+  stdpar:
+    name: 'NVHPC stdpar'
     stds: [17, 20]
   python:
     name: "cuda (python)"

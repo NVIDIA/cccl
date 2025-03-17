@@ -214,7 +214,7 @@ struct DeathTest
 
 private:
   template <class Func>
-  TEST_NORETURN void RunForChild(Func&& f)
+  [[noreturn]] void RunForChild(Func&& f)
   {
     close(GetStdOutReadFD()); // don't need to read from the pipe in the child.
     close(GetStdErrReadFD());

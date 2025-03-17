@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool test()
 {
   {
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3});
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<TestT>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<TestT>>);
     assert(opt->x == 42);
     assert(opt->size == 3);
     assert(opt->ptr == nullptr);
@@ -48,7 +48,7 @@ __host__ __device__ constexpr bool test()
   {
     int i    = 42;
     auto opt = cuda::std::make_optional<TestT>({42, 2, 3}, &i);
-    ASSERT_SAME_TYPE(decltype(opt), cuda::std::optional<TestT>);
+    static_assert(cuda::std::is_same_v<decltype(opt), cuda::std::optional<TestT>>);
     assert(opt->x == 42);
     assert(opt->size == 3);
     assert(opt->ptr == &i);

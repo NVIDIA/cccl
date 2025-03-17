@@ -29,7 +29,7 @@ __host__ __device__ void test_calloc_success(cuda::std::size_t n)
   }
 
   // check memory alignment
-  assert(((TEST_ALIGNOF(T) - 1) & reinterpret_cast<cuda::std::uintptr_t>(ptr)) == 0);
+  assert(((alignof(T) - 1) & reinterpret_cast<cuda::std::uintptr_t>(ptr)) == 0);
 
   cuda::std::free(ptr);
 }
@@ -63,7 +63,7 @@ struct BigStruct
   }
 };
 
-struct TEST_ALIGNAS(cuda::std::max_align_t) AlignedStruct
+struct alignas(cuda::std::max_align_t) AlignedStruct
 {
   static constexpr cuda::std::size_t n = 32;
 

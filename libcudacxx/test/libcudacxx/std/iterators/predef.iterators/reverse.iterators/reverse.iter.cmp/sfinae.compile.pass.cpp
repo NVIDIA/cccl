@@ -193,7 +193,7 @@ static_assert(HasLess<cuda::std::reverse_iterator<NoLessOrEqualCompIter>>);
 static_assert(HasLessOrEqual<cuda::std::reverse_iterator<NoLessOrEqualCompIter>>);
 static_assert(HasGreater<cuda::std::reverse_iterator<NoLessOrEqualCompIter>>);
 
-#ifndef TEST_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 // operator <=>
 static_assert(cuda::std::three_way_comparable_with<int*, int*>);
 static_assert(HasSpaceship<cuda::std::reverse_iterator<int*>>);
@@ -209,7 +209,7 @@ static_assert(!cuda::std::three_way_comparable_with<NoGreaterOrEqualCompIter, No
 static_assert(!HasSpaceship<cuda::std::reverse_iterator<NoGreaterOrEqualCompIter>>);
 static_assert(!cuda::std::three_way_comparable_with<NoLessOrEqualCompIter, NoLessOrEqualCompIter>);
 static_assert(!HasSpaceship<cuda::std::reverse_iterator<NoLessOrEqualCompIter>>);
-#endif // TEST_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 int main(int, char**)
 {

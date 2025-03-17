@@ -26,8 +26,8 @@ int main(int, char**)
   using weekday_last            = cuda::std::chrono::weekday_last;
   using year_month_weekday_last = cuda::std::chrono::year_month_weekday_last;
 
-  ASSERT_NOEXCEPT(cuda::std::declval<const year_month_weekday_last>().weekday());
-  ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<const year_month_weekday_last>().weekday()));
+  static_assert(noexcept(cuda::std::declval<const year_month_weekday_last>().weekday()));
+  static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<const year_month_weekday_last>().weekday())>);
 
   static_assert(year_month_weekday_last{year{}, month{}, weekday_last{weekday{}}}.weekday() == weekday{}, "");
 

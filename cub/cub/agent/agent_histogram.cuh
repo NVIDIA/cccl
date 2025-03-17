@@ -307,8 +307,8 @@ struct AgentHistogram
   // Initialize privatized bin counters
   _CCCL_DEVICE _CCCL_FORCEINLINE void InitBinCounters(CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS])
   {
-// Initialize histogram bin counts to zeros
-#pragma unroll
+    // Initialize histogram bin counts to zeros
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
     {
       for (int privatized_bin = threadIdx.x; privatized_bin < num_privatized_bins[CHANNEL];
@@ -351,8 +351,8 @@ struct AgentHistogram
     // Barrier to make sure all threads are done updating counters
     __syncthreads();
 
-// Apply privatized bin counts to output bin counts
-#pragma unroll
+    // Apply privatized bin counts to output bin counts
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
     {
       int channel_bins = num_privatized_bins[CHANNEL];
@@ -401,13 +401,13 @@ struct AgentHistogram
     CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS],
     ::cuda::std::true_type is_rle_compress)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
     {
       // Bin pixels
       int bins[PIXELS_PER_THREAD];
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD; ++PIXEL)
       {
         bins[PIXEL] = -1;
@@ -417,7 +417,7 @@ struct AgentHistogram
 
       CounterT accumulator = 1;
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD - 1; ++PIXEL)
       {
         if (bins[PIXEL] != bins[PIXEL + 1])
@@ -447,10 +447,10 @@ struct AgentHistogram
     CounterT* privatized_histograms[NUM_ACTIVE_CHANNELS],
     ::cuda::std::false_type is_rle_compress)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD; ++PIXEL)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
       {
         int bin = -1;
@@ -586,7 +586,7 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   MarkValid(bool (&is_valid)[PIXELS_PER_THREAD], int valid_samples, ::cuda::std::false_type /* is_striped = false */)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD; ++PIXEL)
     {
       is_valid[PIXEL] = IS_FULL_TILE || (((threadIdx.x * PIXELS_PER_THREAD + PIXEL) * NUM_CHANNELS) < valid_samples);
@@ -597,7 +597,7 @@ struct AgentHistogram
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   MarkValid(bool (&is_valid)[PIXELS_PER_THREAD], int valid_samples, ::cuda::std::true_type /* is_striped = true */)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int PIXEL = 0; PIXEL < PIXELS_PER_THREAD; ++PIXEL)
     {
       is_valid[PIXEL] = IS_FULL_TILE || (((threadIdx.x + BLOCK_THREADS * PIXEL) * NUM_CHANNELS) < valid_samples);

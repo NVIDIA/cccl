@@ -50,6 +50,13 @@ THRUST_NAMESPACE_BEGIN
  */
 using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_allocator;
 
+/*! \brief An allocator which creates new elements in memory accessible by both hosts and devices. Uses pinned memory
+ *         when the system supports it.
+ *
+ *  \see https://en.cppreference.com/w/cpp/named_req/Allocator
+ */
+using thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::universal_host_pinned_allocator;
+
 /*! \p universal_ptr stores a pointer to an object allocated in memory accessible
  *  to both hosts and devices.
  *

@@ -66,7 +66,7 @@ public:
       , block_size(block_size)
       , root_allocator(mv(root_allocator_))
   {
-    if (this->place == data_place::host || this->place == data_place::managed)
+    if (this->place.is_host() || this->place.is_managed())
     {
       /* Pinned memory is not cheap, so we currently only allocate 4 blocks (arbitrarily) */
       nentries = 4;

@@ -19,7 +19,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   using aligned_t = cuda::aligned_size_t<1>;
   static_assert(!cuda::std::is_default_constructible<aligned_t>::value, "");

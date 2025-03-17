@@ -224,7 +224,7 @@ struct UniqueAgent
       Size num_selections_prefix,
       Size /*num_selections*/)
     {
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -281,7 +281,7 @@ struct UniqueAgent
           .FlagHeads(selection_flags, items_loc, predicate, tile_predecessor);
       }
 
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set selection_flags for out-of-bounds items

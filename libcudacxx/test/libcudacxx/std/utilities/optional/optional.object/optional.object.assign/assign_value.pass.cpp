@@ -357,9 +357,9 @@ int main(int, char**)
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS
 
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
+#if !TEST_COMPILER(GCC, <, 7)
   static_assert(pr38638(3) == 5, "");
-#endif // !defined(TEST_COMPILER_GCC) || __GNUC__ > 6
+#endif // !TEST_COMPILER(GCC, <, 7)
 
   return 0;
 }

@@ -46,7 +46,7 @@ struct MoveOnly
 };
 
 template <class Iter>
-TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
+constexpr __host__ __device__ void test()
 {
   using value_type = typename cuda::std::iterator_traits<Iter>::value_type;
 
@@ -61,7 +61,7 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   }
 }
 
-TEST_CONSTEXPR_CXX14 __host__ __device__ bool test()
+constexpr __host__ __device__ bool test()
 {
   test<cpp17_input_iterator<int*>>();
   test<forward_iterator<int*>>();

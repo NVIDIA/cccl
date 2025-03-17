@@ -26,16 +26,14 @@
 #include "test_macros.h"
 #include "type_algorithms.h"
 
-#ifdef TEST_COMPILER_MSVC
-#  pragma warning(disable : 4244) // conversion possible loss of data
-#  pragma warning(disable : 4310) // cast truncates constant value
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion possible loss of data
+TEST_DIAG_SUPPRESS_MSVC(4310) // cast truncates constant value
 
 template <class UnderlyingType, class Iter1>
 struct Test
 {
   template <class Iter2>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()()
+  __host__ __device__ constexpr void operator()()
   {
     UnderlyingType a[]  = {0, 1, 2, 3, 4, 5};
     const unsigned s    = sizeof(a) / sizeof(a[0]);
@@ -60,7 +58,7 @@ struct Test
 struct TestNarrowingEqualTo
 {
   template <class UnderlyingType>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()()
+  __host__ __device__ constexpr void operator()()
   {
     UnderlyingType a[] = {
       UnderlyingType(0x1000),
@@ -84,7 +82,7 @@ template <class UnderlyingType, class TypeList>
 struct TestIter2
 {
   template <class Iter1>
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator()()
+  __host__ __device__ constexpr void operator()()
   {
     types::for_each(TypeList(), Test<UnderlyingType, Iter1>());
   }
@@ -93,19 +91,19 @@ struct TestIter2
 struct AddressCompare
 {
   int i = 0;
-  __host__ __device__ TEST_CONSTEXPR_CXX14 AddressCompare(int) {}
+  __host__ __device__ constexpr AddressCompare(int) {}
 
   __host__ __device__ operator char()
   {
     return static_cast<char>(i);
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
+  __host__ __device__ friend constexpr bool operator==(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs == &rhs;
   }
 
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
+  __host__ __device__ friend constexpr bool operator!=(const AddressCompare& lhs, const AddressCompare& rhs)
   {
     return &lhs != &rhs;
   }
@@ -126,7 +124,7 @@ private:
   int i_;
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   types::for_each(types::cpp17_input_iterator_list<int*>(), TestIter2<int, types::cpp17_input_iterator_list<int*>>());
   types::for_each(types::cpp17_input_iterator_list<char*>(),

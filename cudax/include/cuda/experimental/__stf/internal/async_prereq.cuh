@@ -131,7 +131,7 @@ public:
    * @return True if redundant entries were removed and further uniqueness processing is unnecessary, false otherwise.
    * @note This function provides a hook for derived classes to implement optimization strategies.
    */
-  virtual bool factorize(reserved::event_vector& /*unused*/)
+  virtual bool factorize(backend_ctx_untyped&, reserved::event_vector&)
   {
     return false;
   }
@@ -205,7 +205,7 @@ public:
   /// Optimize the list to remove redundant entries which are either
   /// identical events, or events which are implicit from other events in the
   /// list.
-  void optimize()
+  void optimize(backend_ctx_untyped& bctx)
   {
     // No need to remove duplicates on a list that was already sanitized,
     // and that has not been modified since
@@ -221,7 +221,7 @@ public:
     // All items will have the same (derived) event type as the type of the front element.
     // If the type of the event does not implement a factorize method, a
     // false value is returned (eg. with cudaGraphs)
-    bool factorized = payload.front()->factorize(payload);
+    bool factorized = payload.front()->factorize(bctx, payload);
 
     if (!factorized)
     {

@@ -202,9 +202,9 @@ __host__ __device__ constexpr bool test()
 
   // Make sure we don't treat cuda::std::reference_wrapper specially.
 #if TEST_STD_VER > 2017
-#  if defined(TEST_COMPILER_NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
+#  if TEST_COMPILER(NVRTC) // reference_wrapper requires `addressof` which is currently not supported with nvrtc
   if (!TEST_IS_CONSTANT_EVALUATED())
-#  endif // TEST_COMPILER_NVRTC
+#  endif // TEST_COMPILER(NVRTC)
   {
     auto add = [](cuda::std::reference_wrapper<int> a, cuda::std::reference_wrapper<int> b) {
       return a.get() + b.get();
@@ -293,7 +293,7 @@ __host__ __device__ constexpr bool test()
   }
 
 // GCC fails with template argument deduction issues here...
-#ifndef TEST_COMPILER_GCC
+#if !TEST_COMPILER(GCC)
   // Make sure the bind_front unspecified-type is NOT invocable when the call would select a
   // differently-qualified operator().
   //

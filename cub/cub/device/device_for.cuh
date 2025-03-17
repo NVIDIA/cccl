@@ -104,7 +104,7 @@ struct op_wrapper_vectorized_t
     { // Case of fully filled vector
       const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; j++)
       {
         (void) op(*(reinterpret_cast<const T*>(&vec) + j));

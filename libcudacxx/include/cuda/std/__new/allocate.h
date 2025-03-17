@@ -43,7 +43,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_overaligned_for_new(size_t __align
 #ifdef __STDCPP_DEFAULT_NEW_ALIGNMENT__
   return __align > __STDCPP_DEFAULT_NEW_ALIGNMENT__;
 #else // ^^^ __STDCPP_DEFAULT_NEW_ALIGNMENT__ ^^^ / vvv !__STDCPP_DEFAULT_NEW_ALIGNMENT__ vvv
-  return __align > _LIBCUDACXX_ALIGNOF(max_align_t);
+  return __align > alignof(max_align_t);
 #endif // !__STDCPP_DEFAULT_NEW_ALIGNMENT__
 }
 

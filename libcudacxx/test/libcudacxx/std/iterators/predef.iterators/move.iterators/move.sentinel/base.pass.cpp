@@ -29,10 +29,10 @@ __host__ __device__ constexpr bool test()
     assert(cm.base() == 42);
     assert(cuda::std::move(m).base() == 42);
     assert(cuda::std::move(cm).base() == 42);
-    ASSERT_SAME_TYPE(decltype(m.base()), int);
-    ASSERT_SAME_TYPE(decltype(cm.base()), int);
-    ASSERT_SAME_TYPE(decltype(cuda::std::move(m).base()), int);
-    ASSERT_SAME_TYPE(decltype(cuda::std::move(cm).base()), int);
+    static_assert(cuda::std::is_same_v<decltype(m.base()), int>);
+    static_assert(cuda::std::is_same_v<decltype(cm.base()), int>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(m).base()), int>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(cm).base()), int>);
   }
 
   // The sentinel type is a pointer.
@@ -44,10 +44,10 @@ __host__ __device__ constexpr bool test()
     assert(cm.base() == a);
     assert(cuda::std::move(m).base() == a);
     assert(cuda::std::move(cm).base() == a);
-    ASSERT_SAME_TYPE(decltype(m.base()), const int*);
-    ASSERT_SAME_TYPE(decltype(cm.base()), const int*);
-    ASSERT_SAME_TYPE(decltype(cuda::std::move(m).base()), const int*);
-    ASSERT_SAME_TYPE(decltype(cuda::std::move(cm).base()), const int*);
+    static_assert(cuda::std::is_same_v<decltype(m.base()), const int*>);
+    static_assert(cuda::std::is_same_v<decltype(cm.base()), const int*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(m).base()), const int*>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::move(cm).base()), const int*>);
   }
   return true;
 }

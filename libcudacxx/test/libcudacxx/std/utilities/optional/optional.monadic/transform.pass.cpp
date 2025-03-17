@@ -183,7 +183,7 @@ __host__ __device__ constexpr void test_val_types()
     {
       cuda::std::optional<int> i{0};
       assert(i.transform(LVal{}) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(LVal{})), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(LVal{})), cuda::std::optional<int>>);
     }
 
     // With & qualifier on F's operator()
@@ -191,7 +191,7 @@ __host__ __device__ constexpr void test_val_types()
       cuda::std::optional<int> i{0};
       RefQual l{};
       assert(i.transform(l) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::optional<int>>);
     }
   }
 
@@ -201,7 +201,7 @@ __host__ __device__ constexpr void test_val_types()
     {
       const cuda::std::optional<int> i{0};
       assert(i.transform(CLVal{}) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(CLVal{})), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(CLVal{})), cuda::std::optional<int>>);
     }
 
     // With & qualifier on F's operator()
@@ -209,7 +209,7 @@ __host__ __device__ constexpr void test_val_types()
       const cuda::std::optional<int> i{0};
       const CRefQual l{};
       assert(i.transform(l) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::optional<int>>);
     }
   }
 
@@ -219,14 +219,14 @@ __host__ __device__ constexpr void test_val_types()
     {
       cuda::std::optional<int> i{0};
       assert(cuda::std::move(i).transform(RVal{}) == 1);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform(RVal{})), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(cuda::std::move(i).transform(RVal{})), cuda::std::optional<int>>);
     }
 
     // With & qualifier on F's operator()
     {
       cuda::std::optional<int> i{0};
       assert(i.transform(RVRefQual{}) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(RVRefQual{})), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(RVRefQual{})), cuda::std::optional<int>>);
     }
   }
 
@@ -236,7 +236,7 @@ __host__ __device__ constexpr void test_val_types()
     {
       const cuda::std::optional<int> i{0};
       assert(cuda::std::move(i).transform(CRVal{}) == 1);
-      ASSERT_SAME_TYPE(decltype(cuda::std::move(i).transform(CRVal{})), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(cuda::std::move(i).transform(CRVal{})), cuda::std::optional<int>>);
     }
 
     // With & qualifier on F's operator()
@@ -244,7 +244,7 @@ __host__ __device__ constexpr void test_val_types()
       const cuda::std::optional<int> i{0};
       const RVCRefQual l{};
       assert(i.transform(cuda::std::move(l)) == 1);
-      ASSERT_SAME_TYPE(decltype(i.transform(cuda::std::move(l))), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(cuda::std::move(l))), cuda::std::optional<int>>);
     }
   }
 
@@ -258,7 +258,7 @@ __host__ __device__ constexpr void test_val_types()
 
       i = value;
       assert(i.transform(LValRef{}) == 42);
-      ASSERT_SAME_TYPE(decltype(i.transform(LValRef{})), cuda::std::optional<int&>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(LValRef{})), cuda::std::optional<int&>>);
     }
 
     // With & qualifier on F's operator()
@@ -269,7 +269,7 @@ __host__ __device__ constexpr void test_val_types()
 
       i = value;
       assert(i.transform(l) == 42);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::optional<int&>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::optional<int&>>);
     }
 
     // Without & qualifier on F's operator() returning an object type
@@ -279,7 +279,7 @@ __host__ __device__ constexpr void test_val_types()
 
       i = value;
       assert(i.transform(LValRefObj{}) == 42);
-      ASSERT_SAME_TYPE(decltype(i.transform(LValRefObj{})), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(LValRefObj{})), cuda::std::optional<int>>);
     }
 
     // With & qualifier on F's operator() returning an object type
@@ -290,7 +290,7 @@ __host__ __device__ constexpr void test_val_types()
 
       i = value;
       assert(i.transform(l) == 42);
-      ASSERT_SAME_TYPE(decltype(i.transform(l)), cuda::std::optional<int>);
+      static_assert(cuda::std::is_same_v<decltype(i.transform(l)), cuda::std::optional<int>>);
     }
   }
 }
@@ -315,7 +315,7 @@ struct nvrtc_workaround
 };
 
 // check that the lambda body is not instantiated during overload resolution
-__host__ __device__ TEST_CONSTEXPR_CXX17 void test_sfinae()
+__host__ __device__ constexpr void test_sfinae()
 {
   cuda::std::optional<NonConst> opt{};
   auto l = nvrtc_workaround(); // [](auto&& x) { return x.non_const(); };
@@ -323,7 +323,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 void test_sfinae()
   cuda::std::move(opt).transform(l);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_sfinae();
   test_val_types();
@@ -341,7 +341,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
   cuda::std::move(copt).transform(never_called);
 
 // the code below depends on guaranteed copy/move elision
-#if (!defined(TEST_COMPILER_MSVC) || TEST_STD_VER >= 2020)
+#if (!TEST_COMPILER(MSVC) || TEST_STD_VER >= 2020)
   cuda::std::optional<NoCopy> nc;
   const auto& cnc = nc;
   cuda::std::move(nc).transform(NoCopy{});

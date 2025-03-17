@@ -45,7 +45,7 @@ struct NoDestroy
 template <class T>
 struct CountDestroy
 {
-  __host__ __device__ TEST_CONSTEXPR explicit CountDestroy(int* counter)
+  __host__ __device__ constexpr explicit CountDestroy(int* counter)
       : counter_(counter)
   {}
 
@@ -85,7 +85,7 @@ struct CountDestroy
 
 struct CountDestructor
 {
-  __host__ __device__ TEST_CONSTEXPR explicit CountDestructor(int* counter)
+  __host__ __device__ constexpr explicit CountDestructor(int* counter)
       : counter_(counter)
   {}
 
@@ -116,7 +116,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 
     cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
   }
-#if !defined(TEST_COMPILER_MSVC) && TEST_STD_VER >= 2020 // incomplete type not allowed
+#if !TEST_COMPILER(MSVC) && TEST_STD_VER >= 2020 // incomplete type not allowed
   if (!TEST_IS_CONSTANT_EVALUATED())
   {
     typedef IncompleteHolder* T;
@@ -127,7 +127,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     cuda::std::allocator_traits<Alloc>::destroy(alloc, pool);
     cuda::std::allocator_traits<Alloc>::deallocate(alloc, pool, 1);
   }
-#endif // !defined(TEST_COMPILER_MSVC) && TEST_STD_VER >= 2020
+#endif // !TEST_COMPILER(MSVC) && TEST_STD_VER >= 2020
   {
     using Alloc            = CountDestroy<CountDestructor>;
     int destroys_called    = 0;
