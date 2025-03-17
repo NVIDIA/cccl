@@ -21,6 +21,9 @@ Mdspan
 
    * - :ref:`host/device/managed mdspan and accessor <libcudacxx-extended-api-mdspan-host-device-accessor>`
      - CUDA memory space ``mdspan`` and accessors
+     - CCCL 3.0.0
+     - CUDA 13.0
+
    * - :ref:`restrict mdspan and accessor <libcudacxx-extended-api-mdspan-restrict-accessor>`
      - ``mdspan`` and accessor with the *restrict* aliasing policy
      - CCCL 3.0.0

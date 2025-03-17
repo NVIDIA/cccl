@@ -3,6 +3,11 @@
 ``host/device/managed`` ``mdspan`` and ``accessors``
 ====================================================
 
+*Host*, *device*, and *managed* ``mdspan`` allow to express multi-dimensional views of the respective CUDA memory spaces as *vocabulary types* and prevent potential errors.
+
+Types and Traits
+----------------
+
 .. code:: cpp
 
   template <typename Accessor>
@@ -42,8 +47,6 @@ Alias types to create ``mdspan`` with *host*, *device*, or *managed* accessors.
 
 ----
 
-Traits:
-
 .. code:: cpp
 
   template <typename T>
@@ -66,8 +69,6 @@ Traits:
 Features
 --------
 
-*Host*, *device*, and *managed* ``mdspan`` allow to express multi-dimensional views of the respective CUDA memory spaces as *vocabulary types* and prevent potential errors.
-
 **Memory spaces**
 
 +--------------------+------------------+-------------------+
@@ -87,16 +88,16 @@ Features
 +-----------------------------+------------------+-------------------+---------------------+
 |                             | ``host_mdspan``  | ``device_mdspan`` | ``managed_mdspan``  |
 +=============================+==================+===================+=====================+
-| ``host_mdspan``             | Allowed *****    | *Error*           | *Error*             |
+| ``host_mdspan``             | Allowed *****    | *Compile error*   | *Compile error*     |
 +-----------------------------+------------------+-------------------+---------------------+
-| ``device_mdspan``           | *Error*          | Allowed *****     | *Error*             |
+| ``device_mdspan``           | *Compile error*  | Allowed *****     | *Compile error*     |
 +-----------------------------+------------------+-------------------+---------------------+
 | ``managed_mdspan``          | Allowed          | Allowed           | Allowed *****       |
 +-----------------------------+------------------+-------------------+---------------------+
 | Other mdspan                | Allowed          | Allowed           | Allowed             |
 +-----------------------------+------------------+-------------------+---------------------+
 
-***** the conversion is ``explicit`` if the base accessor are not directly convertible.
+***** the conversion is ``explicit`` if the base accessors are not directly convertible.
 
 Example 1
 ---------
