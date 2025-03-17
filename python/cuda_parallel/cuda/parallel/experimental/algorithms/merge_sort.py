@@ -69,7 +69,7 @@ class _MergeSort:
         self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
         self.d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
 
-        bindings = get_bindings()
+        self.bindings = get_bindings()
 
         if isinstance(d_in_keys, IteratorBase):
             value_type = d_in_keys.value_type
@@ -81,7 +81,7 @@ class _MergeSort:
 
         self.build_result = cccl.DeviceMergeSortBuildResult()
         error = call_build(
-            bindings.cccl_device_merge_sort_build,
+            self.bindings.cccl_device_merge_sort_build,
             ctypes.byref(self.build_result),
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
@@ -113,7 +113,6 @@ class _MergeSort:
             set_state_fn(self.d_out_items_cccl, d_out_items)
 
         stream_handle = protocols.validate_and_get_stream(stream)
-        bindings = get_bindings()
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
             d_temp_storage = None
@@ -123,7 +122,7 @@ class _MergeSort:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
 
-        error = bindings.cccl_device_merge_sort(
+        error = self.bindings.cccl_device_merge_sort(
             self.build_result,
             ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
@@ -144,8 +143,7 @@ class _MergeSort:
     def __del__(self):
         if self.build_result is None:
             return
-        bindings = get_bindings()
-        bindings.cccl_device_merge_sort_cleanup(ctypes.byref(self.build_result))
+        self.bindings.cccl_device_merge_sort_cleanup(ctypes.byref(self.build_result))
 
 
 @cache_with_key(make_cache_key)
