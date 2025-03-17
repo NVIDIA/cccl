@@ -70,7 +70,7 @@ __make_std_complex(const _Tp& __r = _Tp{}, const _Tp& __i = _Tp()) noexcept
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (return ::std::complex<_Tp>{__r, __i};),
-                      (_CCCL_ALIGNAS(alignof(::std::complex<_Tp>)) _Tp __ret[]{__r, __i};
+                      (_CCCL_ALIGNAS_TYPE(::std::complex<_Tp>) _Tp __ret[]{__r, __i};
                        return reinterpret_cast<::std::complex<_Tp>&>(__ret);))
   }
 }
