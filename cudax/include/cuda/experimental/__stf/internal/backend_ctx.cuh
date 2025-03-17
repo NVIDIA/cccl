@@ -509,7 +509,11 @@ protected:
           // Add an edge between that leaf task and the fence node in the DOT output
           if (dot_is_tracing)
           {
+<<<<<<< HEAD
             dot.add_edge(t_id, fence_unique_id, reserved::edge_type::prereqs);
+=======
+            dot.add_edge(t_id, fence_unique_id, 1);
+>>>>>>> main
           }
         }
 
@@ -534,7 +538,11 @@ protected:
           // Add an edge between that freeze and the fence node in the DOT output
           if (dot_is_tracing)
           {
+<<<<<<< HEAD
             dot.add_edge(fake_t_id, fence_unique_id, reserved::edge_type::prereqs);
+=======
+            dot.add_edge(fake_t_id, fence_unique_id, 1);
+>>>>>>> main
           }
         }
 
