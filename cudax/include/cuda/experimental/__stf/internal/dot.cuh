@@ -74,10 +74,8 @@ enum vertex_type
   cluster_proxy_vertex // start or end of clusters (invisible nodes)
 };
 
-// TODO rename per_vertex_info
-//
-// Information for every task, so that we can eventually generate a node for the task
-struct per_task_info
+// Information for every vertex (task, prereq, ...), so that we can eventually generate a node for the DAG
+struct per_vertex_info
 {
   ::std::string color;
   ::std::string label;
@@ -418,7 +416,7 @@ public:
   }
 
 public: // XXX protected, friend : dot
-  ::std::unordered_map<int /* id */, per_task_info> metadata;
+  ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
 private:
   mutable ::std::string ctx_symbol;
@@ -960,12 +958,12 @@ private:
    */
   void merge_nodes(per_ctx_dot& pc, int dst_id, int src_id)
   {
-    // ::std::unordered_map<int /* id */, per_task_info> metadata;
+    // ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
     // Get src_id from the map and remove it
     auto it = pc.metadata.find(src_id);
     assert(it != pc.metadata.end());
-    per_task_info src = mv(it->second);
+    per_vertex_info src = mv(it->second);
     pc.metadata.erase(it);
 
     // If there was some timing associated to either src or dst, update timing
@@ -1048,7 +1046,7 @@ private:
       // to iterate on it, and remove from the original structure if necessary
       decltype(pc->metadata) copy_metadata = pc->metadata;
 
-      // p.first = vertex id, p.second = per_task_info
+      // p.first = vertex id, p.second = per_vertex_info
       for (auto& p : copy_metadata)
       {
         if (p.second.type == freeze_vertex)
