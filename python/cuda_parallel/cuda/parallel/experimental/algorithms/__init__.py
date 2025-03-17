@@ -12,7 +12,7 @@ from .segmented_reduce import segmented_reduce
 __all__ = [
     "merge_sort",
     "reduce_into",
-    "exlusive_scan",
+    "exclusive_scan",
     "inclusive_scan",
     "segmented_reduce",
 ]

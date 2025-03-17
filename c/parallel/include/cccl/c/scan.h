@@ -18,9 +18,7 @@
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
-#ifndef __cplusplus
-#  include <stdbool.h>
-#endif
+#include <stdbool.h>
 #include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
