@@ -2151,9 +2151,9 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
 inline void backend_ctx_untyped::impl::erase_all_logical_data()
 {
   /* Since we modify the map while iterating on it, we will copy it */
-  stack.logical_data_ids_mutex.lock();
-  auto logical_data_ids_cpy = stack.logical_data_ids;
-  stack.logical_data_ids_mutex.unlock();
+  state.logical_data_ids_mutex.lock();
+  auto logical_data_ids_cpy = state.logical_data_ids;
+  state.logical_data_ids_mutex.unlock();
 
   /* Erase all logical data created in this context */
   for (auto p : logical_data_ids_cpy)

@@ -516,7 +516,7 @@ public:
 protected:
   /**
    * @brief This stores states attached to any context, which are not specific to a
-   * given backend. For example the stack of tasks.
+   * given backend.
    */
   class impl
   {
@@ -658,7 +658,7 @@ protected:
         auto deinit_res = it->deinit(bctx);
         if (track_dangling)
         {
-          stack.add_dangling_events(bctx, mv(deinit_res));
+          state.add_dangling_events(bctx, mv(deinit_res));
         }
       }
 
@@ -669,7 +669,7 @@ protected:
       auto composite_deinit_res = composite_cache.deinit();
       if (track_dangling)
       {
-        stack.add_dangling_events(bctx, mv(composite_deinit_res));
+        state.add_dangling_events(bctx, mv(composite_deinit_res));
       }
     }
 
@@ -697,7 +697,6 @@ protected:
 
     void cleanup()
     {
-      // assert(!stack.hasCurrentTask());
       attached_allocators.clear();
       // Leave custom_allocator, auto_scheduler, and auto_reordered as they were.
     }
@@ -706,7 +705,7 @@ protected:
     block_allocator_untyped custom_allocator;
     block_allocator_untyped default_allocator;
     block_allocator_untyped uncached_allocator;
-    reserved::ctx_state stack;
+    reserved::ctx_state state;
 
     // A vector of all allocators used in this ctx, so that they are
     // destroyed when calling finalize()
@@ -763,12 +762,12 @@ protected:
 
     bool has_start_events() const
     {
-      return stack.has_start_events();
+      return state.has_start_events();
     }
 
     const event_list& get_start_events() const
     {
-      return stack.get_start_events();
+      return state.get_start_events();
     }
 
   private:
@@ -813,7 +812,7 @@ public:
   auto& get_stack()
   {
     assert(pimpl);
-    return pimpl->stack;
+    return pimpl->state;
   }
 
   bool reordering_tasks() const
