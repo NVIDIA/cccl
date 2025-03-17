@@ -6,11 +6,15 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/__cccl_config>
+
+#if _CCCL_HAS_LONG_DOUBLE()
 __host__ __device__ inline long double truncate_fp(long double val)
 {
   volatile long double sink = val;
   return sink;
 }
+#endif // _CCCL_HAS_LONG_DOUBLE()
 
 __host__ __device__ inline double truncate_fp(double val)
 {

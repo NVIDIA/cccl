@@ -20,18 +20,6 @@
 
 using cuda::std::optional;
 
-template <class T, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const optional<U>& rhs)
-{
-  bool rhs_engaged = static_cast<bool>(rhs);
-  optional<T> lhs  = rhs;
-  assert(static_cast<bool>(lhs) == rhs_engaged);
-  if (rhs_engaged)
-  {
-    assert(*lhs == *rhs);
-  }
-}
-
 class X
 {
   int i_;
@@ -68,17 +56,86 @@ public:
   }
 };
 
-template <class T, class U>
-__host__ __device__ constexpr bool test_all()
+struct B
 {
+  int val_;
+
+  __host__ __device__ constexpr bool operator==(const int& other) const noexcept
   {
-    optional<U> rhs;
-    test<T>(rhs);
+    return other == val_;
   }
+};
+class D : public B
+{};
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+template <class T>
+struct ConvertibleToReference
+{
+  T val_;
+
+  __host__ __device__ constexpr operator const T&() const noexcept
   {
-    optional<U> rhs(U{3});
-    test<T>(rhs);
+    return val_;
   }
+};
+
+template <class T>
+struct ConvertibleToValue
+{
+  T val_;
+
+  __host__ __device__ constexpr operator T() const noexcept
+  {
+    return val_;
+  }
+
+  __host__ __device__ friend constexpr bool operator==(const int& lhs, const ConvertibleToValue& rhs) noexcept
+  {
+    return lhs == rhs.val_;
+  }
+};
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
+template <class T, class U>
+__host__ __device__ constexpr void test()
+{
+  { // constructed from empty
+    const optional<U> input{};
+    optional<T> opt = input;
+    assert(!input.has_value());
+    assert(!opt.has_value());
+  }
+  { // constructed from non-empty
+    cuda::std::remove_reference_t<U> val{42};
+    const optional<U> input{val};
+    optional<T> opt = input;
+    assert(input.has_value());
+    assert(opt.has_value());
+    assert(*opt == 42);
+    if constexpr (cuda::std::is_reference_v<T>)
+    {
+      // optional<U> does not necessarily hold a reference so we cannot use addressof(val)
+      assert(cuda::std::addressof(static_cast<T>(*input)) == opt.operator->());
+    }
+  }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int, short>();
+  test<X, int>();
+  test<Y, int>();
+
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<B&, D&>();
+  test<const int&, ConvertibleToReference<int>>();
+
+  test<int, ConvertibleToReference<int>&>();
+  test<int, ConvertibleToValue<int>&>();
+  test<int, const ConvertibleToValue<int>&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
+
   return true;
 }
 
@@ -142,19 +199,18 @@ void test_exceptions()
 
 int main(int, char**)
 {
-  test_all<int, short>();
-  test_all<X, int>();
-  test_all<Y, int>();
+  test();
 #if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
-  static_assert(test_all<int, short>());
-  static_assert(test_all<X, int>());
-  static_assert(test_all<Y, int>());
-#endif
+  static_assert(test());
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
+
   {
     typedef TerminatesOnConstruction T;
     typedef int U;
-    optional<U> rhs;
-    test<T>(rhs);
+    const optional<U> rhs;
+    optional<T> lhs{rhs};
+    assert(!lhs.has_value());
+    assert(!rhs.has_value());
   }
   static_assert(!(cuda::std::is_constructible<optional<X>, const optional<Y>&>::value), "");
 

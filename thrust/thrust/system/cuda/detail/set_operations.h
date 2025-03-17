@@ -128,7 +128,7 @@ THRUST_DEVICE_FUNCTION Size biased_binary_search(It data, Size count, T key, Int
 template <bool UpperBound, class Size, class It1, class It2, class Comp>
 THRUST_DEVICE_FUNCTION Size merge_path(It1 a, Size aCount, It2 b, Size bCount, Size diag, Comp comp)
 {
-  using T = typename thrust::iterator_traits<It1>::value_type;
+  using T = thrust::detail::it_value_t<It1>;
 
   Size begin = ::cuda::std::max<Size>(0, diag - bCount);
   Size end   = ::cuda::std::min<Size>(diag, aCount);
@@ -155,7 +155,7 @@ template <class It1, class It2, class Size, class Size2, class CompareOp>
 THRUST_DEVICE_FUNCTION pair<Size, Size>
 balanced_path(It1 keys1, It2 keys2, Size num_keys1, Size num_keys2, Size diag, Size2 levels, CompareOp compare_op)
 {
-  using T = typename iterator_traits<It1>::value_type;
+  using T = thrust::detail::it_value_t<It1>;
 
   Size index1 = merge_path<false>(keys1, num_keys1, keys2, num_keys2, diag, compare_op);
   Size index2 = diag - index1;
@@ -275,10 +275,10 @@ template <class KeysIt1,
           class HAS_VALUES>
 struct SetOpAgent
 {
-  using key1_type   = typename iterator_traits<KeysIt1>::value_type;
-  using key2_type   = typename iterator_traits<KeysIt2>::value_type;
-  using value1_type = typename iterator_traits<ValuesIt1>::value_type;
-  using value2_type = typename iterator_traits<ValuesIt2>::value_type;
+  using key1_type   = thrust::detail::it_value_t<KeysIt1>;
+  using key2_type   = thrust::detail::it_value_t<KeysIt2>;
+  using value1_type = thrust::detail::it_value_t<ValuesIt1>;
+  using value2_type = thrust::detail::it_value_t<ValuesIt2>;
 
   using key_type   = key1_type;
   using value_type = value1_type;
@@ -390,7 +390,7 @@ struct SetOpAgent
     {
       if (IS_FULL_TILE)
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
         {
           int idx      = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -408,7 +408,7 @@ struct SetOpAgent
       }
       else
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           int idx = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -423,7 +423,7 @@ struct SetOpAgent
     template <class T, class It>
     THRUST_DEVICE_FUNCTION void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
     {
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         int idx     = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -442,7 +442,8 @@ struct SetOpAgent
       int tile_output_count)
     {
       int local_scatter_idx = thread_output_prefix - tile_output_prefix;
-#  pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (active_mask & (1 << ITEM))
@@ -610,7 +611,7 @@ struct SetOpAgent
 
         // gather items from shared mem
         //
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           if (active_mask & (1 << ITEM))
@@ -807,7 +808,7 @@ struct serial_set_intersection
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pA = compare_op(aKey, bKey);
@@ -863,7 +864,7 @@ struct serial_set_symmetric_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -925,7 +926,7 @@ struct serial_set_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -987,7 +988,7 @@ struct serial_set_union
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -1149,7 +1150,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
   CompareOp compare_op,
   SetOp set_op)
 {
-  using size_type = typename iterator_traits<KeysIt1>::difference_type;
+  using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
   size_type num_keys1 = static_cast<size_type>(thrust::distance(keys1_first, keys1_last));
   size_type num_keys2 = static_cast<size_type>(thrust::distance(keys2_first, keys2_last));
@@ -1247,7 +1248,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1275,7 +1276,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_difference(
     policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
 }
@@ -1294,7 +1295,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1322,7 +1323,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_intersection(
     policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
 }
@@ -1341,7 +1342,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1369,7 +1370,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_symmetric_difference(
     policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
 }
@@ -1388,7 +1389,7 @@ OutputIt _CCCL_HOST_DEVICE set_union(
   CompareOp compare)
 {
   THRUST_CDP_DISPATCH(
-    (using items1_t = thrust::iterator_value_t<ItemsIt1>; items1_t* null_ = nullptr;
+    (using items1_t = thrust::detail::it_value_t<ItemsIt1>; items1_t* null_ = nullptr;
      auto tmp = __set_operations::set_operations<thrust::detail::false_type>(
        policy,
        items1_first,
@@ -1416,7 +1417,7 @@ OutputIt _CCCL_HOST_DEVICE set_union(
   ItemsIt2 items2_last,
   OutputIt result)
 {
-  using value_type = typename thrust::iterator_value<ItemsIt1>::type;
+  using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_union(policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
 }
 
@@ -1489,7 +1490,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_difference_by_key(
     policy,
     keys1_first,
@@ -1563,7 +1564,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_intersection_by_key(
     policy,
     keys1_first,
@@ -1639,7 +1640,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_symmetric_difference_by_key(
     policy,
     keys1_first,
@@ -1716,7 +1717,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
   KeysOutputIt keys_result,
   ItemsOutputIt items_result)
 {
-  using value_type = typename thrust::iterator_value<KeysIt1>::type;
+  using value_type = thrust::detail::it_value_t<KeysIt1>;
   return cuda_cub::set_union_by_key(
     policy,
     keys1_first,

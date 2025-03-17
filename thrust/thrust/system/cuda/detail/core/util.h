@@ -46,7 +46,6 @@
 #include <thrust/system/cuda/detail/core/load_iterator.h>
 #include <thrust/system/cuda/detail/core/make_load_iterator.h>
 #include <thrust/system/cuda/detail/util.h>
-#include <thrust/system/system_error.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 #include <cuda/std/__type_traits/void_t.h>
@@ -157,7 +156,7 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
     : ::cuda::std::conditional<has_sm_tuning<P, SM>::value, P<SM>, specialize_plan_impl_match<P, typelist<SMs...>>>::type
 {};
 
-#ifdef _NVHPC_CUDA
+#if _CCCL_CUDA_COMPILER(NVHPC)
 #  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
@@ -200,13 +199,13 @@ struct specialize_plan : specialize_plan_msvc10_war<Plan, SM>::type::type
 template <class Agent, class = void>
 struct temp_storage_size
 {
-  static constexpr std::size_t value = 0;
+  static constexpr ::cuda::std::size_t value = 0;
 };
 
 template <class Agent>
 struct temp_storage_size<Agent, ::cuda::std::void_t<typename Agent::TempStorage>>
 {
-  static constexpr std::size_t value = sizeof(typename Agent::TempStorage);
+  static constexpr ::cuda::std::size_t value = sizeof(typename Agent::TempStorage);
 };
 
 // check whether all Agents requires < MAX_SHMEM shared memory
@@ -245,6 +244,7 @@ struct has_enough_shmem : has_enough_shmem_impl<true, Agent, MAX_SHMEM, sm_list>
 /////////////////////////
 /////////////////////////
 
+#if !_CCCL_COMPILER(NVRTC)
 // AgentPlan structure and helpers
 // --------------------------------
 
@@ -334,95 +334,13 @@ struct get_agent_plan_impl<Agent, typelist<lowest_supported_sm_arch>>
 };
 
 template <class Agent>
-THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan(int ptx_version)
+THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type get_agent_plan([[maybe_unused]] int ptx_version)
 {
   NV_IF_TARGET(NV_IS_DEVICE,
-               (THRUST_UNUSED_VAR(ptx_version); using plan_type = typename get_plan<Agent>::type;
-                using ptx_plan                                  = typename Agent::ptx_plan;
+               (using plan_type = typename get_plan<Agent>::type; using ptx_plan = typename Agent::ptx_plan;
                 return plan_type{ptx_plan{}};), // NV_IS_HOST:
                (return get_agent_plan_impl<Agent, sm_list>::get(ptx_version);));
 }
-
-// XXX keep this dead-code for now as a gentle reminder
-//     that kernel launch which reats plan values is the most robust
-//     mechanism to extract sm-specific tuning parameters
-// TODO: since we are unable to afford kernel launch + cudaMemcpy ON EVERY
-//       algorithm invocation, we need to design a good caching strategy
-//       such that when the algorithm is called multiple times, only the
-//       first invocation will invoke kernel launch + cudaMemcpy, but
-//       the subsequent invocations, will just read cached values from host mem
-//       If launched from device, this is just a device-function call
-//       no caching is required.
-// ----------------------------------------------------------------------------
-// if we don't know ptx version, we can call kernel
-// to retrieve AgentPlan from device code. Slower, but guaranteed to work
-// -----------------------------------------------------------------------
-#if 0
-  template<class Agent>
-  void __global__ get_agent_plan_kernel(AgentPlan *plan);
-
-  static _CCCL_DEVICE AgentPlan agent_plan_device;
-
-  template<class Agent>
-  AgentPlan _CCCL_DEVICE get_agent_plan_dev()
-  {
-    AgentPlan plan;
-    plan.block_threads      = Agent::ptx_plan::BLOCK_THREADS;
-    plan.items_per_thread   = Agent::ptx_plan::ITEMS_PER_THREAD;
-    plan.items_per_tile     = Agent::ptx_plan::ITEMS_PER_TILE;
-    plan.shared_memory_size = temp_storage_size<typename Agent::ptx_plan>::value;
-    return plan;
-  }
-
-  template <class Agent, class F>
-  AgentPlan _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  xget_agent_plan_impl(F f, cudaStream_t s, void* d_ptr)
-  {
-    AgentPlan plan;
-#  ifdef __CUDA_ARCH__
-    plan = get_agent_plan_dev<Agent>();
-#  else
-    static std::mutex mutex;
-    bool lock = false;
-    if (d_ptr == 0)
-    {
-      lock = true;
-      cudaGetSymbolAddress(&d_ptr, agent_plan_device);
-    }
-    if (lock)
-      mutex.lock();
-    f<<<1,1,0,s>>>((AgentPlan*)d_ptr);
-    cudaMemcpyAsync((void*)&plan,
-                    d_ptr,
-                    sizeof(AgentPlan),
-                    cudaMemcpyDeviceToHost,
-                    s);
-    if (lock)
-      mutex.unlock();
-    cudaStreamSynchronize(s);
-#  endif
-    return plan;
-  }
-
-  template <class Agent>
-  AgentPlan THRUST_RUNTIME_FUNCTION
-  get_agent_plan(cudaStream_t s = 0, void *ptr = 0)
-  {
-    return xget_agent_plan_impl<Agent>(get_agent_plan_kernel<Agent>,
-                                        s,
-                                        ptr);
-  }
-
-  template<class Agent>
-  void __global__ get_agent_plan_kernel(AgentPlan *plan)
-  {
-    *plan = get_agent_plan_dev<Agent>();
-  }
-#endif
-
-/////////////////////////
-/////////////////////////
-/////////////////////////
 
 THRUST_RUNTIME_FUNCTION inline int get_sm_count()
 {
@@ -469,6 +387,7 @@ THRUST_RUNTIME_FUNCTION inline size_t vshmem_size(size_t shmem_per_block, size_t
     return 0;
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class>
 struct get_arch;
@@ -482,7 +401,7 @@ struct get_arch<Plan<Arch>>
 // BlockLoad
 // -----------
 // a helper metaprogram that returns type of a block loader
-template <class PtxPlan, class It, class T = typename iterator_traits<It>::value_type>
+template <class PtxPlan, class It, class T = thrust::detail::it_value_t<It>>
 struct BlockLoad
 {
   using type = cub::BlockLoad<T, PtxPlan::BLOCK_THREADS, PtxPlan::ITEMS_PER_THREAD, PtxPlan::LOAD_ALGORITHM, 1, 1>;
@@ -528,6 +447,7 @@ public:
   }
 };
 
+#if !_CCCL_COMPILER(NVRTC)
 THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
 {
   int ptx_version = 0;
@@ -581,6 +501,7 @@ THRUST_RUNTIME_FUNCTION inline int get_ptx_version()
 
   return ptx_version;
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #define _CUDA_CUB_RET_IF_FAIL(e)               \
   {                                            \
@@ -671,6 +592,7 @@ public:
   }
 };
 
+#if !_CCCL_COMPILER(NVRTC)
 namespace host
 {
 inline cuda_optional<size_t> get_max_shared_memory_per_block()
@@ -699,6 +621,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t alias_storage(
 {
   return cub::detail::AliasTemporaries(storage_ptr, storage_size, allocations, allocation_sizes);
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 } // namespace detail
 } // namespace core

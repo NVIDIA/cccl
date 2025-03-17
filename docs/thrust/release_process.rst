@@ -1,6 +1,9 @@
 Release Process
 ===============
 
+.. warning::
+    This information may no longer be accurate since Thrust was merged into the CCCL project.
+
 Create a Changelog Entry
 ------------------------
 

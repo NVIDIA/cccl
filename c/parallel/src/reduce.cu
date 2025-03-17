@@ -14,6 +14,7 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_device.cuh>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/cstdint>
 #include <cuda/std/functional> // ::cuda::std::identity
 #include <cuda/std/variant>
@@ -97,8 +98,12 @@ reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
   auto [_, block_size, items_per_thread, vector_load_length] = find_tuning(cc, chain);
 
   // Implement part of MemBoundScaling
-  items_per_thread = CUB_MAX(1, CUB_MIN(items_per_thread * 4 / accumulator_type.size, items_per_thread * 2));
-  block_size       = CUB_MIN(block_size, (((1024 * 48) / (accumulator_type.size * items_per_thread)) + 31) / 32 * 32);
+  auto four_bytes_per_thread = items_per_thread * 4 / accumulator_type.size;
+  items_per_thread = _CUDA_VSTD::clamp<decltype(items_per_thread)>(four_bytes_per_thread, 1, items_per_thread * 2);
+
+  auto work_per_sm    = cub::detail::max_smem_per_block / (accumulator_type.size * items_per_thread);
+  auto max_block_size = cuda::round_up(work_per_sm, 32);
+  block_size          = _CUDA_VSTD::min<decltype(block_size)>(block_size, max_block_size);
 
   return {block_size, items_per_thread, vector_load_length};
 }
@@ -384,7 +389,7 @@ CUresult cccl_device_reduce(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   cccl_value_t init,
   CUstream stream)

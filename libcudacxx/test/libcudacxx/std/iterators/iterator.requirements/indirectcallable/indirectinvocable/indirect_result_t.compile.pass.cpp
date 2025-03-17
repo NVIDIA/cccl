@@ -23,16 +23,9 @@ static_assert(cuda::std::same_as<cuda::std::indirect_result_t<long S::*, S*>, lo
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<S && (S::*) (), S*>, S&&>, "");
 static_assert(cuda::std::same_as<cuda::std::indirect_result_t<int S::* (S::*) (int) const, S*, int*>, int S::*>, "");
 
-#if TEST_STD_VER > 2017
 template <class F, class... Is>
-constexpr bool has_indirect_result = requires { typename cuda::std::indirect_result_t<F, Is...>; };
-#else
-template <class F, class... Is>
-_CCCL_CONCEPT_FRAGMENT(has_indirect_result_, requires()(typename(cuda::std::indirect_result_t<F, Is...>)));
-
-template <class F, class... Is>
-_CCCL_CONCEPT has_indirect_result = _CCCL_FRAGMENT(has_indirect_result_, F, Is...);
-#endif
+_CCCL_CONCEPT has_indirect_result =
+  _CCCL_REQUIRES_EXPR((F, variadic Is))(typename(cuda::std::indirect_result_t<F, Is...>));
 
 static_assert(!has_indirect_result<int (*)(int), int>, ""); // int isn't indirectly_readable
 static_assert(!has_indirect_result<int, int*>, ""); // int isn't invocable

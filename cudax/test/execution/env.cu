@@ -10,7 +10,7 @@
 
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/buffer.cuh>
+#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/execution.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 

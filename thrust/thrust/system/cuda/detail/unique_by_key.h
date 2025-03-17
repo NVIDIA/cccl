@@ -182,7 +182,7 @@ THRUST_RUNTIME_FUNCTION pair<KeyOutputIt, ValOutputIt> unique_by_key(
   ValOutputIt values_result,
   BinaryPred binary_pred)
 {
-  using size_type = typename iterator_traits<KeyInputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<KeyInputIt>;
 
   size_type num_items = static_cast<size_type>(thrust::distance(keys_first, keys_last));
   pair<KeyOutputIt, ValOutputIt> result_end{};
@@ -273,7 +273,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE unique_by_key_copy(
   KeyOutputIt keys_result,
   ValOutputIt values_result)
 {
-  using key_type = typename iterator_traits<KeyInputIt>::value_type;
+  using key_type = thrust::detail::it_value_t<KeyInputIt>;
   return cuda_cub::unique_by_key_copy(
     policy, keys_first, keys_last, values_first, keys_result, values_result, equal_to<key_type>());
 }
@@ -298,7 +298,7 @@ template <class Derived, class KeyInputIt, class ValInputIt>
 pair<KeyInputIt, ValInputIt> _CCCL_HOST_DEVICE
 unique_by_key(execution_policy<Derived>& policy, KeyInputIt keys_first, KeyInputIt keys_last, ValInputIt values_first)
 {
-  using key_type = typename iterator_traits<KeyInputIt>::value_type;
+  using key_type = thrust::detail::it_value_t<KeyInputIt>;
   return cuda_cub::unique_by_key(policy, keys_first, keys_last, values_first, equal_to<key_type>());
 }
 

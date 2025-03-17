@@ -45,11 +45,11 @@
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm_>
+
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace select
+namespace detail::select
 {
 
 enum class may_alias
@@ -97,7 +97,6 @@ enum class distinct_partitions
 template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
 struct sm80_tuning;
 
-// select::if
 template <class Input>
 struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_1>
 {
@@ -1491,16 +1490,18 @@ constexpr distinct_partitions is_distinct_partitions()
   return DistinctPartitions ? distinct_partitions::yes : distinct_partitions::no;
 }
 
-template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, bool MayAlias, bool KeepRejects>
+template <class InputT, class FlagT, class OffsetT, bool DistinctPartitions, SelectImpl Impl>
 struct policy_hub
 {
+  static constexpr bool may_alias    = Impl == SelectImpl::SelectPotentiallyInPlace;
+  static constexpr bool keep_rejects = Impl == SelectImpl::Partition;
+
   template <CacheLoadModifier LoadModifier>
   struct DefaultPolicy
   {
     static constexpr int nominal_4B_items_per_thread = 10;
-    // TODO(bgruber): use cuda::std::clamp() in C++14
     static constexpr int items_per_thread =
-      CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(InputT))));
+      ::cuda::std::clamp(nominal_4B_items_per_thread * 4 / int{sizeof(InputT)}, 1, nominal_4B_items_per_thread);
     using SelectIfPolicyT =
       AgentSelectIfPolicy<128,
                           items_per_thread,
@@ -1511,7 +1512,7 @@ struct policy_hub
   };
 
   struct Policy500
-      : DefaultPolicy<MayAlias ? LOAD_CA : LOAD_LDG>
+      : DefaultPolicy<may_alias ? LOAD_CA : LOAD_LDG>
       , ChainedPolicy<500, Policy500, Policy500>
   {};
 
@@ -1532,14 +1533,14 @@ struct policy_hub
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm80_tuning<InputT,
                                                is_flagged<FlagT>(),
-                                               are_rejects_kept<KeepRejects>(),
+                                               are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
                                                is_primitive<InputT>(),
                                                classify_input_size<InputT>()>>(0));
   };
 
   struct Policy860
-      : DefaultPolicy<MayAlias ? LOAD_CA : LOAD_LDG>
+      : DefaultPolicy<may_alias ? LOAD_CA : LOAD_LDG>
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
@@ -1548,7 +1549,7 @@ struct policy_hub
     using SelectIfPolicyT =
       decltype(select_agent_policy<sm90_tuning<InputT,
                                                is_flagged<FlagT>(),
-                                               are_rejects_kept<KeepRejects>(),
+                                               are_rejects_kept<keep_rejects>(),
                                                offset_size::_4, // before SM100, we only tuned for int32
                                                is_primitive<InputT>(),
                                                classify_input_size<InputT>()>>(0));
@@ -1571,17 +1572,16 @@ struct policy_hub
     using SelectIfPolicyT =
       decltype(select_agent_policy100<sm100_tuning<InputT,
                                                    is_flagged<FlagT>(),
-                                                   are_rejects_kept<KeepRejects>(),
+                                                   are_rejects_kept<keep_rejects>(),
                                                    classify_offset_size<OffsetT>(),
                                                    is_primitive<InputT>(),
                                                    classify_input_size<InputT>(),
-                                                   should_alias<MayAlias>(),
+                                                   should_alias<may_alias>(),
                                                    is_distinct_partitions<DistinctPartitions>()>>(0));
   };
 
   using MaxPolicy = Policy1000;
 };
-} // namespace select
-} // namespace detail
+} // namespace detail::select
 
 CUB_NAMESPACE_END

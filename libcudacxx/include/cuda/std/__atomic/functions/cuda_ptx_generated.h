@@ -49,21 +49,21 @@ static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_device_tag)
 static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_system_tag)
 { asm volatile("membar.sys;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_block_tag, __atomic_cuda_acq_rel)
-{ asm volatile("fence.cta.acq_rel;" ::: "memory"); }
+{ asm volatile("fence.acq_rel.cta;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_block_tag, __atomic_cuda_seq_cst)
-{ asm volatile("fence.cta.sc;" ::: "memory"); }
+{ asm volatile("fence.sc.cta;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_cluster_tag, __atomic_cuda_acq_rel)
-{ asm volatile("fence.cluster.acq_rel;" ::: "memory"); }
+{ asm volatile("fence.acq_rel.cluster;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_cluster_tag, __atomic_cuda_seq_cst)
-{ asm volatile("fence.cluster.sc;" ::: "memory"); }
+{ asm volatile("fence.sc.cluster;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_device_tag, __atomic_cuda_acq_rel)
-{ asm volatile("fence.gpu.acq_rel;" ::: "memory"); }
+{ asm volatile("fence.acq_rel.gpu;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_device_tag, __atomic_cuda_seq_cst)
-{ asm volatile("fence.gpu.sc;" ::: "memory"); }
+{ asm volatile("fence.sc.gpu;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_system_tag, __atomic_cuda_acq_rel)
-{ asm volatile("fence.sys.acq_rel;" ::: "memory"); }
+{ asm volatile("fence.acq_rel.sys;" ::: "memory"); }
 static inline _CCCL_DEVICE void __cuda_atomic_fence(__thread_scope_system_tag, __atomic_cuda_seq_cst)
-{ asm volatile("fence.sys.sc;" ::: "memory"); }
+{ asm volatile("fence.sc.sys;" ::: "memory"); }
 
 template <typename _Sco>
 static inline _CCCL_DEVICE void __atomic_thread_fence_cuda(int __memorder, _Sco) {

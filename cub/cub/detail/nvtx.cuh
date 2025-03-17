@@ -48,7 +48,8 @@
 // * C++14 is available for cuda::std::optional
 // * NVTX3 uses module as an identifier, which trips up NVHPC
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
-                      && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER == 2017)
+                      && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER == 2017)                           \
+                      && !_CCCL_COMPILER(NVRTC)
 // Include our NVTX3 C++ wrapper if not available from the CTK
 // TODO(bgruber): replace by a check for the first CTK version shipping the header
 #  if _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
