@@ -41,8 +41,13 @@ __host__ __device__ constexpr void test_type()
     static_assert(cuda::std::is_same_v<decltype(r.value), T>);
     static_assert(cuda::std::is_same_v<decltype(r.overflow), bool>);
 
+#if TEST_COMPILER(NVRTC)
+    assert(offsetof(cuda::overflow_result<T>, value) == 0);
+    assert(offsetof(cuda::overflow_result<T>, overflow) > offsetof(cuda::overflow_result<T>, value));
+#else // ^^^ TEST_COMPILER(NVRTC) ^^^ / vvv !TEST_COMPILER(NVRTC) vvv
     static_assert(offsetof(cuda::overflow_result<T>, value) == 0);
     static_assert(offsetof(cuda::overflow_result<T>, overflow) > offsetof(cuda::overflow_result<T>, value));
+#endif // !TEST_COMPILER(NVRTC)
   }
 
   // 3. Test explicit bool conversion
