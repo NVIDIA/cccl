@@ -97,16 +97,10 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
-  const size_t num_segments = static_cast<size_t>(state.get_int64("NumSegments{io}"));
+  const size_t num_elements = static_cast<size_t>(state.get_int64("NumElements{io}"));
   const size_t segment_size = static_cast<size_t>(state.get_int64("SegmentSize{io}"));
+  const size_t num_segments = std::max<std::size_t>(1, (num_elements / segment_size));
   const size_t elements     = num_segments * segment_size;
-
-  const size_t max_elements = std::pow(2, 30);
-  if (elements > max_elements)
-  {
-    state.skip("Input size too large for current configuration");
-    return;
-  }
 
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<T> out(num_segments);
@@ -150,7 +144,19 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
 }
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
-  .set_name("base")
+  .set_name("small")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("NumSegments{io}", nvbench::range(18, 28, 2))
-  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(0, 10, 1));
+  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
+  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(0, 4, 1));
+
+NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
+  .set_name("medium")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 4))
+  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(5, 8, 1));
+
+NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
+  .set_name("large")
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
+  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(9, 16, 2));
