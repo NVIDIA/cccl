@@ -45,8 +45,8 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<day>() + cuda::std::declval<days>()));
   static_assert(noexcept(cuda::std::declval<days>() + cuda::std::declval<day>()));
 
-  ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<day>() + cuda::std::declval<days>()));
-  ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<days>() + cuda::std::declval<day>()));
+  static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<day>() + cuda::std::declval<days>())>);
+  static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<days>() + cuda::std::declval<day>())>);
 
   static_assert(testConstexpr<day, days>(), "");
 

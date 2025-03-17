@@ -79,10 +79,12 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::declval<year_month_weekday_last>() + cuda::std::declval<months>()));
     static_assert(noexcept(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday_last>()));
 
-    ASSERT_SAME_TYPE(year_month_weekday_last,
-                     decltype(cuda::std::declval<year_month_weekday_last>() + cuda::std::declval<months>()));
-    ASSERT_SAME_TYPE(year_month_weekday_last,
-                     decltype(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday_last>()));
+    static_assert(
+      cuda::std::is_same_v<year_month_weekday_last,
+                           decltype(cuda::std::declval<year_month_weekday_last>() + cuda::std::declval<months>())>);
+    static_assert(
+      cuda::std::is_same_v<year_month_weekday_last,
+                           decltype(cuda::std::declval<months>() + cuda::std::declval<year_month_weekday_last>())>);
 
     static_assert(testConstexprMonths(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}), "");
 
@@ -107,10 +109,12 @@ int main(int, char**)
     static_assert(noexcept(cuda::std::declval<year_month_weekday_last>() + cuda::std::declval<years>()));
     static_assert(noexcept(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday_last>()));
 
-    ASSERT_SAME_TYPE(year_month_weekday_last,
-                     decltype(cuda::std::declval<year_month_weekday_last>() + cuda::std::declval<years>()));
-    ASSERT_SAME_TYPE(year_month_weekday_last,
-                     decltype(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday_last>()));
+    static_assert(
+      cuda::std::is_same_v<year_month_weekday_last,
+                           decltype(cuda::std::declval<year_month_weekday_last>() + cuda::std::declval<years>())>);
+    static_assert(
+      cuda::std::is_same_v<year_month_weekday_last,
+                           decltype(cuda::std::declval<years>() + cuda::std::declval<year_month_weekday_last>())>);
 
     static_assert(testConstexprYears(year_month_weekday_last{year{1}, January, weekday_last{Tuesday}}), "");
 

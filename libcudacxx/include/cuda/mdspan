@@ -1,14 +1,15 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_BUFFER__
-#define __CUDAX_BUFFER__
+#ifndef _CUDA_MDSPAN
+#define _CUDA_MDSPAN
 
 #include <cuda/std/detail/__config>
 
@@ -20,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__container/uninitialized_async_buffer.cuh>
-#include <cuda/experimental/__container/uninitialized_buffer.cuh>
+#include <cuda/__mdspan/restrict_mdspan.h>
+#include <cuda/std/mdspan>
 
-#endif // __CUDAX_BUFFER
+#endif // _CUDA_MDSPAN

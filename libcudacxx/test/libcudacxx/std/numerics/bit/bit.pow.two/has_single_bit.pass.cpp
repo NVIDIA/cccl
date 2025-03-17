@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ void runtime_test()
 {
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::has_single_bit(T(0))));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::has_single_bit(T(0)))>);
   static_assert(noexcept(cuda::std::has_single_bit(T(0))));
 
   assert(!cuda::std::has_single_bit(T(121)));

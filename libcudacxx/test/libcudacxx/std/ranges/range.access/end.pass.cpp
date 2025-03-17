@@ -20,15 +20,15 @@
 using RangeEndT  = decltype(cuda::std::ranges::end);
 using RangeCEndT = decltype(cuda::std::ranges::cend);
 
-STATIC_TEST_GLOBAL_VAR int globalBuff[8] = {};
+TEST_GLOBAL_VARIABLE int globalBuff[8] = {};
 
-#if (!defined(_MSC_VER) || _MSC_VER >= 1923)
+#if !TEST_COMPILER(MSVC, <, 19, 23)
 // old MSVC has a bug where it doesn't properly handle rvalue arrays
 static_assert(!cuda::std::is_invocable_v<RangeEndT, int (&&)[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCEndT, int (&&)[]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeEndT, int (&&)[10]>, "");
 static_assert(!cuda::std::is_invocable_v<RangeCEndT, int (&&)[10]>, "");
-#endif
+#endif // !TEST_COMPILER(MSVC, <, 19, 23)
 
 static_assert(!cuda::std::is_invocable_v<RangeEndT, int (&)[]>, "");
 static_assert(cuda::std::is_invocable_v<RangeEndT, int (&)[10]>, "");
@@ -438,7 +438,7 @@ static_assert(noexcept(cuda::std::ranges::end(cuda::std::declval<int (&)[10]>())
 static_assert(noexcept(cuda::std::ranges::cend(cuda::std::declval<int (&)[10]>())));
 
 // needs c++17's guaranteed copy elision
-#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !TEST_COMPILER(MSVC2019) // broken noexcept
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEnd
 {
   __host__ __device__ ThrowingIterator<int> begin() const;
@@ -455,7 +455,7 @@ _CCCL_GLOBAL_CONSTANT struct NoThrowADLEnd
 } ntae;
 static_assert(noexcept(cuda::std::ranges::end(ntae)), "");
 static_assert(noexcept(cuda::std::ranges::cend(ntae)), "");
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
 
 _CCCL_GLOBAL_CONSTANT struct NoThrowMemberEndReturnsRef
 {
@@ -500,10 +500,10 @@ int main(int, char**)
   testEndFunction();
   static_assert(testEndFunction(), "");
 
-#if !defined(TEST_COMPILER_MSVC_2019) // broken noexcept
+#if !TEST_COMPILER(MSVC2019) // broken noexcept
   unused(ntme);
   unused(ntae);
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER(MSVC2019)
   unused(ntmerr);
   unused(erar);
 

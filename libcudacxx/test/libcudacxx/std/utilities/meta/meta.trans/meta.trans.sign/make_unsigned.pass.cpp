@@ -36,8 +36,8 @@ enum HugeEnum : __int128_t
 template <class T, class U>
 __host__ __device__ void test_make_unsigned()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::make_unsigned<T>::type);
-  ASSERT_SAME_TYPE(U, cuda::std::make_unsigned_t<T>);
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::make_unsigned<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::make_unsigned_t<T>>);
 }
 
 int main(int, char**)

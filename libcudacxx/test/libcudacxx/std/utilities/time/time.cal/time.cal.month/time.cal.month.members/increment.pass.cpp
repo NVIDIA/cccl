@@ -43,8 +43,8 @@ int main(int, char**)
   static_assert(noexcept(++(cuda::std::declval<month&>())));
   static_assert(noexcept((cuda::std::declval<month&>())++));
 
-  ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<month&>()++));
-  ASSERT_SAME_TYPE(month&, decltype(++cuda::std::declval<month&>()));
+  static_assert(cuda::std::is_same_v<month, decltype(cuda::std::declval<month&>()++)>);
+  static_assert(cuda::std::is_same_v<month&, decltype(++cuda::std::declval<month&>())>);
 
   static_assert(testConstexpr<month>(), "");
 

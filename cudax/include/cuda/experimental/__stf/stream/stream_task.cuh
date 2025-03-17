@@ -353,7 +353,7 @@ public:
     reserved::dot& dot = reserved::dot::instance();
     auto& statistics   = reserved::task_statistics::instance();
 
-    const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto;
+    const bool is_auto = get_exec_place().affine_data_place().is_device_auto();
     bool calibrate     = false;
 
     // We need to know the data footprint if scheduling or calibrating tasks
@@ -489,7 +489,7 @@ public:
    * @param deps A list of `task_dep` objects that this task depends on
    */
   stream_task(stream_ctx* ctx, task_dep<Data>... deps)
-      : stream_task(exec_place::host, ctx, mv(deps)...)
+      : stream_task(exec_place::host(), ctx, mv(deps)...)
   {}
 
   /**

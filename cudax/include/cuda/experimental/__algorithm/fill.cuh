@@ -65,8 +65,9 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 //!
 //! Destination needs to either be an instance of `cuda::std::mdspan` or launch transform
 //! into one. It can also implicitly convert to `cuda::std::mdspan`, but the type needs to contain `mdspan` template
-//! arguments as member aliases named `value_type`, `extents_type`, `layout_type` and `accessor_type`.   Destination
-//! type is required to be trivially copyable.
+//! arguments as member aliases named `value_type`, `extents_type`, `layout_type` and `accessor_type`.
+//! Resulting mdspan is required to be exhaustive.
+//! Destination type is required to be trivially copyable.
 //!
 //! Destination can't reside in pagable host memory.
 //!
@@ -80,6 +81,11 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
   decltype(auto) __dst_transformed = __launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst));
   decltype(auto) __dst_as_arg      = __kernel_transform(__dst_transformed);
   auto __dst_mdspan                = __as_mdspan_t<decltype(__dst_as_arg)>(__dst_as_arg);
+
+  if (!__dst_mdspan.is_exhaustive())
+  {
+    _CUDA_VSTD::__throw_invalid_argument("fill_bytes supports only exhaustive mdspans");
+  }
 
   __fill_bytes_impl(
     __stream, _CUDA_VSTD::span(__dst_mdspan.data_handle(), __dst_mdspan.mapping().required_span_size()), __value);

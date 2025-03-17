@@ -79,9 +79,9 @@ __host__ __device__ constexpr bool check_lvalue_adl_swappable()
 __host__ __device__ constexpr bool check_rvalue_adl_swappable()
 {
   static_assert(noexcept(cuda::std::ranges::swap(rvalue_adl_swappable(0), rvalue_adl_swappable(1))));
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 10)
+#if !TEST_COMPILER(GCC, <, 10)
   assert(check_swap_21(rvalue_adl_swappable(0), rvalue_adl_swappable(1)));
-#endif
+#endif // !TEST_COMPILER(GCC, <, 10)
   return true;
 }
 
@@ -105,9 +105,9 @@ __host__ __device__ constexpr bool check_throwable_swappable()
 {
   auto x = throwable_adl_swappable{0};
   auto y = throwable_adl_swappable{1};
-#if !defined(TEST_COMPILER_NVHPC)
+#if !TEST_COMPILER(NVHPC)
   static_assert(!noexcept(cuda::std::ranges::swap(x, y)));
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
   assert(check_swap_21(x, y));
   return true;
 }
@@ -172,9 +172,9 @@ __host__ __device__ constexpr bool check_throwable_adl_swappable_arrays()
 {
   throwable_adl_swappable x[] = {{0}, {1}, {2}, {3}};
   throwable_adl_swappable y[] = {{4}, {5}, {6}, {7}};
-#if !defined(TEST_COMPILER_NVHPC)
+#if !TEST_COMPILER(NVHPC)
   static_assert(!noexcept(cuda::std::ranges::swap(x, y)));
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
   assert(check_swap_22(x, y));
   return true;
 }
@@ -253,9 +253,9 @@ static_assert(swappable<swap_type>, "");
 int main(int, char**)
 {
   assert(check_lvalue_adl_swappable());
-#if (!defined(__GNUC__) || __GNUC__ >= 10)
+#if !TEST_COMPILER(GCC, <, 10)
   assert(check_rvalue_adl_swappable());
-#endif
+#endif // !TEST_COMPILER(GCC, <, 10)
   assert(check_lvalue_rvalue_adl_swappable());
   assert(check_rvalue_lvalue_adl_swappable());
   assert(check_throwable_swappable());
@@ -267,7 +267,7 @@ int main(int, char**)
   assert(check_swappable_references());
   assert(check_swappable_pointers());
 
-#if (!defined(__GNUC__) || __GNUC__ >= 10)
+#if !TEST_COMPILER(GCC, <, 10)
   static_assert(check_lvalue_adl_swappable(), "");
   static_assert(check_rvalue_adl_swappable(), "");
   static_assert(check_lvalue_rvalue_adl_swappable(), "");
@@ -280,7 +280,7 @@ int main(int, char**)
   static_assert(check_throwable_adl_swappable_arrays(), "");
   static_assert(check_swappable_references(), "");
   static_assert(check_swappable_pointers(), "");
-#endif
+#endif // !TEST_COMPILER(GCC, <, 10)
 
   return 0;
 }

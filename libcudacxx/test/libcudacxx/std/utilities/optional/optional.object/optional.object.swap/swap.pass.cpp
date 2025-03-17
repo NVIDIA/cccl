@@ -82,14 +82,14 @@ public:
   {
     return x.i_ == y.i_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 void swap(W& x, W& y) noexcept
+  __host__ __device__ friend constexpr void swap(W& x, W& y) noexcept
   {
     cuda::std::swap(x.i_, y.i_);
   }
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool check_swap()
+__host__ __device__ constexpr bool check_swap()
 {
   {
     optional<T> opt1;

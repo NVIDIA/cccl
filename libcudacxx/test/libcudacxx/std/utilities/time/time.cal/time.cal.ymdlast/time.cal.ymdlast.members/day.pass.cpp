@@ -27,7 +27,7 @@ int main(int, char**)
   using year_month_day_last = cuda::std::chrono::year_month_day_last;
 
   static_assert(noexcept(cuda::std::declval<const year_month_day_last>().day()));
-  ASSERT_SAME_TYPE(day, decltype(cuda::std::declval<const year_month_day_last>().day()));
+  static_assert(cuda::std::is_same_v<day, decltype(cuda::std::declval<const year_month_day_last>().day())>);
 
   //  Some months have a 31st
   static_assert(year_month_day_last{year{2020}, month_day_last{month{1}}}.day() == day{31}, "");

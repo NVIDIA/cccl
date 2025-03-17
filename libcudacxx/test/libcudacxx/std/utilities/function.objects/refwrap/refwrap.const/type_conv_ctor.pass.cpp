@@ -37,7 +37,7 @@ template <bool IsNothrow>
 struct nothrow_convertible
 {
   int val = 0;
-  __host__ __device__ operator int&() TEST_NOEXCEPT_COND(IsNothrow)
+  __host__ __device__ operator int&() noexcept(IsNothrow)
   {
     return val;
   }
@@ -66,20 +66,20 @@ int main(int, char**)
   {
     using Ref = cuda::std::reference_wrapper<int>;
     static_assert(noexcept(Ref(nothrow_convertible<true>())));
-#ifndef TEST_COMPILER_NVHPC
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(Ref(nothrow_convertible<false>())));
-#endif // !TEST_COMPILER_NVHPC
+#endif // !TEST_COMPILER(NVHPC)
   }
   {
     meow(0);
   }
-#if !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(MSVC) && !TEST_COMPILER(NVRTC)
   {
     extern cuda::std::reference_wrapper<int> purr();
-    ASSERT_SAME_TYPE(decltype(true ? purr() : 0), int);
+    static_assert(cuda::std::is_same_v<decltype(true ? purr() : 0), int>);
   }
-#endif // !defined(TEST_COMPILER_MSVC)
-#if (!defined(__GNUC__) || __GNUC__ >= 8) // gcc-7 is broken wrt ctad
+#endif // !TEST_COMPILER(MSVC)
+#if !TEST_COMPILER(GCC, <, 8) // gcc-7 is broken wrt ctad
   {
     int i = 0;
     cuda::std::reference_wrapper ri(i);
@@ -88,7 +88,7 @@ int main(int, char**)
     cuda::std::reference_wrapper rj(j);
     static_assert((cuda::std::is_same<decltype(rj), cuda::std::reference_wrapper<const int>>::value), "");
   }
-#endif
+#endif // !TEST_COMPILER(GCC, <, 8)
 
   return 0;
 }

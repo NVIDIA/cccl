@@ -15,10 +15,11 @@
 #include <cuda/std/cstddef>
 
 #include "concurrent_agents.h"
+#include "test_macros.h"
 
-#if defined(__clang__) && defined(__CUDA__)
+#if TEST_CUDA_COMPILER(CLANG)
 #  include <new>
-#endif
+#endif // TEST_CUDA_COMPILER(CLANG)
 
 #if _CCCL_COMPILER(NVRTC)
 #  define LAMBDA [=]
