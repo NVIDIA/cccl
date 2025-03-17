@@ -310,7 +310,7 @@ public:
 
   void finalize()
   {
-    assert(get_phase() < backend_ctx_untyped::phase::finalized);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
     if (!state.submitted)
     {
@@ -329,7 +329,7 @@ public:
 
   void submit(cudaStream_t stream = nullptr)
   {
-    assert(get_phase() < backend_ctx_untyped::phase::submitted);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
     auto& state = this->state();
     if (!state.submitted_stream)
     {

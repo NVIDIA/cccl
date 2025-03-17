@@ -503,7 +503,7 @@ public:
 
   void finalize()
   {
-    assert(get_phase() < backend_ctx_untyped::phase::finalized);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
     if (!state.submitted_stream)
     {
@@ -528,9 +528,8 @@ public:
   void submit()
   {
     auto& state = this->state();
-    assert(!state.submitted_stream);
-
-    assert(get_phase() < backend_ctx_untyped::phase::submitted);
+    _CCCL_ASSERT(!state.submitted_stream, "");
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
 
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;

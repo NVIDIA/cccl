@@ -37,7 +37,7 @@
 #include <cuda/experimental/__stf/internal/repeat.cuh>
 #include <cuda/experimental/__stf/internal/scheduler.cuh> // backend_ctx_untyped::impl uses scheduler
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
-#include <cuda/experimental/__stf/internal/task_state.cuh> // backend_ctx_untyped::impl has-a ctx_state
+#include <cuda/experimental/__stf/internal/ctx_state.cuh> // backend_ctx_untyped::impl has-a ctx_state
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
@@ -492,8 +492,10 @@ private:
 } // end namespace reserved
 
 /**
- * @brief Unified context!!!
+ * @brief This is the underlying context implementation common to all types.
  *
+ * We use this class rather than the front-end ones (stream_ctx, graph_ctx,
+ * ...) in the internal methods where we don't always know types for example.
  */
 class backend_ctx_untyped
 {
@@ -510,17 +512,6 @@ public:
     submitted, // between acquire and release
     finalized, // we have called finalize
   };
-
-#if 0
-    static ::std::string phase_to_string(phase p) {
-        switch (p) {
-        case phase::setup: return ::std::string("setup");
-        case phase::submitted: return ::std::string("submitted");
-        case phase::finalized: return ::std::string("finalized");
-        }
-        return ::std::string("error");
-   }
-#endif
 
 protected:
   /**
