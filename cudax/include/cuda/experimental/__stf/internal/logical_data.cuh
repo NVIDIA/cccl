@@ -166,9 +166,9 @@ public:
     refcnt.store(0);
 
     // This will automatically create a weak_ptr from the shared_ptr
-    ctx.get_stack().logical_data_ids_mutex.lock();
-    ctx.get_stack().logical_data_ids.emplace(get_unique_id(), *this);
-    ctx.get_stack().logical_data_ids_mutex.unlock();
+    ctx.get_state().logical_data_ids_mutex.lock();
+    ctx.get_state().logical_data_ids.emplace(get_unique_id(), *this);
+    ctx.get_state().logical_data_ids_mutex.unlock();
 
     // It is possible that there is no valid copy (e.g. with temporary accesses)
     if (memory_node.is_invalid())
@@ -1738,6 +1738,7 @@ inline void reserved::logical_data_untyped_impl::erase()
   }
 
   auto& cs = ctx.get_stack();
+  auto& ctx_st = ctx.get_state();
 
   auto wb_prereqs = event_list();
   auto& h_state   = get_state();
@@ -1843,23 +1844,16 @@ inline void reserved::logical_data_untyped_impl::erase()
   // data may be called after finalize()
   h_state.clear();
 
-  cs.logical_data_ids_mutex.lock();
+  ctx_st.logical_data_ids_mutex.lock();
 
   // This unique ID is not associated to a pointer anymore (and should never be reused !)
-  auto& logical_data_ids = cs.logical_data_ids;
-
-  // fprintf(stderr, "REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
-  // &logical_data_ids, logical_data_ids.size());
-
+  //
   // This SHOULD be in the table because that piece of data was created
   // in this context and cannot already have been destroyed.
-  auto erased = logical_data_ids.erase(get_unique_id());
+  auto erased = ctx_st.logical_data_ids.erase(get_unique_id());
   EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
-  cs.logical_data_ids_mutex.unlock();
-
-  // fprintf(stderr, "AFTER REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
-  // &logical_data_ids, logical_data_ids.size());
+  ctx_st.logical_data_ids_mutex.unlock();
 
   // Make sure this we do not erase this twice. For example after calling
   // finalize() there is no need to erase it again in the constructor
@@ -2151,9 +2145,9 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
 inline void backend_ctx_untyped::impl::erase_all_logical_data()
 {
   /* Since we modify the map while iterating on it, we will copy it */
-  state.logical_data_ids_mutex.lock();
-  auto logical_data_ids_cpy = state.logical_data_ids;
-  state.logical_data_ids_mutex.unlock();
+  logical_data_ids_mutex.lock();
+  auto logical_data_ids_cpy = logical_data_ids;
+  logical_data_ids_mutex.unlock();
 
   /* Erase all logical data created in this context */
   for (auto p : logical_data_ids_cpy)
@@ -2371,6 +2365,7 @@ inline void reclaim_memory(
   const auto memory_node = to_index(place);
 
   auto& cs = ctx.get_stack();
+  auto& ctx_state = ctx.get_state();
 
   reclaimed_s = 0;
 
@@ -2407,8 +2402,8 @@ inline void reclaim_memory(
   for (int pass = first_pass; (reclaimed_s < requested_s) && (eligible_data_size < requested_s) && (pass <= 2); pass++)
   {
     // Get the table of all logical data ids used in this context (the parent of the task)
-    ::std::lock_guard<::std::mutex> guard(cs.logical_data_ids_mutex);
-    auto& logical_data_ids = cs.logical_data_ids;
+    ::std::lock_guard<::std::mutex> guard(ctx_state.logical_data_ids_mutex);
+    auto& logical_data_ids = ctx_state.logical_data_ids;
     for (auto& e : logical_data_ids)
     {
       auto& d = e.second;

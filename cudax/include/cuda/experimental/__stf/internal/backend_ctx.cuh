@@ -197,9 +197,6 @@ public:
   ctx_state& operator=(const ctx_state&) = delete;
 
 public:
-  ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
-  ::std::mutex logical_data_ids_mutex;
-
   // Some asynchronous operations cannot be waited on when they occur.
   // For example, when destroying a logical data, it is possible that
   // asynchronous operations are not completed immediately (write back
@@ -361,6 +358,9 @@ protected:
      * The implementation requires logical_data_untyped_impl to be complete
      */
     void erase_all_logical_data();
+
+    ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
+    ::std::mutex logical_data_ids_mutex;
 
     /**
      * @brief Add an allocator to the vector of allocators which will be
