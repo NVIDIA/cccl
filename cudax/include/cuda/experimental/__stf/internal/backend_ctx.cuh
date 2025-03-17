@@ -343,7 +343,7 @@ protected:
     void erase_all_logical_data();
 
     ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
-    ::std::mutex logical_data_ids_mutex;
+    mutable ::std::mutex logical_data_ids_mutex;
 
     /**
      * @brief Add an allocator to the vector of allocators which will be
