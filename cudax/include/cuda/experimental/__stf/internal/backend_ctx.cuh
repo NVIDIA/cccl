@@ -30,10 +30,8 @@
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
 #include <cuda/experimental/__stf/internal/ctx_state.cuh> // backend_ctx_untyped::impl has-a ctx_state
-#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // backend_ctx<T>::launch() uses execution_policy
 #include <cuda/experimental/__stf/internal/hooks.cuh>
-#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
 #include <cuda/experimental/__stf/internal/machine.cuh> // backend_ctx_untyped::impl usese machine
 #include <cuda/experimental/__stf/internal/reorderer.cuh> // backend_ctx_untyped::impl uses reorderer
@@ -77,6 +75,12 @@ class parallel_for_scope;
 
 template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
 class launch_scope;
+
+template <typename Ctx, bool called_from_launch, typename... Deps>
+class host_launch_scope;
+
+template <typename Ctx, bool chained, typename... Deps>
+class cuda_kernel_scope;
 
 // We need to have a map of logical data stored in the ctx.
 class logical_data_untyped_impl;
