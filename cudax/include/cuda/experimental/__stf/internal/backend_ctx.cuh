@@ -215,82 +215,6 @@ public:
   ctx_state(const ctx_state&)            = delete;
   ctx_state& operator=(const ctx_state&) = delete;
 
-  // Insert a fence with all pending asynchronous operations on the current context
-  [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
-  {
-    auto prereqs = event_list();
-    // Create a node in the DOT output (if any)
-    int fence_unique_id = -1;
-    bool dot_is_tracing = dot.is_tracing();
-    if (dot_is_tracing)
-    {
-      fence_unique_id = reserved::unique_id_t();
-      dot.add_fence_vertex(fence_unique_id);
-    }
-
-    {
-      auto guard = ::std::lock_guard(leaves.leaf_tasks_mutex);
-
-      // Sync with the events of all leaf tasks
-      for (auto& [t_id, t_done_prereqs] : leaves.get_leaf_tasks())
-      {
-        // Add the events associated with the termination of that leaf tasks to the list of events
-        prereqs.merge(mv(t_done_prereqs));
-
-        // Add an edge between that leaf task and the fence node in the DOT output
-        if (dot_is_tracing)
-        {
-          dot.add_edge(t_id, fence_unique_id, 1);
-        }
-      }
-
-      /* Remove all leaf tasks */
-      leaves.clear();
-
-      /* Erase start events if any */
-      start_events.clear();
-
-      _CCCL_ASSERT(leaves.get_leaf_tasks().size() == 0, "");
-    }
-
-    {
-      // Wait for all pending get() operations associated to frozen logical data
-      auto guard = ::std::lock_guard(pending_freeze_mutex);
-
-      for (auto& [fake_t_id, get_prereqs] : pending_freeze)
-      {
-        // Depend on the get() operation
-        prereqs.merge(mv(get_prereqs));
-
-        // Add an edge between that freeze and the fence node in the DOT output
-        if (dot_is_tracing)
-        {
-          dot.add_edge(fake_t_id, fence_unique_id, 1);
-        }
-      }
-
-      pending_freeze.clear();
-    }
-
-    // Sync with events which have not been synchronized with, and which are
-    // not "reachable". For example if some async operations occurred in a data
-    // handle destructor there could be some remaining events to sync with to
-    // make sure data were properly deallocated.
-    auto guard = ::std::lock_guard(dangling_events_mutex);
-    if (dangling_events.size() > 0)
-    {
-      prereqs.merge(mv(dangling_events));
-
-      // We consider that dangling events have been sync'ed with, so there is
-      // no need to keep track of them.
-      dangling_events.clear();
-    }
-
-    assert(dangling_events.size() == 0);
-
-    return prereqs;
-  }
-
 public:
   ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
   ::std::mutex logical_data_ids_mutex;
@@ -594,6 +518,82 @@ protected:
     const event_list& get_start_events() const
     {
       return state.get_start_events();
+    }
+
+    // Insert a fence with all pending asynchronous operations on the current context
+    [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
+    {
+      auto prereqs = event_list();
+      // Create a node in the DOT output (if any)
+      int fence_unique_id = -1;
+      bool dot_is_tracing = dot.is_tracing();
+      if (dot_is_tracing)
+      {
+        fence_unique_id = reserved::unique_id_t();
+        dot.add_fence_vertex(fence_unique_id);
+      }
+
+      {
+        auto guard = ::std::lock_guard(state.leaves.leaf_tasks_mutex);
+
+        // Sync with the events of all leaf tasks
+        for (auto& [t_id, t_done_prereqs] : state.leaves.get_leaf_tasks())
+        {
+          // Add the events associated with the termination of that leaf tasks to the list of events
+          prereqs.merge(mv(t_done_prereqs));
+
+          // Add an edge between that leaf task and the fence node in the DOT output
+          if (dot_is_tracing)
+          {
+            dot.add_edge(t_id, fence_unique_id, 1);
+          }
+        }
+
+        /* Remove all leaf tasks */
+        state.leaves.clear();
+
+        /* Erase start events if any */
+        state.start_events.clear();
+
+        _CCCL_ASSERT(state.leaves.get_leaf_tasks().size() == 0, "");
+      }
+
+      {
+        // Wait for all pending get() operations associated to frozen logical data
+        auto guard = ::std::lock_guard(state.pending_freeze_mutex);
+
+        for (auto& [fake_t_id, get_prereqs] : state.pending_freeze)
+        {
+          // Depend on the get() operation
+          prereqs.merge(mv(get_prereqs));
+
+          // Add an edge between that freeze and the fence node in the DOT output
+          if (dot_is_tracing)
+          {
+            dot.add_edge(fake_t_id, fence_unique_id, 1);
+          }
+        }
+
+        state.pending_freeze.clear();
+      }
+
+      // Sync with events which have not been synchronized with, and which are
+      // not "reachable". For example if some async operations occurred in a data
+      // handle destructor there could be some remaining events to sync with to
+      // make sure data were properly deallocated.
+      auto guard = ::std::lock_guard(state.dangling_events_mutex);
+      if (state.dangling_events.size() > 0)
+      {
+        prereqs.merge(mv(state.dangling_events));
+
+        // We consider that dangling events have been sync'ed with, so there is
+        // no need to keep track of them.
+        state.dangling_events.clear();
+      }
+
+      _CCCL_ASSERT(state.dangling_events.size() == 0, "");
+
+      return prereqs;
     }
 
   private:

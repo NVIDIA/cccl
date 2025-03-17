@@ -278,7 +278,7 @@ public:
         ? user_dstream.value()
         : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
 
-    auto prereqs = get_stack().insert_task_fence(*get_dot());
+    auto prereqs = get_state().insert_task_fence(*get_dot());
 
     prereqs.optimize(*this);
 

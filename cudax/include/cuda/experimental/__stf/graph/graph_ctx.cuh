@@ -543,8 +543,7 @@ private:
   {
     auto& state = this->state();
 
-    auto& cs          = this->get_stack();
-    auto prereq_fence = cs.insert_task_fence(*get_dot());
+    auto prereq_fence = state.insert_task_fence(*get_dot());
 
     const size_t graph_epoch             = state.graph_epoch;
     ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereq_fence, graph_epoch);
