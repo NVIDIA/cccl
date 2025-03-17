@@ -347,7 +347,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS operator ::std::complex<_Tp>() const
   {
-    return _CUDA_VSTD::__make_std_complex(real(), imag());
+    return _CUDA_VSTD::__make_std_complex(__re_, __im_);
   }
 #endif // !_CCCL_COMPILER(NVRTC)
 
