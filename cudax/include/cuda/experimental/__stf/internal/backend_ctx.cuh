@@ -124,7 +124,7 @@ public:
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
-    auto t = ctx.task(exec_place::host);
+    auto t = ctx.task(exec_place::host());
     t.add_deps(deps);
     if (!symbol.empty())
     {
@@ -1106,21 +1106,21 @@ public:
   template <typename T>
   cuda::experimental::stf::logical_data<T> logical_data(shape_of<T> shape)
   {
-    return cuda::experimental::stf::logical_data<T>(*this, make_data_interface<T>(shape), data_place::invalid);
+    return cuda::experimental::stf::logical_data<T>(*this, make_data_interface<T>(shape), data_place::invalid());
   }
 
   template <typename T>
-  auto logical_data(T prototype, data_place dplace = data_place::host)
+  auto logical_data(T prototype, data_place dplace = data_place::host())
   {
-    EXPECT(dplace != data_place::invalid);
+    EXPECT(!dplace.is_invalid());
     assert(self());
     return cuda::experimental::stf::logical_data<T>(*this, make_data_interface<T>(prototype), mv(dplace));
   }
 
   template <typename T, size_t n>
-  auto logical_data(T (&array)[n], data_place dplace = data_place::host)
+  auto logical_data(T (&array)[n], data_place dplace = data_place::host())
   {
-    EXPECT(dplace != data_place::invalid);
+    EXPECT(!dplace.is_invalid());
     return logical_data(make_slice(&array[0], n), mv(dplace));
   }
 
@@ -1132,9 +1132,9 @@ public:
   }
 
   template <typename T>
-  auto logical_data(T* p, size_t n, data_place dplace = data_place::host)
+  auto logical_data(T* p, size_t n, data_place dplace = data_place::host())
   {
-    EXPECT(dplace != data_place::invalid);
+    _CCCL_ASSERT(!dplace.is_invalid(), "invalid data place");
     return logical_data(make_slice(p, n), mv(dplace));
   }
 
@@ -1151,7 +1151,7 @@ public:
   template <typename T>
   frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid)
+                                data_place where = data_place::invalid())
   {
     return frozen_logical_data<T>(*this, mv(d), m, mv(where));
   }

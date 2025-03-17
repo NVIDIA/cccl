@@ -16,10 +16,10 @@
 
 int main(int, char**)
 {
-  ASSERT_SAME_TYPE(char, cuda::std::conditional<true, char, int>::type);
-  ASSERT_SAME_TYPE(int, cuda::std::conditional<false, char, int>::type);
-  ASSERT_SAME_TYPE(char, cuda::std::conditional_t<true, char, int>);
-  ASSERT_SAME_TYPE(int, cuda::std::conditional_t<false, char, int>);
+  static_assert(cuda::std::is_same_v<char, cuda::std::conditional<true, char, int>::type>);
+  static_assert(cuda::std::is_same_v<int, cuda::std::conditional<false, char, int>::type>);
+  static_assert(cuda::std::is_same_v<char, cuda::std::conditional_t<true, char, int>>);
+  static_assert(cuda::std::is_same_v<int, cuda::std::conditional_t<false, char, int>>);
 
   return 0;
 }

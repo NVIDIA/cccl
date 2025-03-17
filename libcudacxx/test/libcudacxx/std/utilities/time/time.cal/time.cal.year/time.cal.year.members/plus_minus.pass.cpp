@@ -37,11 +37,11 @@ int main(int, char**)
 {
   using year = cuda::std::chrono::year;
 
-  ASSERT_NOEXCEPT(+cuda::std::declval<year>());
-  ASSERT_NOEXCEPT(-cuda::std::declval<year>());
+  static_assert(noexcept(+cuda::std::declval<year>()));
+  static_assert(noexcept(-cuda::std::declval<year>()));
 
-  ASSERT_SAME_TYPE(year, decltype(+cuda::std::declval<year>()));
-  ASSERT_SAME_TYPE(year, decltype(-cuda::std::declval<year>()));
+  static_assert(cuda::std::is_same_v<year, decltype(+cuda::std::declval<year>())>);
+  static_assert(cuda::std::is_same_v<year, decltype(-cuda::std::declval<year>())>);
 
   static_assert(testConstexpr<year>(), "");
 

@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from typing import TYPE_CHECKING, Callable, Literal, Union
+
 import numba
 
 from cuda.cooperative.experimental._common import (
     make_binary_tempfile,
+    normalize_dim_param,
     normalize_dtype_param,
 )
 from cuda.cooperative.experimental._types import (
@@ -20,9 +23,16 @@ from cuda.cooperative.experimental._types import (
     numba_type_to_wrapper,
 )
 
+if TYPE_CHECKING:
+    import numpy as np
+
 
 def merge_sort_keys(
-    dtype, threads_per_block, items_per_thread, compare_op, methods=None
+    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    threads_per_block: int,
+    items_per_thread: int,
+    compare_op: Callable,
+    methods: Literal["construct", "assign"] = None,
 ):
     """Performs a block-wide merge sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
@@ -52,14 +62,19 @@ def merge_sort_keys(
 
     Args:
         dtype: Numba data type of the keys to be sorted
-        threads_per_block: The number of threads in a block
+
+        threads_per_block: The number of threads in a block, either an integer
+            or a tuple of 2 or 3 integers
+
         items_per_thread: The number of items each thread owns
-        compare_op: Comparison function object which returns true if the first argument is ordered before the second one
+
+        compare_op: Comparison function object which returns true if the first
+            argument is ordered before the second one
 
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    # Normalize the dtype parameter.
+    dim = normalize_dim_param(threads_per_block)
     dtype = normalize_dtype_param(dtype)
 
     template = Algorithm(
@@ -71,6 +86,9 @@ def merge_sort_keys(
             TemplateParameter("KeyT"),
             TemplateParameter("BLOCK_DIM_X"),
             TemplateParameter("ITEMS_PER_THREAD"),
+            TemplateParameter("ValueT"),
+            TemplateParameter("BLOCK_DIM_Y"),
+            TemplateParameter("BLOCK_DIM_Z"),
         ],
         [
             [
@@ -88,8 +106,11 @@ def merge_sort_keys(
     specialization = template.specialize(
         {
             "KeyT": dtype,
-            "BLOCK_DIM_X": threads_per_block,
+            "BLOCK_DIM_X": dim[0],
             "ITEMS_PER_THREAD": items_per_thread,
+            "ValueT": "::cub::NullType",
+            "BLOCK_DIM_Y": dim[1],
+            "BLOCK_DIM_Z": dim[2],
             "Op": compare_op,
         }
     )

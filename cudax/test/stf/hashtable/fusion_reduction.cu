@@ -52,7 +52,7 @@ class hashtable_fusion_t : public stream_reduction_operator<hashtable>
 {
   void op(const hashtable& in, hashtable& inout, const exec_place& e, cudaStream_t s) override
   {
-    if (e.affine_data_place() == data_place::host)
+    if (e.affine_data_place().is_host())
     {
       cuda_safe_call(cudaStreamSynchronize(s)); // TODO use a callback
       cpu_merge_hashtable(inout, in);

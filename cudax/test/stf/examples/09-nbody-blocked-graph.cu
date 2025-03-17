@@ -54,7 +54,7 @@ void writeVTKFile(stream_ctx& ctx,
 
   for (size_t b = 0; b < parts.size(); b++)
   {
-    ctx.task(exec_place::host, parts[b].read())->*[&](cudaStream_t s, slice<body> p) {
+    ctx.task(exec_place::host(), parts[b].read())->*[&](cudaStream_t s, slice<body> p) {
       cuda_safe_call(cudaStreamSynchronize(s));
       for (size_t i = 0; i < p.size(); i++)
       {

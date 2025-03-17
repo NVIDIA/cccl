@@ -44,9 +44,9 @@ __host__ __device__ constexpr size_t count_dynamic_extents()
 template <class E, class IndexType, size_t... Extents>
 __host__ __device__ void testExtents()
 {
-  ASSERT_SAME_TYPE(typename E::index_type, IndexType);
-  ASSERT_SAME_TYPE(typename E::size_type, cuda::std::make_unsigned_t<IndexType>);
-  ASSERT_SAME_TYPE(typename E::rank_type, size_t);
+  static_assert(cuda::std::is_same_v<typename E::index_type, IndexType>);
+  static_assert(cuda::std::is_same_v<typename E::size_type, cuda::std::make_unsigned_t<IndexType>>);
+  static_assert(cuda::std::is_same_v<typename E::rank_type, size_t>);
 
   static_assert(sizeof...(Extents) == E::rank(), "");
   static_assert(count_dynamic_extents<Extents...>() == E::rank_dynamic());

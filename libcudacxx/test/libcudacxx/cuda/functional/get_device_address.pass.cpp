@@ -19,7 +19,7 @@ __device__ const int const_scalar_object = 42;
 __device__ int array_object[]             = {42, 1337, -1};
 __device__ const int const_array_object[] = {42, 1337, -1};
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 template <class T>
 void test_host(T& object)
 {
@@ -41,7 +41,7 @@ void test_host(T& object)
     assert(attributes.devicePointer == device_address);
   }
 }
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 template <class T>
 __host__ __device__ void test(T& object)

@@ -51,11 +51,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -344,7 +341,8 @@ struct AgentReduceImpl
     // Load items as vector items
     InputT input_items[ITEMS_PER_THREAD];
     VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < WORDS; ++i)
     {
       vec_items[i] = d_vec_in[THREADS * i];
@@ -352,7 +350,8 @@ struct AgentReduceImpl
 
     // Convert from input type to output type
     AccumT items[ITEMS_PER_THREAD];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       items[i] = transform_op(input_items[i]);

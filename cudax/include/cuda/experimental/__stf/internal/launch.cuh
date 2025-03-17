@@ -197,7 +197,7 @@ public:
     static_assert(is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type,
                   "Cannot run launch() on the host");
 
-    EXPECT(e_place != exec_place::host, "Attempt to run a launch on the host.");
+    EXPECT(e_place != exec_place::host(), "Attempt to run a launch on the host.");
 
     const size_t grid_size = e_place.size();
 
@@ -324,7 +324,7 @@ public:
     static_assert(is_extended_device_lambda_closure_type || is_extended_host_device_lambda_closure_type,
                   "Cannot run launch() on the host");
 
-    EXPECT(e_place != exec_place::host, "Attempt to run a launch on the host.");
+    EXPECT(e_place != exec_place::host(), "Attempt to run a launch on the host.");
 
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();

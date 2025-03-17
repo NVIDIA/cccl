@@ -19,7 +19,7 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
+__host__ __device__ constexpr void test_constexpr()
 {
   {
     constexpr T lhs(-2.5);
@@ -44,7 +44,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_constexpr()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_nonconstexpr()
+__host__ __device__ constexpr void test_nonconstexpr()
 {
   {
     T lhs(-2.5);
@@ -69,7 +69,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_nonconstexpr()
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_nonconstexpr<T>();
   test_constexpr<T>();

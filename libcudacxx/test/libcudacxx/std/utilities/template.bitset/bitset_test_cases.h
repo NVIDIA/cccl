@@ -17,7 +17,7 @@
 #include "template_cost_testing.h" // for base cases of REPEAT_*
 #include "test_macros.h"
 
-#define BITSET_TEST_CONSTEXPR TEST_CONSTEXPR_GLOBAL
+#define BITSET_TEST_CONSTEXPR constexpr
 
 #define NUMARGS(...) (::cuda::std::tuple_size<decltype(::cuda::std::make_tuple(__VA_ARGS__))>::value)
 #define DEFINE_CASES(N, ...)                                                                                    \

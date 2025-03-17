@@ -75,11 +75,11 @@ class stream_adapter
       void* result;
       EXPECT(!memory_node.is_composite());
 
-      if (memory_node == data_place::host)
+      if (memory_node.is_host())
       {
         cuda_safe_call(cudaMallocHost(&result, s));
       }
-      else if (memory_node == data_place::managed)
+      else if (memory_node.is_managed())
       {
         cuda_safe_call(cudaMallocManaged(&result, s));
       }
@@ -163,7 +163,7 @@ public:
 
     for (auto& b : to_free)
     {
-      if (b.memory_node == data_place::host)
+      if (b.memory_node.is_host())
       {
         if (!stream_was_synchronized)
         {
@@ -172,7 +172,7 @@ public:
         }
         cuda_safe_call(cudaFreeHost(b.ptr));
       }
-      else if (b.memory_node == data_place::managed)
+      else if (b.memory_node.is_managed())
       {
         if (!stream_was_synchronized)
         {

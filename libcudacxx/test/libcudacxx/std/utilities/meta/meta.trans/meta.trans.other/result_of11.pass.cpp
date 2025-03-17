@@ -26,9 +26,7 @@
 #include "test_macros.h"
 
 TEST_NV_DIAG_SUPPRESS(3013) // a volatile function parameter is deprecated
-#ifdef TEST_COMPILER_CLANG_CUDA
-#  pragma clang diagnostic ignored "-Wdeprecated-volatile"
-#endif // TEST_COMPILER_CLANG_CUDA
+TEST_DIAG_SUPPRESS_CLANG("-Wdeprecated-volatile")
 
 struct wat
 {
@@ -54,16 +52,16 @@ struct test_invoke_result<Fn(Args...), Ret>
   {
     static_assert(cuda::std::is_invocable<Fn, Args...>::value, "");
     static_assert(cuda::std::is_invocable_r<Ret, Fn, Args...>::value, "");
-    ASSERT_SAME_TYPE(Ret, typename cuda::std::invoke_result<Fn, Args...>::type);
-    ASSERT_SAME_TYPE(Ret, cuda::std::invoke_result_t<Fn, Args...>);
+    static_assert(cuda::std::is_same_v<Ret, typename cuda::std::invoke_result<Fn, Args...>::type>);
+    static_assert(cuda::std::is_same_v<Ret, cuda::std::invoke_result_t<Fn, Args...>>);
   }
 };
 
 template <class T, class U>
 __host__ __device__ void test_result_of_imp()
 {
-  ASSERT_SAME_TYPE(U, typename cuda::std::result_of<T>::type);
-  ASSERT_SAME_TYPE(U, cuda::std::result_of_t<T>);
+  static_assert(cuda::std::is_same_v<U, typename cuda::std::result_of<T>::type>);
+  static_assert(cuda::std::is_same_v<U, cuda::std::result_of_t<T>>);
   test_invoke_result<T, U>::call();
 }
 

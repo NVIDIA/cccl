@@ -33,7 +33,7 @@ int main(int, char**)
   using month_day_last      = cuda::std::chrono::month_day_last;
   using year_month_day_last = cuda::std::chrono::year_month_day_last;
 
-  ASSERT_NOEXCEPT(year_month_day_last{year{1}, month_day_last{month{1}}});
+  static_assert(noexcept(year_month_day_last{year{1}, month_day_last{month{1}}}));
 
   constexpr month January = cuda::std::chrono::January;
 
