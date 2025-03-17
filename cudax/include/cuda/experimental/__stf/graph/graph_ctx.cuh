@@ -30,6 +30,8 @@
 #include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
+#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
@@ -310,7 +312,7 @@ public:
 
   void finalize()
   {
-    assert(get_phase() < backend_ctx_untyped::phase::finalized);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
     if (!state.submitted)
     {
@@ -329,7 +331,7 @@ public:
 
   void submit(cudaStream_t stream = nullptr)
   {
-    assert(get_phase() < backend_ctx_untyped::phase::submitted);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
     auto& state = this->state();
     if (!state.submitted_stream)
     {
@@ -537,8 +539,7 @@ private:
   {
     auto& state = this->state();
 
-    auto& cs          = this->get_stack();
-    auto prereq_fence = cs.insert_task_fence(*get_dot());
+    auto prereq_fence = state.insert_task_fence(*get_dot());
 
     const size_t graph_epoch             = state.graph_epoch;
     ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereq_fence, graph_epoch);

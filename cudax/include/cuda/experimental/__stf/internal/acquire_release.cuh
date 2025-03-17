@@ -295,7 +295,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   }
 
   // This task becomes a new "leaf task" until another task depends on it
-  cs.add_leaf_task(*this);
+  cs.leaves.add(*this);
 
   pimpl->phase = task::phase::finished;
 

@@ -168,9 +168,9 @@ public:
     refcnt.store(0);
 
     // This will automatically create a weak_ptr from the shared_ptr
-    ctx.get_stack().logical_data_ids_mutex.lock();
-    ctx.get_stack().logical_data_ids.emplace(get_unique_id(), *this);
-    ctx.get_stack().logical_data_ids_mutex.unlock();
+    ctx.get_state().logical_data_ids_mutex.lock();
+    ctx.get_state().logical_data_ids.emplace(get_unique_id(), *this);
+    ctx.get_state().logical_data_ids_mutex.unlock();
 
     // It is possible that there is no valid copy (e.g. with temporary accesses)
     if (memory_node.is_invalid())
@@ -1739,7 +1739,8 @@ inline void reserved::logical_data_untyped_impl::erase()
     unfreeze(unfreeze_fake_task.value(), event_list());
   }
 
-  auto& cs = ctx.get_stack();
+  auto& cs     = ctx.get_stack();
+  auto& ctx_st = ctx.get_state();
 
   auto wb_prereqs = event_list();
   auto& h_state   = get_state();
@@ -1794,7 +1795,7 @@ inline void reserved::logical_data_untyped_impl::erase()
       if (track_dangling_events)
       {
         // nobody waits for these events, so we put them in the list of dangling events
-        cs.add_dangling_events(ctx, reqs);
+        ctx_st.add_dangling_events(ctx, reqs);
       }
     }
   }
@@ -1824,7 +1825,7 @@ inline void reserved::logical_data_untyped_impl::erase()
 
       if (track_dangling_events)
       {
-        cs.add_dangling_events(ctx, inst_prereqs);
+        ctx_st.add_dangling_events(ctx, inst_prereqs);
       }
     }
 
@@ -1836,7 +1837,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     if (wb_prereqs.size() > 0)
     {
       // nobody waits for these events, so we put them in the list of dangling events
-      cs.add_dangling_events(ctx, wb_prereqs);
+      ctx_st.add_dangling_events(ctx, wb_prereqs);
     }
   }
 
@@ -1845,25 +1846,20 @@ inline void reserved::logical_data_untyped_impl::erase()
   // data may be called after finalize()
   h_state.clear();
 
-  cs.logical_data_ids_mutex.lock();
+  ctx_st.logical_data_ids_mutex.lock();
 
   // This unique ID is not associated to a pointer anymore (and should never be reused !)
-  auto& logical_data_ids = cs.logical_data_ids;
-
-  // fprintf(stderr, "REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
-  // &logical_data_ids, logical_data_ids.size());
-
+  //
   // This SHOULD be in the table because that piece of data was created
   // in this context and cannot already have been destroyed.
-  auto erased = logical_data_ids.erase(get_unique_id());
+  auto erased = ctx_st.logical_data_ids.erase(get_unique_id());
   EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
-  cs.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
-
-  cs.logical_data_ids_mutex.unlock();
+  ctx_st.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
 
   // fprintf(stderr, "AFTER REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
   // &logical_data_ids, logical_data_ids.size());
+  ctx_st.logical_data_ids_mutex.unlock();
 
   // Make sure this we do not erase this twice. For example after calling
   // finalize() there is no need to erase it again in the constructor
@@ -1956,7 +1952,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(cw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(cw_id);
+      cs.leaves.remove(cw_id);
 
       // Replace previous writer
       ctx_.previous_writer = cw;
@@ -1975,7 +1971,7 @@ inline event_list enforce_stf_deps_before(
         {
           dot.add_edge(reader_task_id, task.get_unique_id());
         }
-        cs.remove_leaf_task(reader_task_id);
+        cs.leaves.remove(reader_task_id);
       }
 
       current_readers.clear();
@@ -2004,7 +2000,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(pw_id);
+      cs.leaves.remove(pw_id);
 
       ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
@@ -2020,7 +2016,7 @@ inline event_list enforce_stf_deps_before(
         dot.add_edge(pw_id, task.get_unique_id());
       }
 
-      cs.remove_leaf_task(pw_id);
+      cs.leaves.remove(pw_id);
     }
 
     // Note : the task will later be added to the list of readers
@@ -2155,9 +2151,9 @@ inline void reserved::logical_data_untyped_impl::unfreeze(task& fake_task, event
 inline void backend_ctx_untyped::impl::erase_all_logical_data()
 {
   /* Since we modify the map while iterating on it, we will copy it */
-  stack.logical_data_ids_mutex.lock();
-  auto logical_data_ids_cpy = stack.logical_data_ids;
-  stack.logical_data_ids_mutex.unlock();
+  logical_data_ids_mutex.lock();
+  auto logical_data_ids_cpy = logical_data_ids;
+  logical_data_ids_mutex.unlock();
 
   /* Erase all logical data created in this context */
   for (auto p : logical_data_ids_cpy)
@@ -2167,7 +2163,7 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
   }
 }
 
-inline void reserved::ctx_stack::print_logical_data_summary() const
+inline void backend_ctx_untyped::impl::print_logical_data_summary() const
 {
   ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
 
@@ -2461,7 +2457,7 @@ inline void reclaim_memory(
 {
   const auto memory_node = to_index(place);
 
-  auto& cs = ctx.get_stack();
+  auto& ctx_state = ctx.get_state();
 
   reclaimed_s = 0;
 
@@ -2498,8 +2494,8 @@ inline void reclaim_memory(
   for (int pass = first_pass; (reclaimed_s < requested_s) && (eligible_data_size < requested_s) && (pass <= 2); pass++)
   {
     // Get the table of all logical data ids used in this context (the parent of the task)
-    ::std::lock_guard<::std::mutex> guard(cs.logical_data_ids_mutex);
-    auto& logical_data_ids = cs.logical_data_ids;
+    ::std::lock_guard<::std::mutex> guard(ctx_state.logical_data_ids_mutex);
+    auto& logical_data_ids = ctx_state.logical_data_ids;
     for (auto& e : logical_data_ids)
     {
       auto& d = e.second;
