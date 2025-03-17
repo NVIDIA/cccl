@@ -212,7 +212,7 @@ public:
 
     // Create an event in the stream
     auto start_e = reserved::record_event_in_stream(dstream);
-    get_stack().add_start_events(*this, event_list(mv(start_e)));
+    get_state().add_start_events(*this, event_list(mv(start_e)));
 
     // When a stream is attached to the context creation, the finalize()
     // semantic is non-blocking

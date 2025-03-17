@@ -161,25 +161,6 @@ public:
     pending_freeze.erase(fake_t.get_unique_id());
   }
 
-  bool has_start_events() const
-  {
-    return (start_events.size() > 0);
-  }
-
-  void add_start_events(backend_ctx_untyped& bctx, const event_list& lst)
-  {
-    start_events.merge(lst);
-
-    // We only add events at the beginning of the context, but use them
-    // often, so it's good to optimize anyhow
-    start_events.optimize(bctx);
-  }
-
-  const event_list& get_start_events() const
-  {
-    return start_events;
-  }
-
   void add_dangling_events(backend_ctx_untyped& bctx, const event_list& lst)
   {
     auto guard = ::std::lock_guard(dangling_events_mutex);
@@ -233,10 +214,6 @@ public:
   // cleaned when unfreezing which means it has been synchronized with.
   ::std::unordered_map<int /* fake_task_id */, event_list> pending_freeze;
   ::std::mutex pending_freeze_mutex;
-
-  // Events which denote the beginning of the context : any task with no
-  // dependency, or logical data with a reference copy should depend on it.
-  event_list start_events;
 };
 
 } // end namespace reserved
@@ -510,15 +487,33 @@ protected:
       ctx_phase = p;
     }
 
+    /*
+     *
+     *  Start events : keep track of what events any work in a context depends on
+     *
+     */
     bool has_start_events() const
     {
-      return state.has_start_events();
+      return (start_events.size() > 0);
+    }
+
+    void add_start_events(backend_ctx_untyped& bctx, const event_list& lst)
+    {
+      start_events.merge(lst);
+
+      // We only add events at the beginning of the context, but use them
+      // often, so it's good to optimize anyhow
+      start_events.optimize(bctx);
     }
 
     const event_list& get_start_events() const
     {
-      return state.get_start_events();
+      return start_events;
     }
+
+    // Events which denote the beginning of the context : any task with no
+    // dependency, or logical data with a reference copy should depend on it.
+    event_list start_events;
 
     // Insert a fence with all pending asynchronous operations on the current context
     [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
@@ -553,7 +548,7 @@ protected:
         state.leaves.clear();
 
         /* Erase start events if any */
-        state.start_events.clear();
+        start_events.clear();
 
         _CCCL_ASSERT(state.leaves.get_leaf_tasks().size() == 0, "");
       }
