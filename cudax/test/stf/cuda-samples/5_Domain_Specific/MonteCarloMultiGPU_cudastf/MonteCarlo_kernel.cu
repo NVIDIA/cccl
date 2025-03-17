@@ -124,7 +124,7 @@ static __global__ void MonteCarloOneBlockPerOption(
     {
       __TOptionValue sumCall = {0, 0};
 
-#pragma unroll 8
+      _CCCL_PRAGMA_UNROLL(8)
       for (int i = iSum; i < pathN; i += SUM_N)
       {
         real r         = curand_normal(&localState);

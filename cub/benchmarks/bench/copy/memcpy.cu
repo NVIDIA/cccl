@@ -188,7 +188,6 @@ void copy(nvbench::state& state,
     input_buffer_it_t,
     output_buffer_it_t,
     buffer_size_it_t,
-    buffer_offset_t,
     block_offset_t,
     cub::CopyAlg::Memcpy
 #if !TUNE_BASE

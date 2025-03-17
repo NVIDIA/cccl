@@ -22,6 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/extended_data_types.h>
+
 //! This file consolidates all compiler builtin detection for CCCL.
 //!
 //! To work around older compilers not supporting `__has_builtin` we use `_CCCL_CHECK_BUILTIN` that detects more
@@ -427,14 +429,16 @@
 #  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
 
-#if _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
-#  define _CCCL_BUILTIN_HUGE_VALF128() __builtin_huge_valf128()
-#endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_HUGE_VALF128() __builtin_huge_valf128()
+#  endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf128) || _CCCL_COMPILER(GCC, >=, 7)
 
 // nvcc does not implement __builtin_huge_valf128
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_HUGE_VALF128
-#endif // _CCCL_CUDA_COMPILER(NVCC)
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_HUGE_VALF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
 
 #if _CCCL_CHECK_BUILTIN(builtin_hypot) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_HYPOTF(...) __builtin_hypotf(__VA_ARGS__)
@@ -575,14 +579,16 @@
 #  define _CCCL_BUILTIN_NANL(...) static_cast<long double>(__builtin_nan(__VA_ARGS__))
 #endif // _CCCL_CHECK_BUILTIN(builtin_nanl)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
-#  define _CCCL_BUILTIN_NANF128(...) __builtin_nanf128(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_NANF128(...) __builtin_nanf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_nanf128) || _CCCL_COMPILER(GCC, >=, 7)
 
 // nvcc does not implement __builtin_nanf128
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_NANF128
-#endif // _CCCL_CUDA_COMPILER(NVCC)
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_NANF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
 
 #if _CCCL_CHECK_BUILTIN(builtin_nansf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANSF(...) __builtin_nansf(__VA_ARGS__)
@@ -598,14 +604,16 @@
 #  define _CCCL_BUILTIN_NANSL(...) static_cast<long double>(__builtin_nans(__VA_ARGS__))
 #endif // _CCCL_CHECK_BUILTIN(builtin_nansl)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
-#  define _CCCL_BUILTIN_NANSF128(...) __builtin_nansf128(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_HAS_FLOAT128()
+#  if _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
+#    define _CCCL_BUILTIN_NANSF128(...) __builtin_nansf128(__VA_ARGS__)
+#  endif // _CCCL_CHECK_BUILTIN(builtin_nansf128) || _CCCL_COMPILER(GCC, >=, 7)
 
 // nvcc does not implement __builtin_nansf128
-#if _CCCL_CUDA_COMPILER(NVCC)
-#  undef _CCCL_BUILTIN_NANSF128
-#endif // _CCCL_CUDA_COMPILER(NVCC)
+#  if _CCCL_CUDA_COMPILER(NVCC)
+#    undef _CCCL_BUILTIN_NANSF128
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // _CCCL_HAS_FLOAT128()
 
 #if _CCCL_CHECK_BUILTIN(builtin_nearbyint) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_NEARBYINTF(...) __builtin_nearbyintf(__VA_ARGS__)

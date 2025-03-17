@@ -282,7 +282,8 @@ private:
   {
     OffsetT lower_bound = 0;
     OffsetT upper_bound = num_items;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i <= Log2<MAX_NUM_ITEMS>::VALUE; i++)
     {
       OffsetT mid = cub::MidPoint<OffsetT>(lower_bound, upper_bound);
@@ -307,7 +308,8 @@ private:
   {
     // Keep the runs' items and the offsets of each run's beginning in the temporary storage
     RunOffsetT thread_dst_offset = static_cast<RunOffsetT>(linear_tid) * static_cast<RunOffsetT>(RUNS_PER_THREAD);
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < RUNS_PER_THREAD; i++)
     {
       temp_storage.runs.run_values[thread_dst_offset]  = run_values[i];
@@ -327,7 +329,8 @@ private:
   {
     // Compute the offset for the beginning of each run
     DecodedOffsetT run_offsets[RUNS_PER_THREAD];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < RUNS_PER_THREAD; i++)
     {
       run_offsets[i] = static_cast<DecodedOffsetT>(run_lengths[i]);
@@ -386,7 +389,7 @@ public:
 
     ItemT val = temp_storage.runs.run_values[assigned_run];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (DecodedOffsetT i = 0; i < DECODED_ITEMS_PER_THREAD; i++)
     {
       decoded_items[i] = val;
