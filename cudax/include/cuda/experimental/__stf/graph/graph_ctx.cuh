@@ -30,6 +30,8 @@
 #include <cuda/experimental/__stf/graph/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
+#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
@@ -62,7 +64,7 @@ public:
 
     const size_t graph_epoch                   = bctx.epoch();
     const cudaGraph_t graph                    = bctx.graph();
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_epoch);
     cudaGraphNode_t out                        = nullptr;
 
     if (memory_node.is_host())
@@ -98,7 +100,7 @@ public:
     const cudaGraph_t graph                    = bctx.graph();
     const size_t graph_epoch                   = bctx.epoch();
     cudaGraphNode_t out                        = nullptr;
-    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereqs, graph_epoch);
     if (memory_node.is_host())
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
@@ -310,7 +312,7 @@ public:
 
   void finalize()
   {
-    assert(get_phase() < backend_ctx_untyped::phase::finalized);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
     if (!state.submitted)
     {
@@ -329,7 +331,7 @@ public:
 
   void submit(cudaStream_t stream = nullptr)
   {
-    assert(get_phase() < backend_ctx_untyped::phase::submitted);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
     auto& state = this->state();
     if (!state.submitted_stream)
     {
@@ -418,7 +420,7 @@ public:
     get_state().detach_allocators(*this);
 
     // Make sure all pending async ops are sync'ed with
-    task_fence_impl();
+    task_fence_impl(*this);
 
     auto& state = this->state();
 
@@ -539,15 +541,14 @@ private:
   };
 
   /// @brief Inserts an empty node that depends on all pending operations
-  cudaStream_t task_fence_impl()
+  cudaStream_t task_fence_impl(backend_ctx_untyped& bctx)
   {
     auto& state = this->state();
 
-    auto& cs          = this->get_stack();
-    auto prereq_fence = cs.insert_task_fence(*get_dot());
+    auto prereq_fence = state.insert_task_fence(*get_dot());
 
     const size_t graph_epoch             = state.graph_epoch;
-    ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereq_fence, graph_epoch);
+    ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(bctx, prereq_fence, graph_epoch);
 
     // Create an empty graph node
     cudaGraphNode_t n;
