@@ -45,7 +45,7 @@ struct __task : __immovable
 {
   using __execute_fn_t = void(__task*) noexcept;
 
-  __task() = default;
+  _CUDAX_DEFAULTED_API __task() = default;
 
   _CUDAX_API explicit __task(__task* __next, __task* __tail) noexcept
       : __next_{__next}

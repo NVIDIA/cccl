@@ -90,7 +90,7 @@ struct _WITH_COMPLETIONS
 
 struct __merror_base
 {
-  // virtual ~__merror_base() = default;
+  // _CUDAX_DEFAULTED_API virtual ~__merror_base() = default;
 
   _CCCL_HOST_DEVICE constexpr friend bool __ustdex_unhandled_error(void*) noexcept
   {

@@ -51,7 +51,7 @@ struct __nil
 
 struct __immovable
 {
-  __immovable() = default;
+  _CUDAX_DEFAULTED_API __immovable() = default;
   _CUDAX_IMMOVABLE(__immovable);
 };
 
