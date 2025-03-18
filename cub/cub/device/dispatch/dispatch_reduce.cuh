@@ -46,6 +46,7 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
+#include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -706,7 +707,7 @@ struct DispatchSegmentedReduce
   OutputIteratorT d_out;
 
   /// The number of segments that comprise the sorting data
-  int num_segments;
+  ::cuda::std::int64_t num_segments;
 
   /// Random-access input iterator to the sequence of beginning offsets of
   /// length `num_segments`, such that `d_begin_offsets[i]` is the first
@@ -747,7 +748,7 @@ struct DispatchSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
@@ -813,33 +814,61 @@ struct DispatchSegmentedReduce
         break;
       }
 
-// Log device_reduce_sweep_kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), "
-              "%d items per thread, %d SM occupancy\n",
-              num_segments,
-              policy.SegmentedReduce().BlockThreads(),
-              (long long) stream,
-              policy.SegmentedReduce().ItemsPerThread(),
-              segmented_reduce_config.sm_occupancy);
-#endif // CUB_DEBUG_LOG
+      const auto num_segments_per_invocation =
+        static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+      const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
-      // Invoke DeviceReduceKernel
-      launcher_factory(num_segments, policy.SegmentedReduce().BlockThreads(), 0, stream)
-        .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, num_segments, reduction_op, init);
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
+      // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
+      // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
+      // indirect_arg_t as the iterator type, which does not support the + operator.
+      // TODO (elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
+      if (num_invocations > 1
+          && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
       {
-        break;
+        return cudaErrorInvalidValue;
       }
 
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
+      for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
       {
-        break;
+        const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+        const auto num_current_segments =
+          ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+
+// Log device_reduce_sweep_kernel configuration
+#ifdef CUB_DEBUG_LOG
+        _CubLog("Invoking SegmentedDeviceReduceKernel<<<%ld, %d, 0, %lld>>>(), "
+                "%d items per thread, %d SM occupancy\n",
+                num_current_segments,
+                policy.SegmentedReduce().BlockThreads(),
+                (long long) stream,
+                policy.SegmentedReduce().ItemsPerThread(),
+                segmented_reduce_config.sm_occupancy);
+#endif // CUB_DEBUG_LOG
+
+        // Invoke DeviceReduceKernel
+        launcher_factory(
+          static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
+          .doit(segmented_reduce_kernel,
+                d_in,
+                detail::advance_iterators_if_supported(d_out, current_seg_offset),
+                detail::advance_iterators_if_supported(d_begin_offsets, current_seg_offset),
+                detail::advance_iterators_if_supported(d_end_offsets, current_seg_offset),
+                reduction_op,
+                init);
+
+        // Check for failure to launch
+        error = CubDebug(cudaPeekAtLastError());
+        if (cudaSuccess != error)
+        {
+          break;
+        }
+
+        // Sync the stream if specified to flush runtime errors
+        error = CubDebug(detail::DebugSyncStream(stream));
+        if (cudaSuccess != error)
+        {
+          break;
+        }
       }
     } while (0);
 
@@ -908,7 +937,7 @@ struct DispatchSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     ReductionOpT reduction_op,
