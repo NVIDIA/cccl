@@ -170,9 +170,8 @@ public:
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_sm_80(arrival_token __token) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_sm_80([[maybe_unused]] arrival_token __token) const
   {
-    (void) __token;
     int32_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
@@ -186,9 +185,8 @@ private:
   }
 
   // Document de drop > uint32_t for __nanosec on public for APIs
-  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait(arrival_token __token) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait([[maybe_unused]] arrival_token __token) const
   {
-    (void) __token;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
@@ -268,9 +266,8 @@ private:
                 _CUDA_VSTD::chrono::nanoseconds(__nanosec));))
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_parity_sm_80(bool __phase_parity) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_parity_sm_80([[maybe_unused]] bool __phase_parity) const
   {
-    (void) __phase_parity;
     uint16_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,

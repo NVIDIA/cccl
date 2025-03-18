@@ -108,8 +108,7 @@
 template <class Tp>
 inline void DoNotOptimize(Tp const& value)
 {
-  const volatile void* volatile unused = __builtin_addressof(value);
-  static_cast<void>(unused);
+  [[maybe_unused]] const volatile void* volatile unused = __builtin_addressof(value);
   _ReadWriteBarrier();
 }
 #else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv

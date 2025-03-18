@@ -25,16 +25,14 @@
 template <class Iter1, class Iter2>
 __host__ __device__ constexpr void test()
 {
-  int ia[]          = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4};
-  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  int ib[]          = {2, 4};
-  const unsigned sb = sizeof(ib) / sizeof(ib[0]);
-  int ic[]          = {1, 2};
-  const unsigned sc = sizeof(ic) / sizeof(ic[0]);
-  ((void) sc);
-  int id[]          = {3, 3, 3, 3};
-  const unsigned sd = sizeof(id) / sizeof(id[0]);
-  ((void) sd);
+  int ia[]                           = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4};
+  const unsigned sa                  = sizeof(ia) / sizeof(ia[0]);
+  int ib[]                           = {2, 4};
+  const unsigned sb                  = sizeof(ib) / sizeof(ib[0]);
+  int ic[]                           = {1, 2};
+  [[maybe_unused]] const unsigned sc = sizeof(ic) / sizeof(ic[0]);
+  int id[]                           = {3, 3, 3, 3};
+  [[maybe_unused]] const unsigned sd = sizeof(id) / sizeof(id[0]);
 
   assert(cuda::std::includes(Iter1(ia), Iter1(ia), Iter2(ib), Iter2(ib)));
   assert(!cuda::std::includes(Iter1(ia), Iter1(ia), Iter2(ib), Iter2(ib + 1)));

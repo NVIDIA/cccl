@@ -43,9 +43,8 @@ _LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t* __try_get_barrier_handle(barrier
 template <>
 _LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t*
 __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(
-  barrier<thread_scope_block>& __barrier)
+  [[maybe_unused]] barrier<thread_scope_block>& __barrier)
 {
-  (void) __barrier;
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (return ::cuda::device::barrier_native_handle(__barrier);), NV_ANY_TARGET, (return nullptr;));
 }

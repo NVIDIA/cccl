@@ -2051,10 +2051,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(const variant<_Types...>& __
 template <class... _Vs>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void __throw_if_valueless(_Vs&&... __vs)
 {
-  int __unused[] = {
+  [[maybe_unused]] int __unused[] = {
     (_CUDA_VSTD::__as_variant(__vs).valueless_by_exception() ? _CUDA_VSTD::__throw_bad_variant_access() : void(), 0)...,
     0};
-  (void) __unused[0];
 }
 
 template <class _Visitor,
