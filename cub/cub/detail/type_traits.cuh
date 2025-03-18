@@ -118,7 +118,7 @@ inline constexpr bool is_fixed_size_random_access_range_v = is_fixed_size_random
 template <typename T, typename = void>
 struct static_size
 {
-  static_assert(cub::detail::always_false_v<T>, "static_size not supported for this type");
+  static_assert(always_false_v<T>, "static_size not supported for this type");
 };
 
 template <typename T, size_t N>
