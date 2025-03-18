@@ -21,6 +21,8 @@ from ..typing import DeviceArrayLike, GpuStruct
 
 
 class _Reduce:
+    _impl = cyb
+
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
@@ -41,9 +43,9 @@ class _Reduce:
             value_type = numba.typeof(h_init)
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
-        self.build_result = cyb.DeviceReduceBuildResult()
+        self.build_result = self._impl.DeviceReduceBuildResult()
         error = call_build(
-            cyb.device_reduce_build,
+            self._impl.device_reduce_build,
             self.build_result,
             self.d_in_cccl,
             self.d_out_cccl,
@@ -97,7 +99,7 @@ class _Reduce:
     def __del__(self):
         if self.build_result is None:
             return
-        cyb.device_reduce_cleanup(self.build_result)
+        self._impl.device_reduce_cleanup(self.build_result)
 
 
 def make_cache_key(
