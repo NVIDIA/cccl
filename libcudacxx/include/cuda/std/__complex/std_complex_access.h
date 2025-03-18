@@ -25,6 +25,11 @@
 #    define _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS() 0
 #  endif // ^^^ !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^
 
+// silence warning about using non-standard floating point types in std::complex being unspecified behavior
+#  if _CCCL_COMPILER(MSVC)
+_CCCL_NV_DIAG_SUPPRESS(1444)
+#  endif // _CCCL_COMPILER(MSVC)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -76,6 +81,10 @@ __make_std_complex(const _Tp& __r = _Tp{}, const _Tp& __i = _Tp()) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  if _CCCL_COMPILER(MSVC)
+_CCCL_NV_DIAG_DEFAULT(1444)
+#  endif // _CCCL_COMPILER(MSVC)
 
 #endif // !_CCCL_COMPILER(NVRTC)
 
