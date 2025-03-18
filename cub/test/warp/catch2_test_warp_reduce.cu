@@ -19,7 +19,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  **********************************************************************************************************************/
-
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
@@ -40,6 +39,10 @@
 #include <test_util.h>
 #include <utils/check_results.cuh>
 #include <utils/operator.cuh>
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // numeric(33): C: '=': conversion from 'int' to '_Ty', possible loss of data
+_CCCL_DIAG_POP
 
 /***********************************************************************************************************************
  * Constants
