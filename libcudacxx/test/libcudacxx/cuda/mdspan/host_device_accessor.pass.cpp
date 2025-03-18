@@ -9,15 +9,17 @@
 
 #include <cuda/mdspan>
 
+#include "nv/detail/__target_macros"
 #include "test_macros.h"
 
 __device__ int device_array[]              = {1, 2, 3, 4};
 __device__ __managed__ int managed_array[] = {1, 2, 3, 4};
 
+using ext_t = cuda::std::extents<int, 4>;
+
 __host__ __device__ void basic_mdspan_access_test()
 {
   int array[] = {1, 2, 3, 4};
-  using ext_t = cuda::std::extents<int, 4>;
   cuda::host_mdspan<int, ext_t> h_md{array, ext_t{}};
   cuda::device_mdspan<int, ext_t> d_md{device_array, ext_t{}};
   cuda::managed_mdspan<int, ext_t> m_md{managed_array, ext_t{}};
@@ -25,8 +27,23 @@ __host__ __device__ void basic_mdspan_access_test()
   unused(m_md[0]);
 }
 
+__global__ void test_kernel(cuda::host_mdspan<int, ext_t> md)
+{
+  cuda::host_mdspan<int, ext_t> h_md2{md};
+  unused(h_md2);
+}
+
+void host_mdspan_to_kernel_test()
+{
+  int array[] = {1, 2, 3, 4};
+  cuda::host_mdspan<int, ext_t> h_md{array, ext_t{}};
+  test_kernel<<<1, 1>>>(h_md);
+  assert(cudaDeviceSynchronize() == cudaSuccess);
+}
+
 int main(int, char**)
 {
   basic_mdspan_access_test();
+  NV_IF_TARGET(NV_IS_HOST, (host_mdspan_to_kernel_test();))
   return 0;
 }
