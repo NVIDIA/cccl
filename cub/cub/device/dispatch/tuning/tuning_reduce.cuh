@@ -275,7 +275,7 @@ struct policy_hub
 {
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
-  public:
+  private:
     static constexpr int nominal_4b_threads_per_block = 256;
     static constexpr int nominal_4b_items_per_thread  = 16;
     static constexpr int items_per_vec_load           = 4;

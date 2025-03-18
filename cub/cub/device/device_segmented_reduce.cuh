@@ -138,37 +138,6 @@ private:
                        stream);
   }
 
-  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ReductionOpT, typename InitT>
-  CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
-    ::cuda::std::false_type,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    OffsetT segment_size,
-    ReductionOpT reduction_op,
-    InitT initial_value,
-    cudaStream_t stream);
-
-  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT, typename ReductionOpT, typename InitT>
-  CUB_RUNTIME_FUNCTION static cudaError_t segmented_reduce(
-    ::cuda::std::true_type,
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_segments,
-    OffsetT segment_size,
-    ReductionOpT reduction_op,
-    InitT initial_value,
-    cudaStream_t stream)
-  {
-    return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT>::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
-  }
-
 public:
   //! @rst
   //! Computes a device-wide segmented reduction using the specified
@@ -351,7 +320,7 @@ public:
   //!   Pointer to the input sequence of data items
   //!
   //! @param[out] d_out
-  //!   Pointer to the output aggregate
+  //!   Pointer to the output aggregates
   //!
   //! @param[in] num_segments
   //!   The number of segments that comprise the segmented reduction data
@@ -387,17 +356,9 @@ public:
     // integral constant or larger integral types
     using offset_t = int;
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT>(
-      ::cuda::std::true_type{},
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_segments,
-      segment_size,
-      reduction_op,
-      initial_value,
-      stream);
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T>::Dispatch(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
   }
 
   //! @rst

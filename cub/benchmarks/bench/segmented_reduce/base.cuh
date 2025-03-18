@@ -37,8 +37,6 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
   {
-    static constexpr int threads_per_block  = TUNE_THREADS_PER_BLOCK;
-    static constexpr int items_per_thread   = TUNE_ITEMS_PER_THREAD;
     static constexpr int items_per_vec_load = TUNE_ITEMS_PER_VEC_LOAD;
 
     static constexpr int small_threads_per_warp = TUNE_S_THREADS_PER_WARP;
@@ -46,6 +44,9 @@ struct policy_hub_t
 
     static constexpr int medium_threads_per_warp = TUNE_M_THREADS_PER_WARP;
     static constexpr int medium_items_per_thread = TUNE_M_ITEMS_PER_THREAD;
+
+    static constexpr int threads_per_block = TUNE_L_THREADS_PER_BLOCK;
+    static constexpr int items_per_thread  = TUNE_L_ITEMS_PER_THREAD;
 
     using ReducePolicy =
       cub::AgentReducePolicy<threads_per_block,
@@ -76,16 +77,14 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <typename T, typename OffsetT>
-void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T>
+void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 {
-  using accum_t        = T;
-  using input_it_t     = const T*;
-  using output_it_t    = T*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
-  using segment_size_t = offset_t;
-  using output_t       = T;
-  using init_t         = T;
+  using accum_t     = T;
+  using input_it_t  = const T*;
+  using output_it_t = T*;
+  using output_t    = T;
+  using init_t      = T;
 
   using dispatch_t = cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
     input_it_t,
@@ -102,7 +101,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
 
   // Retrieve axis parameters
   const size_t num_elements = static_cast<size_t>(state.get_int64("NumElements{io}"));
-  const size_t segment_size = static_cast<size_t>(state.get_int64("SegmentSize{io}"));
+  const size_t segment_size = static_cast<size_t>(state.get_int64("SegmentSize"));
   const size_t num_segments = std::max<std::size_t>(1, (num_elements / segment_size));
   const size_t elements     = num_segments * segment_size;
 
@@ -120,15 +119,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
   // Allocate temporary storage:
   std::size_t temp_size;
   dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    d_in,
-    d_out,
-    num_segments,
-    static_cast<segment_size_t>(segment_size),
-    op_t{},
-    init_t{},
-    0 /* stream */);
+    nullptr, temp_size, d_in, d_out, num_segments, static_cast<int>(segment_size), op_t{}, init_t{}, 0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
@@ -140,26 +131,26 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T, Of
       d_in,
       d_out,
       num_segments,
-      static_cast<segment_size_t>(segment_size),
+      static_cast<int>(segment_size),
       op_t{},
       init_t{},
       launch.get_stream());
   });
 }
 
-NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
+NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("small")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
   .add_int64_power_of_two_axis("SegmentSize", nvbench::range(0, 4, 1));
 
-NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
+NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("medium")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 4))
   .add_int64_power_of_two_axis("SegmentSize", nvbench::range(5, 8, 1));
 
-NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
+NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("large")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
