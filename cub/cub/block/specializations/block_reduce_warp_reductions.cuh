@@ -91,17 +91,16 @@ struct BlockReduceWarpReductions
   };
 
   static_assert(BLOCK_THREADS <= 1024);
-  static_assert(WARP_THREADS == 32);
   static_assert(LOGICAL_WARP_SIZE >= 1 && LOGICAL_WARP_SIZE <= 32);
 
   ///  WarpReduce utility type
-  using WarpReduce = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
+  using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
 
   /// Shared memory storage layout type
   struct _TempStorage
   {
     /// Buffer for warp-synchronous reduction
-    typename WarpReduce::TempStorage warp_reduce[WARPS];
+    typename WarpReduceInternal::TempStorage warp_reduce[WARPS];
 
     /// Shared totals from each warp-synchronous reduction
     T warp_aggregates[WARPS];
@@ -221,7 +220,7 @@ struct BlockReduceWarpReductions
 
     // Warp reduction in every warp
     T warp_aggregate =
-      WarpReduce(temp_storage.warp_reduce[warp_id])
+      WarpReduceInternal(temp_storage.warp_reduce[warp_id])
         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, ::cuda::std::plus<>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
@@ -251,7 +250,7 @@ struct BlockReduceWarpReductions
                          : num_valid - warp_offset;
 
     // Warp reduction in every warp
-    T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id])
+    T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
                          .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
