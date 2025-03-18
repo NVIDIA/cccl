@@ -28,47 +28,36 @@
 namespace cuda::experimental
 {
 
-#if _CCCL_STD_VER >= 2020
+template <class _Resource, class _OtherResource>
+_CCCL_CONCEPT __comparable_resources = _CCCL_REQUIRES_EXPR((_Resource, _OtherResource))(
+  requires(_CUDA_VMR::__different_resource<_Resource, _OtherResource>),
+  requires(_CUDA_VMR::resource<_Resource>),
+  requires(_CUDA_VMR::resource<_OtherResource>),
+  requires(__non_polymorphic<_Resource>),
+  requires(__non_polymorphic<_OtherResource>));
+
 //! @brief Equality comparison between two resources of different types.
 //! @param __lhs The left-hand side resource.
 //! @param __rhs The right-hand side resource.
 //! @returns Always returns false.
 template <class _Resource, class _OtherResource>
-  requires _CUDA_VMR::resource<_Resource> && _CUDA_VMR::resource<_OtherResource>
-        && _CUDA_VMR::__different_resource<_Resource, _OtherResource> && __non_polymorphic<_Resource>
-        && __non_polymorphic<_OtherResource>
-_CCCL_NODISCARD bool operator==(_Resource const&, _OtherResource const&) noexcept
+_CCCL_NODISCARD auto operator==(_Resource const&, _OtherResource const&) noexcept
+  _CCCL_TRAILING_REQUIRES(bool)(__comparable_resources<_Resource, _OtherResource>)
 {
   return false;
 }
 
-#else // ^^^ C++20 ^^^ / vvv C++17
-//! @brief Equality comparison between two resources of different types.
-//! @param __lhs The left-hand side resource.
-//! @param __rhs The right-hand side resource.
-//! @returns Always returns false.
-template <class _Resource, class _OtherResource>
-_CCCL_NODISCARD auto operator==(_Resource const&, _OtherResource const&) noexcept _CCCL_TRAILING_REQUIRES(bool)(
-  _CUDA_VMR::resource<_Resource>&& _CUDA_VMR::resource<_OtherResource>&&
-    _CUDA_VMR::__different_resource<_Resource, _OtherResource>&& __non_polymorphic<_Resource>&&
-      __non_polymorphic<_OtherResource>)
-{
-  return false;
-}
-
+#if _CCCL_STD_VER <= 2017
 //! @brief Inequality comparison between two resources of different types.
 //! @param __lhs The left-hand side resource.
 //! @param __rhs The right-hand side resource.
 //! @returns Always returns true.
 template <class _Resource, class _OtherResource>
-_CCCL_NODISCARD auto operator!=(_Resource const&, _OtherResource const&) noexcept _CCCL_TRAILING_REQUIRES(bool)(
-  _CUDA_VMR::resource<_Resource>&& _CUDA_VMR::resource<_OtherResource>&&
-    _CUDA_VMR::__different_resource<_Resource, _OtherResource>&& __non_polymorphic<_Resource>&&
-      __non_polymorphic<_OtherResource>)
+_CCCL_NODISCARD auto operator!=(_Resource const&, _OtherResource const&) noexcept
+  _CCCL_TRAILING_REQUIRES(bool)(__comparable_resources<_Resource, _OtherResource>)
 {
   return true;
 }
-
 #endif // _CCCL_STD_VER <= 2017
 
 } // namespace cuda::experimental
