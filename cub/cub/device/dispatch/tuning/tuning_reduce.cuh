@@ -275,16 +275,18 @@ struct policy_hub
 {
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_vec_load = 4;
+  public:
+    static constexpr int nominal_4b_threads_per_block = 256;
+    static constexpr int nominal_4b_items_per_thread  = 16;
+    static constexpr int items_per_vec_load           = 4;
 
-    static constexpr int items_per_thread        = 16;
-    static constexpr int small_items_per_thread  = 16;
-    static constexpr int medium_items_per_thread = 16;
+    static constexpr int nominal_4b_small_items_per_thread  = 16;
+    static constexpr int nominal_4b_medium_items_per_thread = 16;
 
+  public:
     using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
+      AgentReducePolicy<nominal_4b_threads_per_block,
+                        nominal_4b_items_per_thread,
                         AccumT,
                         items_per_vec_load,
                         BLOCK_REDUCE_WARP_REDUCTIONS,
@@ -294,7 +296,7 @@ struct policy_hub
     using SmallReducePolicy =
       AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
                             1 /* threads per warp */,
-                            small_items_per_thread,
+                            nominal_4b_small_items_per_thread,
                             AccumT,
                             items_per_vec_load,
                             LOAD_LDG>;
@@ -302,7 +304,7 @@ struct policy_hub
     using MediumReducePolicy =
       AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
                             32 /* threads per warp */,
-                            medium_items_per_thread,
+                            nominal_4b_medium_items_per_thread,
                             AccumT,
                             items_per_vec_load,
                             LOAD_LDG>;

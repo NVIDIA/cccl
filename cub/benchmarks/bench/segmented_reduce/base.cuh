@@ -151,16 +151,16 @@ NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, 
   .set_name("small")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
-  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(0, 4, 1));
+  .add_int64_power_of_two_axis("SegmentSize", nvbench::range(0, 4, 1));
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("medium")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 4))
-  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(5, 8, 1));
+  .add_int64_power_of_two_axis("SegmentSize", nvbench::range(5, 8, 1));
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
   .set_name("large")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
-  .add_int64_power_of_two_axis("SegmentSize{io}", nvbench::range(9, 16, 2));
+  .add_int64_power_of_two_axis("SegmentSize", nvbench::range(9, 16, 2));

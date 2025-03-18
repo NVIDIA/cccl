@@ -1101,46 +1101,35 @@ struct DispatchFixedSizeSegmentedReduce
     static_assert((small_items_per_tile < medium_items_per_tile),
                   "small items per tile must be less than medium items per tile");
 
-    cudaError error = cudaSuccess;
-    do
+    // Return if the caller is simply requesting the size of the storage
+    // allocation
+    if (d_temp_storage == nullptr)
     {
-      // Return if the caller is simply requesting the size of the storage
-      // allocation
-      if (d_temp_storage == nullptr)
-      {
-        temp_storage_bytes = 1;
-        return cudaSuccess;
-      }
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
 
-      int blocks = num_segments;
-      if (segment_size <= small_items_per_tile)
-      {
-        blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK);
-      }
-      else if (segment_size <= medium_items_per_tile)
-      {
-        blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK);
-      }
+    int blocks = num_segments; // assume large segment size problem
+    if (segment_size <= small_items_per_tile)
+    {
+      blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK);
+    }
+    else if (segment_size <= medium_items_per_tile)
+    {
+      blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK);
+    }
 
-      // Invoke DeviceReduceKernel
-      launcher_factory(blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-        .doit(fixed_size_segmented_reduce_kernel, d_in, d_out, segment_size, num_segments, reduction_op, init);
+    launcher_factory(blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+      .doit(fixed_size_segmented_reduce_kernel, d_in, d_out, segment_size, num_segments, reduction_op, init);
 
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    cudaError error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
+    // Sync the stream if specified to flush runtime errors
+    error = CubDebug(detail::DebugSyncStream(stream));
     return error;
   }
 
@@ -1156,7 +1145,7 @@ struct DispatchFixedSizeSegmentedReduce
   //---------------------------------------------------------------------------
 
   /**
-   * @brief Internal dispatch routine for computing a device-wide reduction
+   * @brief Internal dispatch routine for computing a device-wide segmented reduction
    *
    * @param[in] d_temp_storage
    *   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -1170,7 +1159,7 @@ struct DispatchFixedSizeSegmentedReduce
    *   Pointer to the input sequence of data items
    *
    * @param[out] d_out
-   *   Pointer to the output aggregate
+   *   Pointer to the output aggregates
    *
    * @param[in] num_segments
    *   The number of segments that comprise the segmented reduction data
@@ -1212,41 +1201,31 @@ struct DispatchFixedSizeSegmentedReduce
       return cudaSuccess;
     }
 
-    cudaError error = cudaSuccess;
-
-    do
+    // Get PTX version
+    int ptx_version = 0;
+    cudaError error = CubDebug(PtxVersion(ptx_version));
+    if (cudaSuccess != error)
     {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      // Create dispatch functor
-      DispatchFixedSizeSegmentedReduce dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_segments,
-        segment_size,
-        reduction_op,
-        init,
-        stream,
-        ptx_version,
-        kernel_source,
-        launcher_factory);
+    // Create dispatch functor
+    DispatchFixedSizeSegmentedReduce dispatch(
+      d_temp_storage,
+      temp_storage_bytes,
+      d_in,
+      d_out,
+      num_segments,
+      segment_size,
+      reduction_op,
+      init,
+      stream,
+      ptx_version,
+      kernel_source,
+      launcher_factory);
 
-      // Dispatch to chained policy
-      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
+    // Dispatch to chained policy
+    error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
     return error;
   }
 };

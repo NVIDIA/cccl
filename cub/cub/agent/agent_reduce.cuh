@@ -92,23 +92,22 @@ struct AgentReducePolicy : ScalingType
 /**
  * Parameterizable tuning policy type for AgentReduce
  * @tparam _BLOCK_THREADS Threads per thread block
- * @tparam NOMINAL_WARP_THREADS_4B Threads per warp
+ * @tparam _WARP_THREADS Threads per warp
  * @tparam NOMINAL_ITEMS_PER_THREAD_4B Items per thread (per tile of input)
  * @tparam ComputeT Dominant compute type
  * @tparam _VECTOR_LOAD_LENGTH Number of items per vectorized load
  * @tparam _LOAD_MODIFIER Cache load modifier for reading input elements
  */
 template <int _BLOCK_THREADS,
-          int NOMINAL_WARP_THREADS_4B,
+          int _WARP_THREADS,
           int NOMINAL_ITEMS_PER_THREAD_4B,
           typename ComputeT,
           int _VECTOR_LOAD_LENGTH,
-          CacheLoadModifier _LOAD_MODIFIER,
-          typename ScalingType = detail::MemBoundScaling<_BLOCK_THREADS, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+          CacheLoadModifier _LOAD_MODIFIER>
 struct AgentWarpReducePolicy
 {
   /// Number of threads per warp
-  static constexpr int WARP_THREADS = NOMINAL_WARP_THREADS_4B;
+  static constexpr int WARP_THREADS = _WARP_THREADS;
 
   /// Number of items per vectorized load
   static constexpr int VECTOR_LOAD_LENGTH = _VECTOR_LOAD_LENGTH;
@@ -117,7 +116,8 @@ struct AgentWarpReducePolicy
   static constexpr int BLOCK_THREADS = _BLOCK_THREADS;
 
   /// Number of items per thread
-  static constexpr int ITEMS_PER_THREAD = ScalingType::ITEMS_PER_THREAD;
+  static constexpr int ITEMS_PER_THREAD =
+    detail::MemBoundScaling<0, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;

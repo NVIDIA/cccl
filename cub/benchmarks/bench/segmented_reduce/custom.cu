@@ -27,14 +27,6 @@
 
 #include <nvbench_helper.cuh>
 
-// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
-// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
-// %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
-// %RANGE% TUNE_S_THREADS_PER_WARP stpw 1:32:1
-// %RANGE% TUNE_S_ITEMS_PER_THREAD sipt 1:32:1
-// %RANGE% TUNE_M_THREADS_PER_WARP mtpw 1:32:1
-// %RANGE% TUNE_M_ITEMS_PER_THREAD mipt 1:32:1
-
 using value_types = all_types;
 using op_t        = max_t;
 #include "base.cuh"
