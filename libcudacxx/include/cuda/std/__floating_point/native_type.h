@@ -42,7 +42,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_native_type_impl()
 #if _CCCL_HAS_FLOAT128()
     return __float128{};
 #elif _CCCL_HAS_LONG_DOUBLE() && LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 113
-    return long double{};
+    return long double();
 #else // ^^^ has native binary128 ^^^ / vvv no native binary128 vvv
     return;
 #endif // ^^^ no native binary128 ^^^
@@ -50,7 +50,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_native_type_impl()
   else if constexpr (_Fmt == __fp_format::__fp80_x86)
   {
 #if _CCCL_HAS_LONG_DOUBLE() && LDBL_MIN_EXP == -16381 && LDBL_MAX_EXP == 16384 && LDBL_MANT_DIG == 64
-    return long double{};
+    return long double();
 #else // ^^^ has native x86 fp80 ^^^ / vvv no native x86 fp80 vvv
     return;
 #endif // ^^^ no native x86 fp80 ^^^
