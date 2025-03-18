@@ -125,7 +125,7 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 namespace detail
 {
 
-inline constexpr int max_devices       = 128;
+inline constexpr int max_devices       = CUB_MAX_DEVICES;
 inline constexpr int warp_threads      = 32;
 inline constexpr int log2_warp_threads = 5;
 inline constexpr int smem_banks        = 32;
