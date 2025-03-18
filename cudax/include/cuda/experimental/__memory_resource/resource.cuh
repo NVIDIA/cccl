@@ -37,8 +37,7 @@ template <class _Resource, class _OtherResource>
   requires _CUDA_VMR::resource<_Resource> && _CUDA_VMR::resource<_OtherResource>
         && _CUDA_VMR::__different_resource<_Resource, _OtherResource> && __non_polymorphic<_Resource>
         && __non_polymorphic<_OtherResource>
-_CCCL_NODISCARD bool
-operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResource const& __rhs) noexcept
+_CCCL_NODISCARD bool operator==(_Resource const&, _OtherResource const&) noexcept
 {
   return false;
 }
@@ -49,11 +48,10 @@ operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResou
 //! @param __rhs The right-hand side resource.
 //! @returns Always returns false.
 template <class _Resource, class _OtherResource>
-_CCCL_NODISCARD auto
-operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResource const& __rhs) noexcept
-  _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::resource<_Resource>&& _CUDA_VMR::resource<_OtherResource>&&
-                                  _CUDA_VMR::__different_resource<_Resource, _OtherResource>&&
-                                    __non_polymorphic<_Resource>&& __non_polymorphic<_OtherResource>)
+_CCCL_NODISCARD auto operator==(_Resource const&, _OtherResource const&) noexcept _CCCL_TRAILING_REQUIRES(bool)(
+  _CUDA_VMR::resource<_Resource>&& _CUDA_VMR::resource<_OtherResource>&&
+    _CUDA_VMR::__different_resource<_Resource, _OtherResource>&& __non_polymorphic<_Resource>&&
+      __non_polymorphic<_OtherResource>)
 {
   return false;
 }
@@ -63,11 +61,10 @@ operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResou
 //! @param __rhs The right-hand side resource.
 //! @returns Always returns true.
 template <class _Resource, class _OtherResource>
-_CCCL_NODISCARD auto
-operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] _OtherResource const& __rhs) noexcept
-  _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::resource<_Resource>&& _CUDA_VMR::resource<_OtherResource>&&
-                                  _CUDA_VMR::__different_resource<_Resource, _OtherResource>&&
-                                    __non_polymorphic<_Resource>&& __non_polymorphic<_OtherResource>)
+_CCCL_NODISCARD auto operator!=(_Resource const&, _OtherResource const&) noexcept _CCCL_TRAILING_REQUIRES(bool)(
+  _CUDA_VMR::resource<_Resource>&& _CUDA_VMR::resource<_OtherResource>&&
+    _CUDA_VMR::__different_resource<_Resource, _OtherResource>&& __non_polymorphic<_Resource>&&
+      __non_polymorphic<_OtherResource>)
 {
   return true;
 }
