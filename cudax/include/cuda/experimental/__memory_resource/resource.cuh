@@ -40,9 +40,9 @@ _CCCL_CONCEPT __comparable_resources = _CCCL_REQUIRES_EXPR((_Resource, _OtherRes
 //! @param __lhs The left-hand side resource.
 //! @param __rhs The right-hand side resource.
 //! @returns Always returns false.
-template <class _Resource, class _OtherResource>
-_CCCL_NODISCARD auto operator==(_Resource const&, _OtherResource const&) noexcept
-  _CCCL_TRAILING_REQUIRES(bool)(__comparable_resources<_Resource, _OtherResource>)
+_CCCL_TEMPLATE(class _Resource, class _OtherResource)
+_CCCL_REQUIRES(__comparable_resources<_Resource, _OtherResource>)
+_CCCL_NODISCARD bool operator==(_Resource const&, _OtherResource const&) noexcept
 {
   return false;
 }
@@ -52,9 +52,9 @@ _CCCL_NODISCARD auto operator==(_Resource const&, _OtherResource const&) noexcep
 //! @param __lhs The left-hand side resource.
 //! @param __rhs The right-hand side resource.
 //! @returns Always returns true.
-template <class _Resource, class _OtherResource>
-_CCCL_NODISCARD auto operator!=(_Resource const&, _OtherResource const&) noexcept
-  _CCCL_TRAILING_REQUIRES(bool)(__comparable_resources<_Resource, _OtherResource>)
+_CCCL_TEMPLATE(class _Resource, class _OtherResource)
+_CCCL_REQUIRES(__comparable_resources<_Resource, _OtherResource>)
+_CCCL_NODISCARD bool operator!=(_Resource const&, _OtherResource const&) noexcept
 {
   return true;
 }
