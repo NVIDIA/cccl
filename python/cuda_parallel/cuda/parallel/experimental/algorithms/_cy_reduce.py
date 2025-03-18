@@ -32,7 +32,7 @@ class _Reduce:
         h_init: np.ndarray | GpuStruct,
     ):
         # Referenced from __del__:
-        self.build_result = None
+        self.build_result = self._impl.DeviceReduceBuildResult()
 
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
@@ -43,7 +43,6 @@ class _Reduce:
             value_type = numba.typeof(h_init)
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
-        self.build_result = self._impl.DeviceReduceBuildResult()
         error = call_build(
             self._impl.device_reduce_build,
             self.build_result,

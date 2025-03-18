@@ -14,7 +14,7 @@ from numba.core.typing.templates import AttributeTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 from numba.cuda.cudaimpl import registry as cuda_lower_registry
 
-import cuda.parallel.experimental.iterators._iterators as _iterators
+from . import _iterators
 
 
 @lru_cache
