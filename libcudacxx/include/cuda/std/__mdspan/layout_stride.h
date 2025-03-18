@@ -322,7 +322,7 @@ public:
             enable_if_t<_CCCL_TRAIT(is_constructible, index_type, const _OtherIndexType&), int> = 0,
             enable_if_t<_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type), int>   = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(const extents_type& __ext,
-                                              const array<_OtherIndexType, extents_type::rank()> __strides) noexcept
+                                              const array<_OtherIndexType, extents_type::rank()>& __strides) noexcept
       : mapping(__ext, span<const _OtherIndexType, extents_type::rank()>(__strides))
   {}
 
