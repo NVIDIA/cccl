@@ -145,13 +145,12 @@ CUB_NAMESPACE_BEGIN
 //!   hardware warp threads).  Default is the warp size of the targeted CUDA compute-capability
 //!   (e.g., 32 threads for SM20).
 //!
-template <typename T, int LogicalWarpThreads = CUB_PTX_WARP_THREADS>
+template <typename T, int LogicalWarpThreads = 32>
 class WarpReduce
 {
-  static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= CUB_WARP_THREADS(0),
-                "LogicalWarpThreads must be in the range [1, 32]");
+  static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= 32, "LogicalWarpThreads must be in the range [1, 32]");
 
-  static constexpr bool is_full_warp    = (LogicalWarpThreads == CUB_WARP_THREADS(0));
+  static constexpr bool is_full_warp    = (LogicalWarpThreads == 32);
   static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpThreads});
 
 public:

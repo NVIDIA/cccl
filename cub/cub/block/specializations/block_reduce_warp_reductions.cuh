@@ -90,11 +90,12 @@ struct BlockReduceWarpReductions
     EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
   };
 
+  static constexpr int LogicalWarpSize = LOGICAL_WARP_SIZE;
   static_assert(BLOCK_THREADS <= 1024);
-  static_assert(LOGICAL_WARP_SIZE >= 1 && LOGICAL_WARP_SIZE <= 32);
+  static_assert(LogicalWarpSize >= 1 && LogicalWarpSize <= 32);
 
   ///  WarpReduce utility type
-  using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
+  using WarpReduceInternal = typename WarpReduce<T, LogicalWarpSize>::InternalWarpReduce;
 
   /// Shared memory storage layout type
   struct _TempStorage
