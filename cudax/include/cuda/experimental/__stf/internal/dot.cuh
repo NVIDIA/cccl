@@ -87,9 +87,18 @@ struct per_vertex_info
   ::std::string color;
   ::std::string label;
   ::std::optional<float> timing;
-  int dot_section_id;
   // is that a task, fence or prereq ?
   vertex_type type;
+
+  // id of the vertex
+  int original_id;
+
+  // id of the vertex after collapsing : this is the id of the vertex that
+  // represents all nodes that were merged in a section.
+  int representative_id;
+
+  int dot_section_id;
+  int ctx_id;
 };
 
 class per_ctx_dot
@@ -99,7 +108,8 @@ public:
       : _is_tracing(_is_tracing)
       , _is_tracing_prereqs(_is_tracing_prereqs)
       , _is_timing(_is_timing)
-  {}
+  {
+  }
 
   ~per_ctx_dot() = default;
 
@@ -126,6 +136,9 @@ public:
     m.label          = "task fence";
 
     m.type = fence_vertex;
+
+    m.original_id = unique_id;
+    m.representative_id = unique_id;
   }
 
   void ctx_add_input_id(int prereq_unique_id)
@@ -178,9 +191,14 @@ public:
     m.color = get_current_color();
 
     m.dot_section_id = get_current_section_id(get_unique_id());
+    m.ctx_id = get_unique_id();
+
     m.label          = symbol;
 
     m.type = prereq_vertex;
+
+    m.original_id = prereq_unique_id;
+    m.representative_id = prereq_unique_id;
   }
 
   // Define vertices which represent the beginning or the end of a (nested) context
@@ -196,8 +214,12 @@ public:
     auto& m          = metadata[prereq_unique_id];
     m.color          = get_current_color();
     m.dot_section_id = get_current_section_id(get_unique_id());
+    m.ctx_id = get_unique_id();
     m.label          = "proxy";
     m.type           = cluster_proxy_vertex;
+
+    m.original_id = prereq_unique_id;
+    m.representative_id = prereq_unique_id;
   }
 
   // Edges are not rendered directly, so that we can decide to filter out
@@ -213,6 +235,11 @@ public:
   void add_edge(int id_from, int id_to, edge_type style = edge_type::plain)
   {
     if (!is_tracing())
+    {
+      return;
+    }
+
+    if (!tracing_enabled)
     {
       return;
     }
@@ -265,6 +292,7 @@ public:
     task_metadata.color = get_current_color();
 
     task_metadata.dot_section_id = get_current_section_id(get_unique_id());
+    task_metadata.ctx_id = get_unique_id();
 
     // We here create the label of the task, which we may augment later with
     // timing information for example
@@ -286,6 +314,9 @@ public:
 
     task_metadata.label = task_oss.str();
     task_metadata.type  = type;
+
+    task_metadata.original_id = t.get_unique_id();
+    task_metadata.representative_id = t.get_unique_id();
   }
 
   // Save the ID of the task in the "vertices" vector, and associate this ID to
@@ -361,7 +392,6 @@ public:
 
   void discard(int id)
   {
-    single_threaded_section guard(mtx);
     discarded_tasks.insert(id);
   }
 
@@ -657,17 +687,23 @@ public:
       return;
     }
 
+    /* Collect all edges and vertices from all contexts */
     for (const auto& pc : per_ctx)
     {
       for (const auto& e : pc->existing_edges)
       {
-        existing_edges.insert(e);
+        all_edges.insert(e);
+      }
+
+      for (const auto& v : pc->metadata)
+      {
+        all_vertices[v.first] = v.second;
       }
     }
 
-    remove_freeze_nodes(existing_edges);
-
     collapse_sections();
+
+    remove_freeze_nodes();
 
     // Now we have executed all tasks, so we can compute the average execution
     // times, and update the colors appropriately if needed.
@@ -678,7 +714,7 @@ public:
     {
       if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
       {
-        remove_redundant_edges(existing_edges);
+        remove_redundant_edges();
       }
 
       outFile << "digraph {\n";
@@ -701,12 +737,12 @@ public:
       }
 
       /* Edges do not have to belong to the cluster (Vertices do) */
-      for (const auto& [from, to] : existing_edges)
+      for (const auto& [from, to] : all_edges)
       {
         outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
       }
 
-      edge_count = existing_edges.size();
+      edge_count = all_edges.size();
 
       outFile << "// Edge   count : " << edge_count << "\n";
       outFile << "// Vertex count : " << vertex_count << "\n";
@@ -753,7 +789,7 @@ private:
     ::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, const ::std::shared_ptr<per_ctx_dot>& pc)
   {
     // Pick up an identifier in DOT (we may update this value later)
-    size_t ctx_id = ctx_cnt++;
+    size_t ctx_id = pc->get_unique_id();
     if (display_clusters)
     {
       outFile << "subgraph cluster_" << ctx_id << " {\n";
@@ -765,36 +801,38 @@ private:
       //      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
     }
 
-    for (const auto& p : pc->metadata)
+    for (const auto& p : all_vertices)
     {
-      // Select the display style of the node based on the type of vertex
-      ::std::string style;
-      switch (p.second.type)
-      {
-        case task_vertex:
-        case fence_vertex:
-          style = "filled";
-          break;
-        case freeze_vertex:
-        case prereq_vertex:
-          style = "dashed";
-          break;
-        case cluster_proxy_vertex:
-          style = "invis";
-          break;
-        default:
-          fprintf(stderr, "error: unknown vertex type\n");
-          abort();
-      };
-      outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color << "\" label=\""
-              << p.second.label << "\"]\n";
+      if (p.second.ctx_id == ctx_id) {
+         // Select the display style of the node based on the type of vertex
+         ::std::string style;
+         switch (p.second.type)
+         {
+           case task_vertex:
+           case fence_vertex:
+             style = "filled";
+             break;
+           case freeze_vertex:
+           case prereq_vertex:
+             style = "dashed";
+             break;
+           case cluster_proxy_vertex:
+             style = "invis";
+             break;
+           default:
+             fprintf(stderr, "error: unknown vertex type\n");
+             abort();
+         };
+         outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color << "\" label=\""
+                 << p.second.label << "\"]\n";
 
-      // to force the start_cluster node to be at the top, we add dependencies
-      // if (display_clusters) {
-      //   outFile << "\"start_cluster_" << ctx_id << "\" -> \"NODE_" << p.first << "\" [style=invis]\n";
-      //}
+         // to force the start_cluster node to be at the top, we add dependencies
+         // if (display_clusters) {
+         //   outFile << "\"start_cluster_" << ctx_id << "\" -> \"NODE_" << p.first << "\" [style=invis]\n";
+         //}
 
-      vertex_count++;
+         vertex_count++;
+      }
     }
 
     if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
@@ -846,18 +884,6 @@ private:
       //      outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
 
       outFile << "} // end subgraph cluster_" << ctx_id << "\n";
-
-#if 0
-      for (auto i : pc->ctx_input_id)
-      {
-        outFile << "\"NODE_" << i << "\" -> \"start_cluster_" << ctx_id << "\"\n";
-      }
-
-      for (auto i : pc->ctx_output_id)
-      {
-        outFile << "\"end_cluster_" << ctx_id << "\" -> \"NODE_" << i << "\"\n";
-      }
-#endif
     }
   }
 
@@ -905,9 +931,11 @@ private:
     outFile << "    label=\"" + map[id]->get_symbol() + "\"\n";
 
     // Put all nodes which belong to this section
-    for (auto i : section_id_to_nodes[id])
+    for (auto &v: all_vertices)
     {
-      outFile << "    \"NODE_" + ::std::to_string(i) + "\"\n";
+        if (v.second.dot_section_id == id) {
+           outFile << "    \"NODE_" + ::std::to_string(v.first) + "\"\n";
+        }
     }
 
     outFile << "} // end subgraph cluster_section_" << ::std::to_string(id) << "\n ";
@@ -923,17 +951,15 @@ private:
 
     float sum  = 0.0;
     size_t cnt = 0;
+
     // First go over all tasks which have some timing and compute the average duration
-    for (const auto& pc : per_ctx)
+    for (const auto& p : all_vertices)
     {
-      for (const auto& p : pc->metadata)
+      if (p.second.timing.has_value())
       {
-        if (p.second.timing.has_value())
-        {
-          float ms = p.second.timing.value();
-          cnt++;
-          sum += ms;
-        }
+        float ms = p.second.timing.value();
+        cnt++;
+        sum += ms;
       }
     }
 
@@ -943,16 +969,13 @@ private:
 
       // Update colors associated to tasks with timing now in order to
       // illustrate how long they take to execute relative to the average
-      for (auto& pc : per_ctx)
+      for (auto& p : all_vertices)
       {
-        for (auto& p : pc->metadata)
+        if (p.second.timing.has_value())
         {
-          if (p.second.timing.has_value())
-          {
-            float ms       = p.second.timing.value();
-            p.second.color = get_color_for_duration(ms, avg);
-            p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
-          }
+          float ms       = p.second.timing.value();
+          p.second.color = get_color_for_duration(ms, avg);
+          p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
         }
       }
     }
@@ -963,42 +986,28 @@ private:
    * updated one ("dst_id"), redirecting edges and combining timing if
    * necessary
    */
-  void merge_nodes(per_ctx_dot& pc, int dst_id, int src_id)
+  void merge_nodes(int dst_id, int src_id)
   {
-    // ::std::unordered_map<int /* id */, per_vertex_info> metadata;
+//    // Get src_id from the map and remove it
+//    auto it = all_vertices.find(src_id);
+//    assert(it != all_vertices.end());
+//    //per_vertex_info src = mv(it->second);
+//    //all_vertices.erase(it);
+//    per_vertex_info &src = it->second;
 
-    // Get src_id from the map and remove it
-    auto it = pc.metadata.find(src_id);
-    assert(it != pc.metadata.end());
-    per_vertex_info src = mv(it->second);
-    pc.metadata.erase(it);
+    auto &src = all_vertices[src_id];
 
     // If there was some timing associated to either src or dst, update timing
-    auto& dst = pc.metadata[dst_id];
+    auto& dst = all_vertices[dst_id];
     if (dst.timing.has_value() || src.timing.has_value())
     {
       dst.timing =
         (src.timing.has_value() ? src.timing.value() : 0.0f) + (dst.timing.has_value() ? dst.timing.value() : 0.0f);
     }
-
-    // Replace edges if necessary
-    IntPairSet new_edges;
-    for (auto& [from, to] : pc.existing_edges)
-    {
-      int new_from = (from == src_id) ? dst_id : from;
-      int new_to   = (to == src_id) ? dst_id : to;
-
-      if (new_from != new_to)
-      {
-        _CCCL_ASSERT(new_from < new_to, "invalid edge");
-        new_edges.insert(std::make_pair(new_from, new_to));
-      }
-    }
-    ::std::swap(new_edges, pc.existing_edges);
   }
 
   // Remove one vertex and replace incoming/outgoing edges
-  void collapse_vertex(int vertex_id, IntPairSet& edges)
+  void collapse_vertex(int vertex_id)
   {
     /* We look for incoming edges, and outgoing edges */
     ::std::vector<int> in;
@@ -1006,7 +1015,7 @@ private:
 
     IntPairSet new_edges;
 
-    for (auto& [from, to] : edges)
+    for (auto& [from, to] : all_edges)
     {
       bool keep_edge = true;
       if (from == vertex_id)
@@ -1037,32 +1046,29 @@ private:
       }
     }
 
-    ::std::swap(new_edges, edges);
+    ::std::swap(new_edges, all_edges);
   }
 
-  void remove_freeze_nodes(IntPairSet& edges)
+  void remove_freeze_nodes()
   {
     if (getenv("CUDASTF_DOT_KEEP_FREEZE"))
     {
       return;
     }
 
-    for (const auto& pc : per_ctx)
+    // Since we are going to potentially remove nodes, we create a copy first
+    // to iterate on it, and remove from the original structure if necessary
+    decltype(all_vertices) copy_metadata = all_vertices;
+
+    // p.first = vertex id, p.second = per_vertex_info
+    for (auto& p : copy_metadata)
     {
-      // Since we are going to potentially remove nodes, we create a copy first
-      // to iterate on it, and remove from the original structure if necessary
-      decltype(pc->metadata) copy_metadata = pc->metadata;
-
-      // p.first = vertex id, p.second = per_vertex_info
-      for (auto& p : copy_metadata)
+      if (p.second.type == freeze_vertex)
       {
-        if (p.second.type == freeze_vertex)
-        {
-          collapse_vertex(p.first, edges);
+        collapse_vertex(p.first);
 
-          // remove this collapsed vertex from the unordered_map
-          pc->metadata.erase(p.first);
-        }
+        // remove this collapsed vertex from the unordered_map
+        all_vertices.erase(p.first);
       }
     }
   }
@@ -1081,16 +1087,15 @@ private:
 
     const int max_depth = atoi(env_depth);
 
-    // First go over all tasks which have some timing and compute the average duration
-    for (auto& pc : per_ctx)
-    {
       // key : section id, value : vector of IDs which should be condensed into a node
       ::std::unordered_map<int, ::std::vector<int>> to_condense;
 
-      for (auto& p : pc->metadata)
+      // For all vertices : check if they belong to a section
+      for (auto& p : all_vertices)
       {
         // p.first task id, p.second metadata
         auto& task_info    = p.second;
+
         int dot_section_id = task_info.dot_section_id;
         if (dot_section_id > 0)
         {
@@ -1122,28 +1127,64 @@ private:
         }
       }
 
+      // For each group of tasks
       for (auto& p : to_condense)
       {
         ::std::sort(p.second.begin(), p.second.end());
 
         // For every section ID, we get the vector of nodes to condense. We pick the first node, and "merge" other nodes
         // with it.
+        for (size_t i = 0; i < p.second.size(); i++)
+        {
+            all_vertices[p.second[i]].representative_id = p.second[0];
+        }
 
         // Merge all tasks in the vector with the first entry, and then rename
         // the first entry to take the name of the section.
         for (size_t i = 1; i < p.second.size(); i++)
         {
-          // Fuse i-th entry with the first one
-          merge_nodes(*pc, p.second[0], p.second[i]);
+          // Fuse the content (eg. timing) of the i-th entry with the first one
+          merge_nodes(p.second[0], p.second[i]);
         }
+
+        // Condense edges
 
         // Rename the task that remains to have the label of the section
         ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
-        pc->metadata[p.second[0]].label = sec->get_symbol();
+        all_vertices[p.second[0]].label = sec->get_symbol();
 
         // Assign the node to the parent of the section it corresponds to
-        pc->metadata[p.second[0]].dot_section_id = sec->parent_id;
+        all_vertices[p.second[0]].dot_section_id = sec->parent_id;
       }
+
+    // Replace or condense edges
+    IntPairSet new_edges;
+    for (auto& [from, to] : all_edges)
+    {
+      _CCCL_ASSERT(all_vertices.find(from) != all_vertices.end(), "edge invalid from");
+      _CCCL_ASSERT(all_vertices.find(to) != all_vertices.end(), "edge invalid to");
+
+      int new_from = all_vertices[from].representative_id;
+      int new_to   = all_vertices[to].representative_id;
+
+      // Remove edges internal to a section
+      if (new_from != new_to)
+      {
+        _CCCL_ASSERT(new_from < new_to, "invalid edge");
+        // insert the edge (if it does not exist already)
+        new_edges.insert(std::make_pair(new_from, new_to));
+      }
+    }
+    ::std::swap(new_edges, all_edges);
+
+    // Remove vertices which have been collapsed
+    for (auto it = all_vertices.begin(); it != all_vertices.end(); ) {
+        const auto& info = it->second;
+        if (info.representative_id != info.original_id) {
+            it = all_vertices.erase(it); // erase returns the next valid iterator
+        } else {
+            ++it;
+        }
     }
   }
 
@@ -1204,21 +1245,21 @@ private:
   }
 
   // This method will check whether an edge can be removed when there is already a direct path
-  void remove_redundant_edges(IntPairSet& edges)
+  void remove_redundant_edges()
   {
     single_threaded_section guard(mtx);
     // We first dump the set of edges into a map of predecessors per node
-    for (const auto& [from, to] : edges)
+    for (const auto& [from, to] : all_edges)
     {
       predecessors[to].push_back(from);
     }
 
     // Maybe this is not the most efficient, we could use a vector of
     // pair<int, int> if efficiency matters here.
-    IntPairSet edges_cpy = edges;
+    IntPairSet edges_cpy = all_edges;
 
     // We will put back only those needed
-    edges.clear();
+    all_edges.clear();
 
     for (const auto& [from, to] : edges_cpy)
     {
@@ -1231,6 +1272,7 @@ private:
       ::std::unordered_set<int> visited;
       for (auto p : preds)
       {
+        // Note that it is based on predecessor lists before pruning nodes!
         if (reachable(from, p, visited))
         {
           // Put this edge back in the set of edges
@@ -1241,7 +1283,7 @@ private:
 
       if (keep)
       {
-        edges.insert(::std::pair(from, to));
+        all_edges.insert(::std::pair(from, to));
       }
     }
   }
@@ -1270,36 +1312,34 @@ private:
     ::std::unordered_map<int, int> path_predecessor;
 
     // Gather durations
-    for (const auto& pc : per_ctx)
+
+    // Per vertex (task, prereqs, ...)
+    for (const auto& p : all_vertices)
     {
-      // Per task
-      for (const auto& p : pc->metadata)
+      if (p.second.timing.has_value())
       {
-        if (p.second.timing.has_value())
-        {
-          float ms = p.second.timing.value();
-          // Total work is simply the sum of all work
-          t1 += ms;
-          durations[p.first] = ms;
-        }
+        float ms = p.second.timing.value();
+        // Total work is simply the sum of all work
+        t1 += ms;
+        durations[p.first] = ms;
+      }
+    }
+
+    // We go through edges to find the predecessors of every node
+    for (const auto& [from, to] : all_edges)
+    {
+      predecessors[to].push_back(from);
+      successors[from].push_back(to);
+
+      // For nodes which don't have timing information, we assume a 0.0 duration. This will make a simpler algorithm
+      if (durations.find(from) == durations.end())
+      {
+        durations[from] = 0.0f;
       }
 
-      // We go through edges to find the predecessors of every node
-      for (const auto& [from, to] : pc->existing_edges)
+      if (durations.find(to) == durations.end())
       {
-        predecessors[to].push_back(from);
-        successors[from].push_back(to);
-
-        // For nodes which don't have timing information, we assume a 0.0 duration. This will make a simpler algorithm
-        if (durations.find(from) == durations.end())
-        {
-          durations[from] = 0.0f;
-        }
-
-        if (durations.find(to) == durations.end())
-        {
-          durations[to] = 0.0f;
-        }
+        durations[to] = 0.0f;
       }
     }
 
@@ -1377,8 +1417,9 @@ private:
   // Are we measuring the duration of tasks ?
   bool enable_timing = false;
 
-  // Keep track of existing edges, to make the output possibly look better
-  IntPairSet existing_edges;
+  // all_edges and all_vertices gather edges and vertices from all contexts
+  IntPairSet all_edges;
+  ::std::unordered_map<int /* id */, per_vertex_info> all_vertices;
 
   ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
