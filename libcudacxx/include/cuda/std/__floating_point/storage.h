@@ -61,7 +61,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_storage_type_impl(
 #endif // _CCCL_HAS_INT128()
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point format");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
@@ -164,7 +164,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_s
 #endif // _CCCL_HAS_FLOAT128()
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
@@ -231,7 +231,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_get
 #endif // _CCCL_HAS_FLOAT128()
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
