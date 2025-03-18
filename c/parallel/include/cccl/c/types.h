@@ -87,4 +87,19 @@ typedef struct cccl_iterator_t
   void* state;
 } cccl_iterator_t;
 
+typedef struct cccl_double_buffer_t
+{
+  size_t size;
+  size_t alignment;
+  cccl_type_info value_type;
+  void* buffers[2];
+  int selector;
+} cccl_double_buffer_t;
+
+typedef enum cccl_sort_order_t
+{
+  CCCL_ASCENDING  = 0,
+  CCCL_DESCENDING = 1
+} cccl_sort_order_t;
+
 CCCL_C_EXTERN_C_END
