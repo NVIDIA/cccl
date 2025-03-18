@@ -105,7 +105,6 @@ extern "C++" {
 #    define __alignof__ __alignof
 #  endif
 
-#  define _LIBCUDACXX_ALIGNOF(_Tp)           alignof(_Tp)
 #  define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 
 #  if _CCCL_COMPILER(MSVC)
@@ -115,7 +114,7 @@ extern "C++" {
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
 #    define _CCCL_ALIGNAS(x)      alignas(x)
 #  else
-#    define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
+#    define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(alignof(x))))
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
 #  endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
 

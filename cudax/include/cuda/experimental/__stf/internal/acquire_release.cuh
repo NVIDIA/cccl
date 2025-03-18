@@ -254,7 +254,6 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   assert(get_done_prereqs().size() == 0);
 
   auto& task_deps = pimpl->deps;
-  auto& cs        = ctx.get_stack();
 
   // We copy the list of prereqs into the task
   merge_event_list(done_prereqs);
@@ -271,7 +270,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
     if (mode == access_mode::read)
     {
       // If we have a read-only task, we only need to make sure that write accesses waits for this task
-      data_instance.add_write_prereq(done_prereqs);
+      data_instance.add_write_prereq(ctx, done_prereqs);
     }
     else
     {
@@ -280,7 +279,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
     }
 
     // Update last reader/writer tasks
-    reserved::enforce_stf_deps_after(d, *this, mode);
+    reserved::enforce_stf_deps_after(ctx, d, *this, mode);
   }
 
   // Automatically reset the context to its original configuration (device, SM affinity, ...)
@@ -295,7 +294,7 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   }
 
   // This task becomes a new "leaf task" until another task depends on it
-  cs.add_leaf_task(*this);
+  ctx.get_state().leaves.add(*this);
 
   pimpl->phase = task::phase::finished;
 

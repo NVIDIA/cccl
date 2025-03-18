@@ -29,6 +29,8 @@
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
@@ -212,7 +214,7 @@ public:
 
     // Create an event in the stream
     auto start_e = reserved::record_event_in_stream(dstream);
-    get_stack().add_start_events(event_list(mv(start_e)));
+    get_state().add_start_events(*this, event_list(mv(start_e)));
 
     // When a stream is attached to the context creation, the finalize()
     // semantic is non-blocking
@@ -278,9 +280,9 @@ public:
         ? user_dstream.value()
         : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
 
-    auto prereqs = get_stack().insert_task_fence(*get_dot());
+    auto prereqs = get_state().insert_task_fence(*get_dot());
 
-    prereqs.optimize();
+    prereqs.optimize(*this);
 
     // The output event is used for the tools in practice so we can ignore it
     /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "task_fence", false);
@@ -503,7 +505,7 @@ public:
 
   void finalize()
   {
-    assert(get_phase() < backend_ctx_untyped::phase::finalized);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
     if (!state.submitted_stream)
     {
@@ -528,9 +530,8 @@ public:
   void submit()
   {
     auto& state = this->state();
-    assert(!state.submitted_stream);
-
-    assert(get_phase() < backend_ctx_untyped::phase::submitted);
+    _CCCL_ASSERT(!state.submitted_stream, "");
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
 
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;
