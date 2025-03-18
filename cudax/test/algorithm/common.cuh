@@ -12,6 +12,7 @@
 #define __ALGORITHM_COMMON__
 
 #include <cuda/memory_resource>
+#include <cuda/std/mdspan>
 
 #include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
@@ -60,7 +61,11 @@ inline auto create_fake_strided_mdspan()
 {
   cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
   cuda::std::array<size_t, 3> strides{12, 4, 1};
+#if _CCCL_CUDACC_BELOW(12, 6)
+  auto map = cuda::std::layout_stride::mapping{dynamic_extents, strides};
+#else
   cuda::std::layout_stride::mapping map{dynamic_extents, strides};
+#endif
   return cuda::std::mdspan<int, decltype(dynamic_extents), cuda::std::layout_stride>(nullptr, map);
 };
 

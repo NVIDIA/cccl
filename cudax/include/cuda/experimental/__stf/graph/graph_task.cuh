@@ -87,7 +87,7 @@ public:
     event_list prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
-    prereqs.optimize();
+    prereqs.optimize(ctx);
 
     // Reserve for better performance
     ready_dependencies.reserve(prereqs.size());

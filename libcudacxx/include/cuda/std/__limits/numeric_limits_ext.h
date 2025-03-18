@@ -644,7 +644,7 @@ public:
 };
 #endif // _CCCL_HAS_NVFP4_E2M1()
 
-// __fp128
+// __float128
 
 #if _CCCL_HAS_FLOAT128()
 template <>

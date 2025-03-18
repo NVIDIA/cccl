@@ -246,56 +246,6 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-// TODO Should this be declared in general for two things that satisfy resource concept?
-#if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c __memory_resource_base and another resource.
-  //! @param __rhs The resource to compare to.
-  //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
-  //! resources. Otherwise, returns false.
-  template <class _Resource>
-    requires _CUDA_VMR::__different_resource<__memory_resource_base, _Resource> && __non_polymorphic<_Resource>
-  _CCCL_NODISCARD bool operator==([[maybe_unused]] _Resource const& __rhs) const noexcept
-  {
-    return false;
-  }
-#else // ^^^ C++20 ^^^ / vvv C++17
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator==([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return false;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return false;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator!=([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return true;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return true;
-  }
-#endif // _CCCL_STD_VER <= 2017
-
   _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;

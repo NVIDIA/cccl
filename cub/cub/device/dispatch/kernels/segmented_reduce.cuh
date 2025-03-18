@@ -132,7 +132,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   OutputIteratorT d_out,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  int /*num_segments*/,
   ReductionOpT reduction_op,
   InitT init)
 {
