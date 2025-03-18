@@ -39,13 +39,13 @@ struct policy_hub_t
   {
     static constexpr int items_per_vec_load = TUNE_ITEMS_PER_VEC_LOAD;
 
-    static constexpr int nominal_4b_small_threads_per_warp = TUNE_S_THREADS_PER_WARP;
-    static constexpr int nominal_4b_small_items_per_thread = TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD;
+    static constexpr int small_threads_per_warp  = TUNE_S_THREADS_PER_WARP;
+    static constexpr int medium_threads_per_warp = TUNE_M_THREADS_PER_WARP;
 
-    static constexpr int nominal_4b_medium_threads_per_warp = TUNE_M_THREADS_PER_WARP;
+    static constexpr int nominal_4b_large_threads_per_block = TUNE_L_NOMINAL_4B_THREADS_PER_BLOCK;
+
+    static constexpr int nominal_4b_small_items_per_thread  = TUNE_S_NOMINAL_4B_ITEMS_PER_THREAD;
     static constexpr int nominal_4b_medium_items_per_thread = TUNE_M_NOMINAL_4B_ITEMS_PER_THREAD;
-
-    static constexpr int nominal_4b_large_threads_per_block = TUNE_L_THREADS_PER_BLOCK;
     static constexpr int nominal_4b_large_items_per_thread  = TUNE_L_NOMINAL_4B_ITEMS_PER_THREAD;
 
     using ReducePolicy =
@@ -58,7 +58,7 @@ struct policy_hub_t
 
     using SmallReducePolicy =
       cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
-                                 nominal_4b_small_threads_per_warp,
+                                 small_threads_per_warp,
                                  nominal_4b_small_items_per_thread,
                                  AccumT,
                                  items_per_vec_load,
@@ -66,7 +66,7 @@ struct policy_hub_t
 
     using MediumReducePolicy =
       cub::AgentWarpReducePolicy<ReducePolicy::BLOCK_THREADS,
-                                 nominal_4b_medium_threads_per_warp,
+                                 medium_threads_per_warp,
                                  nominal_4b_medium_items_per_thread,
                                  AccumT,
                                  items_per_vec_load,
