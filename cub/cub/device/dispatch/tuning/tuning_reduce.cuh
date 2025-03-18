@@ -276,17 +276,17 @@ struct policy_hub
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
   private:
-    static constexpr int nominal_4b_threads_per_block = 256;
-    static constexpr int nominal_4b_items_per_thread  = 16;
-    static constexpr int items_per_vec_load           = 4;
+    static constexpr int nominal_4b_large_threads_per_block = 256;
+    static constexpr int nominal_4b_large_items_per_thread  = 16;
+    static constexpr int items_per_vec_load                 = 4;
 
     static constexpr int nominal_4b_small_items_per_thread  = 16;
     static constexpr int nominal_4b_medium_items_per_thread = 16;
 
   public:
     using ReducePolicy =
-      AgentReducePolicy<nominal_4b_threads_per_block,
-                        nominal_4b_items_per_thread,
+      AgentReducePolicy<nominal_4b_large_threads_per_block,
+                        nominal_4b_large_items_per_thread,
                         AccumT,
                         items_per_vec_load,
                         BLOCK_REDUCE_WARP_REDUCTIONS,

@@ -252,7 +252,7 @@ void compute_fixed_size_segmented_problem_reference(
     auto seg_begin = h_begin + segment * segment_size;
     auto seg_end   = seg_begin + segment_size;
     h_results[segment] =
-      static_cast<cub::detail::it_value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
+      static_cast<cub::detail::it_value_t<ResultItT>>(std::reduce(seg_begin, seg_end, init, reduction_op));
   }
 }
 
@@ -274,13 +274,9 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     take(2, random(1 << 15, 1 << 20)));
 
   const int num_segments = max_items / segment_size;
-  const int items        = num_segments * segment_size;
-  const int num_items    = std::min(items, max_items);
+  const int num_items    = num_segments * segment_size;
 
-  // Number of items
-  INFO("Test num_items: " << num_items);
-  INFO("Test num_segments: " << num_segments);
-  INFO("Test segment_size: " << segment_size);
+  CAPTURE(num_items, num_segments, segment_size);
 
   // Generate input data
   c2h::device_vector<input_t> in_items(num_items);
