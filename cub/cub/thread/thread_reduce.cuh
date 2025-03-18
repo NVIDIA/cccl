@@ -43,7 +43,8 @@
 #include <cub/detail/array_utils.cuh> // to_array()
 #include <cub/detail/type_traits.cuh> // are_same()
 #include <cub/thread/thread_load.cuh> // UnrolledCopy
-#include <cub/thread/thread_operators.cuh> // cub_operator_to_dpx_t
+#include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_simd.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <cuda/functional> // cuda::maximum
@@ -142,7 +143,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        int array[4] = {1, 2, 3, 4};
-//!        int sum      = cub::ThreadReduce(array, ::cuda::std::plus<>{}); // sum = 10
+//!        int sum      = cub::ThreadReduce(array, _CUDA_VSTD::plus<>{}); // sum = 10
 //!
 //! @endrst
 //!
@@ -169,8 +170,8 @@ CUB_NAMESPACE_BEGIN
 
 template <typename Input,
           typename ReductionOp,
-          typename ValueT = ::cuda::std::iter_value_t<Input>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
+          typename ValueT = _CUDA_VSTD::iter_value_t<Input>,
+          typename AccumT = _CUDA_VSTD::__accumulator_t<ReductionOp, ValueT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
 // forward declaration
 
@@ -256,7 +257,7 @@ inline constexpr bool enable_sm80_simd_reduction_v<__nv_bfloat16, ReductionOp, L
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm70_simd_reduction_v =
-  ::cuda::std::is_same_v<T, __half> && is_cuda_std_plus_mul_v<ReductionOp, T> && Length >= 4;
+  _CUDA_VSTD::is_same_v<T, __half> && is_cuda_std_plus_mul_v<ReductionOp, T> && Length >= 4;
 
 #  else // _CCCL_HAS_NVFP16() ^^^^ / !_CCCL_HAS_NVFP16() vvvv
 
@@ -271,8 +272,8 @@ inline constexpr bool enable_sm70_simd_reduction_v = false;
 template <typename Input, typename ReductionOp, typename AccumT>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
 {
-  using T = ::cuda::std::iter_value_t<Input>;
-  if constexpr (!::cuda::std::is_same_v<T, AccumT>)
+  using T = _CUDA_VSTD::iter_value_t<Input>;
+  if constexpr (!_CUDA_VSTD::is_same_v<T, AccumT>)
   {
     return false;
   }
@@ -327,8 +328,8 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionO
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
-  ::cuda::std::is_integral_v<T> && sizeof(T) <= 4
-  && (cub::detail::is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<T>>
+  _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 4
+  && (cub::detail::is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<T>>
       || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 template <typename Input, typename ReductionOp>
@@ -342,7 +343,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_red
   else
   {
     // apply SM90 min/max ternary reduction only if the input is natively int32/uint32
-    using T = ::cuda::std::iter_value_t<Input>;
+    using T = _CUDA_VSTD::iter_value_t<Input>;
     // clang-format off
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
@@ -365,7 +366,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
   auto retval = static_cast<AccumT>(input[0]);
-#  pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < cub::detail::static_size_v<Input>; ++i)
   {
     retval = reduction_op(retval, input[i]);
@@ -379,7 +380,6 @@ ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
-
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 2)
   {
@@ -398,7 +398,6 @@ ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
-
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 3)
   {
@@ -422,7 +421,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input
 {
   Output output;
   static_assert(sizeof(input) == sizeof(output), "wrong size");
-  ::memcpy(&output, &input, sizeof(input));
+  ::memcpy(static_cast<void*>(&output), static_cast<const void*>(&input), sizeof(input));
   return output;
 }
 
@@ -430,22 +429,22 @@ template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
   using cub::internal::unsafe_bitcast;
-  using T                       = ::cuda::std::iter_value_t<Input>;
+  using T                       = _CUDA_VSTD::iter_value_t<Input>;
   using SimdReduceOp            = cub_operator_to_simd_operator_t<ReductionOp, T>;
   using SimdType                = simd_type_t<T>;
   constexpr auto length         = cub::detail::static_size_v<Input>;
   constexpr auto simd_ratio     = sizeof(SimdType) / sizeof(T);
   constexpr auto length_rounded = ::cuda::round_down(length, simd_ratio);
-  using UnpackedType            = ::cuda::std::array<T, simd_ratio>;
-  using SimdArray               = ::cuda::std::array<SimdType, length / simd_ratio>;
+  using UnpackedType            = _CUDA_VSTD::array<T, simd_ratio>;
+  using SimdArray               = _CUDA_VSTD::array<SimdType, length / simd_ratio>;
   static_assert(simd_ratio == 2, "Only SIMD size == 2 is supported");
   T local_array[length_rounded];
   UnrolledCopy<length_rounded>(input, local_array);
-  auto simd_input         = unsafe_bitcast<SimdArray>(local_array);
-  SimdType simd_reduction = cub::ThreadReduce(simd_input, SimdReduceOp{});
-  auto unpacked_values    = unsafe_bitcast<UnpackedType>(simd_reduction);
+  auto simd_input      = unsafe_bitcast<SimdArray>(local_array);
+  auto simd_reduction  = cub::ThreadReduce(simd_input, SimdReduceOp{});
+  auto unpacked_values = unsafe_bitcast<UnpackedType>(simd_reduction);
   // Create a reversed copy of the SIMD reduction result and apply the SIMD operator.
-  // This avoids redundant instructions for converting to and from 32-bit register size
+  // This avoids redundant instructions for converting to and from 32-bit registers
   T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
   auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
   SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
@@ -461,7 +460,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
 
 template <typename ReductionOp, typename T>
 inline constexpr bool enable_min_max_promotion_v =
-  is_cuda_std_min_max_v<ReductionOp, T> && ::cuda::std::is_integral_v<T> && sizeof(T) <= 2;
+  is_cuda_std_min_max_v<ReductionOp, T> && _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 2;
 
 } // namespace internal
 
@@ -482,7 +481,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   }
   using cub::detail::is_one_of_v;
   using namespace cub::internal;
-  using PromT = ::cuda::std::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
+  using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
   if constexpr ((!is_cuda_std_operator_v<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
                 || sizeof(ValueT) >= 8)
@@ -496,7 +495,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   else if constexpr (enable_ternary_reduction<Input, ReductionOp>())
   {
     // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
-    if constexpr ((is_one_of_v<ReductionOp, ::cuda::std::plus<>, ::cuda::std::plus<PromT>>
+    if constexpr ((is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<PromT>>
                    && is_one_of_v<PromT, int32_t, uint32_t>)
                   // the compiler generates bad code for int8/uint8 and min/max for SM90
                   || (is_cuda_std_min_max_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
@@ -539,8 +538,8 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 template <typename Input,
           typename ReductionOp,
           typename PrefixT,
-          typename ValueT = ::cuda::std::iter_value_t<Input>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
+          typename ValueT = _CUDA_VSTD::iter_value_t<Input>,
+          typename AccumT = _CUDA_VSTD::__accumulator_t<ReductionOp, ValueT, PrefixT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
