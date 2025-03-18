@@ -23,8 +23,6 @@
 
 namespace cudax = cuda::experimental;
 
-using pinned_resource = cudax::pinned_memory_resource;
-
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
 #  define TEST_TYPES cudax::legacy_pinned_memory_resource, cudax::pinned_memory_resource
 #else
@@ -216,9 +214,9 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>,
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_pinned_resource : cudax::pinned_memory_resource
+struct derived_pinned_resource : cudax::legacy_pinned_memory_resource
 {
-  using cudax::pinned_memory_resource::pinned_memory_resource;
+  using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };
 static_assert(cuda::mr::resource<derived_pinned_resource>, "");
 
