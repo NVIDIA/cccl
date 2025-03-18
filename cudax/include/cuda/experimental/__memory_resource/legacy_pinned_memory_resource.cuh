@@ -82,7 +82,7 @@ public:
   //! @brief Equality comparison with another \c pinned_memory_resource.
   //! @param __other The other \c pinned_memory_resource.
   //! @return Whether both \c pinned_memory_resource were constructed with the same flags.
-  _CCCL_NODISCARD constexpr bool operator==([[maybe_unused]] legacy_pinned_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
     return true;
   }
@@ -90,54 +90,13 @@ public:
   //! @brief Equality comparison with another \c pinned_memory_resource.
   //! @param __other The other \c pinned_memory_resource.
   //! @return Whether both \c pinned_memory_resource were constructed with different flags.
-  _CCCL_NODISCARD constexpr bool operator!=([[maybe_unused]] legacy_pinned_memory_resource const& __other) const noexcept
+  _CCCL_NODISCARD constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
     return false;
   }
 #endif // _CCCL_STD_VER <= 2017
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#  if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c pinned_memory_resource and another resource
-  //! @param __rhs The resource to compare to
-  //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
-  //! resources. Otherwise, returns false.
-  template <class _Resource>
-    requires _CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>
-  _CCCL_NODISCARD bool operator==([[maybe_unused]] _Resource const& __rhs) const noexcept
-  {
-    return false;
-  }
-#  else // ^^^ C++20 ^^^ / vvv C++17
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] legacy_pinned_memory_resource const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
-  {
-    return false;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] legacy_pinned_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
-  {
-    return false;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] legacy_pinned_memory_resource const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
-  {
-    return true;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] legacy_pinned_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
-  {
-    return true;
-  }
-#  endif // _CCCL_STD_VER <= 2017
-
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(legacy_pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
