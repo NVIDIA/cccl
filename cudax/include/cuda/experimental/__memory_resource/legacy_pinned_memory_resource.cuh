@@ -103,7 +103,7 @@ public:
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
   template <class _Resource>
-    requires _CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource>
+    requires _CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>
   _CCCL_NODISCARD bool operator==([[maybe_unused]] _Resource const& __rhs) const noexcept
   {
     return false;
@@ -111,28 +111,28 @@ public:
 #  else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] legacy_pinned_memory_resource const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
   {
     return false;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] legacy_pinned_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
   {
     return false;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] legacy_pinned_memory_resource const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
   {
     return true;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] legacy_pinned_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<legacy_pinned_memory_resource, _Resource> && __non_polymorphic<_Resource>)
   {
     return true;
   }
