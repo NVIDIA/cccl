@@ -88,11 +88,11 @@
 #  error ULLONG_MAX not defined
 #endif
 
-// test if __CHAR_UNSIGNED__ detection for NVRTC works correctly
-// if not, go take a look at cuda/std/climits
+// test if _CCCL_CHAR_IS_UNSIGNED() detection for NVRTC works correctly
+// if not, go take a look at cuda/std/limits
 #ifdef TEST_COMPILER_NVRTC
 #  include <cuda/std/type_traits>
-static_assert(__CHAR_UNSIGNED__ == cuda::std::is_unsigned<char>::value, "");
+static_assert(_CCCL_CHAR_IS_UNSIGNED() == !cuda::std::numeric_limits<char>::is_signed, "");
 #endif
 
 int main(int, char**)
