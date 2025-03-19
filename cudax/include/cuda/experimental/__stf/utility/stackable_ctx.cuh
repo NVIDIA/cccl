@@ -1379,7 +1379,7 @@ class stackable_logical_data
       // Freeze the logical data of the parent node if it wasn't yet
       if (!from_data_node.frozen_ld.has_value())
       {
-        from_data_node.frozen_ld = from_ctx.freeze(from_data_node.ld, m, mv(where), false /* not a user freeze */);
+        from_data_node.frozen_ld = from_ctx.freeze(from_data_node.ld, m, where, false /* not a user freeze */);
         from_data_node.get_cnt   = 0;
       }
       else
