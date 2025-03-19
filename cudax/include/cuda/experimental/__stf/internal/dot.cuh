@@ -1090,7 +1090,9 @@ private:
       // key : section id, value : vector of IDs which should be condensed into a node
       ::std::unordered_map<int, ::std::vector<int>> to_condense;
 
-      // For all vertices : check if they belong to a section
+      // Go over all vertices (tasks, prereqs, ..). If they are in a section
+      // which level is below the threshhold, add the vertex id in the
+      // to_condense map.
       for (auto& p : all_vertices)
       {
         // p.first task id, p.second metadata
