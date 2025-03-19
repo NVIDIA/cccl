@@ -97,7 +97,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
   else if constexpr (_CCCL_TRAIT(is_same, _From, double))
@@ -166,7 +166,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #if _CCCL_HAS_LONG_DOUBLE()
@@ -234,7 +234,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_LONG_DOUBLE()
@@ -303,7 +303,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP16()
@@ -376,7 +376,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVBF16()
@@ -445,7 +445,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
@@ -514,7 +514,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
@@ -583,7 +583,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
@@ -652,7 +652,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
@@ -721,7 +721,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 #  endif // _CCCL_HAS_NVFP4_E2M1()
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
@@ -790,13 +790,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
     }
     else
     {
-      static_assert(__always_false_v<_To>, "Unsupported floating-point type");
+      static_assert(__always_false_v<_To>, "Unsupported floating point format");
     }
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
   else
   {
-    static_assert(__always_false_v<_From>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_From>, "Unsupported floating point format");
   }
 }
 

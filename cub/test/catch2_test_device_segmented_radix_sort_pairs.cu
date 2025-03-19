@@ -388,4 +388,4 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
-#endif
+#endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)

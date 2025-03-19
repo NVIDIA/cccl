@@ -514,7 +514,6 @@ catch (std::bad_alloc& e)
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
          "[keys][segmented][radix][sort][device]",
          all_offset_types)
-
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
@@ -556,5 +555,5 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
 }
-#  endif
+#  endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 #endif // defined(SINGLE_TEST_CASE_INSTANTIATION)

@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -75,43 +75,65 @@ CUB_NAMESPACE_BEGIN
 
 /// Maximum number of devices supported.
 #  ifndef CUB_MAX_DEVICES
+//! Deprecated [Since 3.0]
 #    define CUB_MAX_DEVICES (128)
 #  endif
-
 static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 
 /// Number of threads per warp
 #  ifndef CUB_LOG_WARP_THREADS
+//! Deprecated [Since 3.0]
 #    define CUB_LOG_WARP_THREADS(unused) (5)
-#    define CUB_WARP_THREADS(unused)     (1 << CUB_LOG_WARP_THREADS(0))
+//! Deprecated [Since 3.0]
+#    define CUB_WARP_THREADS(unused) (1 << CUB_LOG_WARP_THREADS(0))
 
-#    define CUB_PTX_WARP_THREADS     CUB_WARP_THREADS(0)
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_WARP_THREADS CUB_WARP_THREADS(0)
+//! Deprecated [Since 3.0]
 #    define CUB_PTX_LOG_WARP_THREADS CUB_LOG_WARP_THREADS(0)
 #  endif
 
 /// Number of smem banks
 #  ifndef CUB_LOG_SMEM_BANKS
+//! Deprecated [Since 3.0]
 #    define CUB_LOG_SMEM_BANKS(unused) (5)
-#    define CUB_SMEM_BANKS(unused)     (1 << CUB_LOG_SMEM_BANKS(0))
+//! Deprecated [Since 3.0]
+#    define CUB_SMEM_BANKS(unused) (1 << CUB_LOG_SMEM_BANKS(0))
 
+//! Deprecated [Since 3.0]
 #    define CUB_PTX_LOG_SMEM_BANKS CUB_LOG_SMEM_BANKS(0)
-#    define CUB_PTX_SMEM_BANKS     CUB_SMEM_BANKS
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_SMEM_BANKS CUB_SMEM_BANKS
 #  endif
 
 /// Oversubscription factor
 #  ifndef CUB_SUBSCRIPTION_FACTOR
+//! Deprecated [Since 3.0]
 #    define CUB_SUBSCRIPTION_FACTOR(unused) (5)
-#    define CUB_PTX_SUBSCRIPTION_FACTOR     CUB_SUBSCRIPTION_FACTOR(0)
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_SUBSCRIPTION_FACTOR CUB_SUBSCRIPTION_FACTOR(0)
 #  endif
 
 /// Prefer padding overhead vs X-way conflicts greater than this threshold
 #  ifndef CUB_PREFER_CONFLICT_OVER_PADDING
+//! Deprecated [Since 3.0]
 #    define CUB_PREFER_CONFLICT_OVER_PADDING(unused) (1)
-#    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING     CUB_PREFER_CONFLICT_OVER_PADDING(0)
+//! Deprecated [Since 3.0]
+#    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING CUB_PREFER_CONFLICT_OVER_PADDING(0)
 #  endif
 
 namespace detail
 {
+
+inline constexpr int max_devices       = CUB_MAX_DEVICES;
+inline constexpr int warp_threads      = CUB_PTX_WARP_THREADS;
+inline constexpr int log2_warp_threads = CUB_PTX_LOG_WARP_THREADS;
+inline constexpr int smem_banks        = CUB_SMEM_BANKS(0);
+inline constexpr int log2_smem_banks   = CUB_PTX_LOG_SMEM_BANKS;
+
+inline constexpr int subscription_factor           = CUB_PTX_SUBSCRIPTION_FACTOR;
+inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVER_PADDING;
+
 // The maximum amount of static shared memory available per thread block
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
 static constexpr ::cuda::std::size_t max_smem_per_block = 48 * 1024;

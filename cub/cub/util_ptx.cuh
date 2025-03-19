@@ -168,9 +168,9 @@ template <int LOGICAL_WARP_THREADS>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
-  constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == detail::warp_threads;
 
-  unsigned int member_mask = 0xFFFFFFFFu >> (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS);
+  unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LOGICAL_WARP_THREADS);
 
   if constexpr (is_pow_of_two && !is_arch_warp)
   {
@@ -444,7 +444,7 @@ struct warp_matcher_t
 };
 
 template <int LABEL_BITS>
-struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
+struct warp_matcher_t<LABEL_BITS, warp_threads>
 {
   // match.any.sync.b32 is slower when matching a few bits
   // using a ballot loop instead
@@ -505,7 +505,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
  * Compute a 32b mask of threads having the same least-significant
  * LABEL_BITS of \p label as the calling thread.
  */
-template <int LABEL_BITS, int WARP_ACTIVE_THREADS = CUB_PTX_WARP_THREADS>
+template <int LABEL_BITS, int WARP_ACTIVE_THREADS = detail::warp_threads>
 inline _CCCL_DEVICE unsigned int MatchAny(unsigned int label)
 {
   return detail::warp_matcher_t<LABEL_BITS, WARP_ACTIVE_THREADS>::match_any(label);
