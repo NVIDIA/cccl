@@ -17,7 +17,7 @@
 
 // constexpr atomic<T>::atomic(T value)
 
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/atomic>
 #include <cuda/std/atomic>

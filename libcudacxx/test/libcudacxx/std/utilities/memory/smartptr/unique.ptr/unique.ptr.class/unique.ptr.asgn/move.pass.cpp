@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 
 // Self assignment post-conditions are tested.
-// ADDITIONAL_COMPILE_FLAGS: -Wno-self-move
+// ADDITIONAL_COMPILE_OPTIONS: -Xcompiler=-Wno-self-move
 
 // <memory>
 
