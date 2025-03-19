@@ -19,76 +19,123 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 
 namespace radix_sort
 {
-struct radix_sort_runtime_tuning_policy
+struct agent_radix_sort_downsweep_policy
 {
-  int block_size;
   int items_per_thread;
-  int items_per_tile;
-
-  radix_sort_runtime_tuning_policy Histogram() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy ExclusiveSum() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy Onesweep() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy Scan() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy Downsweep() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy AltDownsweep() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy Upsweep() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy AltUpsweep() const
-  {
-    return *this;
-  }
-
-  radix_sort_runtime_tuning_policy SingleTile() const
-  {
-    return *this;
-  }
+  int block_threads;
+  int radix_bits;
+  cub::BlockLoadAlgorithm load_algorithm;
+  cub::CacheLoadModifier load_modifier;
+  cub::RadixRankAlgorithm rank_algorithm;
+  cub::BlockScanAlgorithm scan_algorithm;
 };
 
-struct radix_sort_tuning_t
+struct agent_radix_sort_upsweep_policy
 {
-  int cc;
-  int block_size;
   int items_per_thread;
+  int block_threads;
+  int radix_bits;
+  cub::CacheLoadModifier load_modifier;
+};
+
+struct agent_radix_sort_onesweep_policy
+{
+  int items_per_thread;
+  int block_threads;
+  int rank_num_parts;
+  int radix_bits;
+  cub::RadixRankAlgorithm rank_algorithm;
+  cub::BlockScanAlgorithm scan_algorithm;
+  cub::RadixSortStoreAlgorithm store_algorithm;
+};
+
+struct agent_radix_sort_histogram_policy
+{
+  int block_threads;
+  int items_per_thread;
+  int num_parts;
+  int radix_bits;
+};
+
+struct agent_radix_sort_exclusive_sum_policy
+{
+  int block_threads;
+  int radix_bits;
+};
+
+struct agent_scan_policy
+{
+  int items_per_thread;
+  int block_threads;
+  cub::BlockLoadAlgorithm load_algorithm;
+  cub::CacheLoadModifier load_modifier;
+  cub::BlockStoreAlgorithm store_algorithm;
+  cub::BlockScanAlgorithm scan_algorithm;
+};
+
+struct radix_sort_runtime_tuning_policy
+{
+  agent_radix_sort_histogram_policy histogram;
+  agent_radix_sort_exclusive_sum_policy exclusive_sum;
+  agent_radix_sort_onesweep_policy onesweep;
+  agent_scan_policy scan;
+  agent_radix_sort_downsweep_policy downsweep;
+  agent_radix_sort_downsweep_policy alt_downsweep;
+  agent_radix_sort_upsweep_policy upsweep;
+  agent_radix_sort_upsweep_policy alt_upsweep;
+  agent_radix_sort_downsweep_policy single_tile;
+
+  agent_radix_sort_histogram_policy Histogram() const
+  {
+    return histogram;
+  }
+
+  agent_radix_sort_exclusive_sum_policy ExclusiveSum() const
+  {
+    return exclusive_sum;
+  }
+
+  agent_radix_sort_onesweep_policy Onesweep() const
+  {
+    return onesweep;
+  }
+
+  agent_scan_policy Scan() const
+  {
+    return scan;
+  }
+
+  agent_radix_sort_downsweep_policy Downsweep() const
+  {
+    return downsweep;
+  }
+
+  agent_radix_sort_downsweep_policy AltDownsweep() const
+  {
+    return alt_downsweep;
+  }
+
+  agent_radix_sort_upsweep_policy Upsweep() const
+  {
+    return upsweep;
+  }
+
+  agent_radix_sort_upsweep_policy AltUpsweep() const
+  {
+    return alt_upsweep;
+  }
+
+  agent_radix_sort_downsweep_policy SingleTile() const
+  {
+    return single_tile;
+  }
 };
 
 radix_sort_runtime_tuning_policy get_policy(int cc, int key_size)
 {
-  radix_sort_tuning_t chain[] = {
-    {60, 256, nominal_4b_items_to_items(17, key_size)}, {35, 256, nominal_4b_items_to_items(11, key_size)}};
-  auto [_, block_size, items_per_thread] = find_tuning(cc, chain);
-  // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
-  // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
-  // types test as well. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  items_per_thread = 2;
-
-  return {block_size, items_per_thread, block_size * items_per_thread};
+  return {{
+    256,
+  }};
 }
 
 } // namespace radix_sort
