@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
@@ -116,6 +117,8 @@ public:
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -233,8 +236,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -244,25 +247,29 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
 
-    return DispatchSegmentedRadixSort<SortOrder::Ascending, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        false,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Ascending,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -294,6 +301,8 @@ public:
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
@@ -411,8 +420,8 @@ public:
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -422,22 +431,26 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
-    return DispatchSegmentedRadixSort<SortOrder::Ascending, KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        begin_bit,
-        end_bit,
-        true,
-        stream);
+    return DispatchSegmentedRadixSort<
+      SortOrder::Ascending,
+      KeyT,
+      ValueT,
+      BeginOffsetIteratorT,
+      EndOffsetIteratorT,
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @rst
@@ -461,6 +474,8 @@ public:
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -583,8 +598,8 @@ public:
     KeyT* d_keys_out,
     const ValueT* d_values_in,
     ValueT* d_values_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -594,7 +609,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
@@ -605,18 +620,18 @@ public:
       ValueT,
       BeginOffsetIteratorT,
       EndOffsetIteratorT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys,
-                         d_values,
-                         num_items,
-                         num_segments,
-                         d_begin_offsets,
-                         d_end_offsets,
-                         begin_bit,
-                         end_bit,
-                         false,
-                         stream);
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -650,6 +665,8 @@ public:
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
   //!   not to be modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
@@ -769,8 +786,8 @@ public:
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -780,7 +797,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
     return DispatchSegmentedRadixSort<
       SortOrder::Descending,
@@ -788,18 +805,18 @@ public:
       ValueT,
       BeginOffsetIteratorT,
       EndOffsetIteratorT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys,
-                         d_values,
-                         num_items,
-                         num_segments,
-                         d_begin_offsets,
-                         d_end_offsets,
-                         begin_bit,
-                         end_bit,
-                         true,
-                         stream);
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @}  end member group
@@ -826,6 +843,8 @@ public:
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -931,8 +950,8 @@ public:
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -942,7 +961,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
     // Null value type
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
@@ -954,18 +973,18 @@ public:
       NullType,
       BeginOffsetIteratorT,
       EndOffsetIteratorT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys,
-                         d_values,
-                         num_items,
-                         num_segments,
-                         d_begin_offsets,
-                         d_end_offsets,
-                         begin_bit,
-                         end_bit,
-                         false,
-                         stream);
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -994,6 +1013,8 @@ public:
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
@@ -1103,8 +1124,8 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -1114,7 +1135,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
     // Null value type
     DoubleBuffer<NullType> d_values;
@@ -1125,18 +1146,18 @@ public:
       NullType,
       BeginOffsetIteratorT,
       EndOffsetIteratorT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys,
-                         d_values,
-                         num_items,
-                         num_segments,
-                         d_begin_offsets,
-                         d_end_offsets,
-                         begin_bit,
-                         end_bit,
-                         true,
-                         stream);
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @rst
@@ -1159,6 +1180,8 @@ public:
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1265,8 +1288,8 @@ public:
     size_t& temp_storage_bytes,
     const KeyT* d_keys_in,
     KeyT* d_keys_out,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -1276,7 +1299,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
     DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
     DoubleBuffer<NullType> d_values;
@@ -1287,18 +1310,18 @@ public:
       NullType,
       BeginOffsetIteratorT,
       EndOffsetIteratorT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys,
-                         d_values,
-                         num_items,
-                         num_segments,
-                         d_begin_offsets,
-                         d_end_offsets,
-                         begin_bit,
-                         end_bit,
-                         false,
-                         stream);
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              false,
+                              stream);
   }
 
   //! @rst
@@ -1327,6 +1350,8 @@ public:
   //! - Segments are not required to be contiguous. For all index values ``i``
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
+  //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
@@ -1434,8 +1459,8 @@ public:
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit       = 0,
@@ -1445,7 +1470,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
-    using OffsetT = int;
+    using SegmentSizeT = ::cuda::std::int32_t;
 
     // Null value type
     DoubleBuffer<NullType> d_values;
@@ -1456,18 +1481,18 @@ public:
       NullType,
       BeginOffsetIteratorT,
       EndOffsetIteratorT,
-      OffsetT>::Dispatch(d_temp_storage,
-                         temp_storage_bytes,
-                         d_keys,
-                         d_values,
-                         num_items,
-                         num_segments,
-                         d_begin_offsets,
-                         d_end_offsets,
-                         begin_bit,
-                         end_bit,
-                         true,
-                         stream);
+      SegmentSizeT>::Dispatch(d_temp_storage,
+                              temp_storage_bytes,
+                              d_keys,
+                              d_values,
+                              num_items,
+                              num_segments,
+                              d_begin_offsets,
+                              d_end_offsets,
+                              begin_bit,
+                              end_bit,
+                              true,
+                              stream);
   }
 
   //! @}  end member group
