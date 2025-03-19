@@ -95,11 +95,6 @@
 #  define _CCCL_NO_INLINE_VARIABLES
 #endif // __cpp_inline_variables < 201606L
 
-// noexcept function types are only available from C++17 onwards
-#if __cpp_noexcept_function_type < 201510L
-#  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
-#endif // __cpp_noexcept_function_type < 201510L
-
 // Declaring a non-type template parameters with auto is only available from C++17 onwards
 #if __cpp_nontype_template_parameter_auto < 201606L
 #  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
@@ -124,12 +119,6 @@
 #else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
 #  define _CCCL_INLINE_VAR inline
 #endif // !_CCCL_NO_INLINE_VARIABLES
-
-#if defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
-#  define _CCCL_FUNCTION_TYPE_NOEXCEPT
-#else // ^^^ _CCCL_NO_NOEXCEPT_FUNCTION_TYPE ^^^ / vvv !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE vvv
-#  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
-#endif // !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE
 
 #if defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
 #  define _CCCL_NTTP_AUTO unsigned long long int
