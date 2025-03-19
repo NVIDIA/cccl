@@ -14,7 +14,6 @@
 
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/cassert>
-#include <cuda/std/cstring>
 
 #include "test_macros.h"
 
