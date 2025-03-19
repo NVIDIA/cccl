@@ -100,7 +100,7 @@ inline constexpr bool is_fixed_size_random_access_range_v<_CUDA_VSTD::mdspan<T, 
  **********************************************************************************************************************/
 
 template <typename T>
-inline constexpr int static_size_v = std::enable_if_t<_CUDA_VSTD::__always_false_v<T>>{};
+inline constexpr int static_size_v = _CUDA_VSTD::enable_if_t<_CUDA_VSTD::__always_false_v<T>>{};
 
 template <typename T, size_t N>
 inline constexpr int static_size_v<T[N]> = N;
@@ -109,7 +109,8 @@ template <typename T, size_t N>
 inline constexpr int static_size_v<_CUDA_VSTD::array<T, N>> = N;
 
 template <typename T, size_t N>
-inline constexpr int static_size_v<_CUDA_VSTD::span<T, N>> = std::enable_if_t<N != _CUDA_VSTD::dynamic_extent, int>{N};
+inline constexpr int static_size_v<_CUDA_VSTD::span<T, N>> =
+  _CUDA_VSTD::enable_if_t<N != _CUDA_VSTD::dynamic_extent, int>{N};
 
 template <typename T, typename E, typename L, typename A>
 inline constexpr int static_size_v<_CUDA_VSTD::mdspan<T, E, L, A>> =
