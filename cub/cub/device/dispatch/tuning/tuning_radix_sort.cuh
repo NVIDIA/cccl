@@ -279,6 +279,69 @@ template <typename ValueT> struct sm100_small_key_tuning<ValueT, 8,  8, 8> :  sm
 template <typename ValueT> struct sm100_small_key_tuning<ValueT, 8,  16, 8> : sm90_small_key_tuning<8, 16, 8> {};
 // clang-format on
 
+template <typename PolicyT, typename = void>
+struct RadixSortPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct RadixSortPolicyWrapper<
+  StaticPolicyT,
+  ::cuda::std::void_t<typename StaticPolicyT::SingleTilePolicy,
+                      typename StaticPolicyT::OnesweepPolicy,
+                      typename StaticPolicyT::UpsweepPolicy,
+                      typename StaticPolicyT::AltUpsweepPolicy,
+                      typename StaticPolicyT::DownsweepPolicy,
+                      typename StaticPolicyT::AltDownsweepPolicy,
+                      typename StaticPolicyT::HistogramPolicy,
+                      typename StaticPolicyT::ScanPolicy,
+                      typename StaticPolicyT::ExclusiveSumPolicy,
+                      typename StaticPolicyT::SegmentedPolicy,
+                      typename StaticPolicyT::AltSegmentedPolicy>> : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr bool IsOnesweep()
+  {
+    return StaticPolicyT::ONESWEEP;
+  }
+
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT /*policy*/)
+  {
+    return PolicyT::RADIX_BITS;
+  }
+
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT /*policy*/)
+  {
+    return PolicyT::BLOCK_THREADS;
+  }
+
+  CUB_DEFINE_SUB_POLICY_GETTER(SingleTile);
+  CUB_DEFINE_SUB_POLICY_GETTER(Onesweep);
+  CUB_DEFINE_SUB_POLICY_GETTER(Upsweep);
+  CUB_DEFINE_SUB_POLICY_GETTER(AltUpsweep);
+  CUB_DEFINE_SUB_POLICY_GETTER(Downsweep);
+  CUB_DEFINE_SUB_POLICY_GETTER(AltDownsweep);
+  CUB_DEFINE_SUB_POLICY_GETTER(Histogram);
+  CUB_DEFINE_SUB_POLICY_GETTER(Scan);
+  CUB_DEFINE_SUB_POLICY_GETTER(ExclusiveSum);
+  CUB_DEFINE_SUB_POLICY_GETTER(Segmented);
+  CUB_DEFINE_SUB_POLICY_GETTER(AltSegmented);
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION RadixSortPolicyWrapper<PolicyT> MakeRadixSortPolicyWrapper(PolicyT policy)
+{
+  return RadixSortPolicyWrapper<PolicyT>{policy};
+}
+
 /**
  * @brief Tuning policy for kernel specialization
  *
