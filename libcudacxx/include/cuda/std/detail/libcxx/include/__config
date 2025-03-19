@@ -263,7 +263,7 @@ using char32_t = unsigned int;
 #  endif // _CCCL_CUDACC_BELOW(12, 2)
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_CUDACC
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_HAS_CUDA_COMPILER()
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #  endif
 
