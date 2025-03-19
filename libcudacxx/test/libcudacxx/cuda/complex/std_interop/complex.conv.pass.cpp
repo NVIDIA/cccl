@@ -15,7 +15,6 @@
 #include <complex>
 
 #include "test_macros.h"
-#include <nv/target>
 
 template <class T>
 __host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS void test_conversion()

@@ -13,71 +13,56 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/std/__type_traits/is_constant_evaluated.h>
-
 #  include <complex>
 
-#  if !defined(__CUDA_ARCH__) || defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#  if !defined(__CUDA_ARCH__) || _CCCL_HAS_RELAXED_CONSTEXPR()
 #    define _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS       constexpr
 #    define _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS() 1
-#  else // ^^^ _CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^ / vvv !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED vvv
+#  else // ^^^ can directly access std::complex ^^^ / vvv cannot directly access std::complex vvv
 #    define _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS
 #    define _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS() 0
-#  endif // ^^^ !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^
+#  endif // ^^^ cannot directly access std::complex ^^^
 
 // silence warning about using non-standard floating point types in std::complex being unspecified behavior
+// todo: specialize std::complex for extended floating point types (STL team recommends)
 #  if _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_SUPPRESS(1444)
 #  endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS _Tp
 __get_std_complex_real(const ::std::complex<_Tp>& __v) noexcept
 {
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return __v.real();
-  }
-  else
-  {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __v.real();), (return reinterpret_cast<const _Tp(&)[2]>(__v)[0];))
-  }
+#  if _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS()
+  return __v.real();
+#  else // ^^^ can directly access std::complex ^^^ / vvv cannot directly access std::complex vvv
+  return reinterpret_cast<const _Tp(&)[2]>(__v)[0];
+#  endif // ^^^ cannot directly access std::complex ^^^
 }
 
-_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS _Tp
 __get_std_complex_imag(const ::std::complex<_Tp>& __v) noexcept
 {
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return __v.imag();
-  }
-  else
-  {
-    NV_IF_ELSE_TARGET(NV_IS_HOST, (return __v.imag();), (return reinterpret_cast<const _Tp(&)[2]>(__v)[1];))
-  }
+#  if _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS()
+  return __v.imag();
+#  else // ^^^ can directly access std::complex ^^^ / vvv cannot directly access std::complex vvv
+  return reinterpret_cast<const _Tp(&)[2]>(__v)[1];
+#  endif // ^^^ cannot directly access std::complex ^^^
 }
 
-_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS ::std::complex<_Tp>
-__make_std_complex(const _Tp& __r = _Tp{}, const _Tp& __i = _Tp()) noexcept
+__make_std_complex(const _Tp& __r = _Tp(), const _Tp& __i = _Tp()) noexcept
 {
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return ::std::complex<_Tp>{__r, __i};
-  }
-  else
-  {
-    NV_IF_ELSE_TARGET(NV_IS_HOST,
-                      (return ::std::complex<_Tp>{__r, __i};),
-                      (_CCCL_ALIGNAS_TYPE(::std::complex<_Tp>) _Tp __ret[]{__r, __i};
-                       return reinterpret_cast<::std::complex<_Tp>&>(__ret);))
-  }
+#  if _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS()
+  return ::std::complex<_Tp>{__r, __i};
+#  else // ^^^ can directly access std::complex ^^^ / vvv cannot directly access std::complex vvv
+  _CCCL_ALIGNAS_TYPE(::std::complex<_Tp>) _Tp __ret[]{__r, __i};
+  return reinterpret_cast<::std::complex<_Tp>&>(__ret);
+#  endif // ^^^ cannot directly access std::complex ^^^
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

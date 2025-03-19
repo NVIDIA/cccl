@@ -15,35 +15,52 @@
 #include <complex>
 
 #include "test_macros.h"
-#include <nv/target>
 
+template <class T>
+struct test_data
+{
+  ::std::complex<T> only_real;
+  ::std::complex<T> only_imag;
+  ::std::complex<T> real_imag;
+};
+
+// we need to disable the execution space check for this test, because std::complex is not available in device code
 _CCCL_EXEC_CHECK_DISABLE
+template <class T>
+__host__ __device__ constexpr auto get_test_data()
+{
+  test_data<T> data;
+  data.only_real = ::std::complex<T>{T(42.0), T()};
+  data.only_imag = ::std::complex<T>{T(), T(42.0)};
+  data.real_imag = ::std::complex<T>{T(42.0), T(1337.0)};
+  return data;
+}
+
 template <class T, class U>
 __host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS void test_assignment()
 {
-  ::cuda::std::complex<T> from_only_real{static_cast<T>(-1.0), static_cast<T>(1.0)};
-  ::cuda::std::complex<T> from_only_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
-  ::cuda::std::complex<T> from_real_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  constexpr test_data<U> data = get_test_data<U>();
 
-  constexpr ::std::complex<U> only_real{static_cast<U>(42.0), U{}};
-  constexpr ::std::complex<U> only_imag{U{}, static_cast<U>(42.0)};
-  constexpr ::std::complex<U> real_imag{static_cast<U>(42.0), static_cast<U>(1337.0)};
+  ::cuda::std::complex<T> only_real{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  ::cuda::std::complex<T> only_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  ::cuda::std::complex<T> real_imag{static_cast<T>(-1.0), static_cast<T>(1.0)};
 
-  from_only_real = only_real;
-  from_only_imag = only_imag;
-  from_real_imag = real_imag;
+  only_real = data.only_real;
+  only_imag = data.only_imag;
+  real_imag = data.real_imag;
 
-  assert(from_only_real.real() == static_cast<T>(42.0));
-  assert(from_only_real.imag() == 0);
-  assert(from_only_imag.real() == 0);
-  assert(from_only_imag.imag() == static_cast<T>(42.0));
-  assert(from_real_imag.real() == static_cast<T>(42.0));
-  assert(from_real_imag.imag() == static_cast<T>(1337.0));
+  assert(only_real.real() == static_cast<T>(42.0));
+  assert(only_real.imag() == 0);
+  assert(only_imag.real() == 0);
+  assert(only_imag.imag() == static_cast<T>(42.0));
+  assert(real_imag.real() == static_cast<T>(42.0));
+  assert(real_imag.imag() == static_cast<T>(1337.0));
 }
 
 __host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool test()
 {
   test_assignment<float, float>();
+  test_assignment<float, double>();
   test_assignment<double, float>();
   test_assignment<double, double>();
 
