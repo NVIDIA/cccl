@@ -50,6 +50,12 @@ class LibcxxTestFormat(object):
             IntegratedTestKeywordParser(
                 "MODULES_DEFINES:", ParserKind.LIST, initial_value=[]
             ),
+            IntegratedTestKeywordParser(
+                "ADDITIONAL_COMPILE_DEFINITIONS:", ParserKind.LIST, initial_value=[]
+            ),
+            IntegratedTestKeywordParser(
+                "ADDITIONAL_COMPILE_OPTIONS:", ParserKind.LIST, initial_value=[]
+            ),
         ]
 
     @staticmethod
@@ -127,6 +133,16 @@ class LibcxxTestFormat(object):
         if is_fail_test:
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
+
+        extra_compile_definitions = self._get_parser("ADDITIONAL_COMPILE_DEFINITIONS:", parsers).getValue()
+        test_cxx.compile_flags += [
+            ("-D%s" % mdef.strip()) for mdef in extra_compile_definitions
+        ]
+        extra_compile_options = self._get_parser("ADDITIONAL_COMPILE_OPTIONS:", parsers).getValue()
+        test_cxx.compile_flags += [
+            ("%s" % mdef.strip()) for mdef in extra_compile_options
+        ]
+
         extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
         if "-fmodules" in test.config.available_features:
             test_cxx.compile_flags += [
