@@ -34,14 +34,14 @@
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
 
-// Trigger a rebuild of the file
-
 //! @file
 //! The \c legacy_pinned_memory_resource class provides a memory resource that allocates pinned memory.
 namespace cuda::experimental
 {
 
 //! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
+//! @note This memory resource will be deprecated in the future. For CUDA 12.6 and above, use
+//! `cuda::experimental::pinned_memory_resource` instead, which is the long-term replacement.
 class legacy_pinned_memory_resource
 {
 public:
