@@ -789,7 +789,7 @@ private:
     ::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, const ::std::shared_ptr<per_ctx_dot>& pc)
   {
     // Pick up an identifier in DOT (we may update this value later)
-    size_t ctx_id = pc->get_unique_id();
+    auto ctx_id = pc->get_unique_id();
     if (display_clusters)
     {
       outFile << "subgraph cluster_" << ctx_id << " {\n";
