@@ -149,7 +149,7 @@ struct AgentRadixSortUpsweep
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS = CUB_PTX_LOG_WARP_THREADS,
+    LOG_WARP_THREADS = log2_warp_threads,
     WARP_THREADS     = 1 << LOG_WARP_THREADS,
     WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
