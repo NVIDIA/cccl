@@ -312,8 +312,6 @@ using char32_t = unsigned int;
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #  endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 
-#  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
-
 #  ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
 #    define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds
 #  endif // _LIBCUDACXX_SYS_CLOCK_DURATION

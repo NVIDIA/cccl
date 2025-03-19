@@ -311,19 +311,17 @@ public:
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, size_type __count)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, [[maybe_unused]] size_type __count)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
-    (void) __count;
     _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
   }
 
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, _End __last)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
-    (void) __last;
     _CCCL_ASSERT((__last - __first >= 0), "invalid range in span's constructor (iterator, sentinel)");
     _CCCL_ASSERT(__last - __first == _Extent,
                  "invalid range in span's constructor (iterator, sentinel): last - first != extent");

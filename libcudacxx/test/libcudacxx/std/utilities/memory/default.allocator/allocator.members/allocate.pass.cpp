@@ -76,8 +76,7 @@ __host__ __device__ void test_aligned()
 #if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
     DoNotOptimize(ap);
 #else
-    const auto meow = reinterpret_cast<uintptr_t>(ap) + 2;
-    (void) meow;
+    [[maybe_unused]] const auto meow = reinterpret_cast<uintptr_t>(ap) + 2;
 #endif // !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
     // assert(globalMemCounter.checkOutstandingNewEq(1));
     assert(globalMemCounter.checkNewCalledEq(1));

@@ -71,8 +71,7 @@ __host__ __device__ __noinline__ void do_test()
     Selector<volatile Atomic<Scope>, constructor_initializer> sel;
     volatile Atomic<Scope>& obj = *sel.construct(true);
     assert(obj == true);
-    bool b0 = obj.is_lock_free();
-    (void) b0; // to placate scan-build
+    [[maybe_unused]] bool b0 = obj.is_lock_free();
     obj.store(false);
     assert(obj == false);
     obj.store(true, cuda::std::memory_order_release);
@@ -118,8 +117,7 @@ __host__ __device__ __noinline__ void do_test()
     Selector<Atomic<Scope>, constructor_initializer> sel;
     Atomic<Scope>& obj = *sel.construct(true);
     assert(obj == true);
-    bool b0 = obj.is_lock_free();
-    (void) b0; // to placate scan-build
+    [[maybe_unused]] bool b0 = obj.is_lock_free();
     obj.store(false);
     assert(obj == false);
     obj.store(true, cuda::std::memory_order_release);
@@ -165,8 +163,7 @@ __host__ __device__ __noinline__ void do_test()
     Selector<Atomic<Scope>, constructor_initializer> sel;
     Atomic<Scope>& obj = *sel.construct(true);
     assert(obj == true);
-    bool b0 = obj.is_lock_free();
-    (void) b0; // to placate scan-build
+    [[maybe_unused]] bool b0 = obj.is_lock_free();
     obj.store(false);
     assert(obj == false);
     obj.store(true, cuda::std::memory_order_release);

@@ -164,8 +164,7 @@ int main(int, char**)
       cuda::std::is_convertible<cuda::std::tuple<ExplicitTwo&&>&&, const cuda::std::tuple<ExplicitTwo>&>::value, "");
 
     ExplicitTwo e;
-    cuda::std::tuple<ExplicitTwo> t = cuda::std::tuple<ExplicitTwo&&>(cuda::std::move(e));
-    ((void) t);
+    [[maybe_unused]] cuda::std::tuple<ExplicitTwo> t = cuda::std::tuple<ExplicitTwo&&>(cuda::std::move(e));
   }
   return 0;
 }
