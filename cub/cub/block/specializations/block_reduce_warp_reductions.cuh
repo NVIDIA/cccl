@@ -84,18 +84,14 @@ struct BlockReduceWarpReductions
     WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
     /// The logical warp size for warp reductions
-    LOGICAL_WARP_SIZE = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS),
+    LOGICAL_WARP_SIZE = (BLOCK_THREADS < WARP_THREADS ? BLOCK_THREADS : WARP_THREADS), // MSVC bug with cuda::std::min
 
     /// Whether or not the logical warp size evenly divides the thread block size
     EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
   };
 
-  static constexpr int LogicalWarpSize = LOGICAL_WARP_SIZE;
-  static_assert(BLOCK_THREADS <= 1024);
-  static_assert(LogicalWarpSize >= 1 && LogicalWarpSize <= 32);
-
   ///  WarpReduce utility type
-  using WarpReduceInternal = typename WarpReduce<T, LogicalWarpSize>::InternalWarpReduce;
+  using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
 
   /// Shared memory storage layout type
   struct _TempStorage
