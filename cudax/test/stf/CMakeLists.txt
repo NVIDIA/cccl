@@ -48,6 +48,7 @@ set(stf_test_sources
   local_stf/stackable_write_back.cu
   local_stf/stackable_redundant_deps.cu
   local_stf/threads_multiple_graphs.cu
+  places/affinity_gc.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
