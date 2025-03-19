@@ -74,9 +74,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Detect whether we can use some language features based on standard dialect
 ///////////////////////////////////////////////////////////////////////////////
-#if __cpp_if_constexpr < 201606L
-#  define _CCCL_NO_IF_CONSTEXPR
-#endif // !defined(__cpp_if_constexpr)
 
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
@@ -98,11 +95,6 @@
 #  define _CCCL_NO_INLINE_VARIABLES
 #endif // __cpp_inline_variables < 201606L
 
-// noexcept function types are only available from C++17 onwards
-#if __cpp_noexcept_function_type < 201510L
-#  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
-#endif // __cpp_noexcept_function_type < 201510L
-
 // Three way comparison is only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 #  define _CCCL_NO_THREE_WAY_COMPARISON
@@ -122,12 +114,6 @@
 #else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
 #  define _CCCL_INLINE_VAR inline
 #endif // !_CCCL_NO_INLINE_VARIABLES
-
-#if defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
-#  define _CCCL_FUNCTION_TYPE_NOEXCEPT
-#else // ^^^ _CCCL_NO_NOEXCEPT_FUNCTION_TYPE ^^^ / vvv !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE vvv
-#  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
-#endif // !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE
 
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
 #if defined(_CCCL_NO_VARIABLE_TEMPLATES)

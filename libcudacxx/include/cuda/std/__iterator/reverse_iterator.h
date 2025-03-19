@@ -167,7 +167,7 @@ public:
     return *--__tmp;
   }
 
-#if !defined(_CCCL_NO_CONCEPTS) && !defined(_CCCL_NO_IF_CONSTEXPR)
+#if !defined(_CCCL_NO_CONCEPTS)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer operator->() const
     requires is_pointer_v<_Iter> || requires(const _Iter __i) { __i.operator->(); }
   {
