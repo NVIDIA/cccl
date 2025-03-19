@@ -137,7 +137,7 @@ namespace __detail_ap
 template <typename _Property>
 _CCCL_DEVICE void* __associate_address_space(void* __ptr, _Property __prop)
 {
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
   if (std::is_same<_Property, access_property::shared>::value == true)
   {
     bool __b = __isShared(__ptr);
@@ -162,7 +162,7 @@ _CCCL_DEVICE void* __associate_address_space(void* __ptr, _Property __prop)
     (void) __b;
 #  endif // !_CCCL_BUILTIN_ASSUME
   }
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
   return __ptr;
 }

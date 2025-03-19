@@ -57,7 +57,7 @@ The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the ve
 **CUDA identification/version macros**:
 
 +----------------------------------+-----------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER``      | CUDA compiler is available  |
+| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available  |
 +----------------------------------+-----------------------------+
 | ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7     |
 +----------------------------------+-----------------------------+
