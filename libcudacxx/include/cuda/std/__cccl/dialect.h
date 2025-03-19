@@ -95,11 +95,6 @@
 #  define _CCCL_NO_INLINE_VARIABLES
 #endif // __cpp_inline_variables < 201606L
 
-// Declaring a non-type template parameters with auto is only available from C++17 onwards
-#if __cpp_nontype_template_parameter_auto < 201606L
-#  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
-#endif // __cpp_nontype_template_parameter_auto < 201606L
-
 // Three way comparison is only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 #  define _CCCL_NO_THREE_WAY_COMPARISON
@@ -113,12 +108,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
-
-#if defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
-#  define _CCCL_NTTP_AUTO unsigned long long int
-#else // ^^^ _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO ^^^ / vvv !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO vvv
-#  define _CCCL_NTTP_AUTO auto
-#endif // !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
 
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
 #if defined(_CCCL_NO_VARIABLE_TEMPLATES)
