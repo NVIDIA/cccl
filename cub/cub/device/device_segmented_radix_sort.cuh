@@ -118,7 +118,7 @@ public:
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -302,7 +302,7 @@ public:
   //!   ``d_values.Current()[i]``, ``d_keys.Alternate()[i]``,
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
@@ -475,7 +475,7 @@ public:
   //!   outside the specified segments ``d_keys_in[i]``, ``d_values_in[i]``,
   //!   ``d_keys_out[i]``, ``d_values_out[i]`` will not be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -666,7 +666,7 @@ public:
   //!   ``d_values.Alternate()[i]`` will not be accessed nor modified.
   //!   not to be modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
@@ -844,7 +844,7 @@ public:
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1014,7 +1014,7 @@ public:
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
@@ -1181,7 +1181,7 @@ public:
   //!   outside the specified segments ``d_keys_in[i]``, ``d_keys_out[i]`` will not
   //!   be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorage
   //!
   //! Snippet
@@ -1351,7 +1351,7 @@ public:
   //!   outside the specified segments ``d_keys.Current()[i]``,
   //!   ``d_keys[i].Alternate()[i]`` will not be accessed nor modified.
   //! - Note, the size of any segment may not exceed ``INT_MAX``. Please consider using ``DeviceSegmentedSort`` instead,
-  //! if the size of at least one of your segments could exceed ``INT_MAX``.
+  //!   if the size of at least one of your segments could exceed ``INT_MAX``.
   //! - @devicestorageP
   //! - @devicestorage
   //!
