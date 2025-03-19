@@ -48,7 +48,7 @@ THRUST_NAMESPACE_BEGIN
 struct default_init_t
 {};
 
-constexpr default_init_t default_init;
+inline constexpr default_init_t default_init;
 
 namespace detail
 {
