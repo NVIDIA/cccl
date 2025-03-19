@@ -72,16 +72,16 @@ _CCCL_HOST_DEVICE strided_slice(_OffsetType, _ExtentType, _StrideType)
   -> strided_slice<_OffsetType, _ExtentType, _StrideType>;
 
 template <typename>
-_CCCL_INLINE_VAR constexpr bool __is_strided_slice = false;
+inline constexpr bool __is_strided_slice = false;
 
 template <class _OffsetType, class _ExtentType, class _StrideType>
-_CCCL_INLINE_VAR constexpr bool __is_strided_slice<strided_slice<_OffsetType, _ExtentType, _StrideType>> = true;
+inline constexpr bool __is_strided_slice<strided_slice<_OffsetType, _ExtentType, _StrideType>> = true;
 
 struct full_extent_t
 {
   _CCCL_HIDE_FROM_ABI explicit full_extent_t() = default;
 };
-_CCCL_INLINE_VAR constexpr full_extent_t full_extent{};
+inline constexpr full_extent_t full_extent{};
 
 // [mdspan.submdspan.helpers]
 _CCCL_TEMPLATE(class _Tp)

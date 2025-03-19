@@ -123,9 +123,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #if defined(_CCCL_NO_INLINE_VARIABLES)
-#  define _CCCL_INLINE_VAR
+#  define inline
 #else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
-#  define _CCCL_INLINE_VAR inline
+#  define inline inline
 #endif // !_CCCL_NO_INLINE_VARIABLES
 
 #if defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
@@ -151,7 +151,7 @@
 #if defined(__CUDA_ARCH__)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
+#  define _CCCL_GLOBAL_CONSTANT inline constexpr
 #endif // __CUDA_ARCH__
 
 #endif // __CCCL_DIALECT_H

@@ -82,7 +82,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
 {}
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
-_CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
+inline constexpr int __cccl_requires = 0;
 #  endif // !_CCCL_COMPILER(MSVC)
 
 template <class _Tp, class... _Args>
@@ -167,7 +167,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 
 #  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
-#    define _CCCL_CONCEPT _CCCL_INLINE_VAR constexpr bool
+#    define _CCCL_CONCEPT inline constexpr bool
 
 #    define _CCCL_CONCEPT_FRAGMENT(_NAME, ...)                                                                         \
       _LIBCUDACXX_HIDE_FROM_ABI auto _NAME##_CCCL_CONCEPT_FRAGMENT_impl_ _CCCL_CONCEPT_FRAGMENT_REQS_##__VA_ARGS__> {} \

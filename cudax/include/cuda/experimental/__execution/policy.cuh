@@ -53,12 +53,12 @@ _CCCL_GLOBAL_CONSTANT execution_policy unseq_host       = execution_policy::unse
 _CCCL_GLOBAL_CONSTANT execution_policy unseq_device     = execution_policy::unsequenced_device;
 
 template <execution_policy _Policy>
-_CCCL_INLINE_VAR constexpr bool __is_parallel_execution_policy =
+inline constexpr bool __is_parallel_execution_policy =
   _Policy == execution_policy::parallel_host || _Policy == execution_policy::parallel_device
   || _Policy == execution_policy::parallel_unsequenced_host || _Policy == execution_policy::parallel_unsequenced_device;
 
 template <execution_policy _Policy>
-_CCCL_INLINE_VAR constexpr bool __is_unsequenced_execution_policy =
+inline constexpr bool __is_unsequenced_execution_policy =
   _Policy == execution_policy::unsequenced_host || _Policy == execution_policy::unsequenced_device
   || _Policy == execution_policy::parallel_unsequenced_host || _Policy == execution_policy::parallel_unsequenced_device;
 

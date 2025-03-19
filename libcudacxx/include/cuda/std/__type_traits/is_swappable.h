@@ -185,16 +185,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
 {};
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool is_swappable_with_v = is_swappable_with<_Tp, _Up>::value;
+inline constexpr bool is_swappable_with_v = is_swappable_with<_Tp, _Up>::value;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_swappable_v = is_swappable<_Tp>::value;
+inline constexpr bool is_swappable_v = is_swappable<_Tp>::value;
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_Tp, _Up>::value;
+inline constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_Tp, _Up>::value;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
+inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 

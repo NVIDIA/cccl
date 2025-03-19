@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT has_unique_object_representations
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool has_unique_object_representations_v = has_unique_object_representations<_Tp>::value;
+inline constexpr bool has_unique_object_representations_v = has_unique_object_representations<_Tp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS

@@ -32,7 +32,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_CCCL_BUILTIN_IS_SA
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME(_Tp, _Up);
+inline constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME(_Tp, _Up);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
@@ -59,9 +59,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same<_Tp, _Tp> : public true_type
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool is_same_v = false;
+inline constexpr bool is_same_v = false;
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_same_v<_Tp, _Tp> = true;
+inline constexpr bool is_same_v<_Tp, _Tp> = true;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:

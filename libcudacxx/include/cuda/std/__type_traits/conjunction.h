@@ -57,7 +57,7 @@ struct conjunction<_Arg, _Args...> : _If<!bool(_Arg::value), _Arg, conjunction<_
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>
-_CCCL_INLINE_VAR constexpr bool conjunction_v = conjunction<_Args...>::value;
+inline constexpr bool conjunction_v = conjunction<_Args...>::value;
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

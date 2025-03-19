@@ -33,7 +33,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_assignable
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_copy_assignable_v = is_copy_assignable<_Tp>::value;
+inline constexpr bool is_copy_assignable_v = is_copy_assignable<_Tp>::value;
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

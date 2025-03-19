@@ -57,7 +57,7 @@ public:
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<empty_view<_Tp>> = true;
+inline constexpr bool enable_borrowed_range<empty_view<_Tp>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
@@ -65,7 +65,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
 
 #if _CCCL_COMPILER(MSVC)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr empty_view<_Tp> empty{};
+inline constexpr empty_view<_Tp> empty{};
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT empty_view<_Tp> empty{};

@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic : public integral_constant<b
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_polymorphic_v = _CCCL_BUILTIN_IS_POLYMORPHIC(_Tp);
+inline constexpr bool is_polymorphic_v = _CCCL_BUILTIN_IS_POLYMORPHIC(_Tp);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
@@ -53,7 +53,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_polymorphic_v = is_polymorphic<_Tp>::value;
+inline constexpr bool is_polymorphic_v = is_polymorphic<_Tp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
