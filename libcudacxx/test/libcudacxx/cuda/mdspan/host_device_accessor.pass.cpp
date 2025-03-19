@@ -9,7 +9,6 @@
 
 #include <cuda/mdspan>
 
-#include "nv/detail/__target_macros"
 #include "test_macros.h"
 
 __device__ int device_array[]              = {1, 2, 3, 4};
@@ -33,6 +32,8 @@ __global__ void test_kernel(cuda::host_mdspan<int, ext_t> md)
   unused(h_md2);
 }
 
+#if !_CCCL_COMPILER(NVRTC)
+
 void host_mdspan_to_kernel_test()
 {
   int array[] = {1, 2, 3, 4};
@@ -41,9 +42,13 @@ void host_mdspan_to_kernel_test()
   assert(cudaDeviceSynchronize() == cudaSuccess);
 }
 
+#endif // !_CCCL_COMPILER(NVRTC)
+
 int main(int, char**)
 {
   basic_mdspan_access_test();
+#if !_CCCL_COMPILER(NVRTC)
   NV_IF_TARGET(NV_IS_HOST, (host_mdspan_to_kernel_test();))
+#endif // !_CCCL_COMPILER(NVRTC)
   return 0;
 }
