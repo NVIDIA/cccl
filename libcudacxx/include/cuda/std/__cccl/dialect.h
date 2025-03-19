@@ -122,12 +122,6 @@
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(_CCCL_NO_INLINE_VARIABLES)
-#  define inline
-#else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
-#  define inline inline
-#endif // !_CCCL_NO_INLINE_VARIABLES
-
 #if defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
 #  define _CCCL_FUNCTION_TYPE_NOEXCEPT
 #else // ^^^ _CCCL_NO_NOEXCEPT_FUNCTION_TYPE ^^^ / vvv !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE vvv
