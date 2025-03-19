@@ -74,13 +74,13 @@ struct WarpScanShfl
   enum
   {
     /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0)),
+    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads),
 
     /// The number of warp scan steps
     STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE,
 
     /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-    SHFL_C = (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS) << 8
+    SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8
   };
 
   template <typename S>
