@@ -145,7 +145,7 @@ private:
 
   template <class _OtherIndexType>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __required_span_size_is_representable(
-    [[maybe_unused]] const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides)
+    const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
   {
     // nvcc believes strides is unused here
     if constexpr (extents_type::rank() != 0)
