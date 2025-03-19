@@ -37,11 +37,11 @@
 // Trigger a rebuild of the file
 
 //! @file
-//! The \c pinned_memory_resource class provides a memory resource that allocates pinned memory.
+//! The \c legacy_pinned_memory_resource class provides a memory resource that allocates pinned memory.
 namespace cuda::experimental
 {
 
-//! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
+//! @brief legacy_pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
 class legacy_pinned_memory_resource
 {
 public:
@@ -58,7 +58,7 @@ public:
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
     {
-      _CUDA_VSTD::__throw_invalid_argument("Invalid alignment passed to pinned_memory_resource::allocate.");
+      _CUDA_VSTD::__throw_invalid_argument("Invalid alignment passed to legacy_pinned_memory_resource::allocate.");
     }
 
     void* __ptr{nullptr};
@@ -74,22 +74,22 @@ public:
     void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_host_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to pinned_memory_resource::deallocate.");
-    _CCCL_ASSERT_CUDA_API(::cudaFreeHost, "pinned_memory_resource::deallocate failed", __ptr);
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to legacy_pinned_memory_resource::deallocate.");
+    _CCCL_ASSERT_CUDA_API(::cudaFreeHost, "legacy_pinned_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }
 
-  //! @brief Equality comparison with another \c pinned_memory_resource.
-  //! @param __other The other \c pinned_memory_resource.
-  //! @return Whether both \c pinned_memory_resource were constructed with the same flags.
+  //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
+  //! @param __other The other \c legacy_pinned_memory_resource.
+  //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
   _CCCL_NODISCARD constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
     return true;
   }
 #if _CCCL_STD_VER <= 2017
-  //! @brief Equality comparison with another \c pinned_memory_resource.
-  //! @param __other The other \c pinned_memory_resource.
-  //! @return Whether both \c pinned_memory_resource were constructed with different flags.
+  //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
+  //! @param __other The other \c legacy_pinned_memory_resource.
+  //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
   _CCCL_NODISCARD constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
     return false;
