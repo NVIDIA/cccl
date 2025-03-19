@@ -126,13 +126,13 @@ namespace detail
 {
 
 inline constexpr int max_devices       = CUB_MAX_DEVICES;
-inline constexpr int warp_threads      = 32;
-inline constexpr int log2_warp_threads = 5;
-inline constexpr int smem_banks        = 32;
-inline constexpr int log2_smem_banks   = 5;
+inline constexpr int warp_threads      = CUB_PTX_WARP_THREADS;
+inline constexpr int log2_warp_threads = CUB_PTX_LOG_WARP_THREADS;
+inline constexpr int smem_banks        = CUB_SMEM_BANKS(0);
+inline constexpr int log2_smem_banks   = CUB_PTX_LOG_SMEM_BANKS;
 
-inline constexpr int subscription_factor           = 5;
-inline constexpr bool prefer_conflict_over_padding = true;
+inline constexpr int subscription_factor           = CUB_PTX_SUBSCRIPTION_FACTOR;
+inline constexpr bool prefer_conflict_over_padding = CUB_PTX_PREFER_CONFLICT_OVER_PADDING;
 
 // The maximum amount of static shared memory available per thread block
 // Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
