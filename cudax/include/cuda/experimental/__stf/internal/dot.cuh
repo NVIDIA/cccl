@@ -108,8 +108,7 @@ public:
       : _is_tracing(_is_tracing)
       , _is_tracing_prereqs(_is_tracing_prereqs)
       , _is_timing(_is_timing)
-  {
-  }
+  {}
 
   ~per_ctx_dot() = default;
 
@@ -137,7 +136,7 @@ public:
 
     m.type = fence_vertex;
 
-    m.original_id = unique_id;
+    m.original_id       = unique_id;
     m.representative_id = unique_id;
   }
 
@@ -191,13 +190,13 @@ public:
     m.color = get_current_color();
 
     m.dot_section_id = get_current_section_id(get_unique_id());
-    m.ctx_id = get_unique_id();
+    m.ctx_id         = get_unique_id();
 
-    m.label          = symbol;
+    m.label = symbol;
 
     m.type = prereq_vertex;
 
-    m.original_id = prereq_unique_id;
+    m.original_id       = prereq_unique_id;
     m.representative_id = prereq_unique_id;
   }
 
@@ -214,11 +213,11 @@ public:
     auto& m          = metadata[prereq_unique_id];
     m.color          = get_current_color();
     m.dot_section_id = get_current_section_id(get_unique_id());
-    m.ctx_id = get_unique_id();
+    m.ctx_id         = get_unique_id();
     m.label          = "proxy";
     m.type           = cluster_proxy_vertex;
 
-    m.original_id = prereq_unique_id;
+    m.original_id       = prereq_unique_id;
     m.representative_id = prereq_unique_id;
   }
 
@@ -292,7 +291,7 @@ public:
     task_metadata.color = get_current_color();
 
     task_metadata.dot_section_id = get_current_section_id(get_unique_id());
-    task_metadata.ctx_id = get_unique_id();
+    task_metadata.ctx_id         = get_unique_id();
 
     // We here create the label of the task, which we may augment later with
     // timing information for example
@@ -315,7 +314,7 @@ public:
     task_metadata.label = task_oss.str();
     task_metadata.type  = type;
 
-    task_metadata.original_id = t.get_unique_id();
+    task_metadata.original_id       = t.get_unique_id();
     task_metadata.representative_id = t.get_unique_id();
   }
 
@@ -452,7 +451,8 @@ public:
     return int(id);
   }
 
-public: // XXX protected, friend : dot
+public:
+  // per-context vertices
   ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
 private:
@@ -709,14 +709,14 @@ public:
     // times, and update the colors appropriately if needed.
     update_colors_with_timing();
 
+    if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
+    {
+      remove_redundant_edges();
+    }
+
     ::std::ofstream outFile(dot_filename);
     if (outFile.is_open())
     {
-      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
-      {
-        remove_redundant_edges();
-      }
-
       outFile << "digraph {\n";
       size_t ctx_cnt        = 0;
       bool display_clusters = (per_ctx.size() > 1);
@@ -803,35 +803,36 @@ private:
 
     for (const auto& p : all_vertices)
     {
-      if (p.second.ctx_id == ctx_id) {
-         // Select the display style of the node based on the type of vertex
-         ::std::string style;
-         switch (p.second.type)
-         {
-           case task_vertex:
-           case fence_vertex:
-             style = "filled";
-             break;
-           case freeze_vertex:
-           case prereq_vertex:
-             style = "dashed";
-             break;
-           case cluster_proxy_vertex:
-             style = "invis";
-             break;
-           default:
-             fprintf(stderr, "error: unknown vertex type\n");
-             abort();
-         };
-         outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color << "\" label=\""
-                 << p.second.label << "\"]\n";
+      if (p.second.ctx_id == ctx_id)
+      {
+        // Select the display style of the node based on the type of vertex
+        ::std::string style;
+        switch (p.second.type)
+        {
+          case task_vertex:
+          case fence_vertex:
+            style = "filled";
+            break;
+          case freeze_vertex:
+          case prereq_vertex:
+            style = "dashed";
+            break;
+          case cluster_proxy_vertex:
+            style = "invis";
+            break;
+          default:
+            fprintf(stderr, "error: unknown vertex type\n");
+            abort();
+        };
+        outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color
+                << "\" label=\"" << p.second.label << "\"]\n";
 
-         // to force the start_cluster node to be at the top, we add dependencies
-         // if (display_clusters) {
-         //   outFile << "\"start_cluster_" << ctx_id << "\" -> \"NODE_" << p.first << "\" [style=invis]\n";
-         //}
+        // to force the start_cluster node to be at the top, we add dependencies
+        // if (display_clusters) {
+        //   outFile << "\"start_cluster_" << ctx_id << "\" -> \"NODE_" << p.first << "\" [style=invis]\n";
+        //}
 
-         vertex_count++;
+        vertex_count++;
       }
     }
 
@@ -931,11 +932,12 @@ private:
     outFile << "    label=\"" + map[id]->get_symbol() + "\"\n";
 
     // Put all nodes which belong to this section
-    for (auto &v: all_vertices)
+    for (auto& v : all_vertices)
     {
-        if (v.second.dot_section_id == id) {
-           outFile << "    \"NODE_" + ::std::to_string(v.first) + "\"\n";
-        }
+      if (v.second.dot_section_id == id)
+      {
+        outFile << "    \"NODE_" + ::std::to_string(v.first) + "\"\n";
+      }
     }
 
     outFile << "} // end subgraph cluster_section_" << ::std::to_string(id) << "\n ";
@@ -988,16 +990,8 @@ private:
    */
   void merge_nodes(int dst_id, int src_id)
   {
-//    // Get src_id from the map and remove it
-//    auto it = all_vertices.find(src_id);
-//    assert(it != all_vertices.end());
-//    //per_vertex_info src = mv(it->second);
-//    //all_vertices.erase(it);
-//    per_vertex_info &src = it->second;
-
-    auto &src = all_vertices[src_id];
-
     // If there was some timing associated to either src or dst, update timing
+    auto& src = all_vertices[src_id];
     auto& dst = all_vertices[dst_id];
     if (dst.timing.has_value() || src.timing.has_value())
     {
@@ -1087,77 +1081,77 @@ private:
 
     const int max_depth = atoi(env_depth);
 
-      // key : section id, value : vector of IDs which should be condensed into a node
-      ::std::unordered_map<int, ::std::vector<int>> to_condense;
+    // key : section id, value : vector of IDs which should be condensed into a node
+    ::std::unordered_map<int, ::std::vector<int>> to_condense;
 
-      // Go over all vertices (tasks, prereqs, ..). If they are in a section
-      // which level is below the threshhold, add the vertex id in the
-      // to_condense map.
-      for (auto& p : all_vertices)
+    // Go over all vertices (tasks, prereqs, ..). If they are in a section
+    // which level is below the threshold, add the vertex id in the
+    // to_condense map.
+    for (auto& p : all_vertices)
+    {
+      // p.first task id, p.second metadata
+      auto& task_info = p.second;
+
+      int dot_section_id = task_info.dot_section_id;
+      if (dot_section_id > 0)
       {
-        // p.first task id, p.second metadata
-        auto& task_info    = p.second;
+        // Note we do not use a reference here, because we are maybe going to
+        // update the pointer, and we do not want to update its content
+        // instead when setting sec.
+        ::std::shared_ptr<section> sec = dot::instance().map[dot_section_id];
+        assert(sec);
 
-        int dot_section_id = task_info.dot_section_id;
-        if (dot_section_id > 0)
+        int depth      = sec->get_depth();
+        int section_id = task_info.dot_section_id;
+
+        if (depth >= max_depth + 1)
         {
-          // Note we do not use a reference here, because we are maybe going to
-          // update the pointer, and we do not want to update its content
-          // instead when setting sec.
-          ::std::shared_ptr<section> sec = dot::instance().map[dot_section_id];
-          assert(sec);
-
-          int depth      = sec->get_depth();
-          int section_id = task_info.dot_section_id;
-
-          if (depth >= max_depth + 1)
+          /* Find the parent at depth (max_depth + 1)*/
+          while (depth > max_depth + 1)
           {
-            /* Find the parent at depth (max_depth + 1)*/
-            while (depth > max_depth + 1)
-            {
-              section_id = sec->parent_id;
-              _CCCL_ASSERT(section_id != 0, "invalid value");
-              sec = dot::instance().map[section_id];
-              depth--;
-            }
-
-            _CCCL_ASSERT(depth == max_depth + 1, "invalid value");
-
-            /* Add this node to the list of nodes which are "equivalent" to section_id */
-            to_condense[section_id].push_back(p.first);
+            section_id = sec->parent_id;
+            _CCCL_ASSERT(section_id != 0, "invalid value");
+            sec = dot::instance().map[section_id];
+            depth--;
           }
+
+          _CCCL_ASSERT(depth == max_depth + 1, "invalid value");
+
+          /* Add this node to the list of nodes which are "equivalent" to section_id */
+          to_condense[section_id].push_back(p.first);
         }
       }
+    }
 
-      // For each group of tasks
-      for (auto& p : to_condense)
+    // For each group of tasks
+    for (auto& p : to_condense)
+    {
+      ::std::sort(p.second.begin(), p.second.end());
+
+      // For every section ID, we get the vector of nodes to condense. We pick the first node, and "merge" other nodes
+      // with it.
+      for (size_t i = 0; i < p.second.size(); i++)
       {
-        ::std::sort(p.second.begin(), p.second.end());
-
-        // For every section ID, we get the vector of nodes to condense. We pick the first node, and "merge" other nodes
-        // with it.
-        for (size_t i = 0; i < p.second.size(); i++)
-        {
-            all_vertices[p.second[i]].representative_id = p.second[0];
-        }
-
-        // Merge all tasks in the vector with the first entry, and then rename
-        // the first entry to take the name of the section.
-        for (size_t i = 1; i < p.second.size(); i++)
-        {
-          // Fuse the content (eg. timing) of the i-th entry with the first one
-          merge_nodes(p.second[0], p.second[i]);
-        }
-
-        // Condense edges
-
-        // Rename the task that remains to have the label of the section
-        ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
-        all_vertices[p.second[0]].label = sec->get_symbol();
-
-        // Assign the node to the parent of the section it corresponds to
-        all_vertices[p.second[0]].dot_section_id = sec->parent_id;
+        all_vertices[p.second[i]].representative_id = p.second[0];
       }
+
+      // Merge all tasks in the vector with the first entry, and then rename
+      // the first entry to take the name of the section.
+      for (size_t i = 1; i < p.second.size(); i++)
+      {
+        // Fuse the content (eg. timing) of the i-th entry with the first one
+        merge_nodes(p.second[0], p.second[i]);
+      }
+
+      // Condense edges
+
+      // Rename the task that remains to have the label of the section
+      ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
+      all_vertices[p.second[0]].label = sec->get_symbol();
+
+      // Assign the node to the parent of the section it corresponds to
+      all_vertices[p.second[0]].dot_section_id = sec->parent_id;
+    }
 
     // Replace or condense edges
     IntPairSet new_edges;
@@ -1180,13 +1174,17 @@ private:
     ::std::swap(new_edges, all_edges);
 
     // Remove vertices which have been collapsed
-    for (auto it = all_vertices.begin(); it != all_vertices.end(); ) {
-        const auto& info = it->second;
-        if (info.representative_id != info.original_id) {
-            it = all_vertices.erase(it); // erase returns the next valid iterator
-        } else {
-            ++it;
-        }
+    for (auto it = all_vertices.begin(); it != all_vertices.end();)
+    {
+      const auto& info = it->second;
+      if (info.representative_id != info.original_id)
+      {
+        it = all_vertices.erase(it); // erase returns the next valid iterator
+      }
+      else
+      {
+        ++it;
+      }
     }
   }
 
