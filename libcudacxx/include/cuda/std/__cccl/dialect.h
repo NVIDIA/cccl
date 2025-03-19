@@ -88,11 +88,6 @@
 #  define _CCCL_NO_DEDUCTION_GUIDES
 #endif // __cpp_deduction_guides < 201611L
 
-// Fold expressions are only available from C++17 onwards
-#if __cpp_fold_expressions < 201603L
-#  define _CCCL_NO_FOLD_EXPRESSIONS
-#endif // __cpp_fold_expressions < 201603L
-
 // Inline variables are only available from C++17 onwards
 #if __cpp_inline_variables < 201606L
 #  define _CCCL_NO_INLINE_VARIABLES
