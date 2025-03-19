@@ -818,7 +818,7 @@ void vector_base<T, Alloc>::append(size_type n)
     {
       // we've got room for all of them
 
-      if constexpr (OnlyDefaultInit && !::cuda::std::is_trivially_constructible_v<T>)
+      if constexpr (!OnlyDefaultInit || !::cuda::std::is_trivially_constructible_v<T>)
       {
         // default construct new elements at the end of the vector
         m_storage.value_initialize_n(end(), n);
@@ -851,7 +851,7 @@ void vector_base<T, Alloc>::append(size_type n)
         // construct copy all elements into the newly allocated storage
         new_end = m_storage.uninitialized_copy(begin(), end(), new_storage.begin());
 
-        if constexpr (OnlyDefaultInit && !::cuda::std::is_trivially_constructible_v<T>)
+        if constexpr (!OnlyDefaultInit || !::cuda::std::is_trivially_constructible_v<T>)
         {
           // construct new elements to insert
           new_storage.value_initialize_n(new_end, n);
