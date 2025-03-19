@@ -33,11 +33,11 @@
 
 struct NoDefault
 {
-  __host__ __device__ TEST_CONSTEXPR NoDefault(int) {}
+  __host__ __device__ constexpr NoDefault(int) {}
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
+__host__ __device__ constexpr void check_noexcept(T& c)
 {
   static_assert(noexcept(c.begin()));
   static_assert(noexcept(c.end()));
@@ -58,9 +58,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
 
 // gcc-7 and gcc-8 are really helpful here
 __host__ __device__
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
-  TEST_CONSTEXPR_CXX14
-#endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if !TEST_COMPILER(GCC, <, 8)
+  constexpr
+#endif // !TEST_COMPILER(GCC, <, 8)
   bool
   tests()
 {
@@ -232,8 +232,8 @@ __host__ __device__
 int main(int, char**)
 {
   tests();
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !TEST_COMPILER(GCC, <, 8)
   static_assert(tests(), "");
-#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !TEST_COMPILER(GCC, <, 8)
   return 0;
 }

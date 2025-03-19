@@ -44,7 +44,7 @@ __host__ __device__ constexpr long double fp_error_pct<long double>()
 template <typename T>
 __host__ __device__ void fp_test()
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::midpoint(T(), T())));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::midpoint(T(), T()))>);
   static_assert(noexcept(cuda::std::midpoint(T(), T())));
 
   constexpr T maxV = cuda::std::numeric_limits<T>::max();
@@ -91,7 +91,7 @@ __host__ __device__ void fp_test()
   assert((fptest_close_pct(cuda::std::midpoint(maxV * T(0.75), maxV * T(-0.5)), maxV * T(0.125), pct)));
   assert((fptest_close_pct(cuda::std::midpoint(maxV * T(-0.75), maxV * T(0.5)), maxV * T(-0.125), pct)));
 
-#if !defined(TEST_COMPILER_NVRTC) // missing nextafter
+#if !TEST_COMPILER(NVRTC) // missing nextafter
   //  Check two values "close to each other"
   T d1 = T(3.14);
   T d0 = cuda::std::nextafter(d1, T(2));
@@ -118,7 +118,7 @@ __host__ __device__ void fp_test()
   assert(res == d1 || res == d2);
   assert(d1 <= res);
   assert(res <= d2);
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 }
 
 int main(int, char**)

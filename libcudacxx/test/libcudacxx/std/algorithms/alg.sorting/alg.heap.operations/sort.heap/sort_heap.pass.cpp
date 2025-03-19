@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 template <class T, class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int orig[15] = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
   T work[15]   = {3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8, 9, 7, 9};
@@ -48,7 +48,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<int, random_access_iterator<int*>>();
   test<int, int*>();

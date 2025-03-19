@@ -56,11 +56,9 @@ struct __debug_less
 
   template <class _LHS, class _RHS>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype((void) declval<_Compare&>()(declval<_LHS&>(), declval<_RHS&>()))
-  __do_compare_assert(int, _LHS& __l, _RHS& __r)
+  __do_compare_assert(int, [[maybe_unused]] _LHS& __l, [[maybe_unused]] _RHS& __r)
   {
     _CCCL_ASSERT(!__comp_(__l, __r), "Comparator does not induce a strict weak ordering");
-    (void) __l;
-    (void) __r;
   }
 
   template <class _LHS, class _RHS>

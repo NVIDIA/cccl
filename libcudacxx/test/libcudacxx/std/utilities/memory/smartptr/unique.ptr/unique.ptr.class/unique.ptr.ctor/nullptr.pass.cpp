@@ -19,10 +19,10 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-#ifndef TEST_COMPILER_NVRTC // no dynamic initialization
+#if !TEST_COMPILER(NVRTC) // no dynamic initialization
 _LIBCUDACXX_SAFE_STATIC cuda::std::unique_ptr<int> global_static_unique_ptr_single(nullptr);
 _LIBCUDACXX_SAFE_STATIC cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime(nullptr);
-#endif // TEST_COMPILER_NVRTC
+#endif // TEST_COMPILER(NVRTC)
 
 struct NonDefaultDeleter
 {

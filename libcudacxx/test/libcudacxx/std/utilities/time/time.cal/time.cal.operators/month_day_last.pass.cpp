@@ -48,8 +48,8 @@ int main(int, char**)
   constexpr month February                    = cuda::std::chrono::February;
   constexpr cuda::std::chrono::last_spec last = cuda::std::chrono::last;
 
-  ASSERT_SAME_TYPE(month_day_last, decltype(last / February));
-  ASSERT_SAME_TYPE(month_day_last, decltype(February / last));
+  static_assert(cuda::std::is_same_v<month_day_last, decltype(last / February)>);
+  static_assert(cuda::std::is_same_v<month_day_last, decltype(February / last)>);
 
   //  Run the example
   {
@@ -59,9 +59,9 @@ int main(int, char**)
 
   { // operator/(const month& m, last_spec) and switched
     static_assert(noexcept(last / February));
-    ASSERT_SAME_TYPE(month_day_last, decltype(last / February));
+    static_assert(cuda::std::is_same_v<month_day_last, decltype(last / February)>);
     static_assert(noexcept(February / last));
-    ASSERT_SAME_TYPE(month_day_last, decltype(February / last));
+    static_assert(cuda::std::is_same_v<month_day_last, decltype(February / last)>);
 
     static_assert((last / February).month() == February, "");
     static_assert((February / last).month() == February, "");
@@ -79,9 +79,9 @@ int main(int, char**)
 
   { // operator/(int, last_spec) and switched
     static_assert(noexcept(last / 2));
-    ASSERT_SAME_TYPE(month_day_last, decltype(last / 2));
+    static_assert(cuda::std::is_same_v<month_day_last, decltype(last / 2)>);
     static_assert(noexcept(2 / last));
-    ASSERT_SAME_TYPE(month_day_last, decltype(2 / last));
+    static_assert(cuda::std::is_same_v<month_day_last, decltype(2 / last)>);
 
     static_assert((last / 2).month() == February, "");
     static_assert((2 / last).month() == February, "");

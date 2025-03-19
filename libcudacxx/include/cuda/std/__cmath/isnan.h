@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
@@ -74,51 +74,56 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(long double __x) 
 }
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
-#if _LIBCUDACXX_HAS_NVFP16()
+#if _CCCL_HAS_NVFP16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half __x) noexcept
 {
+#  if _LIBCUDACXX_HAS_NVFP16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::__hisnan(__x);
   }
+#  endif // _LIBCUDACXX_HAS_NVFP16()
 
-  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
-  return ((__storage & __cccl_nvfp16_exp_mask) == __cccl_nvfp16_exp_mask) && (__storage & __cccl_nvfp16_mant_mask);
+  const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
+  return ((__storage & __fp_exp_mask_v<__half>) == __fp_exp_mask_v<__half>) && (__storage & __fp_mant_mask_v<__half>);
 }
-#endif // _LIBCUDACXX_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16()
 
-#if _LIBCUDACXX_HAS_NVBF16()
+#if _CCCL_HAS_NVBF16()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_bfloat16 __x) noexcept
 {
+#  if _LIBCUDACXX_HAS_NVFP16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     return ::__hisnan(__x);
   }
+#  endif // _LIBCUDACXX_HAS_NVFP16()
 
-  const auto __storage = _CUDA_VSTD::__cccl_fp_get_storage(__x);
-  return ((__storage & __cccl_nvbf16_exp_mask) == __cccl_nvbf16_exp_mask) && (__storage & __cccl_nvbf16_mant_mask);
+  const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
+  return ((__storage & __fp_exp_mask_v<__nv_bfloat16>) == __fp_exp_mask_v<__nv_bfloat16>)
+      && (__storage & __fp_mant_mask_v<__nv_bfloat16>);
 }
-#endif // _LIBCUDACXX_HAS_NVBF16()
+#endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_fp8_e4m3 __x) noexcept
 {
-  return (__x.__x & __cccl_nvfp8_e4m3_exp_mant_mask) == __cccl_nvfp8_e4m3_exp_mant_mask;
+  return (__x.__x & __fp_exp_mant_mask_v<__nv_fp8_e4m3>) == __fp_exp_mant_mask_v<__nv_fp8_e4m3>;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_fp8_e5m2 __x) noexcept
 {
-  return ((__x.__x & __cccl_nvfp8_e5m2_exp_mask) == __cccl_nvfp8_e5m2_exp_mask)
-      && (__x.__x & __cccl_nvfp8_e5m2_mant_mask);
+  return ((__x.__x & __fp_exp_mask_v<__nv_fp8_e5m2>) == __fp_exp_mask_v<__nv_fp8_e5m2>)
+      && (__x.__x & __fp_mant_mask_v<__nv_fp8_e5m2>);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_fp8_e8m0 __x) noexcept
 {
-  return (__x.__x & __cccl_nvfp8_e8m0_exp_mask) == __cccl_nvfp8_e8m0_exp_mask;
+  return (__x.__x & __fp_exp_mask_v<__nv_fp8_e8m0>) == __fp_exp_mask_v<__nv_fp8_e8m0>;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 

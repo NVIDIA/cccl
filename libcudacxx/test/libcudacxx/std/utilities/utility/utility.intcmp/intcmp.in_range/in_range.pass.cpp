@@ -30,7 +30,7 @@ struct Tuple
 };
 
 template <typename T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range1()
+__host__ __device__ constexpr void test_in_range1()
 {
   constexpr Tuple<T> tup{};
   assert(cuda::std::in_range<T>(tup.min));
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range1()
   assert(cuda::std::in_range<T>(tup.mid + 1));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range()
+__host__ __device__ constexpr void test_in_range()
 {
   constexpr Tuple<uint8_t> utup8{};
   constexpr Tuple<int8_t> stup8{};
@@ -54,7 +54,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range()
   assert(!cuda::std::in_range<uint8_t>(-1));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_in_range();
 #if _CCCL_HAS_INT128()

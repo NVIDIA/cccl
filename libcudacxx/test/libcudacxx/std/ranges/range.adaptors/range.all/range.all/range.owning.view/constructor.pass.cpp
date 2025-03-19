@@ -131,12 +131,12 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::is_nothrow_constructible_v<NoexceptChecker>); // therefore,
     static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::ranges::owning_view<NoexceptChecker>>);
 
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9) && !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
     static_assert(!cuda::std::is_nothrow_constructible_v<DefaultConstructible>); // therefore,
-#endif // no broken noexcept
-#if !defined(TEST_COMPILER_NVCC) && !defined(TEST_COMPILER_NVRTC) // nvbug3910409
+#endif // !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC)
+#if !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC) // nvbug3910409
     static_assert(!cuda::std::is_nothrow_constructible_v<cuda::std::ranges::owning_view<DefaultConstructible>>);
-#endif
+#endif // !TEST_CUDA_COMPILER(NVCC) && !TEST_COMPILER(NVRTC)
 
     static_assert(cuda::std::is_nothrow_move_constructible_v<NoexceptChecker>); // therefore,
     static_assert(cuda::std::is_nothrow_move_constructible_v<cuda::std::ranges::owning_view<NoexceptChecker>>);

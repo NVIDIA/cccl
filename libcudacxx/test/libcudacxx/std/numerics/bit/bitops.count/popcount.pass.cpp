@@ -22,10 +22,7 @@
 
 #include "test_macros.h"
 
-#if defined(_MSC_VER)
-// MSVC 14.12 erroneously notices an integer overflow
-#  pragma warning(disable : 4307)
-#endif
+TEST_DIAG_SUPPRESS_MSVC(4307) // integer overflow
 
 class A
 {};
@@ -66,7 +63,7 @@ __host__ __device__ inline void assert_popcount(T val, int expected)
 template <typename T>
 __host__ __device__ void runtime_test()
 {
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::popcount(T(0))));
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::popcount(T(0)))>);
   static_assert(noexcept(cuda::std::popcount(T(0))));
 
   assert_popcount(T(121), 5);

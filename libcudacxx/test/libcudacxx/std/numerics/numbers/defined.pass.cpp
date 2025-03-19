@@ -10,13 +10,14 @@
 // <cuda/std/numbers>
 
 #include <cuda/std/numbers>
+#include <cuda/std/type_traits>
 
 #include <test_macros.h>
 
 template <class ExpectedT, class T>
 __host__ __device__ constexpr bool test_defined(const T& value)
 {
-  ASSERT_SAME_TYPE(ExpectedT, T);
+  static_assert(cuda::std::is_same_v<ExpectedT, T>);
 
   const ExpectedT* addr = &value;
   unused(addr);

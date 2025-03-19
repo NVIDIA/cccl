@@ -64,12 +64,14 @@ int main(int, char**)
   using months             = cuda::std::chrono::months;
 
   static_assert(noexcept(cuda::std::declval<year_month_weekday&>() += cuda::std::declval<months>()));
-  ASSERT_SAME_TYPE(year_month_weekday&,
-                   decltype(cuda::std::declval<year_month_weekday&>() += cuda::std::declval<months>()));
+  static_assert(
+    cuda::std::is_same_v<year_month_weekday&,
+                         decltype(cuda::std::declval<year_month_weekday&>() += cuda::std::declval<months>())>);
 
   static_assert(noexcept(cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<months>()));
-  ASSERT_SAME_TYPE(year_month_weekday&,
-                   decltype(cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<months>()));
+  static_assert(
+    cuda::std::is_same_v<year_month_weekday&,
+                         decltype(cuda::std::declval<year_month_weekday&>() -= cuda::std::declval<months>())>);
 
   auto constexpr Tuesday = cuda::std::chrono::Tuesday;
   static_assert(

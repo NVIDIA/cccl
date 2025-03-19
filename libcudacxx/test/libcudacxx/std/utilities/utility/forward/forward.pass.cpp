@@ -18,11 +18,11 @@
 struct A
 {};
 
-__host__ __device__ A source() TEST_NOEXCEPT
+__host__ __device__ A source() noexcept
 {
   return A();
 }
-__host__ __device__ const A csource() TEST_NOEXCEPT
+__host__ __device__ const A csource() noexcept
 {
   return A();
 }
@@ -39,11 +39,8 @@ __host__ __device__ constexpr bool test_constexpr_forward()
 
 int main(int, char**)
 {
-  A a;
-  const A ca = A();
-
-  ((void) a); // Prevent unused warning
-  ((void) ca); // Prevent unused warning
+  [[maybe_unused]] A a;
+  [[maybe_unused]] const A ca = A();
 
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<A&>(a)), A&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward<A>(a)), A&&>::value, "");

@@ -125,8 +125,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_fr
 {
   static_assert(_CCCL_TRAIT(is_signed, _IndexType) || _CCCL_TRAIT(is_unsigned, _IndexType),
                 "[mdspan.sub.helpers] mandates IndexType to be a signed or unsigned integral");
-  using _SliceType    = __get_slice_type<_Index, _Slices...>;
-  _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
+  using _SliceType                     = __get_slice_type<_Index, _Slices...>;
+  [[maybe_unused]] _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
   if constexpr (convertible_to<_SliceType, _IndexType>)
   {
     return _CUDA_VSTD::__index_cast<_IndexType>(__slice);
@@ -143,7 +143,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_fr
     }
     else
     {
-      (void) __slice;
       return 0;
     }
   }
@@ -156,9 +155,9 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
 {
   static_assert(_CCCL_TRAIT(__mdspan_detail::__is_extents, _Extents),
                 "[mdspan.sub.helpers] mandates Extents to be a specialization of extents");
-  using _IndexType    = typename _Extents::index_type;
-  using _SliceType    = __get_slice_type<_Index, _Slices...>;
-  _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
+  using _IndexType                     = typename _Extents::index_type;
+  using _SliceType                     = __get_slice_type<_Index, _Slices...>;
+  [[maybe_unused]] _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
   if constexpr (convertible_to<_SliceType, _IndexType>)
   {
     return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice) + 1);
@@ -176,7 +175,6 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
     }
     else
     {
-      (void) __slice;
       return _CUDA_VSTD::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }

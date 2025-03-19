@@ -140,23 +140,25 @@ public:
 template <class... Properties>
 struct memory_resource_wrapper
 {
-  cuda::mr::async_resource_ref<Properties...> ref_;
+  // Not a resource_ref, because it can't be used to create any_async_resource (yet)
+  // https://github.com/NVIDIA/cccl/issues/4166
+  cudax::any_async_resource<Properties...> resource_;
 
   void* allocate(std::size_t size, std::size_t alignment)
   {
-    return ref_.allocate(size, alignment);
+    return resource_.allocate(size, alignment);
   }
   void deallocate(void* ptr, std::size_t size, std::size_t alignment)
   {
-    ref_.deallocate(ptr, size, alignment);
+    resource_.deallocate(ptr, size, alignment);
   }
   void* allocate_async(std::size_t size, std::size_t alignment, cuda::stream_ref stream)
   {
-    return ref_.allocate_async(size, alignment, stream);
+    return resource_.allocate_async(size, alignment, stream);
   }
   void deallocate_async(void* ptr, std::size_t size, std::size_t alignment, cuda::stream_ref stream)
   {
-    ref_.deallocate_async(ptr, size, alignment, stream);
+    resource_.deallocate_async(ptr, size, alignment, stream);
   }
 
   bool operator==(const memory_resource_wrapper&) const

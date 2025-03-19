@@ -320,11 +320,10 @@ void std::__cccl_verbose_abort(char const* format, ...)
   // how we format assertions in the library.
   va_list list;
   va_start(list, format);
-  char const* file       = va_arg(list, char const*);
-  int line               = va_arg(list, int);
-  char const* expression = va_arg(list, char const*);
-  (void) expression;
-  char const* message = va_arg(list, char const*);
+  char const* file                        = va_arg(list, char const*);
+  int line                                = va_arg(list, int);
+  [[maybe_unused]] char const* expression = va_arg(list, char const*);
+  char const* message                     = va_arg(list, char const*);
   va_end(list);
 
   if (GlobalMatcher().Matches(file, line, message))

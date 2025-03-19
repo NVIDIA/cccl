@@ -53,7 +53,7 @@ int main(int, char**)
     constexpr year_month Feb2018{year{2018}, February};
 
     static_assert(noexcept(Feb2018 / weekday_last{Tuesday}));
-    ASSERT_SAME_TYPE(year_month_weekday_last, decltype(Feb2018 / weekday_last{Tuesday}));
+    static_assert(cuda::std::is_same_v<year_month_weekday_last, decltype(Feb2018 / weekday_last{Tuesday})>);
 
     static_assert((Feb2018 / weekday_last{Tuesday}).year() == year{2018}, "");
     static_assert((Feb2018 / weekday_last{Tuesday}).month() == February, "");
@@ -81,9 +81,9 @@ int main(int, char**)
     constexpr month_weekday_last FebLastTues{February, weekday_last{Tuesday}};
 
     static_assert(noexcept(year{2018} / FebLastTues));
-    ASSERT_SAME_TYPE(year_month_weekday_last, decltype(year{2018} / FebLastTues));
+    static_assert(cuda::std::is_same_v<year_month_weekday_last, decltype(year{2018} / FebLastTues)>);
     static_assert(noexcept(FebLastTues / year{2018}));
-    ASSERT_SAME_TYPE(year_month_weekday_last, decltype(FebLastTues / year{2018}));
+    static_assert(cuda::std::is_same_v<year_month_weekday_last, decltype(FebLastTues / year{2018})>);
 
     static_assert((year{2018} / FebLastTues).year() == year{2018}, "");
     static_assert((year{2018} / FebLastTues).month() == February, "");
@@ -119,9 +119,9 @@ int main(int, char**)
     constexpr month_weekday_last FebLastTues{February, weekday_last{Tuesday}};
 
     static_assert(noexcept(2018 / FebLastTues));
-    ASSERT_SAME_TYPE(year_month_weekday_last, decltype(2018 / FebLastTues));
+    static_assert(cuda::std::is_same_v<year_month_weekday_last, decltype(2018 / FebLastTues)>);
     static_assert(noexcept(FebLastTues / 2018));
-    ASSERT_SAME_TYPE(year_month_weekday_last, decltype(FebLastTues / 2018));
+    static_assert(cuda::std::is_same_v<year_month_weekday_last, decltype(FebLastTues / 2018)>);
 
     static_assert((2018 / FebLastTues).year() == year{2018}, "");
     static_assert((2018 / FebLastTues).month() == February, "");
