@@ -462,8 +462,6 @@ C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-// Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
-#  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
          "[keys][segmented][radix][sort][device]",
          all_offset_types)
@@ -511,10 +509,11 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented radix sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
+// Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
+#  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
          "[keys][segmented][radix][sort][device]",
          all_offset_types)
-
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs

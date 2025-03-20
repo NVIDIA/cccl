@@ -277,8 +277,6 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
   REQUIRE((ref_values == out_values) == true);
 }
 
-// Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
-#if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
          "[pairs][segmented][sort][device]",
          all_offset_types)
@@ -337,6 +335,8 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
+// Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
+#if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
 try
 {
@@ -388,4 +388,4 @@ catch (std::bad_alloc& e)
 {
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
-#endif
+#endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
