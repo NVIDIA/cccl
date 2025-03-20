@@ -40,10 +40,6 @@
 #include <utils/check_results.cuh>
 #include <utils/operator.cuh>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4244) // numeric(33): C: '=': conversion from 'int' to '_Ty', possible loss of data
-_CCCL_DIAG_POP
-
 /***********************************************************************************************************************
  * Constants
  **********************************************************************************************************************/
@@ -191,6 +187,9 @@ using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
  * Reference
  **********************************************************************************************************************/
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // numeric(33): C: '=': conversion from 'int' to '_Ty', possible loss of data
+
 template <typename predefined_op, typename T>
 void compute_host_reference(
   const c2h::host_vector<T>& h_in,
@@ -212,6 +211,8 @@ void compute_host_reference(
     }
   }
 }
+
+_CCCL_DIAG_POP
 
 std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned items_per_thread1 = 1)
 {
@@ -350,3 +351,5 @@ C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, 0, items_per_thread);
   verify_results(h_out, d_out);
 }
+
+_CCCL_DIAG_POP
