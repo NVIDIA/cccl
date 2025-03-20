@@ -83,13 +83,12 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
   using accum_t     = T;
   using input_it_t  = const T*;
   using output_it_t = T*;
-  using output_t    = T;
   using init_t      = T;
 
   using dispatch_t = cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
     input_it_t,
     output_it_t,
-    segment_size_t,
+    int,
     op_t,
     init_t,
     accum_t
@@ -140,18 +139,18 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("small")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("SegmentSize", nvbench::range(0, 4, 1));
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("medium")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 4))
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("SegmentSize", nvbench::range(5, 8, 1));
 
 NVBENCH_BENCH_TYPES(fixed_size_segmented_reduce, NVBENCH_TYPE_AXES(value_types))
   .set_name("large")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
-  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(18, 28, 2))
-  .add_int64_power_of_two_axis("SegmentSize", nvbench::range(9, 16, 2));
+  .set_type_axes_names({"T{ct}"})
+  .add_int64_power_of_two_axis("NumElements{io}", nvbench::range(16, 28, 4))
+  .add_int64_power_of_two_axis("SegmentSize", nvbench::range(9, 16, 1));
