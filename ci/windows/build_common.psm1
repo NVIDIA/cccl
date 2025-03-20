@@ -50,8 +50,8 @@ $BUILD_DIR = (Get-Item -Path "$BUILD_DIR").FullName
 # Prepare environment for CMake:
 $env:CMAKE_BUILD_PARALLEL_LEVEL = $PARALLEL_LEVEL
 $env:CTEST_PARALLEL_LEVEL = 1
-$env:CUDAHOSTCXX = $HOST_COMPILER.FullName
-$env:CXX = $HOST_COMPILER.FullName
+$env:CUDAHOSTCXX = $script:HOST_COMPILER
+$env:CXX = $script:HOST_COMPILER
 
 Write-Host "========================================"
 Write-Host "Begin build"

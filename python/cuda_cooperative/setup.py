@@ -5,5 +5,5 @@
 from setuptools import setup
 
 setup(
-    license_files=["../../LICENSE"],
+    license_files=["LICENSE"],
 )

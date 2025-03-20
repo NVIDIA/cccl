@@ -66,11 +66,11 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   // example-begin for-each-in-extents-example
   using                            data_t = cuda::std::array<int, 3>;
   cuda::std::extents<int, 3, 2, 2> extents{};
-  thrust::device_vector<data_t>    d_output(cub::detail::size(extents));
-  thrust::host_vector<data_t>      h_output(cub::detail::size(extents));
+  c2h::device_vector<data_t>    d_output(cub::detail::size(extents));
+  c2h::host_vector<data_t>      h_output(cub::detail::size(extents));
   auto                             d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()),
                                                                           3 * 2 * 2};
-  thrust::host_vector<data_t> expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
+  c2h::host_vector<data_t> expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
                                           {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
                                           {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
 

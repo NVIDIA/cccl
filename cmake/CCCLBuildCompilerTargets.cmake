@@ -25,6 +25,21 @@ option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
 
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
+  # We test to see if C++ compiler options exist using try-compiles in the CXX lang, and then reuse those flags as
+  # -Xcompiler flags for CUDA targets. This requires that the CXX compiler and CUDA_HOST compilers are the same when
+  # using nvcc.
+  if (CCCL_TOPLEVEL_PROJECT AND
+      CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA" AND
+      NOT CMAKE_CUDA_HOST_COMPILER STREQUAL CMAKE_CXX_COMPILER)
+    message(FATAL_ERROR
+    "CCCL developer builds require that CMAKE_CUDA_HOST_COMPILER exactly matches "
+    "CMAKE_CXX_COMPILER when using nvcc:\n"
+    "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}\n"
+    "CMAKE_CUDA_HOST_COMPILER: ${CMAKE_CUDA_HOST_COMPILER}\n"
+    "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}\n"
+    )
+  endif()
+
   add_library(${interface_target} INTERFACE)
 
   foreach (cuda_option IN LISTS cuda_compile_options)

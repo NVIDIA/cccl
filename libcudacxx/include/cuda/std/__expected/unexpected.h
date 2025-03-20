@@ -166,10 +166,8 @@ private:
   _Err __unex_;
 };
 
-#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
-#endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
