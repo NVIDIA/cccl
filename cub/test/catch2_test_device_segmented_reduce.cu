@@ -252,7 +252,7 @@ void compute_fixed_size_segmented_problem_reference(
     auto seg_begin = h_begin + segment * segment_size;
     auto seg_end   = seg_begin + segment_size;
     h_results[segment] =
-      static_cast<cub::detail::it_value_t<ResultItT>>(std::reduce(seg_begin, seg_end, init, reduction_op));
+      static_cast<cub::detail::it_value_t<ResultItT>>(std::accumulate(seg_begin, seg_end, init, reduction_op));
   }
 }
 
