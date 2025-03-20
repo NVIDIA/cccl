@@ -736,10 +736,7 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
   generator_t{}.power_law_segment_offsets<T>(executor::device, seed, segment_offsets, elements);
 }
 
-void do_not_optimize(const void* ptr)
-{
-  (void) ptr;
-}
+void do_not_optimize([[maybe_unused]] const void* ptr) {}
 
 } // namespace detail
 

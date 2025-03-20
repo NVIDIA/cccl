@@ -199,7 +199,7 @@ struct AgentLauncher : Agent
   }
 
   template <class K>
-  THRUST_RUNTIME_FUNCTION void print_info(K k) const
+  THRUST_RUNTIME_FUNCTION void print_info([[maybe_unused]] K k) const
   {
 #  if THRUST_DEBUG_SYNC_FLAG
     cuda_optional<int> occ = max_sm_occupancy(k);
@@ -234,8 +234,6 @@ struct AgentLauncher : Agent
         (!has_shmem ? (int) plan.shared_memory_size : 0),
         (int) ptx_version);
     }
-#  else
-    (void) k;
 #  endif
   }
 

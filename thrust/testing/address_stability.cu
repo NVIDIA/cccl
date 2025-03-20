@@ -104,8 +104,7 @@ void TestAddressStabilityLambda()
       return i + 2;
     };
     static_assert(!proclaims_copyable_arguments<decltype(l)>::value, "");
-    auto pr_device_l = proclaim_copyable_arguments(l);
-    (void) &pr_device_l;
+    [[maybe_unused]] auto pr_device_l = proclaim_copyable_arguments(l);
     static_assert(proclaims_copyable_arguments<decltype(pr_device_l)>::value, "");
   }
 

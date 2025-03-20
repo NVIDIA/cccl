@@ -279,9 +279,8 @@ try
   }
   AssertEquals(it_pair.first, h_gpu_results.cend());
 }
-catch (std::bad_alloc& e)
+catch ([[maybe_unused]] std::bad_alloc& e)
 {
-  (void) e;
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
   std::cout
     << "Skipping test 'RunTest(" << num_ranges << ", " //

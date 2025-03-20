@@ -171,9 +171,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay()
   NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(Delay);));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);), ((void) ns;));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(ns);));
 }
 
 template <unsigned int Delay = 350, unsigned int GridThreshold = 500>
@@ -183,9 +183,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting()
 }
 
 template <unsigned int GridThreshold = 500>
-_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), ((void) ns; __threadfence_block();));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (delay<GridThreshold>(ns);), (__threadfence_block();));
 }
 
 template <unsigned int Delay = 350>
@@ -194,9 +194,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting()
   NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(Delay);), (__threadfence_block();));
 }
 
-_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting(int ns)
+_CCCL_DEVICE _CCCL_FORCEINLINE void always_delay_or_prevent_hoisting([[maybe_unused]] int ns)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), ((void) ns; __threadfence_block();));
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (always_delay(ns);), (__threadfence_block();));
 }
 
 template <unsigned int L2WriteLatency>

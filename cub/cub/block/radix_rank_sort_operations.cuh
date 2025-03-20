@@ -178,8 +178,7 @@ template <class F, class... Ts, ::cuda::std::size_t... Is>
 _CCCL_HOST_DEVICE void
 for_each_member_impl_helper(F f, const ::cuda::std::tuple<Ts&...>& tpl, THRUST_NS_QUALIFIER::index_sequence<Is...>)
 {
-  auto sink = {(f(::cuda::std::get<Is>(tpl)), 0)...};
-  (void) sink;
+  [[maybe_unused]] auto sink = {(f(::cuda::std::get<Is>(tpl)), 0)...};
 }
 
 template <class F, class... Ts>

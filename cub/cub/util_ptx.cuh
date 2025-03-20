@@ -165,7 +165,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y,
  * @param warp_id Id of virtual warp within architectural warp
  */
 template <int LOGICAL_WARP_THREADS>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
   constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == detail::warp_threads;
@@ -176,7 +176,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
   {
     member_mask <<= warp_id * LOGICAL_WARP_THREADS;
   }
-  (void) warp_id;
 
   return member_mask;
 }

@@ -170,8 +170,8 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void
-  destroy_on_allocator_mismatch(const contiguous_storage& other, iterator first, iterator last) noexcept
+  _CCCL_HOST_DEVICE void destroy_on_allocator_mismatch(
+    const contiguous_storage& other, [[maybe_unused]] iterator first, [[maybe_unused]] iterator last) noexcept
   {
     if constexpr (allocator_traits<Alloc>::propagate_on_container_copy_assignment::value)
     {
@@ -180,10 +180,6 @@ public:
         destroy(first, last);
       }
     }
-#if _CCCL_COMPILER(GCC, <, 10)
-    (void) first;
-    (void) last;
-#endif
   }
 
   _CCCL_HOST_DEVICE void set_allocator(const allocator_type& alloc);
