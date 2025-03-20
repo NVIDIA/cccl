@@ -334,7 +334,7 @@ struct DispatchReduce
       int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
 
       // Even-share work distribution
-      int max_blocks = reduce_device_occupancy * CUB_SUBSCRIPTION_FACTOR(0);
+      int max_blocks = reduce_device_occupancy * detail::subscription_factor;
       GridEvenShare<OffsetT> even_share;
       even_share.DispatchInit(num_items, max_blocks, reduce_config.tile_size);
 

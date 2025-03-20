@@ -468,15 +468,15 @@ template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 LoadDirectWarpStriped(int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD])
 {
-  const int tid         = linear_tid & (CUB_PTX_WARP_THREADS - 1);
-  const int wid         = linear_tid >> CUB_PTX_LOG_WARP_THREADS;
-  const int warp_offset = wid * CUB_PTX_WARP_THREADS * ITEMS_PER_THREAD;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
   // Load directly in warp-striped order
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
-    new (&dst_items[i]) T(block_src_it[warp_offset + tid + (i * CUB_PTX_WARP_THREADS)]);
+    new (&dst_items[i]) T(block_src_it[warp_offset + tid + (i * detail::warp_threads)]);
   }
 }
 
@@ -517,15 +517,15 @@ template <typename T, int ITEMS_PER_THREAD, typename RandomAccessIterator>
 _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectWarpStriped(
   int linear_tid, RandomAccessIterator block_src_it, T (&dst_items)[ITEMS_PER_THREAD], int block_items_end)
 {
-  const int tid         = linear_tid & (CUB_PTX_WARP_THREADS - 1);
-  const int wid         = linear_tid >> CUB_PTX_LOG_WARP_THREADS;
-  const int warp_offset = wid * CUB_PTX_WARP_THREADS * ITEMS_PER_THREAD;
+  const int tid         = linear_tid & (detail::warp_threads - 1);
+  const int wid         = linear_tid >> detail::log2_warp_threads;
+  const int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
   // Load directly in warp-striped order
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < ITEMS_PER_THREAD; i++)
   {
-    const auto src_pos = warp_offset + tid + (i * CUB_PTX_WARP_THREADS);
+    const auto src_pos = warp_offset + tid + (i * detail::warp_threads);
     if (src_pos < block_items_end)
     {
       new (&dst_items[i]) T(block_src_it[src_pos]);
@@ -975,7 +975,7 @@ class BlockLoad
   template <int DUMMY>
   struct LoadInternal<BLOCK_LOAD_WARP_TRANSPOSE, DUMMY>
   {
-    static constexpr int WARP_THREADS = CUB_WARP_THREADS(0);
+    static constexpr int WARP_THREADS = detail::warp_threads;
     static_assert(BLOCK_THREADS % WARP_THREADS == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
@@ -1017,7 +1017,7 @@ class BlockLoad
   template <int DUMMY>
   struct LoadInternal<BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED, DUMMY>
   {
-    static constexpr int WARP_THREADS = CUB_WARP_THREADS(0);
+    static constexpr int WARP_THREADS = detail::warp_threads;
     static_assert(BLOCK_THREADS % WARP_THREADS == 0, "BLOCK_THREADS must be a multiple of WARP_THREADS");
 
     using BlockExchange = BlockExchange<T, BLOCK_DIM_X, ITEMS_PER_THREAD, true, BLOCK_DIM_Y, BLOCK_DIM_Z>;
