@@ -133,7 +133,7 @@ def test_TypeInfo_validate(cccl_type_enum):
 
 def test_Value_ctor():
     ti = cyb.TypeInfo(64, 64, cyb.TypeEnum.UINT64)
-    state = bytes(ctypes.c_uint64(2**63 + 17))
+    state = bytearray(ctypes.c_uint64(2**63 + 17))
     v = cyb.Value(ti, state)
     assert isinstance(v, cyb.Value)
 
@@ -227,7 +227,7 @@ def test_cy_reduce_basic_pointer():
 
 def test_cy_reduce_basic_iterator():
     import cuda.parallel.experimental.algorithms._cy_reduce as cyr
-    import cuda.parallel.experimental.iterators as iterators
+    import cuda.parallel.experimental.iterators._cy_iterators as iterators
 
     n = 15
     dt = cp.int32

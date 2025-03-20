@@ -16,7 +16,7 @@ from .. import _cy_bindings as cyb
 from .._caching import CachableFunction, cache_with_key
 from .._cccl_for_cy import call_build
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase
+from ..cy_iterators._cy_iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -73,7 +73,7 @@ class _Reduce:
 
         if temp_storage is None:
             temp_storage_bytes = 0
-            d_temp_storage = None
+            d_temp_storage = 0
         else:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = protocols.get_data_pointer(temp_storage)

@@ -28,7 +28,7 @@ from ._cy_bindings import (
     Value,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .iterators._iterators import IteratorBase
+from .cy_iterators._cy_iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
 _TYPE_TO_ENUM = {
@@ -94,8 +94,8 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     context = cuda.descriptor.cuda_target.target_context
     numba_type = it.numba_type
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
-    iterator_state = bytes(it.state)
-    if not len(iterator_state) == size:
+    iterator_state = memoryview(it.state)
+    if not iterator_state.nbytes == size:
         raise ValueError("Iterator state size does not match size of numba type")
     alignment = context.get_value_type(numba_type).get_abi_alignment(
         context.target_data
@@ -151,10 +151,10 @@ def to_cccl_iter(array_or_iterator) -> Iterator:
     return _device_array_to_cccl_iter(array_or_iterator)
 
 
-def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> bytes:
+def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> memoryview:
     if isinstance(array_or_struct, np.ndarray):
-        # makes a copy here
-        data = bytes(np.atleast_1d(array_or_struct).view(np.uint8))
+        assert array_or_struct.flags.contiguous
+        data = array_or_struct.data.cast("B")
         return data
     else:
         # it's a GpuStruct, use the array underlying it
@@ -164,8 +164,7 @@ def to_cccl_value_state(array_or_struct: np.ndarray | GpuStruct) -> bytes:
 def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
     if isinstance(array_or_struct, np.ndarray):
         info = _numpy_type_to_info(array_or_struct.dtype)
-        data = bytes(np.atleast_1d(array_or_struct).view(np.uint8))
-        return Value(info, data)
+        return Value(info, array_or_struct.data.cast("B"))
     else:
         # it's a GpuStruct, use the array underlying it
         return to_cccl_value(array_or_struct._data)

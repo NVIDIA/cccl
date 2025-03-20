@@ -541,15 +541,15 @@ cdef class TypeInfo:
 
 
 cdef class Value:
-    cdef bytes state_bytes
+    cdef uint8_t[::1] state_obj
     cdef TypeInfo value_type
     cdef cy_cccl_value_t value_data;
 
-    def __cinit__(self, TypeInfo value_type, bytes state):
-        self.state_bytes = state
+    def __cinit__(self, TypeInfo value_type, uint8_t[::1] state):
+        self.state_obj = state
         self.value_type = value_type
         self.value_data.type = value_type.get()
-        self.value_data.state = <void *><const char *>state
+        self.value_data.state = <void *>&state[0]
 
     cdef cy_cccl_value_t * get_ptr(self):
         return &self.value_data
@@ -563,12 +563,12 @@ cdef class Value:
 
     property state:
         def __get__(self):
-            return self.state_bytes
+            return self.state_obj
 
-        def __set__(self, bytes new_value):
-            if (len(self.state_bytes) == len(new_value)):
-                self.state_bytes = new_value
-                self.value_data.state = <void *><const char *>self.state_bytes
+        def __set__(self, uint8_t[::1] new_value):
+            if (len(self.state_obj) == len(new_value)):
+                self.state_obj = new_value
+                self.value_data.state = <void *>&self.state_obj[0]
             else:
                 raise ValueError("Size mismatch")
 
@@ -578,33 +578,47 @@ cdef class Value:
         return bytes(mem_view)
 
 
-cdef void * get_buffer_pointer(object o):
-    cdef int status = 0
-    cdef void *ptr = NULL
-    cdef Py_buffer view
-
+cdef void ensure_buffer(object o) except *:
     if not PyObject_CheckBuffer(o):
         raise TypeError(
             "Object with buffer protocol expected, "
             f"got {type(o)}"
         )
 
+
+cdef void * get_buffer_pointer(object o, size_t *size):
+    cdef int status = 0
+    cdef void *ptr = NULL
+    cdef Py_buffer view
+
     status = PyObject_GetBuffer(o, &view, PyBUF_SIMPLE | PyBUF_ANY_CONTIGUOUS)
     if status != 0:  # pragma: no cover
+        size[0] = 0
         raise RuntimeError(
             "Can not access simple contiguous buffer"
         )
 
     ptr = view.buf
+    size[0] = <size_t>view.len
     PyBuffer_Release(&view)
 
     return ptr
 
 
-cdef void * ctypes_type_pointer_payload_ptr(object ctypes_typed_ptr):
+cdef void * ctypes_typed_pointer_payload_ptr(object ctypes_typed_ptr):
     "Get pointer to the value buffer represented by ctypes.pointer(ctypes_val)"
-    cdef size_t* ptr_ref = <size_t *>get_buffer_pointer(ctypes_typed_ptr)
+    cdef size_t size = 0
+    cdef size_t *ptr_ref = NULL
+    ensure_buffer(ctypes_typed_ptr)
+    ptr_ref = <size_t *>get_buffer_pointer(ctypes_typed_ptr, &size)
     return <void *>(ptr_ref[0])
+
+
+cdef void * ctypes_value_ptr(object ctypes_cdata):
+    "Get pointer to the value buffer behind ctypes_val"
+    cdef size_t size = 0
+    ensure_buffer(ctypes_cdata)
+    return get_buffer_pointer(ctypes_cdata, &size)
 
 
 cdef inline void * int_as_ptr(size_t ptr_val):
@@ -643,7 +657,7 @@ cdef class IteratorStateView:
             self.ptr = int_as_ptr(ptr)
             self.size = size
         elif isinstance(ptr, ctypes._Pointer):
-            self.ptr = ctypes_type_pointer_payload_ptr(ptr)
+            self.ptr = ctypes_typed_pointer_payload_ptr(ptr)
             self.size = ctypes.sizeof(ptr.contents)
         elif isinstance(ptr, ctypes.c_void_p):
             self.ptr = int_as_ptr(ptr.value)
@@ -704,7 +718,7 @@ cdef class Pointer(StateBase):
             ptr = (<PointerProxy>arg).ptr
             ref = arg.reference
         elif isinstance(arg, ctypes._Pointer):
-            ptr = ctypes_type_pointer_payload_ptr(arg)
+            ptr = ctypes_typed_pointer_payload_ptr(arg)
             ref = arg
         elif isinstance(arg, ctypes.c_void_p):
             ptr = int_as_ptr(arg.value)
@@ -722,18 +736,19 @@ cdef class IteratorState(StateBase):
     cdef size_t size
 
     def __cinit__(self, arg):
-        cdef void *ptr
-        cdef object ref
+        cdef size_t buffer_size = 0
+        cdef void *ptr = NULL
+        cdef object ref = None
 
         super().__init__()
         if isinstance(arg, ctypes._Pointer):
-            ptr = ctypes_type_pointer_payload_ptr(arg)
+            ptr = ctypes_typed_pointer_payload_ptr(arg)
             ref = arg.contents
             self.size = ctypes.sizeof(ref)
-        elif isinstance(arg, (bytes, bytearray)):
-            ptr = <void *><const char *>arg
+        elif PyObject_CheckBuffer(arg):
+            ptr = get_buffer_pointer(arg, &buffer_size)
             ref = arg
-            self.size = len(arg)
+            self.size = buffer_size
         else:
             raise TypeError(
                 "Expected a ctypes pointer with content, or object of type bytes or bytearray, "
