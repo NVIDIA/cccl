@@ -399,7 +399,11 @@ public:
 #endif // !_CCCL_BUILTIN_NANSF
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
+#if defined(FLT_TRUE_MIN)
     return FLT_TRUE_MIN;
+#else // ^^^ FLT_TRUE_MIN ^^^ // vvv !FLT_TRUE_MIN vvv
+    return __FLT_DENORM_MIN__;
+#endif // ^^^ !FLT_TRUE_MIN ^^^
   }
 
   static constexpr bool is_iec559  = true;
@@ -494,7 +498,11 @@ public:
 #endif // !_CCCL_BUILTIN_NANS
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
+#if defined(DBL_TRUE_MIN)
     return DBL_TRUE_MIN;
+#else // ^^^ DBL_TRUE_MIN ^^^ // vvv !DBL_TRUE_MIN vvv
+    return __DBL_DENORM_MIN__;
+#endif // ^^^ !DBL_TRUE_MIN ^^^
   }
 
   static constexpr bool is_iec559  = true;
@@ -569,7 +577,11 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
+#  if defined(LDBL_TRUE_MIN)
     return LDBL_TRUE_MIN;
+#  else // ^^^ LDBL_TRUE_MIN ^^^ // vvv !LDBL_TRUE_MIN vvv
+    return __LDBL_DENORM_MIN__;
+#  endif // ^^^ !LDBL_TRUE_MIN ^^^
   }
 
   static constexpr bool is_iec559  = true;

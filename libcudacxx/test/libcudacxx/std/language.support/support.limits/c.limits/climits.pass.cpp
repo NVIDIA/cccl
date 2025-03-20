@@ -89,10 +89,10 @@
 #endif
 
 // test if _CCCL_CHAR_IS_UNSIGNED() detection for NVRTC works correctly
-// if not, go take a look at cuda/std/limits
+// if not, go take a look at cuda::std::is_unsigned_v
 #if TEST_COMPILER(NVRTC)
 #  include <cuda/std/type_traits>
-static_assert(_CCCL_CHAR_IS_UNSIGNED() == !cuda::std::numeric_limits<char>::is_signed, "");
+static_assert(_CCCL_CHAR_IS_UNSIGNED() == cuda::std::is_unsigned_v<char>, "");
 #endif
 
 int main(int, char**)
