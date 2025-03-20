@@ -28,6 +28,7 @@ class _Scan:
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable,
         h_init: np.ndarray | GpuStruct,
+        force_inclusive: bool,
     ):
         # Referenced from __del__:
         self.build_result = None
@@ -50,6 +51,13 @@ class _Scan:
             self.d_out_cccl,
             self.op_wrapper,
             cccl.to_cccl_value(h_init),
+            ctypes.c_bool(force_inclusive),
+        )
+
+        self.device_scan = (
+            self.bindings.cccl_device_inclusive_scan
+            if force_inclusive
+            else self.bindings.cccl_device_exclusive_scan
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building scan")
@@ -78,7 +86,7 @@ class _Scan:
             temp_storage_bytes = ctypes.c_size_t(temp_storage.nbytes)
             d_temp_storage = protocols.get_data_pointer(temp_storage)
 
-        error = self.bindings.cccl_device_scan(
+        error = self.device_scan(
             self.build_result,
             ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
@@ -121,7 +129,7 @@ def make_cache_key(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def scan(
+def exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
@@ -135,8 +143,8 @@ def scan(
         .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
           :language: python
           :dedent:
-          :start-after: example-begin scan-max
-          :end-before: example-end scan-max
+          :start-after: example-begin exclusive-scan-max
+          :end-before: example-end exclusive-scan-max
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -147,4 +155,36 @@ def scan(
     Returns:
         A callable object that can be used to perform the scan
     """
-    return _Scan(d_in, d_out, op, h_init)
+    return _Scan(d_in, d_out, op, h_init, False)
+
+
+# TODO Figure out `sum` without operator and initial value
+# TODO Accept stream
+@cache_with_key(make_cache_key)
+def inclusive_scan(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray,
+):
+    """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
+
+    Example:
+        Below, ``scan`` is used to compute an inclusive scan of a sequence of integers.
+
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+          :language: python
+          :dedent:
+          :start-after: example-begin inclusive-scan-add
+          :end-before: example-end inclusive-scan-add
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array that will store the result of the scan
+        op: Callable representing the binary operator to apply
+        init: Numpy array storing initial value of the scan
+
+    Returns:
+        A callable object that can be used to perform the scan
+    """
+    return _Scan(d_in, d_out, op, h_init, True)
