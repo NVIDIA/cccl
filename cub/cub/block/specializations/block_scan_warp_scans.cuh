@@ -75,7 +75,7 @@ struct BlockScanWarpScans
 
   /// Constants
   /// Number of warp threads
-  static constexpr int WARP_THREADS = CUB_WARP_THREADS(0);
+  static constexpr int WARP_THREADS = warp_threads;
 
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;

@@ -232,7 +232,7 @@ private:
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS = CUB_LOG_WARP_THREADS(0),
+    LOG_WARP_THREADS = detail::log2_warp_threads,
     WARP_THREADS     = 1 << LOG_WARP_THREADS,
     WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
@@ -572,7 +572,7 @@ private:
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS     = CUB_LOG_WARP_THREADS(0),
+    LOG_WARP_THREADS     = detail::log2_warp_threads,
     WARP_THREADS         = 1 << LOG_WARP_THREADS,
     PARTIAL_WARP_THREADS = BLOCK_THREADS % WARP_THREADS,
     WARPS                = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
@@ -903,7 +903,7 @@ struct BlockRadixRankMatchEarlyCounts
     BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
     BINS_TRACKED_PER_THREAD = BINS_PER_THREAD,
     FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
-    WARP_THREADS            = CUB_PTX_WARP_THREADS,
+    WARP_THREADS            = detail::warp_threads,
     PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS,
     BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS,
     PARTIAL_WARP_ID         = BLOCK_WARPS - 1,

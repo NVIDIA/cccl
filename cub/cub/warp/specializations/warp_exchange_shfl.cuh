@@ -47,7 +47,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
+template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
 class WarpExchangeShfl
 {
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
@@ -56,7 +56,7 @@ class WarpExchangeShfl
                 "WARP_EXCHANGE_SHUFFLE currently only works when ITEMS_PER_THREAD == "
                 "LOGICAL_WARP_THREADS");
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == warp_threads;
 
   // concrete recursion class
   template <typename OutputT, int IDX, int SIZE>
