@@ -189,10 +189,9 @@ struct __basic_opstate
 template <class _Sndr, class _Rcvr>
 _CUDAX_TRIVIAL_API auto __make_opstate(_Sndr __sndr, _Rcvr __rcvr)
 {
-  auto [__tag, __data, __child] = static_cast<_Sndr&&>(__sndr);
-  using __data_t                = decltype(__data);
-  using __child_t               = decltype(__child);
-  (void) __tag;
+  [[maybe_unused]] auto [__tag, __data, __child] = static_cast<_Sndr&&>(__sndr);
+  using __data_t                                 = decltype(__data);
+  using __child_t                                = decltype(__child);
   return __basic_opstate(
     static_cast<__child_t&&>(__child), static_cast<__data_t&&>(__data), static_cast<_Rcvr&&>(__rcvr));
 }

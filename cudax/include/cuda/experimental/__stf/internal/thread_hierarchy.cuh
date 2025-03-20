@@ -135,13 +135,9 @@ public:
   }
 
   // Rank from the root
-  _CCCL_HOST_DEVICE size_t rank(int level, int root_level) const
+  _CCCL_HOST_DEVICE size_t rank([[maybe_unused]] int level, [[maybe_unused]] int root_level) const
   {
-#ifndef __CUDA_ARCH__
-    (void) level;
-    (void) root_level;
-    return 0;
-#else
+#ifdef __CUDA_ARCH__
     int tid = threadIdx.x;
     int bid = blockIdx.x;
     // config : ndevs    = launch_config[0]
@@ -170,6 +166,8 @@ public:
     }
 
     return (global_id % root_level_effective_size) / level_effective_size;
+#else
+    return 0;
 #endif
   }
 
