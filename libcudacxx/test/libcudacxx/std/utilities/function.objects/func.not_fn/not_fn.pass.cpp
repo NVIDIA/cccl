@@ -659,8 +659,7 @@ __host__ __device__ void call_operator_noexcept_test()
   {
     using T = NoExceptCallable<bool>;
     T value(true);
-    auto ret = cuda::std::not_fn(value);
-    (void) ret;
+    [[maybe_unused]] auto ret = cuda::std::not_fn(value);
     static_assert(noexcept(!_CUDA_VSTD::__invoke(value)), "");
     static_assert(noexcept(!cuda::std::invoke(value)), "");
 // TODO: nvcc gets this wrong, investigate
@@ -676,8 +675,7 @@ __host__ __device__ void call_operator_noexcept_test()
   {
     using T = NoExceptCallable<NoExceptEvilBool>;
     T value(true);
-    auto ret = cuda::std::not_fn(value);
-    (void) ret;
+    [[maybe_unused]] auto ret = cuda::std::not_fn(value);
 // TODO: nvcc gets this wrong, investigate
 #ifndef __CUDACC__
     static_assert(noexcept(ret()), "call should not be noexcept");

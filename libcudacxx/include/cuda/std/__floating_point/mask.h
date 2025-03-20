@@ -29,67 +29,49 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_sign_mask_impl() noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_sign_mask_impl() noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
+  constexpr __fp_format __fmt = __fp_format_of_v<_Tp>;
+
+  if constexpr (__fmt == __fp_format::__binary16 || __fmt == __fp_format::__bfloat16)
   {
-    return __fp_storage_t<float>{0x80000000u};
+    return __fp_storage_t<_Tp>{0x8000u};
   }
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
+  else if constexpr (__fmt == __fp_format::__binary32)
   {
-    return __fp_storage_t<double>{0x8000000000000000ull};
+    return __fp_storage_t<_Tp>{0x80000000u};
   }
-#if _CCCL_HAS_NVFP16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
+  else if constexpr (__fmt == __fp_format::__binary64)
   {
-    return __fp_storage_t<__half>{0x8000u};
+    return __fp_storage_t<_Tp>{0x8000000000000000ull};
   }
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
+  else if constexpr (__fmt == __fp_format::__binary128)
   {
-    return __fp_storage_t<__nv_bfloat16>{0x8000u};
+    return __fp_storage_t<_Tp>{0x8000000000000000ull} << 64;
   }
-#endif // _CCCL_HAS_NVBF16()
-#if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
+  else if constexpr (__fmt == __fp_format::__fp80_x86)
   {
-    return __fp_storage_t<__nv_fp8_e4m3>{0x80u};
+    return __fp_storage_t<_Tp>{0x8000ull} << 64;
   }
-#endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e4m3 || __fmt == __fp_format::__fp8_nv_e5m2)
   {
-    return __fp_storage_t<__nv_fp8_e5m2>{0x80u};
+    return __fp_storage_t<_Tp>{0x80u};
   }
-#endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e8m0)
   {
-    return __fp_storage_t<__nv_fp8_e8m0>{0x00u};
+    return __fp_storage_t<_Tp>{0x00u};
   }
-#endif // _CCCL_HAS_NVFP8_E8M0()
-#if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
+  else if constexpr (__fmt == __fp_format::__fp6_nv_e2m3 || __fmt == __fp_format::__fp6_nv_e3m2)
   {
-    return __fp_storage_t<__nv_fp6_e2m3>{0x20u};
+    return __fp_storage_t<_Tp>{0x20u};
   }
-#endif // _CCCL_HAS_NVFP6_E2M3()
-#if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
+  else if constexpr (__fmt == __fp_format::__fp4_nv_e2m1)
   {
-    return __fp_storage_t<__nv_fp6_e3m2>{0x20u};
+    return __fp_storage_t<_Tp>{0x8u};
   }
-#endif // _CCCL_HAS_NVFP6_E3M2()
-#if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
-  {
-    return __fp_storage_t<__nv_fp4_e2m1>{0x8u};
-  }
-#endif // _CCCL_HAS_NVFP4_E2M1()
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
@@ -97,67 +79,61 @@ template <class _Tp>
 _CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_sign_mask_v = __fp_sign_mask_impl<_Tp>();
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_exp_mask_impl() noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_exp_mask_impl() noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
+  constexpr __fp_format __fmt = __fp_format_of_v<_Tp>;
+
+  if constexpr (__fmt == __fp_format::__binary16)
   {
-    return __fp_storage_t<float>{0x7f800000u};
+    return __fp_storage_t<_Tp>{0x7c00u};
   }
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
+  else if constexpr (__fmt == __fp_format::__binary32)
   {
-    return __fp_storage_t<double>{0x7ff0000000000000ull};
+    return __fp_storage_t<_Tp>{0x7f800000u};
   }
-#if _CCCL_HAS_NVFP16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
+  else if constexpr (__fmt == __fp_format::__binary64)
   {
-    return __fp_storage_t<__half>{0x7c00u};
+    return __fp_storage_t<_Tp>{0x7ff0000000000000ull};
   }
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
+  else if constexpr (__fmt == __fp_format::__binary128)
   {
-    return __fp_storage_t<__nv_bfloat16>{0x7f80u};
+    return __fp_storage_t<_Tp>{0x7fff000000000000ull} << 64;
   }
-#endif // _CCCL_HAS_NVBF16()
-#if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
+  else if constexpr (__fmt == __fp_format::__bfloat16)
   {
-    return __fp_storage_t<__nv_fp8_e4m3>{0x78u};
+    return __fp_storage_t<_Tp>{0x7f80u};
   }
-#endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
+  else if constexpr (__fmt == __fp_format::__fp80_x86)
   {
-    return __fp_storage_t<__nv_fp8_e5m2>{0x7cu};
+    return __fp_storage_t<_Tp>{0x7fffull} << 64;
   }
-#endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e4m3)
   {
-    return __fp_storage_t<__nv_fp8_e8m0>{0xffu};
+    return __fp_storage_t<_Tp>{0x78u};
   }
-#endif // _CCCL_HAS_NVFP8_E8M0()
-#if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e5m2)
   {
-    return __fp_storage_t<__nv_fp6_e2m3>{0x18u};
+    return __fp_storage_t<_Tp>{0x7cu};
   }
-#endif // _CCCL_HAS_NVFP6_E2M3()
-#if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e8m0)
   {
-    return __fp_storage_t<__nv_fp6_e3m2>{0x1cu};
+    return __fp_storage_t<_Tp>{0xffu};
   }
-#endif // _CCCL_HAS_NVFP6_E3M2()
-#if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
+  else if constexpr (__fmt == __fp_format::__fp6_nv_e2m3)
   {
-    return __fp_storage_t<__nv_fp4_e2m1>{0x6u};
+    return __fp_storage_t<_Tp>{0x18u};
   }
-#endif // _CCCL_HAS_NVFP4_E2M1()
+  else if constexpr (__fmt == __fp_format::__fp6_nv_e3m2)
+  {
+    return __fp_storage_t<_Tp>{0x1cu};
+  }
+  else if constexpr (__fmt == __fp_format::__fp4_nv_e2m1)
+  {
+    return __fp_storage_t<_Tp>{0x6u};
+  }
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
@@ -165,67 +141,61 @@ template <class _Tp>
 _CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_exp_mask_v = __fp_exp_mask_impl<_Tp>();
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_mant_mask_impl() noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_mant_mask_impl() noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
+  constexpr __fp_format __fmt = __fp_format_of_v<_Tp>;
+
+  if constexpr (__fmt == __fp_format::__binary16)
   {
-    return __fp_storage_t<float>{0x007fffffu};
+    return __fp_storage_t<_Tp>{0x03ffu};
   }
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
+  else if constexpr (__fmt == __fp_format::__binary32)
   {
-    return __fp_storage_t<double>{0x000fffffffffffffull};
+    return __fp_storage_t<_Tp>{0x007fffffu};
   }
-#if _CCCL_HAS_NVFP16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
+  else if constexpr (__fmt == __fp_format::__binary64)
   {
-    return __fp_storage_t<__half>{0x03ffu};
+    return __fp_storage_t<_Tp>{0x000fffffffffffffull};
   }
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
+  else if constexpr (__fmt == __fp_format::__binary128)
   {
-    return __fp_storage_t<__nv_bfloat16>{0x007fu};
+    return (__fp_storage_t<_Tp>{0x0000ffffffffffffull} << 64) | 0xffffffffffffffffull;
   }
-#endif // _CCCL_HAS_NVBF16()
-#if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
+  else if constexpr (__fmt == __fp_format::__bfloat16)
   {
-    return __fp_storage_t<__nv_fp8_e4m3>{0x07u};
+    return __fp_storage_t<_Tp>{0x007fu};
   }
-#endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
+  else if constexpr (__fmt == __fp_format::__fp80_x86)
   {
-    return __fp_storage_t<__nv_fp8_e5m2>{0x03u};
+    return __fp_storage_t<_Tp>{0xffffffffffffffffull};
   }
-#endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e4m3)
   {
-    return __fp_storage_t<__nv_fp8_e8m0>{0x00u};
+    return __fp_storage_t<_Tp>{0x07u};
   }
-#endif // _CCCL_HAS_NVFP8_E8M0()
-#if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e5m2)
   {
-    return __fp_storage_t<__nv_fp6_e2m3>{0x07u};
+    return __fp_storage_t<_Tp>{0x03u};
   }
-#endif // _CCCL_HAS_NVFP6_E2M3()
-#if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
+  else if constexpr (__fmt == __fp_format::__fp8_nv_e8m0)
   {
-    return __fp_storage_t<__nv_fp6_e3m2>{0x03u};
+    return __fp_storage_t<_Tp>{0x00u};
   }
-#endif // _CCCL_HAS_NVFP6_E3M2()
-#if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
+  else if constexpr (__fmt == __fp_format::__fp6_nv_e2m3)
   {
-    return __fp_storage_t<__nv_fp4_e2m1>{0x01u};
+    return __fp_storage_t<_Tp>{0x07u};
   }
-#endif // _CCCL_HAS_NVFP4_E2M1()
+  else if constexpr (__fmt == __fp_format::__fp6_nv_e3m2)
+  {
+    return __fp_storage_t<_Tp>{0x03u};
+  }
+  else if constexpr (__fmt == __fp_format::__fp4_nv_e2m1)
+  {
+    return __fp_storage_t<_Tp>{0x01u};
+  }
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 

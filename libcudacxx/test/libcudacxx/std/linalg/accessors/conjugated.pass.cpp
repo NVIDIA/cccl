@@ -20,44 +20,40 @@ __host__ __device__ void constexpr_test()
     using T = float;
     cuda::std::array<T, 2> d{42.f, 43.f};
     cuda::std::mdspan<T, E> md(d.data(), E{});
-    auto conj_md = cuda::std::linalg::conjugated(md);
+    [[maybe_unused]] auto conj_md = cuda::std::linalg::conjugated(md);
 
     static_assert(cuda::std::is_same<decltype(+conj_md(0)), T>::value, "wrong type");
-    static_cast<void>(conj_md);
   }
   // operator() complex type
   {
     using complex_t = cuda::std::complex<float>;
     cuda::std::array<complex_t, 2> d{complex_t{}, complex_t{}};
     cuda::std::mdspan<complex_t, E> md(d.data(), E{});
-    auto conj_md = cuda::std::linalg::conjugated(md);
+    [[maybe_unused]] auto conj_md = cuda::std::linalg::conjugated(md);
 
     static_assert(cuda::std::is_same<decltype(conj_md(0)), complex_t>::value, "wrong type");
-    static_cast<void>(conj_md);
   }
   // nested_accessor() arithmetic type
   {
     using T = int;
     cuda::std::array<T, 2> d{42, 43};
     cuda::std::mdspan<T, E> md(d.data(), E{});
-    auto conj_md = cuda::std::linalg::conjugated(md);
+    [[maybe_unused]] auto conj_md = cuda::std::linalg::conjugated(md);
 
     static_assert(
       cuda::std::is_same<cuda::std::decay_t<decltype(conj_md.accessor())>, cuda::std::default_accessor<T>>::value,
       "wrong type");
-    static_cast<void>(conj_md);
   }
   // nested_accessor() complex type
   {
     using complex_t = cuda::std::complex<float>;
     cuda::std::array<complex_t, 2> d{complex_t{}, complex_t{}};
     cuda::std::mdspan<complex_t, E> md(d.data(), E{});
-    auto conj_md = cuda::std::linalg::conjugated(md);
+    [[maybe_unused]] auto conj_md = cuda::std::linalg::conjugated(md);
 
     static_assert(cuda::std::is_same<cuda::std::decay_t<decltype(conj_md.accessor().nested_accessor())>,
                                      cuda::std::default_accessor<complex_t>>::value,
                   "wrong type");
-    static_cast<void>(conj_md);
   }
 }
 

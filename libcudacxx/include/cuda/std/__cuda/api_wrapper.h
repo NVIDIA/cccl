@@ -41,11 +41,10 @@
       }                                                  \
     }
 
-#  define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)        \
-    {                                                    \
-      const ::cudaError_t __status = _NAME(__VA_ARGS__); \
-      _CCCL_ASSERT(__status == cudaSuccess, _MSG);       \
-      (void) __status;                                   \
+#  define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)                         \
+    {                                                                     \
+      [[maybe_unused]] const ::cudaError_t __status = _NAME(__VA_ARGS__); \
+      _CCCL_ASSERT(__status == cudaSuccess, _MSG);                        \
     }
 #else // ^^^ _CCCL_HAS_CUDA_COMPILER ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER vvv
 #  define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)

@@ -58,7 +58,6 @@ enum class __numeric_limits_type
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_type()
 {
-#if !defined(_CCCL_NO_IF_CONSTEXPR)
   if constexpr (_CCCL_TRAIT(is_same, _Tp, bool))
   {
     return __numeric_limits_type::__bool;
@@ -75,15 +74,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_
   {
     return __numeric_limits_type::__other;
   }
-#else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ // vvv _CCCL_NO_IF_CONSTEXPR vvv
-  return _CCCL_TRAIT(is_same, _Tp, bool)
-         ? __numeric_limits_type::__bool
-         : (_CCCL_TRAIT(is_integral, _Tp)
-              ? __numeric_limits_type::__integral
-              : (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp)
-                   ? __numeric_limits_type::__floating_point
-                   : __numeric_limits_type::__other));
-#endif // _CCCL_NO_IF_CONSTEXPR
 }
 
 template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>()>

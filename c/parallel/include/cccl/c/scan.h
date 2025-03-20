@@ -18,6 +18,7 @@
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
+#include <stdbool.h>
 #include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
@@ -31,6 +32,7 @@ typedef struct cccl_device_scan_build_result_t
   cccl_type_info accumulator_type;
   CUkernel init_kernel;
   CUkernel scan_kernel;
+  bool force_inclusive;
   size_t description_bytes_per_tile;
   size_t payload_bytes_per_tile;
 } cccl_device_scan_build_result_t;
@@ -41,6 +43,7 @@ CCCL_C_API CUresult cccl_device_scan_build(
   cccl_iterator_t d_out,
   cccl_op_t op,
   cccl_value_t init,
+  bool force_inclusive,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -48,7 +51,18 @@ CCCL_C_API CUresult cccl_device_scan_build(
   const char* libcudacxx_path,
   const char* ctk_path);
 
-CCCL_C_API CUresult cccl_device_scan(
+CCCL_C_API CUresult cccl_device_exclusive_scan(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_value_t init,
+  CUstream stream);
+
+CCCL_C_API CUresult cccl_device_inclusive_scan(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,

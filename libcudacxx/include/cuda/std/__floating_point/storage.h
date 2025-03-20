@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -32,65 +33,35 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __fp_storage_type_impl() noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
+  constexpr __fp_format __fmt = __fp_format_of_v<_Tp>;
+
+  if constexpr (__fmt == __fp_format::__fp8_nv_e4m3 || __fmt == __fp_format::__fp8_nv_e5m2
+                || __fmt == __fp_format::__fp8_nv_e8m0 || __fmt == __fp_format::__fp6_nv_e2m3
+                || __fmt == __fp_format::__fp6_nv_e3m2 || __fmt == __fp_format::__fp4_nv_e2m1)
+  {
+    return uint8_t{};
+  }
+  else if constexpr (__fmt == __fp_format::__binary16 || __fmt == __fp_format::__bfloat16)
+  {
+    return uint16_t{};
+  }
+  else if constexpr (__fmt == __fp_format::__binary32)
   {
     return uint32_t{};
   }
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, double))
+  else if constexpr (__fmt == __fp_format::__binary64)
   {
     return uint64_t{};
   }
-#if _CCCL_HAS_NVFP16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
+#if _CCCL_HAS_INT128()
+  else if constexpr (__fmt == __fp_format::__fp80_x86 || __fmt == __fp_format::__binary128)
   {
-    return uint16_t{};
+    return __uint128_t{};
   }
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_bfloat16))
-  {
-    return uint16_t{};
-  }
-#endif // _CCCL_HAS_NVBF16()
-#if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e4m3))
-  {
-    return uint8_t{};
-  }
-#endif // _CCCL_HAS_NVFP8_E4M3()
-#if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e5m2))
-  {
-    return uint8_t{};
-  }
-#endif // _CCCL_HAS_NVFP8_E5M2()
-#if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp8_e8m0))
-  {
-    return uint8_t{};
-  }
-#endif // _CCCL_HAS_NVFP8_E8M0()
-#if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e2m3))
-  {
-    return uint8_t{};
-  }
-#endif // _CCCL_HAS_NVFP6_E2M3()
-#if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp6_e3m2))
-  {
-    return uint8_t{};
-  }
-#endif // _CCCL_HAS_NVFP6_E3M2()
-#if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __nv_fp4_e2m1))
-  {
-    return uint8_t{};
-  }
-#endif // _CCCL_HAS_NVFP4_E2M1()
+#endif // _CCCL_HAS_INT128()
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
@@ -185,9 +156,15 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_s
     return __ret;
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __float128))
+  {
+    return _CUDA_VSTD::bit_cast<_Tp>(__v);
+  }
+#endif // _CCCL_HAS_FLOAT128()
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
@@ -246,9 +223,15 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_get
     return __v.__x;
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  else if constexpr (_CCCL_TRAIT(is_same, _Tp, __float128))
+  {
+    return _CUDA_VSTD::bit_cast<__fp_storage_t<_Tp>>(__v);
+  }
+#endif // _CCCL_HAS_FLOAT128()
   else
   {
-    static_assert(__always_false_v<_Tp>, "Unsupported floating-point type");
+    static_assert(__always_false_v<_Tp>, "Unsupported floating point format");
   }
 }
 
