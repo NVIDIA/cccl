@@ -85,9 +85,8 @@ __host__ __device__ void do_test()
 {
   typedef typename cuda::std::remove_pointer<T>::type X;
   Selector<A, constructor_initializer> sel;
-  A& obj  = *sel.construct(T(0));
-  bool b0 = obj.is_lock_free();
-  ((void) b0); // mark as unused
+  A& obj                   = *sel.construct(T(0));
+  [[maybe_unused]] bool b0 = obj.is_lock_free();
   assert(obj == T(0));
   obj.store(T(0));
   assert(obj == T(0));

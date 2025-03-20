@@ -219,10 +219,10 @@ enum WarpLoadAlgorithm
 template <typename InputT,
           int ITEMS_PER_THREAD,
           WarpLoadAlgorithm ALGORITHM = WARP_LOAD_DIRECT,
-          int LOGICAL_WARP_THREADS    = CUB_PTX_WARP_THREADS>
+          int LOGICAL_WARP_THREADS    = detail::warp_threads>
 class WarpLoad
 {
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
 
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
 

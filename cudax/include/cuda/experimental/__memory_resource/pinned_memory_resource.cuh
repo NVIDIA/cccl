@@ -209,65 +209,6 @@ public:
 #  endif // _CCCL_STD_VER <= 2017
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <class _Resource>
-  _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
-  {
-    if constexpr (has_property<_Resource, device_accessible>)
-    {
-      return resource_ref<device_accessible>{*const_cast<pinned_memory_resource*>(this)}
-          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
-    }
-    else if constexpr (has_property<_Resource, host_accessible>)
-    {
-      return resource_ref<host_accessible>{*const_cast<pinned_memory_resource*>(this)}
-          == __cudax::__as_resource_ref<host_accessible>(const_cast<_Resource&>(__rhs));
-    }
-    else
-    {
-      return false;
-    }
-  }
-#    if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c pinned_memory_resource and another resource
-  //! @param __rhs The resource to compare to
-  //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
-  //! resources. Otherwise, returns false.
-  template <class _Resource>
-    requires _CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>
-  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
-  {
-    return this->__equal_to(__rhs);
-  }
-#    else // ^^^ C++20 ^^^ / vvv C++17
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
-  {
-    return __lhs.__equal_to(__rhs);
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, pinned_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
-  {
-    return __rhs.__equal_to(__lhs);
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
-  {
-    return !__lhs.__equal_to(__rhs);
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __lhs, pinned_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
-  {
-    return !__rhs.__equal_to(__lhs);
-  }
-#    endif // _CCCL_STD_VER <= 2017
-
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property

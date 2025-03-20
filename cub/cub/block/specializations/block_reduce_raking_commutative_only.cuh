@@ -87,7 +87,7 @@ struct BlockReduceRakingCommutativeOnly
   enum
   {
     /// Number of warp threads
-    WARP_THREADS = CUB_WARP_THREADS(0),
+    WARP_THREADS = warp_threads,
 
     /// Whether or not to use fall-back
     USE_FALLBACK = ((BLOCK_THREADS % WARP_THREADS != 0) || (BLOCK_THREADS <= WARP_THREADS)),

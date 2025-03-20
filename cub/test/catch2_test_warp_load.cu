@@ -26,6 +26,7 @@
  ******************************************************************************/
 
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/warp/warp_load.cuh>
 
 #include <thrust/sequence.h>
@@ -213,7 +214,7 @@ struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == CUB_WARP_THREADS(0));
+  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
   static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 

@@ -61,27 +61,22 @@ struct ExplicitDerived : cuda::std::tuple<T>
 int main(int, char**)
 {
   {
-    cuda::std::tuple<Explicit> foo = Derived<int>{42};
-    ((void) foo);
+    [[maybe_unused]] cuda::std::tuple<Explicit> foo = Derived<int>{42};
     assert(count == 1);
-    cuda::std::tuple<Explicit> bar(Derived<int>{42});
-    ((void) bar);
+    [[maybe_unused]] cuda::std::tuple<Explicit> bar(Derived<int>{42});
     assert(count == 2);
   }
   count = 0;
   {
-    cuda::std::tuple<Implicit> foo = Derived<int>{42};
-    ((void) foo);
+    [[maybe_unused]] cuda::std::tuple<Implicit> foo = Derived<int>{42};
     assert(count == 1);
-    cuda::std::tuple<Implicit> bar(Derived<int>{42});
-    ((void) bar);
+    [[maybe_unused]] cuda::std::tuple<Implicit> bar(Derived<int>{42});
     assert(count == 2);
   }
   count = 0;
   {
     static_assert(!cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Explicit>>::value, "");
-    cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42});
-    ((void) bar);
+    [[maybe_unused]] cuda::std::tuple<Explicit> bar(ExplicitDerived<int>{42});
     assert(count == 1);
   }
   count = 0;
@@ -89,7 +84,6 @@ int main(int, char**)
     // FIXME: Libc++ incorrectly rejects this code.
 #ifndef _LIBCUDACXX_VERSION
     cuda::std::tuple<Implicit> foo = ExplicitDerived<int>{42};
-    ((void) foo);
     static_assert(cuda::std::is_convertible<ExplicitDerived<int>, cuda::std::tuple<Implicit>>::value,
                   "correct STLs accept this");
 #else
@@ -97,8 +91,7 @@ int main(int, char**)
                   "libc++ incorrectly rejects this");
 #endif
     assert(count == 0);
-    cuda::std::tuple<Implicit> bar(ExplicitDerived<int>{42});
-    ((void) bar);
+    [[maybe_unused]] cuda::std::tuple<Implicit> bar(ExplicitDerived<int>{42});
     assert(count == 1);
   }
   count = 0;

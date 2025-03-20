@@ -80,9 +80,8 @@ enum class IsExplicit
 };
 
 template <IsExplicit is_explicit, class To, class From>
-__host__ __device__ constexpr void test(From input)
+__host__ __device__ constexpr void test([[maybe_unused]] From input)
 {
-  (void) input;
   if constexpr (cuda::std::is_convertible_v<const From&, optional<To>>)
   {
     static_assert(is_explicit == IsExplicit::No);

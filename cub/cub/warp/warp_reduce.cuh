@@ -150,7 +150,7 @@ CUB_NAMESPACE_BEGIN
 //!   hardware warp threads).  Default is the warp size of the targeted CUDA compute-capability
 //!   (e.g., 32 threads for SM20).
 //!
-template <typename T, int LOGICAL_WARP_THREADS = CUB_PTX_WARP_THREADS>
+template <typename T, int LOGICAL_WARP_THREADS = detail::warp_threads>
 class WarpReduce
 {
 private:
@@ -161,7 +161,7 @@ private:
   enum
   {
     /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0)),
+    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads),
 
     /// Whether the logical warp size is a power-of-two
     IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE,

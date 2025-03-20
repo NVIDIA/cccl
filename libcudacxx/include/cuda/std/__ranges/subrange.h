@@ -379,12 +379,11 @@ public:
       }
     }
 
-    const auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
+    [[maybe_unused]] const auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
     if constexpr (_StoreSize)
     {
       __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
     }
-    (void) __d;
     return *this;
   }
 };
