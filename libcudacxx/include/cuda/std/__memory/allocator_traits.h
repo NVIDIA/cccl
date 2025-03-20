@@ -55,9 +55,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
 #  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY) \
     template <class _Tp, class = void>                         \
-    _CCCL_INLINE_VAR constexpr bool NAME##_v = false;          \
+    inline constexpr bool NAME##_v = false;                    \
     template <class _Tp>                                       \
-    _CCCL_INLINE_VAR constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
+    inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // __pointer

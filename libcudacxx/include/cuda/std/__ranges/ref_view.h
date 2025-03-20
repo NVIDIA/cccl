@@ -114,7 +114,7 @@ _CCCL_HOST_DEVICE ref_view(_Range&) -> ref_view<_Range>;
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
+inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

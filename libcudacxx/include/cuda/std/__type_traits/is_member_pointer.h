@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_pointer
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_member_pointer_v = _CCCL_BUILTIN_IS_MEMBER_POINTER(_Tp);
+inline constexpr bool is_member_pointer_v = _CCCL_BUILTIN_IS_MEMBER_POINTER(_Tp);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // ^^^ _CCCL_BUILTIN_IS_MEMBER_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_POINTER vvv
@@ -47,7 +47,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_pointer
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_member_pointer_v = is_member_pointer<_Tp>::value;
+inline constexpr bool is_member_pointer_v = is_member_pointer<_Tp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_IS_MEMBER_POINTER

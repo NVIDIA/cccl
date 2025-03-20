@@ -217,8 +217,6 @@ The following macros are required only if the target C++ version does not suppor
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX23``   | Enable ``constexpr`` for C++23 or newer                  |
 +-----------------------------+----------------------------------------------------------+
-| ``_CCCL_INLINE_VAR``        | Portable ``inline constexpr`` variable (before C++17)    |
-+-----------------------------+----------------------------------------------------------+
 
 **Concept-like Macros**:
 

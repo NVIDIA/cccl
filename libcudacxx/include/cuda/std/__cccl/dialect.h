@@ -104,12 +104,6 @@
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(_CCCL_NO_INLINE_VARIABLES)
-#  define _CCCL_INLINE_VAR
-#else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
-#  define _CCCL_INLINE_VAR inline
-#endif // !_CCCL_NO_INLINE_VARIABLES
-
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
 #if defined(_CCCL_NO_VARIABLE_TEMPLATES)
 #  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
@@ -121,7 +115,7 @@
 #if defined(__CUDA_ARCH__)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
+#  define _CCCL_GLOBAL_CONSTANT inline constexpr
 #endif // __CUDA_ARCH__
 
 #endif // __CCCL_DIALECT_H

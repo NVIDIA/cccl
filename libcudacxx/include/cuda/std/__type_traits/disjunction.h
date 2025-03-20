@@ -67,7 +67,7 @@ struct disjunction : _Or<_Args...>
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>
-_CCCL_INLINE_VAR constexpr bool disjunction_v = _Or<_Args...>::value;
+inline constexpr bool disjunction_v = _Or<_Args...>::value;
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

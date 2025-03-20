@@ -154,7 +154,7 @@ _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 template <class _Rp>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
+inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
