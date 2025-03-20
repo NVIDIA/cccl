@@ -14,7 +14,7 @@ authors = [{ name = "NVIDIA Corporation" }]
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
   "Environment :: GPU :: NVIDIA CUDA",
-  "License :: OSI Approved :: Apache-2.0 WITH LLVM-exception",
+  "License :: OSI Approved :: Apache Software License",
 ]
 license-files = ["LICENSE"]
 requires-python = ">=3.9"
