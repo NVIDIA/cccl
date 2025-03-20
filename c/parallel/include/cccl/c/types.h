@@ -66,8 +66,9 @@ typedef struct cccl_op_t
 
 typedef enum cccl_iterator_kind_t
 {
-  CCCL_POINTER  = 0,
-  CCCL_ITERATOR = 1
+  CCCL_POINTER       = 0,
+  CCCL_ITERATOR      = 1,
+  CCCL_DOUBLE_BUFFER = 2
 } cccl_iterator_kind_t;
 
 typedef struct cccl_value_t

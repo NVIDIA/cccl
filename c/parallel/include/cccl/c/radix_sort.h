@@ -36,6 +36,7 @@ typedef struct cccl_device_radix_sort_build_result_t
   CUkernel histogram_kernel;
   CUkernel exclusive_sum_kernel;
   CUkernel onesweep_kernel;
+  cccl_sort_order_t order;
 } cccl_device_radix_sort_build_result_t;
 
 CCCL_C_API CUresult cccl_device_radix_sort_build(
@@ -44,6 +45,7 @@ CCCL_C_API CUresult cccl_device_radix_sort_build(
   cccl_type_info key_t,
   cccl_type_info value_t,
   cccl_op_t decomposer,
+  const char* decomposer_return_type,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -51,7 +53,19 @@ CCCL_C_API CUresult cccl_device_radix_sort_build(
   const char* libcudacxx_path,
   const char* ctk_path);
 
-CCCL_C_API CUresult cccl_device_radix_sort(
+CCCL_C_API CUresult cccl_device_ascending_radix_sort(
+  cccl_device_radix_sort_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_double_buffer_t d_keys,
+  cccl_double_buffer_t d_values,
+  cccl_op_t decomposer,
+  uint64_t num_items,
+  int begin_bit,
+  int end_bit,
+  CUstream stream);
+
+CCCL_C_API CUresult cccl_device_descending_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,

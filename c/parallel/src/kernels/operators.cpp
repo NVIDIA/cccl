@@ -81,6 +81,12 @@ std::string make_kernel_user_comparison_operator(std::string_view input_t, cccl_
   return make_kernel_binary_operator_full_source(input_t, operation, "bool");
 }
 
+std::string
+make_kernel_user_decomposer_operator(std::string_view input_t, cccl_op_t operation, std::string_view return_type)
+{
+  return make_kernel_binary_operator_full_source(input_t, operation, return_type);
+}
+
 std::string make_kernel_user_unary_operator(std::string_view input_t, cccl_op_t operation)
 {
   constexpr std::string_view stateless_op = R"XXX(

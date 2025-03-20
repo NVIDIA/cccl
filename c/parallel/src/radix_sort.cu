@@ -12,10 +12,16 @@
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_radix_sort.cuh>
 
+#include <format>
+
+#include "cccl/c/types.h"
+#include "cub/util_type.cuh"
 #include "kernels/operators.h"
+#include "util/context.h"
 #include "util/indirect_arg.h"
 #include "util/types.h"
 #include <cccl/c/radix_sort.h>
+#include <nvrtc/ltoir_list_appender.h>
 
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
@@ -128,7 +134,7 @@ reg_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
   int items_per_thread = std::max(1, nominal_4_byte_items_per_thread * 4 / std::max(4, key_size));
   int block_threads =
     std::min(nominal_4_byte_block_threads,
-             cuda::ceil_div(cub::detail::max_smem_per_block / (key_size * items_per_thread), 32) * 32);
+             cuda::ceil_div(int{cub::detail::max_smem_per_block} / (key_size * items_per_thread), 32) * 32);
 
   return {items_per_thread, block_threads};
 }
@@ -140,7 +146,7 @@ mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
     std::max(1, std::min(nominal_4_byte_items_per_thread * 4 / key_size, nominal_4_byte_items_per_thread * 2));
   int block_threads =
     std::min(nominal_4_byte_block_threads,
-             cuda::ceil_div(cub::detail::max_smem_per_block / (key_size * items_per_thread), 32) * 32);
+             cuda::ceil_div(int{cub::detail::max_smem_per_block} / (key_size * items_per_thread), 32) * 32);
 
   return {items_per_thread, block_threads};
 }
@@ -150,34 +156,222 @@ radix_sort_runtime_tuning_policy get_policy(int cc, int key_size)
   constexpr int onesweep_radix_bits                                        = 8;
   const int primary_radix_bits                                             = (key_size > 1) ? 7 : 5;
   const int single_tile_radix_bits                                         = (key_size > 1) ? 6 : 5;
-  const auto [onesweep_items_per_thread, onesweep_block_threads]           = reg_bound_scaling(256, 21);
-  const auto [scan_items_per_thread, scan_block_threads]                   = mem_bound_scaling(512, 13);
-  const auto [downsweep_items_per_thread, downsweep_block_threads]         = mem_bound_scaling(160, 39);
-  const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16);
-  const auto [single_tile_items_per_thread, single_tile_block_threads]     = mem_bound_scaling(256, 19);
+  const auto [onesweep_items_per_thread, onesweep_block_threads]           = reg_bound_scaling(256, 21, key_size);
+  const auto [scan_items_per_thread, scan_block_threads]                   = mem_bound_scaling(512, 13, key_size);
+  const auto [downsweep_items_per_thread, downsweep_block_threads]         = mem_bound_scaling(160, 39, key_size);
+  const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16, key_size);
+  const auto [single_tile_items_per_thread, single_tile_block_threads]     = mem_bound_scaling(256, 19, key_size);
 
-  return
+  return {{256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits},
+          {256, onesweep_radix_bits},
+          {onesweep_items_per_thread, onesweep_block_threads, 1, onesweep_radix_bits},
+          {scan_block_threads, scan_items_per_thread},
+          {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
+          {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
+          {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
+          {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
+          {single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits}};
+};
+
+std::string get_single_tile_kernel_name(
+  std::string_view chained_policy_t,
+  cccl_sort_order_t sort_order,
+  cccl_type_info key_t,
+  cccl_type_info value_t,
+  cccl_op_t decomposer)
+{
+  const std::string key   = cccl_type_enum_to_name(key_t.type);
+  const std::string value = cccl_type_enum_to_name(value_t.type);
+
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  return std::format(
+    "cub::detail::radix_sort::DeviceRadixSortSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    chained_policy_t,
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
+    key,
+    value,
+    offset_t,
+    decomposer.name);
+}
+
+std::string get_upsweep_kernel_name(
+  std::string_view chained_policy_t,
+  bool alt_digit_bits,
+  cccl_sort_order_t sort_order,
+  cccl_type_info key_t,
+  cccl_op_t decomposer)
+{
+  const std::string key = cccl_type_enum_to_name(key_t.type);
+
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  return std::format(
+    "cub::detail::radix_sort::DeviceRadixSortUpsweepKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    chained_policy_t,
+    alt_digit_bits ? "true" : "false",
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
+    key,
+    offset_t,
+    decomposer.name);
+}
+
+std::string get_scan_bins_kernel_name(std::string_view chained_policy_t)
+{
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  return std::format("cub::detail::radix_sort::DeviceRadixSortScanBinsKernel<{0}, {1}>", chained_policy_t, offset_t);
+}
+
+std::string get_downsweep_kernel_name(
+  std::string_view chained_policy_t,
+  bool alt_digit_bits,
+  cccl_sort_order_t sort_order,
+  cccl_type_info key_t,
+  cccl_type_info value_t,
+  cccl_op_t decomposer)
+{
+  const std::string key   = cccl_type_enum_to_name(key_t.type);
+  const std::string value = cccl_type_enum_to_name(value_t.type);
+
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  return std::format(
+    "cub::detail::radix_sort::DeviceRadixSortDownsweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
+    chained_policy_t,
+    alt_digit_bits ? "true" : "false",
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
+    key,
+    value,
+    offset_t,
+    decomposer.name);
+}
+
+std::string get_histogram_kernel_name(
+  std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t, cccl_op_t decomposer)
+{
+  const std::string key = cccl_type_enum_to_name(key_t.type);
+
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  return std::format(
+    "cub::detail::radix_sort::DeviceRadixSortHistogramKernel<{0}, {1}, {2}, {3}, {4}>",
+    chained_policy_t,
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
+    key,
+    offset_t,
+    decomposer.name);
+}
+
+std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t)
+{
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  return std::format("cub::detail::radix_sort::DeviceRadixSortExclusiveSumKernel<{0}, {1}>", chained_policy_t, offset_t);
+}
+
+std::string get_onesweep_kernel_name(
+  std::string_view chained_policy_t,
+  cccl_sort_order_t sort_order,
+  cccl_type_info key_t,
+  cccl_type_info value_t,
+  cccl_op_t decomposer)
+{
+  const std::string key   = cccl_type_enum_to_name(key_t.type);
+  const std::string value = cccl_type_enum_to_name(value_t.type);
+
+  std::string offset_t;
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
+  return std::format(
+    "cub::detail::radix_sort::DeviceRadixSortOnesweepKernel<{0}, {1}, {2}, {3}, {4}, int, int, {5}>",
+    chained_policy_t,
+    (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
+    key,
+    value,
+    offset_t,
+    decomposer.name);
+}
+
+template <auto* GetPolicy>
+struct dynamic_radix_sort_policy_t
+{
+  using MaxPolicy = dynamic_radix_sort_policy_t;
+
+  template <typename F>
+  cudaError_t Invoke(int device_ptx_version, F& op)
   {
-    {256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits}, {256, onesweep_radix_bits},
-      {onesweep_items_per_thread, onesweep_block_threads, 1, onesweep_radix_bits},
-      {scan_block_threads, scan_items_per_thread},
-      {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
-      {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
-      {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
-      {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
-    {
-      single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits
-    }
+    return op.template Invoke<radix_sort_runtime_tuning_policy>(GetPolicy(device_ptx_version, key_size));
+  }
+
+  uint64_t key_size;
+};
+
+struct radix_sort_kernel_source
+{
+  cccl_device_radix_sort_build_result_t& build;
+
+  CUkernel RadixSortSingleTileKernel() const
+  {
+    return build.single_tile_kernel;
+  }
+
+  CUkernel RadixSortUpsweepKernel() const
+  {
+    return build.upsweep_kernel;
+  }
+
+  CUkernel RadixSortAltUpsweepKernel() const
+  {
+    return build.alt_upsweep_kernel;
+  }
+
+  CUkernel RadixSortScanBinsKernel() const
+  {
+    return build.scan_bins_kernel;
+  }
+
+  CUkernel RadixSortDownsweepKernel() const
+  {
+    return build.downsweep_kernel;
+  }
+
+  CUkernel RadixSortAltDownsweepKernel() const
+  {
+    return build.alt_downsweep_kernel;
+  }
+
+  CUkernel RadixSortHistogramKernel() const
+  {
+    return build.histogram_kernel;
+  }
+
+  CUkernel RadixSortExclusiveSumKernel() const
+  {
+    return build.exclusive_sum_kernel;
+  }
+
+  CUkernel RadixSortOnesweepKernel() const
+  {
+    return build.onesweep_kernel;
   }
 };
+
 } // namespace radix_sort
 
-CCCL_C_API CUresult cccl_device_radix_sort_build(
-  cccl_device_radix_sort_build_result_t* build,
+CUresult cccl_device_radix_sort_build(
+  cccl_device_radix_sort_build_result_t* build_ptr,
   cccl_sort_order_t sort_order,
   cccl_type_info key_t,
   cccl_type_info value_t,
   cccl_op_t decomposer,
+  const char* decomposer_return_type,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -193,7 +387,8 @@ CCCL_C_API CUresult cccl_device_radix_sort_build(
     const int cc             = cc_major * 10 + cc_minor;
     const auto policy        = radix_sort::get_policy(cc, key_t.size);
     const auto key_cpp       = cccl_type_enum_to_name(key_t.type);
-    const std::string op_src = make_kernel_user_binary_operator(key_cpp, decomposer);
+    const std::string op_src = make_kernel_user_decomposer_operator(key_cpp, decomposer, decomposer_return_type);
+    constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
 
     constexpr std::string_view src_template = R"XXX(
 #include <cub/device/dispatch/kernels/radix_sort.cuh>
@@ -229,9 +424,9 @@ struct agent_scan_policy_t {{
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM   = cub::BLOCK_SCAN_RAKING_MEMOIZE;
   struct detail
-  {
+  {{
     using delay_constructor_t = detail::default_delay_constructor_t<{15}>;
-  };
+  }};
 }};
 struct agent_downsweep_policy_t {{
   static constexpr int ITEMS_PER_THREAD = {16};
@@ -260,7 +455,7 @@ struct agent_single_tile_policy_t {{
   static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM = cub::RADIX_RANK_MEMOIZE;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
 }};
-struct device_scan_policy {{
+struct {25} {{
   struct ActivePolicy {{
     using HistogramPolicy = agent_histogram_policy_t;
     using ExclusiveSumPolicy = agent_exclusive_sum_policy_t;
@@ -273,6 +468,7 @@ struct device_scan_policy {{
     using SingleTilePolicy = agent_single_tile_policy_t;
   }};
 }};
+{26};
 )XXX";
 
     const std::string src = std::format(
@@ -301,8 +497,101 @@ struct device_scan_policy {{
       policy.alt_downsweep.radix_bits, // 21
       policy.single_tile.items_per_thread, // 22
       policy.single_tile.block_threads, // 23
-      policy.single_tile.radix_bits // 24
+      policy.single_tile.radix_bits, // 24
+      chained_policy_t, // 25
+      op_src // 26
     );
+
+#if false // CCCL_DEBUGGING_SWITCH
+    fflush(stderr);
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    fflush(stdout);
+#endif
+
+    std::string single_tile_kernel_name =
+      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_t, value_t, decomposer);
+    std::string upsweep_kernel_name =
+      radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_t, decomposer);
+    std::string alt_upsweep_kernel_name =
+      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_t, decomposer);
+    std::string scan_bins_kernel_name = radix_sort::get_scan_bins_kernel_name(chained_policy_t);
+    std::string downsweep_kernel_name =
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_t, value_t, decomposer);
+    std::string alt_downsweep_kernel_name =
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_t, value_t, decomposer);
+    std::string histogram_kernel_name =
+      radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_t, decomposer);
+    std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t);
+    std::string onesweep_kernel_name =
+      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_t, value_t, decomposer);
+    std::string single_tile_kernel_lowered_name;
+    std::string upsweep_kernel_lowered_name;
+    std::string alt_upsweep_kernel_lowered_name;
+    std::string scan_bins_kernel_lowered_name;
+    std::string downsweep_kernel_lowered_name;
+    std::string alt_downsweep_kernel_lowered_name;
+    std::string histogram_kernel_lowered_name;
+    std::string exclusive_sum_kernel_lowered_name;
+    std::string onesweep_kernel_lowered_name;
+
+    const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
+
+    constexpr size_t num_args  = 7;
+    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+
+    constexpr size_t num_lto_args   = 2;
+    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
+
+    // Collect all LTO-IRs to be linked.
+    nvrtc_ltoir_list ltoir_list;
+    nvrtc_ltoir_list_appender appender{ltoir_list};
+    appender.append({decomposer.ltoir, decomposer.ltoir_size});
+
+    nvrtc_link_result result =
+      make_nvrtc_command_list()
+        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_expression({single_tile_kernel_name})
+        .add_expression({upsweep_kernel_name})
+        .add_expression({alt_upsweep_kernel_name})
+        .add_expression({scan_bins_kernel_name})
+        .add_expression({downsweep_kernel_name})
+        .add_expression({alt_downsweep_kernel_name})
+        .add_expression({histogram_kernel_name})
+        .add_expression({exclusive_sum_kernel_name})
+        .add_expression({onesweep_kernel_name})
+        .compile_program({args, num_args})
+        .get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
+        .get_name({upsweep_kernel_name, upsweep_kernel_lowered_name})
+        .get_name({alt_upsweep_kernel_name, alt_upsweep_kernel_lowered_name})
+        .get_name({scan_bins_kernel_name, scan_bins_kernel_lowered_name})
+        .get_name({downsweep_kernel_name, downsweep_kernel_lowered_name})
+        .get_name({alt_downsweep_kernel_name, alt_downsweep_kernel_lowered_name})
+        .get_name({histogram_kernel_name, histogram_kernel_lowered_name})
+        .get_name({exclusive_sum_kernel_name, exclusive_sum_kernel_lowered_name})
+        .get_name({onesweep_kernel_name, onesweep_kernel_lowered_name})
+        .cleanup_program()
+        .add_link_list(ltoir_list)
+        .finalize_program(num_lto_args, lopts);
+
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(
+      cuLibraryGetKernel(&build_ptr->single_tile_kernel, build_ptr->library, single_tile_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->upsweep_kernel, build_ptr->library, upsweep_kernel_lowered_name.c_str()));
+    check(
+      cuLibraryGetKernel(&build_ptr->alt_upsweep_kernel, build_ptr->library, alt_upsweep_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->scan_bins_kernel, build_ptr->library, scan_bins_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->downsweep_kernel, build_ptr->library, downsweep_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(
+      &build_ptr->alt_downsweep_kernel, build_ptr->library, alt_downsweep_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->histogram_kernel, build_ptr->library, histogram_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(
+      &build_ptr->exclusive_sum_kernel, build_ptr->library, exclusive_sum_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->onesweep_kernel, build_ptr->library, onesweep_kernel_lowered_name.c_str()));
+
+    build_ptr->cc         = cc;
+    build_ptr->cubin      = (void*) result.data.release();
+    build_ptr->cubin_size = result.size;
+    build_ptr->order      = sort_order;
   }
   catch (const std::exception& exc)
   {
@@ -315,16 +604,114 @@ struct device_scan_policy {{
   return error;
 }
 
-CCCL_C_API CUresult cccl_device_radix_sort(
+template <cub::SortOrder Order>
+CUresult cccl_device_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
-  cccl_double_buffer_t d_keys,
-  cccl_double_buffer_t d_values,
+  cccl_iterator_t d_keys,
+  cccl_iterator_t d_values,
   cccl_op_t decomposer,
   uint64_t num_items,
   int begin_bit,
   int end_bit,
-  CUstream stream);
+  CUstream stream)
+{
+  if (cccl_iterator_kind_t::CCCL_DOUBLE_BUFFER != d_keys.type
+      || cccl_iterator_kind_t::CCCL_DOUBLE_BUFFER != d_values.type)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_radix_sort(): radix sort input must be a double buffer\n");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
 
-CCCL_C_API CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* bld_ptr);
+  CUresult error = CUDA_SUCCESS;
+  bool pushed    = false;
+  try
+  {
+    pushed = try_push_context();
+
+    CUdevice cu_device;
+    check(cuCtxGetDevice(&cu_device));
+
+    bool is_overwrite_okay = cccl_iterator_kind_t::CCCL_DOUBLE_BUFFER == d_keys.type;
+
+    cub::DoubleBuffer<indirect_arg_t> d_keys_buffer;
+    cub::DoubleBuffer<indirect_arg_t> d_values_buffer;
+
+    cub::DispatchRadixSort<Order,
+                           indirect_arg_t,
+                           indirect_arg_t,
+                           OffsetT,
+                           indirect_arg_t,
+                           radix_sort::dynamic_radix_sort_policy_t<&radix_sort::get_policy>,
+                           radix_sort::radix_sort_kernel_source,
+                           cub::detail::CudaDriverLauncherFactory>::
+      Dispatch(
+        d_temp_storage,
+        *temp_storage_bytes,
+        d_keys_buffer,
+        d_values_buffer,
+        num_items,
+        begin_bit,
+        end_bit,
+        is_overwrite_okay,
+        stream,
+        decomposer,
+        {build},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+        {d_keys.value_type.size});
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_radix_sort(): %s\n", exc.what());
+    fflush(stdout);
+    error = CUDA_ERROR_UNKNOWN;
+  }
+
+  if (pushed)
+  {
+    CUcontext dummy;
+    cuCtxPopCurrent(&dummy);
+  }
+
+  return error;
+}
+
+CUresult cccl_device_ascending_radix_sort(
+  cccl_device_radix_sort_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_keys,
+  cccl_iterator_t d_values,
+  cccl_op_t decomposer,
+  uint64_t num_items,
+  int begin_bit,
+  int end_bit,
+  CUstream stream)
+{
+  assert(build.order == CCCL_ASCENDING);
+  cccl_device_radix_sort<cub::SortOrder::Ascending>(
+    build, d_temp_storage, temp_storage_bytes, d_keys, d_values, decomposer, num_items, begin_bit, end_bit, stream);
+}
+
+CUresult cccl_device_descending_radix_sort(
+  cccl_device_radix_sort_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_keys,
+  cccl_iterator_t d_values,
+  cccl_op_t decomposer,
+  uint64_t num_items,
+  int begin_bit,
+  int end_bit,
+  CUstream stream)
+{
+  assert(build.order == CCCL_DESCENDING);
+  cccl_device_radix_sort<cub::SortOrder::Descending>(
+    build, d_temp_storage, temp_storage_bytes, d_keys, d_values, decomposer, num_items, begin_bit, end_bit, stream);
+}
+
+CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* bld_ptr);
