@@ -28,11 +28,11 @@ int main(int, char**)
 #endif // DECIMAL_DIG
 
   // FLT_ROUNDS
-  [[maybe_unused]] constexpr auto flt_rounds = FLT_ROUNDS;
+  // is limited to host only
+  NV_IF_TARGET(NV_IS_HOST, ([[maybe_unused]] const auto flt_rounds = FLT_ROUNDS;))
 
   // FLT_EVAL_METHOD
-  // may be limited to host only (clang's __builtin_flt_eval_method() is not available on the device)
-  NV_IF_TARGET(NV_IS_HOST, ([[maybe_unused]] constexpr auto flt_eval_method = FLT_EVAL_METHOD;))
+  [[maybe_unused]] constexpr auto flt_eval_method = FLT_EVAL_METHOD;
 
   // FLT_DECIMAL_DIG
 #ifdef FLT_DECIMAL_DIG
