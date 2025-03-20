@@ -710,8 +710,7 @@ struct TestComplexExplicitConstruction
   void operator()()
   {
     const thrust::complex<T> input(42.0, 1337.0);
-    const user_complex result = thrust::exp(input);
-    (void) result;
+    [[maybe_unused]] const user_complex result = thrust::exp(input);
   }
 };
 SimpleUnitTest<TestComplexExplicitConstruction, FloatingPointTypes> TestComplexExplicitConstructionInstance;

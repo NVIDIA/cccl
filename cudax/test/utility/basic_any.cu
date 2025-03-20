@@ -302,10 +302,9 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
     CHECK(a != b);
     CHECK(b != a);
 
-    int const k                                  = 0;
-    cudax::basic_any<cudax::imovable<> const*> c = &k;
+    int const k                                                   = 0;
+    [[maybe_unused]] cudax::basic_any<cudax::imovable<> const*> c = &k;
     STATIC_REQUIRE(!_CUDA_VSTD::constructible_from<cudax::basic_any<cudax::imovable<>>, decltype(*c)>);
-    (void) c;
   }
 
   SECTION("any ibase pointer to model")

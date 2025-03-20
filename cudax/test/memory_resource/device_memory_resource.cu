@@ -274,8 +274,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate(5, 42);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 42);
       }
       catch (std::invalid_argument&)
       {
@@ -290,8 +289,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate(5, 1337);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -307,8 +305,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
       cudaStreamCreate(&raw_stream);
       try
       {
-        auto* ptr = res.allocate_async(5, 42, raw_stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 42, raw_stream);
       }
       catch (std::invalid_argument&)
       {
@@ -326,8 +323,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
       cudaStreamCreate(&raw_stream);
       try
       {
-        auto* ptr = res.allocate_async(5, 1337, raw_stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 1337, raw_stream);
       }
       catch (std::invalid_argument&)
       {

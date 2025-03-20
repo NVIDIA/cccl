@@ -182,7 +182,7 @@ private:
   //! @note This function is inherently asynchronous. We need to ensure that the memory pointed to by \p __first and
   //! \p __last lives long enough
   template <class _Iter>
-  _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
+  _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, [[maybe_unused]] _Iter __last, pointer __dest, size_type __count)
   {
     if (__count == 0)
     {
@@ -211,7 +211,6 @@ private:
     }
     else
     {
-      (void) __last;
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "cudax::async_buffer::__copy_cross: failed to copy data",
