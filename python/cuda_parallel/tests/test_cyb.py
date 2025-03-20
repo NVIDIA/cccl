@@ -227,7 +227,7 @@ def test_cy_reduce_basic_pointer():
 
 def test_cy_reduce_basic_iterator():
     import cuda.parallel.experimental.algorithms._cy_reduce as cyr
-    import cuda.parallel.experimental.iterators._cy_iterators as iterators
+    import cuda.parallel.experimental.cy_iterators as iterators
 
     n = 15
     dt = cp.int32

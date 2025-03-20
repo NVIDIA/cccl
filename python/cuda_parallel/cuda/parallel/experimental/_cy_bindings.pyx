@@ -662,8 +662,13 @@ cdef class IteratorStateView:
         elif isinstance(ptr, ctypes.c_void_p):
             self.ptr = int_as_ptr(ptr.value)
             self.size = size
+        elif PyObject_CheckBuffer(ptr):
+            self.ptr = get_buffer_pointer(ptr, &self.size)
         else:
-            raise TypeError("First argument must be int, type ctypes pointer, or ctypes.c_void_p")
+            raise TypeError(
+                "First argument must be int, type ctypes pointer, or ctypes.c_void_p, "
+                f"got type {type(ptr)}"
+            )
         self.owner = owner
 
     @property
@@ -762,6 +767,23 @@ cdef class IteratorState(StateBase):
     @property
     def size(self):
         return self.size
+
+    def __getbuffer__(self, Py_buffer *buffer, int flags):
+        cdef Py_ssize_t cast_size = <Py_ssize_t>self.size
+        buffer.buf = <char *>self.ptr
+        buffer.obj = self
+        buffer.len = cast_size
+        buffer.readonly = 0
+        buffer.itemsize = 1
+        buffer.format = "B"  # unsigned char
+        buffer.ndim = 1
+        buffer.shape = <Py_ssize_t *>&self.size
+        buffer.strides = &buffer.itemsize
+        buffer.suboffsets = NULL
+        buffer.internal = NULL
+
+    def __releasebuffer__(self, Py_buffer *buffer):
+        pass
 
 
 cdef class Iterator:
@@ -871,11 +893,6 @@ cdef class Iterator:
                     self.state_obj = new_value.reference
                     self.iter_data.size = (<IteratorState>new_value).get_size()
                     self.iter_data.state = (<IteratorState>new_value).get()
-                elif isinstance(new_value, (bytes, bytearray)):
-                    state_sz = len(new_value)
-                    self.state_obj = new_value
-                    self.iter_data.size = state_sz
-                    self.iter_data.state = <void *><const char *>(self.state_bytes)
                 elif isinstance(new_value, IteratorStateView):
                     self.state_obj = new_value.reference
                     self.iter_data.size = (<IteratorStateView>new_value).size
@@ -885,6 +902,9 @@ cdef class Iterator:
                     if self.iter_data.size == 0:
                         raise ValueError("Assigning incomplete state value to iterator without state size information")
                     self.iter_data.state = (<Pointer>new_value).get()
+                elif PyObject_CheckBuffer(new_value):
+                    self.iter_data.state = get_buffer_pointer(new_value, &self.iter_data.size)
+                    self.state_obj = new_value
                 else:
                     raise TypeError(
                         "For iterator with type ITERATOR, state value must have type IteratorState or type bytes, "

@@ -1,3 +1,5 @@
+from typing_extensions import Buffer
+
 class IntEnum:
     def __init__(self, parent_class, name: str, value: int):
         pass
@@ -120,7 +122,7 @@ class IteratorStateView:
 class Pointer:
     def __init__(self, arg): ...
 
-class IteratorState:
+class IteratorState(Buffer):
     def __init__(self, arg): ...
     @property
     def size(self) -> int: ...

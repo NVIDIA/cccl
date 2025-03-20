@@ -13,7 +13,7 @@ from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
 from .._caching import CachableFunction
-from .._cy_bindings import IteratorStateView
+from .._cy_bindings import IteratorState
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
@@ -67,6 +67,7 @@ class IteratorBase:
         self,
         cvalue,
         numba_type: types.Type,
+        state_type: types.Type,
         value_type: types.Type,
         prefix: str = "",
     ):
@@ -85,10 +86,11 @@ class IteratorBase:
         """
         self.cvalue = cvalue
         self.numba_type = numba_type
+        self.state_type = state_type
         self.value_type = value_type
         self.prefix = prefix
         self.kind_ = self.__class__.iterator_kind_type(self.value_type)
-        self.state_ = ctypes.cast(ctypes.pointer(self.cvalue), ctypes.c_void_p)
+        self.state_ = IteratorState(self.cvalue)
 
     @property
     def kind(self):
@@ -99,9 +101,9 @@ class IteratorBase:
     # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
-        abi_sfx = _get_abi_suffix(self.kind)
-        advance_abi_name = f"{self.prefix}advance_{abi_sfx}"
-        deref_abi_name = f"{self.prefix}dereference_{abi_sfx}"
+        abi_suffix = _get_abi_suffix(self.kind)
+        advance_abi_name = f"{self.prefix}advance_{abi_suffix}"
+        deref_abi_name = f"{self.prefix}dereference_{abi_suffix}"
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
@@ -121,18 +123,16 @@ class IteratorBase:
         return {advance_abi_name: advance_ltoir, deref_abi_name: deref_ltoir}
 
     @property
-    def state(self) -> ctypes.c_void_p:
+    def state(self) -> IteratorState:
         return self.state_
 
     @staticmethod
     def advance(state, distance):
-        raise NotImplementedError(
-            "Subclasses must override advance staticmethod")
+        raise NotImplementedError("Subclasses must override advance staticmethod")
 
     @staticmethod
     def dereference(state):
-        raise NotImplementedError(
-            "Subclasses must override dereference staticmethod")
+        raise NotImplementedError("Subclasses must override dereference staticmethod")
 
     def __add__(self, offset: int):
         return make_advanced_iterator(self, offset=offset)
@@ -177,10 +177,12 @@ class RawPointer(IteratorBase):
 
     def __init__(self, ptr: int, value_type: types.Type):
         cvalue = ctypes.c_void_p(ptr)
-        numba_type = types.CPointer(types.CPointer(value_type))
+        state_type = types.CPointer(value_type)
+        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
+            state_type=state_type,
             value_type=value_type,
         )
 
@@ -204,8 +206,7 @@ def load_cs(typingctx, base):
     def codegen(context, builder, sig, args):
         rt = context.get_value_type(sig.return_type)
         if rt is None:
-            raise RuntimeError(
-                f"Unsupported return type: {type(sig.return_type)}")
+            raise RuntimeError(f"Unsupported return type: {type(sig.return_type)}")
         ftype = ir.FunctionType(rt, [rt.as_pointer()])
         bw = sig.return_type.bitwidth
         asm_txt = f"ld.global.cs.b{bw} $0, [$1];"
@@ -229,9 +230,14 @@ class CacheModifiedPointer(IteratorBase):
     def __init__(self, ptr: int, ntype: types.Type, prefix: str):
         cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
-        numba_type = types.CPointer(types.CPointer(value_type))
+        state_type = types.CPointer(value_type)
+        numba_type = types.CPointer(state_type)
         super().__init__(
-            cvalue=cvalue, numba_type=numba_type, value_type=value_type, prefix=prefix
+            cvalue=cvalue,
+            numba_type=numba_type,
+            state_type=state_type,
+            value_type=value_type,
+            prefix=prefix,
         )
 
     @staticmethod
@@ -253,10 +259,12 @@ class ConstantIterator(IteratorBase):
     def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
-        numba_type = types.CPointer(value_type)
+        state_type = value_type
+        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
+            state_type=state_type,
             value_type=value_type,
         )
 
@@ -279,10 +287,12 @@ class CountingIterator(IteratorBase):
     def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
-        numba_type = types.CPointer(value_type)
+        state_type = value_type
+        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
+            state_type=state_type,
             value_type=value_type,
         )
 
@@ -313,6 +323,7 @@ def make_transform_iterator(it, op: Callable):
         def __init__(self, it: IteratorBase, op: CUDADispatcher):
             self._it = it
             self._op = CachableFunction(op.py_func)
+            state_type = it.state_type
             numba_type = it.numba_type
             # TODO: it would be nice to not need to compile `op` to get
             # its return type, but there's nothing in the numba API
@@ -327,6 +338,7 @@ def make_transform_iterator(it, op: Callable):
             super().__init__(
                 cvalue=it.cvalue,
                 numba_type=numba_type,
+                state_type=state_type,
                 value_type=value_type,
             )
 
@@ -363,6 +375,7 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
             super().__init__(
                 cvalue=cvalue_advanced,
                 numba_type=it.numba_type,
+                state_type=it.state_type,
                 value_type=it.value_type,
             )
 

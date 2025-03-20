@@ -18,6 +18,7 @@ from ._cy_bindings import (
     IntEnum,
     Iterator,
     IteratorKind,
+    IteratorState,
     IteratorStateView,
     Op,
     OpKind,
@@ -93,10 +94,14 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
 def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     context = cuda.descriptor.cuda_target.target_context
     numba_type = it.numba_type
-    size = context.get_value_type(numba_type).get_abi_size(context.target_data)
+    state_type = it.state_type
+    size = context.get_value_type(state_type).get_abi_size(context.target_data)
     iterator_state = memoryview(it.state)
     if not iterator_state.nbytes == size:
-        raise ValueError("Iterator state size does not match size of numba type")
+        raise ValueError(
+            f"Iterator state size, {iterator_state.nbytes} bytes, for iterator type {type(it)} "
+            f"does not match size of numba type, {size} bytes"
+        )
     alignment = context.get_value_type(numba_type).get_abi_alignment(
         context.target_data
     )
@@ -186,7 +191,11 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
         ptr = get_data_pointer(input_it)
         cccl_it.state = Pointer(PointerProxy(ptr, input_it))
     else:
-        cccl_it.state = Pointer(PointerProxy(input_it.state, input_it))
+        state_ = input_it.state
+        if isinstance(state_, (IteratorState, Pointer)):
+            cccl_it.state = state_
+        elif isinstance(state_, Pointer):
+            cccl_it.state = Pointer(PointerProxy(state_, input_it))
 
 
 @functools.lru_cache()
