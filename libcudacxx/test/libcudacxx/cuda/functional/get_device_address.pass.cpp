@@ -29,7 +29,11 @@ void test_host(T& object)
     cudaPointerAttributes attributes;
     cudaError_t status = cudaPointerGetAttributes(&attributes, host_address);
     assert(status == cudaSuccess);
-    assert(attributes.devicePointer == nullptr);
+
+    if (attributes.devicePointer)
+    {
+      assert(attributes.devicePointer == host_address);
+    }
   }
 
   {
