@@ -31,10 +31,8 @@ template <class _Tp>
 struct rank : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_RANK(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr size_t rank_v = _CCCL_BUILTIN_ARRAY_RANK(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr size_t rank_v = _CCCL_BUILTIN_ARRAY_RANK(_Tp);
 
 #else
 
@@ -48,10 +46,8 @@ template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT rank<_Tp[_Np]> : public integral_constant<size_t, rank<_Tp>::value + 1>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr size_t rank_v = rank<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr size_t rank_v = rank<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK)
 

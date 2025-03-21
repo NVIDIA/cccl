@@ -20,10 +20,10 @@ static_assert(cuda::std::is_nothrow_move_constructible<cuda::std::source_locatio
 static_assert(cuda::std::is_nothrow_move_assignable<cuda::std::source_location>::value, "support.srcloc.cons (1.2)");
 static_assert(cuda::std::is_nothrow_swappable<cuda::std::source_location>::value, "support.srcloc.cons (1.3)");
 
-ASSERT_NOEXCEPT(cuda::std::source_location());
-#if !defined(TEST_COMPILER_NVCC)
-ASSERT_NOEXCEPT(cuda::std::source_location::current());
-#endif // TEST_COMPILER_NVCC
+static_assert(noexcept(cuda::std::source_location()));
+#if !TEST_CUDA_COMPILER(NVCC)
+static_assert(noexcept(cuda::std::source_location::current()));
+#endif // TEST_CUDA_COMPILER(NVCC)
 
 __host__ __device__ bool compare_strings(const char* lhs, const char* rhs) noexcept
 {

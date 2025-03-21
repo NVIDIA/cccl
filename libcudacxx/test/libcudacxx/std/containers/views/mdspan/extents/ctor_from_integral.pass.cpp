@@ -45,7 +45,7 @@ struct IntegralCtorTest
   test_construction(AllExtents all_ext, Extents ext, cuda::std::index_sequence<Indices...>)
   {
     // construction from indices
-    ASSERT_NOEXCEPT(E(ext[Indices]...));
+    static_assert(noexcept(E(ext[Indices]...)));
     test_runtime_observers(E(ext[Indices]...), all_ext);
   }
 };

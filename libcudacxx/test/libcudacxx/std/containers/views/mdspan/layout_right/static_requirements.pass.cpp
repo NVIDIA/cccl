@@ -106,11 +106,11 @@ __host__ __device__ void test_mapping_requirements(cuda::std::index_sequence<Idx
   static_assert(cuda::std::is_nothrow_move_constructible<M>::value, "");
   static_assert(cuda::std::is_nothrow_move_assignable<M>::value, "");
   static_assert(cuda::std::is_nothrow_swappable<M>::value, "");
-  ASSERT_SAME_TYPE(typename M::index_type, typename E::index_type);
-  ASSERT_SAME_TYPE(typename M::size_type, typename E::size_type);
-  ASSERT_SAME_TYPE(typename M::rank_type, typename E::rank_type);
-  ASSERT_SAME_TYPE(typename M::layout_type, cuda::std::layout_right);
-  ASSERT_SAME_TYPE(typename M::layout_type::template mapping<E>, M);
+  static_assert(cuda::std::is_same_v<typename M::index_type, typename E::index_type>);
+  static_assert(cuda::std::is_same_v<typename M::size_type, typename E::size_type>);
+  static_assert(cuda::std::is_same_v<typename M::rank_type, typename E::rank_type>);
+  static_assert(cuda::std::is_same_v<typename M::layout_type, cuda::std::layout_right>);
+  static_assert(cuda::std::is_same_v<typename M::layout_type::template mapping<E>, M>);
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>().extents()), const E&>::value, "");
   static_assert(cuda::std::is_same<decltype(cuda::std::declval<M>()(Idxs...)), typename M::index_type>::value, "");
   static_assert(

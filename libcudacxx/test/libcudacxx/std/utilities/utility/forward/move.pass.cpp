@@ -45,13 +45,13 @@ __device__ int global_var              = 42;
 __device__ const int& global_reference = global_var;
 
 template <class QualInt>
-__host__ __device__ QualInt get() TEST_NOEXCEPT
+__host__ __device__ QualInt get() noexcept
 {
   return static_cast<QualInt>(global_var);
 }
 
-STATIC_TEST_GLOBAL_VAR int copy_ctor = 0;
-STATIC_TEST_GLOBAL_VAR int move_ctor = 0;
+TEST_GLOBAL_VARIABLE int copy_ctor = 0;
+TEST_GLOBAL_VARIABLE int move_ctor = 0;
 
 struct A
 {
@@ -78,13 +78,13 @@ int main(int, char**)
 {
   { // Test return type and noexcept.
     static_assert(cuda::std::is_same<decltype(cuda::std::move(global_var)), int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(global_var));
+    static_assert(noexcept(cuda::std::move(global_var)));
     static_assert(cuda::std::is_same<decltype(cuda::std::move(global_reference)), const int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(global_reference));
+    static_assert(noexcept(cuda::std::move(global_reference)));
     static_assert(cuda::std::is_same<decltype(cuda::std::move(42)), int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(42));
+    static_assert(noexcept(cuda::std::move(42)));
     static_assert(cuda::std::is_same<decltype(cuda::std::move(get<const int&&>())), const int&&>::value, "");
-    ASSERT_NOEXCEPT(cuda::std::move(get<int const&&>()));
+    static_assert(noexcept(cuda::std::move(get<int const&&>())));
   }
   { // test copy and move semantics
     A a;
@@ -93,23 +93,19 @@ int main(int, char**)
     assert(copy_ctor == 0);
     assert(move_ctor == 0);
 
-    A a2 = a;
-    (void) a2;
+    [[maybe_unused]] A a2 = a;
     assert(copy_ctor == 1);
     assert(move_ctor == 0);
 
-    A a3 = cuda::std::move(a);
-    (void) a3;
+    [[maybe_unused]] A a3 = cuda::std::move(a);
     assert(copy_ctor == 1);
     assert(move_ctor == 1);
 
-    A a4 = ca;
-    (void) a4;
+    [[maybe_unused]] A a4 = ca;
     assert(copy_ctor == 2);
     assert(move_ctor == 1);
 
-    A a5 = cuda::std::move(ca);
-    (void) a5;
+    [[maybe_unused]] A a5 = cuda::std::move(ca);
     assert(copy_ctor == 3);
     assert(move_ctor == 1);
   }

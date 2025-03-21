@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   int i = 1;
   int j = 2;

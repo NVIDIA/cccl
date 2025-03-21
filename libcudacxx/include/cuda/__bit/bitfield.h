@@ -68,9 +68,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
 bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bitfield_insert() requires unsigned integer types");
-  constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
-  _CCCL_ASSERT(__width > 0 && __width <= __digits, "width out of range");
-  _CCCL_ASSERT(__start >= 0 && __start < __digits, "start position out of range");
+  [[maybe_unused]] constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
+  _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
+  _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
   {
@@ -86,7 +86,7 @@ bitfield_insert(const _Tp __dest, const _Tp __source, int __start, int __width) 
     }
   }
   auto __mask = ::cuda::bitmask<_Tp>(__start, __width);
-  return ((__source << __start) & __mask) | (__dest & ~__mask);
+  return (::cuda::__shl(__source, __start) & __mask) | (__dest & ~__mask);
 }
 
 template <typename _Tp>
@@ -94,9 +94,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp
 bitfield_extract(const _Tp __value, int __start, int __width) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bitfield_extract() requires unsigned integer types");
-  constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
-  _CCCL_ASSERT(__width > 0 && __width <= __digits, "width out of range");
-  _CCCL_ASSERT(__start >= 0 && __start < __digits, "start position out of range");
+  [[maybe_unused]] constexpr auto __digits = _CUDA_VSTD::numeric_limits<_Tp>::digits;
+  _CCCL_ASSERT(__width >= 0 && __width <= __digits, "width out of range");
+  _CCCL_ASSERT(__start >= 0 && __start <= __digits, "start position out of range");
   _CCCL_ASSERT(__start + __width <= __digits, "start position + width out of range");
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
@@ -110,7 +110,7 @@ bitfield_extract(const _Tp __value, int __start, int __width) noexcept
       // clang-format on
     }
   }
-  return ((__value >> __start) & ::cuda::bitmask<_Tp>(0, __width));
+  return ::cuda::__shr(__value, __start) & ::cuda::bitmask<_Tp>(0, __width);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

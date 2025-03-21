@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bitfield_extract:
 
-``bitfield_extract``
-====================
+``cuda::bitfield_extract``
+==========================
 
 .. code:: cpp
 
@@ -22,14 +22,14 @@ The function extracts a bitfield from a value and returns it in the lower bits.
 
 - ``(value >> start) & bitfield``.
 
-**Mandates**
+**Constraints**
 
 - ``T`` is an unsigned integer type.
 
 **Preconditions**
 
-    - ``start >= 0 && start < num_bits(T)``
-    - ``width >  0 && width <= num_bits(T)``
+    - ``start >= 0 && start <= num_bits(T)``
+    - ``width >= 0 && width <= num_bits(T)``
     - ``start + width <= num_bits(T)``
 
 **Performance considerations**

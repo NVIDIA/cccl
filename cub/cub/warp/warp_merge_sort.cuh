@@ -122,7 +122,7 @@ CUB_NAMESPACE_BEGIN
 //!   <b>[optional]</b> Value type (default: cub::NullType, which indicates a
 //!   keys-only sort)
 //!
-template <typename KeyT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = CUB_WARP_THREADS(0), typename ValueT = NullType>
+template <typename KeyT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = detail::warp_threads, typename ValueT = NullType>
 class WarpMergeSort
     : public BlockMergeSortStrategy<KeyT,
                                     ValueT,
@@ -131,7 +131,7 @@ class WarpMergeSort
                                     WarpMergeSort<KeyT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, ValueT>>
 {
 private:
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
   static constexpr bool KEYS_ONLY    = ::cuda::std::is_same_v<ValueT, NullType>;
   static constexpr int TILE_SIZE     = ITEMS_PER_THREAD * LOGICAL_WARP_THREADS;
 

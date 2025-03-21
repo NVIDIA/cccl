@@ -71,8 +71,8 @@ _CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_asy
 #if __cccl_ptx_isa >= 800
   NV_IF_TARGET(
     NV_PROVIDES_SM_90,
-    (const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
-     (void) __can_use_complete_tx;
+    ([[maybe_unused]] const bool __can_use_complete_tx =
+       __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
      _CCCL_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle),
                   "Pass non-null bar_handle if and only if can_use_complete_tx.");
      if constexpr (_Align >= 16) {

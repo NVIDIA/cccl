@@ -26,9 +26,9 @@ int main(int, char**)
 {
   using day = cuda::std::chrono::day;
 
-  ASSERT_NOEXCEPT(day{});
-  ASSERT_NOEXCEPT(day(0U));
-  ASSERT_NOEXCEPT(static_cast<unsigned>(day(0U)));
+  static_assert(noexcept(day{}));
+  static_assert(noexcept(day(0U)));
+  static_assert(noexcept(static_cast<unsigned>(day(0U))));
 
   constexpr day d0{};
   static_assert(static_cast<unsigned>(d0) == 0, "");

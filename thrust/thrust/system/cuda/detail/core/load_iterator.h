@@ -30,6 +30,7 @@
 
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
 THRUST_NAMESPACE_BEGIN

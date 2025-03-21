@@ -27,7 +27,7 @@ int main(int, char**)
 
   // cuda::std::make_integer_sequence is implemented using a compiler builtin if available.
   // this builtin has different diagnostic messages than the fallback implementation.
-#if TEST_HAS_BUILTIN(__make_integer_seq) && !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
+#if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
   MakeSeqT i; // expected-error@*:* {{integer sequences must have non-negative sequence length}}
 #else
   MakeSeqT i; // expected-error-re@*:* {{{{(static_assert|static assertion)}}

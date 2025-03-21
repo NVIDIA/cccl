@@ -63,17 +63,17 @@ __host__ __device__ constexpr void test_mdspan_types(const H& handle, const M& m
   using MDS = cuda::std::mdspan<typename A::element_type, typename M::extents_type, typename M::layout_type, A>;
 
   // deduction from data_handle_type (including non-pointer), mapping and accessor
-  ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle, map, acc)), MDS);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::mdspan(handle, map, acc)), MDS>);
 
   if constexpr (cuda::std::is_same<A, cuda::std::default_accessor<typename A::element_type>>::value)
   {
     // deduction from pointer and mapping
     // non-pointer data-handle-types have other accessor
-    ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle, map)), MDS);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::mdspan(handle, map)), MDS>);
     if constexpr (cuda::std::is_same<typename M::layout_type, cuda::std::layout_right>::value)
     {
       // deduction from pointer and extents
-      ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle, map.extents())), MDS);
+      static_assert(cuda::std::is_same_v<decltype(cuda::std::mdspan(handle, map.extents())), MDS>);
     }
   }
 }
@@ -110,30 +110,33 @@ __host__ __device__ constexpr bool test_no_layout_deduction_guides(const H& hand
 {
   using T = typename A::element_type;
   // deduction from pointer alone
-  ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle)), cuda::std::mdspan<T, cuda::std::extents<size_t>>);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::std::mdspan(handle)), cuda::std::mdspan<T, cuda::std::extents<size_t>>>);
   // deduction from pointer and integral like
-  ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle, 5, SizeTIntType(6))),
-                   cuda::std::mdspan<T, cuda::std::dextents<size_t, 2>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::mdspan(handle, 5, SizeTIntType(6))),
+                                     cuda::std::mdspan<T, cuda::std::dextents<size_t, 2>>>);
 
   // P3029R1: deduction from `integral_constant`
-  ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle, cuda::std::integral_constant<size_t, 5>{})),
-                   cuda::std::mdspan<T, cuda::std::extents<size_t, 5>>);
-  ASSERT_SAME_TYPE(
-    decltype(cuda::std::mdspan(handle, cuda::std::integral_constant<size_t, 5>{}, cuda::std::dynamic_extent)),
-    cuda::std::mdspan<T, cuda::std::extents<size_t, 5, cuda::std::dynamic_extent>>);
-  ASSERT_SAME_TYPE(
-    decltype(cuda::std::mdspan(handle,
-                               cuda::std::integral_constant<size_t, 5>{},
-                               cuda::std::dynamic_extent,
-                               cuda::std::integral_constant<size_t, 7>{})),
-    cuda::std::mdspan<T, cuda::std::extents<size_t, 5, cuda::std::dynamic_extent, 7>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::mdspan(handle, cuda::std::integral_constant<size_t, 5>{})),
+                                     cuda::std::mdspan<T, cuda::std::extents<size_t, 5>>>);
+  static_assert(
+    cuda::std::is_same_v<
+      decltype(cuda::std::mdspan(handle, cuda::std::integral_constant<size_t, 5>{}, cuda::std::dynamic_extent)),
+      cuda::std::mdspan<T, cuda::std::extents<size_t, 5, cuda::std::dynamic_extent>>>);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::std::mdspan(handle,
+                                                    cuda::std::integral_constant<size_t, 5>{},
+                                                    cuda::std::dynamic_extent,
+                                                    cuda::std::integral_constant<size_t, 7>{})),
+                         cuda::std::mdspan<T, cuda::std::extents<size_t, 5, cuda::std::dynamic_extent, 7>>>);
 
   cuda::std::array<char, 3> exts;
   // deduction from pointer and array
-  ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle, exts)), cuda::std::mdspan<T, cuda::std::dextents<size_t, 3>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::mdspan(handle, exts)),
+                                     cuda::std::mdspan<T, cuda::std::dextents<size_t, 3>>>);
   // deduction from pointer and span
-  ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(handle, cuda::std::span(exts))),
-                   cuda::std::mdspan<T, cuda::std::dextents<size_t, 3>>);
+  static_assert(cuda::std::is_same_v<decltype(cuda::std::mdspan(handle, cuda::std::span(exts))),
+                                     cuda::std::mdspan<T, cuda::std::dextents<size_t, 3>>>);
   return true;
 }
 
@@ -191,7 +194,8 @@ __host__ __device__ constexpr bool test()
 
   // deduction from array alone
   float a[12] = {};
-  ASSERT_SAME_TYPE(decltype(cuda::std::mdspan(a)), cuda::std::mdspan<float, cuda::std::extents<size_t, 12>>);
+  static_assert(
+    cuda::std::is_same_v<decltype(cuda::std::mdspan(a)), cuda::std::mdspan<float, cuda::std::extents<size_t, 12>>>);
   unused(a);
 
   return true;

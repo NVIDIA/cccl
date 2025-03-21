@@ -73,7 +73,7 @@ int main(int argc, char** argv)
     {
       double sum = 0.0;
 
-      ctx.task(exec_place::host, lUn.read())->*[&](auto stream, auto sUn) {
+      ctx.task(exec_place::host(), lUn.read())->*[&](auto stream, auto sUn) {
         cuda_safe_call(cudaStreamSynchronize(stream));
         for (size_t offset = 0; offset < TOTAL_SIZE; offset++)
         {
