@@ -102,17 +102,17 @@ struct incrementable_traits<const _Ip> : incrementable_traits<_Ip>
 {};
 
 template <class _Tp, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_difference_type = false;
+inline constexpr bool __has_member_difference_type = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
+inline constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
 
 template <class _Tp, class = void, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_integral_minus = false;
+inline constexpr bool __has_integral_minus = false;
 
 // In C++17 we get issues trying to bind void* to a const& so special case it here
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool
+inline constexpr bool
   __has_integral_minus<_Tp,
                        enable_if_t<!same_as<_Tp, void*>>,
                        void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>> =

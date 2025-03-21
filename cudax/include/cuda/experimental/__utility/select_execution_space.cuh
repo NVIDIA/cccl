@@ -34,7 +34,7 @@ enum class _ExecutionSpace
 };
 
 template <class... _Properties>
-_CCCL_INLINE_VAR constexpr _ExecutionSpace __select_execution_space =
+inline constexpr _ExecutionSpace __select_execution_space =
   _CUDA_VMR::__is_host_device_accessible<_Properties...> ? _ExecutionSpace::__host_device
   : _CUDA_VMR::__is_device_accessible<_Properties...>
     ? _ExecutionSpace::__device

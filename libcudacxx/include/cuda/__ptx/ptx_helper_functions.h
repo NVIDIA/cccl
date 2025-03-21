@@ -27,7 +27,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
@@ -142,6 +142,6 @@ inline _CCCL_DEVICE _B8 __u32_as_b8(uint32_t __u32)
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 #endif // _CUDA_PTX_HELPER_FUNCTIONS_H_

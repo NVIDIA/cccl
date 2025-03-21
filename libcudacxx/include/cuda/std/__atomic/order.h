@@ -143,12 +143,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 using memory_order = _CUDA_VSTD::memory_order;
 
-_CCCL_INLINE_VAR constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
-_CCCL_INLINE_VAR constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
-_CCCL_INLINE_VAR constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
-_CCCL_INLINE_VAR constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
-_CCCL_INLINE_VAR constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
-_CCCL_INLINE_VAR constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
+inline constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
+inline constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
+inline constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
+inline constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
+inline constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
+inline constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

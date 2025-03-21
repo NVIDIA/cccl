@@ -41,17 +41,17 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_host_iterator_category =
+inline constexpr bool is_host_iterator_category =
   ::cuda::std::is_convertible_v<T, input_host_iterator_tag>
   || ::cuda::std::is_convertible_v<T, output_host_iterator_tag>;
 
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_device_iterator_category =
+inline constexpr bool is_device_iterator_category =
   ::cuda::std::is_convertible_v<T, input_device_iterator_tag>
   || ::cuda::std::is_convertible_v<T, output_device_iterator_tag>;
 
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_iterator_category = is_host_iterator_category<T> || is_device_iterator_category<T>;
+inline constexpr bool is_iterator_category = is_host_iterator_category<T> || is_device_iterator_category<T>;
 
 // adapted from http://www.boost.org/doc/libs/1_37_0/libs/iterator/doc/iterator_facade.html#iterator-category
 //

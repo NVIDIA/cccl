@@ -26,11 +26,11 @@
 #define _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()    0
 #define _LIBCUDACXX_HAS_WCHAR_H()               0
 
-#if _CCCL_HAS_CUDA_COMPILER || __cpp_aligned_new < 201606
+#if _CCCL_HAS_CUDA_COMPILER() || __cpp_aligned_new < 201606
 #  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 0
 #else
 #  define _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() 1
-#endif // !_CCCL_HAS_CUDA_COMPILER && __cpp_aligned_new >= 201606
+#endif // !_CCCL_HAS_CUDA_COMPILER() && __cpp_aligned_new >= 201606
 
 #if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
 #  define _LIBCUDACXX_HAS_CHAR8_T() 0
@@ -57,7 +57,7 @@
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #if _CCCL_HAS_NVFP16() && _CCCL_CUDACC_AT_LEAST(12, 2) \
-  && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
+  && (_CCCL_HAS_CUDA_COMPILER() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
 #  define _LIBCUDACXX_HAS_NVFP16() 1
 #else
 #  define _LIBCUDACXX_HAS_NVFP16() 0

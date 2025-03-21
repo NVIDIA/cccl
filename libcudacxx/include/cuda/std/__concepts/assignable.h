@@ -40,7 +40,7 @@ concept assignable_from =
        { __lhs = _CUDA_VSTD::forward<_Rhs>(__rhs) } -> same_as<_Lhs>;
      };
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Lhs, class _Rhs>
 _CCCL_CONCEPT_FRAGMENT(
@@ -53,7 +53,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Lhs, class _Rhs>
 _CCCL_CONCEPT assignable_from = _CCCL_FRAGMENT(__assignable_from_, _Lhs, _Rhs);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

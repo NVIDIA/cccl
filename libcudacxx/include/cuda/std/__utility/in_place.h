@@ -38,7 +38,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_type_t
   _CCCL_HIDE_FROM_ABI explicit in_place_type_t() = default;
 };
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr in_place_type_t<_Tp> in_place_type{};
+inline constexpr in_place_type_t<_Tp> in_place_type{};
 
 template <size_t _Idx>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_index_t
@@ -46,7 +46,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_index_t
   _CCCL_HIDE_FROM_ABI explicit in_place_index_t() = default;
 };
 template <size_t _Idx>
-_CCCL_INLINE_VAR constexpr in_place_index_t<_Idx> in_place_index{};
+inline constexpr in_place_index_t<_Idx> in_place_index{};
 
 template <class _Tp>
 struct __is_inplace_type_imp : false_type

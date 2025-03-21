@@ -116,16 +116,16 @@ struct __cond_value_type<_Tp, enable_if_t<_CCCL_TRAIT(is_object, _Tp)>>
 };
 
 template <class _Tp, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_value_type = false;
+inline constexpr bool __has_member_value_type = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
+inline constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
 
 template <class _Tp, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_element_type = false;
+inline constexpr bool __has_member_element_type = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
+inline constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
 
 template <class, class = void>
 struct indirectly_readable_traits

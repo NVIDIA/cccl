@@ -138,7 +138,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_format __fp_format_of_v
 }
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_format __fp_format_of_v = _CUDA_VSTD::__fp_format_of_v_impl<_Tp>();
+inline constexpr __fp_format __fp_format_of_v = _CUDA_VSTD::__fp_format_of_v_impl<_Tp>();
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

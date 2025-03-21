@@ -39,10 +39,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT has_virtual_destructor : public false_type
 
 #endif // defined(_CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool has_virtual_destructor_v = has_virtual_destructor<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool has_virtual_destructor_v = has_virtual_destructor<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

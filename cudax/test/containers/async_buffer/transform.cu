@@ -101,8 +101,8 @@ TEMPLATE_LIST_TEST_CASE(
 
   cudax::async_device_buffer<type> a{env, num_items, cudax::uninit};
   cudax::async_device_buffer<type> b{env, num_items, cudax::uninit};
-  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), a.begin(), a.end());
-  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), b.begin(), b.end());
+  thrust::sequence(thrust::cuda::par_nosync.on(stream), a.begin(), a.end());
+  thrust::sequence(thrust::cuda::par_nosync.on(stream), b.begin(), b.end());
 
   cudax::async_device_buffer<type> result{env, num_items, cudax::uninit};
 

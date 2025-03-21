@@ -38,10 +38,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array<_Tp[]> : true_type
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_unbounded_array_v = is_unbounded_array<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_unbounded_array_v = is_unbounded_array<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

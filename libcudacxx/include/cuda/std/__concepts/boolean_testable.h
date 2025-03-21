@@ -38,7 +38,7 @@ concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t)
   { !_CUDA_VSTD::forward<_Tp>(__t) } -> __boolean_testable_impl;
 };
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
 _CCCL_CONCEPT __boolean_testable_impl = convertible_to<_Tp, bool>;
@@ -52,7 +52,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT __boolean_testable = _CCCL_FRAGMENT(__boolean_testable_, _Tp);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

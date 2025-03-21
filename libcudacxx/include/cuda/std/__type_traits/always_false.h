@@ -24,7 +24,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class...>
-_CCCL_INLINE_VAR constexpr bool __always_false_v = false;
+inline constexpr bool __always_false_v = false;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

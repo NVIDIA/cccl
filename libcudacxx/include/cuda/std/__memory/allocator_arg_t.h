@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t
   _CCCL_HIDE_FROM_ABI explicit allocator_arg_t() = default;
 };
 
-_CCCL_INLINE_VAR constexpr allocator_arg_t allocator_arg = allocator_arg_t();
+inline constexpr allocator_arg_t allocator_arg = allocator_arg_t();
 
 // allocator construction
 

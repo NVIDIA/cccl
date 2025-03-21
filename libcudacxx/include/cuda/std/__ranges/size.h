@@ -37,7 +37,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class>
-_CCCL_INLINE_VAR constexpr bool disable_sized_range = false;
+inline constexpr bool disable_sized_range = false;
 
 // [range.prim.size]
 

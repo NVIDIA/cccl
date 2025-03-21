@@ -168,7 +168,7 @@ struct __get_subextent
 };
 
 template <class _IndexType, class _SliceType>
-_CCCL_INLINE_VAR constexpr bool __is_valid_subextents =
+inline constexpr bool __is_valid_subextents =
   convertible_to<_SliceType, _IndexType> || __index_pair_like<_SliceType, _IndexType>
   || _CCCL_TRAIT(is_convertible, _SliceType, full_extent_t) || __is_strided_slice<remove_cv_t<_SliceType>>;
 

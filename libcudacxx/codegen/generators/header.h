@@ -57,7 +57,7 @@ inline void FormatHeader(std::ostream& out)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 )XXX";
 
   out << header;
@@ -66,7 +66,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 inline void FormatTail(std::ostream& out)
 {
   std::string tail = R"XXX(
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

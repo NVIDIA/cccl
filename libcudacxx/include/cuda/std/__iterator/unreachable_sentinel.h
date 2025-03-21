@@ -25,7 +25,6 @@
 #include <cuda/std/__iterator/concepts.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
 // MSVC requires an interesting workaround for a /permissive- bug
 // We cannot simply define unreachable_sentinel_t with it friendfunctions,
@@ -77,8 +76,6 @@ struct __unreachable_base
 struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_base
 {};
 #endif // _CCCL_COMPILER(MSVC)
-
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 _CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
 _LIBCUDACXX_END_NAMESPACE_STD

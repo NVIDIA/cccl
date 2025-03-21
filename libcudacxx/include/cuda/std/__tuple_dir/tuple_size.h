@@ -68,7 +68,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<__tuple_types<_Tp...>>
 {};
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
+inline constexpr size_t tuple_size_v = tuple_size<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

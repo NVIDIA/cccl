@@ -29,7 +29,10 @@ struct other_property
 
 // make the cudax resources have that property for tests
 inline void get_property(const cuda::experimental::device_memory_resource&, other_property) {}
+inline void get_property(const cuda::experimental::legacy_pinned_memory_resource&, other_property) {}
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
 inline void get_property(const cuda::experimental::pinned_memory_resource&, other_property) {}
+#endif
 
 //! @brief Simple wrapper around a memory resource that caches previous allocations
 template <class Resource>

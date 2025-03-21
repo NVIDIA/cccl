@@ -120,7 +120,7 @@ void test_cross_device_access_from_kernel(
 
   // This will be a pinned memory vector once available
   cudax::uninitialized_buffer<float, cuda::mr::host_accessible> host_buffer(
-    cudax::pinned_memory_resource(), dev0_buffer.size());
+    cudax::legacy_pinned_memory_resource(), dev0_buffer.size());
   std::generate(host_buffer.begin(), host_buffer.end(), []() {
     static int i = 0;
     return static_cast<float>((i++) % 4096);

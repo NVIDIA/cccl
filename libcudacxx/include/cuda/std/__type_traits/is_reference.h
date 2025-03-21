@@ -42,14 +42,12 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_REFERENCE(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_lvalue_reference_v = _CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp);
+inline constexpr bool is_lvalue_reference_v = _CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp);
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_rvalue_reference_v = _CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp);
+inline constexpr bool is_rvalue_reference_v = _CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp);
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_reference_v = _CCCL_BUILTIN_IS_REFERENCE(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_reference_v = _CCCL_BUILTIN_IS_REFERENCE(_Tp);
 
 #else
 
@@ -77,16 +75,14 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_reference<_Tp&&> : public true_type
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_lvalue_reference_v = is_lvalue_reference<_Tp>::value;
+inline constexpr bool is_lvalue_reference_v = is_lvalue_reference<_Tp>::value;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_rvalue_reference_v = is_rvalue_reference<_Tp>::value;
+inline constexpr bool is_rvalue_reference_v = is_rvalue_reference<_Tp>::value;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_reference_v = is_reference<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_reference_v = is_reference<_Tp>::value;
 
 #endif // !_CCCL_BUILTIN_IS_LVALUE_REFERENCE
 

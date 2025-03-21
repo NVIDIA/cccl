@@ -91,10 +91,10 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_co
 }
 
 template <class _Lhs, class _Rhs>
-_CCCL_INLINE_VAR constexpr __fp_conv_rank_order __fp_conv_rank_order_v = __fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
+inline constexpr __fp_conv_rank_order __fp_conv_rank_order_v = __fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
 
 template <class _Lhs, class _Rhs>
-_CCCL_INLINE_VAR constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
+inline constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
   __fp_conv_rank_order_v<conditional_t<_CCCL_TRAIT(is_integral, _Lhs), double, _Lhs>,
                          conditional_t<_CCCL_TRAIT(is_integral, _Rhs), double, _Rhs>>;
 
@@ -106,7 +106,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __fp_is_implicit_conver
 }
 
 template <class _Lhs, class _Rhs>
-_CCCL_INLINE_VAR constexpr bool __fp_is_implicit_conversion_v = __fp_is_implicit_conversion_v_impl<_Lhs, _Rhs>();
+inline constexpr bool __fp_is_implicit_conversion_v = __fp_is_implicit_conversion_v_impl<_Lhs, _Rhs>();
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

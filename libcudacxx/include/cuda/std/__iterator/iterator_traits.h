@@ -592,25 +592,25 @@ _CCCL_CONCEPT __cpp17_random_access_iterator =
 
 // We need to consider if a user has specialized std::iterator_traits
 template <class _Ip>
-_CCCL_INLINE_VAR constexpr bool __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
+inline constexpr bool __specialized_from_std = !__is_primary_std_template<remove_cvref_t<_Ip>>::value;
 
 template <class, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_reference = false;
+inline constexpr bool __has_member_reference = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
+inline constexpr bool __has_member_reference<_Tp, void_t<typename _Tp::reference>> = true;
 
 template <class, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_pointer = false;
+inline constexpr bool __has_member_pointer = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
+inline constexpr bool __has_member_pointer<_Tp, void_t<typename _Tp::pointer>> = true;
 
 template <class, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_iterator_category = false;
+inline constexpr bool __has_member_iterator_category = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
+inline constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
 
 template <class _Ip>
 _CCCL_CONCEPT __specifies_members =

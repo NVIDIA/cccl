@@ -246,11 +246,17 @@ Benchmark results captured in different tuning databases can be compared as well
 
 This will print a Markdown report showing the runtime differences and noise for each variant.
 
-Furthermore, you can plot the results from one or more tuning databases as a bar chart or a box plot (add `--box`):
+Furthermore, you can plot the results, which requires additional python packages:
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/sol.py -o cccl_meta_bench.db ...
+    pip install fpzip pandas matplotlib seaborn tabulate PyQt5
+
+You can plot one or more tuning databases as a bar chart or a box plot (add `--box`):
+
+.. code-block:: bash
+
+    ../benchmarks/scripts/sol.py cccl_meta_bench.db ...
 
 This is useful to display the current performance of CUB as captured in a single tuning database,
 or visually compare the performance of CUB across different tuning databases

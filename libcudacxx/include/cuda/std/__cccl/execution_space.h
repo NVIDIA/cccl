@@ -23,7 +23,7 @@
 #endif // no system header
 
 // We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if _CCCL_HAS_CUDA_COMPILER && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#if _CCCL_HAS_CUDA_COMPILER() && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__

@@ -14,9 +14,9 @@
 C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
 {
   // example-begin merge-keys
-  thrust::device_vector<int> keys1{0, 2, 5};
-  thrust::device_vector<int> keys2{0, 3, 3, 4};
-  thrust::device_vector<int> result(7);
+  c2h::device_vector<int> keys1{0, 2, 5};
+  c2h::device_vector<int> keys2{0, 3, 3, 4};
+  c2h::device_vector<int> result(7);
 
   // 1) Get temp storage size
   std::size_t temp_storage_bytes = 0;
@@ -30,7 +30,7 @@ C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
     result.begin());
 
   // 2) Allocate temp storage
-  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // 3) Perform merge operation
   cub::DeviceMerge::MergeKeys(
@@ -42,7 +42,7 @@ C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
     static_cast<int>(keys2.size()),
     result.begin());
 
-  thrust::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
+  c2h::host_vector<int> expected{0, 0, 2, 3, 3, 4, 5};
   // example-end merge-keys
   CHECK(result == expected);
 }
@@ -50,12 +50,12 @@ C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
 C2H_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
 {
   // example-begin merge-pairs
-  thrust::device_vector<int> keys1{0, 2, 5};
-  thrust::device_vector<char> values1{'a', 'b', 'c'};
-  thrust::device_vector<int> keys2{0, 3, 3, 4};
-  thrust::device_vector<char> values2{'A', 'B', 'C', 'D'};
-  thrust::device_vector<int> result_keys(7);
-  thrust::device_vector<char> result_values(7);
+  c2h::device_vector<int> keys1{0, 2, 5};
+  c2h::device_vector<char> values1{'a', 'b', 'c'};
+  c2h::device_vector<int> keys2{0, 3, 3, 4};
+  c2h::device_vector<char> values2{'A', 'B', 'C', 'D'};
+  c2h::device_vector<int> result_keys(7);
+  c2h::device_vector<char> result_values(7);
 
   // 1) Get temp storage size
   std::size_t temp_storage_bytes = 0;
@@ -72,7 +72,7 @@ C2H_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
     result_values.begin());
 
   // 2) Allocate temp storage
-  thrust::device_vector<char> temp_storage(temp_storage_bytes);
+  c2h::device_vector<char> temp_storage(temp_storage_bytes);
 
   // 3) Perform merge operation
   cub::DeviceMerge::MergePairs(
@@ -87,8 +87,8 @@ C2H_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
     result_keys.begin(),
     result_values.begin());
 
-  thrust::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
-  thrust::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
+  c2h::host_vector<int> expected_keys{0, 0, 2, 3, 3, 4, 5};
+  c2h::host_vector<char> expected_values{'a', 'A', 'b', 'B', 'C', 'D', 'c'};
   // example-end merge-pairs
   CHECK(result_keys == expected_keys);
   CHECK(result_values == expected_values);

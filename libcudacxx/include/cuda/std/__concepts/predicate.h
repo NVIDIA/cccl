@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Fn, class... _Args>
 concept predicate = regular_invocable<_Fn, _Args...> && __boolean_testable<invoke_result_t<_Fn, _Args...>>;
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 // [concept.predicate]
 template <class _Fn, class... _Args>
@@ -43,7 +43,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Fn, class... _Args>
 _CCCL_CONCEPT predicate = _CCCL_FRAGMENT(_Predicate_, _Fn, _Args...);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

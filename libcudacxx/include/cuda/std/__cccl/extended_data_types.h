@@ -51,12 +51,12 @@
 #endif
 
 // FIXME: Enable this for clang-cuda in a followup
-#if !_CCCL_HAS_CUDA_COMPILER
+#if !_CCCL_HAS_CUDA_COMPILER()
 #  undef _CCCL_HAS_LONG_DOUBLE
 #  define _CCCL_HAS_LONG_DOUBLE() 1
-#endif // !_CCCL_HAS_CUDA_COMPILER
+#endif // !_CCCL_HAS_CUDA_COMPILER()
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                       && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  undef _CCCL_HAS_NVFP16
 #  define _CCCL_HAS_NVFP16() 1

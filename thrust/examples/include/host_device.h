@@ -16,7 +16,7 @@
 
 #pragma once
 
-#if !_CCCL_HAS_CUDA_COMPILER
+#if !_CCCL_HAS_CUDA_COMPILER()
 
 #  ifndef __host__
 #    define __host__

@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <cuda/__barrier/aligned_size.h>
 #  include <cuda/__barrier/async_contract_fulfillment.h>

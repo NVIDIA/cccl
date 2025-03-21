@@ -52,7 +52,7 @@ concept copy_constructible =
   && constructible_from<_Tp, const _Tp&> && convertible_to<const _Tp&, _Tp> && constructible_from<_Tp, const _Tp>
   && convertible_to<const _Tp, _Tp>;
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp, class... _Args>
 _CCCL_CONCEPT_FRAGMENT(__constructible_from_,
@@ -96,7 +96,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT copy_constructible = _CCCL_FRAGMENT(__copy_constructible_, _Tp);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/distance.h>
 #  include <thrust/swap.h>
 #  include <thrust/system/cuda/detail/par_to_seq.h>

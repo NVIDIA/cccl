@@ -15,7 +15,9 @@ set(cn_cmake_dir "${CMAKE_CURRENT_LIST_DIR}")
 set(cn_prefix_dir "${cn_cmake_dir}/../../..")
 find_path(cn_include_dir "cuda/experimental/version.cuh"
   REQUIRED
-  NO_DEFAULT_PATH NO_CACHE REQUIRED
+  NO_CACHE
+  NO_CMAKE_FIND_ROOT_PATH # Don't allow CMake to re-root the search
+  NO_DEFAULT_PATH # Only search explicit paths below:
   HINTS
     "${cn_prefix_dir}/cudax/include" # Source
     "${cn_prefix_dir}/include"       # Install

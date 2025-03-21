@@ -159,13 +159,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT common_type<_Tp, _Up, _Vp, _Rest...>
 template <class... _Tp>
 using common_type_t _CCCL_NODEBUG_ALIAS = typename common_type<_Tp...>::type;
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class, class, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_common_type = false;
+inline constexpr bool __has_common_type = false;
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

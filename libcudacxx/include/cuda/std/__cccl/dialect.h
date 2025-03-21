@@ -80,11 +80,6 @@
 #  define _CCCL_NO_CONCEPTS
 #endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 
-// Fold expressions are only available from C++17 onwards
-#if __cpp_fold_expressions < 201603L
-#  define _CCCL_NO_FOLD_EXPRESSIONS
-#endif // __cpp_fold_expressions < 201603L
-
 // Inline variables are only available from C++17 onwards
 #if __cpp_inline_variables < 201606L
 #  define _CCCL_NO_INLINE_VARIABLES
@@ -95,33 +90,18 @@
 #  define _CCCL_NO_THREE_WAY_COMPARISON
 #endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 
-// Variable templates are only available from C++14 onwards and require some compiler support
-#if __cpp_variable_templates < 201304L
-#  define _CCCL_NO_VARIABLE_TEMPLATES
-#endif // __cpp_variable_templates < 201304L
-
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(_CCCL_NO_INLINE_VARIABLES)
-#  define _CCCL_INLINE_VAR
-#else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
-#  define _CCCL_INLINE_VAR inline
-#endif // !_CCCL_NO_INLINE_VARIABLES
-
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
-#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
-#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
+#  define _CCCL_GLOBAL_CONSTANT inline constexpr
 #endif // __CUDA_ARCH__
 
 #endif // __CCCL_DIALECT_H

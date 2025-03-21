@@ -70,31 +70,31 @@ class expected;
 namespace __expected
 {
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr bool __valid_expected =
+inline constexpr bool __valid_expected =
   !_CCCL_TRAIT(is_reference, _Tp) && !_CCCL_TRAIT(is_function, _Tp)
   && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, in_place_t) && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, unexpect_t)
   && !__unexpected::__is_unexpected<remove_cv_t<_Tp>> && __unexpected::__valid_unexpected<_Err>;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_expected = false;
+inline constexpr bool __is_expected = false;
 
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr bool __is_expected<expected<_Tp, _Err>> = true;
+inline constexpr bool __is_expected<expected<_Tp, _Err>> = true;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_expected_nonvoid = __is_expected<_Tp>;
+inline constexpr bool __is_expected_nonvoid = __is_expected<_Tp>;
 
 template <class _Err>
-_CCCL_INLINE_VAR constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
+inline constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
 
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr bool __can_swap =
+inline constexpr bool __can_swap =
   _CCCL_TRAIT(is_swappable, _Tp) && _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Tp)
   && _CCCL_TRAIT(is_move_constructible, _Err)
   && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err));
 
 template <class _Err>
-_CCCL_INLINE_VAR constexpr bool __can_swap<void, _Err> =
+inline constexpr bool __can_swap<void, _Err> =
   _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Err);
 } // namespace __expected
 

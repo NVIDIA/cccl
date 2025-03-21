@@ -40,10 +40,8 @@ constexpr bool equal_range(const Buffer& buf)
   else
   {
     return buf.size() == cuda::std::size(device_data)
-        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
-                         buf.begin(),
-                         buf.end(),
-                         cuda::get_device_address(device_data[0]));
+        && thrust::equal(
+             thrust::cuda::par.on(buf.get_stream()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
   }
 }
 
@@ -113,7 +111,7 @@ constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int 
   else
   {
     return buf.size() == size
-        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
+        && thrust::equal(thrust::cuda::par.on(buf.get_stream()),
                          buf.begin(),
                          buf.end(),
                          cuda::std::begin(device_data),
@@ -133,9 +131,34 @@ constexpr bool equal_range(const Range1& range1, const Range2& range2)
   else
   {
     return range1.size() == range2.size()
-        && thrust::equal(thrust::cuda::par.on(range1.get_stream().get()), range1.begin(), range1.end(), range2.begin());
+        && thrust::equal(thrust::cuda::par.on(range1.get_stream()), range1.begin(), range1.end(), range2.begin());
   }
 }
+
+struct fake_async_pinned_memory_resource : cudax::legacy_pinned_memory_resource
+{
+  using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
+
+  void* allocate_async(size_t size, size_t alignment, [[maybe_unused]] ::cuda::stream_ref stream)
+  {
+    return allocate(size, alignment);
+  }
+
+  void* allocate_async(size_t size, [[maybe_unused]] ::cuda::stream_ref stream)
+  {
+    return allocate(size);
+  }
+
+  void deallocate_async(void* ptr, size_t size, size_t alignment, [[maybe_unused]] ::cuda::stream_ref stream)
+  {
+    return deallocate(ptr, size, alignment);
+  }
+
+  void deallocate_async(void* ptr, size_t size, [[maybe_unused]] ::cuda::stream_ref stream)
+  {
+    return deallocate(ptr, size);
+  }
+};
 
 // helper class as we need to pass the properties in a tuple to the catch tests
 template <class>
@@ -148,7 +171,11 @@ struct extract_properties<cuda::std::tuple<Properties...>>
   using async_buffer = cudax::async_buffer<int, Properties...>;
   using resource =
     caching_resource<cuda::std::conditional_t<cuda::mr::__is_host_device_accessible<Properties...>,
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
                                               cudax::pinned_memory_resource,
+#else
+                                              fake_async_pinned_memory_resource,
+#endif
                                               cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
                                                                        host_memory_resource<int>,
                                                                        cudax::device_memory_resource>>>;

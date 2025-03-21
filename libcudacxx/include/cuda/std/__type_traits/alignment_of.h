@@ -29,10 +29,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT alignment_of : public integral_constant<size_t, alignof(_Tp)>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr size_t alignment_of_v = alignof(_Tp);
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr size_t alignment_of_v = alignof(_Tp);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -27,8 +27,8 @@
 CUB_NAMESPACE_BEGIN
 namespace detail::merge
 {
-_CCCL_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
-_CCCL_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
+inline constexpr int fallback_BLOCK_THREADS    = 64;
+inline constexpr int fallback_ITEMS_PER_THREAD = 1;
 
 template <typename DefaultPolicy, class... Args>
 class choose_merge_agent

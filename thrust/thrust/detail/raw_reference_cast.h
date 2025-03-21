@@ -49,17 +49,17 @@ __THRUST_DEFINE_HAS_NESTED_TYPE(is_wrapped_reference, wrapped_reference_hint)
 // wrapped reference-like things which aren't strictly wrapped references
 // (e.g. tuples of wrapped references) are considered unwrappable
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool can_unwrap = is_wrapped_reference<T>::value;
+inline constexpr bool can_unwrap = is_wrapped_reference<T>::value;
 
 // specialize is_unwrappable
 // a tuple is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-_CCCL_INLINE_VAR constexpr bool can_unwrap<tuple<Ts...>> = (can_unwrap<Ts> || ...);
+inline constexpr bool can_unwrap<tuple<Ts...>> = (can_unwrap<Ts> || ...);
 
 // specialize is_unwrappable
 // a tuple_of_iterator_references is_unwrappable if any of its elements is_unwrappable
 template <typename... Ts>
-_CCCL_INLINE_VAR constexpr bool can_unwrap<tuple_of_iterator_references<Ts...>> = (can_unwrap<Ts> || ...);
+inline constexpr bool can_unwrap<tuple_of_iterator_references<Ts...>> = (can_unwrap<Ts> || ...);
 
 namespace raw_reference_detail
 {

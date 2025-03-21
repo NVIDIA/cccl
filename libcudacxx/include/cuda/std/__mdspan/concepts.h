@@ -60,11 +60,11 @@ struct __is_extents : false_type
 {};
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_extents_v = __is_extents<_Tp>::value;
+inline constexpr bool __is_extents_v = __is_extents<_Tp>::value;
 
 // [mdspan.layout.general]/2
 template <class _Layout, class _Mapping>
-_CCCL_INLINE_VAR constexpr bool __is_mapping_of =
+inline constexpr bool __is_mapping_of =
   _CCCL_TRAIT(is_same, typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping);
 
 // [mdspan.layout.reqmts]/1

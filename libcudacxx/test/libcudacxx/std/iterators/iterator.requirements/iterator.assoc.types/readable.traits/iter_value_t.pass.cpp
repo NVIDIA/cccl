@@ -43,10 +43,10 @@ static_assert(check_iter_value_t<both_members, double>(), "");
 
 // clang-format off
 template <class T, class = void>
-_CCCL_INLINE_VAR constexpr bool check_no_iter_value_t = true;
+inline constexpr bool check_no_iter_value_t = true;
 
 template <class T>
-_CCCL_INLINE_VAR constexpr bool check_no_iter_value_t<T, cuda::std::void_t<cuda::std::iter_value_t<T>>> = false;
+inline constexpr bool check_no_iter_value_t<T, cuda::std::void_t<cuda::std::iter_value_t<T>>> = false;
 
 static_assert(check_no_iter_value_t<void>, "");
 static_assert(check_no_iter_value_t<double>, "");

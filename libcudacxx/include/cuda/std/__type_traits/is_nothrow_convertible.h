@@ -47,10 +47,8 @@ struct is_nothrow_convertible
           _Lazy<_And, is_convertible<_Fm, _To>, __is_nothrow_convertible_helper<_Fm, _To>>>::type
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <typename _Fm, typename _To>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

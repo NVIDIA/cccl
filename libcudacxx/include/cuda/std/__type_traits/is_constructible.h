@@ -152,20 +152,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
     : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_CCCL_INLINE_VAR constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...);
 
 #else
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible : public __cccl_is_constructible<_Tp, _Args...>::type
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_CCCL_INLINE_VAR constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 
