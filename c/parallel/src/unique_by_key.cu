@@ -313,9 +313,20 @@ struct device_unique_by_key_policy {{
 }};
 struct device_unique_by_key_vsmem_helper {{
   template<typename ActivePolicyT, typename... Ts>
-  struct VSMemHelperDefaultFallbackPolicyT : public cub::detail::vsmem_helper_impl<cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>> {{
+  struct VSMemHelperDefaultFallbackPolicyT {{
     using agent_policy_t = agent_policy_t;
     using agent_t = cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
+    using static_temp_storage_t = typename cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>::TempStorage;
+    static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
+      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem, ::cuda::std::size_t linear_block_id)
+    {{
+        return static_temp_storage;
+    }}
+    template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
+    static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
+    {{
+      return false;
+    }}
   }};
 }};
 {13}
