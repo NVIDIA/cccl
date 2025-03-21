@@ -56,22 +56,34 @@ _CCCL_HOST_DEVICE void assign_value(execution_policy<DerivedPolicy>& exec, Point
   // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
   // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
   // NV_IF_TARGET switch. See also NVBug 881631.
-  [[maybe_unused]] auto kernel = &detail::assign_value_kernel<V1, V2>;
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    // on host, perform device -> device memcpy
-    (
-      if constexpr (::cuda::std::is_same_v<V1, V2>) {
+  struct HostPath
+  {
+    execution_policy<DerivedPolicy>& exec;
+    Pointer1 dst;
+    Pointer2 src;
+
+    _CCCL_HOST void operator()() const
+    {
+      if constexpr (::cuda::std::is_same_v<V1, V2>)
+      {
         const cudaError status = trivial_copy_device_to_device(exec, raw_pointer_cast(dst), raw_pointer_cast(src), 1);
         throw_on_error(status, "__copy:: D->D: failed");
-      } else {
-        const cudaError status = cuda_cub::detail::triple_chevron(1, 1, 0, stream(exec))
-                                   .doit(kernel, raw_pointer_cast(dst), raw_pointer_cast(src));
+      }
+      else
+      {
+        const cudaError status =
+          cuda_cub::detail::triple_chevron(1, 1, 0, stream(exec))
+            .doit(detail::assign_value_kernel<V1, V2>, raw_pointer_cast(dst), raw_pointer_cast(src));
         throw_on_error(status, "__copy:: D->D with different data types: kernel failed");
         throw_on_error(synchronize_optional(exec), "__copy:: D->D with different data types: sync failed");
-      }),
-    // on device, simply assign
-    *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src););
+      }
+    }
+  };
+  NV_IF_TARGET(NV_IS_HOST,
+               // on host, perform device -> device memcpy
+               (HostPath{exec, dst, src}();),
+               // on device, simply assign
+               *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src););
 }
 
 namespace detail
