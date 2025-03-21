@@ -38,7 +38,7 @@ CPMAddPackage(
 
 # Default to building for the GPU on the current system
 if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES 86)
+  set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
 add_library(cudax_samples_interface INTERFACE)

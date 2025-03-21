@@ -21,12 +21,12 @@ Starting from scratch:
     cd cccl
     mkdir build
     cd build
-    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_ARCHITECTURES=native
 
 You clone the repository, create a build directory and configure the build with CMake.
 It's important that you enable benchmarks (`CCCL_ENABLE_BENCHMARKS=ON`),
 build in Release mode (`CMAKE_BUILD_TYPE=Release`),
-and set the GPU architecture to match your system (`CMAKE_CUDA_ARCHITECTURES=XX`).
+and set the GPU architecture to match your system (`CMAKE_CUDA_ARCHITECTURES=native`).
 This `website <https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/>`_
 contains a great table listing the architectures for different brands of GPUs.
 
