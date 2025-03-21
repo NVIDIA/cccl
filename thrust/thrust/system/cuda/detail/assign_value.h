@@ -38,15 +38,29 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+template <typename T, typename U>
+CCCL_DETAIL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
+{
+  *dst = *src;
+}
+
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
 _CCCL_HOST_DEVICE void assign_value(execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
 {
   NV_IF_TARGET(
     NV_IS_HOST,
     // on host, perform device -> device memcpy
-    (const cudaError status =
-       trivial_copy_device_to_device(exec, thrust::raw_pointer_cast(dst), thrust::raw_pointer_cast(src), 1);
-     throw_on_error(status, "__copy:: D->D: failed");),
+    (
+      using V1 = thrust::detail::it_value_t<Pointer1>; using V2 = thrust::detail::it_value_t<Pointer2>;
+      if constexpr (::cuda::std::is_same_v<V1, V2>) {
+        const cudaError status = trivial_copy_device_to_device(exec, raw_pointer_cast(dst), raw_pointer_cast(src), 1);
+        throw_on_error(status, "__copy:: D->D: failed");
+      } else {
+        const cudaError status = cuda_cub::detail::triple_chevron(1, 1, 0, stream(exec))
+                                   .doit(assign_value_kernel<V1, V2>, raw_pointer_cast(dst), raw_pointer_cast(src));
+        throw_on_error(status, "__copy:: D->D with different data types: kernel failed");
+        throw_on_error(synchronize_optional(exec), "__copy:: D->D with different data types: sync failed");
+      }),
     // on device, simply assign
     *thrust::raw_pointer_cast(dst) = *thrust::raw_pointer_cast(src););
 }
@@ -59,8 +73,9 @@ struct cross_system_assign_host_path
   template <typename System1, typename DerivedPolicy2, typename Pointer1, typename Pointer2>
   _CCCL_HOST void operator()(System1&, execution_policy<DerivedPolicy2>& system2, Pointer1 dst, Pointer2 src)
   {
-    const cudaError status = cuda_cub::trivial_copy_from_device(
-      thrust::raw_pointer_cast(dst), thrust::raw_pointer_cast(src), 1, cuda_cub::stream(system2));
+    thrust::detail::it_value_t<Pointer2> copy_dst;
+    const cudaError status = trivial_copy_from_device(&copy_dst, raw_pointer_cast(src), 1, stream(system2));
+    *dst                   = copy_dst; // may convert type
     throw_on_error(status, "__copy:: D->H: failed");
   }
 
@@ -68,8 +83,8 @@ struct cross_system_assign_host_path
   template <typename DerivedPolicy1, typename System2, typename Pointer1, typename Pointer2>
   _CCCL_HOST void operator()(execution_policy<DerivedPolicy1>& system1, System2&, Pointer1 dst, Pointer2 src)
   {
-    const cudaError status = cuda_cub::trivial_copy_to_device(
-      thrust::raw_pointer_cast(dst), thrust::raw_pointer_cast(src), 1, cuda_cub::stream(system1));
+    thrust::detail::it_value_t<Pointer1> copy_src = *src; // may convert type
+    const cudaError status = trivial_copy_to_device(raw_pointer_cast(dst), &copy_src, 1, stream(system1));
     throw_on_error(status, "__copy:: H->D: failed");
   }
 };
