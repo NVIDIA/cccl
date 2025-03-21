@@ -142,6 +142,9 @@ struct VSMemHelper
     return detail::vsmem_helper_impl<
       typename MergeSortVSMemHelperT<ActivePolicyT, Ts...>::merge_agent_t>::vsmem_per_block;
   }
+
+  template <typename AgentT>
+  using VSmemHelperT = vsmem_helper_impl<AgentT>;
 };
 
 template <typename ChainedPolicyT,
@@ -192,7 +195,7 @@ __launch_bounds__(
 
   using AgentBlockSortT = typename MergeSortHelperT::block_sort_agent_t;
 
-  using VSmemHelperT = vsmem_helper_impl<AgentBlockSortT>;
+  using VSmemHelperT = typename MergeSortHelperT::template VSmemHelperT<AgentBlockSortT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;
@@ -300,7 +303,7 @@ __launch_bounds__(
 
   using AgentMergeT = typename MergeSortHelperT::merge_agent_t;
 
-  using VSmemHelperT = vsmem_helper_impl<AgentMergeT>;
+  using VSmemHelperT = typename MergeSortHelperT::template VSmemHelperT<AgentMergeT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;
