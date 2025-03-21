@@ -80,11 +80,6 @@
 #  define _CCCL_NO_CONCEPTS
 #endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 
-// Fold expressions are only available from C++17 onwards
-#if __cpp_fold_expressions < 201603L
-#  define _CCCL_NO_FOLD_EXPRESSIONS
-#endif // __cpp_fold_expressions < 201603L
-
 // Inline variables are only available from C++17 onwards
 #if __cpp_inline_variables < 201606L
 #  define _CCCL_NO_INLINE_VARIABLES
