@@ -38,26 +38,35 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
+namespace detail
+{
 template <typename T, typename U>
 CCCL_DETAIL_KERNEL_ATTRIBUTES void assign_value_kernel(T* dst, const U* src)
 {
   *dst = *src;
 }
+} // namespace detail
 
 template <typename DerivedPolicy, typename Pointer1, typename Pointer2>
 _CCCL_HOST_DEVICE void assign_value(execution_policy<DerivedPolicy>& exec, Pointer1 dst, Pointer2 src)
 {
+  using V1 = thrust::detail::it_value_t<Pointer1>;
+  using V2 = thrust::detail::it_value_t<Pointer2>;
+  // Because of https://docs.nvidia.com/cuda/cuda-c-programming-guide/#cuda-arch point 2., if a call from a __host__
+  // __device__ function leads to the template instantiation of a __global__ function, then this instantiation needs to
+  // happen regardless of whether __CUDA_ARCH__ is defined. Therefore, we make the host path visible outside the
+  // NV_IF_TARGET switch. See also NVBug 881631.
+  [[maybe_unused]] auto kernel = &detail::assign_value_kernel<V1, V2>;
   NV_IF_TARGET(
     NV_IS_HOST,
     // on host, perform device -> device memcpy
     (
-      using V1 = thrust::detail::it_value_t<Pointer1>; using V2 = thrust::detail::it_value_t<Pointer2>;
       if constexpr (::cuda::std::is_same_v<V1, V2>) {
         const cudaError status = trivial_copy_device_to_device(exec, raw_pointer_cast(dst), raw_pointer_cast(src), 1);
         throw_on_error(status, "__copy:: D->D: failed");
       } else {
         const cudaError status = cuda_cub::detail::triple_chevron(1, 1, 0, stream(exec))
-                                   .doit(assign_value_kernel<V1, V2>, raw_pointer_cast(dst), raw_pointer_cast(src));
+                                   .doit(kernel, raw_pointer_cast(dst), raw_pointer_cast(src));
         throw_on_error(status, "__copy:: D->D with different data types: kernel failed");
         throw_on_error(synchronize_optional(exec), "__copy:: D->D with different data types: sync failed");
       }),
