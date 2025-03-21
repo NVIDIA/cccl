@@ -397,8 +397,6 @@ using __type_info_ptr = __type_info const*;
 using __type_info_ref = __type_info const&;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
-#  ifndef _CCCL_NO_VARIABLE_TEMPLATES
-
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
 
@@ -410,32 +408,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noex
   return __typeid_v<_Tp>;
 }
 
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
-
-#  else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
-
-template <class _Tp>
-struct __typeid_value
-{
-  static constexpr __type_info value{_CUDA_VSTD::__pretty_nameof<_Tp>()};
-};
-
-#    if defined(_CCCL_NO_INLINE_VARIABLES) || _CCCL_STD_VER < 2017
-// Before the addition of inline variables, it was necessary to
-// provide a definition for constexpr class static data members.
-template <class _Tp>
-constexpr __type_info __typeid_value<_Tp>::value;
-#    endif // _CCCL_NO_INLINE_VARIABLES
-
-template <class _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
-{
-  return __typeid_value<_Tp>::value;
-}
-
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
-
-#  endif // _CCCL_NO_VARIABLE_TEMPLATES
+#  define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
 
 #endif // !defined(__CUDA_ARCH__) && !_CCCL_BROKEN_MSVC_FUNCSIG
 

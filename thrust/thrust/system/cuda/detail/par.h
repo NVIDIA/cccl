@@ -39,6 +39,8 @@
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/util.h>
 
+#include <cuda/stream_ref>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -60,6 +62,11 @@ public:
     Derived result = derived_cast(*this);
     result.stream  = s;
     return result;
+  }
+
+  Derived on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
   }
 
 private:
@@ -85,6 +92,11 @@ public:
     Derived result = derived_cast(*this);
     result.stream  = s;
     return result;
+  }
+
+  Derived on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
   }
 
 private:
@@ -135,6 +147,11 @@ struct par_t
   {
     return execute_on_stream(stream);
   }
+
+  stream_attachment_type on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
+  }
 };
 
 struct par_nosync_t
@@ -152,6 +169,11 @@ struct par_nosync_t
   THRUST_RUNTIME_FUNCTION stream_attachment_type on(cudaStream_t const& stream) const
   {
     return execute_on_stream_nosync(stream);
+  }
+
+  stream_attachment_type on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
   }
 
 private:

@@ -36,8 +36,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-
 #if !defined(_CCCL_NO_CONCEPTS)
 template <range _Rp>
   requires movable<_Rp> && (!__is_std_initializer_list<remove_cvref_t<_Rp>>)
@@ -151,10 +149,8 @@ public:
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(owning_view);
 
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
-
 template <class _Rp>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
+inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

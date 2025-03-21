@@ -36,10 +36,10 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 template <typename T, typename SFINAE = void>
-_CCCL_INLINE_VAR constexpr bool is_output_iterator = true;
+inline constexpr bool is_output_iterator = true;
 
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_output_iterator<T, ::cuda::std::void_t<it_value_t<T>>> =
+inline constexpr bool is_output_iterator<T, ::cuda::std::void_t<it_value_t<T>>> =
   ::cuda::std::is_void_v<it_value_t<T>> || ::cuda::std::is_same_v<it_value_t<T>, any_assign>;
 } // namespace detail
 

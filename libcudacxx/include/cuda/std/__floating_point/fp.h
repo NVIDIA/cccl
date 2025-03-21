@@ -30,5 +30,6 @@
 #include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__floating_point/storage.h>
+#include <cuda/std/__floating_point/traits.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_FP_H

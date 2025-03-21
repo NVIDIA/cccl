@@ -29,6 +29,7 @@
 #include <cuda/std/__type_traits/alignment_of.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
@@ -39,8 +40,7 @@ _CCCL_NODISCARD _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI pair<_Tp*, ptrdiff_
 get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
-  const ptrdiff_t __m =
-    (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * __CHAR_BIT__ - 1))) / sizeof(_Tp);
+  const ptrdiff_t __m = (~ptrdiff_t(0) ^ ptrdiff_t(ptrdiff_t(1) << (sizeof(ptrdiff_t) * CHAR_BIT - 1))) / sizeof(_Tp);
   if (__n > __m)
   {
     __n = __m;

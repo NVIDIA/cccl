@@ -32,10 +32,8 @@ template <class _Func, class... _Args>
 struct __is_callable : _IsValidExpansion<__call_result_t, _Func, _Args...>
 {};
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Func, class... _Args>
-_CCCL_INLINE_VAR constexpr bool __is_callable_v = _IsValidExpansion<__call_result_t, _Func, _Args...>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __is_callable_v = _IsValidExpansion<__call_result_t, _Func, _Args...>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
