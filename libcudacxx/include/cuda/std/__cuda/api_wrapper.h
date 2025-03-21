@@ -27,7 +27,7 @@
 
 #include <cuda/std/__exception/cuda_error.h>
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)           \
     {                                                    \
       const ::cudaError_t __status = _NAME(__VA_ARGS__); \
@@ -47,9 +47,9 @@
       _CCCL_ASSERT(__status == cudaSuccess, _MSG);       \
       (void) __status;                                   \
     }
-#else // ^^^ _CCCL_HAS_CUDA_COMPILER ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER vvv
+#else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
 #  define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)
 #  define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)
-#endif // !_CCCL_HAS_CUDA_COMPILER
+#endif // !_CCCL_HAS_CUDA_COMPILER()
 
 #endif //_CUDA__STD__CUDA_API_WRAPPER_H
