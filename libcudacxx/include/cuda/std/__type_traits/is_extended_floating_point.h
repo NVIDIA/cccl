@@ -29,15 +29,13 @@ template <class _Tp>
 struct __is_extended_floating_point : false_type
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 inline constexpr bool __is_extended_floating_point_v
-#  if defined(_CCCL_NO_INLINE_VARIABLES)
+#if defined(_CCCL_NO_INLINE_VARIABLES)
   = __is_extended_floating_point<_Tp>::value;
-#  else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
+#else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
   = false;
-#  endif // !_CCCL_NO_INLINE_VARIABLES
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // !_CCCL_NO_INLINE_VARIABLES
 
 #if _CCCL_HAS_NVFP16()
 template <>

@@ -30,14 +30,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-
-#  if _CCCL_COMPILER(MSVC)
+#if _CCCL_COMPILER(MSVC)
 
 template <class _Tp>
 _CCCL_CONCEPT destructible = __is_nothrow_destructible(_Tp);
 
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 
 template <class _Tp, class = void, class = void>
 inline constexpr bool __destructible_impl = false;
@@ -45,11 +43,11 @@ inline constexpr bool __destructible_impl = false;
 template <class _Tp>
 inline constexpr bool __destructible_impl<_Tp,
                                           enable_if_t<_CCCL_TRAIT(is_object, _Tp)>,
-#    if _CCCL_COMPILER(GCC)
+#  if _CCCL_COMPILER(GCC)
                                           enable_if_t<_CCCL_TRAIT(is_destructible, _Tp)>>
-#    else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
+#  else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
                                           void_t<decltype(_CUDA_VSTD::declval<_Tp>().~_Tp())>>
-#    endif // !_CCCL_COMPILER(GCC)
+#  endif // !_CCCL_COMPILER(GCC)
   = noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp());
 
 template <class _Tp>
@@ -67,9 +65,7 @@ inline constexpr bool __destructible<_Tp[_Nm]> = __destructible<_Tp>;
 template <class _Tp>
 _CCCL_CONCEPT destructible = __destructible<_Tp>;
 
-#  endif // !_CCCL_COMPILER(MSVC)
-
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // !_CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
