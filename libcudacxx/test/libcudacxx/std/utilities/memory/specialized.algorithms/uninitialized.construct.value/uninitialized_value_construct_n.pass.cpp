@@ -45,7 +45,7 @@ struct Counted
   __host__ __device__ friend void operator&(Counted) = delete;
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 static int ThrowsCounted_count       = 0;
 static int ThrowsCounted_constructed = 0;
 static int ThrowsCounted_throw_after = 0;
@@ -90,12 +90,10 @@ void test_ctor_throws()
   }
   catch (...)
   {}
-  assert(ThrowsCounted_count == 3);
-  assert(ThrowsCounted_constructed == 4); // forth construction throws
-  cuda::std::__destroy(p, p + 3);
   assert(ThrowsCounted_count == 0);
+  assert(ThrowsCounted_constructed == 4); // forth construction throws
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_counted()
 {
@@ -138,9 +136,9 @@ int main(int, char**)
   test_counted();
   test_value_initialized();
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_ctor_throws();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

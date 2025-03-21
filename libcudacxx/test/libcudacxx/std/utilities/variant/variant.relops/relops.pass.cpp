@@ -42,7 +42,7 @@
 
 #include "test_macros.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct MakeEmptyT
 {
   MakeEmptyT() = default;
@@ -100,7 +100,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 struct MyBool
 {
@@ -192,7 +192,7 @@ __host__ __device__ void test_equality()
   test_equality_basic<ComparesToMyBool, ComparesToMyBool>();
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions_equality()
 {
   {
@@ -227,7 +227,7 @@ void test_exceptions_equality()
     assert(!(v2 != v1));
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <class Var>
 __host__ __device__ constexpr bool test_less(const Var& l, const Var& r, bool expect_less, bool expect_greater)
@@ -284,7 +284,7 @@ __host__ __device__ void test_relational()
   test_relational_basic<ComparesToMyBool, ComparesToMyBool>();
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions_relational()
 {
   { // LHS.index() < RHS.index(), RHS is empty
@@ -317,10 +317,10 @@ int main(int, char**)
   test_equality();
   test_relational();
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions_equality();))
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions_relational();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

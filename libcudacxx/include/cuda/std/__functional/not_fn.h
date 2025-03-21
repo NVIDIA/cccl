@@ -40,6 +40,7 @@ struct __not_fn_t
 {
   _Fn __f;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class... _Args)
   _CCCL_REQUIRES(is_constructible_v<_Fn, _Args&&...>)
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __not_fn_t(_Args&&... __args) noexcept(

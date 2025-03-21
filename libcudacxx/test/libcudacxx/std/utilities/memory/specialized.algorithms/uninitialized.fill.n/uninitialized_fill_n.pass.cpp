@@ -32,7 +32,7 @@ struct Nasty
   int i_;
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 static int B_count      = 0;
 static int B_population = 0;
 struct B
@@ -84,7 +84,7 @@ void test_exceptions()
   }
   assert(B_population == 2);
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -100,9 +100,9 @@ int main(int, char**)
       assert(bp[i].i_ == 23);
     }
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }
