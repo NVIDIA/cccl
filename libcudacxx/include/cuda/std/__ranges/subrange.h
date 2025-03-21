@@ -56,7 +56,6 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
 #if !defined(_CCCL_NO_CONCEPTS)
 template <class _From, class _To>
@@ -411,8 +410,6 @@ _CCCL_REQUIRES(borrowed_range<_Range>)
 _CCCL_HOST_DEVICE subrange(_Range&&, make_unsigned_t<range_difference_t<_Range>>)
   -> subrange<iterator_t<_Range>, sentinel_t<_Range>, subrange_kind::sized>;
 
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
-
 // Not _CCCL_TEMPLATE because we need to forward declare them
 #if !defined(_CCCL_NO_CONCEPTS)
 template <size_t _Index, class _Iter, class _Sent, subrange_kind _Kind>
@@ -462,7 +459,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __s
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
+inline constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
 
 template <class _Rp>
 using borrowed_subrange_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;

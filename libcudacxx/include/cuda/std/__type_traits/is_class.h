@@ -38,7 +38,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class : public integral_constant<bool, _
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_class_v = _CCCL_BUILTIN_IS_CLASS(_Tp);
+inline constexpr bool is_class_v = _CCCL_BUILTIN_IS_CLASS(_Tp);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
@@ -58,7 +58,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_class_v = is_class<_Tp>::value;
+inline constexpr bool is_class_v = is_class<_Tp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)

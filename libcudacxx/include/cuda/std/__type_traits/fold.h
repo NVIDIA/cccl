@@ -27,10 +27,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Use fold expressions when possible to implement __fold_and[_v] and
 // __fold_or[_v].
 template <bool... _Preds>
-_CCCL_INLINE_VAR constexpr bool __fold_and_v = (_Preds && ...);
+inline constexpr bool __fold_and_v = (_Preds && ...);
 
 template <bool... _Preds>
-_CCCL_INLINE_VAR constexpr bool __fold_or_v = (_Preds || ...);
+inline constexpr bool __fold_or_v = (_Preds || ...);
 
 template <bool... _Preds>
 using __fold_and = bool_constant<bool((_Preds && ...))>; // cast to bool to avoid error from gcc < 8

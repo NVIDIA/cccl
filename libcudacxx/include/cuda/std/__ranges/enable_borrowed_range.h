@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 // [range.range], ranges
 
 template <class>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range = false;
+inline constexpr bool enable_borrowed_range = false;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

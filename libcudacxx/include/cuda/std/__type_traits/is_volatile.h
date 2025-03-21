@@ -32,7 +32,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : : public integral_constant<bo
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_volatile_v = _CCCL_BUILTIN_IS_VOLATILE(_Tp);
+inline constexpr bool is_volatile_v = _CCCL_BUILTIN_IS_VOLATILE(_Tp);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // ^^^ _CCCL_BUILTIN_IS_VOLATILE ^^^ / vvv !_CCCL_BUILTIN_IS_VOLATILE vvv
@@ -46,7 +46,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile<_Tp volatile> : public true_typ
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_volatile_v = is_volatile<_Tp>::value;
+inline constexpr bool is_volatile_v = is_volatile<_Tp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_IS_VOLATILE

@@ -36,7 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of : public integral_constant<bool,
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Bp, class _Dp>
-_CCCL_INLINE_VAR constexpr bool is_base_of_v = _CCCL_BUILTIN_IS_BASE_OF(_Bp, _Dp);
+inline constexpr bool is_base_of_v = _CCCL_BUILTIN_IS_BASE_OF(_Bp, _Dp);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
@@ -73,7 +73,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Bp, class _Dp>
-_CCCL_INLINE_VAR constexpr bool is_base_of_v = is_base_of<_Bp, _Dp>::value;
+inline constexpr bool is_base_of_v = is_base_of<_Bp, _Dp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)

@@ -1614,10 +1614,10 @@ template <class T>
 struct Proxy;
 
 template <class T>
-_CCCL_INLINE_VAR constexpr bool IsProxy = false;
+inline constexpr bool IsProxy = false;
 
 template <class T>
-_CCCL_INLINE_VAR constexpr bool IsProxy<Proxy<T>> = true;
+inline constexpr bool IsProxy<Proxy<T>> = true;
 
 template <class T>
 struct Proxy

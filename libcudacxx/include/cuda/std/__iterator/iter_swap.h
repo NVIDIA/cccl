@@ -148,10 +148,10 @@ _CCCL_CONCEPT indirectly_swappable = _CCCL_FRAGMENT(__indirectly_swappable_, _I1
 #endif // _CCCL_NO_CONCEPTS
 
 template <class _I1, class _I2 = _I1, class = void>
-_CCCL_INLINE_VAR constexpr bool __noexcept_swappable = false;
+inline constexpr bool __noexcept_swappable = false;
 
 template <class _I1, class _I2>
-_CCCL_INLINE_VAR constexpr bool __noexcept_swappable<_I1, _I2, enable_if_t<indirectly_swappable<_I1, _I2>>> =
+inline constexpr bool __noexcept_swappable<_I1, _I2, enable_if_t<indirectly_swappable<_I1, _I2>>> =
   noexcept(_CUDA_VRANGES::iter_swap(_CUDA_VSTD::declval<_I1&>(), _CUDA_VSTD::declval<_I2&>()));
 
 _LIBCUDACXX_END_NAMESPACE_STD

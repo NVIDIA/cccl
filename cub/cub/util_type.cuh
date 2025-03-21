@@ -473,7 +473,7 @@ struct CubVector
 };
 
 /// The maximum number of elements in CUDA vector types
-_CCCL_INLINE_VAR constexpr int MAX_VEC_ELEMENTS = 4;
+inline constexpr int MAX_VEC_ELEMENTS = 4;
 
 /**
  * Generic vector-1 type
@@ -1103,7 +1103,7 @@ struct is_primitive : is_primitive_impl::is_primitive<T>
 {};
 
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_primitive_v = is_primitive<T>::value;
+inline constexpr bool is_primitive_v = is_primitive<T>::value;
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED

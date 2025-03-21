@@ -69,7 +69,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp&&> : public tru
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<_Tp>::value;
+inline constexpr bool is_nothrow_destructible_v = is_nothrow_destructible<_Tp>::value;
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

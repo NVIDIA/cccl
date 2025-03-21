@@ -41,7 +41,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_assignable
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _T1, class _T2>
-_CCCL_INLINE_VAR constexpr bool is_assignable_v = _CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2);
+inline constexpr bool is_assignable_v = _CCCL_BUILTIN_IS_ASSIGNABLE(_T1, _T2);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
@@ -68,7 +68,7 @@ struct is_assignable : public __is_assignable_imp<_Tp, _Arg>
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
-_CCCL_INLINE_VAR constexpr bool is_assignable_v = is_assignable<_Tp, _Arg>::value;
+inline constexpr bool is_assignable_v = is_assignable<_Tp, _Arg>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
