@@ -62,8 +62,6 @@ int main()
     axpy<<<16, 128, 0, s>>>(alpha, dX, dY);
   };
 
-  ctx.print_logical_data_summary();
-
   ctx.finalize();
 
   for (size_t i = 0; i < N; i++)
