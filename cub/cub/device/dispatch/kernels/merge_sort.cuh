@@ -195,7 +195,7 @@ __launch_bounds__(
 
   using AgentBlockSortT = typename MergeSortHelperT::block_sort_agent_t;
 
-  using VSmemHelperT = typename MergeSortHelperT::template VSmemHelperT<AgentBlockSortT>;
+  using VSmemHelperT = typename VSMemHelperT::template VSmemHelperT<AgentBlockSortT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;
@@ -303,7 +303,7 @@ __launch_bounds__(
 
   using AgentMergeT = typename MergeSortHelperT::merge_agent_t;
 
-  using VSmemHelperT = typename MergeSortHelperT::template VSmemHelperT<AgentMergeT>;
+  using VSmemHelperT = typename VSMemHelperT::template VSmemHelperT<AgentMergeT>;
 
   // Static shared memory allocation
   __shared__ typename VSmemHelperT::static_temp_storage_t static_temp_storage;

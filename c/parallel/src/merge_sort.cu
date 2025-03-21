@@ -347,21 +347,20 @@ struct device_merge_sort_vsmem_helper {{
     using policy_t = agent_policy_t;
     using block_sort_agent_t = cub::detail::merge_sort::AgentBlockSort<agent_policy_t, KeyInputIteratorT, ValueInputIteratorT, Ts...>;
     using merge_agent_t = cub::detail::merge_sort::AgentMerge<agent_policy_t, Ts...>;
-
-    template <typename AgentT>
-    struct VSmemHelperT {{
-      using static_temp_storage_t = typename AgentT::TempStorage;
-      static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
-        static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem)
-      {{
-          return static_temp_storage;
-      }}
-      template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
-      static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
-      {{
-        return false;
-      }}
-    }};
+  }};
+  template <typename AgentT>
+  struct VSmemHelperT {{
+    using static_temp_storage_t = typename AgentT::TempStorage;
+    static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
+      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem)
+    {{
+        return static_temp_storage;
+    }}
+    template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
+    static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
+    {{
+      return false;
+    }}
   }};
 }};
 {11};
