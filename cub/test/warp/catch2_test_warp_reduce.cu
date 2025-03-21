@@ -266,7 +266,7 @@ C2H_TEST("WarpReduce::Sum/Max/Min, builtin types",
   verify_results(h_out, d_out);
 }
 
-C2H_TEST("WarpReduce::Sum", "[reduce][warp][generic][full]", full_type_list, logical_warp_threads)
+C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_list, logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
