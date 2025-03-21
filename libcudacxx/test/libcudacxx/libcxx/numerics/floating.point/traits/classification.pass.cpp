@@ -15,7 +15,7 @@
 #include <cuda/std/__floating_point/fp.h>
 
 template <class T>
-__host__ __device__ void test_is_std_fp()
+__host__ __device__ void test_std_fp()
 {
   static_assert(cuda::std::__is_std_fp_v<T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<T>);
@@ -100,10 +100,10 @@ __host__ __device__ void test_ext_compiler_fp()
 
 int main(int, char**)
 {
-  test_is_std_fp<float>();
-  test_is_std_fp<double>();
+  test_std_fp<float>();
+  test_std_fp<double>();
 #if _CCCL_HAS_LONG_DOUBLE()
-  test_is_std_fp<long double>();
+  test_std_fp<long double>();
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _CCCL_HAS_NVFP16()
