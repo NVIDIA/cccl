@@ -346,8 +346,7 @@ TEST_CASE("DeviceSelect::UniqueByKey fails to build for large types due to no vs
     "extern \"C\" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {\n"
     "  return lhs.a == rhs.a;\n"
     "}");
-  const std::vector<short> a  = generate<short>(num_items);
-  const std::vector<size_t> b = generate<size_t>(num_items);
+  const std::vector<int> a = generate<int>(num_items);
   std::vector<large_key_pair> input_keys(num_items);
   for (int i = 0; i < num_items; ++i)
   {
