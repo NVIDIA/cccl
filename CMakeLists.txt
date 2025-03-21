@@ -1,5 +1,5 @@
 # 3.15 is the minimum for including the project with add_subdirectory.
-# 3.21 is the minimum for the developer build.
+# 3.24 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
 # sccache cannot handle the -Fd option generating pdb files:
@@ -27,7 +27,7 @@ endif()
 
 # We require a higher cmake version for dev builds
 if (CCCL_TOPLEVEL_PROJECT)
-  cmake_minimum_required(VERSION 3.21)
+  cmake_minimum_required(VERSION 3.24)
 endif()
 
 option(CCCL_ENABLE_LIBCUDACXX "Enable the libcu++ developer build." ${CCCL_TOPLEVEL_PROJECT})
