@@ -185,9 +185,9 @@ OutputIt _CCCL_HOST cross_system_copy_n(cross_system<System1, System2> systems, 
     begin,
     n,
     result,
-    // FIXME(bgruber): I think this is a pessimization. We should only check if the iterator is contiguous and not
-    // whether value_t<InputIt> is trivially copyable, since we memcpy the content regardless in the non-trivial path,
-    // but pay for a temporary storage allocation.
+    // FIXME(bgruber): I think this is a pessimization. We should only check if the iterator is contiguous and the value
+    // types are the same, and not whether value_t<InputIt> is trivially copyable, since we memcpy the content
+    // regardless in the non-trivial path, but pay for a temporary storage allocation.
     typename is_indirectly_trivially_relocatable_to<InputIt, OutputIt>::type());
 }
 
