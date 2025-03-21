@@ -64,7 +64,7 @@ public:
     return result;
   }
 
-  THRUST_RUNTIME_FUNCTION Derived on(::cuda::stream_ref const& s) const
+  Derived on(::cuda::stream_ref const& s) const
   {
     return on(s.get());
   }
@@ -94,7 +94,7 @@ public:
     return result;
   }
 
-  THRUST_RUNTIME_FUNCTION Derived on(::cuda::stream_ref const& s) const
+  Derived on(::cuda::stream_ref const& s) const
   {
     return on(s.get());
   }
@@ -148,7 +148,7 @@ struct par_t
     return execute_on_stream(stream);
   }
 
-  THRUST_RUNTIME_FUNCTION stream_attachment_type on(::cuda::stream_ref const& s) const
+  stream_attachment_type on(::cuda::stream_ref const& s) const
   {
     return on(s.get());
   }
@@ -171,7 +171,7 @@ struct par_nosync_t
     return execute_on_stream_nosync(stream);
   }
 
-  THRUST_RUNTIME_FUNCTION stream_attachment_type on(::cuda::stream_ref const& s) const
+  stream_attachment_type on(::cuda::stream_ref const& s) const
   {
     return on(s.get());
   }
