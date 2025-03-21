@@ -20,12 +20,12 @@ static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::
               "");
 
 // constexpr variables are unavailable before 11.3
-TEST_NODISCARD __host__ __device__ constexpr int test_nodiscard()
+[[nodiscard]] __host__ __device__ constexpr int test_nodiscard()
 {
   return 8294;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   {
     auto& ignore_v = cuda::std::ignore;

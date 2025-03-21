@@ -170,7 +170,7 @@ struct PerDeviceAttributeCache
   };
 
 private:
-  std::array<DeviceEntry, CUB_MAX_DEVICES> entries_;
+  std::array<DeviceEntry, detail::max_devices> entries_;
 
 public:
   /**
@@ -179,7 +179,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    assert(DeviceCount() <= CUB_MAX_DEVICES);
+    assert(DeviceCount() <= detail::max_devices);
   }
 
   /**
@@ -688,6 +688,6 @@ private:
 
 CUB_NAMESPACE_END
 
-#if _CCCL_HAS_CUDA_COMPILER && !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)
 #  include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
-#endif // _CCCL_HAS_CUDA_COMPILER && !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_CUDA_COMPILER() && !_CCCL_COMPILER(NVRTC)

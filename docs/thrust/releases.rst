@@ -3,6 +3,11 @@
 Releases
 ========
 
+.. warning::
+    This table is no longer maintained since Thrust was merged into the CCCL project.
+    For the latest releases, checkout the CCCL releases
+    on `GitHub <https://github.com/NVIDIA/cccl/releases>`_.
+
 .. toctree::
    :hidden:
    :maxdepth: 1

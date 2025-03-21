@@ -29,7 +29,7 @@
 #include "test_macros.h"
 #include "unique_ptr_test_helper.h"
 
-STATIC_TEST_GLOBAL_VAR bool my_free_called = false;
+TEST_GLOBAL_VARIABLE bool my_free_called = false;
 
 __host__ __device__ void my_free(void*)
 {

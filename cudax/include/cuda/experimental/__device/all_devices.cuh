@@ -53,6 +53,8 @@ public:
 
   _CCCL_NODISCARD iterator end() const noexcept;
 
+  operator ::std::vector<device_ref>() const;
+
 private:
   struct __initializer_iterator;
 
@@ -137,6 +139,11 @@ _CCCL_NODISCARD inline all_devices::iterator all_devices::begin() const noexcept
 _CCCL_NODISCARD inline all_devices::iterator all_devices::end() const noexcept
 {
   return __devices().end();
+}
+
+inline all_devices::operator ::std::vector<device_ref>() const
+{
+  return ::std::vector<device_ref>(begin(), end());
 }
 
 inline const ::std::vector<device>& all_devices::__devices()

@@ -44,21 +44,11 @@ _CCCL_NV_DIAG_SUPPRESS(1215)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
-#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY)   \
-    template <class _Tp, class = void>                           \
-    struct NAME : false_type                                     \
-    {};                                                          \
-    template <class _Tp>                                         \
-    struct NAME<_Tp, void_t<typename _Tp::PROPERTY>> : true_type \
-    {}
-#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
-#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY) \
-    template <class _Tp, class = void>                         \
-    _CCCL_INLINE_VAR constexpr bool NAME##_v = false;          \
-    template <class _Tp>                                       \
-    _CCCL_INLINE_VAR constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY) \
+  template <class _Tp, class = void>                         \
+  inline constexpr bool NAME##_v = false;                    \
+  template <class _Tp>                                       \
+  inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 
 // __pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer);

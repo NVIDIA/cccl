@@ -42,12 +42,12 @@ __host__ __device__ constexpr void test_layout_mapping_right()
   assert(M::is_always_unique() == true);
   assert(M::is_always_exhaustive() == true);
   assert(M::is_always_strided() == true);
-  ASSERT_NOEXCEPT(cuda::std::declval<M>().is_unique());
-  ASSERT_NOEXCEPT(cuda::std::declval<M>().is_exhaustive());
-  ASSERT_NOEXCEPT(cuda::std::declval<M>().is_strided());
-  ASSERT_NOEXCEPT(M::is_always_unique());
-  ASSERT_NOEXCEPT(M::is_always_exhaustive());
-  ASSERT_NOEXCEPT(M::is_always_strided());
+  static_assert(noexcept(cuda::std::declval<M>().is_unique()));
+  static_assert(noexcept(cuda::std::declval<M>().is_exhaustive()));
+  static_assert(noexcept(cuda::std::declval<M>().is_strided()));
+  static_assert(noexcept(M::is_always_unique()));
+  static_assert(noexcept(M::is_always_exhaustive()));
+  static_assert(noexcept(M::is_always_strided()));
 }
 
 __host__ __device__ constexpr bool test()

@@ -16,9 +16,8 @@
  * stream_ctx and a graph_ctx backend.
  */
 
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/stf.cuh>
-
-#include <nvtx3/nvToolsExt.h>
 
 #define TILED
 
@@ -158,7 +157,8 @@ public:
   template <typename Fun>
   void fill(stream_ctx& ctx, Fun&& fun)
   {
-    nvtxRangePushA("FILL");
+    nvtx_range r("fill");
+
     // Fill blocks by blocks
     for (size_t colb = 0; colb < nt; colb++)
     {
@@ -176,7 +176,6 @@ public:
           };
       }
     }
-    nvtxRangePop();
   }
 
   T* h_array;
@@ -251,6 +250,8 @@ void PDGEMM(stream_ctx& ctx,
             double beta,
             matrix<double>& C)
 {
+  nvtx_range r("PDGEMM");
+
   for (size_t m = 0; m < C.mt; m++)
   {
     for (size_t n = 0; n < C.nt; n++)

@@ -578,7 +578,7 @@ public:
     // TODO redo cascade of tests
     if constexpr (need_reduction)
     {
-      _CCCL_ASSERT(e_place != exec_place::host, "Reduce access mode currently unimplemented on host.");
+      _CCCL_ASSERT(e_place != exec_place::host(), "Reduce access mode currently unimplemented on host.");
       _CCCL_ASSERT(!e_place.is_grid(), "Reduce access mode currently unimplemented on grid of places.");
       do_parallel_for_redux(f, e_place, shape, t);
       return;
@@ -586,7 +586,7 @@ public:
     else if constexpr (is_extended_host_device_lambda_closure_type)
     {
       // Can run on both - decide dynamically
-      if (e_place == exec_place::host)
+      if (e_place == exec_place::host())
       {
         return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
       }
@@ -595,13 +595,13 @@ public:
     else if constexpr (is_extended_device_lambda_closure_type)
     {
       // Lambda can run only on device - make sure they're not trying it on the host
-      EXPECT(e_place != exec_place::host, "Attempt to run a device function on the host.");
+      EXPECT(e_place != exec_place::host(), "Attempt to run a device function on the host.");
       // Fall through for the device implementation
     }
     else
     {
       // Lambda can run only on the host - make sure they're not trying it elsewhere
-      EXPECT(e_place == exec_place::host, "Attempt to run a host function on a device.");
+      EXPECT(e_place == exec_place::host(), "Attempt to run a host function on a device.");
       return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
     }
 
@@ -662,8 +662,8 @@ public:
     Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
   {
     // parallel_for never calls this function with a host.
-    _CCCL_ASSERT(sub_exec_place != exec_place::host, "Internal CUDASTF error.");
-    _CCCL_ASSERT(sub_exec_place != exec_place::device_auto, "Internal CUDASTF error.");
+    _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
+    _CCCL_ASSERT(sub_exec_place != exec_place::device_auto(), "Internal CUDASTF error.");
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
@@ -828,9 +828,9 @@ public:
     Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
   {
     // parallel_for never calls this function with a host.
-    _CCCL_ASSERT(sub_exec_place != exec_place::host, "Internal CUDASTF error.");
+    _CCCL_ASSERT(sub_exec_place != exec_place::host(), "Internal CUDASTF error.");
 
-    if (sub_exec_place == exec_place::device_auto)
+    if (sub_exec_place == exec_place::device_auto())
     {
       // We have all latitude - recurse with the current device.
       return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);

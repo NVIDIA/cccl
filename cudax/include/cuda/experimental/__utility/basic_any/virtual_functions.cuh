@@ -98,44 +98,44 @@ template <class _Fn, class _Tp = void, auto _Override = 0>
 extern _CUDA_VSTD::__undefined<_Fn> __virtual_override_fn;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void*, _Args...)> //
+inline constexpr __identity_t<_Ret (*)(void*, _Args...)> //
   __virtual_override_fn<_Ret (*)(_Cp&, _Args...), _Tp, _Override> = //
   &__override_fn_<_Tp, _Override, _Ret, false, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void const*, _Args...)>
+inline constexpr __identity_t<_Ret (*)(void const*, _Args...)>
   __virtual_override_fn<_Ret (*)(_Cp const&, _Args...), _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void*, _Args...) noexcept>
+inline constexpr __identity_t<_Ret (*)(void*, _Args...) noexcept>
   __virtual_override_fn<_Ret (*)(_Cp&, _Args...) noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, false, true, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void const*, _Args...) noexcept>
+inline constexpr __identity_t<_Ret (*)(void const*, _Args...) noexcept>
   __virtual_override_fn<_Ret (*)(_Cp const&, _Args...) noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 
 // TODO: Add support for member functions with reference qualifiers.
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void*, _Args...)> //
+inline constexpr __identity_t<_Ret (*)(void*, _Args...)> //
   __virtual_override_fn<_Ret (_Cp::*)(_Args...), _Tp, _Override> = //
   &__override_fn_<_Tp, _Override, _Ret, false, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void const*, _Args...)> //
+inline constexpr __identity_t<_Ret (*)(void const*, _Args...)> //
   __virtual_override_fn<_Ret (_Cp::*)(_Args...) const, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, false, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void*, _Args...) noexcept>
+inline constexpr __identity_t<_Ret (*)(void*, _Args...) noexcept>
   __virtual_override_fn<_Ret (_Cp::*)(_Args...) noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, false, true, _Args...>;
 
 template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
-_CCCL_INLINE_VAR constexpr __identity_t<_Ret (*)(void const*, _Args...) noexcept>
+inline constexpr __identity_t<_Ret (*)(void const*, _Args...) noexcept>
   __virtual_override_fn<_Ret (_Cp::*)(_Args...) const noexcept, _Tp, _Override> =
     &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 

@@ -42,10 +42,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public __cccl_is_floating_point<remove_cv_t<_Tp>>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_floating_point_v = is_floating_point<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_floating_point_v = is_floating_point<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

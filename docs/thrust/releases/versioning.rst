@@ -3,6 +3,12 @@
 Versioning
 ==========
 
+.. warning::
+    This information may no longer be accurate since Thrust was merged into the CCCL project.
+
+..
+    TODO(bgruber): CCCL should probably have a similar section explaining versioning, branches and tags
+
 Thrust has its own versioning system for releases, independent of the
 versioning scheme of the NVIDIA HPC SDK or the CUDA Toolkit.
 

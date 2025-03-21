@@ -28,7 +28,7 @@
 
 #include <nv/target>
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -270,6 +270,6 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 #endif // _CUDA__FUNCTIONAL_FOR_EACH_CANCELED_H

@@ -106,12 +106,13 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_buffer/iterators.cu
     containers/async_buffer/properties.cu
     containers/async_buffer/swap.cu
+    containers/async_buffer/transform.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
     memory_resource/any_async_resource.cu
     memory_resource/any_resource.cu
-    memory_resource/device_memory_pool.cu
+    memory_resource/memory_pools.cu
     memory_resource/device_memory_resource.cu
     memory_resource/get_memory_resource.cu
     memory_resource/managed_memory_resource.cu

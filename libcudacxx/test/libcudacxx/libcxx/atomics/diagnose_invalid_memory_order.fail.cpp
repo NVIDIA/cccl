@@ -23,10 +23,8 @@ int main(int, char**)
 {
   cuda::std::atomic<int> x(42);
   volatile cuda::std::atomic<int>& vx = x;
-  int val1                            = 1;
-  ((void) val1);
-  int val2 = 2;
-  ((void) val2);
+  [[maybe_unused]] int val1           = 1;
+  [[maybe_unused]] int val2           = 2;
   // load operations
   {
     x.load(cuda::std::memory_order_release); // expected-warning {{memory order argument to atomic operation is

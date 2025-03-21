@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-bit-bit_reverse:
 
-``bit_reverse``
-===============
+``cuda::bit_reverse``
+=====================
 
 .. code:: cpp
 
@@ -19,7 +19,7 @@ The function reverses the order of bits in a value.
 
 - Value with reversed bits
 
-**Mandates**
+**Constraints**
 
 - ``T`` is an unsigned integer type.
 
