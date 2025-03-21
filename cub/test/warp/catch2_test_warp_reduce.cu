@@ -207,7 +207,7 @@ void compute_host_reference(
     {
       auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread1;
       auto end                     = start + items_per_logical_warp * items_per_thread1;
-      h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, predefined_op{}));
+      h_out[i * logical_warps + j] = static_cast<T>(std::reduce(start, end, identity, predefined_op{}));
     }
   }
 }
