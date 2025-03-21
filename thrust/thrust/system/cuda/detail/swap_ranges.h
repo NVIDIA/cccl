@@ -57,13 +57,7 @@ struct __swap_f
   template <class Size>
   _CCCL_HOST_DEVICE void operator()(Size idx) const
   {
-    // TODO(bgruber): this should probably use ::cuda::std::iter_swap(items1 + idx, items2 + idx);
-    thrust::detail::it_value_t<ItemsIt1> item1 = items1[idx];
-    thrust::detail::it_value_t<ItemsIt2> item2 = items2[idx];
-    using ::cuda::std::swap;
-    swap(item1, item2);
-    items1[idx] = item1;
-    items2[idx] = item2;
+    ::cuda::std::iter_swap(items1 + idx, items2 + idx);
   }
 };
 
