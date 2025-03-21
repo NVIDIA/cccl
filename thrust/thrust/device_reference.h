@@ -952,7 +952,7 @@ public:
    *  \p x The first \p device_reference of interest.
    *  \p y The second \p device_reference of interest.
    */
-  _CCCL_HOST_DEVICE friend void swap(device_reference& x, device_reference& y) noexcept(noexcept(x.swap(y)))
+  _CCCL_HOST_DEVICE friend void swap(device_reference x, device_reference y) noexcept(noexcept(x.swap(y)))
   {
     x.swap(y);
   }
