@@ -351,5 +351,3 @@ C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, 0, items_per_thread);
   verify_results(h_out, d_out);
 }
-
-_CCCL_DIAG_POP
