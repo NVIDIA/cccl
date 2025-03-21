@@ -182,6 +182,7 @@ public:
         }
       }
 
+      // Try to find an offset which is not used
       int get_avail_entry()
       {
         // XXX implement growth mechanism
@@ -198,12 +199,12 @@ public:
         return res;
       }
 
-      // Make the node available again
+      // Make the offset available again
       void discard_node(int offset)
       {
         nvtx_range r("discard_node");
 
-        // Remove this child from it's parent (if any)
+        // Remove this child from its parent (if any)
         int p = parent[offset];
         if (p != -1)
         {
@@ -306,12 +307,6 @@ public:
       // Ensure the node offset was unused
       _CCCL_ASSERT(!nodes[node_offset].has_value(), "inconsistent state");
 
-      // Keep track of parenthood
-      if (head_offset != -1)
-      {
-        node_tree.set_parent(head_offset, node_offset);
-      }
-
       if (head_offset == -1)
       {
         nodes[node_offset].emplace(stream_ctx(), nullptr, nullptr);
@@ -321,6 +316,9 @@ public:
       }
       else
       {
+        // Keep track of parenthood
+        node_tree.set_parent(head_offset, node_offset);
+
         _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
         auto& parent_node = nodes[head_offset].value();
 
@@ -468,33 +466,20 @@ public:
       return get_node(offset).ctx;
     }
 
-    // XXX until we have a per-thread map
     int get_head_offset() const
     {
-#if 0
-      return current_head_offset;
-#else
       auto it = head_map.find(::std::this_thread::get_id());
       return (it != head_map.end()) ? it->second : -1;
-#endif
     }
 
-    // XXX until we have a per-thread map
     void set_head_offset(int offset)
     {
-#if 0
-      fprintf(stderr, "set_head_offset => from %d to %d\n", current_head_offset, offset);
-      current_head_offset = offset;
-#else
-      // fprintf(stderr, "set_head_offset => from %d to %d\n", head_map[::std::this_thread::get_id()], offset);
       head_map[::std::this_thread::get_id()] = offset;
-#endif
     }
 
     int get_parent_offset(int offset) const
     {
       _CCCL_ASSERT(offset != -1, "");
-      // fprintf(stderr, "get_parent_offet(%d) => %d\n", offset, node_tree.get_parent(offset));
       return node_tree.get_parent(offset);
     }
 
@@ -590,12 +575,7 @@ public:
 
     int root_offset = -1;
 
-#if 0
-    // Get the current offset (XXX later this will be a per-thread map)
-    int current_head_offset = -1;
-#else
     ::std::unordered_map<::std::thread::id, int> head_map;
-#endif
 
     // Handles to retain some asynchronous states, we maintain it separately
     // from nodes because we keep its entries even when we pop a level
