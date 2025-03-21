@@ -33,8 +33,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 struct view_base
 {};
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-
 #if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Derived>
@@ -47,8 +45,6 @@ template <class _Derived, enable_if_t<is_class_v<_Derived> && same_as<_Derived, 
 class view_interface;
 
 #endif // _CCCL_NO_CONCEPTS
-
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 _CCCL_TEMPLATE(class _Op, class _Yp)
 _CCCL_REQUIRES(is_convertible_v<_Op*, view_interface<_Yp>*>)
