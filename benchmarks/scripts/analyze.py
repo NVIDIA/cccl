@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 import argparse
 import functools
 import itertools
@@ -121,10 +120,8 @@ def extract_rt_space(df):
 
 def filter_variants(df, group):
     rt_axes = get_rt_axes(df)
-    unique_combinations = set(
-        df[rt_axes].drop_duplicates().itertuples(index=False))
-    group_combinations = set(
-        group[rt_axes].drop_duplicates().itertuples(index=False))
+    unique_combinations = set(df[rt_axes].drop_duplicates().itertuples(index=False))
+    group_combinations = set(group[rt_axes].drop_duplicates().itertuples(index=False))
     has_all_combinations = group_combinations == unique_combinations
     return has_all_combinations
 
@@ -169,8 +166,7 @@ def extract_scores(dfs):
             weights[subbench],
         )
         grouped = dfs[subbench].groupby("variant")
-        scores = grouped.apply(
-            score_closure, include_groups=False).reset_index()
+        scores = grouped.apply(score_closure, include_groups=False).reset_index()
         scores.columns = ["variant", "score"]
         stat = grouped.agg(
             mins=("speedup", "min"), means=("speedup", "mean"), maxs=("speedup", "max")
@@ -214,7 +210,7 @@ def get_filenames_map(arr):
         if not prefix:
             break
 
-    return {string: string[len(prefix):] for string in arr}
+    return {string: string[len(prefix) :] for string in arr}
 
 
 def is_finite(x):
@@ -257,14 +253,12 @@ def iterate_case_dfs(args, callable):
                     ctk_version = row["ctk"]
                     cccl_version = row["cccl"]
                     ctk_cub_df = df[
-                        (df["ctk"] == ctk_version) & (
-                            df["cccl"] == cccl_version)
+                        (df["ctk"] == ctk_version) & (df["cccl"] == cccl_version)
                     ]
 
                     for gpu in ctk_cub_df["gpu"].unique():
                         target_df = ctk_cub_df[ctk_cub_df["gpu"] == gpu]
-                        target_df = target_df.drop(
-                            columns=["ctk", "cccl", "gpu"])
+                        target_df = target_df.drop(columns=["ctk", "cccl", "gpu"])
                         target_df = compute_speedup(target_df)
 
                         for key in exact_values:
@@ -275,8 +269,7 @@ def iterate_case_dfs(args, callable):
 
                         for ct_point in ct_space(target_df):
                             point_str = ", ".join(
-                                ["{}={}".format(k, ct_point[k])
-                                 for k in ct_point]
+                                ["{}={}".format(k, ct_point[k]) for k in ct_point]
                             )
                             case_df = extract_complete_variants(
                                 extract_case(target_df, ct_point)
@@ -352,8 +345,7 @@ def parallel_coordinates_plot(df, title):
     dics_vars = []
     for v, var in enumerate(my_vars):
         if df_plot[var].dtype.kind not in ["i", "u", "f"]:
-            dic_var = dict([(val, c)
-                           for c, val in enumerate(df_plot[var].unique())])
+            dic_var = dict([(val, c) for c, val in enumerate(df_plot[var].unique())])
             dics_vars += [dic_var]
             ym += [[dic_var[i] for i in df_plot[var].tolist()]]
         else:
@@ -395,8 +387,7 @@ def parallel_coordinates_plot(df, title):
             if i == 0:
                 ax.set_yticklabels([])
             else:
-                ax.set_yticklabels(
-                    [key_val for key_val in dics_vars[dic_count].keys()])
+                ax.set_yticklabels([key_val for key_val in dics_vars[dic_count].keys()])
             dic_count += 1
     host_ax.set_xlim(left=0, right=ym.shape[1] - 1)
     host_ax.set_xticks(range(ym.shape[1]))
@@ -512,10 +503,8 @@ def qrde_hd(samples):
     min_sample, max_sample = min(samples), max(samples)
     num_quantiles = math.ceil(1.0 / precision)
     quantiles = np.linspace(precision, 1 - precision, num_quantiles - 1)
-    hd_quantiles = [min_sample] + \
-        list(hdquantiles(samples, quantiles)) + [max_sample]
-    width = [hd_quantiles[idx + 1] - hd_quantiles[idx]
-             for idx in range(num_quantiles)]
+    hd_quantiles = [min_sample] + list(hdquantiles(samples, quantiles)) + [max_sample]
+    width = [hd_quantiles[idx + 1] - hd_quantiles[idx] for idx in range(num_quantiles)]
     p = 1.0 / precision
     height = [1.0 / (p * w) for w in width]
     return width, height
@@ -525,8 +514,7 @@ def hd_quantiles(samples):
     min_sample, max_sample = min(samples), max(samples)
     num_quantiles = math.ceil(1.0 / precision)
     quantiles = np.linspace(precision, 1 - precision, num_quantiles - 1)
-    hd_quantiles = [min_sample] + \
-        list(hdquantiles(samples, quantiles)) + [max_sample]
+    hd_quantiles = [min_sample] + list(hdquantiles(samples, quantiles)) + [max_sample]
     return hd_quantiles
 
 
@@ -721,8 +709,7 @@ def case_variants(pattern, mode, algname, ct_point_name, case_dfs):
             return
 
         fig, axes = plt.subplots(
-            nrows=num_rows, ncols=num_cols, gridspec_kw={
-                "wspace": 0, "hspace": 0}
+            nrows=num_rows, ncols=num_cols, gridspec_kw={"wspace": 0, "hspace": 0}
         )
 
         for _, vertical_row_description in (
@@ -750,8 +737,7 @@ def case_variants(pattern, mode, algname, ct_point_name, case_dfs):
                     horizontal_point = []
                     for rt_axis in horizontal_axes:
                         horizontal_point.append(
-                            "{}={}".format(
-                                rt_axis, horizontal_row_description[rt_axis])
+                            "{}={}".format(rt_axis, horizontal_row_description[rt_axis])
                         )
                     horizontal_name = " / ".join(horizontal_point)
                     horizontal_id = horizontal_axis_ids[horizontal_name]
@@ -868,8 +854,7 @@ def parse_arguments():
         "files", type=file_exists, nargs="+", help="At least one file is required."
     )
     parser.add_argument("--alpha", default=1.0, type=float)
-    parser.add_argument("--variants-pdf", type=str,
-                        help="Show matching variants data.")
+    parser.add_argument("--variants-pdf", type=str, help="Show matching variants data.")
     parser.add_argument(
         "--variants-ratio", type=str, help="Show matching variants data."
     )
