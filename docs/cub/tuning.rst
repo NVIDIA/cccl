@@ -252,13 +252,14 @@ Search Process
 --------------------------------------------------------------------------------
 
 To get started with tuning, you need to configure CMake.
-You can use the following command:
+You can use the following command, which will preconfigure CUB accordingly,
+including setting  :code:`CMAKE_BUILD_TYPE=Release` and :code:`CMAKE_CUDA_ARCHITECTURES=native`:
 
 .. code:: bash
 
   $ mkdir build
   $ cd build
-  $ cmake .. --preset=cub-tune -DCMAKE_CUDA_ARCHITECTURES=native
+  $ cmake .. --preset=cub-tune
 
 You can then run the tuning search for a specific algorithm and compile-time workload:
 
