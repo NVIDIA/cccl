@@ -18,20 +18,34 @@
 #include <stdexcept>
 
 #include "common_tests.cuh"
-#include "cuda/__memory_resource/resource_ref.h"
 #include <testing.cuh>
 #include <utility.cuh>
 
 namespace cudax = cuda::experimental;
 
-using pinned_resource = cudax::pinned_memory_resource;
-static_assert(!cuda::std::is_trivial<pinned_resource>::value, "");
-static_assert(!cuda::std::is_trivially_default_constructible<pinned_resource>::value, "");
-static_assert(cuda::std::is_trivially_copy_constructible<pinned_resource>::value, "");
-static_assert(cuda::std::is_trivially_move_constructible<pinned_resource>::value, "");
-static_assert(cuda::std::is_trivially_copy_assignable<pinned_resource>::value, "");
-static_assert(cuda::std::is_trivially_move_assignable<pinned_resource>::value, "");
-static_assert(cuda::std::is_trivially_destructible<pinned_resource>::value, "");
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#  define TEST_TYPES cudax::legacy_pinned_memory_resource, cudax::pinned_memory_resource
+#else
+#  define TEST_TYPES cudax::legacy_pinned_memory_resource
+#endif
+
+template <typename Resource>
+void resource_static_asserts()
+{
+  static_assert(!cuda::std::is_trivial_v<Resource>, "");
+  static_assert(!cuda::std::is_trivially_default_constructible_v<Resource>, "");
+  static_assert(cuda::std::is_trivially_copy_constructible_v<Resource>, "");
+  static_assert(cuda::std::is_trivially_move_constructible_v<Resource>, "");
+  static_assert(cuda::std::is_trivially_copy_assignable_v<Resource>, "");
+  static_assert(cuda::std::is_trivially_move_assignable_v<Resource>, "");
+  static_assert(cuda::std::is_trivially_destructible_v<Resource>, "");
+  static_assert(cuda::std::is_default_constructible_v<Resource>, "");
+}
+
+template void resource_static_asserts<cudax::legacy_pinned_memory_resource>();
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+template void resource_static_asserts<cudax::pinned_memory_resource>();
+#endif
 
 static void ensure_pinned_ptr(void* ptr)
 {
@@ -45,16 +59,9 @@ static void ensure_pinned_ptr(void* ptr)
   // CHECK(attributes.devicePointer != nullptr);
 }
 
-TEST_CASE("pinned_memory_resource construction", "[memory_resource]")
+TEMPLATE_TEST_CASE("pinned_memory_resource allocation", "[memory_resource]", TEST_TYPES)
 {
-  SECTION("Default construction")
-  {
-    STATIC_REQUIRE(cuda::std::is_default_constructible_v<pinned_resource>);
-  }
-}
-
-TEST_CASE("pinned_memory_resource allocation", "[memory_resource]")
-{
+  using pinned_resource = TestType;
   pinned_resource res{};
   cudax::stream stream{};
 
@@ -74,24 +81,27 @@ TEST_CASE("pinned_memory_resource allocation", "[memory_resource]")
     res.deallocate(ptr, 42, 4);
   }
 
-  { // allocate_async / deallocate_async
-    auto* ptr = res.allocate_async(42, stream);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+  if constexpr (cuda::mr::async_resource<pinned_resource>)
+  {
+    { // allocate_async / deallocate_async
+      auto* ptr = res.allocate_async(42, stream);
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
-    ensure_pinned_ptr(ptr);
+      stream.wait();
+      ensure_pinned_ptr(ptr);
 
-    res.deallocate_async(ptr, 42, stream);
-  }
+      res.deallocate_async(ptr, 42, stream);
+    }
 
-  { // allocate_async / deallocate_async with alignment
-    auto* ptr = res.allocate_async(42, 4, stream);
-    static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
+    { // allocate_async / deallocate_async with alignment
+      auto* ptr = res.allocate_async(42, 4, stream);
+      static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
-    ensure_pinned_ptr(ptr);
+      stream.wait();
+      ensure_pinned_ptr(ptr);
 
-    res.deallocate_async(ptr, 42, 4, stream);
+      res.deallocate_async(ptr, 42, 4, stream);
+    }
   }
 
 #ifndef _LIBCUDACXX_NO_EXCEPTIONS
@@ -126,35 +136,39 @@ TEST_CASE("pinned_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-  { // allocate_async with too small alignment
-    while (true)
-    {
-      try
-      {
-        auto* ptr = res.allocate_async(5, 42, stream);
-        (void) ptr;
-      }
-      catch (std::invalid_argument&)
-      {
-        break;
-      }
-      CHECK(false);
-    }
-  }
 
-  { // allocate_async with non matching alignment
-    while (true)
-    {
-      try
+  if constexpr (cuda::mr::async_resource<pinned_resource>)
+  {
+    { // allocate_async with too small alignment
+      while (true)
       {
-        auto* ptr = res.allocate_async(5, 1337, stream);
-        (void) ptr;
+        try
+        {
+          auto* ptr = res.allocate_async(5, 42, stream);
+          (void) ptr;
+        }
+        catch (std::invalid_argument&)
+        {
+          break;
+        }
+        CHECK(false);
       }
-      catch (std::invalid_argument&)
+    }
+
+    { // allocate_async with non matching alignment
+      while (true)
       {
-        break;
+        try
+        {
+          auto* ptr = res.allocate_async(5, 1337, stream);
+          (void) ptr;
+        }
+        catch (std::invalid_argument&)
+        {
+          break;
+        }
+        CHECK(false);
       }
-      CHECK(false);
     }
   }
 #endif // _LIBCUDACXX_NO_EXCEPTIONS
@@ -200,14 +214,15 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>,
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_pinned_resource : cudax::pinned_memory_resource
+struct derived_pinned_resource : cudax::legacy_pinned_memory_resource
 {
-  using cudax::pinned_memory_resource::pinned_memory_resource;
+  using legacy_pinned_memory_resource::legacy_pinned_memory_resource;
 };
 static_assert(cuda::mr::resource<derived_pinned_resource>, "");
 
-TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
+TEMPLATE_TEST_CASE("pinned_memory_resource comparison", "[memory_resource]", TEST_TYPES)
 {
+  using pinned_resource = TestType;
   pinned_resource first{};
   { // comparison against a plain pinned_memory_resource
     pinned_resource second{};
@@ -225,6 +240,7 @@ TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
     CHECK(!(second_ref != first));
   }
 
+  if constexpr (cuda::mr::async_resource<pinned_resource>)
   { // comparison against a pinned_memory_resource wrapped inside a async_resource_ref
     pinned_resource second{};
     cudax::async_resource_ref<cudax::device_accessible> second_ref{second};

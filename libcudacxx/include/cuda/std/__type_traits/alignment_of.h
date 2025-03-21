@@ -31,7 +31,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT alignment_of : public integral_constant<siz
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr size_t alignment_of_v = alignof(_Tp);
+inline constexpr size_t alignment_of_v = alignof(_Tp);
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

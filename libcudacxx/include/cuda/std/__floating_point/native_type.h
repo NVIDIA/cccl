@@ -65,7 +65,7 @@ template <__fp_format _Fmt>
 using __fp_native_type_t = decltype(__fp_native_type_impl<_Fmt>());
 
 template <__fp_format _Fmt>
-_CCCL_INLINE_VAR constexpr bool __fp_has_native_type_v = !_CCCL_TRAIT(is_void, __fp_native_type_t<_Fmt>);
+inline constexpr bool __fp_has_native_type_v = !_CCCL_TRAIT(is_void, __fp_native_type_t<_Fmt>);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -31,9 +31,9 @@
 
 #include <nv/target>
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

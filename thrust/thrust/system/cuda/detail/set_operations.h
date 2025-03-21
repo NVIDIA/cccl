@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>

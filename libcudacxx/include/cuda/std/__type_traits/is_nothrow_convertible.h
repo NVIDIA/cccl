@@ -49,7 +49,7 @@ struct is_nothrow_convertible
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <typename _Fm, typename _To>
-_CCCL_INLINE_VAR constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
+inline constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -37,7 +37,7 @@ struct is_trivially_copy_assignable
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_trivially_copy_assignable_v = _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(
+inline constexpr bool is_trivially_copy_assignable_v = _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(
   add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<typename add_const<_Tp>::type>);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
@@ -50,7 +50,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copy_assignable
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_trivially_copy_assignable_v = is_trivially_copy_assignable<_Tp>::value;
+inline constexpr bool is_trivially_copy_assignable_v = is_trivially_copy_assignable<_Tp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)

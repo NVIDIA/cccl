@@ -52,6 +52,11 @@ file(GLOB example_srcs
   *.cu
 )
 
+# Example requires pinned_memory_resource.
+if(CUDAToolkit_VERSION VERSION_LESS 12.6)
+  list(REMOVE_ITEM example_srcs async_buffer_add.cu)
+endif()
+
 foreach(cudax_target IN LISTS cudax_TARGETS)
   cudax_get_target_property(config_prefix ${cudax_target} PREFIX)
 
