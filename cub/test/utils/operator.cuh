@@ -35,7 +35,7 @@
  **********************************************************************************************************************/
 
 template <typename T, typename Operator>
-constexpr T operator_identity_v;
+inline constexpr T operator_identity;
 
 template <typename T>
 constexpr T operator_identity_v<T, cuda::std::plus<>> = T{};
