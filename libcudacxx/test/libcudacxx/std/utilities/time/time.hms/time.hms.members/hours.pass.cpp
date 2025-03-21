@@ -32,7 +32,7 @@ template <typename Duration>
 __host__ __device__ constexpr long check_hours(Duration d)
 {
   using HMS = cuda::std::chrono::hh_mm_ss<Duration>;
-  ASSERT_SAME_TYPE(cuda::std::chrono::hours, decltype(cuda::std::declval<HMS>().hours()));
+  static_assert(cuda::std::is_same_v<cuda::std::chrono::hours, decltype(cuda::std::declval<HMS>().hours())>);
   static_assert(noexcept(cuda::std::declval<HMS>().hours()));
   return HMS(d).hours().count();
 }

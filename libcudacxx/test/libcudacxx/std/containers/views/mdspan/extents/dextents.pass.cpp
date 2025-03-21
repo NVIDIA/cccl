@@ -25,11 +25,12 @@ template <class IndexType>
 __host__ __device__ void test_alias_template_dextents()
 {
   [[maybe_unused]] constexpr size_t D = cuda::std::dynamic_extent;
-  ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 0>, cuda::std::extents<IndexType>);
-  ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 1>, cuda::std::extents<IndexType, D>);
-  ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 2>, cuda::std::extents<IndexType, D, D>);
-  ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 3>, cuda::std::extents<IndexType, D, D, D>);
-  ASSERT_SAME_TYPE(cuda::std::dextents<IndexType, 9>, cuda::std::extents<IndexType, D, D, D, D, D, D, D, D, D>);
+  static_assert(cuda::std::is_same_v<cuda::std::dextents<IndexType, 0>, cuda::std::extents<IndexType>>);
+  static_assert(cuda::std::is_same_v<cuda::std::dextents<IndexType, 1>, cuda::std::extents<IndexType, D>>);
+  static_assert(cuda::std::is_same_v<cuda::std::dextents<IndexType, 2>, cuda::std::extents<IndexType, D, D>>);
+  static_assert(cuda::std::is_same_v<cuda::std::dextents<IndexType, 3>, cuda::std::extents<IndexType, D, D, D>>);
+  static_assert(
+    cuda::std::is_same_v<cuda::std::dextents<IndexType, 9>, cuda::std::extents<IndexType, D, D, D, D, D, D, D, D, D>>);
 }
 
 int main(int, char**)

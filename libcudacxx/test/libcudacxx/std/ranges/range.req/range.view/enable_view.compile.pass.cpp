@@ -95,8 +95,8 @@ static_assert(!cuda::std::ranges::enable_view<const EnableViewTrue&>, "");
 static_assert(!cuda::std::ranges::enable_view<const EnableViewTrue&&>, "");
 
 // Make sure that enable_view is a bool, not some other contextually-convertible-to-bool type.
-ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<Empty>), const bool);
-ASSERT_SAME_TYPE(decltype(cuda::std::ranges::enable_view<PublicViewBase>), const bool);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::enable_view<Empty>), const bool>);
+static_assert(cuda::std::is_same_v<decltype(cuda::std::ranges::enable_view<PublicViewBase>), const bool>);
 
 // view_interface requires c++17
 
@@ -113,18 +113,18 @@ struct V2
     : cuda::std::ranges::view_interface<V1>
     , cuda::std::ranges::view_interface<V2>
 {};
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC seems to allow the conversion
-                                                        // despite the ambiguity in
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC seems to allow the conversion
+                                                // despite the ambiguity in
 // C++17
 static_assert(!cuda::std::ranges::enable_view<V2>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(!cuda::std::ranges::enable_view<V2&>, "");
 static_assert(!cuda::std::ranges::enable_view<V2&&>, "");
-#if !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017 // MSVC seems to allow the conversion
-                                                        // despite the ambiguity in
+#if !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017 // MSVC seems to allow the conversion
+                                                // despite the ambiguity in
 // C++17
 static_assert(!cuda::std::ranges::enable_view<const V2>, "");
-#endif // !defined(TEST_COMPILER_MSVC) || TEST_STD_VER > 2017
+#endif // !TEST_COMPILER(MSVC) || TEST_STD_VER > 2017
 static_assert(!cuda::std::ranges::enable_view<const V2&>, "");
 static_assert(!cuda::std::ranges::enable_view<const V2&&>, "");
 

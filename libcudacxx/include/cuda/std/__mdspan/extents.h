@@ -329,9 +329,8 @@ static constexpr bool __potentially_narrowing =
 // if _From is not an integral, we just check positivity
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(integral<_To>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as(_From __value)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as([[maybe_unused]] _From __value)
 {
-  (void) __value;
   if constexpr (integral<_From>)
   {
     if constexpr (_CCCL_TRAIT(is_signed, _From))
@@ -522,12 +521,11 @@ private:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Values __construct_vals_from_extents(
     integral_constant<size_t, _DynCount>,
     integral_constant<size_t, _Idx>,
-    const _OtherExtents& __exts,
+    [[maybe_unused]] const _OtherExtents& __exts,
     _DynamicValues... __dynamic_values) noexcept
   {
     if constexpr (_Idx == __rank_)
     {
-      (void) __exts;
       if constexpr (_DynCount == __rank_dynamic_)
       {
         return _Values{static_cast<index_type>(__dynamic_values)...};

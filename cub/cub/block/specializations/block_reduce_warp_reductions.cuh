@@ -78,7 +78,7 @@ struct BlockReduceWarpReductions
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
 
     /// Number of warp threads
-    WARP_THREADS = CUB_WARP_THREADS(0),
+    WARP_THREADS = warp_threads,
 
     /// Number of active warps
     WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,

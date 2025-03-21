@@ -244,8 +244,23 @@ A single benchmark file can define multiple benchmarks (multiple benchmark funct
 All benchmarks in a single file must share the same compile-time axes.
 The tuning infrastructure will run all benchmarks in a single file together for the same compile-time workload
 and compute a common score across all benchmarks and runtime workloads.
+Unless a benchmark axis is importance-ordered, each sample contributes equally to the score.
 This is useful to tune an algorithm for multiple runtime use cases at once,
 that we don't intend to provide separate tuning policies for.
+Also, a large space of runtime workloads can be segmented this way,
+e.g., by splitting the benchmark entry point and supplying a few low and a few high values for a runtime axis:
+
+.. code:: c++
+
+  NVBENCH_BENCH_TYPES(algname, NVBENCH_TYPE_AXES(all_types, offset_types))
+    .set_name("small")
+    ...
+    .add_int64_power_of_two_axis("SegmentSize", nvbench::range(0, 3, 1)); // tests sizes 2^0, 2^1, 2^2, 2^3
+
+  NVBENCH_BENCH_TYPES(algname, NVBENCH_TYPE_AXES(all_types, offset_types))
+    .set_name("large")
+    ...
+    .add_int64_power_of_two_axis("SegmentSize", nvbench::range(12, 18, 2)); // tests sizes 2^12, 2^14, 2^16, 2^18
 
 
 Search Process
@@ -350,9 +365,6 @@ The result of the search is stored in one or more :code:`cccl_meta_bench.db` fil
 result you can use the :code:`analyze.py` script.
 The :code:`--coverage` flag will show the amount of variants that were covered per compile-time workload:
 
-..
-    TODO(bgruber): also show analysis using multiple tuning databases
-
 .. code:: bash
 
   $ ../benchmarks/scripts/analyze.py --coverage
@@ -386,21 +398,72 @@ If all those three values are larger than 1.0, the variant is strictly better th
 If only the mean or max are larger than 1.0, the variant may perform better in most runtime workloads, but regress in others.
 This information can be used to change the existing tuning policies in CUB.
 
+By default, :code:`analyze.py` will look for a file named :code:`cccl_meta_bench.db` in the current directory.
+If the tuning results are available in multiple databases, e.g., after tuning on multiple GPUs,
+glob expressions matching multiple databases, or just multiple file paths, can be passed as arguments as well:
+
+.. code:: bash
+
+  $ ../benchmarks/scripts/analyze.py --top=5 <path-to-databases>/*.db
+
+In case the tuning database(s) store(s) results for several different benchmarks,
+the analysis can again be restricted using a regular expression via the :code:`-R` option:
+
+.. code:: bash
+
+  $ ../benchmarks/scripts/analyze.py -R=".*radix_sort.keys.*"  --top=5 <path-to-databases>/*.db
+
 
 Variant plots
 --------------------------------------------------------------------------------
 
 The reported score for a tuning aggregates the performance across all runtime workloads.
-Even though the min, mean and max score are given as well, it may be necessary to view the distribution of scores across variants.
+Furthermore, NVBench collects and aggregates multiple samples for a single compile and runtime workload.
+So, even though the min, mean and max score are reported for a variant,
+it may be necessary to compare the distributions of raw speedups between the baseline and a variant across all runtime workloads and samples.
+This is achieved using variant plots.
+For more background information on this subject, we refer the reader to `this article <https://aakinshin.net/posts/shift-and-ratio-functions/>`_.
 
-..
-    TODO(bgruber): the following is outdated and should be rewroted
+A variant plot can be generated for one or more variants using the :code:`--variants-ratio=` option and specifying the specific variant to plot.
+For example:
 
 .. code:: bash
 
-  $ ../benchmarks/scripts/analyze.py --variant='ipt_(18|19).tpb_512'
+  $ ../benchmarks/scripts/analyze.py -R=".*radix_sort.keys.*" --variants-ratio='ipt_18.tpb_288' <path-to-databases>/*.db
 
-The last command plots distribution of the elapsed times for the specified variants.
+May display a matrix of variant plots like:
+
+.. image:: ../images/variant_plot.png
+
+In the image above we see twelve diagrams for the Cartesian product of the :code:`Entropy` (horizontally) and :code:`Elements{io}` (vertically) runtime axes.
+The compile-time axes are fixed for one matrix of variant plots.
+Across each variant plot's x-axis, the speedup over the baseline (y-axis) is represented.
+The baseline is shown as a straight horizontal red line at 1.
+The found tuning thus results in a slowdown for :code:`Elements{io}` 2^16 and 2^20 (orange line below red baseline),
+but a speedup for 2^24 and 2^28 (orange line above red baseline).
+In general, bigger axis values for plots for importance-ordered axes, like :code:`Elements{io}`,
+should be prioritized in evaluating a given tuning, because GPUs are optimized for large problem sizes.
+However, while the almost 4% slowdown for 2^16 elements at entropy 0.544 may be bearable,
+a close to 7% slowdown for 2^20 elements at entropy 1 is probably too large to accept this tuning,
+despite the solid 3.5-8% speedup for larger element counts.
+
+The shown ratios are generated by fitting an equal amount of quantiles into the samples of the baseline and the variant,
+and then showing the quotient for each corresponding quantile from baseline and variant.
+For background information on the quantile-respectful density estimation,
+we refer the reader to this `article <https://aakinshin.net/posts/qrde-hd>`_.
+By default, a quantile corresponds to a percentile, and thus a ratio plot contains 100 data points
+expressing the speedup of the slowest 1% in the variant over the slowest 1% in the baseline (left),
+then the second slowest 1%, etc., until the speedup of the fastest 1% in the variant over the fastest 1% in the baseline (right).
+
+The detailed analysis via variant plots is needed,
+because a single aggregated score cannot represent the distribution of samples obtained from highly concurrent algorithms, such as those in CUB.
+Even though NVBench reruns a benchmark many times to gain statistical confidence in the result,
+the runtime of a CUB algorithm does not necessarily follow a normal distribution.
+For example, the concurrent nature of some algorithms may result in bimodal or even more complex distributions,
+as a consequence of how the hardware schedules and executes threads.
+Also, the kind of distribution may be different between baseline and variant.
+For all these reasons, comparing the distribution of samples is the only reliable way to determine,
+whether a tuning provides a consistent speedup for all runtime workloads.
 
 
 Creating tuning policies

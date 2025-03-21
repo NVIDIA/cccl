@@ -51,11 +51,11 @@ struct is_even_t
 C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][device]")
 {
   // example-begin segmented-select-flaggedif
-  constexpr int num_items            = 8;
-  thrust::device_vector<int> d_in    = {0, 1, 2, 3, 4, 5, 6, 7};
-  thrust::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
-  thrust::device_vector<int> d_out(num_items);
-  thrust::device_vector<int> d_num_selected_out(num_items);
+  constexpr int num_items         = 8;
+  c2h::device_vector<int> d_in    = {0, 1, 2, 3, 4, 5, 6, 7};
+  c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
+  c2h::device_vector<int> d_out(num_items);
+  c2h::device_vector<int> d_num_selected_out(num_items);
   is_even_t is_even{};
 
   // Determine temporary device storage requirements
@@ -84,7 +84,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
     num_items,
     is_even);
 
-  thrust::device_vector<int> expected{0, 1, 5};
+  c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));
@@ -95,10 +95,10 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf works with int data elements", "[select][
 C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "[select][device]")
 {
   // example-begin segmented-select-flaggedif-inplace
-  constexpr int num_items            = 8;
-  thrust::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
-  thrust::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
-  thrust::device_vector<int> d_num_selected_out(num_items);
+  constexpr int num_items         = 8;
+  c2h::device_vector<int> d_data  = {0, 1, 2, 3, 4, 5, 6, 7};
+  c2h::device_vector<int> d_flags = {8, 6, 7, 5, 3, 0, 9, 3};
+  c2h::device_vector<int> d_num_selected_out(num_items);
   is_even_t is_even{};
 
   // Determine temporary device storage requirements
@@ -119,7 +119,7 @@ C2H_TEST("cub::DeviceSelect::FlaggedIf in-place works with int data elements", "
     num_items,
     is_even);
 
-  thrust::device_vector<int> expected{0, 1, 5};
+  c2h::device_vector<int> expected{0, 1, 5};
   // example-end segmented-select-flaggedif-inplace
 
   REQUIRE(d_num_selected_out[0] == static_cast<int>(expected.size()));

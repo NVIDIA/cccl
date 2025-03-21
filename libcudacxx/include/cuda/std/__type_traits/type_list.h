@@ -606,7 +606,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
 #  if defined(_CCCL_DOXYGEN_INVOKED)
 
 //! \see __type_switch
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
 {
   template <class _OtherInt>
@@ -626,17 +626,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
   using type = _Value;
 };
 
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 using __type_case _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<decltype(_Label), _Label>, _Value>;
 
 #  endif // !DOXYGEN
 
 namespace __detail
 {
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 _LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
 
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 _LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
 } // namespace __detail
 
@@ -664,7 +664,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __type_switch_fn
 //!                              __type_default<float>>;
 //! static_assert(is_same_v<result, double>);
 //! \endcode
-template <_CCCL_NTTP_AUTO _Label, class... _Cases>
+template <auto _Label, class... _Cases>
 using __type_switch _CCCL_NODEBUG_ALIAS =
   __type_call<__type_switch_fn<decltype(_Label), _Cases...>, integral_constant<decltype(_Label), _Label>>;
 

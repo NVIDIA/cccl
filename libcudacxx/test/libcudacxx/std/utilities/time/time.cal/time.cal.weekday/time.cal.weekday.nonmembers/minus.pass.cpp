@@ -55,10 +55,10 @@ int main(int, char**)
   using days    = cuda::std::chrono::days;
 
   static_assert(noexcept(cuda::std::declval<weekday>() - cuda::std::declval<days>()));
-  ASSERT_SAME_TYPE(weekday, decltype(cuda::std::declval<weekday>() - cuda::std::declval<days>()));
+  static_assert(cuda::std::is_same_v<weekday, decltype(cuda::std::declval<weekday>() - cuda::std::declval<days>())>);
 
   static_assert(noexcept(cuda::std::declval<weekday>() - cuda::std::declval<weekday>()));
-  ASSERT_SAME_TYPE(days, decltype(cuda::std::declval<weekday>() - cuda::std::declval<weekday>()));
+  static_assert(cuda::std::is_same_v<days, decltype(cuda::std::declval<weekday>() - cuda::std::declval<weekday>())>);
 
   static_assert(testConstexpr<weekday, days>(), "");
 

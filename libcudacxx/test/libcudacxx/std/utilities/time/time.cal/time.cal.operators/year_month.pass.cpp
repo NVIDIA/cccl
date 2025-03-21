@@ -32,7 +32,7 @@ int main(int, char**)
 
   { // operator/(const year& y, const month& m)
     static_assert(noexcept(year{2018} / February));
-    ASSERT_SAME_TYPE(year_month, decltype(year{2018} / February));
+    static_assert(cuda::std::is_same_v<year_month, decltype(year{2018} / February)>);
 
     static_assert((year{2018} / February).year() == year{2018}, "");
     static_assert((year{2018} / February).month() == month{2}, "");
@@ -49,7 +49,7 @@ int main(int, char**)
 
   { // operator/(const year& y, const int m)
     static_assert(noexcept(year{2018} / 4));
-    ASSERT_SAME_TYPE(year_month, decltype(year{2018} / 4));
+    static_assert(cuda::std::is_same_v<year_month, decltype(year{2018} / 4)>);
 
     static_assert((year{2018} / 2).year() == year{2018}, "");
     static_assert((year{2018} / 2).month() == month{2}, "");

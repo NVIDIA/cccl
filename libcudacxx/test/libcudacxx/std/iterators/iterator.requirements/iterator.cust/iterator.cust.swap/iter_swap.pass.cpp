@@ -204,7 +204,7 @@ __host__ __device__ constexpr bool test()
     cuda::std::ranges::iter_swap(&g, &h);
     assert(g.value && h.value);
   }
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   {
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
@@ -217,7 +217,7 @@ __host__ __device__ constexpr bool test()
       assert(arr[0].moves() == 1 && arr[1].moves() == 2);
     }
   }
-#endif
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   {
     int buff[2] = {1, 2};
     cuda::std::ranges::iter_swap(buff + 0, buff + 1);

@@ -74,84 +74,34 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Detect whether we can use some language features based on standard dialect
 ///////////////////////////////////////////////////////////////////////////////
-#if __cpp_if_constexpr < 201606L
-#  define _CCCL_NO_IF_CONSTEXPR
-#endif // !defined(__cpp_if_constexpr)
 
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 #  define _CCCL_NO_CONCEPTS
 #endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 
-// CTAD is only available from C++17 onwards
-#if __cpp_deduction_guides < 201611L
-#  define _CCCL_NO_DEDUCTION_GUIDES
-#endif // __cpp_deduction_guides < 201611L
-
-// Fold expressions are only available from C++17 onwards
-#if __cpp_fold_expressions < 201603L
-#  define _CCCL_NO_FOLD_EXPRESSIONS
-#endif // __cpp_fold_expressions < 201603L
-
 // Inline variables are only available from C++17 onwards
 #if __cpp_inline_variables < 201606L
 #  define _CCCL_NO_INLINE_VARIABLES
 #endif // __cpp_inline_variables < 201606L
-
-// noexcept function types are only available from C++17 onwards
-#if __cpp_noexcept_function_type < 201510L
-#  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
-#endif // __cpp_noexcept_function_type < 201510L
-
-// Declaring a non-type template parameters with auto is only available from C++17 onwards
-#if __cpp_nontype_template_parameter_auto < 201606L
-#  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
-#endif // __cpp_nontype_template_parameter_auto < 201606L
 
 // Three way comparison is only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 #  define _CCCL_NO_THREE_WAY_COMPARISON
 #endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 
-// Variable templates are only available from C++14 onwards and require some compiler support
-#if __cpp_variable_templates < 201304L
-#  define _CCCL_NO_VARIABLE_TEMPLATES
-#endif // __cpp_variable_templates < 201304L
-
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 
-#if defined(_CCCL_NO_INLINE_VARIABLES)
-#  define _CCCL_INLINE_VAR
-#else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
-#  define _CCCL_INLINE_VAR inline
-#endif // !_CCCL_NO_INLINE_VARIABLES
-
-#if defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
-#  define _CCCL_FUNCTION_TYPE_NOEXCEPT
-#else // ^^^ _CCCL_NO_NOEXCEPT_FUNCTION_TYPE ^^^ / vvv !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE vvv
-#  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
-#endif // !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE
-
-#if defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
-#  define _CCCL_NTTP_AUTO unsigned long long int
-#else // ^^^ _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO ^^^ / vvv !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO vvv
-#  define _CCCL_NTTP_AUTO auto
-#endif // !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
-
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
-#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
-#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
+#  define _CCCL_GLOBAL_CONSTANT inline constexpr
 #endif // __CUDA_ARCH__
 
 #endif // __CCCL_DIALECT_H

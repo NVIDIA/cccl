@@ -530,7 +530,7 @@ struct __expected_storage : __expected_destruct<_Tp, _Err>
 };
 
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr __smf_availability __expected_can_copy_construct =
+inline constexpr __smf_availability __expected_can_copy_construct =
   (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
       && _CCCL_TRAIT(is_trivially_copy_constructible, _Err)
     ? __smf_availability::__trivial
@@ -581,7 +581,7 @@ struct __expected_copy<_Tp, _Err, __smf_availability::__deleted> : __expected_st
 };
 
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr __smf_availability __expected_can_move_construct =
+inline constexpr __smf_availability __expected_can_move_construct =
   (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
       && _CCCL_TRAIT(is_trivially_move_constructible, _Err)
     ? __smf_availability::__trivial
@@ -634,7 +634,7 @@ struct __expected_move<_Tp, _Err, __smf_availability::__deleted> : __expected_co
 
 // Need to also check against is_nothrow_move_constructible in the trivial case as that is stupidly in the constraints
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr __smf_availability __expected_can_copy_assign =
+inline constexpr __smf_availability __expected_can_copy_assign =
   (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
       && _CCCL_TRAIT(is_trivially_destructible, _Err)
       && (_CCCL_TRAIT(is_trivially_copy_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
@@ -710,7 +710,7 @@ struct __expected_copy_assign<_Tp, _Err, __smf_availability::__deleted> : __expe
 };
 
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr __smf_availability __expected_can_move_assign =
+inline constexpr __smf_availability __expected_can_move_assign =
   (_CCCL_TRAIT(is_trivially_destructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))
       && _CCCL_TRAIT(is_trivially_destructible, _Err)
       && (_CCCL_TRAIT(is_trivially_move_constructible, _Tp) || _CCCL_TRAIT(is_same, _Tp, void))

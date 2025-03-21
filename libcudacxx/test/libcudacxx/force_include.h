@@ -56,8 +56,8 @@ void list_devices()
 
 __host__ __device__ int fake_main(int, char**);
 
-int cuda_thread_count = 1;
-int cuda_cluster_size = 1;
+int cuda_thread_count                  = 1;
+[[maybe_unused]] int cuda_cluster_size = 1;
 
 __global__ void fake_main_kernel(int* ret)
 {
@@ -114,7 +114,6 @@ int main(int argc, char** argv)
   else
 #endif // CTK <= 11.7
   {
-    (void) cuda_cluster_size;
     fake_main_kernel<<<1, cuda_thread_count>>>(cuda_ret);
   }
   CUDA_CALL(err, cudaGetLastError());

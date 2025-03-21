@@ -30,8 +30,8 @@ struct Predicate
 
 int main(int, char**)
 {
-  cuda::std::binary_negate<Predicate> f((Predicate())); // expected-error{{'binary_negate<Predicate>' is deprecated}}
-  (void) f;
+  [[maybe_unused]] cuda::std::binary_negate<Predicate> f((Predicate())); // expected-error{{'binary_negate<Predicate>'
+                                                                         // is deprecated}}
 
   return 0;
 }
