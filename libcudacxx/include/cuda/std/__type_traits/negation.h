@@ -32,10 +32,8 @@ template <class _Tp>
 struct negation : _Not<_Tp>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 inline constexpr bool negation_v = !_Tp::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -31,10 +31,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_constructible
     : public is_nothrow_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 inline constexpr bool is_nothrow_copy_constructible_v = is_nothrow_copy_constructible<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

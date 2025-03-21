@@ -48,7 +48,7 @@ concept __invoke_constructible = requires(_Fun&& __fun, _Args&&... __args) {
     _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...));
 };
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Fn, class... _Args>
 _CCCL_CONCEPT_FRAGMENT(_Invocable_,
@@ -69,7 +69,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Fun, class... _Args>
 _CCCL_CONCEPT __invoke_constructible = _CCCL_FRAGMENT(__invoke_constructible_, _Fun, _Args...);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
