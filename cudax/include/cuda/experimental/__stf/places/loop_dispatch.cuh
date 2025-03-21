@@ -87,6 +87,13 @@ inline void loop_dispatch(
   {
     // Work that should be performed by thread "tid"
     auto tid_work = [=, &ctx, &func]() {
+      if constexpr (::std::is_same_v<context_t, stackable_ctx>)
+      {
+        ctx.set_head_offset(head);
+        fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d\n", head);
+        ctx.push();
+      }
+
       // Distribute subplaces in a round robin fashion
       ::std::vector<::std::shared_ptr<exec_place>> thread_affinity;
       for (size_t i = tid; i < place_cnt; i += nthreads)
@@ -95,12 +102,6 @@ inline void loop_dispatch(
       }
       ctx.push_affinity(mv(thread_affinity));
 
-      if constexpr (::std::is_same_v<context_t, stackable_ctx>)
-      {
-        ctx.set_head_offset(head);
-        fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d\n", head);
-        ctx.push();
-      }
 
       for (size_t i = start; i < end; i++)
       {
