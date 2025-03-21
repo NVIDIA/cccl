@@ -40,10 +40,8 @@ constexpr bool equal_range(const Buffer& buf)
   else
   {
     return buf.size() == cuda::std::size(device_data)
-        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
-                         buf.begin(),
-                         buf.end(),
-                         cuda::get_device_address(device_data[0]));
+        && thrust::equal(
+             thrust::cuda::par.on(buf.get_stream()), buf.begin(), buf.end(), cuda::get_device_address(device_data[0]));
   }
 }
 
@@ -113,7 +111,7 @@ constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int 
   else
   {
     return buf.size() == size
-        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
+        && thrust::equal(thrust::cuda::par.on(buf.get_stream()),
                          buf.begin(),
                          buf.end(),
                          cuda::std::begin(device_data),
@@ -133,7 +131,7 @@ constexpr bool equal_range(const Range1& range1, const Range2& range2)
   else
   {
     return range1.size() == range2.size()
-        && thrust::equal(thrust::cuda::par.on(range1.get_stream().get()), range1.begin(), range1.end(), range2.begin());
+        && thrust::equal(thrust::cuda::par.on(range1.get_stream()), range1.begin(), range1.end(), range2.begin());
   }
 }
 
