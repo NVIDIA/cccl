@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,6 +25,10 @@
  *
  ******************************************************************************/
 #pragma once
+
+#include <cuda/std/type_traits>
+
+#include "c2h/catch2_test_helper.h"
 
 /**
  * @brief Compares the results returned from system under test against the expected results.
