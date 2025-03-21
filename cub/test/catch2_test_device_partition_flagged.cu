@@ -355,17 +355,25 @@ struct convertible_from_T
   T val_;
 
   convertible_from_T() = default;
+
+  // needed for thrust::device_reference<T>::operator=(T)
   __host__ __device__ convertible_from_T(const T& val) noexcept
       : val_(val)
   {}
-  __host__ __device__ convertible_from_T& operator=(const T& val) noexcept
+
+  _CCCL_HOST_DEVICE friend bool operator==(const convertible_from_T& a, const T& b)
   {
-    val_ = val;
+    return a.val_ == b;
   }
-  // Converting back to T helps satisfy all the machinery that T supports
-  __host__ __device__ operator T() const noexcept
+
+  _CCCL_HOST_DEVICE friend bool operator==(const T& a, const convertible_from_T& b)
   {
-    return val_;
+    return a == b.val_;
+  }
+
+  _CCCL_HOST_DEVICE friend auto operator<<(std::ostream& os, const convertible_from_T& value) -> std::ostream&
+  {
+    return os << value.val_;
   }
 };
 

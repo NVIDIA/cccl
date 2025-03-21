@@ -72,7 +72,7 @@ struct WarpScanSmem
    ******************************************************************************/
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0));
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
   /// The number of warp scan steps
   static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;

@@ -301,6 +301,16 @@ Usage example:
 | ``_CCCL_PRAGMA(X)``         | Portable ``_Pragma(X)`` keyword            |
 +-----------------------------+--------------------------------------------+
 
+**Portable Pragma Macros**
+
++--------------------------------+-------------------------------------------+
+| ``_CCCL_PRAGMA_UNROLL(N)``     | Portable ``#pragma unroll N`` pragma      |
++--------------------------------+-------------------------------------------+
+| ``_CCCL_PRAGMA_UNROLL_FULL()`` | Portable ``#pragma unroll`` pragma        |
++--------------------------------+-------------------------------------------+
+| ``_CCCL_PRAGMA_NOUNROLL()``    | Portable ``#pragma nounroll`` pragma      |
++--------------------------------+-------------------------------------------+
+
 ----
 
 Visibility Macros

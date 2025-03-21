@@ -24,13 +24,13 @@
 
 int main(int, char**)
 {
-  ASSERT_SAME_TYPE(const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Sunday));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Monday));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Tuesday));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Wednesday));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Thursday));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Friday));
-  ASSERT_SAME_TYPE(const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Saturday));
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Sunday)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Monday)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Tuesday)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Wednesday)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Thursday)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Friday)>);
+  static_assert(cuda::std::is_same_v<const cuda::std::chrono::weekday, decltype(cuda::std::chrono::Saturday)>);
 
   static_assert(cuda::std::chrono::Sunday == cuda::std::chrono::weekday(0), "");
   static_assert(cuda::std::chrono::Monday == cuda::std::chrono::weekday(1), "");

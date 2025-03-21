@@ -54,7 +54,7 @@ struct NonTrivialSortable
   __host__ __device__ constexpr NonTrivialSortable(const NonTrivialSortable& rhs)
       : value(rhs.value)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialSortable& operator=(const NonTrivialSortable& rhs)
+  __host__ __device__ constexpr NonTrivialSortable& operator=(const NonTrivialSortable& rhs)
   {
     value = rhs.value;
     return *this;
@@ -104,7 +104,7 @@ struct NonTrivialSortableWithComp
   __host__ __device__ constexpr NonTrivialSortableWithComp(const NonTrivialSortableWithComp& rhs)
       : value(rhs.value)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 NonTrivialSortableWithComp& operator=(const NonTrivialSortableWithComp& rhs)
+  __host__ __device__ constexpr NonTrivialSortableWithComp& operator=(const NonTrivialSortableWithComp& rhs)
   {
     value = rhs.value;
     return *this;

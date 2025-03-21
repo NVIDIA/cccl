@@ -40,7 +40,7 @@ _CCCL_INLINE_VAR constexpr bool reference_converts_from_temporary_v =
 template <class _Tp, class _Up>
 struct reference_converts_from_temporary : integral_constant<bool, false>
 {
-  static_assert(__always_false<_Tp>, "The compiler does not support __reference_converts_from_temporary");
+  static_assert(__always_false_v<_Tp>, "The compiler does not support __reference_converts_from_temporary");
 };
 
 template <class _Tp, class _Up>

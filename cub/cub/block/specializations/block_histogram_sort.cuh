@@ -184,7 +184,7 @@ struct BlockHistogramSort
     // Initialize the shared memory's run_begin and run_end for each bin
     int histo_offset = 0;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
     {
       temp_storage.discontinuities.run_begin[histo_offset + linear_tid] = TILE_SIZE;
@@ -216,7 +216,7 @@ struct BlockHistogramSort
     // Composite into histogram
     histo_offset = 0;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
     {
       int thread_offset = histo_offset + linear_tid;

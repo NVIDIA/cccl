@@ -19,19 +19,17 @@ __host__ __device__ void constexpr_test()
   cuda::std::mdspan<T, E> md(d.data(), E{});
   // operator() type
   {
-    auto scaled_md = cuda::std::linalg::scaled(2.0f, md);
+    [[maybe_unused]] auto scaled_md = cuda::std::linalg::scaled(2.0f, md);
 
     static_assert(cuda::std::is_same<decltype(scaled_md(0)), float>::value, "wrong type");
-    static_cast<void>(scaled_md);
   }
   // nested_accessor()
   {
-    auto scaled_md = cuda::std::linalg::scaled(2, md);
+    [[maybe_unused]] auto scaled_md = cuda::std::linalg::scaled(2, md);
 
     static_assert(
       cuda::std::is_same<decltype(scaled_md.accessor().nested_accessor()), cuda::std::default_accessor<T>>::value,
       "wrong type");
-    static_cast<void>(scaled_md);
   }
 }
 

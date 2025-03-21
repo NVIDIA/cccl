@@ -15,10 +15,10 @@
 #include "../bitset_test_cases.h"
 #include "test_macros.h"
 
-_CCCL_NV_DIAG_SUPPRESS(186)
+TEST_NV_DIAG_SUPPRESS(186)
 
 template <cuda::std::size_t N>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_not_all()
+__host__ __device__ constexpr void test_not_all()
 {
   auto const& cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -34,7 +34,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_not_all()
   }
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test_not_all<0>();
   test_not_all<1>();

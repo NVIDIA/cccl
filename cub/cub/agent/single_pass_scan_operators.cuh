@@ -543,7 +543,7 @@ struct tile_state_with_memory_order
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr int num_tiles_to_num_tile_states(int num_tiles)
 {
-  return CUB_PTX_WARP_THREADS + num_tiles;
+  return warp_threads + num_tiles;
 }
 
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE size_t
@@ -623,7 +623,7 @@ struct ScanTileState<T, true>
   // Constants
   enum
   {
-    TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Device storage
@@ -824,7 +824,7 @@ struct ScanTileState<T, false>
   // Constants
   enum
   {
-    TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Device storage
@@ -1012,7 +1012,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE,
     STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE,
 
-    TILE_STATUS_PADDING = CUB_PTX_WARP_THREADS,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Status word type
@@ -1297,7 +1297,7 @@ struct TilePrefixCallbackOp
     // Keep sliding the window back until we come across a tile whose inclusive prefix is known
     while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
     {
-      predecessor_idx -= CUB_PTX_WARP_THREADS;
+      predecessor_idx -= detail::warp_threads;
 
       // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());

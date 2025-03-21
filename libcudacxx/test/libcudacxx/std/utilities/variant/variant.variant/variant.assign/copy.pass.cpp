@@ -450,7 +450,7 @@ __host__ __device__ void test_copy_assignment_same_index()
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
     assert(CopyAssign::copy_construct() == 0);
     assert(CopyAssign::move_construct() == 0);
     // FIXME(mdominiak): try to narrow down what in the compiler makes it emit an invalid PTX call instruction without
@@ -459,7 +459,7 @@ __host__ __device__ void test_copy_assignment_same_index()
     // interactions of many weird things these tests are doing.
     asm volatile("" ::: "memory");
     assert(CopyAssign::copy_assign() == 1);
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
 #  if defined(_LIBCUDACXX_HAS_STRING)
@@ -572,7 +572,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
     assert(CopyAssign::alive() == 2);
     assert(CopyAssign::copy_construct() == 1);
     assert(CopyAssign::move_construct() == 1);
@@ -582,7 +582,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     // interactions of many weird things these tests are doing.
     asm volatile("" ::: "memory");
     assert(CopyAssign::copy_assign() == 0);
-#endif // !TEST_COMPILER_MSVC
+#endif // !TEST_COMPILER(MSVC)
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
 #  if defined(_LIBCUDACXX_HAS_STRING)

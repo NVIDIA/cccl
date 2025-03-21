@@ -23,12 +23,12 @@ template <class E, cuda::std::enable_if_t<E::rank() != 0, int> = 0>
 __host__ __device__ constexpr void test_construction()
 {
   using M = cuda::std::layout_left::mapping<E>;
-  ASSERT_NOEXCEPT(M{});
+  static_assert(noexcept(M{}));
   M m;
   E e;
 
   // check correct extents are returned
-  ASSERT_NOEXCEPT(m.extents());
+  static_assert(noexcept(m.extents()));
   assert(m.extents() == e);
 
   // check required_span_size()
@@ -44,12 +44,12 @@ template <class E, cuda::std::enable_if_t<E::rank() == 0, int> = 0>
 __host__ __device__ constexpr void test_construction()
 {
   using M = cuda::std::layout_left::mapping<E>;
-  ASSERT_NOEXCEPT(M{});
+  static_assert(noexcept(M{}));
   M m;
   E e;
 
   // check correct extents are returned
-  ASSERT_NOEXCEPT(m.extents());
+  static_assert(noexcept(m.extents()));
   assert(m.extents() == e);
 }
 

@@ -30,7 +30,7 @@ __host__ __device__ constexpr void test_access()
   {
     static_assert(
       cuda::std::is_same<decltype(acc.access(ptr, i)), typename cuda::std::default_accessor<T>::reference>::value, "");
-    ASSERT_NOEXCEPT(acc.access(ptr, i));
+    static_assert(noexcept(acc.access(ptr, i)));
     assert(&acc.access(ptr, i) == ptr + i);
   }
 }

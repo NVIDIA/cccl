@@ -20,7 +20,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   assert((cuda::std::minmax({1, 2, 3}) == cuda::std::pair<int, int>(1, 3)));
   assert((cuda::std::minmax({1, 3, 2}) == cuda::std::pair<int, int>(1, 3)));

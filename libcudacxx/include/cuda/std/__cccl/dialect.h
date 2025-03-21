@@ -74,9 +74,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // Detect whether we can use some language features based on standard dialect
 ///////////////////////////////////////////////////////////////////////////////
-#if __cpp_if_constexpr < 201606L
-#  define _CCCL_NO_IF_CONSTEXPR
-#endif // !defined(__cpp_if_constexpr)
 
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L

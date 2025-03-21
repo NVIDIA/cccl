@@ -179,12 +179,11 @@ public:
   __atomic_semaphore(__atomic_semaphore const&)            = delete;
   __atomic_semaphore& operator=(__atomic_semaphore const&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI void release(ptrdiff_t __update = 1)
+  _LIBCUDACXX_HIDE_FROM_ABI void release([[maybe_unused]] ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(__update == 1, "");
     __available.store(1, memory_order_release);
     __available.notify_one();
-    (void) __update;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI void acquire()

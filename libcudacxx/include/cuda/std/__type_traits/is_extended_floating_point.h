@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__internal/nvfp_types.h>
+#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -123,6 +123,18 @@ struct __is_extended_floating_point<__nv_fp4_e2m1> : true_type
 template <>
 _CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp4_e2m1> = true;
 #  endif // _CCCL_HAS_NVFP4_E2M1()
+#endif // !_CCCL_NO_INLINE_VARIABLES
+
+#if _CCCL_HAS_FLOAT128()
+template <>
+struct __is_extended_floating_point<__float128> : true_type
+{};
+#endif // _CCCL_HAS_FLOAT128()
+#ifndef _CCCL_NO_INLINE_VARIABLES
+#  if _CCCL_HAS_FLOAT128()
+template <>
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__float128> = true;
+#  endif // _CCCL_HAS_FLOAT128()
 #endif // !_CCCL_NO_INLINE_VARIABLES
 
 _LIBCUDACXX_END_NAMESPACE_STD

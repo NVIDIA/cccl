@@ -452,8 +452,8 @@ public:
   }
 };
 
-STATIC_TEST_GLOBAL_VAR int test_deleter_base_count         = 0;
-STATIC_TEST_GLOBAL_VAR int test_deleter_base_dealloc_count = 0;
+TEST_GLOBAL_VARIABLE int test_deleter_base_count         = 0;
+TEST_GLOBAL_VARIABLE int test_deleter_base_dealloc_count = 0;
 struct test_deleter_base
 {};
 
