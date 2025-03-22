@@ -183,7 +183,7 @@ void TestTransformIteratorReferenceAndValueType()
     (void) it_tr_ref;
 
     auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
-    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, "");
+    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&>::value, "");
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
 
@@ -264,3 +264,93 @@ void TestTransformIteratorIdentity()
 }
 
 DECLARE_UNITTEST(TestTransformIteratorIdentity);
+
+struct foo
+{
+  int x, y;
+};
+
+struct access_x
+{
+  _CCCL_HOST_DEVICE int& operator()(foo& f) const noexcept
+  {
+    return f.x;
+  }
+};
+
+void TestTransformIteratorAsDestination()
+{
+  constexpr auto n = 10;
+
+  auto check = [](auto& dst) {
+    const thrust::host_vector<foo>& dst_h = dst; // no copy when Vec is a host vector
+    for (const auto& f : dst_h)
+    {
+      ASSERT_EQUAL(f.x, 1234);
+      ASSERT_EQUAL(f.y, 2);
+    }
+  };
+
+  // host -> host
+  {
+    thrust::host_vector<int> src(n, 1234);
+    thrust::host_vector<foo> dst(n, foo{1, 2});
+
+    // can use iterator and raw pointer as base iterator
+    thrust::copy(src.begin(), src.end(), thrust::make_transform_iterator(dst.begin(), access_x{}));
+    check(dst);
+    thrust::copy(
+      src.begin(), src.end(), thrust::make_transform_iterator(thrust::raw_pointer_cast(dst.data()), access_x{}));
+    check(dst);
+  }
+
+  // device -> device
+  {
+    thrust::device_vector<int> src(n, 1234);
+    thrust::device_vector<foo> dst(n, foo{1, 2});
+
+    // either unwrap base iterator and specify device execution (thrust would wrongly determine a cross_system)
+    thrust::copy(thrust::device,
+                 src.begin(),
+                 src.end(),
+                 thrust::make_transform_iterator(thrust::raw_pointer_cast(dst.data()), access_x{}));
+    check(dst);
+
+    // or unwrap base iterator and specify device system (thrust would wrongly determine a cross_system)
+    using It = thrust::transform_iterator<access_x, foo*, int&, int, thrust::device_system_tag>;
+    thrust::copy(src.begin(), src.end(), It(thrust::raw_pointer_cast(dst.data()), access_x{}));
+    check(dst);
+  }
+
+  // host -> device
+  {
+    thrust::host_vector<int> src(n, 1234);
+    thrust::device_vector<foo> dst(n, foo{1, 2});
+
+    // either unwrap base iterator and specify device execution (thrust would wrongly determine a cross_system)
+    thrust::copy(thrust::device,
+                 src.begin(),
+                 src.end(),
+                 thrust::make_transform_iterator(thrust::raw_pointer_cast(dst.data()), access_x{}));
+    check(dst);
+
+    // or unwrap base iterator and specify device system (thrust would wrongly determine a cross_system)
+    using It = thrust::transform_iterator<access_x, foo*, int&, int, thrust::device_system_tag>;
+    thrust::copy(src.begin(), src.end(), It(thrust::raw_pointer_cast(dst.data()), access_x{}));
+    check(dst);
+  }
+
+  // device -> host
+  {
+    thrust::device_vector<int> src(n, 1234);
+    thrust::host_vector<foo> dst(n, foo{1, 2});
+
+    // can use iterator and raw pointer as base iterator
+    thrust::copy(src.begin(), src.end(), thrust::make_transform_iterator(dst.begin(), access_x{}));
+    check(dst);
+    thrust::copy(
+      src.begin(), src.end(), thrust::make_transform_iterator(thrust::raw_pointer_cast(dst.data()), access_x{}));
+    check(dst);
+  }
+}
+DECLARE_UNITTEST(TestTransformIteratorAsDestination);
