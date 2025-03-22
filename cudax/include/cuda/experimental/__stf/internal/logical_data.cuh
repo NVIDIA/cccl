@@ -30,7 +30,9 @@
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
+#include <map>
 #include <mutex>
 #include <optional>
 
@@ -270,12 +272,12 @@ public:
 
   void unfreeze(task& fake_task, event_list prereqs);
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
     automatic_unfreeze = flag;
 
     // Save for future use when destroying data
-    frozen_fake_task = fake_task;
+    unfreeze_fake_task = unfreeze_fake_task_;
   }
 
   // This needs the full definition of logical_data_untyped so the implementation is deferred
@@ -302,7 +304,7 @@ public:
   // destroyed. This assumed all dependencies are solved by other means (eg.
   // because it is used within other tasks)
   bool automatic_unfreeze = false;
-  ::std::optional<task> frozen_fake_task;
+  ::std::optional<task> unfreeze_fake_task;
 
   // This defines how to allocate/deallocate raw buffers (ptr+size) within
   // the interface, if undefined (set to nullptr), then the default allocator
@@ -1071,9 +1073,9 @@ public:
     pimpl->unfreeze(fake_task, mv(prereqs));
   }
 
-  void set_automatic_unfreeze(task& fake_task, bool flag)
+  void set_automatic_unfreeze(task& unfreeze_fake_task_, bool flag)
   {
-    pimpl->set_automatic_unfreeze(fake_task, flag);
+    pimpl->set_automatic_unfreeze(unfreeze_fake_task_, flag);
   }
 
   /**
@@ -1697,12 +1699,12 @@ public:
     return pimpl->get_mutex();
   }
 
-private:
   int get_unique_id() const
   {
     return pimpl->get_unique_id();
   }
 
+private:
   ::std::shared_ptr<reserved::logical_data_untyped_impl> pimpl;
 };
 
@@ -1733,8 +1735,8 @@ inline void reserved::logical_data_untyped_impl::erase()
     // Freeze data automatically : we assume all dependencies on that
     // frozen data are solved by other means (this is the requirement of
     // the set_automatic_unfreeze API)
-    assert(frozen_fake_task.has_value());
-    unfreeze(frozen_fake_task.value(), event_list());
+    assert(unfreeze_fake_task.has_value());
+    unfreeze(unfreeze_fake_task.value(), event_list());
   }
 
   auto& ctx_st = ctx.get_state();
@@ -1852,6 +1854,10 @@ inline void reserved::logical_data_untyped_impl::erase()
   auto erased = ctx_st.logical_data_ids.erase(get_unique_id());
   EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
+  ctx_st.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
+
+  // fprintf(stderr, "AFTER REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
+  // &logical_data_ids, logical_data_ids.size());
   ctx_st.logical_data_ids_mutex.unlock();
 
   // Make sure this we do not erase this twice. For example after calling
@@ -2154,6 +2160,93 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
     auto& d = p.second;
     d.erase();
   }
+}
+
+inline void backend_ctx_untyped::impl::print_logical_data_summary() const
+{
+  ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
+
+  fprintf(stderr, "Context current logical data summary\n");
+  fprintf(stderr, "====================================\n");
+
+  size_t total_footprint = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> data_summary;
+
+  for (const auto& [id, data_impl] : logical_data_ids)
+  {
+    size_t footprint = data_impl.dinterface->data_footprint();
+    total_footprint += footprint;
+
+    ::std::string symbol = data_impl.get_symbol();
+    data_summary[symbol][footprint]++;
+  }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Current footprint : %s\n", pretty_print_bytes(total_footprint).c_str());
+  fprintf(stderr, "====================================\n");
+
+  size_t total_footprint_destroyed = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> destroyed_data_summary;
+
+  for (const auto& [symbol, footprint] : previous_logical_data_stats)
+  {
+    total_footprint_destroyed += footprint;
+    destroyed_data_summary[symbol][footprint]++;
+  }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : destroyed_data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Destroyed footprint : %s\n", pretty_print_bytes(total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Total footprint : %s\n", pretty_print_bytes(total_footprint + total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
 }
 
 // Defined here to avoid circular dependencies

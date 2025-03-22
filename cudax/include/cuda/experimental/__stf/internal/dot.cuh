@@ -19,6 +19,7 @@
  * CUDASTF_DOT_REMOVE_DATA_DEPS
  * CUDASTF_DOT_TIMING
  * CUDASTF_DOT_MAX_DEPTH
+ * CUDASTF_DOT_SHOW_FENCE
  */
 
 #pragma once
@@ -53,6 +54,8 @@
 namespace cuda::experimental::stf::reserved
 {
 
+int get_next_prereq_unique_id();
+
 /**
  * @brief Some helper type
  */
@@ -60,13 +63,42 @@ using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimenta
 
 class dot;
 
-// Information for every task, so that we can eventually generate a node for the task
-struct per_task_info
+enum edge_type
+{
+  plain   = 0,
+  prereqs = 1,
+  fence   = 2
+};
+
+// We have different types of nodes in the graph
+enum vertex_type
+{
+  task_vertex,
+  prereq_vertex,
+  fence_vertex,
+  section_vertex, // collapsed sections depicted as a single node
+  freeze_vertex, // freeze and unfreeze operations
+  cluster_proxy_vertex // start or end of clusters (invisible nodes)
+};
+
+// Information for every vertex (task, prereq, ...), so that we can eventually generate a node for the DAG
+struct per_vertex_info
 {
   ::std::string color;
   ::std::string label;
   ::std::optional<float> timing;
+  // is that a task, fence or prereq ?
+  vertex_type type;
+
+  // id of the vertex
+  int original_id;
+
+  // id of the vertex after collapsing : this is the id of the vertex that
+  // represents all nodes that were merged in a section.
+  int representative_id;
+
   int dot_section_id;
+  int ctx_id;
 };
 
 class per_ctx_dot
@@ -77,17 +109,8 @@ public:
       , _is_tracing_prereqs(_is_tracing_prereqs)
       , _is_timing(_is_timing)
   {}
+
   ~per_ctx_dot() = default;
-
-  void finish()
-  {
-    prev_oss.push_back(mv(oss));
-  }
-
-  const auto& get_streams() const
-  {
-    return prev_oss;
-  }
 
   void set_ctx_symbol(::std::string s)
   {
@@ -96,7 +119,7 @@ public:
 
   void add_fence_vertex(int unique_id)
   {
-    if (getenv("CUDASTF_DOT_NO_FENCE"))
+    if (!getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
@@ -105,8 +128,49 @@ public:
 
     vertices.push_back(unique_id);
 
-    // Add a node in the DOT file
-    oss << "\"NODE_" << unique_id << "\" [style=\"filled\" fillcolor=\"red\" label=\"task fence\"]\n";
+    auto& m = metadata[unique_id];
+    m.color = "red";
+
+    m.dot_section_id = get_current_section_id(get_unique_id());
+    m.label          = "task fence";
+
+    m.type = fence_vertex;
+
+    m.original_id       = unique_id;
+    m.representative_id = unique_id;
+  }
+
+  void ctx_add_input_id(int prereq_unique_id)
+  {
+    if (!is_tracing())
+    {
+      return;
+    }
+
+    // If this is the first input we select the ID of the proxy start
+    if (!proxy_start_unique_id.has_value())
+    {
+      proxy_start_unique_id = get_next_prereq_unique_id();
+      add_ctx_proxy_vertex(proxy_start_unique_id.value());
+    }
+
+    add_edge(prereq_unique_id, proxy_start_unique_id.value(), edge_type::prereqs);
+  }
+
+  void ctx_add_output_id(int prereq_unique_id)
+  {
+    if (!is_tracing())
+    {
+      return;
+    }
+
+    if (!proxy_end_unique_id.has_value())
+    {
+      proxy_end_unique_id = get_next_prereq_unique_id();
+      add_ctx_proxy_vertex(proxy_end_unique_id.value());
+    }
+
+    add_edge(proxy_end_unique_id.value(), prereq_unique_id, edge_type::prereqs);
   }
 
   void add_prereq_vertex(const ::std::string& symbol, int prereq_unique_id)
@@ -121,8 +185,40 @@ public:
     vertices.push_back(prereq_unique_id);
 
     set_current_color_by_device(guard);
-    // Add an entry in the DOT file
-    oss << "\"NODE_" << prereq_unique_id << "\" [label=\"" << symbol << "\", style=dashed]\n";
+
+    auto& m = metadata[prereq_unique_id];
+    m.color = get_current_color();
+
+    m.dot_section_id = get_current_section_id(get_unique_id());
+    m.ctx_id         = get_unique_id();
+
+    m.label = symbol;
+
+    m.type = prereq_vertex;
+
+    m.original_id       = prereq_unique_id;
+    m.representative_id = prereq_unique_id;
+  }
+
+  // Define vertices which represent the beginning or the end of a (nested) context
+  void add_ctx_proxy_vertex(int prereq_unique_id)
+  {
+    if (!is_tracing())
+    {
+      return;
+    }
+
+    ::std::lock_guard<::std::mutex> guard(mtx);
+
+    auto& m          = metadata[prereq_unique_id];
+    m.color          = get_current_color();
+    m.dot_section_id = get_current_section_id(get_unique_id());
+    m.ctx_id         = get_unique_id();
+    m.label          = "proxy";
+    m.type           = cluster_proxy_vertex;
+
+    m.original_id       = prereq_unique_id;
+    m.representative_id = prereq_unique_id;
   }
 
   // Edges are not rendered directly, so that we can decide to filter out
@@ -130,13 +226,19 @@ public:
   //
   // style = 0 => plain
   // style = 1 => dashed
+  // style = 2 => dashed to fence
   //
   // Note that while tasks are topologically ordered, when we generate graphs
   // which includes internal async events, we may have (prereq) nodes which
   // are not ordered, so we cannot expect "id_from < id_to"
-  void add_edge(int id_from, int id_to, int style = 0)
+  void add_edge(int id_from, int id_to, edge_type style = edge_type::plain)
   {
     if (!is_tracing())
+    {
+      return;
+    }
+
+    if (!tracing_enabled)
     {
       return;
     }
@@ -148,7 +250,7 @@ public:
       return;
     }
 
-    if (style == 1 && getenv("CUDASTF_DOT_NO_FENCE"))
+    if (style == edge_type::fence && !getenv("CUDASTF_DOT_SHOW_FENCE"))
     {
       return;
     }
@@ -161,10 +263,13 @@ public:
   }
 
   // Used to avoid cyclic dependencies, defined later
-  static int get_current_section_id();
+  static int get_current_section_id(int per_ctx_id);
 
+  // Save the ID of the task in the "vertices" vector, and associate this ID to
+  // the metadata of the task, so that we can generate a node for the task
+  // later.
   template <typename task_type, typename data_type>
-  void add_vertex(const task_type& t)
+  void add_vertex_internal(const task_type& t, vertex_type type)
   {
     // Do this work outside the critical section
     const auto remove_deps = getenv("CUDASTF_DOT_REMOVE_DATA_DEPS");
@@ -185,7 +290,8 @@ public:
 
     task_metadata.color = get_current_color();
 
-    task_metadata.dot_section_id = get_current_section_id();
+    task_metadata.dot_section_id = get_current_section_id(get_unique_id());
+    task_metadata.ctx_id         = get_unique_id();
 
     // We here create the label of the task, which we may augment later with
     // timing information for example
@@ -206,10 +312,38 @@ public:
     }
 
     task_metadata.label = task_oss.str();
+    task_metadata.type  = type;
+
+    task_metadata.original_id       = t.get_unique_id();
+    task_metadata.representative_id = t.get_unique_id();
+  }
+
+  // Save the ID of the task in the "vertices" vector, and associate this ID to
+  // the metadata of the task, so that we can generate a node for the task
+  // later.
+  template <typename task_type, typename data_type>
+  void add_vertex(const task_type& t)
+  {
+    add_vertex_internal<task_type, data_type>(t, task_vertex);
+  }
+
+  // internal freeze indicates if this is a freeze/unfreeze from the user or
+  // not and if we need to display an edge, or if it is unnecessary because
+  // other dependencies will imply that edge between freeze and unfreeze
+  template <typename task_type, typename data_type>
+  void add_freeze_vertices(const task_type& freeze_fake_task, const task_type& unfreeze_fake_task, bool user_freeze)
+  {
+    add_vertex_internal<task_type, data_type>(freeze_fake_task, freeze_vertex);
+    add_vertex_internal<task_type, data_type>(unfreeze_fake_task, freeze_vertex);
+
+    if (user_freeze)
+    {
+      add_edge(freeze_fake_task.get_unique_id(), unfreeze_fake_task.get_unique_id(), edge_type::plain);
+    }
   }
 
   template <typename task_type>
-  void add_vertex_timing(const task_type& t, float time_ms, int device = -1)
+  void add_vertex_timing(const task_type& t, float time_ms, [[maybe_unused]] int device = -1)
   {
     ::std::lock_guard<::std::mutex> guard(mtx);
 
@@ -218,14 +352,11 @@ public:
       return;
     }
 
-    oss << "// " << t.get_unique_id() << " : mapping_id=" << t.get_mapping_id() << " time=" << time_ms
-        << " device=" << device << "\n";
-
     // Save timing information for this task
     metadata[t.get_unique_id()].timing = time_ms;
   }
 
-  // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone ddid take a lock.
+  // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone did take a lock.
   void set_current_color_by_device(::std::lock_guard<::std::mutex>&)
   {
     if (getenv("CUDASTF_DOT_COLOR_BY_DEVICE"))
@@ -252,16 +383,6 @@ public:
     return current_color;
   }
 
-  void change_epoch()
-  {
-    if (getenv("CUDASTF_DOT_DISPLAY_EPOCHS"))
-    {
-      ::std::lock_guard<::std::mutex> guard(mtx);
-      prev_oss.push_back(mv(oss));
-      oss.clear();
-    }
-  }
-
   // Change the current tracing mode to enable or disable it dynamically
   void set_tracing(bool enable)
   {
@@ -270,9 +391,9 @@ public:
 
   void discard(int id)
   {
-    single_threaded_section guard(mtx);
     discarded_tasks.insert(id);
   }
+
   bool is_discarded(int id, ::std::lock_guard<::std::mutex>&) const
   {
     return discarded_tasks.find(id) != discarded_tasks.end();
@@ -280,12 +401,12 @@ public:
 
   static void set_parent_ctx(::std::shared_ptr<per_ctx_dot> parent_dot, ::std::shared_ptr<per_ctx_dot> child_dot)
   {
-    parent_dot->children.push_back(child_dot);
+    parent_dot->children.push_back(::std::make_pair(child_dot, get_current_section_id(parent_dot->get_unique_id())));
     child_dot->parent = mv(parent_dot);
   }
 
   ::std::shared_ptr<per_ctx_dot> parent;
-  ::std::vector<::std::shared_ptr<per_ctx_dot>> children;
+  ::std::vector<::std::pair<::std::shared_ptr<per_ctx_dot>, int /* section id */>> children;
 
   const ::std::string& get_ctx_symbol() const
   {
@@ -324,12 +445,15 @@ public:
   // Non copyable unique id, ok because we use shared pointers
   unique_id<per_ctx_dot> id;
 
-public: // XXX protected, friend : dot
-  // string for the current epoch
-  mutable ::std::ostringstream oss;
-  // strings of the previous epochs
-  mutable ::std::vector<::std::ostringstream> prev_oss;
-  ::std::unordered_map<int /* id */, per_task_info> metadata;
+  // Get the unique id of this per-context descriptor
+  int get_unique_id() const
+  {
+    return int(id);
+  }
+
+public:
+  // per-context vertices
+  ::std::unordered_map<int /* id */, per_vertex_info> metadata;
 
 private:
   mutable ::std::string ctx_symbol;
@@ -339,6 +463,9 @@ private:
   ::std::vector<int> vertices;
 
   ::std::unordered_set<int> discarded_tasks;
+
+  ::std::optional<int> proxy_start_unique_id;
+  ::std::optional<int> proxy_end_unique_id;
 };
 
 class dot : public reserved::meyers_singleton<dot>
@@ -353,7 +480,6 @@ public:
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
-        , r(symbol.c_str())
     {
       static_assert(::std::is_move_constructible_v<section>, "section must be move constructible");
       static_assert(::std::is_move_assignable_v<section>, "section must be move assignable");
@@ -362,14 +488,16 @@ public:
     class guard
     {
     public:
-      guard(::std::string symbol)
+      guard(int _per_ctx_id, ::std::string symbol)
+          : per_ctx_id(_per_ctx_id)
       {
-        section::push(mv(symbol));
+        section::push(per_ctx_id, mv(symbol));
       }
 
       // Move constructor: transfer ownership and disable the moved-from guard.
       guard(guard&& other) noexcept
-          : active(cuda::std::exchange(other.active, false))
+          : per_ctx_id(other.per_ctx_id)
+          , active(cuda::std::exchange(other.active, false))
       {}
 
       // Move assignment, disable the moved-from guard
@@ -381,9 +509,10 @@ public:
           // of the existing guard before overwriting it with a new guard.
           if (active)
           {
-            section::pop();
+            section::pop(per_ctx_id);
           }
           // Transfer ownership.
+          per_ctx_id   = other.per_ctx_id;
           active       = other.active;
           other.active = false;
         }
@@ -397,7 +526,7 @@ public:
       void end()
       {
         _CCCL_ASSERT(active, "Attempting to end the same section twice.");
-        section::pop();
+        section::pop(per_ctx_id);
         active = false;
       }
 
@@ -405,28 +534,37 @@ public:
       {
         if (active)
         {
-          section::pop();
+          section::pop(per_ctx_id);
         }
       }
 
     private:
+      int per_ctx_id;
+
       // Have we called end() ?
       bool active = true;
     };
 
-    static auto& current()
+    static auto& current(int per_ctx_id)
     {
-      thread_local ::std::stack<int> s;
-      return s;
+      // Indexed by the unique id of the per-ctx dot descriptor (should be ctx id ??)
+      thread_local ::std::unordered_map<int, ::std::stack<int>> s;
+      return s[per_ctx_id];
     }
 
-    static void push(::std::string symbol)
+    static void push(int per_ctx_id, ::std::string symbol)
     {
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+      nvtxRangePushA(symbol.c_str());
+#endif
+
       // We first create a section object, with its unique id
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
 
-      int parent_id  = current().empty() ? 0 : current().top();
+      auto& section_stack = current(per_ctx_id);
+
+      int parent_id  = section_stack.empty() ? 0 : section_stack.top();
       sec->parent_id = parent_id;
 
       // Save the section in the map
@@ -439,16 +577,20 @@ public:
       }
 
       // Push the id in the current stack
-      current().push(id);
+      section_stack.push(id);
 
       // The size of the stack is the recursion level of the section
-      sec->depth = current().size();
+      sec->depth = section_stack.size();
     }
 
-    static void pop()
+    static void pop(int per_ctx_id)
     {
-      _CCCL_ASSERT(current().size() > 0, "Cannot pop, no section was pushed.");
-      current().pop();
+      _CCCL_ASSERT(current(per_ctx_id).size() > 0, "Cannot pop, no section was pushed.");
+      current(per_ctx_id).pop();
+
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+      nvtxRangePop();
+#endif
     }
 
     /**
@@ -481,9 +623,6 @@ public:
 
     ::std::string symbol;
 
-    // An annotation that has the lifetime of the section
-    nvtx_range r;
-
     // An identifier for that section. This is movable, but non
     // copyable, but we manipulate section by the means of shared_ptr.
     unique_id<section> id;
@@ -501,7 +640,6 @@ protected:
     }
 
     dot_filename = filename;
-    //::std::cout << "Creating a DOT file in " << filename << ::std::endl;
 
     const char* ignore_prereqs_str = getenv("CUDASTF_DOT_IGNORE_PREREQS");
     tracing_prereqs                = ignore_prereqs_str && atoi(ignore_prereqs_str) == 0;
@@ -531,7 +669,7 @@ public:
     return enable_timing;
   }
 
-  // Add a context to the vector of contexts we track
+  // Add a context to the vector of contexts we need to depict in DOT
   void track_ctx(::std::shared_ptr<per_ctx_dot> pc)
   {
     ::std::lock_guard<::std::mutex> lock(mtx);
@@ -549,16 +687,32 @@ public:
       return;
     }
 
+    /* Collect all edges and vertices from all contexts */
     for (const auto& pc : per_ctx)
     {
-      pc->finish();
+      for (const auto& e : pc->existing_edges)
+      {
+        all_edges.insert(e);
+      }
+
+      for (const auto& v : pc->metadata)
+      {
+        all_vertices[v.first] = v.second;
+      }
     }
 
     collapse_sections();
 
+    remove_freeze_nodes();
+
     // Now we have executed all tasks, so we can compute the average execution
     // times, and update the colors appropriately if needed.
     update_colors_with_timing();
+
+    if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
+    {
+      remove_redundant_edges();
+    }
 
     ::std::ofstream outFile(dot_filename);
     if (outFile.is_open())
@@ -566,6 +720,9 @@ public:
       outFile << "digraph {\n";
       size_t ctx_cnt        = 0;
       bool display_clusters = (per_ctx.size() > 1);
+
+      compute_critical_path(outFile);
+
       /*
        * For every context, we write the description of the DAG per
        * epoch. Then we write the edges after removing redundant ones.
@@ -579,32 +736,13 @@ public:
         }
       }
 
-      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
-      {
-        remove_redundant_edges(existing_edges);
-      }
-
-      compute_critical_path(outFile);
-
       /* Edges do not have to belong to the cluster (Vertices do) */
-      for (const auto& [from, to] : existing_edges)
+      for (const auto& [from, to] : all_edges)
       {
         outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
       }
 
-      // Update node properties such as labels and colors now that we have all information
-      vertex_count = 0;
-      for (const auto& pc : per_ctx)
-      {
-        for (const auto& p : pc->metadata)
-        {
-          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
-                  << p.second.label << "\"]\n";
-          vertex_count++;
-        }
-      }
-
-      edge_count = existing_edges.size();
+      edge_count = all_edges.size();
 
       outFile << "// Edge   count : " << edge_count << "\n";
       outFile << "// Vertex count : " << vertex_count << "\n";
@@ -647,55 +785,68 @@ public:
   }
 
 private:
-  void
-  print_one_context(::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, ::std::shared_ptr<per_ctx_dot> pc)
+  void print_one_context(
+    ::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, const ::std::shared_ptr<per_ctx_dot>& pc)
   {
     // Pick up an identifier in DOT (we may update this value later)
-    size_t ctx_id = ctx_cnt++;
+    auto ctx_id = pc->get_unique_id();
     if (display_clusters)
     {
       outFile << "subgraph cluster_" << ctx_id << " {\n";
+
+      //      // We need to add "proxy" nodes because we can't make a dependency
+      //      // between a node and a cluster in DOT
+      //      outFile << "\"start_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
+      //      // Rank constraints so that these node appear at the top of bottom of the cluster
+      //      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
     }
-    size_t epoch_cnt = pc->prev_oss.size();
-    for (size_t epoch_id = 0; epoch_id < epoch_cnt; epoch_id++)
+
+    for (const auto& p : all_vertices)
     {
-      if (epoch_cnt > 1)
+      if (p.second.ctx_id == ctx_id)
       {
-        outFile << "subgraph cluster_" << epoch_id << "_" << ctx_id << " {\n";
-        outFile << "label=\"epoch " << epoch_id << "\"\n";
-      }
-
-      outFile << pc->prev_oss[epoch_id].str();
-
-      if (epoch_cnt > 1)
-      {
-        outFile << "} // end subgraph cluster_" << epoch_id << "_" << ctx_id << "\n";
-      }
-
-      if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
-      {
-        for (auto& child_pc : pc->children)
+        // Select the display style of the node based on the type of vertex
+        ::std::string style;
+        switch (p.second.type)
         {
-          print_one_context(outFile, ctx_cnt, display_clusters, child_pc);
+          case task_vertex:
+          case fence_vertex:
+            style = "filled";
+            break;
+          case freeze_vertex:
+          case prereq_vertex:
+            style = "dashed";
+            break;
+          case cluster_proxy_vertex:
+            style = "invis";
+            break;
+          default:
+            fprintf(stderr, "error: unknown vertex type\n");
+            abort();
+        };
+        outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color
+                << "\" label=\"" << p.second.label << "\"]\n";
+
+        // to force the start_cluster node to be at the top, we add dependencies
+        // if (display_clusters) {
+        //   outFile << "\"start_cluster_" << ctx_id << "\" -> \"NODE_" << p.first << "\" [style=invis]\n";
+        //}
+
+        vertex_count++;
+      }
+    }
+
+    if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
+    {
+      // pairs of child and section id
+      for (auto& p : pc->children)
+      {
+        // Print subcontexts not in a section
+        if (p.second == 0)
+        {
+          print_one_context(outFile, ctx_cnt, display_clusters, p.first);
         }
       }
-    }
-    if (display_clusters)
-    {
-      if (pc->get_ctx_symbol().empty())
-      {
-        outFile << "label=\"cluster_" << ctx_id << "\"\n";
-      }
-      else
-      {
-        outFile << "label=\"" << pc->get_ctx_symbol() << "\"\n";
-      }
-      outFile << "} // end subgraph cluster_" << ctx_id << "\n";
-    }
-
-    for (const auto& e : pc->existing_edges)
-    {
-      existing_edges.insert(e);
     }
 
     /* Put nodes which belong to a section into their clusters */
@@ -716,16 +867,37 @@ private:
       // Select root nodes only
       if (sec_ptr->parent_id == 0)
       {
-        print_section(outFile, id, section_id_to_nodes);
+        print_section(outFile, id, section_id_to_nodes, ctx_cnt, display_clusters, pc);
       }
+    }
+    if (display_clusters)
+    {
+      if (pc->get_ctx_symbol().empty())
+      {
+        outFile << "label=\"cluster_" << ctx_id << "\"\n";
+      }
+      else
+      {
+        outFile << "label=\"" << pc->get_ctx_symbol() << "\"\n";
+      }
+
+      //      outFile << "\"end_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
+      //      outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
+
+      outFile << "} // end subgraph cluster_" << ctx_id << "\n";
     }
   }
 
   /**
    * @brief Add a dashed box around a section and its children
    */
-  void
-  print_section(::std::ofstream& outFile, int id, ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes)
+  void print_section(
+    ::std::ofstream& outFile,
+    int id,
+    ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes,
+    size_t& ctx_cnt,
+    bool display_clusters,
+    const ::std::shared_ptr<per_ctx_dot>& pc)
   {
     // Stop printing sections if they are deeper than the max depth (if defined)
     const char* env_max_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
@@ -736,10 +908,22 @@ private:
 
     outFile << "subgraph cluster_section_" << ::std::to_string(id) << " {\n ";
 
-    // Display all children too to have nested boxes
-    for (int children_ids : map[id]->children_ids)
+    if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
     {
-      print_section(outFile, children_ids, section_id_to_nodes);
+      // pairs of child and section id
+      for (auto& p : pc->children)
+      {
+        // Print subcontexts in this section
+        if (p.second == id)
+        {
+          print_one_context(outFile, ctx_cnt, display_clusters, p.first);
+        }
+      }
+    }
+    // Display all children too to have nested boxes
+    for (int child_id : map[id]->children_ids)
+    {
+      print_section(outFile, child_id, section_id_to_nodes, ctx_cnt, display_clusters, pc);
     }
 
     // style of the box
@@ -748,9 +932,12 @@ private:
     outFile << "    label=\"" + map[id]->get_symbol() + "\"\n";
 
     // Put all nodes which belong to this section
-    for (auto i : section_id_to_nodes[id])
+    for (auto& v : all_vertices)
     {
-      outFile << "    \"NODE_" + ::std::to_string(i) + "\"\n";
+      if (v.second.dot_section_id == id)
+      {
+        outFile << "    \"NODE_" + ::std::to_string(v.first) + "\"\n";
+      }
     }
 
     outFile << "} // end subgraph cluster_section_" << ::std::to_string(id) << "\n ";
@@ -766,17 +953,15 @@ private:
 
     float sum  = 0.0;
     size_t cnt = 0;
+
     // First go over all tasks which have some timing and compute the average duration
-    for (const auto& pc : per_ctx)
+    for (const auto& p : all_vertices)
     {
-      for (const auto& p : pc->metadata)
+      if (p.second.timing.has_value())
       {
-        if (p.second.timing.has_value())
-        {
-          float ms = p.second.timing.value();
-          cnt++;
-          sum += ms;
-        }
+        float ms = p.second.timing.value();
+        cnt++;
+        sum += ms;
       }
     }
 
@@ -786,16 +971,13 @@ private:
 
       // Update colors associated to tasks with timing now in order to
       // illustrate how long they take to execute relative to the average
-      for (auto& pc : per_ctx)
+      for (auto& p : all_vertices)
       {
-        for (auto& p : pc->metadata)
+        if (p.second.timing.has_value())
         {
-          if (p.second.timing.has_value())
-          {
-            float ms       = p.second.timing.value();
-            p.second.color = get_color_for_duration(ms, avg);
-            p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
-          }
+          float ms       = p.second.timing.value();
+          p.second.color = get_color_for_duration(ms, avg);
+          p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
         }
       }
     }
@@ -806,38 +988,83 @@ private:
    * updated one ("dst_id"), redirecting edges and combining timing if
    * necessary
    */
-  void merge_nodes(per_ctx_dot& pc, int dst_id, int src_id)
+  void merge_nodes(int dst_id, int src_id)
   {
-    // ::std::unordered_map<int /* id */, per_task_info> metadata;
-
-    // Get src_id from the map and remove it
-    auto it = pc.metadata.find(src_id);
-    assert(it != pc.metadata.end());
-    per_task_info src = mv(it->second);
-    pc.metadata.erase(it);
-
     // If there was some timing associated to either src or dst, update timing
-    auto& dst = pc.metadata[dst_id];
+    auto& src = all_vertices[src_id];
+    auto& dst = all_vertices[dst_id];
     if (dst.timing.has_value() || src.timing.has_value())
     {
       dst.timing =
         (src.timing.has_value() ? src.timing.value() : 0.0f) + (dst.timing.has_value() ? dst.timing.value() : 0.0f);
     }
+  }
 
-    // Replace edges if necessary
+  // Remove one vertex and replace incoming/outgoing edges
+  void collapse_vertex(int vertex_id)
+  {
+    /* We look for incoming edges, and outgoing edges */
+    ::std::vector<int> in;
+    ::std::vector<int> out;
+
     IntPairSet new_edges;
-    for (auto& [from, to] : pc.existing_edges)
-    {
-      int new_from = (from == src_id) ? dst_id : from;
-      int new_to   = (to == src_id) ? dst_id : to;
 
-      if (new_from != new_to)
+    for (auto& [from, to] : all_edges)
+    {
+      bool keep_edge = true;
+      if (from == vertex_id)
       {
-        _CCCL_ASSERT(new_from < new_to, "invalid edge");
-        new_edges.insert(std::make_pair(new_from, new_to));
+        out.push_back(to);
+        keep_edge = false;
+      }
+
+      if (to == vertex_id)
+      {
+        in.push_back(from);
+        keep_edge = false;
+      }
+
+      if (keep_edge)
+      {
+        // Create a copy of the existing edge
+        new_edges.insert(::std::make_pair(from, to));
       }
     }
-    ::std::swap(new_edges, pc.existing_edges);
+
+    // Create new edges between all pairs of in/out
+    for (auto& from : in)
+    {
+      for (auto& to : out)
+      {
+        new_edges.insert(::std::make_pair(from, to));
+      }
+    }
+
+    ::std::swap(new_edges, all_edges);
+  }
+
+  void remove_freeze_nodes()
+  {
+    if (getenv("CUDASTF_DOT_KEEP_FREEZE"))
+    {
+      return;
+    }
+
+    // Since we are going to potentially remove nodes, we create a copy first
+    // to iterate on it, and remove from the original structure if necessary
+    decltype(all_vertices) copy_metadata = all_vertices;
+
+    // p.first = vertex id, p.second = per_vertex_info
+    for (auto& p : copy_metadata)
+    {
+      if (p.second.type == freeze_vertex)
+      {
+        collapse_vertex(p.first);
+
+        // remove this collapsed vertex from the unordered_map
+        all_vertices.erase(p.first);
+      }
+    }
   }
 
   /**
@@ -854,68 +1081,109 @@ private:
 
     const int max_depth = atoi(env_depth);
 
-    // First go over all tasks which have some timing and compute the average duration
-    for (auto& pc : per_ctx)
+    // key : section id, value : vector of IDs which should be condensed into a node
+    ::std::unordered_map<int, ::std::vector<int>> to_condense;
+
+    // Go over all vertices (tasks, prereqs, ..). If they are in a section
+    // which level is below the threshold, add the vertex id in the
+    // to_condense map.
+    for (auto& p : all_vertices)
     {
-      // key : section id, value : vector of IDs which should be condensed into a node
-      ::std::unordered_map<int, ::std::vector<int>> to_condense;
+      // p.first task id, p.second metadata
+      auto& task_info = p.second;
 
-      for (auto& p : pc->metadata)
+      int dot_section_id = task_info.dot_section_id;
+      if (dot_section_id > 0)
       {
-        // p.first task id, p.second metadata
-        auto& task_info    = p.second;
-        int dot_section_id = task_info.dot_section_id;
-        if (dot_section_id > 0)
+        // Note we do not use a reference here, because we are maybe going to
+        // update the pointer, and we do not want to update its content
+        // instead when setting sec.
+        ::std::shared_ptr<section> sec = dot::instance().map[dot_section_id];
+        assert(sec);
+
+        int depth      = sec->get_depth();
+        int section_id = task_info.dot_section_id;
+
+        if (depth >= max_depth + 1)
         {
-          // Note we do not use a reference here, because we are maybe going to
-          // update the pointer, and we do not want to update its content
-          // instead when setting sec.
-          ::std::shared_ptr<section> sec = dot::instance().map[dot_section_id];
-          assert(sec);
-
-          int depth      = sec->get_depth();
-          int section_id = task_info.dot_section_id;
-
-          if (depth >= max_depth + 1)
+          /* Find the parent at depth (max_depth + 1)*/
+          while (depth > max_depth + 1)
           {
-            /* Find the parent at depth (max_depth + 1)*/
-            while (depth > max_depth + 1)
-            {
-              section_id = sec->parent_id;
-              _CCCL_ASSERT(section_id != 0, "invalid value");
-              sec = dot::instance().map[section_id];
-              depth--;
-            }
-
-            _CCCL_ASSERT(depth == max_depth + 1, "invalid value");
-
-            /* Add this node to the list of nodes which are "equivalent" to section_id */
-            to_condense[section_id].push_back(p.first);
+            section_id = sec->parent_id;
+            _CCCL_ASSERT(section_id != 0, "invalid value");
+            sec = dot::instance().map[section_id];
+            depth--;
           }
+
+          _CCCL_ASSERT(depth == max_depth + 1, "invalid value");
+
+          /* Add this node to the list of nodes which are "equivalent" to section_id */
+          to_condense[section_id].push_back(p.first);
         }
       }
+    }
 
-      for (auto& p : to_condense)
+    // For each group of tasks
+    for (auto& p : to_condense)
+    {
+      ::std::sort(p.second.begin(), p.second.end());
+
+      // For every section ID, we get the vector of nodes to condense. We pick the first node, and "merge" other nodes
+      // with it.
+      for (size_t i = 0; i < p.second.size(); i++)
       {
-        ::std::sort(p.second.begin(), p.second.end());
+        all_vertices[p.second[i]].representative_id = p.second[0];
+      }
 
-        // For every section ID, we get the vector of nodes to condense. We pick the first node, and "merge" other nodes
-        // with it.
+      // Merge all tasks in the vector with the first entry, and then rename
+      // the first entry to take the name of the section.
+      for (size_t i = 1; i < p.second.size(); i++)
+      {
+        // Fuse the content (eg. timing) of the i-th entry with the first one
+        merge_nodes(p.second[0], p.second[i]);
+      }
 
-        // Merge all tasks in the vector with the first entry, and then rename
-        // the first entry to take the name of the section.
-        for (size_t i = 1; i < p.second.size(); i++)
-        {
-          // Fuse i-th entry with the first one
-          merge_nodes(*pc, p.second[0], p.second[i]);
-        }
+      // Condense edges
 
-        // Rename the task that remains to have the label of the section
-        ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
-        pc->metadata[p.second[0]].label = sec->get_symbol();
+      // Rename the task that remains to have the label of the section
+      ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
+      all_vertices[p.second[0]].label = sec->get_symbol();
 
-        // Assign the node to the parent of the section it corresponds to
-        pc->metadata[p.second[0]].dot_section_id = sec->parent_id;
+      // Assign the node to the parent of the section it corresponds to
+      all_vertices[p.second[0]].dot_section_id = sec->parent_id;
+    }
+
+    // Replace or condense edges
+    IntPairSet new_edges;
+    for (auto& [from, to] : all_edges)
+    {
+      _CCCL_ASSERT(all_vertices.find(from) != all_vertices.end(), "edge invalid from");
+      _CCCL_ASSERT(all_vertices.find(to) != all_vertices.end(), "edge invalid to");
+
+      int new_from = all_vertices[from].representative_id;
+      int new_to   = all_vertices[to].representative_id;
+
+      // Remove edges internal to a section
+      if (new_from != new_to)
+      {
+        _CCCL_ASSERT(new_from < new_to, "invalid edge");
+        // insert the edge (if it does not exist already)
+        new_edges.insert(std::make_pair(new_from, new_to));
+      }
+    }
+    ::std::swap(new_edges, all_edges);
+
+    // Remove vertices which have been collapsed
+    for (auto it = all_vertices.begin(); it != all_vertices.end();)
+    {
+      const auto& info = it->second;
+      if (info.representative_id != info.original_id)
+      {
+        it = all_vertices.erase(it); // erase returns the next valid iterator
+      }
+      else
+      {
+        ++it;
       }
     }
   }
@@ -977,21 +1245,21 @@ private:
   }
 
   // This method will check whether an edge can be removed when there is already a direct path
-  void remove_redundant_edges(IntPairSet& edges)
+  void remove_redundant_edges()
   {
     single_threaded_section guard(mtx);
     // We first dump the set of edges into a map of predecessors per node
-    for (const auto& [from, to] : edges)
+    for (const auto& [from, to] : all_edges)
     {
       predecessors[to].push_back(from);
     }
 
     // Maybe this is not the most efficient, we could use a vector of
     // pair<int, int> if efficiency matters here.
-    IntPairSet edges_cpy = edges;
+    IntPairSet edges_cpy = all_edges;
 
     // We will put back only those needed
-    edges.clear();
+    all_edges.clear();
 
     for (const auto& [from, to] : edges_cpy)
     {
@@ -1004,6 +1272,7 @@ private:
       ::std::unordered_set<int> visited;
       for (auto p : preds)
       {
+        // Note that it is based on predecessor lists before pruning nodes!
         if (reachable(from, p, visited))
         {
           // Put this edge back in the set of edges
@@ -1014,7 +1283,7 @@ private:
 
       if (keep)
       {
-        edges.insert(::std::pair(from, to));
+        all_edges.insert(::std::pair(from, to));
       }
     }
   }
@@ -1043,36 +1312,34 @@ private:
     ::std::unordered_map<int, int> path_predecessor;
 
     // Gather durations
-    for (const auto& pc : per_ctx)
+
+    // Per vertex (task, prereqs, ...)
+    for (const auto& p : all_vertices)
     {
-      // Per task
-      for (const auto& p : pc->metadata)
+      if (p.second.timing.has_value())
       {
-        if (p.second.timing.has_value())
-        {
-          float ms = p.second.timing.value();
-          // Total work is simply the sum of all work
-          t1 += ms;
-          durations[p.first] = ms;
-        }
+        float ms = p.second.timing.value();
+        // Total work is simply the sum of all work
+        t1 += ms;
+        durations[p.first] = ms;
+      }
+    }
+
+    // We go through edges to find the predecessors of every node
+    for (const auto& [from, to] : all_edges)
+    {
+      predecessors[to].push_back(from);
+      successors[from].push_back(to);
+
+      // For nodes which don't have timing information, we assume a 0.0 duration. This will make a simpler algorithm
+      if (durations.find(from) == durations.end())
+      {
+        durations[from] = 0.0f;
       }
 
-      // We go through edges to find the predecessors of every node
-      for (const auto& [from, to] : pc->existing_edges)
+      if (durations.find(to) == durations.end())
       {
-        predecessors[to].push_back(from);
-        successors[from].push_back(to);
-
-        // For nodes which don't have timing information, we assume a 0.0 duration. This will make a simpler algorithm
-        if (durations.find(from) == durations.end())
-        {
-          durations[from] = 0.0f;
-        }
-
-        if (durations.find(to) == durations.end())
-        {
-          durations[to] = 0.0f;
-        }
+        durations[to] = 0.0f;
       }
     }
 
@@ -1150,8 +1417,9 @@ private:
   // Are we measuring the duration of tasks ?
   bool enable_timing = false;
 
-  // Keep track of existing edges, to make the output possibly look better
-  IntPairSet existing_edges;
+  // all_edges and all_vertices gather edges and vertices from all contexts
+  IntPairSet all_edges;
+  ::std::unordered_map<int /* id */, per_vertex_info> all_vertices;
 
   ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
@@ -1173,10 +1441,10 @@ private:
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 };
 
-inline int per_ctx_dot::get_current_section_id()
+inline int per_ctx_dot::get_current_section_id(int per_ctx_id)
 {
   // Get the stack of IDs, if it's empty return 0, otherwise the id of the section (which are numbered starting from 1)
-  auto& s = dot::section::current();
+  const auto& s = dot::section::current(per_ctx_id);
   return s.size() == 0 ? 0 : s.top();
 }
 
