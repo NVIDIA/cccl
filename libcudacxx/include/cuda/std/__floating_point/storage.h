@@ -24,6 +24,7 @@
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -85,9 +86,15 @@ struct __cccl_nvbf16_manip_helper : __nv_bfloat16
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_storage_t<_Tp> __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_floating_point, _Tp))
+  if constexpr (_CCCL_TRAIT(__is_std_fp, _Tp) || _CCCL_TRAIT(__is_ext_compiler_fp, _Tp))
   {
     return _CUDA_VSTD::bit_cast<_Tp>(__v);
+  }
+  else if constexpr (_CCCL_TRAIT(__is_ext_cccl_fp, _Tp))
+  {
+    _Tp __ret{};
+    __ret.__storage_ = __v;
+    return __ret;
   }
 #if _CCCL_HAS_NVFP16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))
@@ -171,9 +178,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_s
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_get_storage(_Tp __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(is_floating_point, _Tp))
+  if constexpr (_CCCL_TRAIT(__is_std_fp, _Tp) || _CCCL_TRAIT(__is_ext_compiler_fp, _Tp))
   {
     return _CUDA_VSTD::bit_cast<__fp_storage_t<_Tp>>(__v);
+  }
+  else if constexpr (_CCCL_TRAIT(__is_ext_cccl_fp, _Tp))
+  {
+    return __v.__storage_;
   }
 #if _CCCL_HAS_NVFP16()
   else if constexpr (_CCCL_TRAIT(is_same, _Tp, __half))

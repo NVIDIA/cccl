@@ -23,6 +23,7 @@
 
 #include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__floating_point/properties.h>
+#include <cuda/std/__fwd/fp.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -122,10 +123,27 @@ template <>
 inline constexpr bool __is_ext_compiler_fp_v<__float128> = true;
 #endif // _CCCL_HAS_FLOAT128()
 
+// __is_ext_cccl_fp_v
+
+template <class _Tp>
+inline constexpr bool __is_ext_cccl_fp_v = false;
+
+template <class _Tp>
+inline constexpr bool __is_ext_cccl_fp_v<const _Tp> = __is_ext_cccl_fp_v<_Tp>;
+
+template <class _Tp>
+inline constexpr bool __is_ext_cccl_fp_v<volatile _Tp> = __is_ext_cccl_fp_v<_Tp>;
+
+template <class _Tp>
+inline constexpr bool __is_ext_cccl_fp_v<const volatile _Tp> = __is_ext_cccl_fp_v<_Tp>;
+
+template <__fp_format _Fmt>
+inline constexpr bool __is_ext_cccl_fp_v<__cccl_fp<_Fmt>> = true;
+
 // __is_ext_fp_v
 
 template <class _Tp>
-inline constexpr bool __is_ext_fp_v = __is_ext_nv_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>;
+inline constexpr bool __is_ext_fp_v = __is_ext_nv_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp> || __is_ext_cccl_fp_v<_Tp>;
 
 // __is_fp_v (todo: use cuda::std::is_floating_point_v instead in the future)
 
