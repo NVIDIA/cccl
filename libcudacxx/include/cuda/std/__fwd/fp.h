@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___FLOATING_POINT_FP_H
-#define _LIBCUDACXX___FLOATING_POINT_FP_H
+#ifndef _LIBCUDACXX___FWD_FP_H
+#define _LIBCUDACXX___FWD_FP_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,16 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__floating_point/cast.h>
-#include <cuda/std/__floating_point/cccl_fp.h>
-#include <cuda/std/__floating_point/common_type.h>
-#include <cuda/std/__floating_point/conversion_rank_order.h>
-#include <cuda/std/__floating_point/format.h>
-#include <cuda/std/__floating_point/mask.h>
-#include <cuda/std/__floating_point/native_type.h>
-#include <cuda/std/__floating_point/nvfp_types.h>
-#include <cuda/std/__floating_point/properties.h>
-#include <cuda/std/__floating_point/storage.h>
-#include <cuda/std/__floating_point/traits.h>
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___FLOATING_POINT_FP_H
+enum class __fp_format;
+
+template <__fp_format _Fmt>
+class __cccl_fp;
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+#endif // _LIBCUDACXX___FWD_FP_H

@@ -21,9 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,18 +40,11 @@ enum class __fp_conv_rank_order
 template <class _Lhs, class _Rhs>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_conv_rank_order_v_impl() noexcept
 {
-  static_assert(numeric_limits<_Lhs>::is_specialized, "numeric_limits<_Lhs> is not specialized");
-  static_assert(numeric_limits<_Rhs>::is_specialized, "numeric_limits<_Rhs> is not specialized");
-
-  if constexpr (numeric_limits<_Lhs>::min_exponent == numeric_limits<_Rhs>::min_exponent
-                && numeric_limits<_Lhs>::max_exponent == numeric_limits<_Rhs>::max_exponent
-                && numeric_limits<_Lhs>::digits == numeric_limits<_Rhs>::digits)
+  if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs> && __fp_is_subset_of_v<_Rhs, _Lhs>)
   {
 #if _CCCL_HAS_LONG_DOUBLE()
     // If double and long double have the same properties, long double has the higher subrank
-    if constexpr (numeric_limits<double>::min_exponent == numeric_limits<long double>::min_exponent
-                  && numeric_limits<double>::max_exponent == numeric_limits<long double>::max_exponent
-                  && numeric_limits<double>::digits == numeric_limits<long double>::digits)
+    if constexpr (__fp_is_subset_of_v<long double, double>)
     {
       if constexpr (_CCCL_TRAIT(is_same, _Lhs, long double) && !_CCCL_TRAIT(is_same, _Rhs, long double))
       {
@@ -70,17 +65,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_co
       return __fp_conv_rank_order::__equal;
     }
   }
-  else if constexpr (numeric_limits<_Lhs>::min_exponent <= numeric_limits<_Rhs>::min_exponent
-                     && numeric_limits<_Lhs>::max_exponent >= numeric_limits<_Rhs>::max_exponent
-                     && numeric_limits<_Lhs>::digits >= numeric_limits<_Rhs>::digits
-                     && (numeric_limits<_Lhs>::is_signed || !numeric_limits<_Rhs>::is_signed))
+  else if constexpr (__fp_is_subset_of_v<_Rhs, _Lhs>)
   {
     return __fp_conv_rank_order::__greater;
   }
-  else if constexpr (numeric_limits<_Lhs>::min_exponent >= numeric_limits<_Rhs>::min_exponent
-                     && numeric_limits<_Lhs>::max_exponent <= numeric_limits<_Rhs>::max_exponent
-                     && numeric_limits<_Lhs>::digits <= numeric_limits<_Rhs>::digits
-                     && (!numeric_limits<_Lhs>::is_signed || numeric_limits<_Rhs>::is_signed))
+  else if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs>)
   {
     return __fp_conv_rank_order::__less;
   }
@@ -90,7 +79,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_co
   }
 }
 
-template <class _Lhs, class _Rhs>
+_CCCL_TEMPLATE(class _Lhs, class _Rhs)
+_CCCL_REQUIRES(_CCCL_TRAIT(__is_fp, _Lhs) && _CCCL_TRAIT(__is_fp, _Rhs))
 inline constexpr __fp_conv_rank_order __fp_conv_rank_order_v = __fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
 
 template <class _Lhs, class _Rhs>
@@ -98,15 +88,11 @@ inline constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
   __fp_conv_rank_order_v<conditional_t<_CCCL_TRAIT(is_integral, _Lhs), double, _Lhs>,
                          conditional_t<_CCCL_TRAIT(is_integral, _Rhs), double, _Rhs>>;
 
-template <class _Lhs, class _Rhs>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __fp_is_implicit_conversion_v_impl() noexcept
-{
-  constexpr auto __order = __fp_conv_rank_order_v<_Lhs, _Rhs>();
-  return __order == __fp_conv_rank_order::__greater || __order == __fp_conv_rank_order::__equal;
-}
-
-template <class _Lhs, class _Rhs>
-inline constexpr bool __fp_is_implicit_conversion_v = __fp_is_implicit_conversion_v_impl<_Lhs, _Rhs>();
+_CCCL_TEMPLATE(class _From, class _To)
+_CCCL_REQUIRES(_CCCL_TRAIT(__is_fp, _From) && _CCCL_TRAIT(__is_fp, _To))
+inline constexpr bool __fp_is_implicit_conversion_v =
+  __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__less
+  || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__equal;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
