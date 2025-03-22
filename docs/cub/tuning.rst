@@ -560,7 +560,16 @@ Verification
 --------------------------------------------------------------------------------
 
 Once we have selected tunings and implemented them in CUB, we need to verify them.
-That is, we must benchmark and compare the performance of the tuned algorithm before and after the tunings have been applied.
+This process consists of two steps.
+
+Firstly, we need to ensure that adding new tunings and policies did not break existing tunings.
+This is most relevant when tunings for new PTX versions have been added.
+To verify this, compile the corresponding benchmarks for the previous architecture
+(excluding the new tunings) before and after modifying any tunings,
+and compare the generated SASS :code:(`cuobjdump -sass`).
+It should not have changed.
+
+Secondly, we must benchmark and compare the performance of the tuned algorithm before and after the tunings have been applied.
 This extra step is needed, because the score shown during the tuning analysis is just an aggregated result.
 Individual benchmarks may still have regressed for some compile-time workloads.
 Fortunately, this is no different than :ref:`running <cub-benchmarking-running>` the corresponding CUB benchmark with and without the changes,
