@@ -32,6 +32,9 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/scan.h>
 
+#include <cuda/std/__functional/invoke.h>
+#include <cuda/std/__functional/operations.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -54,7 +57,8 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
 {
   // Use the input iterator's value type per https://wg21.link/P0571
   using ValueType = thrust::detail::it_value_t<InputIterator>;
-  return thrust::exclusive_scan(exec, first, last, result, ValueType{});
+  using AccumT    = ::cuda::std::__accumulator_t<std::plus<>, ValueType>;
+  return thrust::exclusive_scan(exec, first, last, result, AccumT{});
 } // end exclusive_scan()
 
 template <typename ExecutionPolicy, typename InputIterator, typename OutputIterator, typename T>
