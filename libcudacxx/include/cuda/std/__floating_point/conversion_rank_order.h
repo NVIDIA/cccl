@@ -23,6 +23,7 @@
 
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
