@@ -74,6 +74,7 @@ jobs:
       ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
           toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys']) != '[]' }}
     needs: build-workflow
+    secrets: inherit
     permissions:
       id-token: write
       contents: read
@@ -108,6 +109,7 @@ jobs:
       ${{ !contains(github.event.head_commit.message, '[skip-matrix]') &&
           toJSON(fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys']) != '[]' }}
     needs: build-workflow
+    secrets: inherit
     permissions:
       id-token: write
       contents: read

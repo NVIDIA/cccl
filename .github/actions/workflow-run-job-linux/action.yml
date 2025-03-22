@@ -38,6 +38,10 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  # This token must have the "read:enterprise" scope
+  dist-token:
+    description: "The token used to authenticate with the sccache-dist build cluster."
+    required: false
 
 runs:
   using: "composite"
@@ -72,12 +76,15 @@ runs:
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
+        DIST_TOKEN: "${{inputs.dist-token}}"
         AWS_ACCESS_KEY_ID: "${{env.AWS_ACCESS_KEY_ID}}"
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
         echo "[host]      github.workspace: ${{github.workspace}}"
+        echo "[host]           runner.temp: ${{runner.temp}}"
         echo "[container] GITHUB_WORKSPACE: ${GITHUB_WORKSPACE:-}"
+        echo "[container]      RUNNER_TEMP: ${RUNNER_TEMP:-}"
         echo "[container]              PWD: $(pwd)"
 
         # Necessary because we're doing docker-outside-of-docker:
@@ -87,12 +94,14 @@ runs:
         ln -s "$(pwd)" "${{github.workspace}}"
         cd "${{github.workspace}}"
 
-        mkdir artifacts
+        echo "[container]          new PWD: $(pwd)"
 
-        cat <<'EOF' > ci.sh
+        cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
         #! /usr/bin/env bash
         set -euo pipefail
         echo -e "\e[1;34mRunning as '$(whoami)' user in $(pwd):\e[0m"
+        # Print current dist status to verify we're connected
+        echo -e "\e[1;34mBuild cluster:\n$(./ci/sccache_dist_status.sh | sed 's/\"//g' | column -t -s, -R $(seq -s, 1 13))\e[0m"
         echo -e "\e[1;34m${COMMAND}\e[0m"
         eval "${COMMAND}"
         exit_code=$?
@@ -110,33 +119,19 @@ runs:
           echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
           exit $exit_code
         fi
-
-        # Copy any artifacts we want to preserve out of the container:
-        results_dir=/artifacts
-
-        # Finds a matching file in the repo directory and copies it to the results directory.
-        find_and_copy() {
-          filename="$1"
-          filepath="$(find . -name "${filename}" -print -quit)"
-          if [[ -z "$filepath" ]]; then
-            echo "${filename} does not exist in repo directory."
-            return 1
-          fi
-          cp -v "$filepath" "$results_dir"
-        }
-
-        find_and_copy "sccache_stats.json" || :
         EOF
 
-        chmod +x ci.sh
+        chmod +x "$RUNNER_TEMP/ci.sh"
 
-        mkdir "$RUNNER_TEMP/.aws";
+        mkdir -p "$RUNNER_TEMP/.aws"
 
         cat <<EOF > "$RUNNER_TEMP/.aws/config"
         [default]
         bucket=rapids-sccache-devs
         region=us-east-2
         EOF
+
+        chmod 0664 "$RUNNER_TEMP/.aws/config"
 
         cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
         [default]
@@ -146,32 +141,107 @@ runs:
         EOF
 
         chmod 0600 "$RUNNER_TEMP/.aws/credentials"
-        chmod 0664 "$RUNNER_TEMP/.aws/config"
 
-        declare -a gpu_request=()
+        mkdir -p "$RUNNER_TEMP/.config/sccache"
+
+        # Configure the sccache client
+        cat <<EOF > "$RUNNER_TEMP/.config/sccache/config"
+        server_startup_timeout_ms = $((5 * 60 * 1000))
+        [cache.disk]
+        size = 0
+        [cache.disk.preprocessor_cache_mode]
+        use_preprocessor_cache_mode = false
+        EOF
+
+        chmod 0664 "$RUNNER_TEMP/.config/sccache/config"
+
+        # Download new sccache binary
+        mkdir -p "$RUNNER_TEMP/bin"
+        curl -fsSL \
+          "https://github.com/trxcllnt/sccache/releases/download/v0.10.0-rapids.6/sccache-v0.10.0-rapids.6-$(uname -m)-unknown-linux-musl.tar.gz" \
+        | tar -C "$RUNNER_TEMP/bin" -zf - --wildcards --strip-components=1 -x '*/sccache'
+
+        declare -a extra_launch_args=(
+          # Write debug logs to a file we can upload
+          --env "SCCACHE_SERVER_LOG=sccache=debug"
+          --env "SCCACHE_ERROR_LOG=/home/coder/cccl/sccache.log"
+          # Cache in a separate S3 bucket prefix
+          --env "SCCACHE_S3_KEY_PREFIX=cccl-test-sccache-dist"
+          # Mount in new sccache binary
+          --volume "${{runner.temp}}/bin/sccache:/usr/bin/sccache:ro"
+        )
+
+        OS="$(uname -s)"
+        CPUS="$(nproc --all)"
+        ARCH="$(dpkg --print-architecture)"
+
+        # Use the build cluster
+        if test -n "${DIST_TOKEN+x}"; then
+
+          # Configure sccache client to talk to the build cluster
+          cat <<EOF >> "$RUNNER_TEMP/.config/sccache/config"
+        [dist]
+        # Infinitely retry all retryable dist-compilation errors
+        max_retries = inf
+        # Never fallback to building locally, fail instead
+        fallback_to_local_compile = false
+
+        scheduler_url = "https://${ARCH}.${OS,,}.sccache.gha-runners.nvidia.com"
+
+        # Build cluster auth
+        [dist.auth]
+        type = "token"
+        token = "$DIST_TOKEN"
+
+        # Build cluster network config
+        [dist.net]
+        connect_timeout = 30
+        request_timeout = 1800
+        EOF
+
+          if grep -q '"./ci/build_' <<< "$COMMAND"; then
+            extra_launch_args+=(
+              # Repopulate the cache
+              --env "SCCACHE_RECACHE=1"
+              # Do not cache build products
+              # --env "SCCACHE_NO_CACHE=1"
+            )
+          fi
+
+          # Over-subscribe -j to keep the build cluster busy if _not_ ClangCUDA.
+          # ClangCUDA can use the build cluster for C++ files, but _not_ CUDA,
+          # and we'll OOM if we try to compile too many at once.
+          if ! grep -q '\-cuda "clang' <<< "$COMMAND"; then
+            extra_launch_args+=(
+              --env "PARALLEL_LEVEL=$((CPUS * 16 > 128 ? 128 : CPUS * 16))"
+            )
+          fi
+
+          if ! grep -q '11.1' <<< "${{inputs.cuda}}"; then
+            # Compile device objects in parallel
+            extra_launch_args+=(
+              --env "NVCC_APPEND_FLAGS=-t=100"
+            )
+          fi
+        fi
 
         # Explicitly pass which GPU to use if on a GPU runner
         if [[ "${RUNNER}" = *"-gpu-"* ]]; then
-          gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
+          extra_launch_args+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
         fi
-
-        host_path() {
-          sed "s@/__w@$(dirname "$(dirname "${{github.workspace}}")")@" <<< "$1"
-        }
 
         # If the image contains "cudaXX.Yext"...
         if [[ "${IMAGE}" =~ cuda[0-9.]+ext ]]; then
-          cuda_ext_request="--cuda-ext"
+          extra_launch_args+=(--cuda-ext)
         fi
 
         # Launch this container using the host's docker daemon
         set -x
+
         ${{github.event.repository.name}}/.devcontainer/launch.sh \
           --docker \
           --cuda ${{inputs.cuda}} \
           --host ${{inputs.host}} \
-          ${cuda_ext_request:-} \
-          "${gpu_request[@]}" \
           --env "CI=$CI" \
           --env "AWS_ROLE_ARN=" \
           --env "COMMAND=$COMMAND" \
@@ -185,33 +255,64 @@ runs:
           --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-          --volume "${{github.workspace}}/ci.sh:/ci.sh" \
-          --volume "${{github.workspace}}/artifacts:/artifacts" \
-          --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
+          --volume "${{runner.temp}}/ci.sh:/ci.sh:ro" \
+          --volume "${{runner.temp}}/.aws:/root/.aws" \
+          --volume "${{runner.temp}}/.config:/root/.config:ro" \
           --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
+          "${extra_launch_args[@]}" \
           -- /ci.sh
 
-    - name: Prepare job artifacts
+    - if: ${{ always() }}
+      name: Create job artifact dir
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        result_dir="jobs/${{inputs.id}}"
+        mkdir -p "$result_dir"
+        echo "result_dir=$result_dir" >> "$GITHUB_ENV"
+
+    - if: ${{ success() }}
+      name: Record job success
+      shell: bash --noprofile --norc -euo pipefail {0}
+      run: |
+        touch "$result_dir/success"
+
+    - if: ${{ always() }}
+      name: Prepare job artifacts
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         echo "Prepare job artifacts"
-        result_dir="jobs/${{inputs.id}}"
-        mkdir -p "$result_dir"
 
-        touch "$result_dir/success"
+        # chmod all temp contents 777 so the runner can delete them
+        find "$RUNNER_TEMP/" -exec chmod 0777 {} \;
 
-        artifacts_exist="$(ls -A artifacts)"
-        if [ "$artifacts_exist" ]; then
-          cp -rv artifacts/* "$result_dir"
-        fi
+        # Finds a matching file in the repo directory and copies it to the results directory.
+        find_and_copy() {
+          pat="$1"
+          dir="${{github.event.repository.name}}"
+          filepath="$(find "$dir/" -type f -path "$dir/$pat" -print -quit)"
+          if [[ -z "$filepath" ]]; then
+            echo "File with pattern '$dir/$pat' does not exist in repo directory."
+            return 1
+          fi
+          cp -v "$filepath" "$result_dir"
+        }
+
+        # Copy any artifacts we want to preserve out of the container
+        find_and_copy "sccache.log" || :
+        find_and_copy "build/*/.ninja_log" || :
+        find_and_copy "build/*/build.ninja" || :
+        find_and_copy "build/*/rules.ninja" || :
+        find_and_copy "build/*/sccache_stats.json" || :
 
         echo "::group::Job artifacts"
         tree "$result_dir"
         echo "::endgroup::"
 
-    - name: Upload job artifacts
+    - if: ${{ always() }}
+      name: Upload job artifacts
       uses: actions/upload-artifact@v4
       with:
         name: jobs-${{inputs.id}}
         path: jobs
         compression-level: 0
+        include-hidden-files: true
