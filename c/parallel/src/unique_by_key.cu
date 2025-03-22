@@ -148,7 +148,8 @@ std::string get_sweep_kernel_name(
   check(nvrtcGetTypeName<op_wrapper>(&equality_op_t));
 
   return std::format(
-    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, "
+    "device_unique_by_key_vsmem_helper>",
     chained_policy_t,
     input_keys_iterator_t,
     input_values_iterator_t,
@@ -308,6 +309,24 @@ struct agent_policy_t {{
 struct device_unique_by_key_policy {{
   struct ActivePolicy {{
     using UniqueByKeyPolicyT = agent_policy_t;
+  }};
+}};
+struct device_unique_by_key_vsmem_helper {{
+  template<typename ActivePolicyT, typename... Ts>
+  struct VSMemHelperDefaultFallbackPolicyT {{
+    using agent_policy_t = agent_policy_t;
+    using agent_t = cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
+    using static_temp_storage_t = typename cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>::TempStorage;
+    static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
+      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem, ::cuda::std::size_t linear_block_id)
+    {{
+        return static_temp_storage;
+    }}
+    template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
+    static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
+    {{
+      return false;
+    }}
   }};
 }};
 {13}
