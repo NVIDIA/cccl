@@ -374,7 +374,7 @@ struct dispatch_t<StableAddress,
     }
 
     int ptx_version = 0;
-    auto error      = CubDebug(PtxVersion(ptx_version));
+    auto error      = CubDebug(launcher_factory.PtxVersion(ptx_version));
     if (cudaSuccess != error)
     {
       return error;
