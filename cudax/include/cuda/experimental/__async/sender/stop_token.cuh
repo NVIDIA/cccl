@@ -65,7 +65,7 @@ protected:
   using __execute_fn_t = void(__inplace_stop_callback_base*) noexcept;
 
   _CUDAX_API explicit __inplace_stop_callback_base( //
-    const inplace_stop_source* __source, //
+    const inplace_stop_source* __source,            //
     __execute_fn_t* __execute) noexcept
       : __source_(__source)
       , __execute_fn_(__execute)
@@ -85,7 +85,7 @@ protected:
 
 struct __spin_wait
 {
-  __spin_wait() noexcept = default;
+  _CUDAX_DEFAULTED_API __spin_wait() noexcept = default;
 
   _CUDAX_API void __wait() noexcept
   {
@@ -150,7 +150,7 @@ class inplace_stop_callback;
 class inplace_stop_source
 {
 public:
-  _CUDAX_API inplace_stop_source() noexcept = default;
+  _CUDAX_DEFAULTED_API inplace_stop_source() noexcept = default;
   _CUDAX_API ~inplace_stop_source();
   _CUDAX_IMMOVABLE(inplace_stop_source);
 
@@ -197,13 +197,13 @@ public:
       : __source_(nullptr)
   {}
 
-  inplace_stop_token(const inplace_stop_token& __other) noexcept = default;
+  _CUDAX_DEFAULTED_API inplace_stop_token(const inplace_stop_token& __other) noexcept = default;
 
   _CUDAX_API inplace_stop_token(inplace_stop_token&& __other) noexcept
       : __source_(__async::__exchange(__other.__source_, {}))
   {}
 
-  auto operator=(const inplace_stop_token& __other) noexcept -> inplace_stop_token& = default;
+  _CUDAX_DEFAULTED_API auto operator=(const inplace_stop_token& __other) noexcept -> inplace_stop_token& = default;
 
   _CUDAX_API auto operator=(inplace_stop_token&& __other) noexcept -> inplace_stop_token&
   {

@@ -32,11 +32,7 @@ namespace cuda::experimental::__async
 {
 struct start_detached_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   struct __opstate_base_t : __immovable
   {};
 
@@ -56,7 +52,7 @@ private:
     template <class _Error>
     void set_error(_Error&&) && noexcept
     {
-      ::cuda::std::terminate();
+      _CUDA_VSTD_NOVERSION::terminate();
     }
 
     void set_stopped() && noexcept
@@ -69,7 +65,6 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __opstate_base_t
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __async::completion_signatures_of_t<_Sndr, __rcvr_t>;
     connect_result_t<_Sndr, __rcvr_t> __opstate_;
 
     static void __destroy(__opstate_base_t* __ptr) noexcept

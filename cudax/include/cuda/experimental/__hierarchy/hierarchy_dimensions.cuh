@@ -448,7 +448,7 @@ public:
   template <typename Unit, typename Level>
   using extents_type = decltype(::cuda::std::apply(
     ::cuda::std::declval<detail::hierarchy_extents_helper<Unit>>(),
-    levels_range_static<Unit, Level>(::cuda::std::declval<::cuda::std::tuple<Levels...>>())));
+    hierarchy_dimensions::levels_range_static<Unit, Level>(::cuda::std::declval<::cuda::std::tuple<Levels...>>())));
 
   /**
    * @brief Get a fragment of this hierarchy

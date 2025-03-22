@@ -45,7 +45,7 @@ struct __task : __immovable
 {
   using __execute_fn_t = void(__task*) noexcept;
 
-  __task() = default;
+  _CUDAX_DEFAULTED_API __task() = default;
 
   _CUDAX_API explicit __task(__task* __next, __task* __tail) noexcept
       : __next_{__next}
@@ -77,14 +77,11 @@ struct __operation : __task
   run_loop* __loop_;
   _CCCL_NO_UNIQUE_ADDRESS _Rcvr __rcvr_;
 
-  using completion_signatures = //
-    __async::completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>;
-
   _CUDAX_API static void __execute_impl(__task* __p) noexcept
   {
     auto& __rcvr = static_cast<__operation*>(__p)->__rcvr_;
     _CUDAX_TRY( //
-      ({ //
+      ({        //
         if (get_stop_token(get_env(__rcvr)).stop_requested())
         {
           set_stopped(static_cast<_Rcvr&&>(__rcvr));
@@ -94,10 +91,11 @@ struct __operation : __task
           set_value(static_cast<_Rcvr&&>(__rcvr));
         }
       }),
-      _CUDAX_CATCH(...)( //
-        { //
-          set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
-        }))
+      _CUDAX_CATCH(...) //
+      ({                //
+        set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
+      }) //
+    )
   }
 
   _CUDAX_API explicit __operation(__task* __tail_) noexcept
@@ -139,6 +137,12 @@ public:
       _CUDAX_API auto connect(_Rcvr __rcvr) const noexcept -> __operation<_Rcvr>
       {
         return {&__loop_->__head, __loop_, static_cast<_Rcvr&&>(__rcvr)};
+      }
+
+      template <class _Self>
+      _CUDAX_API static constexpr auto get_completion_signatures() noexcept
+      {
+        return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>();
       }
 
     private:
@@ -220,14 +224,15 @@ private:
 
 template <class _Rcvr>
 _CUDAX_API inline void __operation<_Rcvr>::start() & noexcept {
-  _CUDAX_TRY( //
-    ({ //
-      __loop_->__push_back(this); //
-    }), //
-    _CUDAX_CATCH(...)( //
-      { //
-        set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception()); //
-      })) //
+  _CUDAX_TRY(                                                               //
+    ({                                                                      //
+      __loop_->__push_back(this);                                           //
+    }),                                                                     //
+    _CUDAX_CATCH(...)                                                       //
+    ({                                                                      //
+      set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception()); //
+    })                                                                      //
+    )                                                                       //
 }
 
 _CUDAX_API inline void run_loop::run()

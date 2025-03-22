@@ -49,7 +49,7 @@ endfunction()
 file(GLOB example_srcs
   RELATIVE "${cudax_SOURCE_DIR}/examples"
   CONFIGURE_DEPENDS
-  *.cu
+  *.cu *.cpp
 )
 
 # Example requires pinned_memory_resource.
