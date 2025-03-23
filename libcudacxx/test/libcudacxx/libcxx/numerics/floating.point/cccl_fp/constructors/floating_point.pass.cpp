@@ -25,7 +25,7 @@ __host__ __device__ constexpr void test_fp_constructor()
   static_assert(cuda::std::__fp_is_implicit_conversion_v<Fp, T> == cuda::std::is_convertible_v<Fp, T>);
 
   // TODO: check construction from a floating point type
-  T val{Fp{}};
+  [[maybe_unused]] T val{Fp{}};
 }
 
 template <cuda::std::__fp_format Fmt>

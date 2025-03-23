@@ -24,8 +24,8 @@ __host__ __device__ constexpr void test_int_conversion_operator()
   // Construction from an integral type is always implicit
   static_assert(cuda::std::is_convertible_v<T, Int>);
 
-  // TODO: check construction from an integral type
-  Int val{T{}};
+  // TODO: check conversion to an integral type
+  [[maybe_unused]] Int val{T{}};
 }
 
 template <cuda::std::__fp_format Fmt>
