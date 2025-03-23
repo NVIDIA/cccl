@@ -8,6 +8,7 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    - {jobs: ['test'], project: 'cudax', std: 17, ctk: '12.8', cxx: 'gcc13', gpu: 'rtx4090', sm: '60;70;80'}
 
   pull_request:
     # Old CTK/compiler
