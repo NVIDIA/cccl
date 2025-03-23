@@ -173,7 +173,7 @@ namespace reduce
  * @tparam CollectiveReduceT
  *   Block or Warp reduction type
  *
- * @tparam THREADS
+ * @tparam NumThreads
  *   Number of threads participating in the collective reduction
  *
  * @tparam IsWarpReduction
@@ -187,7 +187,7 @@ template <typename AgentReducePolicy,
           typename AccumT,
           typename TransformOp,
           typename CollectiveReduceT,
-          int THREADS,
+          int NumThreads,
           bool IsWarpReduction = false>
 struct AgentReduceImpl
 {
@@ -211,7 +211,7 @@ struct AgentReduceImpl
 
   /// Constants
   static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
-  static constexpr int TILE_ITEMS         = THREADS * ITEMS_PER_THREAD;
+  static constexpr int TILE_ITEMS         = NumThreads * ITEMS_PER_THREAD;
   static constexpr int VECTOR_LOAD_LENGTH = _CUDA_VSTD::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
@@ -305,7 +305,7 @@ struct AgentReduceImpl
     AccumT items[ITEMS_PER_THREAD];
 
     // Load items in striped fashion
-    load_transform_direct_striped<THREADS>(lane_id, d_wrapped_in + block_offset, items, transform_op);
+    load_transform_direct_striped<NumThreads>(lane_id, d_wrapped_in + block_offset, items, transform_op);
 
     // Reduce items within each thread stripe
     thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
@@ -345,7 +345,7 @@ struct AgentReduceImpl
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < WORDS; ++i)
     {
-      vec_items[i] = d_vec_in[THREADS * i];
+      vec_items[i] = d_vec_in[NumThreads * i];
     }
 
     // Convert from input type to output type
@@ -384,7 +384,7 @@ struct AgentReduceImpl
     if ((IS_FIRST_TILE) && (thread_offset < valid_items))
     {
       thread_aggregate = transform_op(d_wrapped_in[block_offset + thread_offset]);
-      thread_offset += THREADS;
+      thread_offset += NumThreads;
     }
 
     // Continue reading items (block-striped)
@@ -393,7 +393,7 @@ struct AgentReduceImpl
       InputT item(d_wrapped_in[block_offset + thread_offset]);
 
       thread_aggregate = reduction_op(thread_aggregate, transform_op(item));
-      thread_offset += THREADS;
+      thread_offset += NumThreads;
     }
   }
 
@@ -423,7 +423,7 @@ struct AgentReduceImpl
       // whereas for Block Reduction it is implicitly handled
       if constexpr (IsWarpReduction)
       {
-        valid_items = (THREADS <= valid_items) ? THREADS : valid_items;
+        valid_items = (NumThreads <= valid_items) ? NumThreads : valid_items;
       }
       return CollectiveReduceT(temp_storage.reduce).Reduce(thread_aggregate, reduction_op, valid_items);
     }
