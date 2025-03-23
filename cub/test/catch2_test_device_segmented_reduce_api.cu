@@ -251,8 +251,8 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int d
   // example-begin fixed-size-segmented-reduce-reduce
   int num_segments = 3;
   int segment_size = 2;
-  thrust::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
-  thrust::device_vector<int> d_out(3);
+  c2h::device_vector<int> d_in{8, 6, 7, 5, 3, 0, 9};
+  c2h::device_vector<int> d_out(3);
   CustomMin min_op;
   int initial_value{INT_MAX};
 
@@ -262,14 +262,14 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int d
   cub::DeviceSegmentedReduce::Reduce(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size, min_op, initial_value);
 
-  thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
   // Run reduction
   cub::DeviceSegmentedReduce::Reduce(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size, min_op, initial_value);
 
-  thrust::device_vector<int> expected{6, 5, 0};
+  c2h::device_vector<int> expected{6, 5, 0};
   // example-end fixed-size-segmented-reduce-reduce
 
   REQUIRE(d_out == expected);
