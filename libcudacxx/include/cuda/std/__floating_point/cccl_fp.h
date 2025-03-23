@@ -51,7 +51,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND !__fp_is_implicit_conversion_v<_Tp, __cccl_fp>)
+  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__fp_is_implicit_conversion_v<_Tp, __cccl_fp>))
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __cccl_fp([[maybe_unused]] const _Tp& __v) noexcept
       : __cccl_fp{}
   {
@@ -79,7 +79,7 @@ public:
   }
 
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND !__fp_is_implicit_conversion_v<__cccl_fp, _Tp>)
+  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__fp_is_implicit_conversion_v<__cccl_fp, _Tp>))
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator _Tp() noexcept
   {
     // todo
