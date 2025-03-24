@@ -228,14 +228,25 @@ public:
       }
     }
 
-    for (size_t k = 0; k < 50; k++)
+    // That is a miss, we need to allocate data using the root allocator
+
+    /* Create one large block of memory */
+    size_t cnt                = 50;
+    ::std::ptrdiff_t large_sz = cnt * s;
+    auto* base                = root_allocator.allocate(ctx, memory_node, large_sz, prereqs);
+    _CCCL_ASSERT(large_sz >= 0, "failed to allocate large buffer");
+
+    large_allocations[memory_node].push_back(::std::make_pair(base, large_sz));
+
+    /* Populate the cache with sub-entries from this large block, except the
+     * first entry which is used immediately */
+    auto& per_node = free_cache[memory_node][s];
+    for (size_t k = 1; k < cnt; k++)
     {
-      auto* ptr = root_allocator.allocate(ctx, memory_node, s, prereqs);
-      free_cache[memory_node][s].push(alloc_cache_entry{ptr, prereqs});
+      per_node.push(alloc_cache_entry{(char*) base + s * k, prereqs});
     }
 
-    // That is a miss, we need to allocate data using the root allocator
-    return root_allocator.allocate(ctx, memory_node, s, prereqs);
+    return base;
   }
 
   /**
@@ -253,7 +264,8 @@ public:
   deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
   {
     ::std::lock_guard<::std::mutex> g(allocator_mutex);
-    // We do not call the deallocate method of the root allocator, we discard buffers instead
+    // We do not call the deallocate method of the root allocator, we discard buffers instead.
+    // Note that we do not need to keep track of the "large buffer" from which this originated
     free_cache[memory_node][sz].push(alloc_cache_entry{ptr, prereqs});
   }
 
@@ -272,19 +284,30 @@ public:
     event_list result;
     for (auto& [where, size_map] : free_cache_janitor)
     {
+      event_list per_place_result;
+
       // For each size key, iterate over the associated queue
       for (auto& [sz, queue] : size_map)
       {
-        // Process all cache entries stored in the queue (FIFO order)
+        // We first go through all suballocations to "collect" prereqs
         while (!queue.empty())
         {
           alloc_cache_entry ace = std::move(queue.front());
           queue.pop();
 
-          root_allocator.deallocate(ctx, where, ace.prereq, ace.ptr, sz);
-          result.merge(std::move(ace.prereq));
+          per_place_result.merge(mv(ace.prereq));
         }
       }
+
+      // Then we actually deallocate memory: for each place, there is a vector of large allocations
+      for (auto& alloc : large_allocations[where])
+      {
+        void* base      = alloc.first;
+        size_t large_sz = alloc.second;
+        root_allocator.deallocate(ctx, where, per_place_result, base, large_sz);
+      }
+
+      result.merge(mv(per_place_result));
     }
     return result;
   }
@@ -330,8 +353,12 @@ protected:
   /// Maps sizes to cache entries for a given data_place.
   using per_place_map_t = ::std::unordered_map<size_t, ::std::queue<alloc_cache_entry>>;
 
-  /// Top-level cache map mapping data_place to per_place_map_t.
+  /// We track actually allocated blocks (per data place), and then a map of
+  // suballocations. The deallocate method only return ptr/sz so we loose track
+  // of the connection between large blocks from the root allocator, and
+  // small allocations, but we simply clear these blocks at the end.
   ::std::unordered_map<data_place, per_place_map_t, hash<data_place>> free_cache;
+  ::std::unordered_map<data_place, ::std::vector<::std::pair<void*, size_t>>, hash<data_place>> large_allocations;
 
   ::std::mutex allocator_mutex;
 };
