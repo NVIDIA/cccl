@@ -62,7 +62,7 @@ struct __pipeable
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
 
 template <class _Tp>
-_Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);
+_CCCL_HOST_DEVICE _Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);
 
 template <class _Tp>
 _CCCL_CONCEPT __is_range_adaptor_closure = _CCCL_REQUIRES_EXPR((_Tp))(
