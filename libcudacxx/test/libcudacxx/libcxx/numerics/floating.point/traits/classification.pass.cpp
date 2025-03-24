@@ -20,24 +20,28 @@ __host__ __device__ void test_std_fp()
   static_assert(cuda::std::__is_std_fp_v<T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<T>);
   static_assert(!cuda::std::__is_ext_fp_v<T>);
   static_assert(cuda::std::__is_fp_v<T>);
 
   static_assert(cuda::std::__is_std_fp_v<const T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<const T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<const T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<const T>);
   static_assert(!cuda::std::__is_ext_fp_v<const T>);
   static_assert(cuda::std::__is_fp_v<const T>);
 
   static_assert(cuda::std::__is_std_fp_v<volatile T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<volatile T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<volatile T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<volatile T>);
   static_assert(!cuda::std::__is_ext_fp_v<volatile T>);
   static_assert(cuda::std::__is_fp_v<volatile T>);
 
   static_assert(cuda::std::__is_std_fp_v<const volatile T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<const volatile T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<const volatile T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<const volatile T>);
   static_assert(!cuda::std::__is_ext_fp_v<const volatile T>);
   static_assert(cuda::std::__is_fp_v<const volatile T>);
 }
@@ -48,24 +52,28 @@ __host__ __device__ void test_ext_nv_fp()
   static_assert(!cuda::std::__is_std_fp_v<T>);
   static_assert(cuda::std::__is_ext_nv_fp_v<T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<T>);
   static_assert(cuda::std::__is_ext_fp_v<T>);
   static_assert(cuda::std::__is_fp_v<T>);
 
   static_assert(!cuda::std::__is_std_fp_v<const T>);
   static_assert(cuda::std::__is_ext_nv_fp_v<const T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<const T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<const T>);
   static_assert(cuda::std::__is_ext_fp_v<const T>);
   static_assert(cuda::std::__is_fp_v<const T>);
 
   static_assert(!cuda::std::__is_std_fp_v<volatile T>);
   static_assert(cuda::std::__is_ext_nv_fp_v<volatile T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<volatile T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<volatile T>);
   static_assert(cuda::std::__is_ext_fp_v<volatile T>);
   static_assert(cuda::std::__is_fp_v<volatile T>);
 
   static_assert(!cuda::std::__is_std_fp_v<const volatile T>);
   static_assert(cuda::std::__is_ext_nv_fp_v<const volatile T>);
   static_assert(!cuda::std::__is_ext_compiler_fp_v<const volatile T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<const volatile T>);
   static_assert(cuda::std::__is_ext_fp_v<const volatile T>);
   static_assert(cuda::std::__is_fp_v<const volatile T>);
 }
@@ -76,24 +84,62 @@ __host__ __device__ void test_ext_compiler_fp()
   static_assert(!cuda::std::__is_std_fp_v<T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<T>);
   static_assert(cuda::std::__is_ext_compiler_fp_v<T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<T>);
   static_assert(cuda::std::__is_ext_fp_v<T>);
   static_assert(cuda::std::__is_fp_v<T>);
 
   static_assert(!cuda::std::__is_std_fp_v<const T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<const T>);
   static_assert(cuda::std::__is_ext_compiler_fp_v<const T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<const T>);
   static_assert(cuda::std::__is_ext_fp_v<const T>);
   static_assert(cuda::std::__is_fp_v<const T>);
 
   static_assert(!cuda::std::__is_std_fp_v<volatile T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<volatile T>);
   static_assert(cuda::std::__is_ext_compiler_fp_v<volatile T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<volatile T>);
   static_assert(cuda::std::__is_ext_fp_v<volatile T>);
   static_assert(cuda::std::__is_fp_v<volatile T>);
 
   static_assert(!cuda::std::__is_std_fp_v<const volatile T>);
   static_assert(!cuda::std::__is_ext_nv_fp_v<const volatile T>);
   static_assert(cuda::std::__is_ext_compiler_fp_v<const volatile T>);
+  static_assert(!cuda::std::__is_ext_cccl_fp_v<const volatile T>);
+  static_assert(cuda::std::__is_ext_fp_v<const volatile T>);
+  static_assert(cuda::std::__is_fp_v<const volatile T>);
+}
+
+template <cuda::std::__fp_format Fmt>
+__host__ __device__ void test_ext_cccl_fp()
+{
+  using T = cuda::std::__cccl_fp<Fmt>;
+
+  static_assert(!cuda::std::__is_std_fp_v<T>);
+  static_assert(!cuda::std::__is_ext_nv_fp_v<T>);
+  static_assert(!cuda::std::__is_ext_compiler_fp_v<T>);
+  static_assert(cuda::std::__is_ext_cccl_fp_v<T>);
+  static_assert(cuda::std::__is_ext_fp_v<T>);
+  static_assert(cuda::std::__is_fp_v<T>);
+
+  static_assert(!cuda::std::__is_std_fp_v<const T>);
+  static_assert(!cuda::std::__is_ext_nv_fp_v<const T>);
+  static_assert(!cuda::std::__is_ext_compiler_fp_v<const T>);
+  static_assert(cuda::std::__is_ext_cccl_fp_v<const T>);
+  static_assert(cuda::std::__is_ext_fp_v<const T>);
+  static_assert(cuda::std::__is_fp_v<const T>);
+
+  static_assert(!cuda::std::__is_std_fp_v<volatile T>);
+  static_assert(!cuda::std::__is_ext_nv_fp_v<volatile T>);
+  static_assert(!cuda::std::__is_ext_compiler_fp_v<volatile T>);
+  static_assert(cuda::std::__is_ext_cccl_fp_v<volatile T>);
+  static_assert(cuda::std::__is_ext_fp_v<volatile T>);
+  static_assert(cuda::std::__is_fp_v<volatile T>);
+
+  static_assert(!cuda::std::__is_std_fp_v<const volatile T>);
+  static_assert(!cuda::std::__is_ext_nv_fp_v<const volatile T>);
+  static_assert(!cuda::std::__is_ext_compiler_fp_v<const volatile T>);
+  static_assert(cuda::std::__is_ext_cccl_fp_v<const volatile T>);
   static_assert(cuda::std::__is_ext_fp_v<const volatile T>);
   static_assert(cuda::std::__is_fp_v<const volatile T>);
 }
@@ -134,6 +180,19 @@ int main(int, char**)
 #if _CCCL_HAS_FLOAT128()
   test_ext_compiler_fp<__float128>();
 #endif // _CCCL_HAS_FLOAT128()
+
+  test_ext_cccl_fp<cuda::std::__fp_format::__binary16>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__binary32>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__binary64>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__binary128>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__fp80_x86>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__bfloat16>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__fp8_nv_e4m3>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__fp8_nv_e5m2>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__fp8_nv_e8m0>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__fp6_nv_e2m3>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__fp6_nv_e3m2>();
+  test_ext_cccl_fp<cuda::std::__fp_format::__fp4_nv_e2m1>();
 
   return 0;
 }

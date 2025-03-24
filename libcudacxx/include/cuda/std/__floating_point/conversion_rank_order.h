@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -78,7 +79,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_co
   }
 }
 
-template <class _Lhs, class _Rhs>
+_CCCL_TEMPLATE(class _Lhs, class _Rhs)
+_CCCL_REQUIRES(_CCCL_TRAIT(__is_fp, _Lhs) && _CCCL_TRAIT(__is_fp, _Rhs))
 inline constexpr __fp_conv_rank_order __fp_conv_rank_order_v = __fp_conv_rank_order_v_impl<_Lhs, _Rhs>();
 
 template <class _Lhs, class _Rhs>
@@ -86,15 +88,11 @@ inline constexpr __fp_conv_rank_order __fp_conv_rank_order_int_ext_v =
   __fp_conv_rank_order_v<conditional_t<_CCCL_TRAIT(is_integral, _Lhs), double, _Lhs>,
                          conditional_t<_CCCL_TRAIT(is_integral, _Rhs), double, _Rhs>>;
 
-template <class _Lhs, class _Rhs>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __fp_is_implicit_conversion_v_impl() noexcept
-{
-  constexpr auto __order = __fp_conv_rank_order_v<_Lhs, _Rhs>();
-  return __order == __fp_conv_rank_order::__greater || __order == __fp_conv_rank_order::__equal;
-}
-
-template <class _Lhs, class _Rhs>
-inline constexpr bool __fp_is_implicit_conversion_v = __fp_is_implicit_conversion_v_impl<_Lhs, _Rhs>();
+_CCCL_TEMPLATE(class _From, class _To)
+_CCCL_REQUIRES(_CCCL_TRAIT(__is_fp, _From) && _CCCL_TRAIT(__is_fp, _To))
+inline constexpr bool __fp_is_implicit_conversion_v =
+  __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__less
+  || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__equal;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
