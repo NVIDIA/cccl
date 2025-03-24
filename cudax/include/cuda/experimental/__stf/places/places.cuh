@@ -450,7 +450,8 @@ public:
   }
 
   // To use in a ::std::map indexed by exec_place
-  bool operator<(const exec_place& rhs) const {
+  bool operator<(const exec_place& rhs) const
+  {
     return pimpl < rhs.pimpl;
   }
 

@@ -102,7 +102,6 @@ inline void loop_dispatch(
       }
       ctx.push_affinity(mv(thread_affinity));
 
-
       for (size_t i = start; i < end; i++)
       {
         if (reserved::customHash(i) % nthreads == tid)
