@@ -714,14 +714,16 @@ cdef class Pointer(StateBase):
     def __cinit__(self, arg):
         cdef void *ptr
         cdef object ref
+        cdef PointerProxy handle
 
         super().__init__()
-        if isinstance(arg, int):
+        if isinstance(arg, PointerProxy):
+            handle = <PointerProxy>arg
+            ptr = handle.ptr
+            ref = handle.owner
+        elif isinstance(arg, int):
             ptr = int_as_ptr(arg)
             ref = None
-        elif isinstance(arg, PointerProxy):
-            ptr = (<PointerProxy>arg).ptr
-            ref = arg.reference
         elif isinstance(arg, ctypes._Pointer):
             ptr = ctypes_typed_pointer_payload_ptr(arg)
             ref = arg
