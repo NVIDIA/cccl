@@ -99,8 +99,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   template <class _Query>
   using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const env&>()));
 
-  template <class _Query>
-    requires __queryable_with<__1st_env_t<_Query>, _Query>
+  _CCCL_TEMPLATE(class _Query)
+  _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
     noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
@@ -133,8 +133,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   template <class _Query, class _Env = env>
   using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const _Env&>()));
 
-  template <class _Query>
-    requires __queryable_with<__1st_env_t<_Query>, _Query>
+  _CCCL_TEMPLATE(class _Query)
+  _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
     noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
