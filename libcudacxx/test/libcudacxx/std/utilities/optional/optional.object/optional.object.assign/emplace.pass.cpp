@@ -252,7 +252,7 @@ struct Y
 
 void test_exceptions()
 {
-  Y::dtor_called() = true;
+  Y::dtor_called() = false;
   Y y;
   optional<Y> opt(y);
   try

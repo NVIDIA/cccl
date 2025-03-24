@@ -168,11 +168,11 @@ static_assert(cuda::std::is_trivially_copy_assignable_v<TCopyAssignNTMoveAssign>
 struct CopyThrows
 {
   CopyThrows() = default;
-  __host__ __device__ CopyThrows(const CopyThrows&)
+  CopyThrows(const CopyThrows&)
   {
     throw 42;
   }
-  __host__ __device__ CopyThrows& operator=(const CopyThrows&)
+  CopyThrows& operator=(const CopyThrows&)
   {
     throw 42;
   }
@@ -181,20 +181,20 @@ struct CopyThrows
 struct CopyCannotThrow
 {
   static int alive;
-  __host__ __device__ CopyCannotThrow()
+  CopyCannotThrow()
   {
     ++alive;
   }
-  __host__ __device__ CopyCannotThrow(const CopyCannotThrow&) noexcept
+  CopyCannotThrow(const CopyCannotThrow&) noexcept
   {
     ++alive;
   }
-  __host__ __device__ CopyCannotThrow(CopyCannotThrow&&) noexcept
+  CopyCannotThrow(CopyCannotThrow&&) noexcept
   {
     assert(false);
   }
-  __host__ __device__ CopyCannotThrow& operator=(const CopyCannotThrow&) noexcept = default;
-  __host__ __device__ CopyCannotThrow& operator=(CopyCannotThrow&&) noexcept
+  CopyCannotThrow& operator=(const CopyCannotThrow&) noexcept = default;
+  CopyCannotThrow& operator=(CopyCannotThrow&&) noexcept
   {
     assert(false);
     return *this;
@@ -206,27 +206,27 @@ int CopyCannotThrow::alive = 0;
 struct MoveThrows
 {
   static int alive;
-  __host__ __device__ MoveThrows()
+  MoveThrows()
   {
     ++alive;
   }
-  __host__ __device__ MoveThrows(const MoveThrows&)
+  MoveThrows(const MoveThrows&)
   {
     ++alive;
   }
-  __host__ __device__ MoveThrows(MoveThrows&&)
+  MoveThrows(MoveThrows&&)
   {
     throw 42;
   }
-  __host__ __device__ MoveThrows& operator=(const MoveThrows&)
+  MoveThrows& operator=(const MoveThrows&)
   {
     return *this;
   }
-  __host__ __device__ MoveThrows& operator=(MoveThrows&&)
+  MoveThrows& operator=(MoveThrows&&)
   {
     throw 42;
   }
-  __host__ __device__ ~MoveThrows()
+  ~MoveThrows()
   {
     --alive;
   }
@@ -237,29 +237,29 @@ int MoveThrows::alive = 0;
 struct MakeEmptyT
 {
   static int alive;
-  __host__ __device__ MakeEmptyT()
+  MakeEmptyT()
   {
     ++alive;
   }
-  __host__ __device__ MakeEmptyT(const MakeEmptyT&)
+  MakeEmptyT(const MakeEmptyT&)
   {
     ++alive;
     // Don't throw from the copy constructor since variant's assignment
     // operator performs a copy before committing to the assignment.
   }
-  __host__ __device__ MakeEmptyT(MakeEmptyT&&)
+  MakeEmptyT(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(const MakeEmptyT&)
+  MakeEmptyT& operator=(const MakeEmptyT&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(MakeEmptyT&&)
+  MakeEmptyT& operator=(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ ~MakeEmptyT()
+  ~MakeEmptyT()
   {
     --alive;
   }
