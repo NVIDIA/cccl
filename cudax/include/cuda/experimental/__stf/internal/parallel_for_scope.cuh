@@ -606,7 +606,8 @@ public:
     }
 
     // Device land. Must use the supplemental if constexpr below to avoid compilation errors.
-    if constexpr (is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type)
+    if constexpr (!::std::is_same_v<exec_place_t, exec_place_host> && is_extended_host_device_lambda_closure_type
+                  || is_extended_device_lambda_closure_type)
     {
       if (!e_place.is_grid())
       {
