@@ -315,6 +315,21 @@ def to_cccl_op(op: Callable, sig) -> Op:
     )
 
 
+def to_cccl_binop(op: Callable, arg_types, ret_type) -> Op:
+    # define a wrapper function which will accept pointer arguments
+    # and a pointer for the return value:
+    op = cuda.jit(op, device=True)
+
+    def wrapped_op(lhs, rhs, ret):
+        ret[0] = op(lhs[0], rhs[0])
+
+    sig = types.void(
+        *(types.CPointer(arg) for arg in arg_types), types.CPointer(ret_type)
+    )
+
+    return to_cccl_op(wrapped_op, sig)
+
+
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
     if cccl_it.type.value == IteratorKind.POINTER:
         cccl_it.state = get_data_pointer(input_it)
