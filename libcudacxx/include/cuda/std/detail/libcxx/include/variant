@@ -266,7 +266,7 @@ C++20
 #  include <cuda/std/detail/libcxx/include/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
 #  ifdef __cpp_lib_variant
 #    include <variant>
 #  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
@@ -292,18 +292,18 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_variant_access()
 {
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(
     NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_variant_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 }
 
 template <class... _Types>
