@@ -55,6 +55,15 @@ namespace cuda::experimental::stf
 {
 
 template <typename T>
+struct is_shape_of : std::false_type {};
+
+template <typename U>
+struct is_shape_of<shape_of<U>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_shape_of_v = is_shape_of<T>::value;
+
+template <typename T>
 class logical_data;
 
 template <typename T>
@@ -1030,8 +1039,10 @@ public:
   /*
    * parallel_for : apply an operation over a shaped index space
    */
-  template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, Deps... deps)
+
+  template <typename exec_place_t, typename S, typename... Deps,
+            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t> && is_shape_of_v<S>> >
+  auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
     return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
