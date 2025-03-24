@@ -244,9 +244,9 @@ void test_exceptions()
 { // assign_range throws std::bad_alloc
   constexpr size_t capacity = 4;
   using inplace_vector      = cuda::std::inplace_vector<int, 4>; // NVCC complains about invalid second argument...
-  inplace_vector too_small{};
   try
   {
+    inplace_vector too_small{};
     too_small.assign_range(Range<int, 2 + capacity>{0, 1, 2, 3, 4, 5});
     assert(false);
   }
