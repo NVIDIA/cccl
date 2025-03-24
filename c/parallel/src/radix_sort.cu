@@ -33,6 +33,16 @@ struct agent_radix_sort_downsweep_policy
   int block_threads;
   int items_per_thread;
   int radix_bits;
+
+  int BlockThreads() const
+  {
+    return block_threads;
+  }
+
+  int ItemsPerThread() const
+  {
+    return block_threads;
+  }
 };
 
 struct agent_radix_sort_upsweep_policy
@@ -40,6 +50,16 @@ struct agent_radix_sort_upsweep_policy
   int items_per_thread;
   int block_threads;
   int radix_bits;
+
+  int BlockThreads() const
+  {
+    return block_threads;
+  }
+
+  int ItemsPerThread() const
+  {
+    return block_threads;
+  }
 };
 
 struct agent_radix_sort_onesweep_policy
@@ -48,6 +68,16 @@ struct agent_radix_sort_onesweep_policy
   int items_per_thread;
   int rank_num_parts;
   int radix_bits;
+
+  int BlockThreads() const
+  {
+    return block_threads;
+  }
+
+  int ItemsPerThread() const
+  {
+    return block_threads;
+  }
 };
 
 struct agent_radix_sort_histogram_policy
@@ -56,6 +86,11 @@ struct agent_radix_sort_histogram_policy
   int items_per_thread;
   int num_parts;
   int radix_bits;
+
+  int BlockThreads() const
+  {
+    return block_threads;
+  }
 };
 
 struct agent_radix_sort_exclusive_sum_policy
@@ -68,6 +103,16 @@ struct agent_scan_policy
 {
   int block_threads;
   int items_per_thread;
+
+  int BlockThreads() const
+  {
+    return block_threads;
+  }
+
+  int ItemsPerThread() const
+  {
+    return block_threads;
+  }
 };
 
 struct radix_sort_runtime_tuning_policy
@@ -81,6 +126,7 @@ struct radix_sort_runtime_tuning_policy
   agent_radix_sort_upsweep_policy upsweep;
   agent_radix_sort_upsweep_policy alt_upsweep;
   agent_radix_sort_downsweep_policy single_tile;
+  bool is_onesweep;
 
   agent_radix_sort_histogram_policy Histogram() const
   {
@@ -126,6 +172,23 @@ struct radix_sort_runtime_tuning_policy
   {
     return single_tile;
   }
+
+  bool IsOnesweep() const
+  {
+    return is_onesweep;
+  }
+
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int RadixBits(PolicyT policy)
+  {
+    return policy.radix_bits;
+  }
+
+  template <typename PolicyT>
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads(PolicyT policy)
+  {
+    return policy.block_threads;
+  }
 };
 
 std::pair<int, int>
@@ -151,7 +214,7 @@ mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
   return {items_per_thread, block_threads};
 }
 
-radix_sort_runtime_tuning_policy get_policy(int cc, int key_size)
+radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 {
   constexpr int onesweep_radix_bits                                        = 8;
   const int primary_radix_bits                                             = (key_size > 1) ? 7 : 5;
@@ -170,7 +233,8 @@ radix_sort_runtime_tuning_policy get_policy(int cc, int key_size)
           {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
           {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
           {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
-          {single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits}};
+          {single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits},
+          false};
 };
 
 std::string get_single_tile_kernel_name(
@@ -332,7 +396,7 @@ struct radix_sort_kernel_source
     return build.alt_upsweep_kernel;
   }
 
-  CUkernel RadixSortScanBinsKernel() const
+  CUkernel DeviceRadixSortScanBinsKernel() const
   {
     return build.scan_bins_kernel;
   }
@@ -693,7 +757,7 @@ CUresult cccl_device_ascending_radix_sort(
   CUstream stream)
 {
   assert(build.order == CCCL_ASCENDING);
-  cccl_device_radix_sort<cub::SortOrder::Ascending>(
+  return cccl_device_radix_sort<cub::SortOrder::Ascending>(
     build, d_temp_storage, temp_storage_bytes, d_keys, d_values, decomposer, num_items, begin_bit, end_bit, stream);
 }
 
@@ -710,8 +774,29 @@ CUresult cccl_device_descending_radix_sort(
   CUstream stream)
 {
   assert(build.order == CCCL_DESCENDING);
-  cccl_device_radix_sort<cub::SortOrder::Descending>(
+  return cccl_device_radix_sort<cub::SortOrder::Descending>(
     build, d_temp_storage, temp_storage_bytes, d_keys, d_values, decomposer, num_items, begin_bit, end_bit, stream);
 }
 
-CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* bld_ptr);
+CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* build_ptr)
+{
+  try
+  {
+    if (build_ptr == nullptr)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_radix_sort_cleanup(): %s\n", exc.what());
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  return CUDA_SUCCESS;
+}
