@@ -59,7 +59,7 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
     # Set a .dtype attribute on the class that returns the
     # corresponding numpy structure dtype. This makes it convenient to
     # create CuPy/NumPy arrays of this type.
-    setattr(this, "dtype", np.dtype(list(anns.items())))
+    setattr(this, "dtype", np.dtype(list(anns.items()), align=True))
 
     # Define __post_init__ to create a numpy struct from the fields,
     # and keep a reference to it in the `._data` attribute. The data
