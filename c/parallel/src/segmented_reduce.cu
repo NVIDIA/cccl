@@ -283,7 +283,7 @@ CUresult cccl_device_segmented_reduce_build(
     const std::string end_offset_iterator_src =
       make_kernel_input_iterator(offset_t, "end_offset_iterator_t", end_offset_it_value_t, end_offset_it);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
+    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
     // agent_policy_t is to specify parameters like policy_hub does in dispatch_reduce.cuh
     constexpr std::string_view program_preamble_template = R"XXX(

@@ -241,7 +241,7 @@ CUresult cccl_device_scan_build(
     const std::string output_iterator_src =
       make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
+    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
     constexpr std::string_view src_template = R"XXX(
 #include <cub/block/block_scan.cuh>
