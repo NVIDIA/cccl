@@ -90,10 +90,8 @@ void test_ctor_throws()
   }
   catch (...)
   {}
-  assert(ThrowsCounted_count == 3);
-  assert(ThrowsCounted_constructed == 4); // forth construction throws
-  cuda::std::__destroy(p, p + 3);
   assert(ThrowsCounted_count == 0);
+  assert(ThrowsCounted_constructed == 4); // forth construction throws
 }
 #endif // TEST_HAS_EXCEPTIONS()
 

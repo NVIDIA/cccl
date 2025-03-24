@@ -73,36 +73,14 @@ namespace RuntimeHelpers
 struct ThrowsCtorT
 {
   int value;
-  __host__ __device__ ThrowsCtorT()
+  ThrowsCtorT()
       : value(0)
   {}
-  __host__ __device__ ThrowsCtorT(int) noexcept(false)
+  ThrowsCtorT(int) noexcept(false)
   {
     throw 42;
   }
-  __host__ __device__ ThrowsCtorT& operator=(int v) noexcept
-  {
-    value = v;
-    return *this;
-  }
-};
-
-struct MoveCrashes
-{
-  int value;
-  __host__ __device__ MoveCrashes(int v = 0) noexcept
-      : value{v}
-  {}
-  __host__ __device__ MoveCrashes(MoveCrashes&&) noexcept
-  {
-    assert(false);
-  }
-  __host__ __device__ MoveCrashes& operator=(MoveCrashes&&) noexcept
-  {
-    assert(false);
-    return *this;
-  }
-  __host__ __device__ MoveCrashes& operator=(int v) noexcept
+  ThrowsCtorT& operator=(int v) noexcept
   {
     value = v;
     return *this;
@@ -112,18 +90,18 @@ struct MoveCrashes
 struct ThrowsCtorTandMove
 {
   int value;
-  __host__ __device__ ThrowsCtorTandMove()
+  ThrowsCtorTandMove()
       : value(0)
   {}
-  __host__ __device__ ThrowsCtorTandMove(int) noexcept(false)
+  ThrowsCtorTandMove(int) noexcept(false)
   {
     throw 42;
   }
-  __host__ __device__ ThrowsCtorTandMove(ThrowsCtorTandMove&&) noexcept(false)
+  ThrowsCtorTandMove(ThrowsCtorTandMove&&) noexcept(false)
   {
     assert(false);
   }
-  __host__ __device__ ThrowsCtorTandMove& operator=(int v) noexcept
+  ThrowsCtorTandMove& operator=(int v) noexcept
   {
     value = v;
     return *this;
@@ -133,31 +111,15 @@ struct ThrowsCtorTandMove
 struct ThrowsAssignT
 {
   int value;
-  __host__ __device__ ThrowsAssignT()
+  ThrowsAssignT()
       : value(0)
   {}
-  __host__ __device__ ThrowsAssignT(int v) noexcept
+  ThrowsAssignT(int v) noexcept
       : value(v)
   {}
-  __host__ __device__ ThrowsAssignT& operator=(int) noexcept(false)
+  ThrowsAssignT& operator=(int) noexcept(false)
   {
     throw 42;
-  }
-};
-
-struct NoThrowT
-{
-  int value;
-  __host__ __device__ NoThrowT()
-      : value(0)
-  {}
-  __host__ __device__ NoThrowT(int v) noexcept
-      : value(v)
-  {}
-  __host__ __device__ NoThrowT& operator=(int v) noexcept
-  {
-    value = v;
-    return *this;
   }
 };
 
