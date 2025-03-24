@@ -1045,7 +1045,7 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t> && is_shape_of_v<S>>>
+            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
     return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(

@@ -406,7 +406,7 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t> && is_shape_of_v<S>>>
+            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
