@@ -33,17 +33,12 @@
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
-template <typename T, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<T>, int> = 0>
+// TODO: Replace this function by REQUIRE_APPROX_EQ once it supports integral vector types like short2
+template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
-  REQUIRE_APPROX_EQ(expected_data, test_results);
-}
-
-/**
- * @brief Compares the results returned from system under test against the expected results.
- */
-template <typename T, ::cuda::std::enable_if_t<!::cuda::std::is_floating_point_v<T>, int> = 0>
-void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
-{
-  REQUIRE(expected_data == test_results);
+  if constexpr(::cuda::std::is_floating_point_v<T>)
+    REQUIRE_APPROX_EQ(expected_data, test_results);
+  else
+    REQUIRE(expected_data == test_results);
 }
