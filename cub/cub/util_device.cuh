@@ -263,12 +263,8 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
 {
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
-  using EmptyKernelPtr        = void (*)();
-  EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
-
-  // This is necessary for unused variable warnings in host compilers. The
-  // usual syntax of (void)empty_kernel; was not sufficient on MSVC2015.
-  (void) reinterpret_cast<void*>(empty_kernel);
+  using EmptyKernelPtr                         = void (*)();
+  [[maybe_unused]] EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
 
   // Define a temporary macro that expands to the current target ptx version
   // in device code.
@@ -308,8 +304,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
  */
 _CCCL_HOST inline cudaError_t PtxVersionUncached(int& ptx_version, int device)
 {
-  SwitchDevice sd(device);
-  (void) sd;
+  [[maybe_unused]] SwitchDevice sd(device);
   return PtxVersionUncached(ptx_version);
 }
 
@@ -424,27 +419,24 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SmVersion(int& sm_version, int device = 
 }
 
 //! Synchronize the specified \p stream when called in host code. Otherwise, does nothing.
-CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream(cudaStream_t stream)
+CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t stream)
 {
-  NV_IF_TARGET(
-    NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), ((void) stream; return cudaErrorNotSupported;));
+  NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
 
 namespace detail
 {
 //! If CUB_DEBUG_SYNC is defined and this function is called from host code, a sync is performed and the
 //! sync result is returned. Otherwise, does nothing.
-CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream(cudaStream_t stream)
+CUB_RUNTIME_FUNCTION inline cudaError_t DebugSyncStream([[maybe_unused]] cudaStream_t stream)
 {
-#  ifndef CUB_DEBUG_SYNC
-  (void) stream;
+#  ifdef CUB_DEBUG_SYNC
+  NV_IF_TARGET(NV_IS_HOST,
+               (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
+               (_CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
+#  else // ^^^ CUB_DEBUG_SYNC / !CUB_DEBUG_SYNC vvv
   return cudaSuccess;
-#  else // CUB_DEBUG_SYNC
-  NV_IF_TARGET(
-    NV_IS_HOST,
-    (_CubLog("%s", "Synchronizing...\n"); return SyncStream(stream);),
-    ((void) stream; _CubLog("%s", "WARNING: Skipping CUB debug synchronization in device code"); return cudaSuccess;));
-#  endif // CUB_DEBUG_SYNC
+#  endif // ^^^ !CUB_DEBUG_SYNC ^^^
 }
 
 /** \brief Gets whether the current device supports unified addressing */

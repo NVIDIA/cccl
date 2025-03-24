@@ -103,8 +103,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate(5, 42);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 42);
       }
       catch (std::invalid_argument&)
       {
@@ -119,8 +118,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate(5, 1337);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -134,8 +132,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate_async(5, 42, stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 42, stream);
       }
       catch (std::invalid_argument&)
       {
@@ -150,8 +147,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate_async(5, 1337, stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 1337, stream);
       }
       catch (std::invalid_argument&)
       {

@@ -493,9 +493,8 @@ void do_large_offset_test(std::size_t num_items)
 
     arrays.verify_unstable_key_sort(num_items, is_descending, sorted_keys);
   }
-  catch (std::bad_alloc& e)
+  catch ([[maybe_unused]] std::bad_alloc& e)
   {
-    (void) e;
 #ifdef DEBUG_CHECKED_ALLOC_FAILURE
     const std::size_t num_bytes = num_items * sizeof(key_t);
     std::cerr
