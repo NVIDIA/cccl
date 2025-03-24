@@ -800,12 +800,14 @@ struct __expected_destruct<void, _Err, false, false>
         : __empty_()
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
       _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
         : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Fun, class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
       __expected_construct_from_invoke_tag,
@@ -830,6 +832,7 @@ struct __expected_destruct<void, _Err, false, false>
       : __has_val_(__has_val)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -837,6 +840,7 @@ struct __expected_destruct<void, _Err, false, false>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(
     __expected_construct_from_invoke_tag,
@@ -873,12 +877,14 @@ struct __expected_destruct<void, _Err, false, true>
         : __empty_()
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
       _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
         : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
     {}
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Fun, class... _Args>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(
       __expected_construct_from_invoke_tag,
@@ -895,6 +901,7 @@ struct __expected_destruct<void, _Err, false, true>
 
   _CCCL_HIDE_FROM_ABI constexpr __expected_destruct() = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(in_place_t) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -902,6 +909,7 @@ struct __expected_destruct<void, _Err, false, true>
       , __has_val_(true)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(unexpect_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -909,6 +917,7 @@ struct __expected_destruct<void, _Err, false, true>
       , __has_val_(false)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fun, class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_destruct(
     __expected_construct_from_invoke_tag,
