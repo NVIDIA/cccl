@@ -241,7 +241,7 @@ private:
     else
     {
       ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, _Tp());
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream()), __first, __count, _Tp());
     }
   }
 
@@ -263,7 +263,7 @@ private:
     else
     {
       ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, __value);
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream()), __first, __count, __value);
     }
   }
 
@@ -765,7 +765,7 @@ public:
     {
       ::cuda::experimental::__ensure_current_device __guard(__lhs.get_stream().get());
       return (__lhs.size() == __rhs.size())
-          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream().get()),
+          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream()),
                            __lhs.__unwrapped_begin(),
                            __lhs.__unwrapped_end(),
                            __rhs.__unwrapped_begin());

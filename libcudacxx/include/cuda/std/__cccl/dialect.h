@@ -90,21 +90,12 @@
 #  define _CCCL_NO_THREE_WAY_COMPARISON
 #endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 
-// Variable templates are only available from C++14 onwards and require some compiler support
-#if __cpp_variable_templates < 201304L
-#  define _CCCL_NO_VARIABLE_TEMPLATES
-#endif // __cpp_variable_templates < 201304L
-
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
-#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
-#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)

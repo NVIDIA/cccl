@@ -500,13 +500,11 @@ template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Fn, class... _Args>
 inline constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
 
 template <class _Ret, class _Fn, class... _Args>
 inline constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // is_nothrow_invocable
 

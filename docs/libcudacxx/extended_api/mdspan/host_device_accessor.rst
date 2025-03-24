@@ -71,7 +71,7 @@ Features
 
 **Memory spaces**
 
-*Host*, *device*, and *managed* ``mdspan`` can be created and "sliced" (``cuda::std::submdspan``) on any memory spaces. However, accessing to a specific memory space is restricted to the respective *accessor* type.
+*Host*, *device*, and *managed* ``mdspan`` can be created and "sliced" (``cuda::std::submdspan``) on any memory space. However, access to a specific memory space is restricted to the respective *accessor* type.
 
 +----------------------------------+------------------+-------------------+
 | ``mdspan`` / memory space access | Host memory      | Device memory     |

@@ -158,8 +158,6 @@ template <class _Tp>
 struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp&>::value>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
     : public integral_constant<bool, __detail::__swappable_with<_Tp, _Up>::value>
@@ -195,8 +193,6 @@ inline constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappable_with<_T
 
 template <class _Tp>
 inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
-
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

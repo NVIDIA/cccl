@@ -31,10 +31,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_assignable
     : public is_assignable<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 inline constexpr bool is_copy_assignable_v = is_copy_assignable<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
