@@ -47,7 +47,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
   SECTION("Host and managed resource")
   {
     cudax::managed_memory_resource managed_resource;
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, buffer_size);
@@ -78,7 +78,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer input(host_resource, buffer_size);
     cudax::weird_buffer output(host_resource, buffer_size);
 
@@ -90,7 +90,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
 
   SECTION("Asymmetric size")
   {
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);
     cudax::fill_bytes(_stream, host_buffer, fill_byte);
 
@@ -154,7 +154,7 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
 
   SECTION("Launch transform")
   {
-    auto host_resource = cudax::pinned_memory_resource{};
+    auto host_resource = cudax::legacy_pinned_memory_resource{};
     auto mixed_extents =
       cuda::std::extents<size_t, 1024, cuda::std::dynamic_extent, 2, cuda::std::dynamic_extent>(1024, 2);
     [[maybe_unused]] auto static_extents = cuda::std::extents<size_t, 1024, 1024, 2, 2>();

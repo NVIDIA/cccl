@@ -29,10 +29,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief The default alignment by a cudaMalloc{...} call
-_CCCL_INLINE_VAR constexpr size_t default_cuda_malloc_alignment = 256;
+inline constexpr size_t default_cuda_malloc_alignment = 256;
 
 //! @brief The default alignment by a cudaMallocHost{...} call
-_CCCL_INLINE_VAR constexpr size_t default_cuda_malloc_host_alignment = alignof(_CUDA_VSTD::max_align_t);
+inline constexpr size_t default_cuda_malloc_host_alignment = alignof(_CUDA_VSTD::max_align_t);
 
 //! @brief The device_accessible property signals that the allocated memory is device accessible
 struct device_accessible
@@ -44,22 +44,22 @@ struct host_accessible
 
 //! @brief determines whether a set of properties signals host accessible memory.
 template <class... _Properties>
-_CCCL_INLINE_VAR constexpr bool __is_host_accessible =
+inline constexpr bool __is_host_accessible =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible>;
 
 //! @brief determines whether a set of properties signals device accessible memory.
 template <class... _Properties>
-_CCCL_INLINE_VAR constexpr bool __is_device_accessible =
+inline constexpr bool __is_device_accessible =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, device_accessible>;
 
 //! @brief determines whether a set of properties signals host device accessible memory.
 template <class... _Properties>
-_CCCL_INLINE_VAR constexpr bool __is_host_device_accessible =
+inline constexpr bool __is_host_device_accessible =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible, device_accessible>;
 
 //! @brief verifies that a set of properties contains at least one execution space property
 template <class... _Properties>
-_CCCL_INLINE_VAR constexpr bool __contains_execution_space_property =
+inline constexpr bool __contains_execution_space_property =
   __is_host_accessible<_Properties...> || __is_device_accessible<_Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR

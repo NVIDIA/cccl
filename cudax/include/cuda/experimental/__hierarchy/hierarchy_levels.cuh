@@ -85,22 +85,22 @@ template <typename LevelType>
 using __default_unit_below = typename LevelType::allowed_below::default_unit;
 
 template <typename QueryLevel, typename AllowedLevels>
-_CCCL_INLINE_VAR constexpr bool is_level_allowed = false;
+inline constexpr bool is_level_allowed = false;
 
 template <typename QueryLevel, typename... Levels>
-_CCCL_INLINE_VAR constexpr bool is_level_allowed<QueryLevel, allowed_levels<Levels...>> =
+inline constexpr bool is_level_allowed<QueryLevel, allowed_levels<Levels...>> =
   ::cuda::std::disjunction_v<::cuda::std::is_same<QueryLevel, Levels>...>;
 
 template <typename L1, typename L2>
-_CCCL_INLINE_VAR constexpr bool can_rhs_stack_on_lhs =
+inline constexpr bool can_rhs_stack_on_lhs =
   is_level_allowed<L1, typename L2::allowed_below> || is_level_allowed<L2, typename L1::allowed_above>;
 
 template <typename Unit, typename Level>
-_CCCL_INLINE_VAR constexpr bool legal_unit_for_level =
+inline constexpr bool legal_unit_for_level =
   can_rhs_stack_on_lhs<Unit, Level> || legal_unit_for_level<Unit, __default_unit_below<Level>>;
 
 template <typename Unit>
-_CCCL_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
+inline constexpr bool legal_unit_for_level<Unit, void> = false;
 } // namespace detail
 
 // Base type for all hierarchy levels
