@@ -23,9 +23,9 @@ def test_segmented_reduce(input_array, offset_dtype):
 
     assert input_array.ndim == 1
     sz = input_array.size
-    rng = np.random.default_rng()
+    rng = cp.random
     n_segments = 16
-    h_offsets = np.zeros(n_segments + 1, dtype="int64")
+    h_offsets = cp.zeros(n_segments + 1, dtype="int64")
     h_offsets[1:] = rng.multinomial(sz, [1 / n_segments] * n_segments)
 
     offsets = cp.cumsum(cp.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
@@ -38,7 +38,7 @@ def test_segmented_reduce(input_array, offset_dtype):
     assert end_offsets[-1] == sz
 
     d_in = cp.asarray(input_array)
-    d_out = cp.zeros(n_segments, dtype=d_in.dtype)
+    d_out = cp.empty(n_segments, dtype=d_in.dtype)
 
     h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
