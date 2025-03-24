@@ -103,29 +103,29 @@ static_assert(cuda::std::is_trivially_move_constructible<TMoveNTCopy>::value, ""
 struct MakeEmptyT
 {
   static int alive;
-  __host__ __device__ MakeEmptyT()
+  MakeEmptyT()
   {
     ++alive;
   }
-  __host__ __device__ MakeEmptyT(const MakeEmptyT&)
+  MakeEmptyT(const MakeEmptyT&)
   {
     ++alive;
     // Don't throw from the copy constructor since variant's assignment
     // operator performs a copy before committing to the assignment.
   }
-  __host__ __device__ MakeEmptyT(MakeEmptyT&&)
+  MakeEmptyT(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(const MakeEmptyT&)
+  MakeEmptyT& operator=(const MakeEmptyT&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(MakeEmptyT&&)
+  MakeEmptyT& operator=(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ ~MakeEmptyT()
+  ~MakeEmptyT()
   {
     --alive;
   }
@@ -134,7 +134,7 @@ struct MakeEmptyT
 int MakeEmptyT::alive = 0;
 
 template <class Variant>
-__host__ __device__ void makeEmpty(Variant& v)
+void makeEmpty(Variant& v)
 {
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
   try

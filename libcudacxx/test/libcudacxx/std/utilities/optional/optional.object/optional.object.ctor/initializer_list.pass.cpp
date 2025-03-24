@@ -81,20 +81,20 @@ class Z
   int j_ = 0;
 
 public:
-  __host__ __device__ Z()
+  Z()
       : i_(0)
   {}
-  __host__ __device__ Z(int i)
+  Z(int i)
       : i_(i)
   {}
-  __host__ __device__ Z(cuda::std::initializer_list<int> il)
+  Z(cuda::std::initializer_list<int> il)
       : i_(il.begin()[0])
       , j_(il.begin()[1])
   {
     TEST_THROW(6);
   }
 
-  __host__ __device__ friend bool operator==(const Z& x, const Z& y)
+  friend bool operator==(const Z& x, const Z& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }

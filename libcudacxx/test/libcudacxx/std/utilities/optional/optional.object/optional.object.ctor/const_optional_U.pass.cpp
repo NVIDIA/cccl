@@ -174,7 +174,7 @@ public:
 };
 
 template <class T, class U>
-__host__ __device__ void test_exception(const optional<U>& rhs)
+void test_exception(const optional<U>& rhs)
 {
   try
   {

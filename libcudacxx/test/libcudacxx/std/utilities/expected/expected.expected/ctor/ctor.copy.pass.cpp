@@ -126,7 +126,7 @@ void test_exceptions()
   struct Throwing
   {
     Throwing() = default;
-    __host__ __device__ Throwing(const Throwing&)
+    Throwing(const Throwing&)
     {
       throw Except{};
     }

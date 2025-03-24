@@ -493,28 +493,27 @@ void throws_in_constructor_test()
 {
   struct ThrowsOnCopy
   {
-    ThrowsOnCopy(ThrowsOnCopy const&)
-    {
-      throw 42;
-    }
     ThrowsOnCopy() = default;
+    // NVCC claims this is a host device function so we need to hack around it
+    __host__ __device__ ThrowsOnCopy(ThrowsOnCopy const&)
+    {
+      NV_IF_TARGET(NV_IS_HOST, throw 42;)
+    }
     bool operator()() const
     {
       assert(false);
       _CCCL_UNREACHABLE();
     }
   };
+  try
   {
-    ThrowsOnCopy cp;
-    try
-    {
-      (void) cuda::std::not_fn(cp);
-      assert(false);
-    }
-    catch (int const& value)
-    {
-      assert(value == 42);
-    }
+    ThrowsOnCopy cp{};
+    (void) cuda::std::not_fn(cp);
+    assert(false);
+  }
+  catch (int const& value)
+  {
+    assert(value == 42);
   }
 }
 #endif // TEST_HAS_EXCEPTIONS()

@@ -153,6 +153,7 @@ union __expected_union_t<_Tp, _Err, true>
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __expected_union_t(unexpect_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
@@ -742,6 +743,7 @@ struct __expected_move_assign<_Tp, _Err, __smf_availability::__available> : __ex
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign& operator=(const __expected_move_assign&) = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __expected_move_assign&
   operator=(__expected_move_assign&& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_move_assignable, _Tp) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp)
@@ -993,6 +995,7 @@ struct __expected_copy_assign<void, _Err, __smf_availability::__available> : __e
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(const __expected_copy_assign&) = default;
   _CCCL_HIDE_FROM_ABI __expected_copy_assign(__expected_copy_assign&&)      = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __expected_copy_assign&
   operator=(const __expected_copy_assign& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_assignable, _Err) && _CCCL_TRAIT(is_nothrow_copy_constructible, _Err)) // strengthened
@@ -1030,6 +1033,7 @@ struct __expected_move_assign<void, _Err, __smf_availability::__available> : __e
   _CCCL_HIDE_FROM_ABI __expected_move_assign(__expected_move_assign&&)                 = default;
   _CCCL_HIDE_FROM_ABI __expected_move_assign& operator=(const __expected_move_assign&) = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __expected_move_assign&
   operator=(__expected_move_assign&& __other) noexcept(
     _CCCL_TRAIT(is_nothrow_move_assignable, _Err) && _CCCL_TRAIT(is_nothrow_move_constructible, _Err)) // strengthened

@@ -243,7 +243,7 @@ template <template <class, size_t> class Range>
 void test_exceptions()
 { // assign_range throws std::bad_alloc
   constexpr size_t capacity = 4;
-  using inplace_vector      = cuda::std::inplace_vector<int, capacity>;
+  using inplace_vector      = cuda::std::inplace_vector<int, 4>; // NVCC complains about invalid second argument...
   inplace_vector too_small{};
   try
   {
