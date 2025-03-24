@@ -49,7 +49,7 @@ struct Counted
   int value;
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 static int ThrowsCounted_count       = 0;
 static int ThrowsCounted_constructed = 0;
 static int ThrowsCounted_throw_after = 0;
@@ -104,7 +104,7 @@ void test_ctor_throws()
   assert(values[3] == 4);
   assert(values[4] == 5);
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_counted()
 {
@@ -139,9 +139,9 @@ __host__ __device__ void test_counted()
 int main(int, char**)
 {
   test_counted();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_ctor_throws();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   // Test with an iterator that overloads operator== and operator!= as the input and output iterators
   {

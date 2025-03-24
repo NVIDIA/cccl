@@ -23,7 +23,7 @@
 #include "test_macros.h"
 #include "variant_test_helpers.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct almost_string
 {
   const char* ptr;
@@ -102,14 +102,14 @@ void test_exceptions()
     assert(test(v1, v2, v3, v4));
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions<void>();))
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions<int>();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }
