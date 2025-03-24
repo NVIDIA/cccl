@@ -21,9 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -38,18 +39,11 @@ enum class __fp_conv_rank_order
 template <class _Lhs, class _Rhs>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_conv_rank_order_v_impl() noexcept
 {
-  static_assert(numeric_limits<_Lhs>::is_specialized, "numeric_limits<_Lhs> is not specialized");
-  static_assert(numeric_limits<_Rhs>::is_specialized, "numeric_limits<_Rhs> is not specialized");
-
-  if constexpr (numeric_limits<_Lhs>::min_exponent == numeric_limits<_Rhs>::min_exponent
-                && numeric_limits<_Lhs>::max_exponent == numeric_limits<_Rhs>::max_exponent
-                && numeric_limits<_Lhs>::digits == numeric_limits<_Rhs>::digits)
+  if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs> && __fp_is_subset_of_v<_Rhs, _Lhs>)
   {
 #if _CCCL_HAS_LONG_DOUBLE()
     // If double and long double have the same properties, long double has the higher subrank
-    if constexpr (numeric_limits<double>::min_exponent == numeric_limits<long double>::min_exponent
-                  && numeric_limits<double>::max_exponent == numeric_limits<long double>::max_exponent
-                  && numeric_limits<double>::digits == numeric_limits<long double>::digits)
+    if constexpr (__fp_is_subset_of_v<long double, double>)
     {
       if constexpr (_CCCL_TRAIT(is_same, _Lhs, long double) && !_CCCL_TRAIT(is_same, _Rhs, long double))
       {
@@ -70,17 +64,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_conv_rank_order __fp_co
       return __fp_conv_rank_order::__equal;
     }
   }
-  else if constexpr (numeric_limits<_Lhs>::min_exponent <= numeric_limits<_Rhs>::min_exponent
-                     && numeric_limits<_Lhs>::max_exponent >= numeric_limits<_Rhs>::max_exponent
-                     && numeric_limits<_Lhs>::digits >= numeric_limits<_Rhs>::digits
-                     && (numeric_limits<_Lhs>::is_signed || !numeric_limits<_Rhs>::is_signed))
+  else if constexpr (__fp_is_subset_of_v<_Rhs, _Lhs>)
   {
     return __fp_conv_rank_order::__greater;
   }
-  else if constexpr (numeric_limits<_Lhs>::min_exponent >= numeric_limits<_Rhs>::min_exponent
-                     && numeric_limits<_Lhs>::max_exponent <= numeric_limits<_Rhs>::max_exponent
-                     && numeric_limits<_Lhs>::digits <= numeric_limits<_Rhs>::digits
-                     && (!numeric_limits<_Lhs>::is_signed || numeric_limits<_Rhs>::is_signed))
+  else if constexpr (__fp_is_subset_of_v<_Lhs, _Rhs>)
   {
     return __fp_conv_rank_order::__less;
   }

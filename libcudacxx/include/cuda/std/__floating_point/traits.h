@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/nvfp_types.h>
+#include <cuda/std/__floating_point/properties.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -130,6 +131,19 @@ inline constexpr bool __is_ext_fp_v = __is_ext_nv_fp_v<_Tp> || __is_ext_compiler
 
 template <class _Tp>
 inline constexpr bool __is_fp_v = __is_std_fp_v<_Tp> || __is_ext_fp_v<_Tp>;
+
+// __fp_is_subset_v
+
+template <__fp_format _LhsFmt, __fp_format _RhsFmt>
+inline constexpr bool __fp_is_subset_v =
+  (!__fp_is_signed_v<_LhsFmt> || __fp_is_signed_v<_RhsFmt>)
+  && __fp_exp_min_v<_LhsFmt> >= __fp_exp_min_v<_RhsFmt> && __fp_exp_max_v<_LhsFmt> <= __fp_exp_max_v<_RhsFmt>
+  && __fp_digits_v<_LhsFmt> <= __fp_digits_v<_RhsFmt> && (!__fp_has_denorm_v<_LhsFmt> || __fp_has_denorm_v<_RhsFmt>);
+
+// __fp_is_subset_of_v
+
+template <class _Lhs, class _Rhs>
+inline constexpr bool __fp_is_subset_of_v = __fp_is_subset_v<__fp_format_of_v<_Lhs>, __fp_format_of_v<_Rhs>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
