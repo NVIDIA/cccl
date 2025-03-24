@@ -56,7 +56,7 @@ public:
       : stream(stream_)
   {}
 
-  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref const& s) const
+  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
   {
     Derived result = derived_cast(*this);
     result.stream  = s.get();
@@ -81,7 +81,7 @@ public:
       : stream(stream_)
   {}
 
-  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref const& s) const
+  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
   {
     Derived result = derived_cast(*this);
     result.stream  = s.get();
@@ -132,7 +132,7 @@ struct par_t
 
   using stream_attachment_type = execute_on_stream;
 
-  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref const& s) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
   {
     return execute_on_stream(s.get());
   }
@@ -150,7 +150,7 @@ struct par_nosync_t
 
   using stream_attachment_type = execute_on_stream_nosync;
 
-  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref const& s) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
   {
     return execute_on_stream_nosync(s.get());
   }
