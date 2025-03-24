@@ -17,9 +17,8 @@ class _SegmentedReduce:
     def __del__(self):
         if self.build_result is None:
             return
-        self.bindings.cccl_device_segmented_reduce_cleanup(
-            ctypes.byref(self.build_result)
-        )
+        bindings = get_bindings()
+        bindings.cccl_device_segmented_reduce_cleanup(ctypes.byref(self.build_result))
 
     def __init__(
         self,
@@ -40,8 +39,7 @@ class _SegmentedReduce:
             value_type = numba.from_dtype(h_init.dtype)
         else:
             value_type = numba.typeof(h_init)
-        sig = (value_type, value_type)
-        self.op_wrapper = cccl.to_cccl_op(op, sig)
+        self.op_wrapper = cccl.to_cccl_binop(op, (value_type, value_type), value_type)
         self.build_result = cccl.DeviceSegmentedReduceBuildResult()
         self.bindings = get_bindings()
         error = call_build(

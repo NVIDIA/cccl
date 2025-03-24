@@ -7,6 +7,7 @@ import ctypes
 from typing import Callable
 
 import numba
+from numba import types
 from numba.cuda.cudadrv import enums
 
 from .. import _cccl as cccl
@@ -76,8 +77,7 @@ class _MergeSort:
         else:
             value_type = numba.from_dtype(protocols.get_dtype(d_in_keys))
 
-        sig = (value_type, value_type)
-        self.op_wrapper = cccl.to_cccl_op(op, sig)
+        self.op_wrapper = cccl.to_cccl_binop(op, (value_type, value_type), types.uint8)
 
         self.build_result = cccl.DeviceMergeSortBuildResult()
         error = call_build(
