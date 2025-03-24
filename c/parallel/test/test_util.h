@@ -207,21 +207,20 @@ static std::string get_reduce_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ char op(char a, char b) { return a + b; }";
+      return "extern \"C\" __device__ void op(char* a, char* b, char* out) { *out = *a + *b; }";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ int op(int a, int b) { return a + b; }";
+      return "extern \"C\" __device__ void op(int* a, int* b, int* out) { *out = *a + *b; }";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ unsigned int op(unsigned int a, unsigned int b) { return a + b; }";
+      return "extern \"C\" __device__ void op(unsigned int* a, unsigned int* b, unsigned int* out) { *out = *a + *b; }";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ long long op(long long a, long long b) { return a + b; }";
+      return "extern \"C\" __device__ void op(long long* a, long long* b, long long* out) { *out = *a + *b; }";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ unsigned long long op(unsigned long long a, unsigned long long b) { "
-             " return a + b; "
-             "}";
+      return "extern \"C\" __device__ void op(unsigned long long* a, unsigned long long* b, unsigned long long* out) { "
+             "*out = *a + *b; }";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ float op(float a, float b) { return a + b; }";
+      return "extern \"C\" __device__ void op(float* a, float* b, float* out) { *out = *a + *b; }";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ double op(double a, double b) { return a + b; }";
+      return "extern \"C\" __device__ void op(double* a, double* b, double* out) { *out = *a + *b; }";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -253,26 +252,29 @@ static std::string get_merge_sort_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ bool op(char lhs, char rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(char* lhs, char* rhs, bool* result) { *result = *lhs < *rhs; }";
     case cccl_type_enum::CCCL_UINT8:
-      return "extern \"C\" __device__ bool op(unsigned char lhs, unsigned char rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(unsigned char* lhs, unsigned char* rhs, bool* result) { *result = *lhs < "
+             "*rhs; }";
     case cccl_type_enum::CCCL_INT16:
-      return "extern \"C\" __device__ bool op(short lhs, short rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(short* lhs, short* rhs, bool* result) { *result = *lhs < *rhs; }";
     case cccl_type_enum::CCCL_UINT16:
-      return "extern \"C\" __device__ bool op(unsigned short lhs, unsigned short rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(unsigned short* lhs, unsigned short* rhs, bool* result) { *result = *lhs "
+             "< *rhs; }";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ bool op(int lhs, int rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(int* lhs, int* rhs, bool* result) { *result = *lhs < *rhs; }";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ bool op(unsigned int lhs, unsigned int rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(unsigned int* lhs, unsigned int* rhs, bool* result) { *result = *lhs < "
+             "*rhs; }";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ bool op(long long lhs, long long rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(long long* lhs, long long* rhs, bool* result) { *result = *lhs < *rhs; }";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ bool op(unsigned long long lhs, unsigned long long rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(unsigned long long* lhs, unsigned long long* rhs, bool* result) { "
+             "*result = *lhs < *rhs; }";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(float* lhs, float* rhs, bool* result) { *result = *lhs < *rhs; }";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs < rhs; }";
-
+      return "extern \"C\" __device__ void op(double* lhs, double* rhs, bool* result) { *result = *lhs < *rhs; }";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -284,26 +286,30 @@ static std::string get_unique_by_key_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ bool op(char lhs, char rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(char* lhs, char* rhs, bool* result) { *result = *lhs == *rhs; }";
     case cccl_type_enum::CCCL_UINT8:
-      return "extern \"C\" __device__ bool op(unsigned char lhs, unsigned char rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(unsigned char* lhs, unsigned char* rhs, bool* result) { *result = *lhs "
+             "== *rhs; }";
     case cccl_type_enum::CCCL_INT16:
-      return "extern \"C\" __device__ bool op(short lhs, short rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(short* lhs, short* rhs, bool* result) { *result = *lhs == *rhs; }";
     case cccl_type_enum::CCCL_UINT16:
-      return "extern \"C\" __device__ bool op(unsigned short lhs, unsigned short rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(unsigned short* lhs, unsigned short* rhs, bool* result) { *result = *lhs "
+             "== *rhs; }";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ bool op(int lhs, int rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(int* lhs, int* rhs, bool* result) { *result = *lhs == *rhs; }";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ bool op(unsigned int lhs, unsigned int rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(unsigned int* lhs, unsigned int* rhs, bool* result) { *result = *lhs == "
+             "*rhs; }";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ bool op(long long lhs, long long rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(long long* lhs, long long* rhs, bool* result) { *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ bool op(unsigned long long lhs, unsigned long long rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(unsigned long long* lhs, unsigned long long* rhs, bool* result) { "
+             "*result = *lhs == *rhs; }";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(float* lhs, float* rhs, bool* result) { *result = *lhs == *rhs; }";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs == rhs; }";
-
+      return "extern \"C\" __device__ void op(double* lhs, double* rhs, bool* result) { *result = *lhs == *rhs; }";
     default:
       throw std::runtime_error("Unsupported type");
   }
