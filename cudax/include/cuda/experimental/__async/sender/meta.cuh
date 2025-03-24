@@ -29,7 +29,7 @@
 #include <cuda/experimental/__detail/config.cuh>
 
 #if __cpp_lib_three_way_comparison
-#  include <compare>
+#  include <compare> // IWYU pragma: keep
 #endif
 
 #include <cuda/experimental/__async/sender/prologue.cuh>

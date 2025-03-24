@@ -87,6 +87,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   template <class _Query>
   _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
+    // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__queryable_with<_Envs, _Query>..., false};
     constexpr size_t __idx   = __async::__find_pos(__flags, __flags + sizeof...(_Envs));
     if constexpr (__idx != __npos)
@@ -99,9 +100,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const env&>()));
 
   template <class _Query>
+    requires __queryable_with<__1st_env_t<_Query>, _Query>
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<__1st_env_t<_Query>, _Query>
+    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
     return env::__get_1st<_Query>(*this).query(__query);
   }
@@ -117,27 +118,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;
 
   template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
+  _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
     if constexpr (__queryable_with<_Env0, _Query>)
     {
-      return (__env0_);
+      return (__self.__env0_);
     }
     else
     {
-      return (__env1_);
+      return (__self.__env1_);
     }
   }
 
   template <class _Query, class _Env = env>
-  using __1st_env_t = decltype(declval<const _Env&>().__get_1st(_Query{}));
+  using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const _Env&>()));
 
   template <class _Query>
+    requires __queryable_with<__1st_env_t<_Query>, _Query>
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<__1st_env_t<_Query>, _Query>
+    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
-    return __get_1st(__query).query(__query);
+    return env::__get_1st<_Query>(*this).query(__query);
   }
 
   env& operator=(const env&) = delete;

@@ -40,7 +40,7 @@ template <class _Ty, class _Query>
 auto __query_result_() -> decltype(declval<_Ty>().query(_Query()));
 
 template <class _Ty, class _Query>
-using __query_result_t = decltype(__query_result_<_Ty, _Query>());
+using __query_result_t = decltype(__async::__query_result_<_Ty, _Query>());
 
 template <class _Ty, class _Query>
 inline constexpr bool __queryable_with = __type_valid_v<__query_result_t, _Ty, _Query>;
@@ -50,10 +50,10 @@ template <class _Ty, class _Query>
 inline constexpr bool __nothrow_queryable_with = true;
 #else
 template <class _Ty, class _Query>
-using __nothrow_queryable_ = _CUDA_VSTD::enable_if_t<noexcept(declval<_Ty>().query(_Query()))>;
+using __nothrow_queryable_with_ = _CUDA_VSTD::enable_if_t<noexcept(__declval<_Ty>().query(_Query{}))>;
 
 template <class _Ty, class _Query>
-inline constexpr bool __nothrow_queryable_with = __type_valid_v<__nothrow_queryable_, _Ty, _Query>;
+inline constexpr bool __nothrow_queryable_with = __type_valid_v<__nothrow_queryable_with_, _Ty, _Query>;
 #endif
 
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
