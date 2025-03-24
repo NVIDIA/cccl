@@ -12,6 +12,7 @@ import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
+from cuda.parallel.experimental.struct import gpu_struct
 
 
 def random_int(shape, dtype):
@@ -628,3 +629,38 @@ def test_reduce_invalid_stream():
             h_init=h_init,
             stream=Stream3(),
         )
+
+
+def test_reduce_struct_int8():
+    @gpu_struct
+    class MyStruct:
+        x: np.int8
+        y: np.int8
+
+    def op(a: MyStruct, b: MyStruct) -> MyStruct:
+        if a.x > b.x:
+            return a
+        elif a.x == b.x:
+            if a.y > b.y:
+                return a
+        return b
+
+    num_items = 100
+
+    d_in = cp.random.randint(0, 10, (num_items, 2), dtype=np.int8).view(MyStruct.dtype)
+    d_out = cp.empty(1, MyStruct.dtype)
+
+    h_init = MyStruct(0, 0)
+
+    reduce_into = algorithms.reduce_into(d_in, d_out, op, h_init)
+    temp_storage_bytes = reduce_into(None, d_in, d_out, d_in.size, h_init)
+
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    _ = reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init)
+
+    h_in = d_in.get()
+    a = h_in.view(np.int8)[:, 0]
+    b = h_in.view(np.int8)[:, 1]
+    argmax = np.lexsort((b, a))[-1]
+
+    np.testing.assert_equal(h_in[argmax], d_out.get())
