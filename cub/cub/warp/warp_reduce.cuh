@@ -52,9 +52,6 @@
 #include <cuda/std/bit>
 #include <cuda/std/type_traits>
 
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_NVHPC(nodiscard_doesnt_apply)
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst
@@ -704,7 +701,7 @@ public:
     struct TempStorage : Uninitialized<_TempStorage>
     {};
 
-    _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
+    _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
     template <bool ALL_LANES_VALID, typename ReductionOp>
     _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T
@@ -826,5 +823,3 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END
-
-_CCCL_DIAG_POP
