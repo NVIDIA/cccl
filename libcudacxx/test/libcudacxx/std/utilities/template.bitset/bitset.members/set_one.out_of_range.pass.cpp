@@ -15,8 +15,11 @@
 #include <cuda/std/bitset>
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
 int main(int, char**)
 {
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(
     NV_IS_HOST,
     {
@@ -47,6 +50,7 @@ int main(int, char**)
       catch (::std::out_of_range const&)
       {}
     })
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

@@ -68,7 +68,7 @@ struct NoThrowT
 
 namespace RuntimeHelpers
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 
 struct ThrowsCtorT
 {
@@ -161,7 +161,7 @@ struct NoThrowT
   }
 };
 
-#endif // !defined(TEST_HAS_NO_EXCEPTIONS)
+#endif // TEST_HAS_EXCEPTIONS()
 } // namespace RuntimeHelpers
 
 __host__ __device__ void test_T_assignment_noexcept()
@@ -306,7 +306,7 @@ __host__ __device__ void test_T_assignment_basic()
 #endif // TEST_VARIANT_HAS_NO_REFERENCES
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_T_assignment_performs_construction()
 {
   using namespace RuntimeHelpers;
@@ -335,9 +335,9 @@ void test_T_assignment_performs_construction()
   }
 #  endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_T_assignment_performs_assignment()
 {
   using namespace RuntimeHelpers;
@@ -388,15 +388,15 @@ void test_T_assignment_performs_assignment()
   }
 #  endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
   test_T_assignment_basic();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_T_assignment_performs_construction();))
   NV_IF_TARGET(NV_IS_HOST, (test_T_assignment_performs_assignment();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   test_T_assignment_noexcept();
   test_T_assignment_sfinae();
 

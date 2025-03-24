@@ -164,7 +164,7 @@ struct TCopyAssignNTMoveAssign
 
 static_assert(cuda::std::is_trivially_copy_assignable_v<TCopyAssignNTMoveAssign>, "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct CopyThrows
 {
   CopyThrows() = default;
@@ -281,7 +281,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_copy_assignment_not_noexcept()
 {
@@ -342,7 +342,7 @@ __host__ __device__ void test_copy_assignment_sfinae()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_copy_assignment_empty_empty()
 {
   using MET = MakeEmptyT;
@@ -412,7 +412,7 @@ void test_copy_assignment_empty_non_empty()
   }
 #  endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <typename T>
 struct Result
@@ -461,7 +461,7 @@ __host__ __device__ void test_copy_assignment_same_index()
     assert(CopyAssign::copy_assign() == 1);
 #endif // !TEST_COMPILER(MSVC)
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)
   using MET = MakeEmptyT;
   {
@@ -480,7 +480,7 @@ __host__ __device__ void test_copy_assignment_same_index()
     assert(&cuda::std::get<1>(v1) == &mref);
   }
 #  endif // _LIBCUDACXX_HAS_STRING
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -584,7 +584,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     assert(CopyAssign::copy_assign() == 0);
 #endif // !TEST_COMPILER(MSVC)
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)
   {
     using V = cuda::std::variant<int, CopyThrows, cuda::std::string>;
@@ -648,7 +648,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     assert(cuda::std::get<2>(v2) == "hello");
   }
 #  endif // _LIBCUDACXX_HAS_STRING
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -708,11 +708,11 @@ __host__ __device__ void test_constexpr_copy_assignment()
 
 int main(int, char**)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_non_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_copy_assignment_empty_non_empty();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   test_copy_assignment_same_index();
   test_copy_assignment_different_index();
   test_copy_assignment_sfinae();

@@ -235,7 +235,7 @@ __host__ __device__ void test_on_test_type()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct Y
 {
   STATIC_MEMBER_VAR(dtor_called, bool);
@@ -270,7 +270,7 @@ void test_exceptions()
     assert(Y::dtor_called() == true);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ constexpr bool test()
 {
@@ -308,8 +308,8 @@ int main(int, char**)
     test_on_test_type<ExplicitTestTypes::TestType>();
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

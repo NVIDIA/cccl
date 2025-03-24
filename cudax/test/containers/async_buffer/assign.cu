@@ -225,7 +225,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
   }
 
 #if 0 // Implement exceptions
-#  ifndef TEST_HAS_NO_EXCEPTIONS
+#  if TEST_HAS_EXCEPTIONS()
   SECTION("cudax::async_buffer::assign exception handling")
   {
     try
@@ -261,6 +261,6 @@ TEMPLATE_TEST_CASE("cudax::async_buffer assign",
       CUDAX_CHECK(false);
     }
   }
-#  endif // TEST_HAS_NO_EXCEPTIONS
+#  endif // TEST_HAS_EXCEPTIONS()
 #endif // Implement exceptions
 }

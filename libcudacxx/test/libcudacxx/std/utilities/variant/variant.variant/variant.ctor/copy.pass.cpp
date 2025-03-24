@@ -94,7 +94,7 @@ struct TCopyNTMove
 
 static_assert(cuda::std::is_trivially_copy_constructible<TCopyNTMove>::value, "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct MakeEmptyT
 {
   static int alive;
@@ -141,7 +141,7 @@ __host__ __device__ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_copy_ctor_sfinae()
 {
@@ -257,7 +257,7 @@ __host__ __device__ void test_copy_ctor_basic()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_copy_ctor_valueless_by_exception()
 {
   using V = cuda::std::variant<int, MakeEmptyT>;
@@ -267,7 +267,7 @@ void test_copy_ctor_valueless_by_exception()
   V v(cv1);
   assert(v.valueless_by_exception());
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <size_t Idx>
 __host__ __device__ constexpr bool test_constexpr_copy_ctor_imp(cuda::std::variant<long, void*, const int> const& v)
@@ -297,9 +297,9 @@ __host__ __device__ void test_constexpr_copy_ctor()
 int main(int, char**)
 {
   test_copy_ctor_basic();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_copy_ctor_valueless_by_exception();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   test_copy_ctor_sfinae();
   test_constexpr_copy_ctor();
   return 0;
