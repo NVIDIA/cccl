@@ -33,7 +33,7 @@ using ::memcpy;
 using ::memset;
 using ::size_t;
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE const void* __memchr_device(const void* __ptr, int __c, size_t __n) noexcept
 {
   auto __p = static_cast<const unsigned char*>(__ptr);
@@ -49,7 +49,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE const void* __memchr_device(const void* __ptr, 
 
   return nullptr;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_HIDE_FROM_ABI const void* memchr(const void* __ptr, int __c, size_t __n) noexcept
 {
@@ -64,7 +64,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void* memchr(void* __ptr, int __c, size_t __n) noexcep
                     (return const_cast<void*>(_CUDA_VSTD::memchr(const_cast<const void*>(__ptr), __c, __n));))
 }
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __memmove_device(void* __dst, const void* __src, size_t __n) noexcept
 {
   auto __d = (__dst <= __src) ? static_cast<unsigned char*>(__dst) : (static_cast<unsigned char*>(__dst) + __n - 1);
@@ -81,7 +81,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __memmove_device(void* __dst, const void*
 
   return __dst;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_HIDE_FROM_ABI void* memmove(void* __dst, const void* __src, size_t __n) noexcept
 {
@@ -93,7 +93,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void* memmove(void* __dst, const void* __src, size_t _
 #endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
 }
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __memcmp_device(const void* __lhs, const void* __rhs, size_t __n) noexcept
 {
   auto __l = static_cast<const unsigned char*>(__lhs);
@@ -110,7 +110,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __memcmp_device(const void* __lhs, const vo
   }
   return 0;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_HIDE_FROM_ABI int memcmp(const void* __lhs, const void* __rhs, size_t __n) noexcept
 {

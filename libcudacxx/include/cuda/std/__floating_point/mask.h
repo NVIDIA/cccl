@@ -76,7 +76,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_sig
 }
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_sign_mask_v = __fp_sign_mask_impl<_Tp>();
+inline constexpr __fp_storage_t<_Tp> __fp_sign_mask_v = __fp_sign_mask_impl<_Tp>();
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_exp_mask_impl() noexcept
@@ -138,7 +138,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_exp
 }
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_exp_mask_v = __fp_exp_mask_impl<_Tp>();
+inline constexpr __fp_storage_t<_Tp> __fp_exp_mask_v = __fp_exp_mask_impl<_Tp>();
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_mant_mask_impl() noexcept
@@ -200,10 +200,10 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_man
 }
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_mant_mask_v = __fp_mant_mask_impl<_Tp>();
+inline constexpr __fp_storage_t<_Tp> __fp_mant_mask_v = __fp_mant_mask_impl<_Tp>();
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __fp_storage_t<_Tp> __fp_exp_mant_mask_v =
+inline constexpr __fp_storage_t<_Tp> __fp_exp_mant_mask_v =
   static_cast<__fp_storage_t<_Tp>>(__fp_exp_mask_v<_Tp> | __fp_mant_mask_v<_Tp>);
 
 _LIBCUDACXX_END_NAMESPACE_STD

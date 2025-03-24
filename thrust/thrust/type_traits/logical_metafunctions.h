@@ -33,12 +33,10 @@
 THRUST_NAMESPACE_BEGIN
 
 using ::cuda::std::conjunction;
-using ::cuda::std::disjunction;
-using ::cuda::std::negation;
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 using ::cuda::std::conjunction_v;
+using ::cuda::std::disjunction;
 using ::cuda::std::disjunction_v;
+using ::cuda::std::negation;
 using ::cuda::std::negation_v;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 THRUST_NAMESPACE_END

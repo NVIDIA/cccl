@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/device/device_segmented_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_common.cuh>
 
-#include "cub/device/dispatch/dispatch_common.cuh"
 #include <nvbench_helper.cuh>
 
 template <class T, typename OffsetT>

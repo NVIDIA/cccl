@@ -53,20 +53,23 @@ int main(int, char**)
   test<__int128_t>(0);
   test<__uint128_t>(0);
 #endif // _CCCL_HAS_INT128()
-#if defined(__FLT_DENORM_MIN__) // guarded because these macros are extensions.
-  test<float>(__FLT_DENORM_MIN__);
-  test<double>(__DBL_DENORM_MIN__);
-#  if _CCCL_HAS_LONG_DOUBLE()
-  test<long double>(__LDBL_DENORM_MIN__);
-#  endif // _CCCL_HAS_LONG_DOUBLE()
-#endif
-#if defined(FLT_TRUE_MIN) // not currently provided on linux.
+#if defined(FLT_TRUE_MIN)
   test<float>(FLT_TRUE_MIN);
+#else // ^^^ FLT_TRUE_MIN ^^^ // vvv !FLT_TRUE_MIN vvv
+  test<float>(__FLT_DENORM_MIN__);
+#endif // ^^^ !FLT_TRUE_MIN ^^^
+#if defined(DBL_TRUE_MIN)
   test<double>(DBL_TRUE_MIN);
-#  if _CCCL_HAS_LONG_DOUBLE()
+#else // ^^^ DBL_TRUE_MIN ^^^ // vvv !DBL_TRUE_MIN vvv
+  test<double>(__DBL_DENORM_MIN__);
+#endif // ^^^ !DBL_TRUE_MIN ^^^
+#if _CCCL_HAS_LONG_DOUBLE()
+#  if defined(LDBL_TRUE_MIN)
   test<long double>(LDBL_TRUE_MIN);
-#  endif // _CCCL_HAS_LONG_DOUBLE()
-#endif
+#  else // ^^^ LDBL_TRUE_MIN ^^^ // vvv !LDBL_TRUE_MIN vvv
+  test<long double>(__LDBL_DENORM_MIN__);
+#  endif // ^^^ !LDBL_TRUE_MIN ^^^
+#endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
   test<__half>(__double2half(5.9604644775390625e-08));
 #endif // _CCCL_HAS_NVFP16
@@ -94,10 +97,6 @@ int main(int, char**)
 #if _CCCL_HAS_FLOAT128()
   test<__float128>(cuda::std::bit_cast<__float128>(__uint128_t{0x1}));
 #endif // _CCCL_HAS_FLOAT128()
-
-#if !defined(__FLT_DENORM_MIN__) && !defined(FLT_TRUE_MIN)
-#  error Test has no expected values for floating point types
-#endif
 
   return 0;
 }

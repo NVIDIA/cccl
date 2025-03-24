@@ -444,7 +444,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 };
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_copy_construct =
+inline constexpr __smf_availability __optional_can_copy_construct =
   _CCCL_TRAIT(is_trivially_copy_constructible, _Tp) ? __smf_availability::__trivial
   : _CCCL_TRAIT(is_copy_constructible, _Tp)
     ? __smf_availability::__available
@@ -486,7 +486,7 @@ struct __optional_copy_base<_Tp, __smf_availability::__deleted> : __optional_sto
 };
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_move_construct =
+inline constexpr __smf_availability __optional_can_move_construct =
   _CCCL_TRAIT(is_trivially_move_constructible, _Tp) ? __smf_availability::__trivial
   : _CCCL_TRAIT(is_move_constructible, _Tp)
     ? __smf_availability::__available
@@ -527,7 +527,7 @@ struct __optional_move_base<_Tp, __smf_availability::__deleted> : __optional_cop
 };
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_copy_assign =
+inline constexpr __smf_availability __optional_can_copy_assign =
   _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_copy_constructible, _Tp)
       && _CCCL_TRAIT(is_trivially_copy_assignable, _Tp)
     ? __smf_availability::__trivial
@@ -570,7 +570,7 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__deleted> : __optio
 };
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_move_assign =
+inline constexpr __smf_availability __optional_can_move_assign =
   _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_move_constructible, _Tp)
       && _CCCL_TRAIT(is_trivially_move_assignable, _Tp)
     ? __smf_availability::__trivial
@@ -642,32 +642,32 @@ using __opt_check_assignable_from_opt =
       is_assignable<_Tp&, _Opt const&&>>;
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __opt_is_implictly_constructible =
+inline constexpr bool __opt_is_implictly_constructible =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_convertible, _Up, _Tp);
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __opt_is_explictly_constructible =
+inline constexpr bool __opt_is_explictly_constructible =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && !_CCCL_TRAIT(is_convertible, _Up, _Tp);
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_U =
+inline constexpr bool __opt_is_constructible_from_U =
   !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, in_place_t) && !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, optional<_Tp>);
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_opt =
+inline constexpr bool __opt_is_constructible_from_opt =
   !_CCCL_TRAIT(is_same, _Up, _Tp) && !__opt_check_constructible_from_opt<_Tp, _Up>::value;
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __opt_is_assignable =
+inline constexpr bool __opt_is_assignable =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_assignable, _Tp&, _Up);
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_U =
+inline constexpr bool __opt_is_assignable_from_U =
   !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, optional<_Tp>)
   && (!_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, _Tp) || !_CCCL_TRAIT(is_scalar, _Tp));
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_opt =
+inline constexpr bool __opt_is_assignable_from_opt =
   !_CCCL_TRAIT(is_same, _Up, _Tp) && !__opt_check_constructible_from_opt<_Tp, _Up>::value
   && !__opt_check_assignable_from_opt<_Tp, _Up>::value;
 
@@ -1147,10 +1147,8 @@ public:
   using __base::reset;
 };
 
-#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Tp>
 _CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
-#endif // _CCCL_NO_DEDUCTION_GUIDES
 
 // Comparisons between optionals
 _CCCL_EXEC_CHECK_DISABLE

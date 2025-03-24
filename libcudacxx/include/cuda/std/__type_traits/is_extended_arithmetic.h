@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_extended_arithmetic_v =
+inline constexpr bool __is_extended_arithmetic_v =
   _CCCL_TRAIT(is_arithmetic, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
 
 _LIBCUDACXX_END_NAMESPACE_STD
