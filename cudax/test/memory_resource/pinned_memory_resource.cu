@@ -104,7 +104,7 @@ TEMPLATE_TEST_CASE("pinned_memory_resource allocation", "[memory_resource]", TES
     }
   }
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   { // allocate with too small alignment
     while (true)
     {
@@ -168,7 +168,7 @@ TEMPLATE_TEST_CASE("pinned_memory_resource allocation", "[memory_resource]", TES
       }
     }
   }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 }
 
 enum class AccessibilityType
