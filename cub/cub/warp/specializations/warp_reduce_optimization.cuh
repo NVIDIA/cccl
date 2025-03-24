@@ -35,11 +35,8 @@
 
 #include <cstdint>
 
-#include "cuda/__functional/maximum.h"
-#include "cuda/std/__internal/namespaces.h"
-#include "cuda/std/__type_traits/integral_constant.h"
-#include "cuda/std/__type_traits/make_unsigned.h"
-#include <sys/types.h>
+#include "cuda/std/__concepts/concept_macros.h"
+#include "cuda/std/__type_traits/is_floating_point.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -54,7 +51,10 @@
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/functional>
 #include <cuda/ptx>
+#include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -72,6 +72,8 @@ using warp_reduce_mode_t = _CUDA_VSTD::integral_constant<WarpReduceMode, Mode>;
 inline constexpr auto single_logical_warp    = warp_reduce_mode_t<WarpReduceMode::SingleLogicalWarp>{};
 inline constexpr auto multiple_logical_warps = warp_reduce_mode_t<WarpReduceMode::MultipleLogicalWarps>{};
 
+//----------------------------------------------------------------------------------------------------------------------
+
 enum class WarpReduceResult
 {
   AllLanes,
@@ -84,538 +86,355 @@ using warp_reduce_result_t = _CUDA_VSTD::integral_constant<WarpReduceResult, Kin
 inline constexpr auto all_lanes_result   = warp_reduce_result_t<WarpReduceResult::AllLanes>{};
 inline constexpr auto single_lane_result = warp_reduce_result_t<WarpReduceResult::SingleLane>{};
 
+//----------------------------------------------------------------------------------------------------------------------
+
 /**
- * @brief WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
- *        across a CUDA thread warp.
+ * @brief Reduction
  *
- * @tparam T
- *   Data type being reduced
+ * @tparam ALL_LANES_VALID
+ *   Whether all lanes in each warp are contributing a valid fold of items
  *
- * @tparam LOGICAL_WARP_THREADS
- *   Number of threads per logical warp
+ * @param[in] input
+ *   Calling thread's input
+ *
+ * @param[in] valid_items
+ *   Total number of valid items across the logical warp
+ *
+ * @param[in] reduction_op
+ *   Reduction operator
  */
-template <typename T, int LOGICAL_WARP_THREADS>
-struct WarpReduceSmem
+
+_CCCL_DEVICE _CCCL_FORCEINLINE static unsigned reduce_down_mask(int step)
 {
-  /******************************************************************************
-   * Constants and type definitions
-   ******************************************************************************/
+  const auto clamp   = unsigned{LogicalWarpSize} - 1;
+  const auto segmask = (unsigned{warp_threads} - LogicalWarpSize) << 8;
+  return clamp | segmask;
+}
 
-  /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
-
-  /// Whether the logical warp size is a power-of-two
-  static constexpr bool IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
-
-  /// The number of warp reduction steps
-  static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
-
-  /// The number of threads in half a warp
-  static constexpr int HALF_WARP_THREADS = 1 << (STEPS - 1);
-
-  /// The number of shared memory elements per warp
-  static constexpr int WARP_SMEM_ELEMENTS = LOGICAL_WARP_THREADS + HALF_WARP_THREADS;
-
-  /// FlagT status (when not using ballot)
-  static constexpr auto UNSET = 0x0; // Is initially unset
-  static constexpr auto SET   = 0x1; // Is initially set
-  static constexpr auto SEEN  = 0x2; // Has seen another head flag from a successor peer
-
-  /// Shared memory flag type
-  using SmemFlag = unsigned char;
-
-  /// Shared memory storage layout type (1.5 warps-worth of elements for each warp)
-  struct _TempStorage
+template <typename Input, typename ReductionOp>
+_CCCL_DEVICE _CCCL_FORCEINLINE static Input reduce_sm30(Input input, ReductionOp)
+{
+  using namespace internal;
+  unsigned member_mask = ::__activemask();
+  if constexpr (_CUDA_VSTD::is_same_v<Input, bool>)
   {
-    T reduce[WARP_SMEM_ELEMENTS];
-    SmemFlag flags[WARP_SMEM_ELEMENTS];
-  };
-
-  // Alias wrapper allowing storage to be unioned
-  struct TempStorage : Uninitialized<_TempStorage>
-  {};
-
-  /******************************************************************************
-   * Thread fields
-   ******************************************************************************/
-
-  _TempStorage& temp_storage;
-  unsigned int lane_id;
-  unsigned int member_mask;
-
-  /******************************************************************************
-   * Construction
-   ******************************************************************************/
-
-  /// Constructor
-  explicit _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceSmem(TempStorage& temp_storage)
-      : temp_storage(temp_storage.Alias())
-      , lane_id(IS_ARCH_WARP ? ::cuda::ptx::get_sreg_laneid() : ::cuda::ptx::get_sreg_laneid() % LOGICAL_WARP_THREADS)
-      , member_mask(WarpMask<LOGICAL_WARP_THREADS>(::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS))
-  {}
-
-  /******************************************************************************
-   * Interface
-   ******************************************************************************/
-
-  using sing
-
-    /**
-     * @brief Reduction
-     *
-     * @tparam ALL_LANES_VALID
-     *   Whether all lanes in each warp are contributing a valid fold of items
-     *
-     * @param[in] input
-     *   Calling thread's input
-     *
-     * @param[in] valid_items
-     *   Total number of valid items across the logical warp
-     *
-     * @param[in] reduction_op
-     *   Reduction operator
-     */
-    template <bool ALL_LANES_VALID, typename ReductionOp>
-    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, single_logical_warp)
-  {
-    constexpr bool is_cuda_std_plus =
-      _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::plus<>> || _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::plus<T>>;
-    constexpr bool is_cuda_maximum =
-      _CUDA_VSTD::is_same_v<ReductionOp, ::cuda::maximum<>> || _CUDA_VSTD::is_same_v<ReductionOp, ::cuda::maximum<T>>;
-    constexpr bool is_cuda_minimum =
-      _CUDA_VSTD::is_same_v<ReductionOp, ::cuda::minimum<>> || _CUDA_VSTD::is_same_v<ReductionOp, ::cuda::minimum<T>>;
-    constexpr bool is_cuda_std_bit_and = _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::bit_and<>>
-                                      || _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::bit_and<T>>;
-    constexpr bool is_cuda_std_bit_or = _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::bit_or<>>
-                                     || _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::bit_or<T>>;
-    constexpr bool is_cuda_std_bit_xor = _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::bit_xor<>>
-                                      || _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::bit_xor<T>>;
-    if constexpr (is_cuda_std_plus)
+    if constexpr (is_cuda_std_plus_v<ReductionOp, Input>)
     {
-      if constexpr (_CUDA_VSTD::is_same_v<T, bool>)
-      {
-        return _CUDA_VSTD::popcount(::__ballot_sync(member_mask, input));
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) <= sizeof(uint32_t))
-      {
-        using unsigned_t = _CUDA_VSTD::_If<_CUDA_VSTD::is_signed_v<T>, int, uint32_t>;
-        return static_cast<T>(::__reduce_add_sync(member_mask, static_cast<unsigned_t>(input)));
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) == sizeof(uint64_t))
-      {
-        auto high           = static_cast<uint32_t>(static_cast<uint64_t>(input) >> 32u);
-        auto low            = static_cast<uint32_t>(input);
-        auto high_reduction = ::__reduce_add_sync(member_mask, high);
-        auto mid_reduction  = ::__reduce_add_sync(member_mask, low >> (32u - 5u)); // carry out
-        auto low_reduction  = ::__reduce_add_sync(member_mask, low);
-        auto result_high    = high_reduction + mid_reduction;
-        return static_cast<T>((static_cast<uint64_t>(result_high) << 32u) + low_reduction);
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) == sizeof(__uint128_t))
-      {
-        auto high           = static_cast<uint64_t>(static_cast<__uint128_t>(input) >> 64u);
-        auto low            = static_cast<uint64_t>(input);
-        auto high_reduction = this->Reduce(high, reduction_op);
-        auto mid_reduction  = ::__reduce_add_sync(member_mask, static_cast<uint32_t>(low >> (64u - 5u))); // carry out
-        auto low_reduction  = this->Reduce(low, reduction_op);
-        auto result_high    = high_reduction + mid_reduction;
-        return static_cast<T>((static_cast<__uint128_t>(result_high) << 64u) + low_reduction);
-      }
+      return _CUDA_VSTD::popcount(::__ballot_sync(member_mask, input));
     }
-    else if constexpr (is_cuda_maximum)
+    else if constexpr (is_cuda_std_bit_and_v<ReductionOp, Input>)
     {
-      using cast_t = _CUDA_VSTD::_If<_CUDA_VSTD::is_signed_v<T>, int, uint32_t>;
-      if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) <= sizeof(uint32_t))
-      {
-        return static_cast<T>(::__reduce_max_sync(member_mask, static_cast<cast_t>(input)));
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) == sizeof(uint64_t))
-      {
-        auto high     = static_cast<cast_t>(static_cast<uint64_t>(input) >> 32);
-        auto high_max = ::__reduce_max_sync(member_mask, high);
-        if (high_max == 0) // shortcut: max input is positive and < 2^32
-        {
-          return ::__reduce_max_sync(member_mask, static_cast<uint32_t>(input));
-        }
-        if (high_max > 0)
-        {
-          constexpr auto min_v = _CUDA_VSTD::numeric_limits<uint32_t>::min();
-          auto low             = static_cast<uint32_t>(input);
-          auto low_max         = ::__reduce_max_sync(member_mask, (high_max == high) ? low : min_v);
-          return static_cast<T>(static_cast<uint64_t>(high_max) << 32 | low_max);
-        }
-        constexpr auto min_v = _CUDA_VSTD::numeric_limits<int32_t>::min();
-        auto low             = static_cast<int32_t>(input);
-        auto low_max         = ::__reduce_max_sync(member_mask, (high_max == high) ? low : min_v);
-        return static_cast<T>(static_cast<uint64_t>(high_max) << 32 | low_max);
-      }
+      return ::__all_sync(member_mask, input);
     }
-    else if constexpr (is_cuda_minimum)
+    else if constexpr (is_cuda_std_bit_or_v<ReductionOp, Input>)
     {
-      using cast_t = _CUDA_VSTD::_If<_CUDA_VSTD::is_signed_v<T>, int, uint32_t>;
-      if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) <= sizeof(uint32_t))
-      {
-        return static_cast<T>(::__reduce_min_sync(member_mask, static_cast<cast_t>(input)));
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) == sizeof(uint64_t))
-      {
-        auto high     = static_cast<cast_t>(static_cast<uint64_t>(input) >> 32);
-        auto high_min = ::__reduce_min_sync(member_mask, high);
-        if (high_min == 0)
-        {
-          return ::__reduce_min_sync(member_mask, static_cast<cast_t>(input));
-        }
-        constexpr auto max_v = _CUDA_VSTD::numeric_limits<cast_t>::max();
-        auto low             = static_cast<cast_t>(input);
-        auto low_min         = ::__reduce_min_sync(member_mask, (high_min == high) ? low : max_v);
-        return static_cast<T>(static_cast<uint64_t>(high_min) << 32 | low_min);
-      }
+      return ::__any_sync(member_mask, input);
     }
-    else if constexpr (is_cuda_std_bit_and)
+    else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, Input>)
     {
-      if constexpr (_CUDA_VSTD::is_same_v<T, bool>)
-      {
-        return ::__all_sync(member_mask, input);
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) <= sizeof(uint32_t))
-      {
-        return static_cast<T>(::__reduce_and_sync(member_mask, static_cast<uint32_t>(input)));
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T>)
-      {
-        constexpr auto half_bits = _CUDA_VSTD::numeric_limits<T>::digits / 2u;
-        using unsigned_t         = _CUDA_VSTD::make_unsigned_t<T>;
-        using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
-        auto high                = static_cast<half_size_t>(static_cast<unsigned_t>(input) >> half_bits);
-        auto low                 = static_cast<half_size_t>(input);
-        auto high_reduction      = this->Reduce(high, reduction_op);
-        auto low_reduction       = this->Reduce(low, reduction_op);
-        return static_cast<T>((static_cast<unsigned_t>(high_reduction) << half_bits) & low_reduction);
-      }
-    }
-    else if constexpr (is_cuda_std_bit_or)
-    {
-      if constexpr (_CUDA_VSTD::is_same_v<T, bool>)
-      {
-        return ::__any_sync(member_mask, input);
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) <= sizeof(uint32_t))
-      {
-        return static_cast<T>(::__reduce_or_sync(member_mask, static_cast<uint32_t>(input)));
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T>)
-      {
-        constexpr auto half_bits = _CUDA_VSTD::numeric_limits<T>::digits / 2u;
-        using unsigned_t         = _CUDA_VSTD::make_unsigned_t<T>;
-        using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
-        auto high                = static_cast<half_size_t>(static_cast<unsigned_t>(input) >> half_bits);
-        auto low                 = static_cast<half_size_t>(input);
-        auto high_reduction      = this->Reduce(high, reduction_op);
-        auto low_reduction       = this->Reduce(low, reduction_op);
-        return static_cast<T>((static_cast<unsigned_t>(high_reduction) << half_bits) | low_reduction);
-      }
-    }
-    else if constexpr (is_cuda_std_bit_xor)
-    {
-      if constexpr (_CUDA_VSTD::is_same_v<T, bool>)
-      {
-        return _CUDA_VSTD::popcount(::__ballot_sync(member_mask, input)) % 2u; // TODO: __reduce_xor_sync
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T> && sizeof(T) <= sizeof(uint32_t))
-      {
-        return static_cast<T>(::__reduce_xor_sync(member_mask, static_cast<uint32_t>(input)));
-      }
-      else if constexpr (_CUDA_VSTD::is_integral_v<T>)
-      {
-        constexpr auto half_bits = _CUDA_VSTD::numeric_limits<T>::digits / 2u;
-        using unsigned_t         = _CUDA_VSTD::make_unsigned_t<T>;
-        using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
-        auto high                = static_cast<half_size_t>(static_cast<unsigned_t>(input) >> half_bits);
-        auto low                 = static_cast<half_size_t>(input);
-        auto high_reduction      = this->Reduce(high, reduction_op);
-        auto low_reduction       = this->Reduce(low, reduction_op);
-        return static_cast<T>((static_cast<unsigned_t>(high_reduction) << half_bits) ^ low_reduction);
-      }
-    }
-    else
-    {
+      return _CUDA_VSTD::popcount(::__ballot_sync(member_mask, input)) % 2u;
     }
   }
+}
 
-  template <typename T>
-  auto split_integral(T input)
+template <typename Input, typename ReductionOp>
+_CCCL_DEVICE _CCCL_FORCEINLINE static Input reduce_sm80(Input input, ReductionOp)
+{
+  using namespace internal;
+  unsigned member_mask = ::__activemask();
+  static_assert(_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t));
+  static_assert(is_cuda_std_bitwise_v<ReductionOp, Input> || is_cuda_std_plus_v<ReductionOp, Input>
+                || is_cuda_std_min_max_v<ReductionOp, Input>);
+  if constexpr (is_cuda_std_bit_and_v<ReductionOp, Input>)
   {
-    constexpr auto half_bits = _CUDA_VSTD::numeric_limits<T>::digits / 2u;
-    using unsigned_t         = _CUDA_VSTD::make_unsigned_t<T>;
-    using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
-    auto high                = static_cast<half_size_t>(static_cast<unsigned_t>(input) >> half_bits);
-    auto low                 = static_cast<half_size_t>(input);
-    return ::cuda::std::array<half_size_t, 2>{high, low};
+    return static_cast<Input>(::__reduce_and_sync(member_mask, static_cast<uint32_t>(input)));
   }
-
-  template <bool ALL_LANES_VALID, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
-  {}
-
-  /**
-   * @brief Segmented reduction
-   *
-   * @tparam HEAD_SEGMENTED
-   *   Whether flags indicate a segment-head or a segment-tail
-   *
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] flag
-   *   Whether or not the current lane is a segment head/tail
-   *
-   * @param[in] reduction_op
-   *   Reduction operator
-   */
-  template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op)
+  else if constexpr (is_cuda_std_bit_or_v<ReductionOp, Input>)
   {
-    return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, ::cuda::std::true_type());
+    return static_cast<Input>(::__reduce_or_sync(member_mask, static_cast<uint32_t>(input)));
   }
-
-private:
-  /******************************************************************************
-   * Utility methods
-   ******************************************************************************/
-
-  //---------------------------------------------------------------------
-  // Regular reduction
-  //---------------------------------------------------------------------
-
-  /**
-   * @brief Reduction step
-   *
-   * @tparam ALL_LANES_VALID
-   *   Whether all lanes in each warp are contributing a valid fold of items
-   *
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] valid_items
-   *   Total number of valid items across the logical warp
-   *
-   * @param[in] reduction_op
-   *   Reduction operator
-   */
-  template <bool ALL_LANES_VALID, typename ReductionOp, int STEP>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceStep(T input, int valid_items, ReductionOp reduction_op, constant_t<STEP> /*step*/)
+  else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, Input>)
   {
-    constexpr int OFFSET = 1 << STEP;
-
-    // Share input through buffer
-    ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
-
-    __syncwarp(member_mask);
-
-    // Update input if peer_addend is in range
-    if ((ALL_LANES_VALID && IS_POW_OF_TWO) || ((lane_id + OFFSET) < valid_items))
-    {
-      T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
-      input         = reduction_op(input, peer_addend);
-    }
-
-    __syncwarp(member_mask);
-
-    return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, constant_v<STEP + 1>);
+    return static_cast<Input>(::__reduce_xor_sync(member_mask, static_cast<uint32_t>(input)));
   }
-
-  /**
-   * @brief Reduction step (terminate)
-   *
-   * @tparam ALL_LANES_VALID
-   *   Whether all lanes in each warp are contributing a valid fold of items
-   *
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] valid_items
-   *   Total number of valid items across the logical warp
-   *
-   * @param[in] reduction_op
-   *   Reduction operator
-   */
-  template <bool ALL_LANES_VALID, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  ReduceStep(T input, int valid_items, ReductionOp /*reduction_op*/, constant_t<STEPS> /*step*/)
+  else if constexpr (is_cuda_std_plus_v<ReductionOp, Input>)
   {
-    return input;
+    return ::__reduce_add_sync(member_mask, input);
   }
-
-  //---------------------------------------------------------------------
-  // Segmented reduction
-  //---------------------------------------------------------------------
-
-  /**
-   * @brief Ballot-based segmented reduce
-   *
-   * @tparam HEAD_SEGMENTED
-   *   Whether flags indicate a segment-head or a segment-tail
-   *
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] flag
-   *   Whether or not the current lane is a segment head/tail
-   *
-   * @param[in] reduction_op
-   *   Reduction operator
-   *
-   * @param[in] has_ballot
-   *   Marker type for whether the target arch has ballot functionality
-   */
-  template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::true_type /*has_ballot*/)
+  else if constexpr (is_cuda_minimum_v<ReductionOp, Input>)
   {
-    // Get the start flags for each thread in the warp.
-    int warp_flags = __ballot_sync(member_mask, flag);
+    return ::__reduce_min_sync(member_mask, input);
+  }
+  else if constexpr (is_cuda_maximum_v<ReductionOp, Input>)
+  {
+    return ::__reduce_max_sync(member_mask, input);
+  }
+}
 
-    if (!HEAD_SEGMENTED)
+template <typename Input>
+_CCCL_DEVICE _CCCL_FORCEINLINE static auto split(Input input)
+{
+  constexpr auto half_bits = _CUDA_VSTD::numeric_limits<Input>::digits / 2u;
+  using unsigned_t         = _CUDA_VSTD::make_unsigned_t<Input>;
+  using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
+  using output_t           = _CUDA_VSTD::__make_nbit_int_t<half_bits, _CUDA_VSTD::is_signed_v<Input>>;
+  auto input1              = static_cast<unsigned_t>(input);
+  auto high                = static_cast<half_size_t>(input1 >> half_bits);
+  auto low                 = static_cast<half_size_t>(input1);
+  return _CUDA_VSTD::array<output_t, 2>{static_cast<output_t>(high), static_cast<output_t>(low)};
+}
+
+template <typename Input>
+_CCCL_DEVICE _CCCL_FORCEINLINE static auto merge(Input inputA, Input inputB)
+{
+  static_assert(_CUDA_VSTD::is_integral_v<Input>);
+  constexpr auto digits = _CUDA_VSTD::numeric_limits<Input>::digits;
+  using unsigned_t      = _CUDA_VSTD::__make_nbit_uint_t<digits * 2>;
+  using output_t        = _CUDA_VSTD::__make_nbit_int_t<digits * 2, _CUDA_VSTD::is_signed_v<Input>>;
+  return static_cast<output_t>(static_cast<unsigned_t>(inputA) << digits | inputB);
+}
+
+_CCCL_TEMPLATE(typename Input, typename ReductionOp)
+_CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input>)
+_CCCL_DEVICE _CCCL_FORCEINLINE static Input reduce_recursive(Input input, ReductionOp reduction_op)
+{
+  using namespace internal;
+  static_assert(is_cuda_std_bitwise_v<ReductionOp, Input> && _CUDA_VSTD::is_integral_v<Input>);
+  auto [high, low]    = split(input);
+  auto high_reduction = reduce(high, reduction_op);
+  auto low_reduction  = reduce(low, reduction_op);
+  return merge(high_reduction, low_reduction);
+}
+
+_CCCL_TEMPLATE(typename Input, typename ReductionOp)
+_CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input>)
+_CCCL_DEVICE _CCCL_FORCEINLINE static Input reduce_recursive(Input input, ReductionOp reduction_op)
+{
+  using detail::merge;
+  using detail::split;
+  using internal::identity_v;
+  constexpr auto half_bits = _CUDA_VSTD::numeric_limits<Input>::digits / 2u;
+  auto [high, low]         = split(input);
+  auto high_result         = reduce(high, reduction_op);
+  if (high_result == 0) // shortcut: input is in range [0, 2^N/2)
+  {
+    return reduce(low, reduction_op);
+  }
+  if (_CUDA_VSTD::is_unsigned_v<Input> || high_result > 0) // >= 2^N/2 -> perform the computation as unsigned
+  {
+    using half_size_unsigned_t = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
+    constexpr auto identity    = identity_v<ReductionOp, half_size_unsigned_t>;
+    auto low_unsigned          = static_cast<half_size_unsigned_t>(low);
+    auto low_result            = reduce(high_result == high ? low_unsigned : identity, reduction_op);
+    return static_cast<Input>(merge(high_result, low_result));
+  }
+  // signed type and < 0
+  using half_size_signed_t = _CUDA_VSTD::__make_nbit_int_t<half_bits, true>;
+  constexpr auto identity  = identity_v<ReductionOp, half_size_signed_t>;
+  auto low_result          = reduce(high_result == high ? low : identity, reduction_op);
+  return merge(high_result, low_result);
+}
+
+_CCCL_TEMPLATE(typename Input, typename ReductionOp)
+_CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
+_CCCL_DEVICE _CCCL_FORCEINLINE Input reduce_recursive(Input input, ReductionOp reduction_op)
+{
+  using detail::merge;
+  using detail::split;
+  using internal::identity_v;
+  using unsigned_t      = _CUDA_VSTD::make_unsigned_t<Input>;
+  constexpr auto digits = _CUDA_VSTD::numeric_limits<Input>::digits;
+  auto [high, low]      = split(input);
+  auto high_reduction   = reduce(high, reduction_op);
+  auto low_digits       = static_cast<unsigned_t>(low) >> (digits - 5);
+  auto carry_out        = reduce(static_cast<uint32_t>(low_digits), reduction_op);
+  auto low_reduction    = reduce(low, reduction_op);
+  auto result_high      = high_reduction + carry_out;
+  return merge(result_high, low_reduction);
+}
+
+template <typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult ResultMode>
+_CCCL_DEVICE _CCCL_FORCEINLINE Input Reduce(
+  Input input,
+  ReductionOp reduction_op,
+  warp_reduce_mode_t<Mode> logical_warp_mode,
+  warp_reduce_result_t<ResultMode> result_mode)
+{
+  using namespace internal;
+  constexpr bool is_natively_supported_type =
+    _CUDA_VSTD::is_integral_v<Input> //
+    || _CUDA_VSTD::is_floating_point_v<Input> //
+    || _CUDA_VSTD::is_same_v<Input, _CUDA_VSTD::complex<float>>
+    || _CUDA_VSTD::is_same_v<Input, _CUDA_VSTD::complex<double>>;
+  if constexpr (is_natively_supported_type)
+  {
+    constexpr bool is_sm80_supported =
+      logical_warp_mode == single_logical_warp && _CUDA_VSTD::is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
+    if constexpr (is_sm80_supported)
     {
-      warp_flags <<= 1;
+      NV_IF_TARGET(NV_PROVIDES_SM_80, return reduce_sm80(input, reduction_op));
     }
-
-    // Keep bits above the current thread.
-    warp_flags &= ::cuda::ptx::get_sreg_lanemask_gt();
-
-    // Accommodate packing of multiple logical warps in a single physical warp
-    if (!IS_ARCH_WARP)
-    {
-      warp_flags >>= (::cuda::ptx::get_sreg_laneid() / LOGICAL_WARP_THREADS) * LOGICAL_WARP_THREADS;
-    }
-
-    // Find next flag
-    int next_flag = __clz(__brev(warp_flags));
-
-    // Clip the next segment at the warp boundary if necessary
-    if (LOGICAL_WARP_THREADS != 32)
-    {
-      next_flag = _CUDA_VSTD::min(next_flag, LOGICAL_WARP_THREADS);
-    }
-
+    return reduce_sm30(input, reduction_op);
+  }
+  else if constexpr (is_cuda_std_operator_v<ReductionOp, Input>)
+  {
+    return reduce_recursive(input, reduction_op);
+  }
+  else
+  {
+    constexpr auto Log2Size     = ::cuda::ilog2(LogicalWarpSize);
+    constexpr auto LogicalWidth = _CUDA_VSTD::integral_constant<int, LogicalWarpSize>{};
+    int pred;
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int STEP = 0; STEP < STEPS; STEP++)
+    for (int K = 0; K < Log2Size; K++)
     {
-      const int OFFSET = 1 << STEP;
-
-      // Share input into buffer
-      ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
-
-      __syncwarp(member_mask);
-
-      // Update input if peer_addend is in range
-      if (OFFSET + lane_id < next_flag)
+      auto res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, LogicalWidth);
+      if (res.pred)
       {
-        T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
-        input         = reduction_op(input, peer_addend);
-      }
-
-      __syncwarp(member_mask);
-    }
-
-    return input;
-  }
-
-  /**
-   * @brief Smem-based segmented reduce
-   *
-   * @tparam HEAD_SEGMENTED
-   *   Whether flags indicate a segment-head or a segment-tail
-   *
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] flag
-   *   Whether or not the current lane is a segment head/tail
-   *
-   * @param[in] reduction_op
-   *   Reduction operator
-   *
-   * @param[in] has_ballot
-   *   Marker type for whether the target arch has ballot functionality
-   */
-  template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T
-  SegmentedReduce(T input, FlagT flag, ReductionOp reduction_op, ::cuda::std::false_type /*has_ballot*/)
-  {
-    enum
-    {
-      UNSET = 0x0, // Is initially unset
-      SET   = 0x1, // Is initially set
-      SEEN  = 0x2, // Has seen another head flag from a successor peer
-    };
-
-    // Alias flags onto shared data storage
-    volatile SmemFlag* flag_storage = temp_storage.flags;
-
-    SmemFlag flag_status = (flag) ? SET : UNSET;
-
-    for (int STEP = 0; STEP < STEPS; STEP++)
-    {
-      const int OFFSET = 1 << STEP;
-
-      // Share input through buffer
-      ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
-
-      __syncwarp(member_mask);
-
-      // Get peer from buffer
-      T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
-
-      __syncwarp(member_mask);
-
-      // Share flag through buffer
-      flag_storage[lane_id] = flag_status;
-
-      // Get peer flag from buffer
-      SmemFlag peer_flag_status = flag_storage[lane_id + OFFSET];
-
-      // Update input if peer was in range
-      if (lane_id < LOGICAL_WARP_THREADS - OFFSET)
-      {
-        if (HEAD_SEGMENTED)
-        {
-          // Head-segmented
-          if ((flag_status & SEEN) == 0)
-          {
-            // Has not seen a more distant head flag
-            if (peer_flag_status & SET)
-            {
-              // Has now seen a head flag
-              flag_status |= SEEN;
-            }
-            else
-            {
-              // Peer is not a head flag: grab its count
-              input = reduction_op(input, peer_addend);
-            }
-
-            // Update seen status to include that of peer
-            flag_status |= (peer_flag_status & SEEN);
-          }
-        }
-        else
-        {
-          // Tail-segmented.  Simply propagate flag status
-          if (!flag_status)
-          {
-            input = reduction_op(input, peer_addend);
-            flag_status |= peer_flag_status;
-          }
-        }
+        input = reduction_op(input, res.data);
       }
     }
-
     return input;
   }
-};
+}
 
 } // namespace detail
+
+// #####################################################################################################################
+// # SHUFFLE DOWN + OP (float, int)
+// #####################################################################################################################
+
+#define _CUB_SHFL_OP_32BIT(TYPE, DIRECTION, OP, PTX_TYPE, PTX_REG_TYPE)                                                \
+                                                                                                                       \
+  template <typename = void>                                                                                           \
+  _CCCL_DEVICE void shfl_##DIRECTION##_##OP(                                                                           \
+    TYPE& value, int& pred, unsigned source_offset, unsigned shfl_c, unsigned mask)                                    \
+  {                                                                                                                    \
+    asm volatile(                                                                                                      \
+      "{                                                                                                       \n\t\t" \
+      ".reg .pred p;                                                                                          \n\t\t"  \
+      ".reg .b32  r0;                                                                                         \n\t\t"  \
+      "shfl.sync." #DIRECTION ".b32 r0|p, %0, %2, %3, %4;                                                     \n\t\t"  \
+      "@p " #OP "." #PTX_TYPE " %0, r0, %0;                                                                   \n\t\t"  \
+      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
+      "}"                                                                                                              \
+      : "+" #PTX_REG_TYPE(value), "=r"(pred)                                                                           \
+      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
+  }
+
+_CUB_SHFL_OP_32BIT(float, down, add, f32, f) // shfl_down_add(float)
+_CUB_SHFL_OP_32BIT(int, down, add, s32, r) // shfl_down_add(int)
+_CUB_SHFL_OP_32BIT(int, down, max, s32, r) // shfl_down_max(int)
+_CUB_SHFL_OP_32BIT(int, down, min, s32, r) // shfl_down_min(int)
+_CUB_SHFL_OP_32BIT(unsigned, down, add, u32, r) // shfl_down_add(unsigned)
+_CUB_SHFL_OP_32BIT(unsigned, down, max, u32, r) // shfl_down_max(unsigned)
+_CUB_SHFL_OP_32BIT(unsigned, down, min, u32, r) // shfl_down_min(unsigned)
+_CUB_SHFL_OP_32BIT(unsigned, down, and, u32, r) // shfl_down_and(unsigned)
+_CUB_SHFL_OP_32BIT(unsigned, down, or, u32, r) // shfl_down_or(unsigned)
+_CUB_SHFL_OP_32BIT(unsigned, down, xor, u32, r) // shfl_down_xor(unsigned)
+#undef _CUB_SHFL_OP_32BIT
+
+// #####################################################################################################################
+// # SHUFFLE DOWN + OP (double)
+// #####################################################################################################################
+
+#define _CUB_SHFL_OP_64BIT(TYPE, DIRECTION, OP, PTX_TYPE, PTX_REG_TYPE)                                                \
+                                                                                                                       \
+  template <typename = void>                                                                                           \
+  _CCCL_DEVICE void shfl_##DIRECTION##_##OP(                                                                           \
+    TYPE& value, int& pred, unsigned source_offset, unsigned shfl_c, unsigned mask)                                    \
+  {                                                                                                                    \
+    asm volatile(                                                                                                      \
+      "{                                                                                                       \n\t\t" \
+      ".reg .pred p;                                                                                          \n\t\t"  \
+      ".reg .u32 lo;                                                                                          \n\t\t"  \
+      ".reg .u32 hi;                                                                                          \n\t\t"  \
+      ".reg ." #PTX_TYPE " r1;                                                                                \n\t\t"  \
+      "mov.b64 {lo, hi}, %0;                                                                                  \n\t\t"  \
+      "shfl.sync." #DIRECTION ".b32 lo,   lo, %2, %3, %4;                                                     \n\t\t"  \
+      "shfl.sync." #DIRECTION ".b32 hi|p, hi, %2, %3, %4;                                                     \n\t\t"  \
+      "@p mov.b64 r1, {lo, hi};                                                                               \n\t\t"  \
+      "@p " #OP "." #PTX_TYPE " %0, r1, %0;                                                                   \n\t\t"  \
+      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
+      "}"                                                                                                              \
+      : "+" #PTX_REG_TYPE(value), "=r"(pred)                                                                           \
+      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
+  }
+
+_CUB_SHFL_OP_64BIT(double, down, add, f64, d) // shfl_down_add (double)
+#undef SHFL_EXCH_OP_64
+
+// #####################################################################################################################
+// # SHUFFLE DOWN + OP (complex<double>)
+// #####################################################################################################################
+
+#define _CUB_SHFL_OP_COMPLEX_32BIT(TYPE, DIRECTION, OP)                                                                \
+                                                                                                                       \
+  template <typename = void>                                                                                           \
+  _CCCL_DEVICE void shfl_##DIRECTION##_##OP(                                                                           \
+    TYPE& value, int& pred, unsigned source_offset, unsigned shfl_c, unsigned mask)                                    \
+  {                                                                                                                    \
+    auto real = value.real();                                                                                          \
+    auto img  = value.img();                                                                                           \
+    asm volatile(                                                                                                      \
+      "{                                                                                                       \n\t\t" \
+      ".reg .pred p;                                                                                          \n\t\t"  \
+      ".reg .f32 r0;                                                                                          \n\t\t"  \
+      ".reg .f32 r1;                                                                                          \n\t\t"  \
+      "shfl.sync." #DIRECTION ".b32 r0,   %0, %3, %4, %5;                                                     \n\t\t"  \
+      "shfl.sync." #DIRECTION ".b32 r1|p, %1, %3, %4, %5;                                                     \n\t\t"  \
+      "@p " #OP ".f32 %0, r0, %0;                                                                             \n\t\t"  \
+      "@p " #OP ".f32 %1, r1, %1;                                                                             \n\t\t"  \
+      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
+      "}"                                                                                                              \
+      : "+f"(real), "+f"(img), "=r"(pred)                                                                              \
+      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
+    value.real(real);                                                                                                  \
+    value.img(real);                                                                                                   \
+  }
+
+_CUB_SHFL_OP_COMPLEX_32BIT(::cuda::std::complex<float>, down, add) // shfl_down_add (double)
+#undef _CUB_SHFL_OP_COMPLEX_32BIT
+
+// #####################################################################################################################
+// # SHUFFLE DOWN + OP (complex<double>)
+// #####################################################################################################################
+
+#define _CUB_SHFL_OP_COMPLEX_64BIT(TYPE, DIRECTION, OP)                                                                \
+                                                                                                                       \
+  template <typename = void>                                                                                           \
+  _CCCL_DEVICE void shfl_##DIRECTION##_##OP(                                                                           \
+    TYPE& value, int& pred, unsigned source_offset, unsigned shfl_c, unsigned mask)                                    \
+  {                                                                                                                    \
+    auto real = value.real();                                                                                          \
+    auto img  = value.img();                                                                                           \
+    asm volatile(                                                                                                      \
+      ".reg .u32 lo1;                                                                                          \n\t\t" \
+      ".reg .u32 hi1;                                                                                          \n\t\t" \
+      ".reg .u32 lo2;                                                                                          \n\t\t" \
+      ".reg .u32 hi2;                                                                                          \n\t\t" \
+      ".reg .f64 r1;                                                                                           \n\t\t" \
+      ".reg .f64 r2;                                                                                           \n\t\t" \
+      ".reg .pred p;                                                                                           \n\t\t" \
+      "mov.b64 {lo1, hi1}, %0;                                                                                 \n\t\t" \
+      "mov.b64 {lo2, hi2}, %1;                                                                                 \n\t\t" \
+      "shfl.sync." #DIRECTION ".b32 lo1,   lo1, %3, %4, %5;                                                    \n\t\t" \
+      "shfl.sync." #DIRECTION ".b32 hi1,   hi1, %3, %4, %5;                                                    \n\t\t" \
+      "shfl.sync." #DIRECTION ".b32 lo2,   lo2, %3, %4, %5;                                                    \n\t\t" \
+      "shfl.sync." #DIRECTION ".b32 hi2|p, hi2, %3, %4, %5;                                                    \n\t\t" \
+      "@p mov.b64 r1, {lo1, hi1};                                                                              \n\t\t" \
+      "@p mov.b64 r2, {lo2, hi2};                                                                              \n\t\t" \
+      "@p " #OP ".f64 %0, r1, %0;                                                                              \n\t\t" \
+      "@p " #OP ".f64 %1, r2, %1;                                                                              \n\t\t" \
+      "selp.s32 %2, 1, 0, p;                                                                                   \n\t"   \
+      "}"                                                                                                              \
+      : "+f"(real), "+f"(img), "=r"(pred)                                                                              \
+      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
+    value.real(real);                                                                                                  \
+    value.img(real);                                                                                                   \
+  }
+
+_CUB_SHFL_OP_COMPLEX_64BIT(::cuda::std::complex<float>, down, add) // shfl_down_add (double)
+#undef _CUB_SHFL_OP_COMPLEX_32BIT
 
 CUB_NAMESPACE_END
