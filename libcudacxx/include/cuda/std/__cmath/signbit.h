@@ -68,7 +68,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __signbit_impl(_Tp __x)
 {
   if constexpr (numeric_limits<_Tp>::is_signed)
   {
-    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_v<_Tp>;
+    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_of_v<_Tp>;
   }
   else
   {
