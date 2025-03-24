@@ -213,8 +213,7 @@ auto integrals    = concat(all_signed, all_unsigned);
 template <template <typename> class Fn, typename... Ts>
 void run(type_list<Ts...>)
 {
-  int ls[sizeof...(Ts)] = {(Fn<Ts>{}(), 0)...};
-  (void) ls;
+  [[maybe_unused]] int ls[sizeof...(Ts)] = {(Fn<Ts>{}(), 0)...};
 }
 
 #endif // SUPPORT_CHARCONV_TEST_HELPERS_H

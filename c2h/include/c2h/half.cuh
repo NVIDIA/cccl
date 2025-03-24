@@ -331,7 +331,7 @@ inline std::ostream& operator<<(std::ostream& out, const __half& x)
 namespace cuda
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool is_floating_point_v<half_t> = true;
+inline constexpr bool is_floating_point_v<half_t> = true;
 }
 
 template <>

@@ -120,11 +120,10 @@ struct get_level_helper
 } // namespace detail
 
 template <typename QueryLevel, typename Hierarchy>
-_CCCL_INLINE_VAR constexpr bool has_level =
-  detail::has_level_helper<QueryLevel, ::cuda::std::remove_cvref_t<Hierarchy>>::value;
+inline constexpr bool has_level = detail::has_level_helper<QueryLevel, ::cuda::std::remove_cvref_t<Hierarchy>>::value;
 
 template <typename QueryLevel, typename Hierarchy>
-_CCCL_INLINE_VAR constexpr bool has_level_or_unit =
+inline constexpr bool has_level_or_unit =
   detail::has_level_helper<QueryLevel, ::cuda::std::remove_cvref_t<Hierarchy>>::value
   || detail::has_unit<QueryLevel, ::cuda::std::remove_cvref_t<Hierarchy>>::value;
 
@@ -138,7 +137,7 @@ struct can_stack_checker
 };
 
 template <typename LUnit, typename L1, typename... Levels>
-_CCCL_INLINE_VAR constexpr bool __can_stack =
+inline constexpr bool __can_stack =
   can_stack_checker<__level_type_of<L1>,
                     __level_type_of<Levels>...>::template can_stack<__level_type_of<Levels>..., LUnit>::value;
 

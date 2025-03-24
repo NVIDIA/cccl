@@ -994,7 +994,6 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI void swap(tuple&) noexcept {}
 };
 
-#ifndef _CCCL_NO_DEDUCTION_GUIDES
 template <class... _Tp>
 _CCCL_HOST_DEVICE tuple(_Tp...) -> tuple<_Tp...>;
 template <class _Tp1, class _Tp2>
@@ -1005,7 +1004,6 @@ template <class _Alloc, class _Tp1, class _Tp2>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
-#endif // !_CCCL_NO_DEDUCTION_GUIDES
 
 template <class... _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
@@ -1295,9 +1293,8 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
 {
   template <class _Tuple0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&>::type
-  operator()(tuple<_Types...> __t, _Tuple0&& __t0)
+  operator()([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0)
   {
-    (void) __t;
     return _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
                                         _CUDA_VSTD::get<_J0>(_CUDA_VSTD::forward<_Tuple0>(__t0))...);
   }
@@ -1305,9 +1302,8 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
   template <class _Tuple0, class _Tuple1, class... _Tuples>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr
     typename __tuple_cat_return_ref<tuple<_Types...>&&, _Tuple0&&, _Tuple1&&, _Tuples&&...>::type
-    operator()(tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
+    operator()([[maybe_unused]] tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
   {
-    (void) __t;
     using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
     using _T1 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple1>;
     return __tuple_cat<tuple<_Types..., __copy_cvref_t<_Tuple0, __tuple_element_t<_J0, _T0>>&&...>,

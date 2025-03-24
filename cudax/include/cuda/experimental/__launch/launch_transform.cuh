@@ -68,7 +68,7 @@ using __launch_transform_direct_result_t =
 struct __launch_fn
 {
   template <typename _Arg>
-  _CCCL_NODISCARD decltype(auto) operator()(::cuda::stream_ref __stream, _Arg&& __arg) const
+  _CCCL_NODISCARD decltype(auto) operator()([[maybe_unused]] ::cuda::stream_ref __stream, _Arg&& __arg) const
   {
     if constexpr (_CUDA_VSTD::_IsValidExpansion<__launch_transform_direct_result_t, _Arg>::value)
     {
@@ -77,7 +77,6 @@ struct __launch_fn
     }
     else
     {
-      (void) __stream;
       return _CUDA_VSTD::forward<_Arg>(__arg);
     }
   }

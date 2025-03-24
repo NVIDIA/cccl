@@ -540,7 +540,7 @@ struct DispatchBatchMemcpy
     }
 
     const int batch_memcpy_blev_grid_size =
-      static_cast<int>(sm_count * batch_memcpy_blev_occupancy * CUB_SUBSCRIPTION_FACTOR(0));
+      static_cast<int>(sm_count * batch_memcpy_blev_occupancy * subscription_factor);
 
     const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_buffers, max_num_buffers_per_invocation);
 

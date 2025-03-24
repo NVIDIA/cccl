@@ -30,10 +30,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public integral_constant<bool, _CCCL_BUILTIN_IS_FINAL(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_FINAL ^^^ / vvv !_CCCL_BUILTIN_IS_FINAL vvv
 
@@ -41,10 +39,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public false_type
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_final_v = false;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_final_v = false;
 
 #endif // !_CCCL_BUILTIN_IS_FINAL
 

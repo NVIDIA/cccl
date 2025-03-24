@@ -48,6 +48,7 @@
 //   Ignore deprecation warnings when using deprecated compilers. Compiling
 //   with deprecated C++ dialects will still issue warnings.
 
+//! Deprecated [Since 3.0]
 #  define CUB_CPP_DIALECT _CCCL_STD_VER
 
 // Define CUB_COMPILER_DEPRECATION macro:

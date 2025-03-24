@@ -72,7 +72,7 @@ struct WarpReduceSmem
    ******************************************************************************/
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0));
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
   /// Whether the logical warp size is a power-of-two
   static constexpr bool IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;

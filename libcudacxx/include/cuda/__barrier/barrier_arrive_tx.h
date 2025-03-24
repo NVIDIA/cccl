@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__barrier/barrier_block_scope.h>

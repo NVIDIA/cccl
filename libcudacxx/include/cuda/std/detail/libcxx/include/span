@@ -187,16 +187,16 @@ template<class R>
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_std_array = false;
+inline constexpr bool __is_std_array = false;
 
 template <class _Tp, size_t _Sz>
-_CCCL_INLINE_VAR constexpr bool __is_std_array<array<_Tp, _Sz>> = true;
+inline constexpr bool __is_std_array<array<_Tp, _Sz>> = true;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_std_span = false;
+inline constexpr bool __is_std_span = false;
 
 template <class _Tp, size_t _Extent>
-_CCCL_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
+inline constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 
 template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
@@ -269,10 +269,10 @@ _CCCL_CONCEPT __integral_constant_like = _CCCL_FRAGMENT(__integral_constant_like
 #endif // _CCCL_NO_CONCEPTS
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
-_CCCL_INLINE_VAR constexpr size_t __maybe_static_ext = dynamic_extent;
+inline constexpr size_t __maybe_static_ext = dynamic_extent;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
+inline constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
 
 template <typename _Tp, size_t _Extent>
 class _CCCL_TYPE_VISIBILITY_DEFAULT span
@@ -311,19 +311,17 @@ public:
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, size_type __count)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, [[maybe_unused]] size_type __count)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
-    (void) __count;
     _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
   }
 
   _CCCL_TEMPLATE(class _It, class _End)
   _CCCL_REQUIRES(__span_compatible_iterator<_It, element_type> _CCCL_AND __span_compatible_sentinel_for<_End, _It>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, _End __last)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_It __first, [[maybe_unused]] _End __last)
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
-    (void) __last;
     _CCCL_ASSERT((__last - __first >= 0), "invalid range in span's constructor (iterator, sentinel)");
     _CCCL_ASSERT(__last - __first == _Extent,
                  "invalid range in span's constructor (iterator, sentinel): last - first != extent");
@@ -754,10 +752,10 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 template <class _Tp, size_t _Extent>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
+inline constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
 
 template <class _Tp, size_t _Extent>
-_CCCL_INLINE_VAR constexpr bool enable_view<span<_Tp, _Extent>> = true;
+inline constexpr bool enable_view<span<_Tp, _Extent>> = true;
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
 #endif // _LIBCUDACXX_SPAN

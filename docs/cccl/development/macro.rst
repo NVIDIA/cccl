@@ -57,7 +57,7 @@ The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the ve
 **CUDA identification/version macros**:
 
 +----------------------------------+-----------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER``      | CUDA compiler is available  |
+| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available  |
 +----------------------------------+-----------------------------+
 | ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7     |
 +----------------------------------+-----------------------------+
@@ -216,8 +216,6 @@ The following macros are required only if the target C++ version does not suppor
 | ``_CCCL_CONSTEXPR_CXX20``   | Enable ``constexpr`` for C++20 or newer                  |
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX23``   | Enable ``constexpr`` for C++23 or newer                  |
-+-----------------------------+----------------------------------------------------------+
-| ``_CCCL_INLINE_VAR``        | Portable ``inline constexpr`` variable (before C++17)    |
 +-----------------------------+----------------------------------------------------------+
 
 **Concept-like Macros**:

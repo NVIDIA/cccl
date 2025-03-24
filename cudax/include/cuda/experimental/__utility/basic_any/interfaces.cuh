@@ -52,19 +52,19 @@ template <class _Interface>
 extern _Interface __remove_ireference_v<__ireference<_Interface const>>;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_value_v = _CUDA_VSTD::is_class_v<_Interface>;
+inline constexpr bool __is_value_v = _CUDA_VSTD::is_class_v<_Interface>;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_value_v<__ireference<_Interface>> = false;
+inline constexpr bool __is_value_v<__ireference<_Interface>> = false;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v = false;
+inline constexpr bool __is_lvalue_reference_v = false;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v<__ireference<_Interface const>> = true;
+inline constexpr bool __is_lvalue_reference_v<__ireference<_Interface const>> = true;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v<_Interface&> = true;
+inline constexpr bool __is_lvalue_reference_v<_Interface&> = true;
 
 //!
 //! __bases_of: get the list of base interface for an interface, including itself
@@ -82,16 +82,16 @@ using __bases_of _CCCL_NODEBUG_ALIAS = //
 //! interface subsumption
 //!
 template <class _Interface1, class _Interface2>
-_CCCL_INLINE_VAR constexpr bool __subsumes = false;
+inline constexpr bool __subsumes = false;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __subsumes<_Interface, _Interface> = true;
+inline constexpr bool __subsumes<_Interface, _Interface> = true;
 
 template <class... _Set>
-_CCCL_INLINE_VAR constexpr bool __subsumes<__iset<_Set...>, __iset<_Set...>> = true;
+inline constexpr bool __subsumes<__iset<_Set...>, __iset<_Set...>> = true;
 
 template <class... _Subset, class... _Superset>
-_CCCL_INLINE_VAR constexpr bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
+inline constexpr bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Superset...>, _Subset...>;
 
 //!
@@ -121,10 +121,10 @@ struct __has_base_fn<__iset<_Bases...>>
 };
 
 template <class _Derived, class _Base, class = void>
-_CCCL_INLINE_VAR constexpr bool __extension_of = false;
+inline constexpr bool __extension_of = false;
 
 template <class _Derived, class _Base>
-_CCCL_INLINE_VAR constexpr bool
+inline constexpr bool
   __extension_of<_Derived,
                  _Base,
                  _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_class_v<_Derived> && _CUDA_VSTD::is_class_v<_Base>>> =

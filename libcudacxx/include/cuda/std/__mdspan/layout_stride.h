@@ -128,9 +128,9 @@ private:
 
   template <class _OtherIndexType>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
-  __conversion_may_overflow(_OtherIndexType __stride) noexcept
+  __conversion_may_overflow([[maybe_unused]] _OtherIndexType __stride) noexcept
   {
-    (void) __stride; // nvcc believes stride is unused here
+    // nvcc believes stride is unused here
     if constexpr (_CCCL_TRAIT(is_integral, _OtherIndexType))
     {
       using _CommonType = common_type_t<index_type, _OtherIndexType>;
@@ -145,9 +145,9 @@ private:
 
   template <class _OtherIndexType>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __required_span_size_is_representable(
-    const extents_type& __ext, span<_OtherIndexType, extents_type::rank()> __strides)
+    const extents_type& __ext, [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides)
   {
-    (void) __strides; // nvcc believes strides is unused here
+    // nvcc believes strides is unused here
     if constexpr (extents_type::rank() != 0)
     {
       index_type __size = 1;
@@ -228,18 +228,18 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr mapping(const mapping&) noexcept = default;
 
   template <class _OtherIndexType, size_t... _Pos>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __to_strides_array(span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __to_strides_array(
+    [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
   {
-    (void) __strides; // nvcc believes strides is unused here
+    // nvcc believes strides is unused here
     return __stride_array{static_cast<index_type>(_CUDA_VSTD::as_const(__strides[_Pos]))...};
   }
 
   template <class _OtherIndexType, size_t... _Pos>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
-  __check_strides(span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __check_strides(
+    [[maybe_unused]] span<_OtherIndexType, extents_type::rank()> __strides, index_sequence<_Pos...>) noexcept
   {
-    (void) __strides; // nvcc believes strides is unused here
+    // nvcc believes strides is unused here
     if constexpr (_CCCL_TRAIT(is_integral, _OtherIndexType))
     {
       return ((__strides[_Pos] > _OtherIndexType{0}) && ... && true);
