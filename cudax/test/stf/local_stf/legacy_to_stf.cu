@@ -249,7 +249,6 @@ int main()
     cuda_safe_call(cudaStreamSynchronize(stream));
   }
 
-
   {
     nvtx_range r("logical token");
     for (size_t i = 0; i < NITER; i++)
@@ -257,4 +256,5 @@ int main()
       lib_call_logical_token<context>(handle, stream, d_ptrA, d_ptrB, N);
     }
     cuda_safe_call(cudaStreamSynchronize(stream));
+  }
 }

@@ -171,7 +171,7 @@ public:
   void fill(Fun&& fun)
   {
     nvtx_range r("fill");
-    
+
     // Fill blocks by blocks
     for (size_t colb = 0; colb < nt; colb++)
     {
@@ -940,7 +940,6 @@ void PDTRSM(cublasSideMode_t side,
 void PDPOTRS(matrix<double>& A, matrix<double>& B, cublasFillMode_t uplo)
 {
   nvtx_range r("PDPOTRS");
-
 
 #ifdef HAVE_DOT
   ctx.get_dot()->set_current_color("green");
