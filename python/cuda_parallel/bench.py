@@ -9,10 +9,13 @@ import numpy as np
 
 import cuda.parallel.experimental.algorithms._cy_reduce as impl_new
 import cuda.parallel.experimental.algorithms.reduce as impl_base
+import cuda.parallel.experimental.cy_iterators as iter_new
+import cuda.parallel.experimental.iterators as iter_base
 
 
-def time_reduce(reps, mod):
-    d = cp.ones(10, dtype="i4")
+def time_reduce_pointer(reps, mod):
+    n = 10
+    d = cp.ones(n, dtype="i4")
     res = cp.empty(tuple(), dtype=d.dtype)
     h_init = np.zeros(tuple(), dtype=d.dtype)
 
@@ -20,12 +23,34 @@ def time_reduce(reps, mod):
         return a + b
 
     alg = mod.reduce_into(d, res, my_add, h_init)
-    temp_bytes = alg(None, d, res, d.size, h_init)
+    temp_bytes = alg(None, d, res, n, h_init)
     scratch = cp.empty(temp_bytes, dtype=cp.uint8)
 
     t0 = time.perf_counter_ns()
     for i in range(reps):
-        alg(scratch, d, res, d.size, h_init)
+        alg(scratch, d, res, n, h_init)
+    t1 = time.perf_counter_ns()
+
+    return t1 - t0
+
+
+def time_reduce_iterator(reps, alg_mod, iter_mod):
+    n = 10
+    dt = cp.int32
+    d = iter_mod.CountingIterator(np.int32(0))
+    res = cp.empty(tuple(), dtype=dt)
+    h_init = np.zeros(tuple(), dtype=dt)
+
+    def my_add(a, b):
+        return a + b
+
+    alg = alg_mod.reduce_into(d, res, my_add, h_init)
+    temp_bytes = alg(None, d, res, n, h_init)
+    scratch = cp.empty(temp_bytes, dtype=cp.uint8)
+
+    t0 = time.perf_counter_ns()
+    for i in range(reps):
+        alg(scratch, d, res, n, h_init)
     t1 = time.perf_counter_ns()
 
     return t1 - t0
@@ -67,16 +92,34 @@ def lineprofile_reduce(reps, mod):
 
 
 def run_specific(mod):
-    time_reduce(10000, mod)
+    time_reduce_pointer(10000, mod)
+
+
+def run_timer_pointer():
+    fn = time_reduce_pointer
+    # warm-up
+    fn(100, impl_new)
+    fn(100, impl_base)
+    # time
+    t_new = fn(100000, impl_new) / 100000
+    t_base = fn(100000, impl_base) / 100000
+    print(f"Base: {t_base:<5.2f} ns per submission")
+    print(f"New:  {t_new:<5.2f} ns per submission")
+    print(f"'Base - New' diff: {t_base - t_new:<5.2f} ns")
 
 
 def run_timer():
+    run_timer_pointer()
+
+
+def run_timer_iterator():
+    fn = time_reduce_iterator
     # warm-up
-    time_reduce(100, impl_new)
-    time_reduce(100, impl_base)
+    fn(100, impl_new, iter_new)
+    fn(100, impl_base, iter_base)
     # time
-    t_new = time_reduce(100000, impl_new) / 100000
-    t_base = time_reduce(100000, impl_base) / 100000
+    t_new = fn(100000, impl_new, iter_new) / 100000
+    t_base = fn(100000, impl_base, iter_base) / 100000
     print(f"Base: {t_base:<5.2f} ns per submission")
     print(f"New:  {t_new:<5.2f} ns per submission")
     print(f"'Base - New' diff: {t_base - t_new:<5.2f} ns")
