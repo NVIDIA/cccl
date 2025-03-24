@@ -32,10 +32,12 @@ constexpr std::string_view op_template = R"XXX(
 )XXX";
 
 constexpr std::string_view stateless_binary_op_template = R"XXX(
-extern "C" __device__ {0} OP_NAME(VALUE_T lhs, VALUE_T rhs);
+extern "C" __device__ void OP_NAME(VALUE_T* lhs, VALUE_T* rhs, {0}* out);
 struct op_wrapper {{
   __device__ {0} operator()(VALUE_T lhs, VALUE_T rhs) const {{
-    return OP_NAME(lhs, rhs);
+    {0} ret;
+    OP_NAME(&lhs, &rhs, &ret);
+    return ret;
   }}
 }};
 )XXX";
