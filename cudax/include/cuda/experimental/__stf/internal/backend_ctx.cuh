@@ -55,10 +55,12 @@ namespace cuda::experimental::stf
 {
 
 template <typename T>
-struct is_shape_of : std::false_type {};
+struct is_shape_of : std::false_type
+{};
 
 template <typename U>
-struct is_shape_of<shape_of<U>> : std::true_type {};
+struct is_shape_of<shape_of<U>> : std::true_type
+{};
 
 template <typename T>
 constexpr bool is_shape_of_v = is_shape_of<T>::value;
@@ -78,7 +80,7 @@ class stream_ctx;
 namespace reserved
 {
 
-template <typename Ctx, typename shape_t, typename partitioner_t, typename... DepsAndOps>
+template <typename Ctx, typename exec_place_t, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
 template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
@@ -1040,17 +1042,21 @@ public:
    * parallel_for : apply an operation over a shaped index space
    */
 
-  template <typename exec_place_t, typename S, typename... Deps,
-            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t> && is_shape_of_v<S>> >
+  template <typename exec_place_t,
+            typename S,
+            typename... Deps,
+            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t> && is_shape_of_v<S>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
+      self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
   auto parallel_for(partitioner_t, exec_place e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, exec_place, S, partitioner_t, Deps...>(
+      self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>

@@ -403,7 +403,7 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
  *
  * @tparam deps_t
  */
-template <typename context, typename shape_t, typename partitioner_t, typename... deps_ops_t>
+template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
   //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
@@ -421,7 +421,7 @@ public:
   /// @param e_place Execution place for this parallel_for
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
-  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, deps_ops_t... deps)
+  parallel_for_scope(context& ctx, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
       : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
       , deps(mv(deps)...)
       , ctx(ctx)
@@ -987,7 +987,7 @@ private:
   ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<deps_ops_t...> deps;
   context& ctx;
-  exec_place e_place;
+  exec_place_t e_place;
   ::std::string symbol;
   shape_t shape;
 };
