@@ -37,8 +37,12 @@
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
-  if constexpr(::cuda::std::is_floating_point_v<T>)
+  if constexpr (::cuda::std::is_floating_point_v<T>)
+  {
     REQUIRE_APPROX_EQ(expected_data, test_results);
+  }
   else
+  {
     REQUIRE(expected_data == test_results);
+  }
 }
