@@ -22,13 +22,17 @@
 #include "MoveOnly.h"
 #include "test_macros.h"
 
+#if TEST_HAS_EXCEPTIONS()
 // test explicit
 static_assert(cuda::std::convertible_to<int, int>, "");
 static_assert(!cuda::std::convertible_to<int, cuda::std::bad_expected_access<int>>, "");
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (cuda::std::bad_expected_access<MoveOnly> b(MoveOnly{3}); assert(b.error().get() == 3);))
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }
