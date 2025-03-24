@@ -37,6 +37,7 @@
 
 #include "cuda/__functional/maximum.h"
 #include "cuda/std/__internal/namespaces.h"
+#include "cuda/std/__type_traits/integral_constant.h"
 #include "cuda/std/__type_traits/make_unsigned.h"
 #include <sys/types.h>
 
@@ -58,6 +59,31 @@
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
+
+enum class WarpReduceMode
+{
+  SingleLogicalWarp,
+  MultipleLogicalWarps
+};
+
+template <WarpReduceMode Mode>
+using warp_reduce_mode_t = _CUDA_VSTD::integral_constant<WarpReduceMode, Mode>;
+
+inline constexpr auto single_logical_warp    = warp_reduce_mode_t<WarpReduceMode::SingleLogicalWarp>{};
+inline constexpr auto multiple_logical_warps = warp_reduce_mode_t<WarpReduceMode::MultipleLogicalWarps>{};
+
+enum class WarpReduceResult
+{
+  AllLanes,
+  SingleLane
+};
+
+template <WarpReduceResult Kind>
+using warp_reduce_result_t = _CUDA_VSTD::integral_constant<WarpReduceResult, Kind>;
+
+inline constexpr auto all_lanes_result   = warp_reduce_result_t<WarpReduceResult::AllLanes>{};
+inline constexpr auto single_lane_result = warp_reduce_result_t<WarpReduceResult::SingleLane>{};
+
 /**
  * @brief WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
  *        across a CUDA thread warp.
@@ -132,23 +158,25 @@ struct WarpReduceSmem
    * Interface
    ******************************************************************************/
 
-  /**
-   * @brief Reduction
-   *
-   * @tparam ALL_LANES_VALID
-   *   Whether all lanes in each warp are contributing a valid fold of items
-   *
-   * @param[in] input
-   *   Calling thread's input
-   *
-   * @param[in] valid_items
-   *   Total number of valid items across the logical warp
-   *
-   * @param[in] reduction_op
-   *   Reduction operator
-   */
-  template <bool ALL_LANES_VALID, typename ReductionOp>
-  _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
+  using sing
+
+    /**
+     * @brief Reduction
+     *
+     * @tparam ALL_LANES_VALID
+     *   Whether all lanes in each warp are contributing a valid fold of items
+     *
+     * @param[in] input
+     *   Calling thread's input
+     *
+     * @param[in] valid_items
+     *   Total number of valid items across the logical warp
+     *
+     * @param[in] reduction_op
+     *   Reduction operator
+     */
+    template <bool ALL_LANES_VALID, typename ReductionOp>
+    _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, single_logical_warp)
   {
     constexpr bool is_cuda_std_plus =
       _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::plus<>> || _CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::plus<T>>;
@@ -205,18 +233,21 @@ struct WarpReduceSmem
       {
         auto high     = static_cast<cast_t>(static_cast<uint64_t>(input) >> 32);
         auto high_max = ::__reduce_max_sync(member_mask, high);
-        if (high_max == 0) // max input is positive and < 2^32
+        if (high_max == 0) // shortcut: max input is positive and < 2^32
         {
           return ::__reduce_max_sync(member_mask, static_cast<uint32_t>(input));
         }
-        if (_CUDA_VSTD::is_signed_v<T> && high_max == -1) // max input is negative and >= -2^32
+        if (high_max > 0)
         {
+          constexpr auto min_v = _CUDA_VSTD::numeric_limits<uint32_t>::min();
+          auto low             = static_cast<uint32_t>(input);
+          auto low_max         = ::__reduce_max_sync(member_mask, (high_max == high) ? low : min_v);
+          return static_cast<T>(static_cast<uint64_t>(high_max) << 32 | low_max);
         }
-        constexpr auto min_v = _CUDA_VSTD::numeric_limits<cast_t>::min();
-        auto low             = static_cast<cast_t>(input);
+        constexpr auto min_v = _CUDA_VSTD::numeric_limits<int32_t>::min();
+        auto low             = static_cast<int32_t>(input);
         auto low_max         = ::__reduce_max_sync(member_mask, (high_max == high) ? low : min_v);
-        auto mask            = ::__ballot_sync(member_mask, low_max == low);
-        return ::cuda::warp_shuffle_idx(input, ::cuda::log2(mask), member_mask);
+        return static_cast<T>(static_cast<uint64_t>(high_max) << 32 | low_max);
       }
     }
     else if constexpr (is_cuda_minimum)
@@ -232,13 +263,12 @@ struct WarpReduceSmem
         auto high_min = ::__reduce_min_sync(member_mask, high);
         if (high_min == 0)
         {
-          return ::__reduce_max_sync(member_mask, static_cast<cast_t>(input));
+          return ::__reduce_min_sync(member_mask, static_cast<cast_t>(input));
         }
-        constexpr auto min_v = _CUDA_VSTD::numeric_limits<uint32_t>::min();
-        auto low             = static_cast<uint32_t>(input);
-        auto low_max         = ::__reduce_max_sync(member_mask, (high_min == high) ? low : min_v);
-        auto mask            = ::__ballot_sync(member_mask, low_max == low);
-        return ::cuda::warp_shuffle_idx(input, ::cuda::log2(mask), member_mask);
+        constexpr auto max_v = _CUDA_VSTD::numeric_limits<cast_t>::max();
+        auto low             = static_cast<cast_t>(input);
+        auto low_min         = ::__reduce_min_sync(member_mask, (high_min == high) ? low : max_v);
+        return static_cast<T>(static_cast<uint64_t>(high_min) << 32 | low_min);
       }
     }
     else if constexpr (is_cuda_std_bit_and)
@@ -312,27 +342,20 @@ struct WarpReduceSmem
     }
   }
 
+  template <typename T>
+  auto split_integral(T input)
+  {
+    constexpr auto half_bits = _CUDA_VSTD::numeric_limits<T>::digits / 2u;
+    using unsigned_t         = _CUDA_VSTD::make_unsigned_t<T>;
+    using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
+    auto high                = static_cast<half_size_t>(static_cast<unsigned_t>(input) >> half_bits);
+    auto low                 = static_cast<half_size_t>(input);
+    return ::cuda::std::array<half_size_t, 2>{high, low};
+  }
+
   template <bool ALL_LANES_VALID, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, int valid_items, ReductionOp reduction_op)
-  {
-    if constexpr (_CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::plus<T>> && _CUDA_VSTD::is_same_v<T, bool>)
-    {
-      auto value = input && (_CUDA_VPTX::get_sreg_laneid() < valid_items);
-      return _CUDA_VSTD::popcount(__ballot_sync(member_mask, value));
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::plus<T>> && _CUDA_VSTD::is_integral_v<T>
-                       && sizeof(T) <= 4)
-    {
-      auto value = (_CUDA_VPTX::get_sreg_laneid() < valid_items) ? input : T{};
-      return static_cast<T>(__reduce_add_sync(member_mask, static_cast<uint32_t>(value)));
-    }
-    else if constexpr (_CUDA_VSTD::is_same_v<ReductionOp, _CUDA_VSTD::plus<T>> && _CUDA_VSTD::is_integral_v<T>
-                       && sizeof(T) == 8)
-    {
-      auto value = (_CUDA_VPTX::get_sreg_laneid() < valid_items) ? input : T{};
-      return __reduce_add_sync(member_mask, static_cast<uint32_t>(value));
-    }
-  }
+  {}
 
   /**
    * @brief Segmented reduction
