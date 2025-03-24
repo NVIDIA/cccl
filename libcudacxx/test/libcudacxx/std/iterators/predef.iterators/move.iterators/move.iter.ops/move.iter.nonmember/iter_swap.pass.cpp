@@ -42,9 +42,10 @@ struct MaybeNoexceptSwap
 using ThrowingBase = MaybeNoexceptSwap<false>;
 using NoexceptBase = MaybeNoexceptSwap<true>;
 static_assert(cuda::std::input_iterator<ThrowingBase>);
-ASSERT_NOT_NOEXCEPT(
-  cuda::std::ranges::iter_swap(cuda::std::declval<ThrowingBase>(), cuda::std::declval<ThrowingBase>()));
-ASSERT_NOEXCEPT(cuda::std::ranges::iter_swap(cuda::std::declval<NoexceptBase>(), cuda::std::declval<NoexceptBase>()));
+static_assert(
+  !noexcept(cuda::std::ranges::iter_swap(cuda::std::declval<ThrowingBase>(), cuda::std::declval<ThrowingBase>())));
+static_assert(
+  noexcept(cuda::std::ranges::iter_swap(cuda::std::declval<NoexceptBase>(), cuda::std::declval<NoexceptBase>())));
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
@@ -79,9 +80,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   // Check the `noexcept` specification.
   {
     using ThrowingIter = cuda::std::move_iterator<ThrowingBase>;
-    ASSERT_NOT_NOEXCEPT(iter_swap(cuda::std::declval<ThrowingIter>(), cuda::std::declval<ThrowingIter>()));
+    static_assert(!noexcept(iter_swap(cuda::std::declval<ThrowingIter>(), cuda::std::declval<ThrowingIter>())));
     using NoexceptIter = cuda::std::move_iterator<NoexceptBase>;
-    ASSERT_NOEXCEPT(iter_swap(cuda::std::declval<NoexceptIter>(), cuda::std::declval<NoexceptIter>()));
+    static_assert(noexcept(iter_swap(cuda::std::declval<NoexceptIter>(), cuda::std::declval<NoexceptIter>())));
   }
 
   return true;

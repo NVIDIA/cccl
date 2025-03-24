@@ -36,7 +36,7 @@ __host__ __device__ void test()
   using C = cuda::std::complex<T>;
 
   static_assert(HasTupleSize<C>::value, "");
-  ASSERT_SAME_TYPE(size_t, typename cuda::std::tuple_size<C>::value_type);
+  static_assert(cuda::std::is_same_v<size_t, typename cuda::std::tuple_size<C>::value_type>);
   static_assert(cuda::std::tuple_size<C>() == 2, "");
 }
 
@@ -44,16 +44,15 @@ __host__ __device__ void test()
 {
   test<float>();
   test<double>();
-
-  // CUDA treats long double as double
-  // test<long double>();
-
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _CCCL_HAS_LONG_DOUBLE()
+  test<long double>();
+#endif // _CCCL_HAS_LONG_DOUBLE()
+#if _LIBCUDACXX_HAS_NVFP16()
   test<__half>();
-#endif
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test<__nv_bfloat16>();
-#endif
+#endif // _LIBCUDACXX_HAS_NVBF16()
 }
 
 int main(int, char**)

@@ -103,16 +103,16 @@ struct WarpReduceShfl
   //---------------------------------------------------------------------
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0));
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
   /// The number of warp reduction steps
   static constexpr int STEPS = Log2<LOGICAL_WARP_THREADS>::VALUE;
 
   /// Number of logical warps in a PTX warp
-  static constexpr int LOGICAL_WARPS = CUB_WARP_THREADS(0) / LOGICAL_WARP_THREADS;
+  static constexpr int LOGICAL_WARPS = warp_threads / LOGICAL_WARP_THREADS;
 
   /// The 5-bit SHFL mask for logically splitting warps into sub-segments starts 8-bits up
-  static constexpr unsigned SHFL_C = (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS) << 8;
+  static constexpr unsigned SHFL_C = (warp_threads - LOGICAL_WARP_THREADS) << 8;
 
   template <typename S>
   struct IsInteger
@@ -725,10 +725,5 @@ struct WarpReduceShfl
   }
 };
 } // namespace detail
-
-template <typename T, int LOGICAL_WARP_THREADS>
-using WarpReduceShfl CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpReduceShfl<T, LOGICAL_WARP_THREADS>;
 
 CUB_NAMESPACE_END

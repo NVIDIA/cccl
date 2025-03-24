@@ -38,12 +38,27 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   nvrtcProgram prog{};
 
   const char* src  = R"asdf(
-    #include <cub/warp/warp_reduce.cuh>
-    #include <cub/warp/warp_scan.cuh>
-    #include <cub/warp/warp_exchange.cuh>
-    #include <cub/warp/warp_load.cuh>
-    #include <cub/warp/warp_store.cuh>
-    #include <cub/warp/warp_merge_sort.cuh>
+    #include <cub/agent/agent_adjacent_difference.cuh>
+    #include <cub/agent/agent_batch_memcpy.cuh>
+    #include <cub/agent/agent_for.cuh>
+    #include <cub/agent/agent_histogram.cuh>
+    #include <cub/agent/agent_merge.cuh>
+    #include <cub/agent/agent_merge_sort.cuh>
+    #include <cub/agent/agent_radix_sort_downsweep.cuh>
+    #include <cub/agent/agent_radix_sort_histogram.cuh>
+    #include <cub/agent/agent_radix_sort_onesweep.cuh>
+    #include <cub/agent/agent_radix_sort_upsweep.cuh>
+    #include <cub/agent/agent_reduce_by_key.cuh>
+    #include <cub/agent/agent_reduce.cuh>
+    #include <cub/agent/agent_rle.cuh>
+    #include <cub/agent/agent_scan_by_key.cuh>
+    #include <cub/agent/agent_scan.cuh>
+    #include <cub/agent/agent_segmented_radix_sort.cuh>
+    #include <cub/agent/agent_select_if.cuh>
+    #include <cub/agent/agent_sub_warp_merge_sort.cuh>
+    #include <cub/agent/agent_three_way_partition.cuh>
+    #include <cub/agent/agent_unique_by_key.cuh>
+    #include <cub/agent/single_pass_scan_operators.cuh>
     #include <cub/block/block_adjacent_difference.cuh>
     #include <cub/block/block_discontinuity.cuh>
     #include <cub/block/block_exchange.cuh>
@@ -53,8 +68,13 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/block/block_merge_sort.cuh>
     #include <cub/block/block_radix_rank.cuh>
     #include <cub/block/block_radix_sort.cuh>
+    #include <cub/block/block_raking_layout.cuh>
     #include <cub/block/block_reduce.cuh>
+    #include <cub/block/block_run_length_decode.cuh>
     #include <cub/block/block_scan.cuh>
+    #include <cub/block/block_shuffle.cuh>
+    #include <cub/block/block_store.cuh>
+    #include <cub/block/radix_rank_sort_operations.cuh>
     #include <cub/device/dispatch/kernels/reduce.cuh>
     #include <cub/device/dispatch/kernels/for_each.cuh>
     #include <cub/device/dispatch/kernels/scan.cuh>
@@ -62,6 +82,35 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
     #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
     #include <cub/device/dispatch/kernels/radix_sort.cuh>
     #include <cub/device/dispatch/kernels/unique_by_key.cuh>
+    #include <cub/device/dispatch/kernels/transform.cuh>
+    #include <cub/iterator/arg_index_input_iterator.cuh>
+    #include <cub/iterator/cache_modified_input_iterator.cuh>
+    #include <cub/iterator/cache_modified_output_iterator.cuh>
+    #include <cub/iterator/tex_obj_input_iterator.cuh>
+    #include <cub/thread/thread_load.cuh>
+    #include <cub/thread/thread_operators.cuh>
+    #include <cub/thread/thread_reduce.cuh>
+    #include <cub/thread/thread_scan.cuh>
+    #include <cub/thread/thread_sort.cuh>
+    #include <cub/thread/thread_store.cuh>
+    #include <cub/warp/warp_reduce.cuh>
+    #include <cub/warp/warp_scan.cuh>
+    #include <cub/warp/warp_exchange.cuh>
+    #include <cub/warp/warp_load.cuh>
+    #include <cub/warp/warp_store.cuh>
+    #include <cub/warp/warp_merge_sort.cuh>
+    #include <cub/util_arch.cuh>
+    #include <cub/util_cpp_dialect.cuh>
+    #include <cub/util_debug.cuh>
+    #include <cub/util_device.cuh>
+    #include <cub/util_macro.cuh>
+    #include <cub/util_math.cuh>
+    #include <cub/util_namespace.cuh>
+    #include <cub/util_policy_wrapper_t.cuh>
+    #include <cub/util_ptx.cuh>
+    #include <cub/util_temporary_storage.cuh>
+    #include <cub/util_type.cuh>
+    #include <cub/util_vsmem.cuh>
 
     #include <thrust/iterator/constant_iterator.h>
     #include <thrust/iterator/counting_iterator.h>

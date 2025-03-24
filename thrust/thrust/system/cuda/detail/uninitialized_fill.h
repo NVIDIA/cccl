@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
@@ -58,7 +58,7 @@ struct functor
   Iterator items;
   T value;
 
-  using value_type = typename iterator_traits<Iterator>::value_type;
+  using value_type = thrust::detail::it_value_t<Iterator>;
 
   THRUST_FUNCTION
   functor(Iterator items_, T const& value_)

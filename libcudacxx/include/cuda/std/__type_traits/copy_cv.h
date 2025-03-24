@@ -26,7 +26,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Let COPYCV(FROM, TO) be an alias for type TO with the addition of FROM's
 // top-level cv-qualifiers.
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class>
 extern __apply_cvref_ __apply_cv;
 template <class _Tp>
@@ -38,31 +37,6 @@ extern __apply_cvref_cv __apply_cv<const volatile _Tp>;
 
 template <class _Tp>
 using __apply_cv_fn = decltype(__apply_cv<_Tp>);
-#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES / _CCCL_NO_VARIABLE_TEMPLATES vvv
-template <class>
-struct __apply_cv
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_;
-};
-template <class _Tp>
-struct __apply_cv<const _Tp>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_c;
-};
-template <class _Tp>
-struct __apply_cv<volatile _Tp>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_v;
-};
-template <class _Tp>
-struct __apply_cv<const volatile _Tp>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_cv;
-};
-
-template <class _Tp>
-using __apply_cv_fn _CCCL_NODEBUG_ALIAS = typename __apply_cv<_Tp>::type;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _From, class _To>
 using __copy_cv_t = typename __apply_cv_fn<_From>::template __call<_To>;

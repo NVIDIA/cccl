@@ -42,21 +42,6 @@ inline event join_with_stream(
 
 using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>, 7>;
 
-/* Tag types for event counters */
-class cuda_event_tag
-{
-public:
-  class created
-  {};
-  class alive
-  {};
-  class destroyed
-  {};
-};
-
-class cuda_stream_wait_event_tag
-{};
-
 } // namespace reserved
 
 /* This event type allows to synchronize a CUDA stream with a CUDA event in
@@ -77,10 +62,6 @@ protected:
     if (cudaEvent)
     {
       cuda_safe_call(cudaEventDestroy(cudaEvent));
-#ifdef CUDASTF_DEBUG
-      reserved::counter<reserved::cuda_event_tag::destroyed>::increment();
-      reserved::counter<reserved::cuda_event_tag::alive>::decrement();
-#endif
 
       //            fprintf(stderr, "DESTROY EVENT %p #%d (created %d)\n", event, ++destroyed_event_cnt,
       //            event_cnt);
@@ -129,27 +110,13 @@ public:
       // Disable timing to avoid implicit barriers
       cudaEvent_t sync_event;
       cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
-#ifdef CUDASTF_DEBUG
-      reserved::counter<reserved::cuda_event_tag::created>::increment();
-      reserved::counter<reserved::cuda_event_tag::alive>::increment();
-      reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(
-        reserved::counter<cuda_event_tag::alive>::load());
-#endif
-
       cuda_safe_call(cudaEventRecord(sync_event, s2));
 
       // According to documentation "event may be from a different device than stream."
       cuda_safe_call(cudaStreamWaitEvent(s1, sync_event, 0));
-#ifdef CUDASTF_DEBUG
-      reserved::counter<reserved::cuda_stream_wait_event_tag>.increment();
-#endif
 
       // Asynchronously destroy event to avoid a memleak
       cuda_safe_call(cudaEventDestroy(sync_event));
-#ifdef CUDASTF_DEBUG
-      reserved::counter<reserved::cuda_event_tag::destroyed>::increment();
-      reserved::counter<reserved::cuda_event_tag::alive>::decrement();
-#endif
     };
   }
 
@@ -167,12 +134,6 @@ public:
       cuda_safe_call(cudaEventCreateWithFlags(&cudaEvent, cudaEventDisableTiming));
       // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
       assert(cudaEvent);
-#ifdef CUDASTF_DEBUG
-      reserved::counter<reserved::cuda_event_tag::created>::increment();
-      reserved::counter<reserved::cuda_event_tag::alive>::increment();
-      reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(
-        reserved::counter<cuda_event_tag::alive>::load());
-#endif
       cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
     };
   }
@@ -186,9 +147,6 @@ public:
       if (!skip)
       {
         cuda_safe_call(cudaStreamWaitEvent(dstream.stream, from.cudaEvent, 0));
-#ifdef CUDASTF_DEBUG
-        reserved::counter<reserved::cuda_stream_wait_event_tag>.increment();
-#endif
       }
     }
   }
@@ -196,7 +154,7 @@ public:
   /**
    * @brief Remove implicit dependencies already induced by more recent events using the same stream.
    */
-  bool factorize(reserved::event_vector& events) override
+  bool factorize(backend_ctx_untyped&, reserved::event_vector& events) override
   {
     assert(events.size() >= 2);
     assert([&] {
@@ -397,7 +355,7 @@ private:
   {
     // Make sure we reduce the number of resulting stream/event synchronization
     // API calls to a minimum. If the list was already optimized, this will be a no-op
-    prereq_in.optimize();
+    prereq_in.optimize(bctx);
 
     // Do we have to keep track of dependencies in DOT ?
     bool tracing = bctx.get_dot()->is_tracing_prereqs();
@@ -415,9 +373,6 @@ private:
         if (!skip)
         {
           cuda_safe_call(cudaStreamWaitEvent(dstream.stream, se->get_cuda_event(), 0));
-#ifdef CUDASTF_DEBUG
-          reserved::counter<reserved::cuda_stream_wait_event_tag>.increment();
-#endif
         }
       }
       se->outbound_deps++;
@@ -482,7 +437,7 @@ inline event join_with_stream(
 {
   // Make sure we reduce the number of resulting stream/event synchronization
   // API calls to a minimum. If the list was already optimized, this will be a no-op
-  prereq_in.optimize();
+  prereq_in.optimize(bctx);
 
   auto se = reserved::handle<stream_and_event>(mv(dstream), record_event);
   se->set_symbol(bctx, mv(string));

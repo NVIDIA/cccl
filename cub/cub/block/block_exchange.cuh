@@ -146,16 +146,17 @@ template <typename T,
 class BlockExchange
 {
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z; ///< The thread block size in threads
-  static constexpr int WARP_THREADS  = CUB_WARP_THREADS(0);
+  static constexpr int WARP_THREADS  = detail::warp_threads;
   static constexpr int WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS; // TODO(bgruber): use ceil_div in
                                                                                   // C++14
-  static constexpr int LOG_SMEM_BANKS = CUB_LOG_SMEM_BANKS(0);
+  static constexpr int LOG_SMEM_BANKS = detail::log2_smem_banks;
 
-  static constexpr int TILE_ITEMS          = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int TIME_SLICES         = WARP_TIME_SLICING ? WARPS : 1;
-  static constexpr int TIME_SLICED_THREADS = WARP_TIME_SLICING ? CUB_MIN(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
-  static constexpr int TIME_SLICED_ITEMS   = TIME_SLICED_THREADS * ITEMS_PER_THREAD;
-  static constexpr int WARP_TIME_SLICED_THREADS = CUB_MIN(BLOCK_THREADS, WARP_THREADS);
+  static constexpr int TILE_ITEMS  = BLOCK_THREADS * ITEMS_PER_THREAD;
+  static constexpr int TIME_SLICES = WARP_TIME_SLICING ? WARPS : 1;
+  static constexpr int TIME_SLICED_THREADS =
+    WARP_TIME_SLICING ? _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS) : BLOCK_THREADS;
+  static constexpr int TIME_SLICED_ITEMS        = TIME_SLICED_THREADS * ITEMS_PER_THREAD;
+  static constexpr int WARP_TIME_SLICED_THREADS = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS);
   static constexpr int WARP_TIME_SLICED_ITEMS   = WARP_TIME_SLICED_THREADS * ITEMS_PER_THREAD;
 
   // Insert padding to avoid bank conflicts during raking when items per thread is a power of two and > 4 (otherwise
@@ -203,7 +204,7 @@ private:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     ::cuda::std::false_type /*time_slicing*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
@@ -216,7 +217,7 @@ private:
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
@@ -244,7 +245,7 @@ private:
   {
     T temp_items[ITEMS_PER_THREAD];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int slice = 0; slice < TIME_SLICES; slice++)
     {
       const int slice_offset = slice * TIME_SLICED_ITEMS;
@@ -254,7 +255,7 @@ private:
 
       if (warp_id == slice)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
@@ -268,7 +269,7 @@ private:
 
       __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         // Read a strip of items
@@ -290,8 +291,8 @@ private:
       }
     }
 
-// Copy
-#pragma unroll
+    // Copy
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       output_items[i] = temp_items[i];
@@ -312,7 +313,7 @@ private:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     ::cuda::std::false_type /*time_slicing*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + i + (lane_id * ITEMS_PER_THREAD);
@@ -325,7 +326,7 @@ private:
 
     __syncwarp(0xffffffff);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id;
@@ -353,7 +354,7 @@ private:
   {
     if (warp_id == 0)
     {
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         int item_offset = i + lane_id * ITEMS_PER_THREAD;
@@ -366,7 +367,7 @@ private:
 
       __syncwarp(0xffffffff);
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
@@ -378,14 +379,14 @@ private:
       }
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int slice = 1; slice < TIME_SLICES; ++slice)
     {
       __syncthreads();
 
       if (warp_id == slice)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i + lane_id * ITEMS_PER_THREAD;
@@ -398,7 +399,7 @@ private:
 
         __syncwarp(0xffffffff);
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
@@ -426,7 +427,7 @@ private:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     ::cuda::std::false_type /*time_slicing*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
@@ -439,8 +440,8 @@ private:
 
     __syncthreads();
 
-// No timeslicing
-#pragma unroll
+    // No timeslicing
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
@@ -469,7 +470,7 @@ private:
     // Warp time-slicing
     T temp_items[ITEMS_PER_THREAD];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int slice = 0; slice < TIME_SLICES; slice++)
     {
       const int slice_offset = slice * TIME_SLICED_ITEMS;
@@ -477,7 +478,7 @@ private:
 
       __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         // Write a strip of items
@@ -502,7 +503,7 @@ private:
 
       if (warp_id == slice)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
@@ -515,8 +516,8 @@ private:
       }
     }
 
-// Copy
-#pragma unroll
+    // Copy
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       output_items[i] = temp_items[i];
@@ -537,7 +538,7 @@ private:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     ::cuda::std::false_type /*time_slicing*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + (i * WARP_TIME_SLICED_THREADS) + lane_id;
@@ -550,7 +551,7 @@ private:
 
     __syncwarp(0xffffffff);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = warp_offset + i + (lane_id * ITEMS_PER_THREAD);
@@ -576,14 +577,14 @@ private:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     ::cuda::std::true_type /*time_slicing*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int slice = 0; slice < TIME_SLICES; ++slice)
     {
       __syncthreads();
 
       if (warp_id == slice)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i * WARP_TIME_SLICED_THREADS + lane_id;
@@ -596,7 +597,7 @@ private:
 
         __syncwarp(0xffffffff);
 
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = i + lane_id * ITEMS_PER_THREAD;
@@ -627,7 +628,7 @@ private:
     OffsetT (&ranks)[ITEMS_PER_THREAD],
     ::cuda::std::false_type /*time_slicing*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
@@ -640,7 +641,7 @@ private:
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = linear_tid * ITEMS_PER_THREAD + i;
@@ -671,14 +672,14 @@ private:
   {
     T temp_items[ITEMS_PER_THREAD];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int slice = 0; slice < TIME_SLICES; slice++)
     {
       __syncthreads();
 
       const int slice_offset = TIME_SLICED_ITEMS * slice;
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         int item_offset = ranks[i] - slice_offset;
@@ -696,7 +697,7 @@ private:
 
       if (warp_id == slice)
       {
-#pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = 0; i < ITEMS_PER_THREAD; i++)
         {
           int item_offset = lane_id * ITEMS_PER_THREAD + i;
@@ -709,8 +710,8 @@ private:
       }
     }
 
-// Copy
-#pragma unroll
+    // Copy
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       output_items[i] = temp_items[i];
@@ -734,7 +735,7 @@ private:
     OffsetT (&ranks)[ITEMS_PER_THREAD],
     ::cuda::std::false_type /*time_slicing*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
@@ -747,7 +748,7 @@ private:
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
@@ -778,7 +779,7 @@ private:
   {
     T temp_items[ITEMS_PER_THREAD];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int slice = 0; slice < TIME_SLICES; slice++)
     {
       const int slice_offset = slice * TIME_SLICED_ITEMS;
@@ -786,7 +787,7 @@ private:
 
       __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         int item_offset = ranks[i] - slice_offset;
@@ -802,7 +803,7 @@ private:
 
       __syncthreads();
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < ITEMS_PER_THREAD; i++)
       {
         // Read a strip of items
@@ -824,8 +825,8 @@ private:
       }
     }
 
-// Copy
-#pragma unroll
+    // Copy
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       output_items[i] = temp_items[i];
@@ -1135,7 +1136,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
@@ -1151,7 +1152,7 @@ public:
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;
@@ -1194,7 +1195,7 @@ public:
     OffsetT (&ranks)[ITEMS_PER_THREAD],
     ValidFlag (&is_valid)[ITEMS_PER_THREAD])
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = ranks[i];
@@ -1210,7 +1211,7 @@ public:
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; i++)
     {
       int item_offset = i * BLOCK_THREADS + linear_tid;

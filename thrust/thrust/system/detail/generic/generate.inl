@@ -25,66 +25,39 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <thrust/detail/internal_functional.h>
-#include <thrust/detail/static_assert.h>
+
 #include <thrust/for_each.h>
-#include <thrust/iterator/iterator_traits.h>
-#include <thrust/system/detail/generic/generate.h>
+
+#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+namespace system::detail::generic
 {
-namespace detail
+template <typename Generator>
+struct generate_functor
 {
-namespace generic
-{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename T>
+  _CCCL_HOST_DEVICE void operator()(T&& x)
+  {
+    ::cuda::std::forward<T>(x) = gen();
+  }
+
+  Generator gen;
+};
 
 template <typename ExecutionPolicy, typename ForwardIterator, typename Generator>
 _CCCL_HOST_DEVICE void
-generate(thrust::execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Generator gen)
+generate(execution_policy<ExecutionPolicy>& exec, ForwardIterator first, ForwardIterator last, Generator gen)
 {
-  // this static assert is necessary due to a workaround in generate_functor
-  // it takes a const reference to accept temporaries from proxy iterators
-  // and then const_casts the constness away
-  //
-  // this had the weird side effect of allowing generate (and fill, and whatever
-  // else is implemented in terms of generate) to fill through const iterators.
-  // this might become unnecessary once Thrust is C++11-and-above only, since the
-  // other solution is to take an rvalue reference in a second overload of
-  // operator() of the function object, but until we support pre-11, this is a
-  // nice solution that validates the const_cast and doesn't take away any
-  // functionality.
-  THRUST_STATIC_ASSERT_MSG(
-    !::cuda::std::is_const<
-      ::cuda::std::remove_reference_t<typename thrust::iterator_traits<ForwardIterator>::reference>>::value,
-    "generating to `const` iterators is not allowed");
-  thrust::for_each(exec, first, last, typename thrust::detail::generate_functor<ExecutionPolicy, Generator>::type(gen));
-} // end generate()
+  thrust::for_each(exec, first, last, generate_functor<Generator>{::cuda::std::move(gen)});
+}
 
 template <typename ExecutionPolicy, typename OutputIterator, typename Size, typename Generator>
 _CCCL_HOST_DEVICE OutputIterator
-generate_n(thrust::execution_policy<ExecutionPolicy>& exec, OutputIterator first, Size n, Generator gen)
+generate_n(execution_policy<ExecutionPolicy>& exec, OutputIterator first, Size n, Generator gen)
 {
-  // this static assert is necessary due to a workaround in generate_functor
-  // it takes a const reference to accept temporaries from proxy iterators
-  // and then const_casts the constness away
-  //
-  // this had the weird side effect of allowing generate (and fill, and whatever
-  // else is implemented in terms of generate) to fill through const iterators.
-  // this might become unnecessary once Thrust is C++11-and-above only, since the
-  // other solution is to take an rvalue reference in a second overload of
-  // operator() of the function object, but until we support pre-11, this is a
-  // nice solution that validates the const_cast and doesn't take away any
-  // functionality.
-  THRUST_STATIC_ASSERT_MSG(
-    !::cuda::std::is_const<
-      ::cuda::std::remove_reference_t<typename thrust::iterator_traits<OutputIterator>::reference>>::value,
-    "generating to `const` iterators is not allowed");
-  return thrust::for_each_n(
-    exec, first, n, typename thrust::detail::generate_functor<ExecutionPolicy, Generator>::type(gen));
-} // end generate()
-
-} // end namespace generic
-} // end namespace detail
-} // end namespace system
+  return thrust::for_each_n(exec, first, n, generate_functor<Generator>{::cuda::std::move(gen)});
+}
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END

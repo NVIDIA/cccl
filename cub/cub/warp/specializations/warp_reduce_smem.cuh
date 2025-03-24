@@ -72,7 +72,7 @@ struct WarpReduceSmem
    ******************************************************************************/
 
   /// Whether the logical warp size and the PTX warp size coincide
-  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0));
+  static constexpr bool IS_ARCH_WARP = (LOGICAL_WARP_THREADS == warp_threads);
 
   /// Whether the logical warp size is a power-of-two
   static constexpr bool IS_POW_OF_TWO = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
@@ -241,10 +241,10 @@ struct WarpReduceSmem
     // Clip the next segment at the warp boundary if necessary
     if (LOGICAL_WARP_THREADS != 32)
     {
-      next_flag = CUB_MIN(next_flag, LOGICAL_WARP_THREADS);
+      next_flag = _CUDA_VSTD::min(next_flag, LOGICAL_WARP_THREADS);
     }
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int STEP = 0; STEP < STEPS; STEP++)
     {
       const int OFFSET = 1 << STEP;
@@ -408,8 +408,4 @@ struct WarpReduceSmem
 };
 } // namespace detail
 
-template <typename T, int LOGICAL_WARP_THREADS>
-using WarpReduceSmem CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::WarpReduceSmem<T, LOGICAL_WARP_THREADS>;
 CUB_NAMESPACE_END

@@ -216,7 +216,7 @@ struct BlockReduceRaking
         int valid_raking_threads = (IS_FULL_TILE) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
-        static_assert(RAKING_THREADS <= CUB_PTX_WARP_THREADS, "RAKING_THREADS must be <= warp size.");
+        static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");
         unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
         __syncwarp(mask);
 
@@ -248,10 +248,5 @@ struct BlockReduceRaking
   }
 };
 } // namespace detail
-
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
-using BlockReduceRaking CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 CUB_NAMESPACE_END

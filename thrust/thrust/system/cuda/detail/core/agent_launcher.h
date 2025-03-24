@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 
@@ -169,9 +169,8 @@ struct AgentLauncher : Agent
     assert(plan.grid_size > 0);
   }
 
-  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* d_ptr = 0)
+  THRUST_RUNTIME_FUNCTION typename get_plan<Agent>::type static get_plan(cudaStream_t, void* /* d_ptr */ = 0)
   {
-    THRUST_UNUSED_VAR(d_ptr);
     return get_agent_plan<Agent>(get_ptx_version());
   }
 
@@ -200,7 +199,7 @@ struct AgentLauncher : Agent
   }
 
   template <class K>
-  THRUST_RUNTIME_FUNCTION void print_info(K k) const
+  THRUST_RUNTIME_FUNCTION void print_info([[maybe_unused]] K k) const
   {
 #  if THRUST_DEBUG_SYNC_FLAG
     cuda_optional<int> occ = max_sm_occupancy(k);
@@ -235,8 +234,6 @@ struct AgentLauncher : Agent
         (!has_shmem ? (int) plan.shared_memory_size : 0),
         (int) ptx_version);
     }
-#  else
-    (void) k;
 #  endif
   }
 

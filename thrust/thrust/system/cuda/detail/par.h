@@ -39,6 +39,8 @@
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/util.h>
 
+#include <cuda/stream_ref>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -60,6 +62,11 @@ public:
     Derived result = derived_cast(*this);
     result.stream  = s;
     return result;
+  }
+
+  Derived on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
   }
 
 private:
@@ -85,6 +92,11 @@ public:
     Derived result = derived_cast(*this);
     result.stream  = s;
     return result;
+  }
+
+  Derived on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
   }
 
 private:
@@ -119,7 +131,6 @@ struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_strea
       : base_t(stream) {};
 };
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct par_t
     : execution_policy<par_t>
     , thrust::detail::allocator_aware_execution_policy<execute_on_stream_base>
@@ -136,10 +147,13 @@ struct par_t
   {
     return execute_on_stream(stream);
   }
-};
-_CCCL_SUPPRESS_DEPRECATED_POP
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+  stream_attachment_type on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
+  }
+};
+
 struct par_nosync_t
     : execution_policy<par_nosync_t>
     , thrust::detail::allocator_aware_execution_policy<execute_on_stream_nosync_base>
@@ -157,6 +171,11 @@ struct par_nosync_t
     return execute_on_stream_nosync(stream);
   }
 
+  stream_attachment_type on(::cuda::stream_ref const& s) const
+  {
+    return on(s.get());
+  }
+
 private:
   // this function is defined to allow non-blocking calls on the default_stream() with thrust::cuda::par_nosync
   // without explicitly using thrust::cuda::par_nosync.on(default_stream())
@@ -165,7 +184,6 @@ private:
     return false;
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 _CCCL_GLOBAL_CONSTANT par_t par;
 

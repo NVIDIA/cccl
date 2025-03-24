@@ -20,34 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16
-
-#if _CCCL_HAS_NVFP8()
-#  include <cuda_fp8.h>
-#endif // _CCCL_HAS_NVFP8()
-
-#if _CCCL_HAS_NVFP6()
-#  include <cuda_fp6.h>
-#endif // _CCCL_HAS_NVFP6()
-
-#if _CCCL_HAS_NVFP4()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_GCC("-Wunused-parameter")
-_CCCL_DIAG_SUPPRESS_MSVC(4100) // unreferenced formal parameter
-#  include <cuda_fp4.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVFP4()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -55,15 +29,13 @@ template <class _Tp>
 struct __is_extended_floating_point : false_type
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v
-#  if defined(_CCCL_NO_INLINE_VARIABLES)
+inline constexpr bool __is_extended_floating_point_v
+#if defined(_CCCL_NO_INLINE_VARIABLES)
   = __is_extended_floating_point<_Tp>::value;
-#  else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
+#else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
   = false;
-#  endif // !_CCCL_NO_INLINE_VARIABLES
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // !_CCCL_NO_INLINE_VARIABLES
 
 #if _CCCL_HAS_NVFP16()
 template <>
@@ -72,7 +44,7 @@ struct __is_extended_floating_point<__half> : true_type
 
 #  ifndef _CCCL_NO_INLINE_VARIABLES
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__half> = true;
+inline constexpr bool __is_extended_floating_point_v<__half> = true;
 #  endif // !_CCCL_NO_INLINE_VARIABLES
 #endif // _CCCL_HAS_NVFP16
 
@@ -83,60 +55,85 @@ struct __is_extended_floating_point<__nv_bfloat16> : true_type
 
 #  ifndef _CCCL_NO_INLINE_VARIABLES
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_bfloat16> = true;
+inline constexpr bool __is_extended_floating_point_v<__nv_bfloat16> = true;
 #  endif // !_CCCL_NO_INLINE_VARIABLES
 #endif // _CCCL_HAS_NVBF16
 
-#if _CCCL_HAS_NVFP8()
+#if _CCCL_HAS_NVFP8_E4M3()
 template <>
 struct __is_extended_floating_point<__nv_fp8_e4m3> : true_type
 {};
+#endif // _CCCL_HAS_NVFP8_E4M3()
+#if _CCCL_HAS_NVFP8_E5M2()
 template <>
 struct __is_extended_floating_point<__nv_fp8_e5m2> : true_type
 {};
-
-#  if _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8_E5M2()
+#if _CCCL_HAS_NVFP8_E8M0()
 template <>
 struct __is_extended_floating_point<__nv_fp8_e8m0> : true_type
 {};
-#  endif // _CCCL_CUDACC_AT_LEAST(12, 8)
+#endif // _CCCL_HAS_NVFP8_E8M0()
 
-#  ifndef _CCCL_NO_INLINE_VARIABLES
+#ifndef _CCCL_NO_INLINE_VARIABLES
+#  if _CCCL_HAS_NVFP8_E4M3()
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e4m3> = true;
+inline constexpr bool __is_extended_floating_point_v<__nv_fp8_e4m3> = true;
+#  endif // _CCCL_HAS_NVFP8_E4M3()
+#  if _CCCL_HAS_NVFP8_E5M2()
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e5m2> = true;
-#    if _CCCL_CUDACC_AT_LEAST(12, 8)
+inline constexpr bool __is_extended_floating_point_v<__nv_fp8_e5m2> = true;
+#  endif // _CCCL_HAS_NVFP8_E5M2()
+#  if _CCCL_HAS_NVFP8_E8M0()
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp8_e8m0> = true;
-#    endif // _CCCL_CUDACC_AT_LEAST(12, 8)
-#  endif // !_CCCL_NO_INLINE_VARIABLES
-#endif // _CCCL_HAS_NVFP8()
+inline constexpr bool __is_extended_floating_point_v<__nv_fp8_e8m0> = true;
+#  endif // _CCCL_HAS_NVFP8_E8M0()
+#endif // !_CCCL_NO_INLINE_VARIABLES
 
-#if _CCCL_HAS_NVFP6()
+#if _CCCL_HAS_NVFP6_E2M3()
 template <>
 struct __is_extended_floating_point<__nv_fp6_e2m3> : true_type
 {};
+#endif // _CCCL_HAS_NVFP6_E2M3()
+#if _CCCL_HAS_NVFP6_E3M2()
 template <>
 struct __is_extended_floating_point<__nv_fp6_e3m2> : true_type
 {};
-#  ifndef _CCCL_NO_INLINE_VARIABLES
+#endif // _CCCL_HAS_NVFP6_E3M2()
+#ifndef _CCCL_NO_INLINE_VARIABLES
+#  if _CCCL_HAS_NVFP6_E2M3()
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp6_e2m3> = true;
+inline constexpr bool __is_extended_floating_point_v<__nv_fp6_e2m3> = true;
+#  endif // _CCCL_HAS_NVFP6_E2M3()
+#  if _CCCL_HAS_NVFP6_E3M2()
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp6_e3m2> = true;
-#  endif // !_CCCL_NO_INLINE_VARIABLES
-#endif // _CCCL_HAS_NVFP6()
+inline constexpr bool __is_extended_floating_point_v<__nv_fp6_e3m2> = true;
+#  endif // _CCCL_HAS_NVFP6_E3M2()
+#endif // !_CCCL_NO_INLINE_VARIABLES
 
-#if _CCCL_HAS_NVFP4()
+#if _CCCL_HAS_NVFP4_E2M1()
 template <>
 struct __is_extended_floating_point<__nv_fp4_e2m1> : true_type
 {};
-#  ifndef _CCCL_NO_INLINE_VARIABLES
+#endif // _CCCL_HAS_NVFP4_E2M1()
+#ifndef _CCCL_NO_INLINE_VARIABLES
+#  if _CCCL_HAS_NVFP4_E2M1()
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_fp4_e2m1> = true;
-#  endif // !_CCCL_NO_INLINE_VARIABLES
-#endif // _CCCL_HAS_NVFP4()
+inline constexpr bool __is_extended_floating_point_v<__nv_fp4_e2m1> = true;
+#  endif // _CCCL_HAS_NVFP4_E2M1()
+#endif // !_CCCL_NO_INLINE_VARIABLES
+
+#if _CCCL_HAS_FLOAT128()
+template <>
+struct __is_extended_floating_point<__float128> : true_type
+{};
+#endif // _CCCL_HAS_FLOAT128()
+#ifndef _CCCL_NO_INLINE_VARIABLES
+#  if _CCCL_HAS_FLOAT128()
+template <>
+inline constexpr bool __is_extended_floating_point_v<__float128> = true;
+#  endif // _CCCL_HAS_FLOAT128()
+#endif // !_CCCL_NO_INLINE_VARIABLES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

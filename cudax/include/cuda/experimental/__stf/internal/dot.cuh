@@ -36,6 +36,7 @@
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 
@@ -291,15 +292,6 @@ public:
     return ctx_symbol;
   }
 
-private:
-  mutable ::std::string ctx_symbol;
-
-  mutable ::std::mutex mtx;
-
-  ::std::vector<int> vertices;
-
-  ::std::unordered_set<int> discarded_tasks;
-
 public:
   // Keep track of existing edges, to make the output possibly look better
   IntPairSet existing_edges;
@@ -338,6 +330,15 @@ public: // XXX protected, friend : dot
   // strings of the previous epochs
   mutable ::std::vector<::std::ostringstream> prev_oss;
   ::std::unordered_map<int /* id */, per_task_info> metadata;
+
+private:
+  mutable ::std::string ctx_symbol;
+
+  mutable ::std::mutex mtx;
+
+  ::std::vector<int> vertices;
+
+  ::std::unordered_set<int> discarded_tasks;
 };
 
 class dot : public reserved::meyers_singleton<dot>
@@ -352,6 +353,7 @@ public:
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
+        , r(symbol.c_str())
     {
       static_assert(::std::is_move_constructible_v<section>, "section must be move constructible");
       static_assert(::std::is_move_assignable_v<section>, "section must be move assignable");
@@ -479,6 +481,9 @@ public:
 
     ::std::string symbol;
 
+    // An annotation that has the lifetime of the section
+    nvtx_range r;
+
     // An identifier for that section. This is movable, but non
     // copyable, but we manipulate section by the means of shared_ptr.
     unique_id<section> id;
@@ -487,6 +492,8 @@ public:
 protected:
   dot()
   {
+    ::std::lock_guard<::std::mutex> lock(mtx);
+
     const char* filename = getenv("CUDASTF_DOT_FILE");
     if (!filename)
     {
@@ -509,6 +516,137 @@ protected:
   }
 
 public:
+  bool is_tracing() const
+  {
+    return !dot_filename.empty();
+  }
+
+  bool is_tracing_prereqs()
+  {
+    return tracing_prereqs;
+  }
+
+  bool is_timing() const
+  {
+    return enable_timing;
+  }
+
+  // Add a context to the vector of contexts we track
+  void track_ctx(::std::shared_ptr<per_ctx_dot> pc)
+  {
+    ::std::lock_guard<::std::mutex> lock(mtx);
+
+    per_ctx.push_back(mv(pc));
+  }
+
+  // This should not need to be called explicitly, unless we are doing some automatic tests for example
+  void finish()
+  {
+    single_threaded_section guard(mtx);
+
+    if (dot_filename.empty())
+    {
+      return;
+    }
+
+    for (const auto& pc : per_ctx)
+    {
+      pc->finish();
+    }
+
+    collapse_sections();
+
+    // Now we have executed all tasks, so we can compute the average execution
+    // times, and update the colors appropriately if needed.
+    update_colors_with_timing();
+
+    ::std::ofstream outFile(dot_filename);
+    if (outFile.is_open())
+    {
+      outFile << "digraph {\n";
+      size_t ctx_cnt        = 0;
+      bool display_clusters = (per_ctx.size() > 1);
+      /*
+       * For every context, we write the description of the DAG per
+       * epoch. Then we write the edges after removing redundant ones.
+       */
+      for (const auto& pc : per_ctx)
+      {
+        // If the context has a parent, it will be printed by this parent itself
+        if (!pc->parent)
+        {
+          print_one_context(outFile, ctx_cnt, display_clusters, pc);
+        }
+      }
+
+      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
+      {
+        remove_redundant_edges(existing_edges);
+      }
+
+      compute_critical_path(outFile);
+
+      /* Edges do not have to belong to the cluster (Vertices do) */
+      for (const auto& [from, to] : existing_edges)
+      {
+        outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
+      }
+
+      // Update node properties such as labels and colors now that we have all information
+      vertex_count = 0;
+      for (const auto& pc : per_ctx)
+      {
+        for (const auto& p : pc->metadata)
+        {
+          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
+                  << p.second.label << "\"]\n";
+          vertex_count++;
+        }
+      }
+
+      edge_count = existing_edges.size();
+
+      outFile << "// Edge   count : " << edge_count << "\n";
+      outFile << "// Vertex count : " << vertex_count << "\n";
+
+      outFile << "}\n";
+
+      outFile.close();
+    }
+    else
+    {
+      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
+    }
+
+    const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
+    if (stats_filename_str)
+    {
+      ::std::string stats_filename = stats_filename_str;
+      ::std::ofstream statsFile(stats_filename);
+      if (statsFile.is_open())
+      {
+        statsFile << "#nedges,nvertices,total_work,critical_path\n";
+
+        // to display an optional value or NA
+        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
+          return opt ? ::std::to_string(*opt) : "NA";
+        };
+
+        statsFile << edge_count << "," << vertex_count << "," << formatOptional(total_work) << ","
+                  << formatOptional(critical_path) << "\n";
+
+        statsFile.close();
+      }
+      else
+      {
+        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
+      }
+    }
+
+    dot_filename.clear();
+  }
+
+private:
   void
   print_one_context(::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, ::std::shared_ptr<per_ctx_dot> pc)
   {
@@ -782,130 +920,6 @@ public:
     }
   }
 
-  // This should not need to be called explicitly, unless we are doing some automatic tests for example
-  void finish()
-  {
-    single_threaded_section guard(mtx);
-
-    if (dot_filename.empty())
-    {
-      return;
-    }
-
-    for (const auto& pc : per_ctx)
-    {
-      pc->finish();
-    }
-
-    collapse_sections();
-
-    // Now we have executed all tasks, so we can compute the average execution
-    // times, and update the colors appropriately if needed.
-    update_colors_with_timing();
-
-    ::std::ofstream outFile(dot_filename);
-    if (outFile.is_open())
-    {
-      outFile << "digraph {\n";
-      size_t ctx_cnt        = 0;
-      bool display_clusters = (per_ctx.size() > 1);
-      /*
-       * For every context, we write the description of the DAG per
-       * epoch. Then we write the edges after removing redundant ones.
-       */
-      for (const auto& pc : per_ctx)
-      {
-        // If the context has a parent, it will be printed by this parent itself
-        if (!pc->parent)
-        {
-          print_one_context(outFile, ctx_cnt, display_clusters, pc);
-        }
-      }
-
-      if (!getenv("CUDASTF_DOT_KEEP_REDUNDANT"))
-      {
-        remove_redundant_edges(existing_edges);
-      }
-
-      compute_critical_path(outFile);
-
-      /* Edges do not have to belong to the cluster (Vertices do) */
-      for (const auto& [from, to] : existing_edges)
-      {
-        outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
-      }
-
-      // Update node properties such as labels and colors now that we have all information
-      vertex_count = 0;
-      for (const auto& pc : per_ctx)
-      {
-        for (const auto& p : pc->metadata)
-        {
-          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
-                  << p.second.label << "\"]\n";
-          vertex_count++;
-        }
-      }
-
-      edge_count = existing_edges.size();
-
-      outFile << "// Edge   count : " << edge_count << "\n";
-      outFile << "// Vertex count : " << vertex_count << "\n";
-
-      outFile << "}\n";
-
-      outFile.close();
-    }
-    else
-    {
-      ::std::cerr << "Unable to open file: " << dot_filename << ::std::endl;
-    }
-
-    const char* stats_filename_str = getenv("CUDASTF_DOT_STATS_FILE");
-    if (stats_filename_str)
-    {
-      ::std::string stats_filename = stats_filename_str;
-      ::std::ofstream statsFile(stats_filename);
-      if (statsFile.is_open())
-      {
-        statsFile << "#nedges,nvertices,total_work,critical_path\n";
-
-        // to display an optional value or NA
-        auto formatOptional = [](const ::std::optional<float>& opt) -> ::std::string {
-          return opt ? ::std::to_string(*opt) : "NA";
-        };
-
-        statsFile << edge_count << "," << vertex_count << "," << formatOptional(total_work) << ","
-                  << formatOptional(critical_path) << "\n";
-
-        statsFile.close();
-      }
-      else
-      {
-        ::std::cerr << "Unable to open file: " << stats_filename << ::std::endl;
-      }
-    }
-
-    dot_filename.clear();
-  }
-
-  bool is_tracing() const
-  {
-    return !dot_filename.empty();
-  }
-
-  bool is_tracing_prereqs()
-  {
-    return tracing_prereqs;
-  }
-
-  bool is_timing() const
-  {
-    return enable_timing;
-  }
-
-  ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
-
 private:
   // Function to get a color based on task duration relative to the average
   ::std::string get_color_for_duration(double duration, double avg_duration)
@@ -1141,8 +1155,6 @@ private:
 
   ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
-  mutable ::std::mutex mtx;
-
   ::std::string dot_filename;
 
   // Map to get dot sections from their ID
@@ -1153,6 +1165,12 @@ private:
   ::std::optional<float> total_work; // T1
   size_t edge_count;
   size_t vertex_count;
+
+private:
+  mutable ::std::mutex mtx;
+
+  // A vector that keeps track of all per context stored data
+  ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 };
 
 inline int per_ctx_dot::get_current_section_id()

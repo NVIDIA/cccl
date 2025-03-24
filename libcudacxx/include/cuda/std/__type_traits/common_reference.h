@@ -162,13 +162,11 @@ struct common_reference;
 template <class... _Types>
 using common_reference_t _CCCL_NODEBUG_ALIAS = typename common_reference<_Types...>::type;
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class, class, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_common_reference = false;
+inline constexpr bool __has_common_reference = false;
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
 
 // bullet 1 - sizeof...(T) == 0
 template <>

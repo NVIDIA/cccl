@@ -28,7 +28,7 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_BINARY_DIR}/libcudacxx/test/utils/nvidia/nvrtc/nvrtcc")
   set(LIBCUDACXX_CUDA_COMPILER_ARG1 "")
   set(LIBCUDACXX_CUDA_TEST_WITH_NVRTC "True")
-  set(LIBCUDACXX_FORCE_INCLUDE "-include '${libcudacxx_SOURCE_DIR}/test/support/nvrtc_limit_macros.h'")
+  set(LIBCUDACXX_FORCE_INCLUDE "")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS "-I'${CUDA_INCLUDE_DIR}'")
   # Use the NVRTCC utility to run the built test outputs
   set(LIBCUDACXX_EXECUTOR "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())")
@@ -41,6 +41,9 @@ endif()
 
 # enable exceptions and assertions in tests
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
+
+# enable optional<T&>
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_OPTIONAL_REF")
 
 # Disable dialect deprecation
 string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_IGNORE_DEPRECATED_CPP_DIALECT")
@@ -78,7 +81,8 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVIDIA")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " ${LIBCUDACXX_FORCE_INCLUDE}"
-    " ${LIBCUDACXX_WARNING_LEVEL}")
+    " ${LIBCUDACXX_WARNING_LEVEL}"
+    " -Wno-deprecated-gpu-targets")
 elseif (${CMAKE_CUDA_COMPILER_ID} STREQUAL "NVHPC")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
     " -stdpar")

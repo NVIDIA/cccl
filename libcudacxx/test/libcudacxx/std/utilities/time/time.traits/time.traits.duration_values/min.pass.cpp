@@ -26,13 +26,13 @@ int main(int, char**)
   static_assert(cuda::std::chrono::duration_values<double>::min() == cuda::std::numeric_limits<double>::lowest(), "");
   static_assert(cuda::std::chrono::duration_values<Rep>::min() == cuda::std::numeric_limits<Rep>::lowest(), "");
 
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::min());
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<double>::min());
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::min());
+  static_assert(noexcept(cuda::std::chrono::duration_values<int>::min()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<double>::min()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<Rep>::min()));
 #if TEST_STD_VER > 2017
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<int>::min());
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<double>::min());
-  ASSERT_NOEXCEPT(cuda::std::chrono::duration_values<Rep>::min());
+  static_assert(noexcept(cuda::std::chrono::duration_values<int>::min()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<double>::min()));
+  static_assert(noexcept(cuda::std::chrono::duration_values<Rep>::min()));
 #endif
 
   return 0;

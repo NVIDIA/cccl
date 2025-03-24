@@ -51,11 +51,8 @@
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/type_traits>
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -142,7 +139,7 @@ struct AgentReduce
   //---------------------------------------------------------------------
 
   /// The input value type
-  using InputT = value_t<InputIteratorT>;
+  using InputT = it_value_t<InputIteratorT>;
 
   /// Vector type of InputT for data movement
   using VectorT = typename CubVector<InputT, AgentReducePolicy::VECTOR_LOAD_LENGTH>::Type;
@@ -159,7 +156,7 @@ struct AgentReduce
   static constexpr int BLOCK_THREADS      = AgentReducePolicy::BLOCK_THREADS;
   static constexpr int ITEMS_PER_THREAD   = AgentReducePolicy::ITEMS_PER_THREAD;
   static constexpr int TILE_ITEMS         = BLOCK_THREADS * ITEMS_PER_THREAD;
-  static constexpr int VECTOR_LOAD_LENGTH = CUB_MIN(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
+  static constexpr int VECTOR_LOAD_LENGTH = _CUDA_VSTD::min(ITEMS_PER_THREAD, AgentReducePolicy::VECTOR_LOAD_LENGTH);
 
   // Can vectorize according to the policy if the input iterator is a native
   // pointer to a primitive type
@@ -291,7 +288,8 @@ struct AgentReduce
     // Load items as vector items
     InputT input_items[ITEMS_PER_THREAD];
     VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < WORDS; ++i)
     {
       vec_items[i] = d_vec_in[BLOCK_THREADS * i];
@@ -299,7 +297,8 @@ struct AgentReduce
 
     // Convert from input type to output type
     AccumT items[ITEMS_PER_THREAD];
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       items[i] = transform_op(input_items[i]);

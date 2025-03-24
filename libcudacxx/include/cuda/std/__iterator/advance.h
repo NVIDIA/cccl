@@ -31,6 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type __n, input_iterator_tag)
@@ -41,6 +42,7 @@ __advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BiDirIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type __n, bidirectional_iterator_tag)
@@ -61,6 +63,7 @@ __advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __advance(_RandIter& __i, typename iterator_traits<_RandIter>::difference_type __n, random_access_iterator_tag)

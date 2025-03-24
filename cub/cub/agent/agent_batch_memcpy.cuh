@@ -52,9 +52,9 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/cmath>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
-
-#include <cstdint>
 
 CUB_NAMESPACE_BEGIN
 
@@ -171,9 +171,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE PointerRange<VectorT>
 GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
 {
   // Data type size used for vectorized stores
-  constexpr size_t out_datatype_size = sizeof(VectorT);
+  constexpr auto out_datatype_size = uint32_t{sizeof(VectorT)};
   // Data type size used for type-aliased loads
-  constexpr size_t in_datatype_size = sizeof(uint32_t);
+  constexpr auto in_datatype_size = uint32_t{sizeof(uint32_t)};
 
   // char-aliased ptrs to simplify pointer arithmetic
   char* out_ptr      = reinterpret_cast<char*>(out_begin);
@@ -194,8 +194,7 @@ GetAlignedPtrs(const void* in_begin, void* out_begin, ByteOffsetT num_bytes)
   uint32_t in_offset_req = in_extra_bytes;
 
   // Bytes after `out_chars_aligned` to the first VectorT-aligned address at or after `out_begin`
-  uint32_t out_start_aligned =
-    CUB_QUOTIENT_CEILING(in_offset_req + alignment_offset, out_datatype_size) * out_datatype_size;
+  uint32_t out_start_aligned = ::cuda::round_up(in_offset_req + alignment_offset, out_datatype_size);
 
   // Compute the beginning of the aligned ranges (output and input pointers)
   VectorT* out_aligned_begin   = reinterpret_cast<VectorT*>(out_chars_aligned + out_start_aligned);
@@ -398,7 +397,7 @@ private:
   static constexpr uint32_t USED_BITS_PER_UNIT = ITEMS_PER_UNIT * BITS_PER_ITEM;
 
   /// The number of backing data types required to store the given number of items
-  static constexpr uint32_t NUM_TOTAL_UNITS = CUB_QUOTIENT_CEILING(NumItems, ITEMS_PER_UNIT);
+  static constexpr uint32_t NUM_TOTAL_UNITS = ::cuda::ceil_div(NumItems, ITEMS_PER_UNIT);
 
   /// This is the net number of bit-storage provided by each unit (remainder bits are unused)
   static constexpr uint32_t UNIT_MASK =
@@ -417,7 +416,7 @@ public:
     const uint32_t target_offset = index * BITS_PER_ITEM;
     uint32_t val                 = 0;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       // In case the bit-offset of the counter at <index> is larger than the bit range of the
@@ -435,7 +434,7 @@ public:
   {
     const uint32_t target_offset = index * BITS_PER_ITEM;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       // In case the bit-offset of the counter at <index> is larger than the bit range of the
@@ -451,7 +450,8 @@ public:
   _CCCL_DEVICE bit_packed_counter operator+(const bit_packed_counter& rhs) const
   {
     bit_packed_counter result;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < NUM_TOTAL_UNITS; ++i)
     {
       result.data[i] = data[i] + rhs.data[i];
@@ -555,18 +555,16 @@ private:
   // TYPE DECLARATIONS
   //---------------------------------------------------------------------
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
-  using AliasT =
-    typename ::cuda::std::conditional<IsMemcpy,
-                                      std::iterator_traits<char*>,
-                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+  using AliasT = typename ::cuda::std::
+    conditional_t<IsMemcpy, ::cuda::std::type_identity<char>, lazy_trait<it_value_t, it_value_t<InputBufferIt>>>::type;
 
   /// Types of the input and output buffers
-  using InputBufferT  = cub::detail::value_t<InputBufferIt>;
-  using OutputBufferT = cub::detail::value_t<OutputBufferIt>;
+  using InputBufferT  = it_value_t<InputBufferIt>;
+  using OutputBufferT = it_value_t<OutputBufferIt>;
 
   /// Type that has to be sufficiently large to hold any of the buffers' sizes.
   /// The BufferSizeIteratorT's value type must be convertible to this type.
-  using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
+  using BufferSizeT = it_value_t<BufferSizeIteratorT>;
 
   /// Type used to index into the tile of buffers that this thread block is assigned to.
   using BlockBufferOffsetT = uint16_t;
@@ -737,7 +735,8 @@ private:
   GetBufferSizeClassHistogram(const BufferSizeT (&buffer_sizes)[BUFFERS_PER_THREAD])
   {
     VectorizedSizeClassCounterT vectorized_counters{};
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BUFFERS_PER_THREAD; i++)
     {
       // Whether to increment ANY of the buffer size classes at all
@@ -767,7 +766,7 @@ private:
     constexpr BlockBufferOffsetT BUFFER_STRIDE =
       BUFFER_STABLE_PARTITION ? static_cast<BlockBufferOffsetT>(1) : static_cast<BlockBufferOffsetT>(BLOCK_THREADS);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BUFFERS_PER_THREAD; i++)
     {
       if (buffer_sizes[i] > 0)
@@ -799,13 +798,14 @@ private:
     BlockOffsetT block_offset[BLEV_BUFFERS_PER_THREAD];
     // Read in the BLEV buffer partition (i.e., the buffers that require block-level collaboration)
     uint32_t blev_buffer_offset = threadIdx.x * BLEV_BUFFERS_PER_THREAD;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BLEV_BUFFERS_PER_THREAD; i++)
     {
       if (blev_buffer_offset < num_blev_buffers)
       {
         BlockBufferOffsetT tile_buffer_id = buffers_by_size_class[blev_buffer_offset].buffer_id;
-        block_offset[i] = CUB_QUOTIENT_CEILING(tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
+        block_offset[i]                   = ::cuda::ceil_div(+tile_buffer_sizes[tile_buffer_id], BLOCK_LEVEL_TILE_SIZE);
       }
       else
       {
@@ -836,7 +836,8 @@ private:
 
     // Read in the BLEV buffer partition (i.e., the buffers that require block-level collaboration)
     blev_buffer_offset = threadIdx.x * BLEV_BUFFERS_PER_THREAD;
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < BLEV_BUFFERS_PER_THREAD; i++)
     {
       if (blev_buffer_offset < num_blev_buffers)
@@ -862,13 +863,13 @@ private:
     BufferSizeIteratorT tile_buffer_sizes,
     BlockBufferOffsetT num_wlev_buffers)
   {
-    const int32_t warp_id              = threadIdx.x / CUB_PTX_WARP_THREADS;
-    constexpr uint32_t WARPS_PER_BLOCK = BLOCK_THREADS / CUB_PTX_WARP_THREADS;
+    const int32_t warp_id              = threadIdx.x / warp_threads;
+    constexpr uint32_t warps_per_block = BLOCK_THREADS / warp_threads;
 
-    for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += WARPS_PER_BLOCK)
+    for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
     {
       const auto buffer_id = buffers_by_size_class[buffer_offset].buffer_id;
-      copy_items<IsMemcpy, CUB_PTX_WARP_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<IsMemcpy, warp_threads, InputBufferT, OutputBufferT, BufferSizeT>(
         tile_buffer_srcs[buffer_id], tile_buffer_dsts[buffer_id], tile_buffer_sizes[buffer_id]);
     }
   }
@@ -899,7 +900,7 @@ private:
 
     // Pre-populate the buffer sizes to 0 (i.e. zero-padding towards the end) to ensure
     // out-of-bounds TLEV buffers will not be considered
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < TLEV_BUFFERS_PER_THREAD; i++)
     {
       tlev_buffer_sizes[i] = 0;
@@ -907,7 +908,7 @@ private:
 
     // Assign TLEV buffers in a blocked arrangement (each thread is assigned consecutive TLEV
     // buffers)
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (uint32_t i = 0; i < TLEV_BUFFERS_PER_THREAD; i++)
     {
       if (tlev_buffer_offset < num_tlev_buffers)
@@ -938,7 +939,8 @@ private:
 
       // Zip from SoA to AoS
       ZippedTLevByteAssignment zipped_byte_assignment[TLEV_BYTES_PER_THREAD];
-#pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
       {
         zipped_byte_assignment[i] = {buffer_id[i], buffer_byte_offset[i]};
@@ -955,14 +957,16 @@ private:
       {
         uint32_t absolute_tlev_byte_offset = decoded_window_offset + threadIdx.x;
         AliasT src_byte[TLEV_BYTES_PER_THREAD];
-#pragma unroll
+
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
           src_byte[i] = read_item<IsMemcpy, AliasT, InputBufferT>(
             tile_buffer_srcs[zipped_byte_assignment[i].tile_buffer_id], zipped_byte_assignment[i].buffer_byte_offset);
           absolute_tlev_byte_offset += BLOCK_THREADS;
         }
-#pragma unroll
+
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
           write_item<IsMemcpy, AliasT, OutputBufferT>(
@@ -974,7 +978,8 @@ private:
       else
       {
         uint32_t absolute_tlev_byte_offset = decoded_window_offset + threadIdx.x;
-#pragma unroll
+
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int32_t i = 0; i < TLEV_BYTES_PER_THREAD; i++)
         {
           if (absolute_tlev_byte_offset < num_total_tlev_bytes)
@@ -1063,7 +1068,7 @@ public:
         blev_buffer_scan_state, temp_storage.buffer_scan_callback, ::cuda::std::plus<>{}, tile_id);
 
       // Signal our partial prefix and wait for the inclusive prefix of previous tiles
-      if (threadIdx.x < CUB_PTX_WARP_THREADS)
+      if (threadIdx.x < warp_threads)
       {
         buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.get(BLEV_SIZE_CLASS));
       }

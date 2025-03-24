@@ -48,11 +48,11 @@ struct TestComplexSizeAndAlignment
 {
   void operator()()
   {
-    THRUST_STATIC_ASSERT(sizeof(thrust::complex<T>) == sizeof(T) * 2);
-    THRUST_STATIC_ASSERT(alignof(thrust::complex<T>) == alignof(T) * 2);
+    static_assert(sizeof(thrust::complex<T>) == sizeof(T) * 2);
+    static_assert(alignof(thrust::complex<T>) == alignof(T) * 2);
 
-    THRUST_STATIC_ASSERT(sizeof(thrust::complex<T const>) == sizeof(T) * 2);
-    THRUST_STATIC_ASSERT(alignof(thrust::complex<T const>) == alignof(T) * 2);
+    static_assert(sizeof(thrust::complex<T const>) == sizeof(T) * 2);
+    static_assert(alignof(thrust::complex<T const>) == alignof(T) * 2);
   }
 };
 SimpleUnitTest<TestComplexSizeAndAlignment, FloatingPointTypes> TestComplexSizeAndAlignmentInstance;
@@ -710,8 +710,7 @@ struct TestComplexExplicitConstruction
   void operator()()
   {
     const thrust::complex<T> input(42.0, 1337.0);
-    const user_complex result = thrust::exp(input);
-    (void) result;
+    [[maybe_unused]] const user_complex result = thrust::exp(input);
   }
 };
 SimpleUnitTest<TestComplexExplicitConstruction, FloatingPointTypes> TestComplexExplicitConstructionInstance;

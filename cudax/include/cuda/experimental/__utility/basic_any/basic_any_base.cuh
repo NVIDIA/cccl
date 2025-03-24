@@ -142,7 +142,7 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
   auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = delete;
   auto operator=(__basic_any_base const&) -> __basic_any_base&     = delete;
 };
-#endif // ^^^ _CCCL_NO_CONCEPTS ^^^
+#endif // _CCCL_NO_CONCEPTS ^^^
 
 } // namespace cuda::experimental
 

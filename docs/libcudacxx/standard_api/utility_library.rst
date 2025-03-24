@@ -35,7 +35,7 @@ the information about the individual features for details.
      - Optional value with error channel
      - CCCL 2.3.0 / CUDA 12.4
    * - :ref:`libcudacxx-standard-api-utility-functional`
-     - ``std::assume_aligned``
+     - General-purpose polymorphic function wrapper
      - CCCL 2.9.0 / CUDA 12.9
    * - :ref:`libcudacxx-standard-api-utility-memory`
      - Function objects and function wrappers
@@ -54,7 +54,7 @@ the information about the individual features for details.
      - libcu++ 1.3.0 / CCCL 2.0.0 / CUDA 11.2
    * - :ref:`libcudacxx-standard-api-utility-variant`
      - Type safe union type
-     - CCCL 2.3.0 / CUDA 12.4
+     - CCCL 2.4.0 / CUDA 12.5
    * - :ref:`libcudacxx-standard-api-utility-version`
      - Compile-time version information and feature test macros
      - libcu++ 1.2.0 / CCCL 2.0.0 / CUDA 11.1

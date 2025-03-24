@@ -246,9 +246,9 @@ __host__ __device__ bool tests()
         1e-20f,
         2.71828f,
         3.14159f,
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CLANG_CUDA)
+#if !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::nanf(""),
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_CLANG_CUDA
+#endif // !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
 #if defined(_CCCL_BUILTIN_NANF)
         _CCCL_BUILTIN_NANF("0x55550001"), // NaN with a payload
 #endif // _CCCL_BUILTIN_NANF
@@ -273,9 +273,9 @@ __host__ __device__ bool tests()
         1e-100,
         2.718281828459045,
         3.141592653589793238462643383279502884197169399375105820974944,
-#if !defined(TEST_COMPILER_NVRTC) && !defined(TEST_COMPILER_CLANG_CUDA)
+#if !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::nan(""),
-#endif // !TEST_COMPILER_NVRTC && !TEST_COMPILER_CLANG_CUDA
+#endif // !TEST_COMPILER(NVRTC) && !TEST_CUDA_COMPILER(CLANG)
         cuda::std::numeric_limits<double>::signaling_NaN(),
         cuda::std::numeric_limits<double>::quiet_NaN(),
         cuda::std::numeric_limits<double>::infinity()})
@@ -285,7 +285,7 @@ __host__ __device__ bool tests()
     test_roundtrip_through<long long>(i);
   }
 
-#ifdef _LIBCUDACXX_HAS_NVFP16
+#if _LIBCUDACXX_HAS_NVFP16()
   // Extended floating point type __half
   for (__half i :
        {__float2half(0.0f),
@@ -300,9 +300,9 @@ __host__ __device__ bool tests()
     test_roundtrip_through_buffer(i);
     test_roundtrip_through<cuda::std::int16_t>(i);
   }
-#endif // _LIBCUDACXX_HAS_NVFP16
+#endif // _LIBCUDACXX_HAS_NVFP16()
 
-#ifdef _LIBCUDACXX_HAS_NVBF16
+#if _LIBCUDACXX_HAS_NVBF16()
   // Extended floating point type __half
   for (__nv_bfloat16 i :
        {__float2bfloat16(0.0f),
@@ -317,7 +317,7 @@ __host__ __device__ bool tests()
     test_roundtrip_through_buffer(i);
     test_roundtrip_through<cuda::std::int16_t>(i);
   }
-#endif // _LIBCUDACXX_HAS_NVBF16
+#endif // _LIBCUDACXX_HAS_NVBF16()
 
   // Test pointers
   {

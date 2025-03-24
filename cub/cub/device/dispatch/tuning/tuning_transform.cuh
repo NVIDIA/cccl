@@ -37,11 +37,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/detect_cuda_runtime.cuh>
 #include <cub/util_device.cuh>
 
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/is_trivially_relocatable.h>
 
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/bit>
 
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
@@ -108,7 +110,7 @@ _CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
 template <typename... Its>
 _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 {
-  return (int{sizeof(value_t<Its>)} + ... + 0);
+  return (int{sizeof(it_value_t<Its>)} + ... + 0);
 }
 
 constexpr int bulk_copy_alignment     = 128;
@@ -123,12 +125,59 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> 
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
 }
 
-constexpr int arch_to_min_bytes_in_flight(int sm_arch)
+_CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
 {
   // TODO(bgruber): use if-else in C++14 for better readability
   return sm_arch >= 900 ? 48 * 1024 // 32 for H100, 48 for H200
        : sm_arch >= 800 ? 16 * 1024 // A100
                         : 12 * 1024; // V100 and below
+}
+
+template <typename PolicyT, typename = void>
+struct TransformPolicyWrapper : PolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::algorithm)>> : StaticPolicyT
+{
+  _CCCL_HOST_DEVICE TransformPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  _CCCL_HOST_DEVICE static constexpr Algorithm GetAlgorithm()
+  {
+    return StaticPolicyT::algorithm;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::algo_policy::block_threads;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadNoInput()
+  {
+    return StaticPolicyT::algo_policy::items_per_thread_no_input;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MinItemsPerThread()
+  {
+    return StaticPolicyT::algo_policy::min_items_per_thread;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int MaxItemsPerThread()
+  {
+    return StaticPolicyT::algo_policy::max_items_per_thread;
+  }
+};
+
+template <typename PolicyT>
+_CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(PolicyT base)
+{
+  return TransformPolicyWrapper<PolicyT>(base);
 }
 
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
@@ -144,7 +193,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   static constexpr bool all_contiguous =
     ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorsIn>...>;
   static constexpr bool all_values_trivially_reloc =
-    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<value_t<RandomAccessIteratorsIn>>...>;
+    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<it_value_t<RandomAccessIteratorsIn>>...>;
 
   static constexpr bool can_memcpy = all_contiguous && all_values_trivially_reloc;
 
@@ -169,7 +218,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
         async_policy::block_threads * async_policy::min_items_per_thread)
       > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
-      ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
+      ((alignof(it_value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;

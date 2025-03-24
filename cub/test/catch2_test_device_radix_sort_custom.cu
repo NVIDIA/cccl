@@ -533,7 +533,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     // example-begin keys
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> in = {
+    c2h::device_vector<custom_t> in = {
       {+2.5f, 4}, //
       {-2.5f, 0}, //
       {+1.1f, 3}, //
@@ -542,7 +542,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {+3.7f, 5} //
     };
 
-    thrust::device_vector<custom_t> out(num_items);
+    c2h::device_vector<custom_t> out(num_items);
 
     const custom_t* d_in = thrust::raw_pointer_cast(in.data());
     custom_t* d_out      = thrust::raw_pointer_cast(out.data());
@@ -554,13 +554,13 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
     cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -581,7 +581,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> in = {
+    c2h::device_vector<custom_t> in = {
       {+1.1f, 2}, //
       {+2.5f, 1}, //
       {-0.0f, 4}, //
@@ -590,19 +590,19 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {+3.7f, 0} //
     };
 
-    thrust::device_vector<custom_t> out(num_items);
+    c2h::device_vector<custom_t> out(num_items);
 
     const custom_t* d_in = thrust::raw_pointer_cast(in.data());
     custom_t* d_out      = thrust::raw_pointer_cast(out.data());
 
     cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -623,7 +623,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_in = {
+    c2h::device_vector<custom_t> keys_in = {
       {+2.5f, 4}, //
       {-2.5f, 0}, //
       {+1.1f, 3}, //
@@ -632,13 +632,13 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {+3.7f, 5} //
     };
 
-    thrust::device_vector<custom_t> keys_out(num_items);
+    c2h::device_vector<custom_t> keys_out(num_items);
 
     const custom_t* d_keys_in = thrust::raw_pointer_cast(keys_in.data());
     custom_t* d_keys_out      = thrust::raw_pointer_cast(keys_out.data());
 
-    thrust::device_vector<int> vals_in = {4, 0, 3, 1, 2, 5};
-    thrust::device_vector<int> vals_out(num_items);
+    c2h::device_vector<int> vals_in = {4, 0, 3, 1, 2, 5};
+    c2h::device_vector<int> vals_out(num_items);
 
     const int* d_vals_in = thrust::raw_pointer_cast(vals_in.data());
     int* d_vals_out      = thrust::raw_pointer_cast(vals_out.data());
@@ -646,13 +646,13 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     cub::DeviceRadixSort::SortPairs(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceRadixSort::SortPairs(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -661,7 +661,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {+3.7f, 5} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
+    c2h::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
     // example-end pairs
 
     REQUIRE(expected_keys == keys_out);
@@ -676,7 +676,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_in = {
+    c2h::device_vector<custom_t> keys_in = {
       {+1.1f, 2}, //
       {+2.5f, 1}, //
       {-0.0f, 4}, //
@@ -685,13 +685,13 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {+3.7f, 0} //
     };
 
-    thrust::device_vector<custom_t> keys_out(num_items);
+    c2h::device_vector<custom_t> keys_out(num_items);
 
     const custom_t* d_keys_in = thrust::raw_pointer_cast(keys_in.data());
     custom_t* d_keys_out      = thrust::raw_pointer_cast(keys_out.data());
 
-    thrust::device_vector<int> vals_in = {2, 1, 4, 3, 5, 0};
-    thrust::device_vector<int> vals_out(num_items);
+    c2h::device_vector<int> vals_in = {2, 1, 4, 3, 5, 0};
+    c2h::device_vector<int> vals_out(num_items);
 
     const int* d_vals_in = thrust::raw_pointer_cast(vals_in.data());
     int* d_vals_out      = thrust::raw_pointer_cast(vals_out.data());
@@ -699,13 +699,13 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_vals_in, d_vals_out, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -714,7 +714,7 @@ C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
       {-2.5f, 5} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
+    c2h::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
     // example-end pairs-descending
 
     REQUIRE(expected_keys == keys_out);
@@ -732,7 +732,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {
+    c2h::device_vector<custom_t> keys_buf = {
       {+2.5f, 4}, //
       {-2.5f, 0}, //
       {+1.1f, 3}, //
@@ -741,7 +741,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {+3.7f, 5} //
     };
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
@@ -750,15 +750,15 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{});
 
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceRadixSort::SortKeys(d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t>& current = //
+    c2h::device_vector<custom_t>& current = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -779,7 +779,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {
+    c2h::device_vector<custom_t> keys_buf = {
       {+1.1f, 2}, //
       {+2.5f, 1}, //
       {-0.0f, 4}, //
@@ -788,7 +788,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {+3.7f, 0} //
     };
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
@@ -797,15 +797,15 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{});
 
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceRadixSort::SortKeysDescending(d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t>& current = //
+    c2h::device_vector<custom_t>& current = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -826,7 +826,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {
+    c2h::device_vector<custom_t> keys_buf = {
       {+2.5f, 4}, //
       {-2.5f, 0}, //
       {+1.1f, 3}, //
@@ -835,13 +835,13 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {+3.7f, 5} //
     };
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
 
-    thrust::device_vector<int> vals_buf = {4, 0, 3, 1, 2, 5};
-    thrust::device_vector<int> vals_alt_buf(num_items);
+    c2h::device_vector<int> vals_buf = {4, 0, 3, 1, 2, 5};
+    c2h::device_vector<int> vals_alt_buf(num_items);
 
     int* d_vals_buf     = thrust::raw_pointer_cast(vals_buf.data());
     int* d_vals_alt_buf = thrust::raw_pointer_cast(vals_alt_buf.data());
@@ -851,18 +851,18 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{});
 
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceRadixSort::SortPairs(d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t>& current_keys = //
+    c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<int>& current_vals = //
+    c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {-2.5f, 0}, //
       {+0.0f, 1}, //
       {-0.0f, 2}, //
@@ -871,7 +871,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {+3.7f, 5} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
+    c2h::device_vector<int> expected_vals = {0, 1, 2, 3, 4, 5};
     // example-end pairs-db
 
     REQUIRE(expected_keys == current_keys);
@@ -886,7 +886,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
 
     constexpr int num_items = 6;
 
-    thrust::device_vector<custom_t> keys_buf = {
+    c2h::device_vector<custom_t> keys_buf = {
       {+1.1f, 2}, //
       {+2.5f, 1}, //
       {-0.0f, 4}, //
@@ -895,13 +895,13 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {+3.7f, 0} //
     };
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
 
-    thrust::device_vector<int> vals_buf = {2, 1, 4, 3, 5, 0};
-    thrust::device_vector<int> vals_alt_buf(num_items);
+    c2h::device_vector<int> vals_buf = {2, 1, 4, 3, 5, 0};
+    c2h::device_vector<int> vals_alt_buf(num_items);
 
     int* d_vals_buf     = thrust::raw_pointer_cast(vals_buf.data());
     int* d_vals_alt_buf = thrust::raw_pointer_cast(vals_alt_buf.data());
@@ -912,19 +912,19 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{});
 
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{});
 
-    thrust::device_vector<custom_t>& current_keys = //
+    c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<int>& current_vals = //
+    c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {+3.7f, 0}, //
       {+2.5f, 1}, //
       {+1.1f, 2}, //
@@ -933,7 +933,7 @@ C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
       {-2.5f, 5} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
+    c2h::device_vector<int> expected_vals = {0, 1, 2, 4, 3, 5};
     // example-end pairs-descending-db
 
     REQUIRE(expected_keys == current_keys);
@@ -946,8 +946,8 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
   SECTION("Keys")
   {
     // example-begin keys-bits
-    constexpr int num_items            = 2;
-    thrust::device_vector<custom_t> in = {
+    constexpr int num_items         = 2;
+    c2h::device_vector<custom_t> in = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
@@ -969,7 +969,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> out(num_items);
+    c2h::device_vector<custom_t> out(num_items);
 
     const custom_t* d_in = thrust::raw_pointer_cast(in.data());
     custom_t* d_out      = thrust::raw_pointer_cast(out.data());
@@ -982,14 +982,14 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}, begin_bit, end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
     cub::DeviceRadixSort::SortKeys(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
@@ -1001,8 +1001,8 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
   SECTION("KeysDescending")
   {
     // example-begin keys-descending-bits
-    constexpr int num_items            = 2;
-    thrust::device_vector<custom_t> in = {{42.4f, 1ll << 60}, {24.2f, 1ll << 61}};
+    constexpr int num_items         = 2;
+    c2h::device_vector<custom_t> in = {{42.4f, 1ll << 60}, {24.2f, 1ll << 61}};
 
     constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
     constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
@@ -1021,7 +1021,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> out(num_items);
+    c2h::device_vector<custom_t> out(num_items);
 
     const custom_t* d_in = thrust::raw_pointer_cast(in.data());
     custom_t* d_out      = thrust::raw_pointer_cast(out.data());
@@ -1034,14 +1034,14 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}, begin_bit, end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
     cub::DeviceRadixSort::SortKeysDescending(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
@@ -1053,13 +1053,13 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
   SECTION("Pairs")
   {
     // example-begin pairs-bits
-    constexpr int num_items                 = 2;
-    thrust::device_vector<custom_t> keys_in = {
+    constexpr int num_items              = 2;
+    c2h::device_vector<custom_t> keys_in = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
 
-    thrust::device_vector<int> vals_in = {1, 0};
+    c2h::device_vector<int> vals_in = {1, 0};
 
     constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
     constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
@@ -1078,8 +1078,8 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> keys_out(num_items);
-    thrust::device_vector<int> vals_out(num_items);
+    c2h::device_vector<custom_t> keys_out(num_items);
+    c2h::device_vector<int> vals_out(num_items);
 
     const custom_t* d_keys_in = thrust::raw_pointer_cast(keys_in.data());
     custom_t* d_keys_out      = thrust::raw_pointer_cast(keys_out.data());
@@ -1103,7 +1103,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
@@ -1119,12 +1119,12 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       begin_bit,
       end_bit);
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1};
+    c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-bits
 
     REQUIRE(expected_keys == keys_out);
@@ -1134,13 +1134,13 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
   SECTION("PairsDescending")
   {
     // example-begin pairs-descending-bits
-    constexpr int num_items                 = 2;
-    thrust::device_vector<custom_t> keys_in = {
+    constexpr int num_items              = 2;
+    c2h::device_vector<custom_t> keys_in = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
 
-    thrust::device_vector<int> vals_in = {1, 0};
+    c2h::device_vector<int> vals_in = {1, 0};
 
     constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
     constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
@@ -1159,8 +1159,8 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> keys_out(num_items);
-    thrust::device_vector<int> vals_out(num_items);
+    c2h::device_vector<custom_t> keys_out(num_items);
+    c2h::device_vector<int> vals_out(num_items);
 
     const custom_t* d_keys_in = thrust::raw_pointer_cast(keys_in.data());
     custom_t* d_keys_out      = thrust::raw_pointer_cast(keys_out.data());
@@ -1184,7 +1184,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
@@ -1200,12 +1200,12 @@ C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
       begin_bit,
       end_bit);
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1};
+    c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-descending-bits
 
     REQUIRE(expected_keys == keys_out);
@@ -1220,7 +1220,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // example-begin keys-bits-db
     constexpr int num_items = 2;
 
-    thrust::device_vector<custom_t> keys_buf = {
+    c2h::device_vector<custom_t> keys_buf = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
@@ -1242,7 +1242,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
@@ -1257,17 +1257,17 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
       d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{}, begin_bit, end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
     cub::DeviceRadixSort::SortKeys(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    thrust::device_vector<custom_t>& current_keys = //
+    c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
@@ -1279,8 +1279,8 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
   SECTION("KeysDescending")
   {
     // example-begin keys-descending-bits-db
-    constexpr int num_items                  = 2;
-    thrust::device_vector<custom_t> keys_buf = {
+    constexpr int num_items               = 2;
+    c2h::device_vector<custom_t> keys_buf = {
       //
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
@@ -1303,7 +1303,7 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
@@ -1318,17 +1318,17 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
       d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{}, begin_bit, end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
     cub::DeviceRadixSort::SortKeysDescending(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    thrust::device_vector<custom_t>& current_keys = //
+    c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<custom_t> expected_output = {
+    c2h::device_vector<custom_t> expected_output = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
@@ -1340,13 +1340,13 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
   SECTION("Pairs")
   {
     // example-begin pairs-bits-db
-    constexpr int num_items                  = 2;
-    thrust::device_vector<custom_t> keys_buf = {
+    constexpr int num_items               = 2;
+    c2h::device_vector<custom_t> keys_buf = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
 
-    thrust::device_vector<int> vals_buf = {1, 0};
+    c2h::device_vector<int> vals_buf = {1, 0};
 
     constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
     constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
@@ -1365,8 +1365,8 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0001xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
-    thrust::device_vector<int> vals_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<int> vals_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
@@ -1384,25 +1384,25 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{}, begin_bit, end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
     cub::DeviceRadixSort::SortPairs(
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    thrust::device_vector<custom_t>& current_keys = //
+    c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<int>& current_vals = //
+    c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1};
+    c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-bits-db
 
     REQUIRE(expected_keys == current_keys);
@@ -1414,12 +1414,12 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // example-begin pairs-descending-bits-db
     constexpr int num_items = 2;
 
-    thrust::device_vector<custom_t> keys_buf = {
+    c2h::device_vector<custom_t> keys_buf = {
       {42.4f, 1ll << 60}, //
       {24.2f, 1ll << 61} //
     };
 
-    thrust::device_vector<int> vals_buf = {1, 0};
+    c2h::device_vector<int> vals_buf = {1, 0};
 
     constexpr int begin_bit = sizeof(long long int) * 8 - 4; // 60
     constexpr int end_bit   = sizeof(long long int) * 8 + 4; // 68
@@ -1438,8 +1438,8 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
     // decompose(in[1]) = xxxxxxxxxxxxxxxxxxxxxxxxxxxx1010 0010xxxxxxxxxx...xxxx
     //                    <-----------  higher bits  /  lower bits  ----------->
 
-    thrust::device_vector<custom_t> keys_alt_buf(num_items);
-    thrust::device_vector<int> vals_alt_buf(num_items);
+    c2h::device_vector<custom_t> keys_alt_buf(num_items);
+    c2h::device_vector<int> vals_alt_buf(num_items);
 
     custom_t* d_keys_buf     = thrust::raw_pointer_cast(keys_buf.data());
     custom_t* d_keys_alt_buf = thrust::raw_pointer_cast(keys_alt_buf.data());
@@ -1457,25 +1457,25 @@ C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radi
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{}, begin_bit, end_bit);
 
     // 2) Allocate temp storage
-    thrust::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+    c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
     d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
     // 3) Sort keys
     cub::DeviceRadixSort::SortPairsDescending(
       d_temp_storage, temp_storage_bytes, d_keys, d_vals, num_items, decomposer_t{}, begin_bit, end_bit);
 
-    thrust::device_vector<custom_t>& current_keys = //
+    c2h::device_vector<custom_t>& current_keys = //
       d_keys.Current() == d_keys_buf ? keys_buf : keys_alt_buf;
 
-    thrust::device_vector<int>& current_vals = //
+    c2h::device_vector<int>& current_vals = //
       d_vals.Current() == d_vals_buf ? vals_buf : vals_alt_buf;
 
-    thrust::device_vector<custom_t> expected_keys = {
+    c2h::device_vector<custom_t> expected_keys = {
       {24.2f, 1ll << 61}, //
       {42.4f, 1ll << 60} //
     };
 
-    thrust::device_vector<int> expected_vals = {0, 1};
+    c2h::device_vector<int> expected_vals = {0, 1};
     // example-end pairs-descending-bits-db
 
     REQUIRE(expected_keys == current_keys);

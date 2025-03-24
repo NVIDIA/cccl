@@ -35,7 +35,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#if _CCCL_HAS_CUDA_COMPILER
+
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -129,10 +130,10 @@ struct DispatchCopyIf
           equality_op_t{},
           num_items,
           stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Return if we're only querying temporary storage requirements
     if (d_temp_storage == nullptr)
@@ -163,11 +164,11 @@ struct DispatchCopyIf
           equality_op_t{},
           num_items,
           stream);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
 
     // Get number of selected items
     status = cuda_cub::synchronize(policy);
-    CUDA_CUB_RET_IF_FAIL(status);
+    _CUDA_CUB_RET_IF_FAIL(status);
     OffsetT num_selected = get_value(policy, d_num_selected_out);
     thrust::advance(output, num_selected);
     return status;
@@ -188,7 +189,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   OutputIt output,
   Predicate predicate)
 {
-  using size_type = typename iterator_traits<InputIt>::difference_type;
+  using size_type = thrust::detail::it_difference_t<InputIt>;
 
   size_type num_items       = static_cast<size_type>(thrust::distance(first, last));
   cudaError_t status        = cudaSuccess;

@@ -114,10 +114,10 @@ int main()
   std::cout << "l:\t" << to_binary_representation(l) << '\n';
   std::cout << "g:\t" << to_binary_representation(g) << "\n\n";
 
-  std::cout << "As you can see, `l` key happened to be larger in the bit-lexicographicl order.\n";
-  std::cout << "Since there's no reflection in C++, we can't inspect the type and convert \n";
-  std::cout << "each field into the bit-lexicographicl order. You can tell CUB how to do that\n";
-  std::cout << "by specializing cub::RadixTraits for the `custom_t`:\n\n";
+  std::cout << "As you can see, `l` key happened to be larger in the bit-lexicographical order.\n";
+  std::cout << "Since there's no reflection in C++ (yet), we can't inspect the type and convert \n";
+  std::cout << "each field into the bit-lexicographical order. You can tell CUB how to do that\n";
+  std::cout << "by providing a decomposer for the `custom_t`:\n\n";
 
   std::cout << "\tstruct decomposer_t \n";
   std::cout << "\t{\n";
@@ -132,7 +132,7 @@ int main()
   std::cout << "Decomposer allows you to specify which fields are most significant and which\n";
   std::cout << "are least significant. In our case, `f` is the most significant field and\n";
   std::cout << "`i` is the least significant field. The decomposer is then used by CUB to convert\n";
-  std::cout << "the `custom_t` into the bit-lexicographicl order:\n\n";
+  std::cout << "the `custom_t` into the bit-lexicographical order:\n\n";
 
   using conversion_policy = cub::detail::radix::traits_t<custom_t>::bit_ordered_conversion_policy;
   l                       = conversion_policy::to_bit_ordered(decomposer_t{}, l);
@@ -148,7 +148,7 @@ int main()
   std::cout << "g:\t" << to_binary_representation(g) << "\n\n";
 
   std::cout << '\n';
-  std::cout << "As you can see, `g` is now actually larger than `l` in the bit-lexicographicl order.\n";
+  std::cout << "As you can see, `g` is now actually larger than `l` in the bit-lexicographical order.\n";
   std::cout << "After binning, CUB is able to restore the original key:\n\n";
 
   l = conversion_policy::from_bit_ordered(decomposer_t{}, l);

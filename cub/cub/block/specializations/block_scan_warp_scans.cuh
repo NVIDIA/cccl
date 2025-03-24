@@ -75,7 +75,7 @@ struct BlockScanWarpScans
 
   /// Constants
   /// Number of warp threads
-  static constexpr int WARP_THREADS = CUB_WARP_THREADS(0);
+  static constexpr int WARP_THREADS = warp_threads;
 
   /// The thread block size in threads
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z;
@@ -205,7 +205,7 @@ struct BlockScanWarpScans
     // TODO(bgruber): does that still hold today? This is creating a lot of template instantiations
     ApplyWarpAggregates(warp_prefix, scan_op, block_aggregate, constant_v<1>);
     /*
-            #pragma unroll
+            _CCCL_PRAGMA_UNROLL_FULL()
             for (int WARP = 1; WARP < WARPS; ++WARP)
             {
                 if (warp_id == WARP)
@@ -534,9 +534,5 @@ struct BlockScanWarpScans
   }
 };
 } // namespace detail
-template <typename T, int BLOCK_DIM_X, int BLOCK_DIM_Y, int BLOCK_DIM_Z>
-using BlockScanWarpScans CCCL_DEPRECATED_BECAUSE(
-  "This class is considered an implementation detail and the public interface will be "
-  "removed.") = detail::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
 CUB_NAMESPACE_END

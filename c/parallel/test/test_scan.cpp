@@ -10,11 +10,16 @@
 
 #include <cuda_runtime.h>
 
-#include <iostream>
+#include <cstdint>
 
 #include "test_util.h"
 
-void scan(cccl_iterator_t input, cccl_iterator_t output, unsigned long long num_items, cccl_op_t op, cccl_value_t init)
+void scan(cccl_iterator_t input,
+          cccl_iterator_t output,
+          uint64_t num_items,
+          cccl_op_t op,
+          cccl_value_t init,
+          bool force_inclusive)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
@@ -28,22 +33,36 @@ void scan(cccl_iterator_t input, cccl_iterator_t output, unsigned long long num_
   const char* ctk_path        = TEST_CTK_PATH;
 
   cccl_device_scan_build_result_t build;
-  REQUIRE(CUDA_SUCCESS
-          == cccl_device_scan_build(
-            &build, input, output, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_scan_build(
+      &build,
+      input,
+      output,
+      op,
+      init,
+      force_inclusive,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path));
 
   const std::string sass = inspect_sass(build.cubin, build.cubin_size);
 
   REQUIRE(sass.find("LDL") == std::string::npos);
   REQUIRE(sass.find("STL") == std::string::npos);
 
+  auto scan_function = force_inclusive ? cccl_device_inclusive_scan : cccl_device_exclusive_scan;
+
   size_t temp_storage_bytes = 0;
-  REQUIRE(CUDA_SUCCESS == cccl_device_scan(build, nullptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
+  REQUIRE(CUDA_SUCCESS == scan_function(build, nullptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
 
   pointer_t<uint8_t> temp_storage(temp_storage_bytes);
 
-  REQUIRE(CUDA_SUCCESS
-          == cccl_device_scan(build, temp_storage.ptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
+  REQUIRE(
+    CUDA_SUCCESS == scan_function(build, temp_storage.ptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
 
@@ -58,10 +77,30 @@ TEMPLATE_LIST_TEST_CASE("Scan works with integral types", "[scan]", integral_typ
   pointer_t<TestType> output_ptr(output);
   value_t<TestType> init{TestType{42}};
 
-  scan(input_ptr, output_ptr, num_items, op, init);
+  scan(input_ptr, output_ptr, num_items, op, init, false);
 
   std::vector<TestType> expected(num_items, 0);
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<TestType>(output_ptr));
+  }
+}
+
+TEMPLATE_LIST_TEST_CASE("Inclusive Scan works with integral types", "[scan]", integral_types)
+{
+  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
+  const std::vector<TestType> input = generate<TestType>(num_items);
+  const std::vector<TestType> output(num_items, 0);
+  pointer_t<TestType> input_ptr(input);
+  pointer_t<TestType> output_ptr(output);
+  value_t<TestType> init{TestType{42}};
+
+  scan(input_ptr, output_ptr, num_items, op, init, true);
+
+  std::vector<TestType> expected(num_items, 0);
+  std::inclusive_scan(input.begin(), input.end(), expected.begin(), std::plus<>{}, init.value);
   if (num_items > 0)
   {
     REQUIRE(expected == std::vector<TestType>(output_ptr));
@@ -101,7 +140,7 @@ TEST_CASE("Scan works with custom types", "[scan]")
   pointer_t<pair> output_ptr(output);
   value_t<pair> init{pair{4, 2}};
 
-  scan(input_ptr, output_ptr, num_items, op, init);
+  scan(input_ptr, output_ptr, num_items, op, init, false);
 
   std::vector<pair> expected(num_items, {0, 0});
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value, [](const pair& lhs, const pair& rhs) {
@@ -113,30 +152,16 @@ TEST_CASE("Scan works with custom types", "[scan]")
   }
 }
 
-struct counting_iterator_state_t
-{
-  int value;
-};
-
 TEST_CASE("Scan works with input iterators", "[scan]")
 {
-  const std::size_t num_items                         = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                                      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, counting_iterator_state_t> input_it = make_iterator<int, counting_iterator_state_t>(
-    "struct counting_iterator_state_t { int value; };\n",
-    {"advance",
-     "extern \"C\" __device__ void advance(counting_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->value += offset;\n"
-     "}"},
-    {"dereference",
-     "extern \"C\" __device__ int dereference(counting_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value = 0;
+  const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  iterator_t<int, counting_iterator_state_t<int>> input_it = make_counting_iterator<int>("int");
+  input_it.state.value                                     = 0;
   pointer_t<int> output_it(num_items);
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init);
+  scan(input_it, output_it, num_items, op, init, false);
 
   // vector storing a sequence of values 0, 1, 2, ..., num_items - 1
   std::vector<int> input(num_items);
@@ -150,32 +175,19 @@ TEST_CASE("Scan works with input iterators", "[scan]")
   }
 }
 
-struct transform_output_iterator_state_t
-{
-  int* d_output;
-};
-
 TEST_CASE("Scan works with output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, transform_output_iterator_state_t> output_it = make_iterator<int, transform_output_iterator_state_t>(
-    "struct transform_output_iterator_state_t { int* d_output; };\n",
-    {"advance",
-     "extern \"C\" __device__ void advance(transform_output_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->d_output += offset;\n"
-     "}"},
-    {"dereference",
-     "extern \"C\" __device__ void dereference(transform_output_iterator_state_t* state, int x) { \n"
-     "  *state->d_output = 2 * x;\n"
-     "}"});
+  iterator_t<int, random_access_iterator_state_t<int>> output_it =
+    make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   const std::vector<int> input = generate<int>(num_items);
   pointer_t<int> input_it(input);
   pointer_t<int> inner_output_it(num_items);
-  output_it.state.d_output = inner_output_it.ptr;
+  output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init);
+  scan(input_it, output_it, num_items, op, init, false);
 
   std::vector<int> expected(num_items);
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
@@ -189,41 +201,19 @@ TEST_CASE("Scan works with output iterators", "[scan]")
   }
 }
 
-template <class T>
-struct constant_iterator_state_t
-{
-  T value;
-};
-
 TEST_CASE("Scan works with input and output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, constant_iterator_state_t<int>> input_it = make_iterator<int, constant_iterator_state_t<int>>(
-    "struct constant_iterator_state_t { int value; };\n",
-    {"in_advance",
-     "extern \"C\" __device__ void in_advance(constant_iterator_state_t*, unsigned long long) {\n"
-     "}"},
-    {"in_dereference",
-     "extern \"C\" __device__ int in_dereference(constant_iterator_state_t* state) { \n"
-     "  return state->value;\n"
-     "}"});
-  input_it.state.value                                         = 1;
-  iterator_t<int, transform_output_iterator_state_t> output_it = make_iterator<int, transform_output_iterator_state_t>(
-    "struct transform_output_iterator_state_t { int* d_output; };\n",
-    {"out_advance",
-     "extern \"C\" __device__ void out_advance(transform_output_iterator_state_t* state, unsigned long long offset) {\n"
-     "  state->d_output += offset;\n"
-     "}"},
-    {"out_dereference",
-     "extern \"C\" __device__ void out_dereference(transform_output_iterator_state_t* state, int x) { \n"
-     "  *state->d_output = 2 * x;\n"
-     "}"});
+  iterator_t<int, constant_iterator_state_t<int>> input_it = make_constant_iterator<int>("int");
+  input_it.state.value                                     = 1;
+  iterator_t<int, random_access_iterator_state_t<int>> output_it =
+    make_random_access_iterator<int>(iterator_kind::OUTPUT, "int", "out", " * 2");
   pointer_t<int> inner_output_it(num_items);
-  output_it.state.d_output = inner_output_it.ptr;
+  output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init);
+  scan(input_it, output_it, num_items, op, init, false);
 
   std::vector<int> expected(num_items, 1);
   std::exclusive_scan(expected.begin(), expected.end(), expected.begin(), init.value);

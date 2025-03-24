@@ -53,6 +53,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 #include <iterator>
@@ -275,7 +276,7 @@ struct DispatchRadixSort
     cudaError error = cudaSuccess;
     do
     {
-      int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
+      int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, end_bit - current_bit);
 
 // Log upsweep_kernel configuration
 #ifdef CUB_DEBUG_LOG
@@ -444,10 +445,10 @@ struct DispatchRadixSort
           break;
         }
 
-        max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * CUB_SUBSCRIPTION_FACTOR(0);
+        max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * detail::subscription_factor;
 
         even_share.DispatchInit(
-          num_items, max_downsweep_grid_size, CUB_MAX(downsweep_config.tile_size, upsweep_config.tile_size));
+          num_items, max_downsweep_grid_size, _CUDA_VSTD::max(downsweep_config.tile_size, upsweep_config.tile_size));
 
       } while (0);
       return error;
@@ -472,8 +473,8 @@ struct DispatchRadixSort
     constexpr PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
     int num_passes                        = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
     OffsetT num_portions                  = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
-    PortionOffsetT max_num_blocks =
-      ::cuda::ceil_div(static_cast<int>(CUB_MIN(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
+    PortionOffsetT max_num_blocks         = ::cuda::ceil_div(
+      static_cast<int>(_CUDA_VSTD::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : sizeof(ValueT);
     size_t allocation_sizes[] = {
@@ -611,11 +612,11 @@ struct DispatchRadixSort
 
       for (int current_bit = begin_bit, pass = 0; current_bit < end_bit; current_bit += RADIX_BITS, ++pass)
       {
-        int num_bits = CUB_MIN(end_bit - current_bit, RADIX_BITS);
+        int num_bits = _CUDA_VSTD::min(end_bit - current_bit, RADIX_BITS);
         for (OffsetT portion = 0; portion < num_portions; ++portion)
         {
-          PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
-            CUB_MIN(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
+          PortionOffsetT portion_num_items =
+            static_cast<PortionOffsetT>(_CUDA_VSTD::min(num_items - portion * PORTION_SIZE, OffsetT{PORTION_SIZE}));
 
           PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
 
@@ -777,7 +778,7 @@ struct DispatchRadixSort
       }
 
       // Get maximum spine length
-      int max_grid_size = CUB_MAX(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
+      int max_grid_size = _CUDA_VSTD::max(pass_config.max_downsweep_grid_size, alt_pass_config.max_downsweep_grid_size);
       int spine_length  = (max_grid_size * pass_config.radix_digits) + pass_config.scan_config.tile_size;
 
       // Temporary storage allocation requirements
@@ -812,7 +813,7 @@ struct DispatchRadixSort
       int num_passes         = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
-      int alt_end_bit        = CUB_MIN(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
+      int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
 
       // Alias the temporary storage allocations
       OffsetT* d_spine = static_cast<OffsetT*>(allocations[0]);
@@ -1113,16 +1114,16 @@ struct DispatchRadixSort
  * @tparam EndOffsetIteratorT
  *   Random-access input iterator type for reading segment ending offsets @iterator
  *
- * @tparam OffsetT
- *   Signed integer type for global offsets
+ * @tparam SegmentSizeT
+ *   Integer type to index items within a segment
  */
 template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename OffsetT,
-          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename SegmentSizeT,
+          typename PolicyHub   = detail::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
           typename DecomposerT = detail::identity_decomposer_t>
 struct DispatchSegmentedRadixSort
 {
@@ -1155,10 +1156,10 @@ struct DispatchSegmentedRadixSort
   DoubleBuffer<ValueT>& d_values;
 
   /// Number of items to sort
-  OffsetT num_items;
+  ::cuda::std::int64_t num_items;
 
   /// The number of segments that comprise the sorting data
-  OffsetT num_segments;
+  ::cuda::std::int64_t num_segments;
 
   /// Random-access input iterator to the sequence of beginning offsets of length `num_segments`,
   /// such that <tt>d_begin_offsets[i]</tt> is the first element of the <em>i</em><sup>th</sup>
@@ -1198,8 +1199,8 @@ struct DispatchSegmentedRadixSort
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    OffsetT num_items,
-    OffsetT num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit,
@@ -1239,34 +1240,60 @@ struct DispatchSegmentedRadixSort
     PassConfigT& pass_config)
   {
     cudaError error = cudaSuccess;
-    do
+
+    // The number of bits to process in this pass
+    int pass_bits = _CUDA_VSTD::min(pass_config.radix_bits, (end_bit - current_bit));
+
+    // The offset type (used to specialize the kernel template), large enough to index any segment within a single
+    // invocation
+    using per_invocation_segment_offset_t = ::cuda::std::int32_t;
+
+    // The upper bound of segments that a single kernel invocation will process
+    constexpr auto max_num_segments_per_invocation =
+      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<per_invocation_segment_offset_t>::max());
+
+    // Number of radix sort invocations until all segments have been processed
+    const auto num_invocations = ::cuda::ceil_div(num_segments, max_num_segments_per_invocation);
+
+    // If d_begin_offsets and d_end_offsets do not support operator+ then we can't have more than
+    // max_num_segments_per_invocation segments per invocation
+    if (num_invocations > 1
+        && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
     {
-      int pass_bits = CUB_MIN(pass_config.radix_bits, (end_bit - current_bit));
+      return cudaErrorInvalidValue;
+    }
 
-// Log kernel configuration
-#ifdef CUB_DEBUG_LOG
-      _CubLog("Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
-              "%lld items per thread, %lld SM occupancy, "
-              "current bit %d, bit_grain %d\n",
-              (long long) num_segments,
-              (long long) pass_config.segmented_config.block_threads,
-              (long long) stream,
-              (long long) pass_config.segmented_config.items_per_thread,
-              (long long) pass_config.segmented_config.sm_occupancy,
-              current_bit,
-              pass_bits);
-#endif
+    // Iterate over chunks of segments
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    {
+      const auto current_segment_offset = invocation_index * max_num_segments_per_invocation;
+      const auto num_current_segments =
+        ::cuda::std::min(max_num_segments_per_invocation, num_segments - current_segment_offset);
 
+      // Log kernel configuration
+      // #ifdef CUB_DEBUG_LOG
+      _CubLog(
+        "Invoking segmented_kernels<<<%lld, %lld, 0, %lld>>>(), "
+        "%lld items per thread, %lld SM occupancy, "
+        "current segment offset %lld, current bit %d, bit_grain %d\n",
+        (long long) num_current_segments,
+        (long long) pass_config.segmented_config.block_threads,
+        (long long) stream,
+        (long long) pass_config.segmented_config.items_per_thread,
+        (long long) pass_config.segmented_config.sm_occupancy,
+        (long long) current_segment_offset,
+        current_bit,
+        pass_bits);
+      // #endif
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        num_segments, pass_config.segmented_config.block_threads, 0, stream)
+        static_cast<unsigned int>(num_current_segments), pass_config.segmented_config.block_threads, 0, stream)
         .doit(pass_config.segmented_kernel,
               d_keys_in,
               d_keys_out,
               d_values_in,
               d_values_out,
-              d_begin_offsets,
-              d_end_offsets,
-              num_segments,
+              detail::advance_iterators_if_supported(d_begin_offsets, current_segment_offset),
+              detail::advance_iterators_if_supported(d_end_offsets, current_segment_offset),
               current_bit,
               pass_bits,
               decomposer);
@@ -1275,19 +1302,19 @@ struct DispatchSegmentedRadixSort
       error = CubDebug(cudaPeekAtLastError());
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
 
       // Sync the stream if specified to flush runtime errors
       error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
-        break;
+        return error;
       }
+    }
 
-      // Update current bit
-      current_bit += pass_bits;
-    } while (0);
+    // Update current bit once all segments have been processed for the current pass
+    current_bit += pass_bits;
 
     return error;
   }
@@ -1381,10 +1408,10 @@ struct DispatchSegmentedRadixSort
       int radix_bits         = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
       int alt_radix_bits     = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
       int num_bits           = end_bit - begin_bit;
-      int num_passes         = CUB_MAX(::cuda::ceil_div(num_bits, radix_bits), 1);
+      int num_passes         = _CUDA_VSTD::max(::cuda::ceil_div(num_bits, radix_bits), 1); // num_bits may be zero
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * radix_bits) - num_bits;
-      int alt_end_bit        = CUB_MIN(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
+      int alt_end_bit        = _CUDA_VSTD::min(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));
 
       DoubleBuffer<KeyT> d_keys_remaining_passes(
         (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : static_cast<KeyT*>(allocations[0]),
@@ -1474,7 +1501,7 @@ struct DispatchSegmentedRadixSort
         ValueT,
         BeginOffsetIteratorT,
         EndOffsetIteratorT,
-        OffsetT,
+        SegmentSizeT,
         DecomposerT>,
       detail::radix_sort::DeviceSegmentedRadixSortKernel<
         max_policy_t,
@@ -1484,7 +1511,7 @@ struct DispatchSegmentedRadixSort
         ValueT,
         BeginOffsetIteratorT,
         EndOffsetIteratorT,
-        OffsetT,
+        SegmentSizeT,
         DecomposerT>);
   }
 
@@ -1545,8 +1572,8 @@ struct DispatchSegmentedRadixSort
     size_t& temp_storage_bytes,
     DoubleBuffer<KeyT>& d_keys,
     DoubleBuffer<ValueT>& d_values,
-    int num_items,
-    int num_segments,
+    ::cuda::std::int64_t num_items,
+    ::cuda::std::int64_t num_segments,
     BeginOffsetIteratorT d_begin_offsets,
     EndOffsetIteratorT d_end_offsets,
     int begin_bit,

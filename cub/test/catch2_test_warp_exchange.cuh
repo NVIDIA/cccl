@@ -27,11 +27,14 @@
 
 #pragma once
 
+#include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_exchange.cuh>
 
 #include <thrust/reverse.h>
 #include <thrust/sequence.h>
+
+#include <cuda/cmath>
 
 #include <type_traits>
 
@@ -224,7 +227,7 @@ c2h::host_vector<T> compute_host_reference(const c2h::device_vector<T>& d_input,
 {
   c2h::host_vector<T> input = d_input;
 
-  int num_warps = CUB_QUOTIENT_CEILING(static_cast<int>(d_input.size()), tile_size);
+  int num_warps = cuda::ceil_div(static_cast<int>(d_input.size()), tile_size);
   for (int warp_id = 0; warp_id < num_warps; warp_id++)
   {
     const int warp_data_begin = tile_size * warp_id;
@@ -239,7 +242,7 @@ struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == CUB_WARP_THREADS(0));
+  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
   static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 

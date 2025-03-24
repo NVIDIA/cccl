@@ -38,6 +38,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/device/dispatch/kernels/reduce.cuh> // finalize_and_store_aggregate
 #include <cub/iterator/arg_index_input_iterator.cuh>
 
 CUB_NAMESPACE_BEGIN
@@ -131,7 +132,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   OutputIteratorT d_out,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  int /*num_segments*/,
   ReductionOpT reduction_op,
   InitT init)
 {

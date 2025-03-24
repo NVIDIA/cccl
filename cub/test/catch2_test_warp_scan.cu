@@ -25,8 +25,11 @@
  *
  ******************************************************************************/
 
+#include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
+
+#include <cuda/cmath>
 
 #include <c2h/catch2_test_helper.h>
 
@@ -278,7 +281,7 @@ c2h::host_vector<T> compute_host_reference(
 
   // The accumulator variable is used to calculate warp_aggregate without
   // taking initial_value into consideration in both exclusive and inclusive scan.
-  int num_warps = CUB_QUOTIENT_CEILING(static_cast<int>(result.size()), logical_warp_threads);
+  int num_warps = cuda::ceil_div(static_cast<int>(result.size()), logical_warp_threads);
   c2h::host_vector<T> warp_accumulator(num_warps);
   if (mode == scan_mode::exclusive)
   {
@@ -333,7 +336,7 @@ struct total_warps_t
 {
 private:
   static constexpr int max_warps      = 2;
-  static constexpr bool is_arch_warp  = (logical_warp_threads == CUB_WARP_THREADS(0));
+  static constexpr bool is_arch_warp  = (logical_warp_threads == cub::detail::warp_threads);
   static constexpr bool is_pow_of_two = ((logical_warp_threads & (logical_warp_threads - 1)) == 0);
   static constexpr int total_warps    = (is_arch_warp || is_pow_of_two) ? max_warps : 1;
 

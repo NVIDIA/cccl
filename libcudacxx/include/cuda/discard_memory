@@ -26,13 +26,11 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-inline _CCCL_HOST_DEVICE void discard_memory(volatile void* __ptr, _CUDA_VSTD::size_t __nbytes) noexcept
+inline _CCCL_HOST_DEVICE void
+discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] _CUDA_VSTD::size_t __nbytes) noexcept
 {
   // The discard PTX instruction is only available with PTX ISA 7.4 and later
-#if __cccl_ptx_isa < 740ULL
-  (void) (__ptr);
-  (void) (__nbytes);
-#else
+#if __cccl_ptx_isa >= 740ULL
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (if (!__isGlobal((void*) __ptr)) return;
@@ -49,8 +47,7 @@ inline _CCCL_HOST_DEVICE void discard_memory(volatile void* __ptr, _CUDA_VSTD::s
      while (__start_aligned < __end_aligned) {
        asm volatile("discard.global.L2 [%0], 128;" ::"l"(__start_aligned) :);
        __start_aligned += _LINE_SIZE;
-     }),
-    ((void) (__ptr); (void) (__nbytes);))
+     }))
 #endif
 }
 

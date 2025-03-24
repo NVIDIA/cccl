@@ -205,7 +205,7 @@ struct DeviceRunLengthEncode
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
 
-    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<InputIteratorT>>;
+    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
     using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 

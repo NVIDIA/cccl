@@ -76,7 +76,7 @@ struct __align__(OP_ALIGNMENT) {0} {{
 std::string make_kernel_input_iterator(
   std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter)
 {
-  if (iter.type == cccl_iterator_kind_t::pointer)
+  if (iter.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     return {};
   }
@@ -97,28 +97,28 @@ std::string make_kernel_output_iterator(
   const std::string iter_def = std::format(R"XXX(
 extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T x);
 extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
-struct __align__(OP_ALIGNMENT) output_iterator_state_t {{
+struct __align__(OP_ALIGNMENT) {0}_state_t {{
   char data[OP_SIZE];
 }};
-struct output_iterator_proxy_t {{
-  __device__ output_iterator_proxy_t operator=(VALUE_T x) {{
+struct {0}_proxy_t {{
+  __device__ {0}_proxy_t operator=(VALUE_T x) {{
     DEREF(&state, x);
     return *this;
   }}
-  output_iterator_state_t state;
+  {0}_state_t state;
 }};
 struct {0} {{
   using iterator_category = cuda::std::random_access_iterator_tag;
   using difference_type   = DIFF_T;
   using value_type        = void;
-  using pointer           = output_iterator_proxy_t*;
-  using reference         = output_iterator_proxy_t;
-  __device__ output_iterator_proxy_t operator*() const {{ return {{state}}; }}
+  using pointer           = {0}_proxy_t*;
+  using reference         = {0}_proxy_t;
+  __device__ {0}_proxy_t operator*() const {{ return {{state}}; }}
   __device__ {0}& operator+=(difference_type diff) {{
       ADVANCE(&state, diff);
       return *this;
   }}
-  __device__ output_iterator_proxy_t operator[](difference_type diff) const {{
+  __device__ {0}_proxy_t operator[](difference_type diff) const {{
     {0} result = *this;
     result += diff;
     return {{ result.state }};
@@ -128,7 +128,7 @@ struct {0} {{
     result += diff;
     return result;
   }}
-  output_iterator_state_t state;
+  {0}_state_t state;
 }};
 )XXX",
                                            iterator_name);
@@ -139,7 +139,7 @@ struct {0} {{
 std::string make_kernel_output_iterator(
   std::string_view offset_t, std::string_view iterator_name, std::string_view input_value_t, cccl_iterator_t iter)
 {
-  if (iter.type == cccl_iterator_kind_t::pointer)
+  if (iter.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     return {};
   }
@@ -194,7 +194,7 @@ struct output_iterator_t {{
 
 std::string make_kernel_inout_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)
 {
-  if (iter.type == cccl_iterator_kind_t::pointer)
+  if (iter.type == cccl_iterator_kind_t::CCCL_POINTER)
   {
     return {};
   }

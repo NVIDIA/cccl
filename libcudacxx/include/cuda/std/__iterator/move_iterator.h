@@ -22,10 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/compare_three_way_result.h>
 #  include <cuda/std/__compare/three_way_comparable.h>
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/derived_from.h>
@@ -65,8 +65,7 @@ concept __move_iter_comparable = requires {
 };
 
 template <class _Iter>
-_CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
@@ -90,8 +89,7 @@ template <class _Iter, class _Sent>
 _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
-_CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
-  noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
+inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #endif // _CCCL_NO_CONCEPTS
 
 template <class _Iter>
@@ -324,7 +322,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const move_iterator<_Iter1>&
 }
 #endif // _CCCL_STD_VER <= 2017
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _Iter1, three_way_comparable_with<_Iter1> _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator<=>(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
@@ -333,7 +331,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator<=>(const move_iterator<_Iter1>
   return __x.base() <=> __y.base();
 }
 
-#else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR vvv
+#else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ / vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)
 {
@@ -357,7 +355,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(const move_iterator<_Iter1>&
 {
   return __x.base() >= __y.base();
 }
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator-(const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y)

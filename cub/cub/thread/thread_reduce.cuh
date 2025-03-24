@@ -346,7 +346,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
   }
   else
   {
-    constexpr auto length = cub::detail::static_size_v<Input>();
+    [[maybe_unused]] constexpr auto length = cub::detail::static_size_v<Input>();
     // clang-format off
     _NV_TARGET_DISPATCH(
       NV_PROVIDES_SM_90,
@@ -359,8 +359,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
       NV_PROVIDES_SM_70,
         (return enable_sm70_simd_reduction<T, ReductionOp, length>();),
       NV_IS_DEVICE,
-        (static_cast<void>(length); // maybe unused
-         return false;)
+        (return false;)
     );
     // clang-format on
     return false;
@@ -491,7 +490,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
   AccumT retval = input[0];
-#  pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < cub::detail::static_size_v<Input>(); ++i)
   {
     retval = reduction_op(retval, input[i]);
@@ -505,10 +504,11 @@ ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>();
   auto array            = cub::detail::to_array<AccumT>(input);
-#  pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 2)
   {
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j + i < length; j += i * 2)
     {
       array[j] = reduction_op(array[j], array[j + i]);
@@ -523,10 +523,11 @@ ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>();
   auto array            = cub::detail::to_array<AccumT>(input);
-#  pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 3)
   {
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 0; j + i < length; j += i * 3)
     {
       auto value = reduction_op(array[j], array[j + i]);
@@ -693,7 +694,8 @@ ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
   // copy to a temporary array of type AccumT
   AccumT array[length + 1];
   array[0] = prefix;
-#  pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 0; i < length; ++i)
   {
     array[i + 1] = input[i];

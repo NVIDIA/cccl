@@ -10,11 +10,10 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba import cuda
 from numba.cuda.cudadrv import enums
 
 from .. import _cccl as cccl
-from .._bindings import get_bindings, get_paths
+from .._bindings import call_build, get_bindings
 from .._caching import CachableFunction, cache_with_key
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase
@@ -29,6 +28,7 @@ class _Scan:
         d_out: DeviceArrayLike | IteratorBase,
         op: Callable,
         h_init: np.ndarray | GpuStruct,
+        force_inclusive: bool,
     ):
         # Referenced from __del__:
         self.build_result = None
@@ -36,8 +36,6 @@ class _Scan:
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
-        cc_major, cc_minor = cuda.get_current_device().compute_capability
-        cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)
         else:
@@ -46,18 +44,20 @@ class _Scan:
         self.op_wrapper = cccl.to_cccl_op(op, sig)
         self.build_result = cccl.DeviceScanBuildResult()
         self.bindings = get_bindings()
-        error = self.bindings.cccl_device_scan_build(
+        error = call_build(
+            self.bindings.cccl_device_scan_build,
             ctypes.byref(self.build_result),
             self.d_in_cccl,
             self.d_out_cccl,
             self.op_wrapper,
             cccl.to_cccl_value(h_init),
-            cc_major,
-            cc_minor,
-            ctypes.c_char_p(cub_path),
-            ctypes.c_char_p(thrust_path),
-            ctypes.c_char_p(libcudacxx_path),
-            ctypes.c_char_p(cuda_include_path),
+            ctypes.c_bool(force_inclusive),
+        )
+
+        self.device_scan = (
+            self.bindings.cccl_device_inclusive_scan
+            if force_inclusive
+            else self.bindings.cccl_device_exclusive_scan
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building scan")
@@ -71,15 +71,9 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
-        if self.d_in_cccl.type.value == cccl.IteratorKind.POINTER:
-            self.d_in_cccl.state = protocols.get_data_pointer(d_in)
-        else:
-            self.d_in_cccl.state = d_in.state
-
-        if self.d_out_cccl.type.value == cccl.IteratorKind.POINTER:
-            self.d_out_cccl.state = protocols.get_data_pointer(d_out)
-        else:
-            self.d_out_cccl.state = d_out.state
+        set_state_fn = cccl.set_cccl_iterator_state
+        set_state_fn(self.d_in_cccl, d_in)
+        set_state_fn(self.d_out_cccl, d_out)
 
         self.h_init_cccl.state = h_init.__array_interface__["data"][0]
 
@@ -92,7 +86,7 @@ class _Scan:
             temp_storage_bytes = ctypes.c_size_t(temp_storage.nbytes)
             d_temp_storage = protocols.get_data_pointer(temp_storage)
 
-        error = self.bindings.cccl_device_scan(
+        error = self.device_scan(
             self.build_result,
             ctypes.c_void_p(d_temp_storage),
             ctypes.byref(temp_storage_bytes),
@@ -112,8 +106,7 @@ class _Scan:
     def __del__(self):
         if self.build_result is None:
             return
-        bindings = get_bindings()
-        bindings.cccl_device_scan_cleanup(ctypes.byref(self.build_result))
+        self.bindings.cccl_device_scan_cleanup(ctypes.byref(self.build_result))
 
 
 def make_cache_key(
@@ -136,7 +129,7 @@ def make_cache_key(
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def scan(
+def exclusive_scan(
     d_in: DeviceArrayLike | IteratorBase,
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
@@ -150,8 +143,8 @@ def scan(
         .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
           :language: python
           :dedent:
-          :start-after: example-begin scan-max
-          :end-before: example-end scan-max
+          :start-after: example-begin exclusive-scan-max
+          :end-before: example-end exclusive-scan-max
 
     Args:
         d_in: Device array or iterator containing the input sequence of data items
@@ -162,4 +155,36 @@ def scan(
     Returns:
         A callable object that can be used to perform the scan
     """
-    return _Scan(d_in, d_out, op, h_init)
+    return _Scan(d_in, d_out, op, h_init, False)
+
+
+# TODO Figure out `sum` without operator and initial value
+# TODO Accept stream
+@cache_with_key(make_cache_key)
+def inclusive_scan(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike | IteratorBase,
+    op: Callable,
+    h_init: np.ndarray,
+):
+    """Computes a device-wide scan using the specified binary ``op`` and initial value ``init``.
+
+    Example:
+        Below, ``scan`` is used to compute an inclusive scan of a sequence of integers.
+
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+          :language: python
+          :dedent:
+          :start-after: example-begin inclusive-scan-add
+          :end-before: example-end inclusive-scan-add
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items
+        d_out: Device array that will store the result of the scan
+        op: Callable representing the binary operator to apply
+        init: Numpy array storing initial value of the scan
+
+    Returns:
+        A callable object that can be used to perform the scan
+    """
+    return _Scan(d_in, d_out, op, h_init, True)

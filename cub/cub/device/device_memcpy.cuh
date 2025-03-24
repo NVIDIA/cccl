@@ -171,19 +171,16 @@ struct DeviceMemcpy
     InputBufferIt input_buffer_it,
     OutputBufferIt output_buffer_it,
     BufferSizeIteratorT buffer_sizes,
-    uint32_t num_buffers,
+    ::cuda::std::int64_t num_buffers,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
-    static_assert(::cuda::std::is_pointer_v<cub::detail::value_t<InputBufferIt>>,
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
-    static_assert(::cuda::std::is_pointer_v<cub::detail::value_t<OutputBufferIt>>,
+    static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<OutputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");
-
-    // Integer type large enough to hold any offset in [0, num_buffers)
-    using BufferOffsetT = uint32_t;
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by
@@ -191,9 +188,8 @@ struct DeviceMemcpy
     using BlockOffsetT = uint32_t;
 
     return detail::
-      DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BufferOffsetT, BlockOffsetT, CopyAlg::Memcpy>::
-        Dispatch(
-          d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
+      DispatchBatchMemcpy<InputBufferIt, OutputBufferIt, BufferSizeIteratorT, BlockOffsetT, CopyAlg::Memcpy>::Dispatch(
+        d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
   }
 };
 

@@ -17,18 +17,19 @@
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+template <class T>
+__host__ __device__ constexpr void test()
 {
   using cuda::std::nullopt;
   using cuda::std::nullopt_t;
   using cuda::std::optional;
 
   {
-    typedef int T;
-    typedef optional<T> O;
+    using O = optional<T>;
+    cuda::std::remove_reference_t<T> val{1};
 
-    O o1; // disengaged
-    O o2{1}; // engaged
+    O o1{}; // disengaged
+    O o2{val}; // engaged
 
     assert(!(nullopt > o1));
     assert(!(nullopt > o2));
@@ -38,6 +39,14 @@ __host__ __device__ constexpr bool test()
     static_assert(noexcept(nullopt > o1), "");
     static_assert(noexcept(o1 > nullopt), "");
   }
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test<int>();
+#ifdef CCCL_ENABLE_OPTIONAL_REF
+  test<int&>();
+#endif // CCCL_ENABLE_OPTIONAL_REF
 
   return true;
 }
@@ -45,10 +54,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-
-#if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test());
-#endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
 
   return 0;
 }

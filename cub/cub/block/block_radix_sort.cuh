@@ -50,6 +50,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -422,7 +423,7 @@ private:
   {
     bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[KEY]);
@@ -431,7 +432,7 @@ private:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = CUB_MIN(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -457,8 +458,8 @@ private:
       __syncthreads();
     }
 
-// Untwiddle bits if necessary
-#pragma unroll
+    // Untwiddle bits if necessary
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[KEY]);
@@ -501,7 +502,7 @@ public:
   {
     bit_ordered_type(&unsigned_keys)[ITEMS_PER_THREAD] = reinterpret_cast<bit_ordered_type(&)[ITEMS_PER_THREAD]>(keys);
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, unsigned_keys[KEY]);
@@ -510,7 +511,7 @@ public:
     // Radix sorting passes
     while (true)
     {
-      int pass_bits = CUB_MIN(RADIX_BITS, end_bit - begin_bit);
+      int pass_bits = _CUDA_VSTD::min(RADIX_BITS, end_bit - begin_bit);
       auto digit_extractor =
         traits::template digit_extractor<fundamental_digit_extractor_t>(begin_bit, pass_bits, decomposer);
 
@@ -543,8 +544,8 @@ public:
       __syncthreads();
     }
 
-// Untwiddle bits if necessary
-#  pragma unroll
+    // Untwiddle bits if necessary
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
     {
       unsigned_keys[KEY] = bit_ordered_conversion::from_bit_ordered(decomposer, unsigned_keys[KEY]);

@@ -25,6 +25,10 @@ function(cudax_add_example target_name_var example_src cudax_target)
     ${cudax_target}
     cudax.examples.thrust
   )
+  target_compile_options(${example_target} PRIVATE
+    "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+  )
+
   cudax_clone_target_properties(${example_target} ${cudax_target})
   target_include_directories(${example_target} PRIVATE "${CUB_SOURCE_DIR}/examples")
 
@@ -47,6 +51,11 @@ file(GLOB example_srcs
   CONFIGURE_DEPENDS
   *.cu
 )
+
+# Example requires pinned_memory_resource.
+if(CUDAToolkit_VERSION VERSION_LESS 12.6)
+  list(REMOVE_ITEM example_srcs async_buffer_add.cu)
+endif()
 
 foreach(cudax_target IN LISTS cudax_TARGETS)
   cudax_get_target_property(config_prefix ${cudax_target} PREFIX)

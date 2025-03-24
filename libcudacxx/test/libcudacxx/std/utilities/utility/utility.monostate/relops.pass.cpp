@@ -23,7 +23,7 @@
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   using M = cuda::std::monostate;
   constexpr M m1{};
@@ -31,10 +31,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(testComparisons(m1, m2, /*isEqual*/ true, /*isLess*/ false));
   AssertComparisonsAreNoexcept<M>();
 
-#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   assert(testOrder(m1, m2, cuda::std::strong_ordering::equal));
   AssertOrderAreNoexcept<M>();
-#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   return true;
 }

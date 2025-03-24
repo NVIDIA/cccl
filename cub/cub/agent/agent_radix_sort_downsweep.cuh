@@ -274,7 +274,7 @@ struct AgentRadixSortDownsweep
     int (&ranks)[ITEMS_PER_THREAD],
     OffsetT valid_items)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       temp_storage.keys_and_offsets.exchange_keys[ranks[ITEM]] = twiddled_keys[ITEM];
@@ -282,7 +282,7 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       bit_ordered_type key       = temp_storage.keys_and_offsets.exchange_keys[threadIdx.x + (ITEM * BLOCK_THREADS)];
@@ -312,7 +312,7 @@ struct AgentRadixSortDownsweep
 
     ValueExchangeT& exchange_values = temp_storage.exchange_values.Alias();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       exchange_values[ranks[ITEM]] = values[ITEM];
@@ -320,7 +320,7 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       ValueT value = exchange_values[threadIdx.x + (ITEM * BLOCK_THREADS)];
@@ -361,7 +361,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<CUB_PTX_WARP_THREADS>(valid_items, 0, 0xffffffff);
+    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
 
     BlockLoadKeysT(temp_storage.load_keys).Load(d_keys_in + block_offset, keys, valid_items, oob_item);
 
@@ -395,7 +395,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<CUB_PTX_WARP_THREADS>(valid_items, 0, 0xffffffff);
+    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
 
     LoadDirectWarpStriped(threadIdx.x, d_keys_in + block_offset, keys, valid_items, oob_item);
   }
@@ -427,7 +427,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<CUB_PTX_WARP_THREADS>(valid_items, 0, 0xffffffff);
+    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
 
     BlockLoadValuesT(temp_storage.load_values).Load(d_values_in + block_offset, values, valid_items);
 
@@ -459,7 +459,7 @@ struct AgentRadixSortDownsweep
   {
     // Register pressure work-around: moving valid_items through shfl prevents compiler
     // from reusing guards/addressing from prior guarded loads
-    valid_items = ShuffleIndex<CUB_PTX_WARP_THREADS>(valid_items, 0, 0xffffffff);
+    valid_items = ShuffleIndex<warp_threads>(valid_items, 0, 0xffffffff);
 
     LoadDirectWarpStriped(threadIdx.x, d_values_in + block_offset, values, valid_items);
   }
@@ -514,7 +514,7 @@ struct AgentRadixSortDownsweep
     LoadKeys(
       keys, block_offset, valid_items, default_key, bool_constant_v<FULL_TILE>, bool_constant_v<LOAD_WARP_STRIPED>);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int KEY = 0; KEY < ITEMS_PER_THREAD; KEY++)
     {
       keys[KEY] = bit_ordered_conversion::to_bit_ordered(decomposer, keys[KEY]);
@@ -526,8 +526,8 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-// Share exclusive digit prefix
-#pragma unroll
+    // Share exclusive digit prefix
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -543,7 +543,7 @@ struct AgentRadixSortDownsweep
     // Get inclusive digit prefix
     int inclusive_digit_prefix[BINS_TRACKED_PER_THREAD];
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -568,8 +568,8 @@ struct AgentRadixSortDownsweep
 
     __syncthreads();
 
-// Update global scatter base offsets for each digit
-#pragma unroll
+    // Update global scatter base offsets for each digit
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -661,7 +661,7 @@ struct AgentRadixSortDownsweep
       , short_circuit(1)
       , decomposer(decomposer)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       this->bin_offset[track] = bin_offset[track];
@@ -701,7 +701,7 @@ struct AgentRadixSortDownsweep
       , short_circuit(1)
       , decomposer(decomposer)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int track = 0; track < BINS_TRACKED_PER_THREAD; ++track)
     {
       int bin_idx = (threadIdx.x * BINS_TRACKED_PER_THREAD) + track;
@@ -741,8 +741,8 @@ struct AgentRadixSortDownsweep
     }
     else
     {
-// Process full tiles of tile_items
-#pragma unroll 1
+      // Process full tiles of tile_items
+      _CCCL_PRAGMA_NOUNROLL()
       while (block_end - block_offset >= TILE_ITEMS)
       {
         ProcessTile<true>(block_offset);

@@ -972,10 +972,8 @@ template <class _Rep>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT treat_as_floating_point : is_floating_point<_Rep>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Rep>
-_CCCL_INLINE_VAR constexpr bool treat_as_floating_point_v = treat_as_floating_point<_Rep>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool treat_as_floating_point_v = treat_as_floating_point<_Rep>::value;
 
 template <class _Rep>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT duration_values
@@ -1598,7 +1596,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI static time_point from_time_t(time_t __t) noexcept;
 };
 
-#ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
+#if _LIBCUDACXX_HAS_MONOTONIC_CLOCK()
 class _CCCL_TYPE_VISIBILITY_DEFAULT steady_clock
 {
 public:
@@ -1612,9 +1610,9 @@ public:
 };
 
 using high_resolution_clock = steady_clock;
-#else
+#else // ^^^ _LIBCUDACXX_HAS_MONOTONIC_CLOCK() ^^^ / vvv !_LIBCUDACXX_HAS_MONOTONIC_CLOCK() vvv
 using high_resolution_clock = system_clock;
-#endif
+#endif // !_LIBCUDACXX_HAS_MONOTONIC_CLOCK()
 
 // [time.clock.file], type file_clock
 using file_clock = _CUDA_VSTD_FS::_FilesystemClock;
@@ -2195,27 +2193,27 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr weekday_last weekday::operator[](last_spec) 
   return weekday_last{*this};
 }
 
-_CCCL_INLINE_VAR constexpr last_spec last{};
-_CCCL_INLINE_VAR constexpr weekday Sunday{0};
-_CCCL_INLINE_VAR constexpr weekday Monday{1};
-_CCCL_INLINE_VAR constexpr weekday Tuesday{2};
-_CCCL_INLINE_VAR constexpr weekday Wednesday{3};
-_CCCL_INLINE_VAR constexpr weekday Thursday{4};
-_CCCL_INLINE_VAR constexpr weekday Friday{5};
-_CCCL_INLINE_VAR constexpr weekday Saturday{6};
+inline constexpr last_spec last{};
+inline constexpr weekday Sunday{0};
+inline constexpr weekday Monday{1};
+inline constexpr weekday Tuesday{2};
+inline constexpr weekday Wednesday{3};
+inline constexpr weekday Thursday{4};
+inline constexpr weekday Friday{5};
+inline constexpr weekday Saturday{6};
 
-_CCCL_INLINE_VAR constexpr month January{1};
-_CCCL_INLINE_VAR constexpr month February{2};
-_CCCL_INLINE_VAR constexpr month March{3};
-_CCCL_INLINE_VAR constexpr month April{4};
-_CCCL_INLINE_VAR constexpr month May{5};
-_CCCL_INLINE_VAR constexpr month June{6};
-_CCCL_INLINE_VAR constexpr month July{7};
-_CCCL_INLINE_VAR constexpr month August{8};
-_CCCL_INLINE_VAR constexpr month September{9};
-_CCCL_INLINE_VAR constexpr month October{10};
-_CCCL_INLINE_VAR constexpr month November{11};
-_CCCL_INLINE_VAR constexpr month December{12};
+inline constexpr month January{1};
+inline constexpr month February{2};
+inline constexpr month March{3};
+inline constexpr month April{4};
+inline constexpr month May{5};
+inline constexpr month June{6};
+inline constexpr month July{7};
+inline constexpr month August{8};
+inline constexpr month September{9};
+inline constexpr month October{10};
+inline constexpr month November{11};
+inline constexpr month December{12};
 
 class month_day
 {
@@ -3605,7 +3603,7 @@ operator""ns(long double __ns)
   return chrono::duration<_LIBCUDACXX_CHRONO_LITERAL_INTERNAL_T, nano>(__ns);
 }
 
-#if _CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#if _CCCL_STD_VER > 2017 && _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
 _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::day operator""d(unsigned long long __d) noexcept
 {
   return chrono::day(static_cast<unsigned>(__d));
@@ -3615,7 +3613,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr chrono::year operator""y(unsigned long long 
 {
   return chrono::year(static_cast<int>(__y));
 }
-#endif //_CCCL_STD_VER > 2017 && !defined(_LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS)
+#endif //_CCCL_STD_VER > 2017 && _LIBCUDACXX_HAS_CXX20_CHRONO_LITERALS()
 } // namespace chrono_literals
 } // namespace literals
 

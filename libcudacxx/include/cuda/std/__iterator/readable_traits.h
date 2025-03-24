@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/same_as.h>
+#include <cuda/std/__fwd/iterator_traits.h>
 #include <cuda/std/__iterator/incrementable_traits.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -94,17 +95,12 @@ template <__has_member_value_type _Tp>
 struct indirectly_readable_traits<_Tp> : __cond_value_type<typename _Tp::value_type>
 {};
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_value_t<I>` denotes
 // `indirectly_readable_traits<RI>::value_type` if `iterator_traits<RI>` names a specialization
 // generated from the primary template, and `iterator_traits<RI>::value_type` otherwise.
 template <class _Ip>
 using iter_value_t =
-  typename conditional_t<__is_primary_template<iterator_traits<remove_cvref_t<_Ip>>>::value,
-                         indirectly_readable_traits<remove_cvref_t<_Ip>>,
-                         iterator_traits<remove_cvref_t<_Ip>>>::value_type;
+  typename __select_traits<remove_cvref_t<_Ip>, indirectly_readable_traits<remove_cvref_t<_Ip>>>::value_type;
 
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
@@ -120,16 +116,16 @@ struct __cond_value_type<_Tp, enable_if_t<_CCCL_TRAIT(is_object, _Tp)>>
 };
 
 template <class _Tp, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_value_type = false;
+inline constexpr bool __has_member_value_type = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
+inline constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
 
 template <class _Tp, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_member_element_type = false;
+inline constexpr bool __has_member_element_type = false;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
+inline constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
 
 template <class, class = void>
 struct indirectly_readable_traits
@@ -171,17 +167,12 @@ struct indirectly_readable_traits<
     : __cond_value_type<typename _Tp::value_type>
 {};
 
-template <class, class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-
 // Let `RI` be `remove_cvref_t<I>`. The type `iter_value_t<I>` denotes
 // `indirectly_readable_traits<RI>::value_type` if `iterator_traits<RI>` names a specialization
 // generated from the primary template, and `iterator_traits<RI>::value_type` otherwise.
 template <class _Ip>
 using iter_value_t =
-  typename conditional_t<__is_primary_template<iterator_traits<remove_cvref_t<_Ip>>>::value,
-                         indirectly_readable_traits<remove_cvref_t<_Ip>>,
-                         iterator_traits<remove_cvref_t<_Ip>>>::value_type;
+  typename __select_traits<remove_cvref_t<_Ip>, indirectly_readable_traits<remove_cvref_t<_Ip>>>::value_type;
 
 #endif // _CCCL_NO_CONCEPTS
 

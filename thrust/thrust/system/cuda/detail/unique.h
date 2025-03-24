@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -73,7 +73,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   BinaryPredicate binary_pred);
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
-_CCCL_HOST_DEVICE typename thrust::iterator_traits<ForwardIterator>::difference_type unique_count(
+_CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   ForwardIterator first,
   ForwardIterator last,
@@ -140,7 +140,7 @@ struct Tuning<core::detail::sm52, T>
 template <class ItemsIt, class ItemsOutputIt, class BinaryPred, class Size, class NumSelectedOutIt>
 struct UniqueAgent
 {
-  using item_type = typename iterator_traits<ItemsIt>::value_type;
+  using item_type = thrust::detail::it_value_t<ItemsIt>;
 
   using ScanTileState = cub::ScanTileState<Size>;
 
@@ -224,7 +224,7 @@ struct UniqueAgent
       Size num_selections_prefix,
       Size /*num_selections*/)
     {
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -281,7 +281,7 @@ struct UniqueAgent
           .FlagHeads(selection_flags, items_loc, predicate, tile_predecessor);
       }
 
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set selection_flags for out-of-bounds items
@@ -482,12 +482,12 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   cudaError_t status         = cudaSuccess;
   size_t allocation_sizes[2] = {0, vshmem_size};
   status                     = ScanTileState::AllocationSize(static_cast<int>(num_tiles), allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   void* allocations[2] = {nullptr, nullptr};
   //
   status = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   if (d_temp_storage == nullptr)
   {
@@ -496,12 +496,12 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   ScanTileState tile_status;
   status = tile_status.Init(static_cast<int>(num_tiles), allocations[0], allocation_sizes[0]);
-  CUDA_CUB_RET_IF_FAIL(status);
+  _CUDA_CUB_RET_IF_FAIL(status);
 
   num_tiles = ::cuda::std::max<size_t>(1, num_tiles);
   init_agent ia(init_plan, num_tiles, stream, "unique_by_key::init_agent");
   ia.launch(tile_status, num_tiles, num_selected_out);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
 
   if (num_items == 0)
   {
@@ -512,7 +512,7 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
 
   unique_agent ua(unique_plan, num_items, stream, vshmem_ptr, "unique_by_key::unique_agent");
   ua.launch(items_in, items_out, binary_pred, num_selected_out, num_items, tile_status, num_tiles);
-  CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
+  _CUDA_CUB_RET_IF_FAIL(cudaPeekAtLastError());
   return status;
 }
 
@@ -524,7 +524,7 @@ THRUST_RUNTIME_FUNCTION ItemsOutputIt unique(
   ItemsOutputIt items_result,
   BinaryPred binary_pred)
 {
-  //  using size_type = typename iterator_traits<ItemsInputIt>::difference_type;
+  //  using size_type = thrust::detail::it_difference_t<ItemsInputIt>;
   using size_type = int;
 
   size_type num_items       = static_cast<size_type>(thrust::distance(items_first, items_last));
@@ -590,7 +590,7 @@ unique_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, Outp
 template <class Derived, class InputIt, class OutputIt>
 OutputIt _CCCL_HOST_DEVICE unique_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  using input_type = typename iterator_traits<InputIt>::value_type;
+  using input_type = thrust::detail::it_value_t<InputIt>;
   return cuda_cub::unique_copy(policy, first, last, result, equal_to<input_type>());
 }
 
@@ -608,7 +608,7 @@ unique(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last, Binar
 template <class Derived, class ForwardIt>
 ForwardIt _CCCL_HOST_DEVICE unique(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last)
 {
-  using input_type = typename iterator_traits<ForwardIt>::value_type;
+  using input_type = thrust::detail::it_value_t<ForwardIt>;
   return cuda_cub::unique(policy, first, last, equal_to<input_type>());
 }
 
@@ -626,7 +626,7 @@ struct zip_adj_not_predicate
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class Derived, class ForwardIt, class BinaryPred>
-typename thrust::iterator_traits<ForwardIt>::difference_type _CCCL_HOST_DEVICE
+thrust::detail::it_difference_t<ForwardIt> _CCCL_HOST_DEVICE
 unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last, BinaryPred binary_pred)
 {
   if (first == last)
