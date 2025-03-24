@@ -47,7 +47,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
-    // todo
+    // todo: implement construction from a floating-point type using __fp_cast
   }
 
   _CCCL_TEMPLATE(class _Tp)
@@ -55,7 +55,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
-    // todo
+    // todo: implement construction from a floating-point type using __fp_cast
   }
 
   _CCCL_TEMPLATE(class _Tp)
@@ -63,7 +63,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp(const _Tp&) noexcept
       : __cccl_fp{}
   {
-    // todo
+    // todo: implement construction from an integral type using __fp_cast
   }
 
   _CCCL_HIDE_FROM_ABI constexpr __cccl_fp(const __cccl_fp&) noexcept = default;
@@ -71,26 +71,28 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr __cccl_fp& operator=(const __cccl_fp&) noexcept = default;
 
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND __fp_is_implicit_conversion_v<__cccl_fp, _Tp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Tp() noexcept
+  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__is_ext_cccl_fp_v<_Tp>)
+                   _CCCL_AND __fp_is_implicit_conversion_v<__cccl_fp, _Tp>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Tp() const noexcept
   {
-    // todo
+    // todo: implement conversion to a floating-point type using __fp_cast
     return _Tp{};
   }
 
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__fp_is_implicit_conversion_v<__cccl_fp, _Tp>))
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator _Tp() noexcept
+  _CCCL_REQUIRES(__is_fp_v<_Tp> _CCCL_AND(!__is_ext_cccl_fp_v<_Tp>)
+                   _CCCL_AND(!__fp_is_implicit_conversion_v<__cccl_fp, _Tp>))
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr operator _Tp() const noexcept
   {
-    // todo
+    // todo: implement conversion to a floating-point type using __fp_cast
     return _Tp{};
   }
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_integral_v<_Tp>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Tp() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Tp() const noexcept
   {
-    // todo
+    // todo: implement conversion to an integral type using __fp_cast
     return _Tp{};
   }
 
