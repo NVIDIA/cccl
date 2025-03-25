@@ -22,7 +22,9 @@
 #endif // no system header
 
 #include <cuda/std/__floating_point/format.h>
+#include <cuda/std/__floating_point/traits.h>
 #include <cuda/std/__type_traits/is_void.h>
+#include <cuda/std/cfloat>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -66,6 +68,9 @@ using __fp_native_type_t = decltype(__fp_native_type_impl<_Fmt>());
 
 template <__fp_format _Fmt>
 inline constexpr bool __fp_has_native_type_v = !_CCCL_TRAIT(is_void, __fp_native_type_t<_Fmt>);
+
+template <class _Tp>
+inline constexpr bool __fp_is_native_type_v = __is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

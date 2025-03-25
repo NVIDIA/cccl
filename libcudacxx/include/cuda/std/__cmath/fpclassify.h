@@ -86,9 +86,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __fpclassify_impl(_Tp __
   else
   {
     const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
-    if ((__storage & __fp_exp_mask_v<_Tp>) == 0)
+    if ((__storage & __fp_exp_mask_of_v<_Tp>) == 0)
     {
-      return (__storage & __fp_mant_mask_v<_Tp>) ? FP_SUBNORMAL : FP_ZERO;
+      return (__storage & __fp_mant_mask_of_v<_Tp>) ? FP_SUBNORMAL : FP_ZERO;
     }
     return FP_NORMAL;
   }
@@ -166,7 +166,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp8_e5m2
 #if _CCCL_HAS_NVFP8_E8M0()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int fpclassify(__nv_fp8_e8m0 __x) noexcept
 {
-  return ((__x.__x & __fp_exp_mask_v<__nv_fp8_e8m0>) == __fp_exp_mask_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
+  return ((__x.__x & __fp_exp_mask_of_v<__nv_fp8_e8m0>) == __fp_exp_mask_of_v<__nv_fp8_e8m0>) ? FP_NAN : FP_NORMAL;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
