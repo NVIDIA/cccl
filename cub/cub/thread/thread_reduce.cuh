@@ -290,7 +290,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
         (return enable_sm80_simd_reduction_v<T, ReductionOp, length> ||
                 enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_PROVIDES_SM_70,
-        (return enable_sm70_simd_reduction<T, ReductionOp, length>();),
+        (return enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_IS_DEVICE,
         (return false;)
     );
