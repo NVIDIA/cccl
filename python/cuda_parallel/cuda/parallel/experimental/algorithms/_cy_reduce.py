@@ -21,6 +21,8 @@ from ..typing import DeviceArrayLike, GpuStruct
 
 
 class _Reduce:
+    # ensure that module is loaded while the class
+    # and its instances a live
     _impl = cyb
 
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
@@ -78,7 +80,7 @@ class _Reduce:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = protocols.get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = cyb.device_reduce(
+        error, temp_storage_bytes = self._impl.device_reduce(
             self.build_result,
             d_temp_storage,
             temp_storage_bytes,
