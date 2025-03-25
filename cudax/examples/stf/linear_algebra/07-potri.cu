@@ -1091,7 +1091,6 @@ void PDTRTRI(matrix<double>& A, cublasFillMode_t uplo, cublasDiagType_t diag)
 void PDLAUUM(matrix<double>& A, cublasFillMode_t uplo)
 {
   nvtx_range r("PDLAUUM");
-
   assert(uplo == CUBLAS_FILL_MODE_LOWER);
 
   for (size_t k = 0; k < A.mt; k++)

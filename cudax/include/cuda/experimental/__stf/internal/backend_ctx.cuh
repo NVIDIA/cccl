@@ -55,17 +55,6 @@ namespace cuda::experimental::stf
 {
 
 template <typename T>
-struct is_shape_of : std::false_type
-{};
-
-template <typename U>
-struct is_shape_of<shape_of<U>> : std::true_type
-{};
-
-template <typename T>
-constexpr bool is_shape_of_v = is_shape_of<T>::value;
-
-template <typename T>
 class logical_data;
 
 template <typename T>
