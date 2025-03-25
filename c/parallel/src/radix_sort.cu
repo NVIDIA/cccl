@@ -238,11 +238,7 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 };
 
 std::string get_single_tile_kernel_name(
-  std::string_view chained_policy_t,
-  cccl_sort_order_t sort_order,
-  cccl_type_info key_t,
-  cccl_type_info value_t,
-  cccl_op_t decomposer)
+  std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t, cccl_type_info value_t)
 {
   const std::string key   = cccl_type_enum_to_name(key_t.type);
   const std::string value = cccl_type_enum_to_name(value_t.type);
@@ -257,15 +253,11 @@ std::string get_single_tile_kernel_name(
     key,
     value,
     offset_t,
-    decomposer.name);
+    "op_wrapper");
 }
 
 std::string get_upsweep_kernel_name(
-  std::string_view chained_policy_t,
-  bool alt_digit_bits,
-  cccl_sort_order_t sort_order,
-  cccl_type_info key_t,
-  cccl_op_t decomposer)
+  std::string_view chained_policy_t, bool alt_digit_bits, cccl_sort_order_t sort_order, cccl_type_info key_t)
 {
   const std::string key = cccl_type_enum_to_name(key_t.type);
 
@@ -279,7 +271,7 @@ std::string get_upsweep_kernel_name(
     (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
     key,
     offset_t,
-    decomposer.name);
+    "op_wrapper");
 }
 
 std::string get_scan_bins_kernel_name(std::string_view chained_policy_t)
@@ -287,7 +279,7 @@ std::string get_scan_bins_kernel_name(std::string_view chained_policy_t)
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
-  return std::format("cub::detail::radix_sort::DeviceRadixSortScanBinsKernel<{0}, {1}>", chained_policy_t, offset_t);
+  return std::format("cub::detail::radix_sort::RadixSortScanBinsKernel<{0}, {1}>", chained_policy_t, offset_t);
 }
 
 std::string get_downsweep_kernel_name(
@@ -295,8 +287,7 @@ std::string get_downsweep_kernel_name(
   bool alt_digit_bits,
   cccl_sort_order_t sort_order,
   cccl_type_info key_t,
-  cccl_type_info value_t,
-  cccl_op_t decomposer)
+  cccl_type_info value_t)
 {
   const std::string key   = cccl_type_enum_to_name(key_t.type);
   const std::string value = cccl_type_enum_to_name(value_t.type);
@@ -312,11 +303,11 @@ std::string get_downsweep_kernel_name(
     key,
     value,
     offset_t,
-    decomposer.name);
+    "op_wrapper");
 }
 
-std::string get_histogram_kernel_name(
-  std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t, cccl_op_t decomposer)
+std::string
+get_histogram_kernel_name(std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t)
 {
   const std::string key = cccl_type_enum_to_name(key_t.type);
 
@@ -329,7 +320,7 @@ std::string get_histogram_kernel_name(
     (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
     key,
     offset_t,
-    decomposer.name);
+    "op_wrapper");
 }
 
 std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t)
@@ -341,11 +332,7 @@ std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t)
 }
 
 std::string get_onesweep_kernel_name(
-  std::string_view chained_policy_t,
-  cccl_sort_order_t sort_order,
-  cccl_type_info key_t,
-  cccl_type_info value_t,
-  cccl_op_t decomposer)
+  std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t, cccl_type_info value_t)
 {
   const std::string key   = cccl_type_enum_to_name(key_t.type);
   const std::string value = cccl_type_enum_to_name(value_t.type);
@@ -360,7 +347,7 @@ std::string get_onesweep_kernel_name(
     key,
     value,
     offset_t,
-    decomposer.name);
+    "op_wrapper");
 }
 
 template <auto* GetPolicy>
@@ -456,6 +443,8 @@ CUresult cccl_device_radix_sort_build(
 
     constexpr std::string_view src_template = R"XXX(
 #include <cub/device/dispatch/kernels/radix_sort.cuh>
+#include <cub/agent/single_pass_scan_operators.cuh>
+
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};
@@ -489,7 +478,7 @@ struct agent_scan_policy_t {{
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM   = cub::BLOCK_SCAN_RAKING_MEMOIZE;
   struct detail
   {{
-    using delay_constructor_t = detail::default_delay_constructor_t<{15}>;
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<{15}>;
   }};
 }};
 struct agent_downsweep_policy_t {{
@@ -573,21 +562,19 @@ struct {25} {{
 #endif
 
     std::string single_tile_kernel_name =
-      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_t, value_t, decomposer);
-    std::string upsweep_kernel_name =
-      radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_t, decomposer);
+      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_t, value_t);
+    std::string upsweep_kernel_name = radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_t);
     std::string alt_upsweep_kernel_name =
-      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_t, decomposer);
+      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_t);
     std::string scan_bins_kernel_name = radix_sort::get_scan_bins_kernel_name(chained_policy_t);
     std::string downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_t, value_t, decomposer);
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_t, value_t);
     std::string alt_downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_t, value_t, decomposer);
-    std::string histogram_kernel_name =
-      radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_t, decomposer);
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_t, value_t);
+    std::string histogram_kernel_name     = radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_t);
     std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t);
     std::string onesweep_kernel_name =
-      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_t, value_t, decomposer);
+      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_t, value_t);
     std::string single_tile_kernel_lowered_name;
     std::string upsweep_kernel_lowered_name;
     std::string alt_upsweep_kernel_lowered_name;
@@ -673,19 +660,23 @@ CUresult cccl_device_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
-  cccl_iterator_t d_keys,
-  cccl_iterator_t d_values,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_keys_out,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t d_values_out,
   cccl_op_t decomposer,
   uint64_t num_items,
   int begin_bit,
   int end_bit,
+  bool is_overwrite_okay,
   CUstream stream)
 {
-  if (cccl_iterator_kind_t::CCCL_DOUBLE_BUFFER != d_keys.type
-      || cccl_iterator_kind_t::CCCL_DOUBLE_BUFFER != d_values.type)
+  if (cccl_iterator_kind_t::CCCL_POINTER != d_keys_in.type || cccl_iterator_kind_t::CCCL_POINTER != d_values_in.type
+      || cccl_iterator_kind_t::CCCL_POINTER != d_keys_out.type
+      || cccl_iterator_kind_t::CCCL_POINTER != d_values_out.type)
   {
     fflush(stderr);
-    printf("\nERROR in cccl_device_radix_sort(): radix sort input must be a double buffer\n");
+    printf("\nERROR in cccl_device_radix_sort(): radix sort input must be a pointer\n");
     fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
@@ -699,10 +690,10 @@ CUresult cccl_device_radix_sort(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    bool is_overwrite_okay = cccl_iterator_kind_t::CCCL_DOUBLE_BUFFER == d_keys.type;
-
-    cub::DoubleBuffer<indirect_arg_t> d_keys_buffer;
-    cub::DoubleBuffer<indirect_arg_t> d_values_buffer;
+    cub::DoubleBuffer<indirect_arg_t> d_keys_buffer(
+      static_cast<indirect_arg_t*>(d_keys_in.state), static_cast<indirect_arg_t*>(d_keys_out.state));
+    cub::DoubleBuffer<indirect_arg_t> d_values_buffer(
+      static_cast<indirect_arg_t*>(d_values_in.state), static_cast<indirect_arg_t*>(d_values_out.state));
 
     cub::DispatchRadixSort<Order,
                            indirect_arg_t,
@@ -725,7 +716,7 @@ CUresult cccl_device_radix_sort(
         decomposer,
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {d_keys.value_type.size});
+        {d_keys_in.value_type.size});
   }
   catch (const std::exception& exc)
   {
@@ -748,34 +739,64 @@ CUresult cccl_device_ascending_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
-  cccl_iterator_t d_keys,
-  cccl_iterator_t d_values,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_keys_out,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t d_values_out,
   cccl_op_t decomposer,
   uint64_t num_items,
   int begin_bit,
   int end_bit,
+  bool is_overwrite_okay,
   CUstream stream)
 {
   assert(build.order == CCCL_ASCENDING);
   return cccl_device_radix_sort<cub::SortOrder::Ascending>(
-    build, d_temp_storage, temp_storage_bytes, d_keys, d_values, decomposer, num_items, begin_bit, end_bit, stream);
+    build,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    decomposer,
+    num_items,
+    begin_bit,
+    end_bit,
+    is_overwrite_okay,
+    stream);
 }
 
 CUresult cccl_device_descending_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
-  cccl_iterator_t d_keys,
-  cccl_iterator_t d_values,
+  cccl_iterator_t d_keys_in,
+  cccl_iterator_t d_keys_out,
+  cccl_iterator_t d_values_in,
+  cccl_iterator_t d_values_out,
   cccl_op_t decomposer,
   uint64_t num_items,
   int begin_bit,
   int end_bit,
+  bool is_overwrite_okay,
   CUstream stream)
 {
   assert(build.order == CCCL_DESCENDING);
   return cccl_device_radix_sort<cub::SortOrder::Descending>(
-    build, d_temp_storage, temp_storage_bytes, d_keys, d_values, decomposer, num_items, begin_bit, end_bit, stream);
+    build,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    decomposer,
+    num_items,
+    begin_bit,
+    end_bit,
+    is_overwrite_okay,
+    stream);
 }
 
 CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* build_ptr)

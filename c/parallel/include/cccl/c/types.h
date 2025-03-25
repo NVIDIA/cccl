@@ -66,9 +66,8 @@ typedef struct cccl_op_t
 
 typedef enum cccl_iterator_kind_t
 {
-  CCCL_POINTER       = 0,
-  CCCL_ITERATOR      = 1,
-  CCCL_DOUBLE_BUFFER = 2
+  CCCL_POINTER  = 0,
+  CCCL_ITERATOR = 1,
 } cccl_iterator_kind_t;
 
 typedef struct cccl_value_t
@@ -87,15 +86,6 @@ typedef struct cccl_iterator_t
   cccl_type_info value_type;
   void* state;
 } cccl_iterator_t;
-
-typedef struct cccl_double_buffer_t
-{
-  size_t size;
-  size_t alignment;
-  cccl_type_info value_type;
-  void* buffers[2];
-  int selector;
-} cccl_double_buffer_t;
 
 typedef enum cccl_sort_order_t
 {

@@ -82,36 +82,42 @@ std::string make_kernel_user_comparison_operator(std::string_view input_t, cccl_
 }
 
 std::string
-make_kernel_user_decomposer_operator(std::string_view input_t, cccl_op_t operation, std::string_view return_type)
-{
-  return make_kernel_binary_operator_full_source(input_t, operation, return_type);
-}
-
-std::string make_kernel_user_unary_operator(std::string_view input_t, cccl_op_t operation)
+make_kernel_unary_operator_full_source(std::string_view input_t, cccl_op_t operation, std::string_view return_type)
 {
   constexpr std::string_view stateless_op = R"XXX(
-extern "C" __device__ VALUE_T OP_NAME(VALUE_T val);
-struct op_wrapper {
-  __device__ VALUE_T operator()(VALUE_T val) const {
+extern "C" __device__ {0} OP_NAME(VALUE_T val);
+struct op_wrapper {{
+  __device__ {0} operator()(VALUE_T val) const {{
     return OP_NAME(val);
-  }
-};
+  }}
+}};
 )XXX";
 
   constexpr std::string_view stateful_op = R"XXX(
-struct __align__(OP_ALIGNMENT) op_state {
+struct __align__(OP_ALIGNMENT) op_state {{
   char data[OP_SIZE];
-};
-extern "C" __device__ VALUE_T OP_NAME(op_state *state, VALUE_T val);
-struct op_wrapper {
+}};
+extern "C" __device__ {0} OP_NAME(op_state *state, VALUE_T val);
+struct op_wrapper {{
   op_state state;
-  __device__ VALUE_T operator()(VALUE_T val) {
+  __device__ {0} operator()(VALUE_T val) {{
     return OP_NAME(&state, val);
-  }
-};
+  }}
+}};
 )XXX";
 
   return (operation.type == cccl_op_kind_t::CCCL_STATELESS)
-         ? std::format(op_template, input_t, operation.name, "", "", stateless_op)
-         : std::format(op_template, input_t, operation.name, operation.alignment, operation.size, stateful_op);
+         ? std::format(op_template, input_t, operation.name, "", "", std::format(stateless_op, return_type))
+         : std::format(op_template,
+                       input_t,
+                       operation.name,
+                       operation.alignment,
+                       operation.size,
+                       std::format(stateful_op, return_type));
+}
+
+std::string
+make_kernel_user_decomposer_operator(std::string_view input_t, cccl_op_t operation, std::string_view return_type)
+{
+  return make_kernel_unary_operator_full_source(input_t, operation, return_type);
 }
