@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -134,11 +134,11 @@ struct dispatch_t
       return cudaSuccess;
     }
 
-    cudaError_t error              = cudaSuccess;
-    constexpr int block_threads    = ActivePolicyT::for_policy_t::block_threads;
-    constexpr int items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
+    cudaError_t error               = cudaSuccess;
+    constexpr int block_threads     = ActivePolicyT::for_policy_t::block_threads;
+    constexpr int items_per_thread1 = ActivePolicyT::for_policy_t::items_per_thread;
 
-    const auto tile_size = static_cast<OffsetT>(block_threads * items_per_thread);
+    const auto tile_size = static_cast<OffsetT>(block_threads * items_per_thread1);
     const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
 #ifdef CUB_DEBUG_LOG
@@ -147,7 +147,7 @@ struct dispatch_t
             static_cast<int>(num_tiles),
             static_cast<int>(block_threads),
             reinterpret_cast<long long>(stream),
-            static_cast<int>(items_per_thread));
+            static_cast<int>(items_per_thread1));
 #endif
 
     error = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(

@@ -90,9 +90,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __copysign_impl(_Tp __x,
 {
   if constexpr (numeric_limits<_Tp>::is_signed)
   {
-    const auto __val = (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<_Tp>)
-                     | (_CUDA_VSTD::__fp_get_storage(__y) & __fp_sign_mask_v<_Tp>);
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_t<_Tp>>(__val));
+    const auto __val = (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>)
+                     | (_CUDA_VSTD::__fp_get_storage(__y) & __fp_sign_mask_of_v<_Tp>);
+    return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
   }
   else
   {

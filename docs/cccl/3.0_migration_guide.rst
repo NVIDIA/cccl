@@ -151,21 +151,34 @@ Removed functions and classes
 Deprecations with planned removal
 ---------------------------------
 
+* ``CUB_LOG_SMEM_BANKS``: No replacement
+* ``CUB_LOG_WARP_THREADS``: No replacement
+* ``CUB_MAX_DEVICES``: No replacement
+* ``CUB_PREFER_CONFLICT_OVER_PADDING``: No replacement
+* ``CUB_PTX_LOG_SMEM_BANKS``: No replacement
+* ``CUB_PTX_LOG_WARP_THREADS``: No replacement
+* ``CUB_PTX_PREFER_CONFLICT_OVER_PADDING``: No replacement
+* ``CUB_PTX_SMEM_BANKS``: No replacement
+* ``CUB_PTX_SUBSCRIPTION_FACTOR``: No replacement
+* ``CUB_PTX_WARP_THREADS``: No replacement
+* ``CUB_SMEM_BANKS``: No replacement
+* ``CUB_SUBSCRIPTION_FACTOR``: No replacement
+* ``CUB_WARP_THREADS``: No replacement
+* ``THRUST_FALSE``: No replacement
+* ``THRUST_PREVENT_MACRO_SUBSTITUTION``: No replacement
+* ``THRUST_STATIC_ASSERT(expr)``: Use ``static_assert(expr)`` instead
+* ``THRUST_TRUE``: No replacement
+* ``THRUST_UNKNOWN``: No replacement
+* ``THRUST_UNUSED_VAR``: No replacement
 * ``cub::BFE``: Use ``cuda::bitfield_extract`` instead
+* ``cub::MergePathSearch``: No replacement
 * ``cub::Traits<T>::Max()``: Use ``cuda::std::numeric_limits<T>::max()`` instead
 * ``cub::Traits<T>::Min()``: Use ``cuda::std::numeric_limits<T>::min()`` instead
-* ``cub::MergePathSearch``: No replacement
 * ``thrust::iterator_difference[_t]<T>``: Use ``cuda::std::iterator_traits<T>::difference_type`` or ``cuda::std::iter_difference_t<T>`` instead
 * ``thrust::iterator_pointer[_t]<T>``: Use ``cuda::std::iterator_traits<T>::pointer`` instead
 * ``thrust::iterator_reference[_t]<T>``: Use ``cuda::std::iterator_traits<T>::reference`` or ``cuda::std::iter_reference_t<T>`` instead
 * ``thrust::iterator_traits<T>``: Use ``cuda::std::iterator_traits<T>`` instead
 * ``thrust::iterator_value[_t]<T>``: Use ``cuda::std::iterator_traits<T>::value_type`` or ``cuda::std::iter_value_t<T>`` instead
-* ``THRUST_FALSE``: No replacement
-* ``THRUST_UNKNOWN``: No replacement
-* ``THRUST_UNUSED_VAR``: No replacement
-* ``THRUST_PREVENT_MACRO_SUBSTITUTION``: No replacement
-* ``THRUST_STATIC_ASSERT(expr)``: Use ``static_assert(expr)`` instead
-* ``THRUST_TRUE``: No replacement
 
 
 API breaks

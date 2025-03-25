@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -25,7 +25,6 @@
  *
  ******************************************************************************/
 
-#include <cub/util_arch.cuh>
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
@@ -60,68 +59,6 @@ __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
   // Write warp aggregate
   out[tid] = result;
 }
-
-/**
- * @brief Delegate wrapper for WarpReduce::Sum
- */
-template <typename T>
-struct warp_sum_t
-{
-  template <int LOGICAL_WARP_THREADS>
-  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
-  {
-    auto result = warp_reduce.Sum(thread_data);
-    return ((linear_tid % LOGICAL_WARP_THREADS) == 0) ? result : thread_data;
-  }
-};
-
-/**
- * @brief Delegate wrapper for partial WarpReduce::Sum
- */
-template <typename T>
-struct warp_sum_partial_t
-{
-  int num_valid;
-  template <int LOGICAL_WARP_THREADS>
-  __device__ __forceinline__ T
-  operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
-  {
-    auto result = warp_reduce.Sum(thread_data, num_valid);
-    return ((linear_tid % LOGICAL_WARP_THREADS) == 0) ? result : thread_data;
-  }
-};
-
-/**
- * @brief Delegate wrapper for WarpReduce::Reduce
- */
-template <typename T, typename ReductionOpT>
-struct warp_reduce_t
-{
-  ReductionOpT reduction_op;
-  template <int LOGICAL_WARP_THREADS>
-  __device__ __forceinline__ T
-  operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
-  {
-    auto result = warp_reduce.Reduce(thread_data, reduction_op);
-    return ((linear_tid % LOGICAL_WARP_THREADS) == 0) ? result : thread_data;
-  }
-};
-
-/**
- * @brief Delegate wrapper for partial WarpReduce::Reduce
- */
-template <typename T, typename ReductionOpT>
-struct warp_reduce_partial_t
-{
-  int num_valid;
-  ReductionOpT reduction_op;
-  template <int LOGICAL_WARP_THREADS>
-  __device__ T operator()(int linear_tid, cub::WarpReduce<T, LOGICAL_WARP_THREADS>& warp_reduce, T& thread_data) const
-  {
-    auto result = warp_reduce.Reduce(thread_data, reduction_op, num_valid);
-    return ((linear_tid % LOGICAL_WARP_THREADS) == 0) ? result : thread_data;
-  }
-};
 
 /**
  * @brief Delegate wrapper for WarpReduce::TailSegmentedSum
@@ -337,137 +274,6 @@ struct params_t
   static constexpr int total_warps          = total_warps_t<logical_warp_threads>::value();
   static constexpr int tile_size            = total_warps * logical_warp_threads;
 };
-
-C2H_TEST("Warp sum works", "[reduce][warp]", full_type_list, logical_warp_threads)
-{
-  using params = params_t<TestType>;
-  using type   = typename params::type;
-
-  // Prepare test data
-  c2h::device_vector<type> d_in(params::tile_size);
-  c2h::device_vector<type> d_out(params::tile_size);
-  constexpr auto valid_items = params::logical_warp_threads;
-  c2h::gen(C2H_SEED(10), d_in);
-
-  // Run test
-  warp_reduce<params::logical_warp_threads, params::total_warps>(d_in, d_out, warp_sum_t<type>{});
-
-  // Prepare verification data
-  c2h::host_vector<type> h_in  = d_in;
-  c2h::host_vector<type> h_out = h_in;
-  auto h_flags                 = thrust::make_constant_iterator(false);
-  compute_host_reference(
-    reduce_mode::all,
-    h_in,
-    h_flags,
-    params::total_warps,
-    params::logical_warp_threads,
-    valid_items,
-    ::cuda::std::plus<type>{},
-    h_out.begin());
-
-  // Verify results
-  verify_results(h_out, d_out);
-}
-
-C2H_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_threads)
-{
-  using params   = params_t<TestType>;
-  using type     = typename params::type;
-  using red_op_t = ::cuda::minimum<>;
-
-  // Prepare test data
-  c2h::device_vector<type> d_in(params::tile_size);
-  c2h::device_vector<type> d_out(params::tile_size);
-  constexpr auto valid_items = params::logical_warp_threads;
-  c2h::gen(C2H_SEED(10), d_in);
-
-  // Run test
-  warp_reduce<params::logical_warp_threads, params::total_warps>(d_in, d_out, warp_reduce_t<type, red_op_t>{red_op_t{}});
-
-  // Prepare verification data
-  c2h::host_vector<type> h_in  = d_in;
-  c2h::host_vector<type> h_out = h_in;
-  auto h_flags                 = thrust::make_constant_iterator(false);
-  compute_host_reference(
-    reduce_mode::all,
-    h_in,
-    h_flags,
-    params::total_warps,
-    params::logical_warp_threads,
-    valid_items,
-    red_op_t{},
-    h_out.begin());
-
-  // Verify results
-  verify_results(h_out, d_out);
-}
-
-C2H_TEST("Warp sum on partial warp works", "[reduce][warp]", full_type_list, logical_warp_threads)
-{
-  using params = params_t<TestType>;
-  using type   = typename params::type;
-
-  // Prepare test data
-  c2h::device_vector<type> d_in(params::tile_size);
-  c2h::device_vector<type> d_out(params::tile_size);
-  const int valid_items = GENERATE_COPY(take(2, random(1, params::logical_warp_threads)));
-  c2h::gen(C2H_SEED(10), d_in);
-
-  // Run test
-  warp_reduce<params::logical_warp_threads, params::total_warps>(d_in, d_out, warp_sum_partial_t<type>{valid_items});
-
-  // Prepare verification data
-  c2h::host_vector<type> h_in  = d_in;
-  c2h::host_vector<type> h_out = h_in;
-  auto h_flags                 = thrust::make_constant_iterator(false);
-  compute_host_reference(
-    reduce_mode::all,
-    h_in,
-    h_flags,
-    params::total_warps,
-    params::logical_warp_threads,
-    valid_items,
-    ::cuda::std::plus<type>{},
-    h_out.begin());
-
-  // Verify results
-  verify_results(h_out, d_out);
-}
-
-C2H_TEST("Warp reduce on partial warp works", "[reduce][warp]", builtin_type_list, logical_warp_threads)
-{
-  using params   = params_t<TestType>;
-  using type     = typename params::type;
-  using red_op_t = ::cuda::minimum<>;
-
-  // Prepare test data
-  c2h::device_vector<type> d_in(params::tile_size);
-  c2h::device_vector<type> d_out(params::tile_size);
-  const int valid_items = GENERATE_COPY(take(2, random(1, params::logical_warp_threads)));
-  c2h::gen(C2H_SEED(10), d_in);
-
-  // Run test
-  warp_reduce<params::logical_warp_threads, params::total_warps>(
-    d_in, d_out, warp_reduce_partial_t<type, red_op_t>{valid_items, red_op_t{}});
-
-  // Prepare verification data
-  c2h::host_vector<type> h_in  = d_in;
-  c2h::host_vector<type> h_out = h_in;
-  auto h_flags                 = thrust::make_constant_iterator(false);
-  compute_host_reference(
-    reduce_mode::all,
-    h_in,
-    h_flags,
-    params::total_warps,
-    params::logical_warp_threads,
-    valid_items,
-    red_op_t{},
-    h_out.begin());
-
-  // Verify results
-  verify_results(h_out, d_out);
-}
 
 C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_warp_threads, segmented_modes)
 {

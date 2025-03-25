@@ -25,6 +25,7 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/limits>
 
 // MSVC and clang cuda need the host side functions included
 #if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
@@ -67,7 +68,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __signbit_impl(_Tp __x)
 {
   if constexpr (numeric_limits<_Tp>::is_signed)
   {
-    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_v<_Tp>;
+    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_of_v<_Tp>;
   }
   else
   {

@@ -79,6 +79,19 @@ __host__ __device__ constexpr bool test()
   test_fp_format<__float128>(cuda::std::__fp_format::__binary128);
 #endif // _CCCL_HAS_FLOAT128()
 
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__binary16>>(cuda::std::__fp_format::__binary16);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__binary32>>(cuda::std::__fp_format::__binary32);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__binary64>>(cuda::std::__fp_format::__binary64);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__binary128>>(cuda::std::__fp_format::__binary128);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__fp80_x86>>(cuda::std::__fp_format::__fp80_x86);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__bfloat16>>(cuda::std::__fp_format::__bfloat16);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__fp8_nv_e4m3>>(cuda::std::__fp_format::__fp8_nv_e4m3);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__fp8_nv_e5m2>>(cuda::std::__fp_format::__fp8_nv_e5m2);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__fp8_nv_e8m0>>(cuda::std::__fp_format::__fp8_nv_e8m0);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__fp6_nv_e2m3>>(cuda::std::__fp_format::__fp6_nv_e2m3);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__fp6_nv_e3m2>>(cuda::std::__fp_format::__fp6_nv_e3m2);
+  test_fp_format<cuda::std::__cccl_fp<cuda::std::__fp_format::__fp4_nv_e2m1>>(cuda::std::__fp_format::__fp4_nv_e2m1);
+
   return true;
 }
 

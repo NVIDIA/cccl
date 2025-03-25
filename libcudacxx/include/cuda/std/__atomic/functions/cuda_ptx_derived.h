@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 template <class _Operand>
 using __cuda_atomic_enable_non_native_arithmetic =
@@ -390,7 +390,7 @@ _CCCL_DEVICE static inline void __atomic_signal_fence_cuda(int)
   asm volatile("" ::: "memory");
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -182,7 +182,7 @@ private:
   //! @note This function is inherently asynchronous. We need to ensure that the memory pointed to by \p __first and
   //! \p __last lives long enough
   template <class _Iter>
-  _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
+  _CCCL_HIDE_FROM_ABI void __copy_cross(_Iter __first, [[maybe_unused]] _Iter __last, pointer __dest, size_type __count)
   {
     if (__count == 0)
     {
@@ -211,7 +211,6 @@ private:
     }
     else
     {
-      (void) __last;
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "cudax::async_buffer::__copy_cross: failed to copy data",
@@ -241,7 +240,7 @@ private:
     else
     {
       ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, _Tp());
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream()), __first, __count, _Tp());
     }
   }
 
@@ -263,7 +262,7 @@ private:
     else
     {
       ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, __value);
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream()), __first, __count, __value);
     }
   }
 
@@ -765,7 +764,7 @@ public:
     {
       ::cuda::experimental::__ensure_current_device __guard(__lhs.get_stream().get());
       return (__lhs.size() == __rhs.size())
-          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream().get()),
+          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream()),
                            __lhs.__unwrapped_begin(),
                            __lhs.__unwrapped_end(),
                            __rhs.__unwrapped_begin());

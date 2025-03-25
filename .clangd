@@ -22,6 +22,17 @@ CompileFlags:
 
 ---
 
+If:
+  PathMatch: ".*cudax/include/cuda/experimental/__async/sender/epilogue[.]cuh"
+
+CompileFlags:
+  Add:
+  - -include
+  - cuda/experimental/__async/sender/prologue.cuh
+  - -Wno-unknown-pragmas
+
+---
+
 # Tweak the clangd parse settings for all files
 CompileFlags:
   Compiler: clang++

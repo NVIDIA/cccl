@@ -31,10 +31,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_POINTER(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_pointer_v = _CCCL_BUILTIN_IS_POINTER(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_pointer_v = _CCCL_BUILTIN_IS_POINTER(_Tp);
 
 #else
 
@@ -49,10 +47,8 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public __cccl_is_pointer<remove_cv_t<_Tp>>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_pointer_v = is_pointer<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_pointer_v = is_pointer<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_POINTER) && !defined(_LIBCUDACXX_USE_IS_POINTER_FALLBACK)
 

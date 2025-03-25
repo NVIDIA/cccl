@@ -20,7 +20,8 @@
 constexpr bool long_double_is_double =
   cuda::std::numeric_limits<double>::min_exponent == cuda::std::numeric_limits<long double>::min_exponent
   && cuda::std::numeric_limits<double>::max_exponent == cuda::std::numeric_limits<long double>::max_exponent
-  && cuda::std::numeric_limits<double>::digits == cuda::std::numeric_limits<long double>::digits;
+  && cuda::std::numeric_limits<double>::digits == cuda::std::numeric_limits<long double>::digits
+  && cuda::std::numeric_limits<double>::has_denorm == cuda::std::numeric_limits<long double>::has_denorm;
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 using fp_conv_rank_order = cuda::std::__fp_conv_rank_order;
@@ -137,7 +138,7 @@ static_assert(fp_conv_rank_order_v<__half, __nv_bfloat16> == fp_conv_rank_order:
 static_assert(fp_conv_rank_order_v<__half, __nv_fp8_e4m3> == fp_conv_rank_order::__greater);
 #  endif // _CCCL_HAS_NVFP8_E4M3()
 #  if _CCCL_HAS_NVFP8_E5M2()
-static_assert(fp_conv_rank_order_v<__half, __nv_fp8_e5m2> == fp_conv_rank_order::__unordered);
+static_assert(fp_conv_rank_order_v<__half, __nv_fp8_e5m2> == fp_conv_rank_order::__greater);
 #  endif // _CCCL_HAS_NVFP8_E5M2()
 #  if _CCCL_HAS_NVFP8_E8M0()
 static_assert(fp_conv_rank_order_v<__half, __nv_fp8_e8m0> == fp_conv_rank_order::__unordered);
@@ -224,7 +225,7 @@ static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, double> == fp_conv_rank_order:
 static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, long double> == fp_conv_rank_order::__less);
 #  endif // _CCCL_HAS_LONG_DOUBLE()
 #  if _CCCL_HAS_NVFP16()
-static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __half> == fp_conv_rank_order::__unordered);
+static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __half> == fp_conv_rank_order::__less);
 #  endif // _CCCL_HAS_NVFP16()
 #  if _CCCL_HAS_NVBF16()
 static_assert(fp_conv_rank_order_v<__nv_fp8_e5m2, __nv_bfloat16> == fp_conv_rank_order::__less);

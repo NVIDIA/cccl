@@ -750,6 +750,7 @@ template <class BidirectionalIterator, class Compare>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/bit>
+#include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/functional>
 #include <cuda/std/initializer_list>
@@ -813,7 +814,7 @@ struct __log2_imp<0, _Rp>
 template <class _UIntType, _UIntType _Xp>
 struct __log2
 {
-  static const size_t value = __log2_imp<_Xp, sizeof(_UIntType) * __CHAR_BIT__ - 1>::value;
+  static const size_t value = __log2_imp<_Xp, sizeof(_UIntType) * CHAR_BIT - 1>::value;
 };
 
 template <class _Engine, class _UIntType>
