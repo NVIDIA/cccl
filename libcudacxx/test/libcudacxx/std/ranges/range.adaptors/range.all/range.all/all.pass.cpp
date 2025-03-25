@@ -203,9 +203,7 @@ __host__ __device__ constexpr bool test()
     assert(cuda::std::ranges::begin(cref) == globalBuff + 2);
     assert(cuda::std::ranges::end(cref) == globalBuff + 8);
 
-#if !TEST_COMPILER(GCC)
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all), const Range&&>);
-#endif // !TEST_COMPILER(GCC)
   }
 
   {
@@ -223,7 +221,6 @@ __host__ __device__ constexpr bool test()
   }
 
   // Check SFINAE friendliness of the call operator
-#if !TEST_COMPILER(GCC)
   {
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all)>);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all), RandomAccessRange, RandomAccessRange>);
@@ -233,7 +230,6 @@ __host__ __device__ constexpr bool test()
     // expression should be ill-formed because `v` is not copyable
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all), MoveOnlyView&>);
   }
-#endif // !TEST_COMPILER(GCC)
 
   // Test that cuda::std::views::all is a range adaptor
   { // Test `v | views::all`
