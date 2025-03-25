@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -44,9 +44,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_store.cuh>
+#include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/ptx>
@@ -152,21 +151,16 @@ struct WarpReduceSmem
   ReduceStep(T input, int valid_items, ReductionOp reduction_op, constant_t<STEP> /*step*/)
   {
     constexpr int OFFSET = 1 << STEP;
-
     // Share input through buffer
-    ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
-
+    temp_storage.reduce[lane_id] = input;
     __syncwarp(member_mask);
-
     // Update input if peer_addend is in range
     if ((ALL_LANES_VALID && IS_POW_OF_TWO) || ((lane_id + OFFSET) < valid_items))
     {
-      T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
+      T peer_addend = temp_storage.reduce[lane_id + OFFSET];
       input         = reduction_op(input, peer_addend);
     }
-
     __syncwarp(member_mask);
-
     return ReduceStep<ALL_LANES_VALID>(input, valid_items, reduction_op, constant_v<STEP + 1>);
   }
 
@@ -250,14 +244,14 @@ struct WarpReduceSmem
       const int OFFSET = 1 << STEP;
 
       // Share input into buffer
-      ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
+      temp_storage.reduce[lane_id] = input;
 
       __syncwarp(member_mask);
 
       // Update input if peer_addend is in range
       if (OFFSET + lane_id < next_flag)
       {
-        T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
+        T peer_addend = temp_storage.reduce[lane_id + OFFSET];
         input         = reduction_op(input, peer_addend);
       }
 
@@ -297,7 +291,7 @@ struct WarpReduceSmem
     };
 
     // Alias flags onto shared data storage
-    volatile SmemFlag* flag_storage = temp_storage.flags;
+    SmemFlag* flag_storage = temp_storage.flags;
 
     SmemFlag flag_status = (flag) ? SET : UNSET;
 
@@ -306,12 +300,12 @@ struct WarpReduceSmem
       const int OFFSET = 1 << STEP;
 
       // Share input through buffer
-      ThreadStore<STORE_VOLATILE>(&temp_storage.reduce[lane_id], input);
+      temp_storage.reduce[lane_id] = input;
 
       __syncwarp(member_mask);
 
       // Get peer from buffer
-      T peer_addend = ThreadLoad<LOAD_VOLATILE>(&temp_storage.reduce[lane_id + OFFSET]);
+      T peer_addend = temp_storage.reduce[lane_id + OFFSET];
 
       __syncwarp(member_mask);
 
