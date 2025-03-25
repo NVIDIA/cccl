@@ -161,7 +161,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(cuda::std::views::all(View<true>())), View<true>>);
     static_assert(noexcept(cuda::std::views::all(View<true>())));
 // old GCC seems to fall over the noexcept clauses here
-#if !TEST_COMPILER(GCC, <, 9)
+#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
     static_assert(!noexcept(cuda::std::views::all(View<false>())));
 #endif // no broken noexcept
 
@@ -175,7 +175,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::is_same_v<decltype(cuda::std::views::all(cuda::std::declval<const CopyableView<true>&>())),
                                        CopyableView<true>>);
     static_assert(noexcept(cuda::std::views::all(CopyableView<true>())));
-#if !TEST_COMPILER(GCC, <, 9)
+#if !TEST_COMPILER(GCC, <, 9) && !TEST_COMPILER(MSVC2019)
     static_assert(!noexcept(cuda::std::views::all(CopyableView<false>())));
 #endif // no broken noexcept
 
