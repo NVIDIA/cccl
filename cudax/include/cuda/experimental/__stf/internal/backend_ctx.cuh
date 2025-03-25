@@ -1045,17 +1045,21 @@ public:
   template <typename exec_place_t,
             typename S,
             typename... Deps,
-            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
   auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
     return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
       self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
-  template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t, exec_place e_place, S shape, Deps... deps)
+  template <typename partitioner_t,
+            typename exec_place_t,
+            typename S,
+            typename... Deps,
+            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+  auto parallel_for(partitioner_t, exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, exec_place, S, partitioner_t, Deps...>(
+    return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
       self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
