@@ -174,7 +174,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<EnabledBorrowingEndMember> = true;
+inline constexpr bool enable_borrowed_range<EnabledBorrowingEndMember> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -326,7 +326,7 @@ namespace std
 namespace ranges
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<EndFunctionEnabledBorrowing> = true;
+inline constexpr bool enable_borrowed_range<EndFunctionEnabledBorrowing> = true;
 }
 } // namespace std
 } // namespace cuda

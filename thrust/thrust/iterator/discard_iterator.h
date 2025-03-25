@@ -164,10 +164,11 @@ private: // Core iterator interface
 //! parameter is \c 0.
 //! \return A new \p discard_iterator with index as given by \p i.
 //! \see constant_iterator
+template <typename System = use_default>
 inline _CCCL_HOST_DEVICE discard_iterator<>
-make_discard_iterator(discard_iterator<>::difference_type i = discard_iterator<>::difference_type(0))
+make_discard_iterator(typename discard_iterator<System>::difference_type i = {})
 {
-  return discard_iterator<>(i);
+  return discard_iterator<System>(i);
 }
 
 //! \} // end fancyiterators

@@ -46,12 +46,12 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
 
-#include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/detail/any_assign.h>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/iterator>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 #if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
@@ -113,13 +113,12 @@ struct non_void_value_impl
 template <typename It, typename FallbackT>
 struct non_void_value_impl<It, FallbackT, false>
 {
-  // we consider thrust::discard_iterator's value_type as `void` as well, so users can switch from
+  // we consider thrust::discard_iterator's value_type (`any_assign`) as `void` as well, so users can switch from
   // cub::DiscardInputIterator to thrust::discard_iterator.
-  using type =
-    ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
-                       || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::discard_iterator<>::value_type>,
-                     FallbackT,
-                     it_value_t<It>>;
+  using type = ::cuda::std::_If<::cuda::std::is_void_v<it_value_t<It>>
+                                  || ::cuda::std::is_same_v<it_value_t<It>, THRUST_NS_QUALIFIER::detail::any_assign>,
+                                FallbackT,
+                                it_value_t<It>>;
 };
 
 /**
@@ -474,7 +473,7 @@ struct CubVector
 };
 
 /// The maximum number of elements in CUDA vector types
-_CCCL_INLINE_VAR constexpr int MAX_VEC_ELEMENTS = 4;
+inline constexpr int MAX_VEC_ELEMENTS = 4;
 
 /**
  * Generic vector-1 type
@@ -1104,7 +1103,7 @@ struct is_primitive : is_primitive_impl::is_primitive<T>
 {};
 
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_primitive_v = is_primitive<T>::value;
+inline constexpr bool is_primitive_v = is_primitive<T>::value;
 } // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED

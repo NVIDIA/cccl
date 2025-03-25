@@ -118,7 +118,7 @@ extern "C++" {
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
 #  endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
 
-#  if _CCCL_HAS_CUDA_COMPILER
+#  if _CCCL_HAS_CUDA_COMPILER()
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
 #  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
@@ -263,7 +263,7 @@ using char32_t = unsigned int;
 #  endif // _CCCL_CUDACC_BELOW(12, 2)
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_CUDACC
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_HAS_CUDA_COMPILER()
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #  endif
 
@@ -311,8 +311,6 @@ using char32_t = unsigned int;
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_RANDOM_SHUFFLE
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #  endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
-
-#  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
 
 #  ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
 #    define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds

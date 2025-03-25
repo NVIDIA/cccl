@@ -49,7 +49,9 @@
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
 // Also, cooperative groups do not support NVHPC yet.
 #if !_CCCL_CUDA_COMPILER(NVHPC)
-#  define _CUB_HAS_TRANSFORM_UBLKCP
+#  ifndef _CUB_HAS_TRANSFORM_UBLKCP
+#    define _CUB_HAS_TRANSFORM_UBLKCP 1
+#  endif // !_CUB_HAS_TRANSFORM_UBLKCP
 #endif // !_CCCL_CUDA_COMPILER(NVHPC)
 
 CUB_NAMESPACE_BEGIN

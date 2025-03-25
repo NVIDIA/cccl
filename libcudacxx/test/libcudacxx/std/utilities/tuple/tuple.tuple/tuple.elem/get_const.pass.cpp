@@ -49,8 +49,7 @@ int main(int, char**)
   {
     typedef cuda::std::tuple<Empty> T;
     constexpr T t{Empty()};
-    constexpr Empty e = cuda::std::get<0>(t);
-    ((void) e); // Prevent unused warning
+    [[maybe_unused]] constexpr Empty e = cuda::std::get<0>(t);
   }
   // cuda::std::string not supported
   /*

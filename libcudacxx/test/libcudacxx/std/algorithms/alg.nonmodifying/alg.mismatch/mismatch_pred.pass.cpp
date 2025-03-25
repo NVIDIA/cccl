@@ -32,11 +32,10 @@ TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
 __host__ __device__ constexpr bool test()
 {
-  int ia[]          = {0, 1, 2, 2, 0, 1, 2, 3};
-  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  int ib[]          = {0, 1, 2, 3, 0, 1, 2, 3};
-  const unsigned sb = sizeof(ib) / sizeof(ib[0]);
-  ((void) sb); // unused in C++11
+  int ia[]                           = {0, 1, 2, 2, 0, 1, 2, 3};
+  const unsigned sa                  = sizeof(ia) / sizeof(ia[0]);
+  int ib[]                           = {0, 1, 2, 3, 0, 1, 2, 3};
+  [[maybe_unused]] const unsigned sb = sizeof(ib) / sizeof(ib[0]);
 
   typedef cpp17_input_iterator<const int*> II;
   typedef random_access_iterator<const int*> RAI;

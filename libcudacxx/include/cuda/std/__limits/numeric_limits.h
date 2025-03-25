@@ -27,6 +27,7 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/cfloat>
 #include <cuda/std/climits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -58,7 +59,6 @@ enum class __numeric_limits_type
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_type()
 {
-#if !defined(_CCCL_NO_IF_CONSTEXPR)
   if constexpr (_CCCL_TRAIT(is_same, _Tp, bool))
   {
     return __numeric_limits_type::__bool;
@@ -75,15 +75,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __numeric_limits_type __make_numeric_limits_
   {
     return __numeric_limits_type::__other;
   }
-#else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ // vvv _CCCL_NO_IF_CONSTEXPR vvv
-  return _CCCL_TRAIT(is_same, _Tp, bool)
-         ? __numeric_limits_type::__bool
-         : (_CCCL_TRAIT(is_integral, _Tp)
-              ? __numeric_limits_type::__integral
-              : (_CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp)
-                   ? __numeric_limits_type::__floating_point
-                   : __numeric_limits_type::__other));
-#endif // _CCCL_NO_IF_CONSTEXPR
 }
 
 template <class _Tp, __numeric_limits_type = __make_numeric_limits_type<_Tp>()>
@@ -183,7 +174,7 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = type(-1) < type(0);
-  static constexpr int digits       = static_cast<int>(sizeof(type) * __CHAR_BIT__ - is_signed);
+  static constexpr int digits       = static_cast<int>(sizeof(type) * CHAR_BIT - is_signed);
   static constexpr int digits10     = digits * 3 / 10;
   static constexpr int max_digits10 = 0;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
@@ -334,16 +325,16 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = __FLT_MANT_DIG__;
-  static constexpr int digits10     = __FLT_DIG__;
+  static constexpr int digits       = FLT_MANT_DIG;
+  static constexpr int digits10     = FLT_DIG;
   static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return __FLT_MIN__;
+    return FLT_MIN;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return __FLT_MAX__;
+    return FLT_MAX;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
@@ -352,20 +343,20 @@ public:
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
-  static constexpr int radix       = __FLT_RADIX__;
+  static constexpr int radix       = FLT_RADIX;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return __FLT_EPSILON__;
+    return FLT_EPSILON;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
     return 0.5F;
   }
 
-  static constexpr int min_exponent   = __FLT_MIN_EXP__;
-  static constexpr int min_exponent10 = __FLT_MIN_10_EXP__;
-  static constexpr int max_exponent   = __FLT_MAX_EXP__;
-  static constexpr int max_exponent10 = __FLT_MAX_10_EXP__;
+  static constexpr int min_exponent   = FLT_MIN_EXP;
+  static constexpr int min_exponent10 = FLT_MIN_10_EXP;
+  static constexpr int max_exponent   = FLT_MAX_EXP;
+  static constexpr int max_exponent10 = FLT_MAX_10_EXP;
 
   static constexpr bool has_infinity             = true;
   static constexpr bool has_quiet_NaN            = true;
@@ -408,7 +399,11 @@ public:
 #endif // !_CCCL_BUILTIN_NANSF
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
+#if defined(FLT_TRUE_MIN)
+    return FLT_TRUE_MIN;
+#else // ^^^ FLT_TRUE_MIN ^^^ // vvv !FLT_TRUE_MIN vvv
     return __FLT_DENORM_MIN__;
+#endif // ^^^ !FLT_TRUE_MIN ^^^
   }
 
   static constexpr bool is_iec559  = true;
@@ -429,16 +424,16 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = __DBL_MANT_DIG__;
-  static constexpr int digits10     = __DBL_DIG__;
+  static constexpr int digits       = DBL_MANT_DIG;
+  static constexpr int digits10     = DBL_DIG;
   static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return __DBL_MIN__;
+    return DBL_MIN;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return __DBL_MAX__;
+    return DBL_MAX;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
@@ -447,20 +442,20 @@ public:
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
-  static constexpr int radix       = __FLT_RADIX__;
+  static constexpr int radix       = FLT_RADIX;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return __DBL_EPSILON__;
+    return DBL_EPSILON;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
     return 0.5;
   }
 
-  static constexpr int min_exponent   = __DBL_MIN_EXP__;
-  static constexpr int min_exponent10 = __DBL_MIN_10_EXP__;
-  static constexpr int max_exponent   = __DBL_MAX_EXP__;
-  static constexpr int max_exponent10 = __DBL_MAX_10_EXP__;
+  static constexpr int min_exponent   = DBL_MIN_EXP;
+  static constexpr int min_exponent10 = DBL_MIN_10_EXP;
+  static constexpr int max_exponent   = DBL_MAX_EXP;
+  static constexpr int max_exponent10 = DBL_MAX_10_EXP;
 
   static constexpr bool has_infinity             = true;
   static constexpr bool has_quiet_NaN            = true;
@@ -503,7 +498,11 @@ public:
 #endif // !_CCCL_BUILTIN_NANS
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
+#if defined(DBL_TRUE_MIN)
+    return DBL_TRUE_MIN;
+#else // ^^^ DBL_TRUE_MIN ^^^ // vvv !DBL_TRUE_MIN vvv
     return __DBL_DENORM_MIN__;
+#endif // ^^^ !DBL_TRUE_MIN ^^^
   }
 
   static constexpr bool is_iec559  = true;
@@ -526,16 +525,16 @@ public:
   static constexpr bool is_specialized = true;
 
   static constexpr bool is_signed   = true;
-  static constexpr int digits       = __LDBL_MANT_DIG__;
-  static constexpr int digits10     = __LDBL_DIG__;
+  static constexpr int digits       = LDBL_MANT_DIG;
+  static constexpr int digits10     = LDBL_DIG;
   static constexpr int max_digits10 = 2 + (digits * 30103l) / 100000l;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
-    return __LDBL_MIN__;
+    return LDBL_MIN;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type max() noexcept
   {
-    return __LDBL_MAX__;
+    return LDBL_MAX;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type lowest() noexcept
   {
@@ -544,20 +543,20 @@ public:
 
   static constexpr bool is_integer = false;
   static constexpr bool is_exact   = false;
-  static constexpr int radix       = __FLT_RADIX__;
+  static constexpr int radix       = FLT_RADIX;
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type epsilon() noexcept
   {
-    return __LDBL_EPSILON__;
+    return LDBL_EPSILON;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type round_error() noexcept
   {
     return 0.5L;
   }
 
-  static constexpr int min_exponent   = __LDBL_MIN_EXP__;
-  static constexpr int min_exponent10 = __LDBL_MIN_10_EXP__;
-  static constexpr int max_exponent   = __LDBL_MAX_EXP__;
-  static constexpr int max_exponent10 = __LDBL_MAX_10_EXP__;
+  static constexpr int min_exponent   = LDBL_MIN_EXP;
+  static constexpr int min_exponent10 = LDBL_MIN_10_EXP;
+  static constexpr int max_exponent   = LDBL_MAX_EXP;
+  static constexpr int max_exponent10 = LDBL_MAX_10_EXP;
 
   static constexpr bool has_infinity             = true;
   static constexpr bool has_quiet_NaN            = true;
@@ -578,7 +577,11 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
+#  if defined(LDBL_TRUE_MIN)
+    return LDBL_TRUE_MIN;
+#  else // ^^^ LDBL_TRUE_MIN ^^^ // vvv !LDBL_TRUE_MIN vvv
     return __LDBL_DENORM_MIN__;
+#  endif // ^^^ !LDBL_TRUE_MIN ^^^
   }
 
   static constexpr bool is_iec559  = true;

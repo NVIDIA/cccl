@@ -567,8 +567,7 @@ struct AgentMerge
 
     // preload items into registers already
     //
-    ValueT items_local[ITEMS_PER_THREAD];
-    (void) items_local; // TODO(bgruber): replace by [[maybe_unused]] in C++17
+    [[maybe_unused]] ValueT items_local[ITEMS_PER_THREAD];
     if constexpr (!KEYS_ONLY)
     {
       if (ping)

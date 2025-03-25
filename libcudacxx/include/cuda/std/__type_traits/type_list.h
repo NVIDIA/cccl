@@ -346,18 +346,38 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*)
 
 template <class _Ret, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
-  -> __type_list<_Args...>;
+  -> __type_list<_Ret, _Args...>;
 } // namespace __detail
 
-//! \brief Given a type that is a specialization of a class template, return a
-//! type list of the template arguments.
+//! \brief Given a type that is can be interpreted as a type list, return its
+//! type list interpretation. Types that can be interpreted as a type
+//! list are of the following forms:
+//!
+//! \li `C<Ts...>`, for any class template `C` and types `Ts...`.
+//! \li `C<T, T... Vs>`, for any class template `C`, type `T` and values `Vs...`.
+//!     The resulting type is `_Fn<integral_constant<T, Vs>...>`.
+//! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
+//!     `_Fn<R, As...>`.
 template <class _List>
 using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
 
-//! \brief Given a type that is a specialization of a class template and a
-//! meta-callable, invoke the callable with the template arguments.
+//! \brief Given a type that can be interpreted as a type list and a
+//! meta-callable, invoke the meta-callable with the types in the list.
+//! \c __as_type_list is used to convert the \c _List type to a specialization
+//! of \c __type_list.
+//!
+//! \sa __as_type_list
 template <class _Fn, class _List>
 using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
+
+//! \brief Given a type that can be interpreted as a type list and a class or
+//! alias template, instantiate the template with the types in the list.
+//! \c __as_type_list is used to convert the \c _List type to a specialization
+//! of \c __type_list.
+//!
+//! \sa __as_type_list
+template <template <class...> class _Fn, class _List>
+using __type_apply_q = __type_call<__as_type_list<_List>, __type_quote<_Fn>>;
 
 namespace __detail
 {
@@ -606,7 +626,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
 #  if defined(_CCCL_DOXYGEN_INVOKED)
 
 //! \see __type_switch
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
 {
   template <class _OtherInt>
@@ -626,17 +646,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
   using type = _Value;
 };
 
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 using __type_case _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<decltype(_Label), _Label>, _Value>;
 
 #  endif // !DOXYGEN
 
 namespace __detail
 {
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 _LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
 
-template <_CCCL_NTTP_AUTO _Label, class _Value>
+template <auto _Label, class _Value>
 _LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
 } // namespace __detail
 
@@ -664,7 +684,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __type_switch_fn
 //!                              __type_default<float>>;
 //! static_assert(is_same_v<result, double>);
 //! \endcode
-template <_CCCL_NTTP_AUTO _Label, class... _Cases>
+template <auto _Label, class... _Cases>
 using __type_switch _CCCL_NODEBUG_ALIAS =
   __type_call<__type_switch_fn<decltype(_Label), _Cases...>, integral_constant<decltype(_Label), _Label>>;
 

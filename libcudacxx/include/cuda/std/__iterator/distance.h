@@ -32,6 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIter>::difference_type
 __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
@@ -44,6 +45,7 @@ __distance(_InputIter __first, _InputIter __last, input_iterator_tag)
   return __r;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_RandIter>::difference_type
 __distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)

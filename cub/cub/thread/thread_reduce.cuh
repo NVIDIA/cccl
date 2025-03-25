@@ -279,7 +279,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
   }
   else
   {
-    constexpr auto length = cub::detail::static_size_v<Input>;
+    [[maybe_unused]] constexpr auto length = cub::detail::static_size_v<Input>();
     // clang-format off
     _NV_TARGET_DISPATCH(
       NV_PROVIDES_SM_90,
@@ -290,10 +290,9 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
         (return enable_sm80_simd_reduction_v<T, ReductionOp, length> ||
                 enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
       NV_PROVIDES_SM_70,
-        (return enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
-      NV_ANY_TARGET,
-        (static_cast<void>(length); // maybe unused
-         return false;)
+        (return enable_sm70_simd_reduction<T, ReductionOp, length>();),
+      NV_IS_DEVICE,
+        (return false;)
     );
     // clang-format on
     return false;

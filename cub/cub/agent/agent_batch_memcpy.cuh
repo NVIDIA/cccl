@@ -863,13 +863,13 @@ private:
     BufferSizeIteratorT tile_buffer_sizes,
     BlockBufferOffsetT num_wlev_buffers)
   {
-    const int32_t warp_id              = threadIdx.x / CUB_PTX_WARP_THREADS;
-    constexpr uint32_t warps_per_block = BLOCK_THREADS / CUB_PTX_WARP_THREADS;
+    const int32_t warp_id              = threadIdx.x / warp_threads;
+    constexpr uint32_t warps_per_block = BLOCK_THREADS / warp_threads;
 
     for (BlockBufferOffsetT buffer_offset = warp_id; buffer_offset < num_wlev_buffers; buffer_offset += warps_per_block)
     {
       const auto buffer_id = buffers_by_size_class[buffer_offset].buffer_id;
-      copy_items<IsMemcpy, CUB_PTX_WARP_THREADS, InputBufferT, OutputBufferT, BufferSizeT>(
+      copy_items<IsMemcpy, warp_threads, InputBufferT, OutputBufferT, BufferSizeT>(
         tile_buffer_srcs[buffer_id], tile_buffer_dsts[buffer_id], tile_buffer_sizes[buffer_id]);
     }
   }
@@ -1068,7 +1068,7 @@ public:
         blev_buffer_scan_state, temp_storage.buffer_scan_callback, ::cuda::std::plus<>{}, tile_id);
 
       // Signal our partial prefix and wait for the inclusive prefix of previous tiles
-      if (threadIdx.x < CUB_PTX_WARP_THREADS)
+      if (threadIdx.x < warp_threads)
       {
         buffer_exclusive_prefix = blev_buffer_prefix_op(size_class_agg.get(BLEV_SIZE_CLASS));
       }

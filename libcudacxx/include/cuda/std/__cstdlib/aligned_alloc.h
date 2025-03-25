@@ -31,18 +31,17 @@
 
 #include <nv/target>
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !_CCCL_COMPILER(NVRTC)
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void* __aligned_alloc_host(size_t __nbytes, size_t __align) noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
+__aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
 {
 #  if _CCCL_COMPILER(MSVC)
-  _LIBCUDACXX_UNUSED_VAR(__nbytes);
-  _LIBCUDACXX_UNUSED_VAR(__align);
   _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported with MSVC");
   return nullptr;
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
