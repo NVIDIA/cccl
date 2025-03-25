@@ -239,3 +239,37 @@ def device_exclusive_scan(
     h_init: Value,
     stream,
 ) -> tuple[int, int]: ...
+
+# ---------------------
+# DeviceSegmentedReduce
+# ---------------------
+
+class DeviceSegmentedReduceBuildResult:
+    def __init__(self): ...
+
+def device_segmented_reduce_build(
+    build_data: DeviceSegmentedReduceBuildResult,
+    d_int: Iterator,
+    d_out: Iterator,
+    start_offsets: Iterator,
+    end_offsets: Iterator,
+    binary_op: Op,
+    h_init: Value,
+    info: CommonData,
+) -> int: ...
+def device_segmented_reduce_cleanup(
+    build_data: DeviceSegmentedReduceBuildResult,
+) -> int: ...
+def device_segmented_reduce(
+    build_data: DeviceSegmentedReduceBuildResult,
+    temp_storage_ptr: int | None,
+    temp_storage_nbytes: int,
+    d_int: Iterator,
+    d_out: Iterator,
+    num_items: int,
+    start_offsets: Iterator,
+    end_offsets: Iterator,
+    binary_op: Op,
+    h_init: Value,
+    stream,
+) -> tuple[int, int]: ...

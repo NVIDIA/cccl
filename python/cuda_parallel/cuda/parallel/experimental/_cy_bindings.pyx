@@ -1225,3 +1225,129 @@ cpdef CUresult device_scan_cleanup(DeviceScanBuildResult build):
 
     status = cccl_device_scan_cleanup(build.get_ptr())
     return status
+
+
+# -----------------------
+#   DeviceSegmentedReduce
+# -----------------------
+
+
+cdef extern from "cccl/c/segmented_reduce.h":
+    cdef struct cy_cccl_device_segmented_reduce_build_result_t 'cccl_device_segmented_reduce_build_result_t':
+        int cc
+        void *cubin
+        size_t cubin_size
+        CUlibrary library
+        uint64_t accumulator_size
+        CUkernel segmented_reduce_kernel
+
+    cdef CUresult cccl_device_segmented_reduce_build(
+        cy_cccl_device_segmented_reduce_build_result_t*,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_op_t,
+        cy_cccl_value_t,
+        int, int, const char*, const char*, const char*, const char*
+    ) nogil
+
+    cdef CUresult cccl_device_segmented_reduce(
+        cy_cccl_device_segmented_reduce_build_result_t,
+        void *,
+        size_t *,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        uint64_t,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_op_t,
+        cy_cccl_value_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_segmented_reduce_cleanup(
+        cy_cccl_device_segmented_reduce_build_result_t* bld_ptr
+    ) nogil
+
+
+cdef class DeviceSegmentedReduceBuildResult:
+    cdef cy_cccl_device_segmented_reduce_build_result_t _build_data
+
+    def __cinit__(self):
+       memset(&self._build_data, 0, sizeof(cy_cccl_device_segmented_reduce_build_result_t))
+
+    cdef cy_cccl_device_segmented_reduce_build_result_t* get_ptr(self):
+       return &self._build_data
+
+    cdef cy_cccl_device_segmented_reduce_build_result_t get(self):
+       return self._build_data
+
+cpdef CUresult device_segmented_reduce_build(
+    DeviceSegmentedReduceBuildResult build,
+    Iterator d_in,
+    Iterator d_out,
+    Iterator start_offsets,
+    Iterator end_offsets,
+    Op op,
+    Value h_init,
+    CommonData common_data
+):
+    cdef CUresult status
+    status = cccl_device_segmented_reduce_build(
+        build.get_ptr(),
+        d_in.get(),
+        d_out.get(),
+        start_offsets.get(),
+        end_offsets.get(),
+        op.get(),
+        h_init.get(),
+        common_data.get_cc_major(),
+        common_data.get_cc_minor(),
+        common_data.cub_path_get_c_str(),
+        common_data.thrust_path_get_c_str(),
+        common_data.libcudacxx_path_get_c_str(),
+        common_data.ctk_path_get_c_str(),
+    )
+    return status
+
+
+cpdef device_segmented_reduce(
+    DeviceSegmentedReduceBuildResult build,
+    temp_storage_ptr,
+    temp_storage_bytes,
+    Iterator d_in,
+    Iterator d_out,
+    size_t num_items,
+    Iterator start_offsets,
+    Iterator end_offsets,
+    Op op,
+    Value h_init,
+    stream
+):
+    cdef CUresult status
+    cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+    cdef size_t storage_sz = <size_t>temp_storage_bytes
+    cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+    status = cccl_device_segmented_reduce(
+        build.get(),
+        storage_ptr,
+        &storage_sz,
+        d_in.get(),
+        d_out.get(),
+        <uint64_t>num_items,
+        start_offsets.get(),
+        end_offsets.get(),
+        op.get(),
+        h_init.get(),
+        c_stream
+    )
+    return status, <object>storage_sz
+
+cpdef CUresult device_segmented_reduce_cleanup(
+    DeviceSegmentedReduceBuildResult build
+):
+    cdef CUresult status
+
+    status = cccl_device_segmented_reduce_cleanup(build.get_ptr())
+    return status
