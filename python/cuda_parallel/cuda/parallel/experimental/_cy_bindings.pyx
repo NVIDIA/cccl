@@ -3,7 +3,7 @@
 # cython: linetrace=True
 
 from libc.string cimport memset, memcpy
-from libc.stdint cimport uint8_t, uint32_t
+from libc.stdint cimport uint8_t, uint32_t, uint64_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 from cpython.buffer cimport (
@@ -72,42 +72,6 @@ cdef extern from "cccl/c/types.h":
         cy_cccl_op_t dereference
         cy_cccl_type_info value_type
         void *state
-
-cdef extern from "cccl/c/reduce.h":
-    cdef struct cy_cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
-        int cc
-        void *cubin
-        size_t cubin_size
-        CUlibrary library
-        unsigned long long accumulator_size
-        CUkernel single_tile_kernel
-        CUkernel single_tile_second_kernel
-        CUkernel reduction_kernel
-
-    cdef CUresult cccl_device_reduce_build(
-        cy_cccl_device_reduce_build_result_t*,
-        cy_cccl_iterator_t,
-        cy_cccl_iterator_t,
-        cy_cccl_op_t,
-        cy_cccl_value_t,
-        int, int, const char*, const char*, const char*, const char*
-    ) nogil
-
-    cdef CUresult cccl_device_reduce(
-        cy_cccl_device_reduce_build_result_t,
-        void *,
-        size_t *,
-        cy_cccl_iterator_t,
-        cy_cccl_iterator_t,
-        unsigned long long,
-        cy_cccl_op_t,
-        cy_cccl_value_t,
-        CUstream
-    ) nogil
-
-    cdef CUresult cccl_device_reduce_cleanup(
-        cy_cccl_device_reduce_build_result_t*
-    ) nogil
 
 
 cdef object arg_type_check(
@@ -983,6 +947,46 @@ cdef class CommonData:
     def libcudacxx_path(self):
         return self.encoded_libcudacxx_path.decode("utf-8")
 
+# --------------
+#   DeviceReduce
+# --------------
+
+cdef extern from "cccl/c/reduce.h":
+    cdef struct cy_cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
+        int cc
+        void *cubin
+        size_t cubin_size
+        CUlibrary library
+        uint64_t accumulator_size
+        CUkernel single_tile_kernel
+        CUkernel single_tile_second_kernel
+        CUkernel reduction_kernel
+
+    cdef CUresult cccl_device_reduce_build(
+        cy_cccl_device_reduce_build_result_t*,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_op_t,
+        cy_cccl_value_t,
+        int, int, const char*, const char*, const char*, const char*
+    ) nogil
+
+    cdef CUresult cccl_device_reduce(
+        cy_cccl_device_reduce_build_result_t,
+        void *,
+        size_t *,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        uint64_t,
+        cy_cccl_op_t,
+        cy_cccl_value_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_reduce_cleanup(
+        cy_cccl_device_reduce_build_result_t*
+    ) nogil
+
 
 cdef class DeviceReduceBuildResult:
     cdef cy_cccl_device_reduce_build_result_t _build_data
@@ -1043,7 +1047,7 @@ cpdef device_reduce(
         &storage_sz,
         d_in.get(),
         d_out.get(),
-        num_items,
+        <uint64_t>num_items,
         op.get(),
         h_init.get(),
         c_stream
@@ -1058,6 +1062,166 @@ cpdef CUresult device_reduce_cleanup(DeviceReduceBuildResult build):
     return status
 
 
-def read_size_t_from_ptr(size_t ptr):
-    cdef size_t * a = <size_t *><void *>ptr
-    return a[0]
+# ------------
+#   DeviceScan
+# ------------
+
+
+cdef extern from "cccl/c/scan.h":
+    ctypedef bint _Bool
+
+    cdef struct cy_cccl_device_scan_build_result_t 'cccl_device_scan_build_result_t':
+        int cc
+        void *cubin
+        size_t cubin_size
+        CUlibrary library
+        cy_cccl_type_info accumulator_type
+        CUkernel init_kernel
+        CUkernel scan_kernel
+        CUkernel reduction_kernel
+        _Bool force_inclusive
+        size_t description_bytes_per_tile
+        size_t payload_bytes_per_tile
+
+    cdef CUresult cccl_device_scan_build(
+        cy_cccl_device_scan_build_result_t*,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_op_t,
+        cy_cccl_value_t,
+        _Bool,
+        int, int, const char*, const char*, const char*, const char*
+    ) nogil
+
+    cdef CUresult cccl_device_exclusive_scan(
+        cy_cccl_device_scan_build_result_t,
+        void *,
+        size_t *,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        uint64_t,
+        cy_cccl_op_t,
+        cy_cccl_value_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_inclusive_scan(
+        cy_cccl_device_scan_build_result_t,
+        void *,
+        size_t *,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        uint64_t,
+        cy_cccl_op_t,
+        cy_cccl_value_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_scan_cleanup(
+        cy_cccl_device_scan_build_result_t*
+    ) nogil
+
+
+cdef class DeviceScanBuildResult:
+    cdef cy_cccl_device_scan_build_result_t _build_data
+
+    def __cinit__(self):
+       memset(&self._build_data, 0, sizeof(cy_cccl_device_scan_build_result_t))
+
+    cdef cy_cccl_device_scan_build_result_t* get_ptr(self):
+       return &self._build_data
+
+    cdef cy_cccl_device_scan_build_result_t get(self):
+       return self._build_data
+
+
+cpdef CUresult device_scan_build(
+    DeviceScanBuildResult build,
+    Iterator d_in,
+    Iterator d_out,
+    Op op,
+    Value h_init,
+    bint force_inclusive,
+    CommonData common_data
+):
+    cdef CUresult status
+    status = cccl_device_scan_build(
+        build.get_ptr(),
+        d_in.get(),
+        d_out.get(),
+        op.get(),
+        h_init.get(),
+        force_inclusive,
+        common_data.get_cc_major(),
+        common_data.get_cc_minor(),
+        common_data.cub_path_get_c_str(),
+        common_data.thrust_path_get_c_str(),
+        common_data.libcudacxx_path_get_c_str(),
+        common_data.ctk_path_get_c_str(),
+    )
+    return status
+
+
+cpdef device_inclusive_scan(
+    DeviceScanBuildResult build,
+    temp_storage_ptr,
+    temp_storage_bytes,
+    Iterator d_in,
+    Iterator d_out,
+    size_t num_items,
+    Op op,
+    Value h_init,
+    stream
+):
+    cdef CUresult status
+    cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+    cdef size_t storage_sz = <size_t>temp_storage_bytes
+    cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+    status = cccl_device_inclusive_scan(
+        build.get(),
+        storage_ptr,
+        &storage_sz,
+        d_in.get(),
+        d_out.get(),
+        <uint64_t>num_items,
+        op.get(),
+        h_init.get(),
+        c_stream
+    )
+    return status, <object>storage_sz
+
+
+cpdef device_exclusive_scan(
+    DeviceScanBuildResult build,
+    temp_storage_ptr,
+    temp_storage_bytes,
+    Iterator d_in,
+    Iterator d_out,
+    size_t num_items,
+    Op op,
+    Value h_init,
+    stream
+):
+    cdef CUresult status
+    cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+    cdef size_t storage_sz = <size_t>temp_storage_bytes
+    cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+    status = cccl_device_exclusive_scan(
+        build.get(),
+        storage_ptr,
+        &storage_sz,
+        d_in.get(),
+        d_out.get(),
+        <uint64_t>num_items,
+        op.get(),
+        h_init.get(),
+        c_stream
+    )
+    return status, <object>storage_sz
+
+
+cpdef CUresult device_scan_cleanup(DeviceScanBuildResult build):
+    cdef CUresult status
+
+    status = cccl_device_scan_cleanup(build.get_ptr())
+    return status

@@ -172,6 +172,10 @@ class CommonData:
     @property
     def ctk_path(self) -> str: ...
 
+# ------------
+# DeviceReduce
+# ------------
+
 class DeviceReduceBuildResult:
     def __init__(self): ...
 
@@ -186,6 +190,46 @@ def device_reduce_build(
 def device_reduce_cleanup(build_data: DeviceReduceBuildResult) -> int: ...
 def device_reduce(
     build_data: DeviceReduceBuildResult,
+    temp_storage_ptr: int | None,
+    temp_storage_nbytes: int,
+    d_in: Iterator,
+    d_out: Iterator,
+    num_items: int,
+    binary_op: Op,
+    h_init: Value,
+    stream,
+) -> tuple[int, int]: ...
+
+# ----------
+# DeviceScan
+# ----------
+
+class DeviceScanBuildResult:
+    def __init__(self): ...
+
+def device_scan_build(
+    build_data: DeviceScanBuildResult,
+    d_int: Iterator,
+    d_out: Iterator,
+    binary_op: Op,
+    h_init: Value,
+    force_inclusive: bool,
+    info: CommonData,
+) -> int: ...
+def device_scan_cleanup(build_data: DeviceScanBuildResult) -> int: ...
+def device_inclusive_scan(
+    build_data: DeviceScanBuildResult,
+    temp_storage_ptr: int | None,
+    temp_storage_nbytes: int,
+    d_in: Iterator,
+    d_out: Iterator,
+    num_items: int,
+    binary_op: Op,
+    h_init: Value,
+    stream,
+) -> tuple[int, int]: ...
+def device_exclusive_scan(
+    build_data: DeviceScanBuildResult,
     temp_storage_ptr: int | None,
     temp_storage_nbytes: int,
     d_in: Iterator,
