@@ -22,13 +22,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  **********************************************************************************************************************/
-
-/**
- * @file
- * cub::WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
- * across a CUDA thread warp.
- */
-
 #pragma once
 
 #include <cub/config.cuh>
@@ -41,10 +34,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_load.cuh>
-#include <cub/thread/thread_operators.cuh>
-#include <cub/thread/thread_store.cuh>
-#include <cub/util_type.cuh>
+#include <cub/warp/specializations/shfl_down_op.cuh>
 
 #include <cuda/functional>
 #include <cuda/ptx>
@@ -108,104 +98,10 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr unsigned member_mask(wa
 {
   return (mode == single_logical_warp) ? (0xFFFFFFFF >> (warp_threads - LogicalWarpSize)) : 0xFFFFFFFF;
 }
-//----------------------------------------------------------------------------------------------------------------------
-// SHUFFLE DOWN + OP (__half2, __bfloat2)
-
-#define _CUB_SHFL_DOWN_OP_16BIT(TYPE, OP, PTX_TYPE)                                                                    \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  _CCCL_DEVICE void shfl_down_##OP(TYPE& value, unsigned source_offset, unsigned shfl_c, unsigned mask)                \
-  {                                                                                                                    \
-    [[maybe_unused]] int pred;                                                                                         \
-    auto tmp = _CUDA_VSTD::bit_cast<uint16_t>(value);                                                                  \
-    asm volatile(                                                                                                      \
-      "{                                                                                                       \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t"  \
-      ".reg .b16  dummy;                                                                                      \n\t\t"  \
-      ".reg .b16  h1;                                                                                         \n\t\t"  \
-      ".reg .b32  r0;                                                                                         \n\t\t"  \
-      "mov.b32 r0, {%0, dummy};                                                                               \n\t\t"  \
-      "shfl.sync.down.b32 r0|p, r0, %2, %3, %4;                                                               \n\t\t"  \
-      "mov.b32 {h1, dummy}, r0;                                                                               \n\t\t"  \
-      "@p " #OP "." #PTX_TYPE " %0, h1, %0;                                                                   \n\t\t"  \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
-      "}"                                                                                                              \
-      : "+h"(tmp), "=r"(pred)                                                                                          \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-    value = _CUDA_VSTD::bit_cast<TYPE>(tmp);                                                                           \
-  }
-
-_CUB_SHFL_DOWN_OP_16BIT(__half, add, f16) // shfl_down_add(__half)
-_CUB_SHFL_DOWN_OP_16BIT(__nv_bfloat16, add, bf16) // shfl_down_add(__nv_bfloat16)
-
-//----------------------------------------------------------------------------------------------------------------------
-// SHUFFLE DOWN + OP (float, int)
-
-#define _CUB_SHFL_DOWN_OP_32BIT(TYPE, OP, PTX_TYPE, PTX_REG_TYPE)                                                      \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  _CCCL_DEVICE void shfl_down_##OP(TYPE& value, unsigned source_offset, unsigned shfl_c, unsigned mask)                \
-  {                                                                                                                    \
-    [[maybe_unused]] int pred;                                                                                         \
-    asm volatile(                                                                                                      \
-      "{                                                                                                       \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t"  \
-      ".reg .b32  r0;                                                                                         \n\t\t"  \
-      "shfl.sync.down.b32 r0|p, %0, %2, %3, %4;                                                               \n\t\t"  \
-      "@p " #OP "." #PTX_TYPE " %0, r0, %0;                                                                   \n\t\t"  \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
-      "}"                                                                                                              \
-      : "+" #PTX_REG_TYPE(value), "=r"(pred)                                                                           \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-  }
-
-// add
-_CUB_SHFL_DOWN_OP_32BIT(float, add, f32, f) // shfl_down_add(float)
-_CUB_SHFL_DOWN_OP_32BIT(unsigned, add, u32, r) // shfl_down_add(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(int, add, s32, r) // shfl_down_add(int)
-// min/max
-_CUB_SHFL_DOWN_OP_32BIT(int, max, s32, r) // shfl_down_max(int)
-_CUB_SHFL_DOWN_OP_32BIT(unsigned, max, u32, r) // shfl_down_max(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(int, min, s32, r) // shfl_down_min(int)
-_CUB_SHFL_DOWN_OP_32BIT(unsigned, min, u32, r) // shfl_down_min(unsigned)
-// bitwise
-_CUB_SHFL_DOWN_OP_32BIT(unsigned, and, u32, r) // shfl_down_and(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(unsigned, or, u32, r) // shfl_down_or(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(unsigned, xor, u32, r) // shfl_down_xor(unsigned)
-#undef _CUB_SHFL_DOWN_OP_32BIT
-
-//----------------------------------------------------------------------------------------------------------------------
-// SHUFFLE DOWN + OP (double)
-
-#define _CUB_SHFL_OP_64BIT(TYPE, OP, PTX_TYPE, PTX_REG_TYPE)                                                           \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  _CCCL_DEVICE void shfl_down_##OP(TYPE& value, unsigned source_offset, unsigned shfl_c, unsigned mask)                \
-  {                                                                                                                    \
-    [[maybe_unused]] int pred;                                                                                         \
-    asm volatile(                                                                                                      \
-      "{                                                                                                       \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t"  \
-      ".reg .u32 lo;                                                                                          \n\t\t"  \
-      ".reg .u32 hi;                                                                                          \n\t\t"  \
-      ".reg ." #PTX_TYPE " r1;                                                                                \n\t\t"  \
-      "mov.b64 {lo, hi}, %0;                                                                                  \n\t\t"  \
-      "shfl.sync.down.b32 lo,   lo, %2, %3, %4;                                                               \n\t\t"  \
-      "shfl.sync.down.b32 hi|p, hi, %2, %3, %4;                                                               \n\t\t"  \
-      "@p mov.b64 r1, {lo, hi};                                                                               \n\t\t"  \
-      "@p " #OP "." #PTX_TYPE " %0, r1, %0;                                                                   \n\t\t"  \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
-      "}"                                                                                                              \
-      : "+" #PTX_REG_TYPE(value), "=r"(pred)                                                                           \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-  }
-
-_CUB_SHFL_OP_64BIT(double, down, add, f64, d) // shfl_down_add (double)
-#undef SHFL_EXCH_OP_64
 
 template <int LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult Kind>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input
-warp_reduce_sm30(Input input, ReductionOp, warp_reduce_mode_t<Mode> mode, warp_reduce_result_t<Kind> result_mode)
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm30(
+  Input input, ReductionOp reduction_op, warp_reduce_mode_t<Mode> mode, warp_reduce_result_t<Kind> result_mode)
 {
   using namespace internal;
   constexpr auto mask = cub::detail::member_mask<LogicalWarpSize>(mode);
@@ -233,10 +129,13 @@ warp_reduce_sm30(Input input, ReductionOp, warp_reduce_mode_t<Mode> mode, warp_r
       _CCCL_UNREACHABLE();
     }
   }
-  else
+  else if constexpr (_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) < sizeof(uint32_t))
   {
-    static_assert((_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) == sizeof(uint32_t))
-                  || _CUDA_VSTD::is_floating_point_v<Input>);
+    return warp_reduce_sm30(static_cast<int>(input), reduction_op, mode, result_mode);
+  }
+  else if constexpr (_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) == sizeof(uint32_t)
+                     || _CUDA_VSTD::is_floating_point_v<Input> || _CUDA_VSTD::__is_extended_floating_point_v<Input>)
+  {
     constexpr auto Log2Size     = ::cuda::ilog2(LogicalWarpSize);
     constexpr auto LogicalWidth = _CUDA_VSTD::integral_constant<int, LogicalWarpSize>{};
     _CCCL_PRAGMA_UNROLL_FULL()
@@ -250,6 +149,11 @@ warp_reduce_sm30(Input input, ReductionOp, warp_reduce_mode_t<Mode> mode, warp_r
     }
     return input;
   }
+  else
+  {
+    static_assert(_CUDA_VSTD::__always_false_v<Input>, "invalid input type/reduction operator combination");
+    _CCCL_UNREACHABLE();
+  }
 }
 
 template <unsigned LogicalWarpSize, typename Input, typename ReductionOp>
@@ -257,6 +161,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm80(Input inpu
 {
   using namespace internal;
   static_assert(_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t));
+  using cast_t        = _CUDA_VSTD::_If<_CUDA_VSTD::is_signed_v<Input>, int32_t, uint32_t>;
   constexpr auto mask = cub::detail::member_mask<LogicalWarpSize>(single_logical_warp);
   if constexpr (is_cuda_std_bit_and_v<ReductionOp, Input>)
   {
@@ -272,15 +177,15 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm80(Input inpu
   }
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input>)
   {
-    return ::__reduce_add_sync(mask, input);
+    return ::__reduce_add_sync(mask, static_cast<cast_t>(input));
   }
   else if constexpr (is_cuda_minimum_v<ReductionOp, Input>)
   {
-    return ::__reduce_min_sync(mask, input);
+    return ::__reduce_min_sync(mask, static_cast<cast_t>(input));
   }
   else if constexpr (is_cuda_maximum_v<ReductionOp, Input>)
   {
-    return ::__reduce_max_sync(mask, input);
+    return ::__reduce_max_sync(mask, static_cast<cast_t>(input));
   }
   else
   {
@@ -374,7 +279,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursiv
   using internal::identity_v;
   constexpr auto half_bits = _CUDA_VSTD::numeric_limits<Input>::digits / 2u;
   auto [high, low]         = split(input);
-  auto high_result         = warp_reduce_dispatch(high, reduction_op, warp_mode, result_mode););
+  auto high_result         = warp_reduce_dispatch(high, reduction_op, warp_mode, result_mode);
   if (high_result == 0) // shortcut: input is in range [0, 2^N/2)
   {
     return warp_reduce_dispatch(low, reduction_op);
@@ -434,9 +339,12 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
   using internal::is_cuda_std_min_max_v;
   using internal::is_cuda_std_plus_v;
   constexpr bool is_small_integer = _CUDA_VSTD::is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
+  constexpr bool is_any_floating_point =
+    _CUDA_VSTD::is_floating_point_v<Input> || _CUDA_VSTD::__is_extended_floating_point_v<Input>;
+  constexpr bool is_supported_floating_point =
+    _CUDA_VSTD::is_floating_point_v<Input> || is_one_of_v<Input, __half, __half2, __nv_bfloat16, __nv_bfloat162>;
   //
-  if constexpr ((_CUDA_VSTD::is_floating_point_v<Input> || _CUDA_VSTD::__is_extended_floating_point_v<Input>)
-                && is_cuda_std_min_max_v<ReductionOp, Input>)
+  if constexpr (is_any_floating_point && is_cuda_std_min_max_v<ReductionOp, Input>)
   {
     constexpr auto digits = _CUDA_VSTD::numeric_limits<Input>::digits;
     using signed_t        = _CUDA_VSTD::__make_nbit_int_t<digits, true>;
@@ -445,17 +353,32 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
   }
   else if constexpr (is_complex_v<Input> && is_cuda_std_plus_v<ReductionOp, Input>)
   {
-    auto real = warp_reduce_dispatch(input.real(), reduction_op, warp_mode, result_mode);
-    auto img  = warp_reduce_dispatch(input.img(), reduction_op, warp_mode, result_mode);
-    return Input{real, img};
+    if constexpr (_CUDA_VSTD::is_same_v<typename Input::value_type, __half>)
+    {
+      auto half2_value = unsafe_bitcast<__half2>(input);
+      auto ret         = warp_reduce_dispatch(half2_value, reduction_op, warp_mode, result_mode);
+      return unsafe_bitcast<Input>(ret);
+    }
+    else if constexpr (_CUDA_VSTD::is_same_v<typename Input::value_type, __nv_bfloat16>)
+    {
+      auto bfloat2_value = unsafe_bitcast<__nv_bfloat162>(input);
+      auto ret           = warp_reduce_dispatch(bfloat2_value, reduction_op, warp_mode, result_mode);
+      return unsafe_bitcast<Input>(ret);
+    }
+    else
+    {
+      auto real = warp_reduce_dispatch(input.real(), reduction_op, warp_mode, result_mode);
+      auto img  = warp_reduce_dispatch(input.img(), reduction_op, warp_mode, result_mode);
+      return Input{real, img};
+    }
   }
   else if constexpr (is_small_integer && warp_mode == single_logical_warp)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, //
                       (return warp_reduce_sm80(input, reduction_op);),
-                      (return warp_reduce_sm30(input, reduction_op, warp_mode, result_mode);));
+                      (return warp_reduce_sm30(input, reduction_op, single_logical_warp, result_mode);));
   }
-  else if constexpr (is_small_integer || _CUDA_VSTD::is_floating_point_v<Input>)
+  else if constexpr (is_small_integer || is_supported_floating_point)
   {
     return warp_reduce_sm30(input, reduction_op, warp_mode);
   }

@@ -35,6 +35,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/thread/thread_reduce.cuh>
+
 #include <cuda/std/bit>
 #include <cuda/std/cstdint>
 
@@ -99,8 +101,8 @@ _CUB_SHFL_DOWN_OP_16BIT(__nv_bfloat16, add, bf16) // shfl_down_add(__nv_bfloat16
 _CUB_SHFL_DOWN_OP_32BIT(float, add, f32, f) // shfl_down_add(float)
 _CUB_SHFL_DOWN_OP_32BIT(unsigned, add, u32, r) // shfl_down_add(unsigned)
 _CUB_SHFL_DOWN_OP_32BIT(int, add, s32, r) // shfl_down_add(int)
-_CUB_SHFL_DOWN_OP_32BIT(__half2, add, f16x2) // shfl_down_add(__half2)
-_CUB_SHFL_DOWN_OP_32BIT(__nv_bfloat162, add, bf16x2) // shfl_down_add(__nv_bfloat162)
+_CUB_SHFL_DOWN_OP_32BIT(__half2, add, f16x2, r) // shfl_down_add(__half2)
+_CUB_SHFL_DOWN_OP_32BIT(__nv_bfloat162, add, bf16x2, r) // shfl_down_add(__nv_bfloat162)
 
 // min/max
 _CUB_SHFL_DOWN_OP_32BIT(int, max, s32, r) // shfl_down_max(int)
