@@ -279,7 +279,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduct
   }
   else
   {
-    [[maybe_unused]] constexpr auto length = cub::detail::static_size_v<Input>();
+    [[maybe_unused]] constexpr auto length = cub::detail::static_size_v<Input>;
     // clang-format off
     _NV_TARGET_DISPATCH(
       NV_PROVIDES_SM_90,
