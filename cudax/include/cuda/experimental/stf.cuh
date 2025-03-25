@@ -419,12 +419,16 @@ public:
       payload);
   }
 
-  template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place e_place, S shape, Deps... deps)
+  template <typename partitioner_t,
+            typename exec_place_t,
+            typename S,
+            typename... Deps,
+            typename = std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+  auto parallel_for(partitioner_t p, exec_place_t e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, exec_place, S, partitioner_t, Deps...>,
-                                   reserved::parallel_for_scope<graph_ctx, exec_place, S, partitioner_t, Deps...>>;
+    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, exec_place_t, S, partitioner_t, Deps...>,
+                                   reserved::parallel_for_scope<graph_ctx, exec_place_t, S, partitioner_t, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.parallel_for(mv(p), mv(e_place), mv(shape), deps...));
