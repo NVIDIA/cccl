@@ -38,6 +38,7 @@
 
 #include <cuda/functional>
 #include <cuda/ptx>
+#include <cuda/std/bit>
 #include <cuda/std/complex>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -86,16 +87,25 @@ inline constexpr auto single_lane_result = detail::warp_reduce_result_t<detail::
 namespace detail
 {
 
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned warp_reduce_mask(unsigned step)
+template <unsigned LogicalWarpSize>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned shuffle_mask([[maybe_unused]] unsigned step)
 {
-  const auto clamp   = 0b11110u << step;
-  const auto segmask = 0b11110u << (step + 8);
-  return clamp | segmask;
+  if constexpr (_CUDA_VSTD::has_single_bit(LogicalWarpSize))
+  {
+    const auto clamp   = 0b11110u << step;
+    const auto segmask = 0b11110u << (step + 8);
+    return clamp | segmask;
+  }
+  else
+  {
+    return LogicalWarpSize - 1;
+  }
 }
 
 template <unsigned LogicalWarpSize, WarpReduceMode Mode>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr unsigned member_mask(warp_reduce_mode_t<Mode> mode)
 {
+  static_assert(mode == single_logical_warp || _CUDA_VSTD::has_single_bit(LogicalWarpSize));
   return (mode == single_logical_warp) ? (0xFFFFFFFF >> (warp_threads - LogicalWarpSize)) : 0xFFFFFFFF;
 }
 
@@ -104,6 +114,8 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm30(
   Input input, ReductionOp reduction_op, warp_reduce_mode_t<Mode> mode, warp_reduce_result_t<Kind> result_mode)
 {
   using namespace internal;
+  constexpr bool is_supported_floating_point =
+    _CUDA_VSTD::is_floating_point_v<Input> || is_one_of<Input, __half, __half2, __nv_bfloat16, __nv_bfloat162>();
   constexpr auto mask = cub::detail::member_mask<LogicalWarpSize>(mode);
   if constexpr (_CUDA_VSTD::is_same_v<Input, bool>)
   {
@@ -133,15 +145,15 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm30(
   {
     return warp_reduce_sm30(static_cast<int>(input), reduction_op, mode, result_mode);
   }
-  else if constexpr (_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) == sizeof(uint32_t)
-                     || _CUDA_VSTD::is_floating_point_v<Input> || _CUDA_VSTD::__is_extended_floating_point_v<Input>)
+  else if constexpr ((_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) == sizeof(uint32_t))
+                     || is_supported_floating_point)
   {
     constexpr auto Log2Size     = ::cuda::ilog2(LogicalWarpSize);
     constexpr auto LogicalWidth = _CUDA_VSTD::integral_constant<int, LogicalWarpSize>{};
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int K = 0; K < Log2Size; K++)
     {
-      shfl_down_add(input, 1u << K, cub::detail::warp_reduce_mask(K), mask);
+      shfl_down_add(input, 1u << K, cub::detail::shuffle_mask<LogicalWarpSize>(K), mask);
     }
     if constexpr (result_mode == all_lanes_result)
     {
@@ -205,7 +217,7 @@ warp_reduce_generic(Input input, ReductionOp, warp_reduce_mode_t<Mode> mode, war
   for (int K = 0; K < Log2Size; K++)
   {
     auto res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, LogicalWidth);
-    if (res.pred)
+    if (res.pred) // && lane_id < valid_items
     {
       input = reduction_op(input, res.data);
     }
@@ -282,7 +294,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursiv
   auto high_result         = warp_reduce_dispatch(high, reduction_op, warp_mode, result_mode);
   if (high_result == 0) // shortcut: input is in range [0, 2^N/2)
   {
-    return warp_reduce_dispatch(low, reduction_op);
+    return warp_reduce_dispatch(low, reduction_op, warp_mode, result_mode);
   }
   if (_CUDA_VSTD::is_unsigned_v<Input> || high_result > 0) // >= 2^N/2 -> perform the computation as unsigned
   {
@@ -342,7 +354,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
   constexpr bool is_any_floating_point =
     _CUDA_VSTD::is_floating_point_v<Input> || _CUDA_VSTD::__is_extended_floating_point_v<Input>;
   constexpr bool is_supported_floating_point =
-    _CUDA_VSTD::is_floating_point_v<Input> || is_one_of_v<Input, __half, __half2, __nv_bfloat16, __nv_bfloat162>;
+    _CUDA_VSTD::is_floating_point_v<Input> || is_one_of<Input, __half, __half2, __nv_bfloat16, __nv_bfloat162>();
   //
   if constexpr (is_any_floating_point && is_cuda_std_min_max_v<ReductionOp, Input>)
   {
