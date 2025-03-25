@@ -33,11 +33,6 @@
 
 #include <cub/config.cuh>
 
-#include <cstdint>
-
-#include "cuda/std/__concepts/concept_macros.h"
-#include "cuda/std/__type_traits/is_floating_point.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -55,6 +50,9 @@
 #include <cuda/ptx>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
+#include <cuda/warp>
+
+#include "cuda/std/__concepts/concept_macros.h"
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -253,11 +251,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE Input reduce_recursive(Input input, ReductionOp r
   return merge(result_high, low_reduction);
 }
 
+template <typename T>
+inline constexpr bool is_complex_v = _CUDA_VSTD::__is_complex<T>::value;
+
 template <typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult ResultMode>
 _CCCL_DEVICE _CCCL_FORCEINLINE Input Reduce(
   Input input,
   ReductionOp reduction_op,
-  warp_reduce_mode_t<Mode> logical_warp_mode,
+  warp_reduce_mode_t<Mode> warp_mode,
   warp_reduce_result_t<ResultMode> result_mode)
 {
   using namespace internal;
@@ -266,21 +267,43 @@ _CCCL_DEVICE _CCCL_FORCEINLINE Input Reduce(
     || _CUDA_VSTD::is_floating_point_v<Input> //
     || _CUDA_VSTD::is_same_v<Input, _CUDA_VSTD::complex<float>>
     || _CUDA_VSTD::is_same_v<Input, _CUDA_VSTD::complex<double>>;
+  constexpr bool is_small_integer = _CUDA_VSTD::is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
   if constexpr (is_natively_supported_type)
   {
-    constexpr bool is_sm80_supported =
-      logical_warp_mode == single_logical_warp && _CUDA_VSTD::is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
-    if constexpr (is_sm80_supported)
+    if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && _CUDA_VSTD::is_floating_point_v<Input>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80, return reduce_sm80(input, reduction_op));
+      constexpr auto digits = _CUDA_VSTD::numeric_limits<Input>::digits;
+      using signed_t        = _CUDA_VSTD::__make_nbit_int_t<digits, true>;
+      auto result           = reduce(_CUDA_VSTD::bit_cast<signed_t>(input), reduction_op, warp_mode, result_mode);
+      return _CUDA_VSTD::bit_cast<Input>(result);
     }
-    return reduce_sm30(input, reduction_op);
+    else if constexpr (is_complex_v<Input> && !is_cuda_std_min_max_v<ReductionOp, Input>)
+    {
+      auto real = reduce(input.real(), reduction_op, warp_mode, result_mode);
+      auto img  = reduce(input.img(), reduction_op, warp_mode, result_mode);
+      return Input{real, img};
+    }
+    else if constexpr (warp_mode == single_logical_warp && is_small_integer)
+    {
+      NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, //
+                        (return reduce_sm80(input, reduction_op);),
+                        (return reduce_sm30(input, reduction_op, warp_mode);));
+    }
+    else if constexpr (is_small_integer || _CUDA_VSTD::is_floating_point_v<Input>)
+    {
+      return reduce_sm30(input, reduction_op, warp_mode);
+    }
+    else if constexpr (_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) > sizeof(uint32_t))
+    {
+      return reduce_recursive(input, reduction_op, warp_mode, result_mode);
+    }
+    else
+    {
+      static_assert(_CUDA_VSTD::__always_false_v<Input>, "Invalid input type/reduction operator combination");
+      _CCCL_UNREACHABLE();
+    }
   }
-  else if constexpr (is_cuda_std_operator_v<ReductionOp, Input>)
-  {
-    return reduce_recursive(input, reduction_op);
-  }
-  else
+  else // generic implementation
   {
     constexpr auto Log2Size     = ::cuda::ilog2(LogicalWarpSize);
     constexpr auto LogicalWidth = _CUDA_VSTD::integral_constant<int, LogicalWarpSize>{};
@@ -294,7 +317,10 @@ _CCCL_DEVICE _CCCL_FORCEINLINE Input Reduce(
         input = reduction_op(input, res.data);
       }
     }
-    return input;
+    if constexpr (result_mode == all_lanes_result)
+    {
+      return _CUDA_VDEV::warp_shuffle_idx(input, 0, LogicalWidth);
+    }
   }
 }
 
@@ -363,78 +389,5 @@ _CUB_SHFL_OP_32BIT(unsigned, down, xor, u32, r) // shfl_down_xor(unsigned)
 
 _CUB_SHFL_OP_64BIT(double, down, add, f64, d) // shfl_down_add (double)
 #undef SHFL_EXCH_OP_64
-
-// #####################################################################################################################
-// # SHUFFLE DOWN + OP (complex<double>)
-// #####################################################################################################################
-
-#define _CUB_SHFL_OP_COMPLEX_32BIT(TYPE, DIRECTION, OP)                                                                \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  _CCCL_DEVICE void shfl_##DIRECTION##_##OP(                                                                           \
-    TYPE& value, int& pred, unsigned source_offset, unsigned shfl_c, unsigned mask)                                    \
-  {                                                                                                                    \
-    auto real = value.real();                                                                                          \
-    auto img  = value.img();                                                                                           \
-    asm volatile(                                                                                                      \
-      "{                                                                                                       \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t"  \
-      ".reg .f32 r0;                                                                                          \n\t\t"  \
-      ".reg .f32 r1;                                                                                          \n\t\t"  \
-      "shfl.sync." #DIRECTION ".b32 r0,   %0, %3, %4, %5;                                                     \n\t\t"  \
-      "shfl.sync." #DIRECTION ".b32 r1|p, %1, %3, %4, %5;                                                     \n\t\t"  \
-      "@p " #OP ".f32 %0, r0, %0;                                                                             \n\t\t"  \
-      "@p " #OP ".f32 %1, r1, %1;                                                                             \n\t\t"  \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
-      "}"                                                                                                              \
-      : "+f"(real), "+f"(img), "=r"(pred)                                                                              \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-    value.real(real);                                                                                                  \
-    value.img(real);                                                                                                   \
-  }
-
-_CUB_SHFL_OP_COMPLEX_32BIT(::cuda::std::complex<float>, down, add) // shfl_down_add (double)
-#undef _CUB_SHFL_OP_COMPLEX_32BIT
-
-// #####################################################################################################################
-// # SHUFFLE DOWN + OP (complex<double>)
-// #####################################################################################################################
-
-#define _CUB_SHFL_OP_COMPLEX_64BIT(TYPE, DIRECTION, OP)                                                                \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  _CCCL_DEVICE void shfl_##DIRECTION##_##OP(                                                                           \
-    TYPE& value, int& pred, unsigned source_offset, unsigned shfl_c, unsigned mask)                                    \
-  {                                                                                                                    \
-    auto real = value.real();                                                                                          \
-    auto img  = value.img();                                                                                           \
-    asm volatile(                                                                                                      \
-      ".reg .u32 lo1;                                                                                          \n\t\t" \
-      ".reg .u32 hi1;                                                                                          \n\t\t" \
-      ".reg .u32 lo2;                                                                                          \n\t\t" \
-      ".reg .u32 hi2;                                                                                          \n\t\t" \
-      ".reg .f64 r1;                                                                                           \n\t\t" \
-      ".reg .f64 r2;                                                                                           \n\t\t" \
-      ".reg .pred p;                                                                                           \n\t\t" \
-      "mov.b64 {lo1, hi1}, %0;                                                                                 \n\t\t" \
-      "mov.b64 {lo2, hi2}, %1;                                                                                 \n\t\t" \
-      "shfl.sync." #DIRECTION ".b32 lo1,   lo1, %3, %4, %5;                                                    \n\t\t" \
-      "shfl.sync." #DIRECTION ".b32 hi1,   hi1, %3, %4, %5;                                                    \n\t\t" \
-      "shfl.sync." #DIRECTION ".b32 lo2,   lo2, %3, %4, %5;                                                    \n\t\t" \
-      "shfl.sync." #DIRECTION ".b32 hi2|p, hi2, %3, %4, %5;                                                    \n\t\t" \
-      "@p mov.b64 r1, {lo1, hi1};                                                                              \n\t\t" \
-      "@p mov.b64 r2, {lo2, hi2};                                                                              \n\t\t" \
-      "@p " #OP ".f64 %0, r1, %0;                                                                              \n\t\t" \
-      "@p " #OP ".f64 %1, r2, %1;                                                                              \n\t\t" \
-      "selp.s32 %2, 1, 0, p;                                                                                   \n\t"   \
-      "}"                                                                                                              \
-      : "+f"(real), "+f"(img), "=r"(pred)                                                                              \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-    value.real(real);                                                                                                  \
-    value.img(real);                                                                                                   \
-  }
-
-_CUB_SHFL_OP_COMPLEX_64BIT(::cuda::std::complex<float>, down, add) // shfl_down_add (double)
-#undef _CUB_SHFL_OP_COMPLEX_32BIT
 
 CUB_NAMESPACE_END
