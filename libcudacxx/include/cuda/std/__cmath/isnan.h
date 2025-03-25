@@ -85,7 +85,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half __x) noexc
 #  endif // _LIBCUDACXX_HAS_NVFP16()
 
   const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
-  return ((__storage & __fp_exp_mask_v<__half>) == __fp_exp_mask_v<__half>) && (__storage & __fp_mant_mask_v<__half>);
+  return ((__storage & __fp_exp_mask_of_v<__half>) == __fp_exp_mask_of_v<__half>)
+      && (__storage & __fp_mant_mask_of_v<__half>);
 }
 #endif // _CCCL_HAS_NVFP16()
 
@@ -100,30 +101,30 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_bfloat16 __x
 #  endif // _LIBCUDACXX_HAS_NVFP16()
 
   const auto __storage = _CUDA_VSTD::__fp_get_storage(__x);
-  return ((__storage & __fp_exp_mask_v<__nv_bfloat16>) == __fp_exp_mask_v<__nv_bfloat16>)
-      && (__storage & __fp_mant_mask_v<__nv_bfloat16>);
+  return ((__storage & __fp_exp_mask_of_v<__nv_bfloat16>) == __fp_exp_mask_of_v<__nv_bfloat16>)
+      && (__storage & __fp_mant_mask_of_v<__nv_bfloat16>);
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_fp8_e4m3 __x) noexcept
 {
-  return (__x.__x & __fp_exp_mant_mask_v<__nv_fp8_e4m3>) == __fp_exp_mant_mask_v<__nv_fp8_e4m3>;
+  return (__x.__x & __fp_exp_mant_mask_of_v<__nv_fp8_e4m3>) == __fp_exp_mant_mask_of_v<__nv_fp8_e4m3>;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_fp8_e5m2 __x) noexcept
 {
-  return ((__x.__x & __fp_exp_mask_v<__nv_fp8_e5m2>) == __fp_exp_mask_v<__nv_fp8_e5m2>)
-      && (__x.__x & __fp_mant_mask_v<__nv_fp8_e5m2>);
+  return ((__x.__x & __fp_exp_mask_of_v<__nv_fp8_e5m2>) == __fp_exp_mask_of_v<__nv_fp8_e5m2>)
+      && (__x.__x & __fp_mant_mask_of_v<__nv_fp8_e5m2>);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_fp8_e8m0 __x) noexcept
 {
-  return (__x.__x & __fp_exp_mask_v<__nv_fp8_e8m0>) == __fp_exp_mask_v<__nv_fp8_e8m0>;
+  return (__x.__x & __fp_exp_mask_of_v<__nv_fp8_e8m0>) == __fp_exp_mask_of_v<__nv_fp8_e8m0>;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 

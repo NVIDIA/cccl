@@ -67,7 +67,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(float __x) noexce
   {
     return ::isinf(__x);
   }
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<float>) == __fp_exp_mask_v<float>;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<float>) == __fp_exp_mask_of_v<float>;
 #else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isinf_impl(__x);
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
@@ -89,7 +89,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(double __x) noexc
   {
     return ::isinf(__x);
   }
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<double>) == __fp_exp_mask_v<double>;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<double>) == __fp_exp_mask_of_v<double>;
 #else // ^^^ _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() ^^^ / vvv !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST() vvv
   return _CUDA_VSTD::__isinf_impl(__x);
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
@@ -120,7 +120,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexc
 #    endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
   }
 #  endif // _LIBCUDACXX_HAS_NVFP16()
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<__half>) == __fp_exp_mask_v<__half>;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<__half>) == __fp_exp_mask_of_v<__half>;
 }
 #endif // _CCCL_HAS_NVFP16()
 
@@ -138,7 +138,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_bfloat16 __x
 #    endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
   }
 #  endif // _LIBCUDACXX_HAS_NVBF16()
-  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<__nv_bfloat16>) == __fp_exp_mask_v<__nv_bfloat16>;
+  return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<__nv_bfloat16>)
+      == __fp_exp_mask_of_v<__nv_bfloat16>;
 }
 #endif // _CCCL_HAS_NVBF16()
 
@@ -152,7 +153,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e4m3) no
 #if _CCCL_HAS_NVFP8_E5M2()
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e5m2 __x) noexcept
 {
-  return (__x.__x & __fp_exp_mant_mask_v<__nv_fp8_e5m2>) == __fp_exp_mask_v<__nv_fp8_e5m2>;
+  return (__x.__x & __fp_exp_mant_mask_of_v<__nv_fp8_e5m2>) == __fp_exp_mask_of_v<__nv_fp8_e5m2>;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
