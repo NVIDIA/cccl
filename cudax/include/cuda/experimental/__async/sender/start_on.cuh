@@ -21,9 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
+
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/queries.cuh>
+#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/rcvr_with_env.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
@@ -46,36 +49,17 @@ struct __sch_env_t
 
 _CCCL_GLOBAL_CONSTANT struct start_on_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   template <class _Rcvr, class _Sch, class _CvSndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
-    {
-      return __async::get_env(__self->__env_rcvr_.__rcvr());
-    }
-
     using operation_state_concept = operation_state_t;
-
-    using completion_signatures = //
-      transform_completion_signatures<
-        completion_signatures_of_t<_CvSndr, __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>*>,
-        transform_completion_signatures<completion_signatures_of_t<schedule_result_t<_Sch>, __opstate_t*>,
-                                        __async::completion_signatures<>,
-                                        _CUDA_VSTD::__type_always<__async::completion_signatures<>>::__call>>;
-
-    __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>> __env_rcvr_;
-    connect_result_t<schedule_result_t<_Sch>, __opstate_t*> __opstate1_;
-    connect_result_t<_CvSndr, __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>*> __opstate2_;
+    using __env_t                 = env_of_t<_Rcvr>;
 
     _CUDAX_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
         : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), {__sch}}
-        , __opstate1_{connect(schedule(__env_rcvr_.__env_.__sch_), this)}
-        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), &__env_rcvr_)}
+        , __opstate1_{connect(schedule(__env_rcvr_.__env_.__sch_), __rcvr_ref{*this})}
+        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{__env_rcvr_})}
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);
@@ -100,6 +84,15 @@ private:
     {
       __async::set_stopped(static_cast<_Rcvr&&>(__env_rcvr_.__rcvr()));
     }
+
+    _CUDAX_API auto get_env() const noexcept -> __env_t
+    {
+      return __async::get_env(__env_rcvr_.__rcvr());
+    }
+
+    __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>> __env_rcvr_;
+    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>>> __opstate2_;
   };
 
   template <class _Sch, class _Sndr>
@@ -107,8 +100,7 @@ private:
 
 public:
   template <class _Sch, class _Sndr>
-  _CUDAX_API auto operator()(_Sch __sch, _Sndr __sndr) const noexcept //
-    -> __sndr_t<_Sch, _Sndr>;
+  _CUDAX_API auto operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>;
 } start_on{};
 
 template <class _Sch, class _Sndr>
@@ -118,6 +110,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
   _CCCL_NO_UNIQUE_ADDRESS start_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
+
+  template <class _Env>
+  using __env_t = env<__sch_env_t<_Sch>, _FWD_ENV_T<_Env>>;
+
+  template <class _Self, class... _Env>
+  _CUDAX_API static constexpr auto get_completion_signatures()
+  {
+    using __sch_sndr   = schedule_result_t<_Sch>;
+    using __child_sndr = __copy_cvref_t<_Self, _Sndr>;
+    _CUDAX_LET_COMPLETIONS(
+      auto(__sndr_completions) = __async::get_completion_signatures<__child_sndr, __env_t<_Env>...>())
+    {
+      _CUDAX_LET_COMPLETIONS(
+        auto(__sch_completions) = __async::get_completion_signatures<__sch_sndr, _FWD_ENV_T<_Env>...>())
+      {
+        return __sndr_completions + transform_completion_signatures(__sch_completions, __swallow_transform());
+      }
+    }
+
+    _CCCL_UNREACHABLE();
+  }
 
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sch, _Sndr>
@@ -138,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-_CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept -> start_on_t::__sndr_t<_Sch, _Sndr>
+_CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>
 {
   return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
 }

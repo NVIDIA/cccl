@@ -29,7 +29,7 @@
 #include <cuda/experimental/__detail/config.cuh>
 
 #if __cpp_lib_three_way_comparison
-#  include <compare>
+#  include <compare> // IWYU pragma: keep
 #endif
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
@@ -44,7 +44,7 @@ template <class _Ret, class... _Args>
 using __fn_t = _Ret(_Args...);
 
 template <class _Ty>
-_Ty&& __declval() noexcept;
+_Ty&& declval() noexcept;
 
 template <size_t... _Vals>
 struct __moffsets;
@@ -71,6 +71,8 @@ struct _WITH_QUERY;
 
 struct _WITH_ENVIRONMENT;
 
+struct _WITH_SIGNATURES;
+
 template <class>
 struct _WITH_COMPLETION_SIGNATURE;
 
@@ -80,13 +82,17 @@ struct _UNKNOWN;
 
 struct _SENDER_HAS_TOO_MANY_SUCCESS_COMPLETIONS;
 
+struct _ARGUMENTS_ARE_NOT_DECAY_COPYABLE;
+
 template <class... _Sigs>
 struct _WITH_COMPLETIONS
 {};
 
 struct __merror_base
 {
-  constexpr friend bool __ustdex_unhandled_error(void*) noexcept
+  // _CUDAX_DEFAULTED_API virtual ~__merror_base() = default;
+
+  _CCCL_HOST_DEVICE constexpr friend bool __ustdex_unhandled_error(void*) noexcept
   {
     return true;
   }
@@ -100,7 +106,7 @@ struct _ERROR : __merror_base
   template <class...>
   using __call _CCCL_NODEBUG_ALIAS = _ERROR;
 
-  using __partitions _CCCL_NODEBUG_ALIAS = _ERROR;
+  using __partitioned _CCCL_NODEBUG_ALIAS = _ERROR;
 
   template <template <class...> class, template <class...> class>
   using __value_types _CCCL_NODEBUG_ALIAS = _ERROR;
@@ -111,16 +117,16 @@ struct _ERROR : __merror_base
   using __sends_stopped _CCCL_NODEBUG_ALIAS = _ERROR;
 
   // The following operator overloads also simplify error propagation.
-  _ERROR operator+();
+  _CCCL_HOST_DEVICE _ERROR operator+();
 
   template <class _Ty>
-  _ERROR& operator,(_Ty&);
+  _CCCL_HOST_DEVICE _ERROR& operator,(_Ty&);
 
   template <class... _With>
-  _ERROR<_What..., _With...>& with(_ERROR<_With...>&);
+  _CCCL_HOST_DEVICE _ERROR<_What..., _With...>& with(_ERROR<_With...>&);
 };
 
-constexpr bool __ustdex_unhandled_error(...) noexcept
+_CCCL_HOST_DEVICE constexpr bool __ustdex_unhandled_error(...) noexcept
 {
   return false;
 }
@@ -144,7 +150,7 @@ inline constexpr bool __type_contains_error =
 #endif
 
 template <class... _Ts>
-using __type_find_error = decltype(+(__declval<_Ts&>(), ..., __declval<_ERROR<_UNKNOWN>&>()));
+using __type_find_error = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
 
 template <template <class...> class _Fn, class... _Ts>
 inline constexpr bool __type_valid_v = _CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value;
@@ -160,7 +166,7 @@ template <>
 struct __type_self_or_error_with_<true>
 {
   template <class _Ty, class... _With>
-  using __call _CCCL_NODEBUG_ALIAS = decltype(__declval<_Ty&>().with(__declval<_ERROR<_With...>&>()));
+  using __call _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty&>().with(declval<_ERROR<_With...>&>()));
 };
 
 template <class _Ty, class... _With>
@@ -226,6 +232,13 @@ struct __type_try_quote<_Fn, _Default>
     typename _CUDA_VSTD::conditional_t<__type_valid_v<_Fn, _Ts...>, //
                                        __type_try_quote<_Fn>,
                                        _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
+};
+
+template <class _Return>
+struct __type_function
+{
+  template <class... _Args>
+  using __call _CCCL_NODEBUG_ALIAS = _Return(_Args...);
 };
 
 template <class _First, class _Second>
