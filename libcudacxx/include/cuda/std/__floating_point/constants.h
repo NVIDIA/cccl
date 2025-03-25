@@ -64,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_na
   else
   {
     return static_cast<__fp_storage_t<_Fmt>>(
-      __fp_exp_mask_v<_Fmt> | (__fp_storage_t<_Fmt>(0x11) << (__fp_mant_nbits_v<_Fmt> - 2)));
+      __fp_exp_mask_v<_Fmt> | (__fp_storage_t<_Fmt>(3) << (__fp_mant_nbits_v<_Fmt> - 2)));
   }
 }
 
@@ -87,7 +87,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_na
   else
   {
     return static_cast<__fp_storage_t<_Fmt>>(
-      __fp_exp_mask_v<_Fmt> | (__fp_storage_t<_Fmt>(0x101) << (__fp_mant_nbits_v<_Fmt> - 3)));
+      __fp_exp_mask_v<_Fmt> | (__fp_storage_t<_Fmt>(5) << (__fp_mant_nbits_v<_Fmt> - 3)));
   }
 }
 
