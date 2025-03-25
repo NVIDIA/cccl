@@ -52,7 +52,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_na
   {
     return __fp_storage_t<_Fmt>(0x7fu);
   }
-  if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
+  else if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
   {
     return __fp_storage_t<_Fmt>(0xffu);
   }
