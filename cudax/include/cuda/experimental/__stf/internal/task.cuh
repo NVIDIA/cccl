@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/msir.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh> // task has-a task_dep_vector_untyped
 
+#include <iterator>
 #include <optional>
 
 namespace cuda::experimental::stf

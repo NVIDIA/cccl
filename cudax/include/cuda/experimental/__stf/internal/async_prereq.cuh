@@ -36,6 +36,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <iterator>
 #include <vector>
 
 namespace cuda::experimental::stf
