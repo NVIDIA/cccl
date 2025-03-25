@@ -175,8 +175,9 @@ _CCCL_CONCEPT __is_interface =
 //! bases, but with duplicates removed.
 //!
 template <class _Interface, class _Fn = __make_type_list>
-using __unique_interfaces _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_apply<_Fn, __bases_of<_Interface, _CUDA_VSTD::__type_quote<_CUDA_VSTD::__make_type_set>>>;
+using __unique_interfaces _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_apply<
+  _Fn,
+  _CUDA_VSTD::__as_type_list<__bases_of<_Interface, _CUDA_VSTD::__type_quote<_CUDA_VSTD::__make_type_set>>>>;
 
 //!
 //! __index_of_base: find the index of an interface in a list of unique interfaces
