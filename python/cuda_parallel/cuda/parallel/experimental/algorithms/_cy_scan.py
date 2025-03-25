@@ -25,6 +25,16 @@ class _Scan:
     # and its instances a live
     _impl = cyb
 
+    __slots__ = [
+        "build_result",
+        "_initialized",
+        "d_in_cccl",
+        "d_out_cccl",
+        "h_init_cccl",
+        "op_wrapper",
+        "device_scan_fn",
+    ]
+
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
     def __init__(
         self,
@@ -36,6 +46,7 @@ class _Scan:
     ):
         # Referenced from __del__:
         self.build_result = self._impl.DeviceScanBuildResult()
+        self._initialized = False
 
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
@@ -56,13 +67,14 @@ class _Scan:
             force_inclusive,
         )
 
-        self.device_scan = (
+        self.device_scan_fn = (
             self._impl.device_inclusive_scan
             if force_inclusive
             else self._impl.device_exclusive_scan
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building scan")
+        self._initialized = True
 
     def __call__(
         self,
@@ -73,6 +85,7 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
+        assert self._initialized
         set_state_fn = cccl.set_cccl_iterator_state
         set_state_fn(self.d_in_cccl, d_in)
         set_state_fn(self.d_out_cccl, d_out)
@@ -88,7 +101,7 @@ class _Scan:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = protocols.get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = self.device_scan(
+        error, temp_storage_bytes = self.device_scan_fn(
             self.build_result,
             d_temp_storage,
             temp_storage_bytes,
@@ -106,9 +119,8 @@ class _Scan:
         return temp_storage_bytes
 
     def __del__(self):
-        if self.build_result is None:
-            return
-        self._impl.device_scan_cleanup(self.build_result)
+        if self._initialized:
+            self._impl.device_scan_cleanup(self.build_result)
 
 
 def make_cache_key(

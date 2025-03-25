@@ -79,6 +79,8 @@ class IteratorBase:
         numba_type
           A numba type representing the type of the input to the advance
           and dereference functions.
+        state_type
+          A numba type of the iterator state.
         value_type
           The numba type of the value returned by the dereference operation.
         prefix
@@ -369,9 +371,7 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
 
         def __init__(self, it: IteratorBase, advance_steps: int):
             self._it = it
-            cvalue_advanced = to_ctypes(it.value_type)(
-                it.cvalue + it.value_type(advance_steps)
-            )
+            cvalue_advanced = type(it.cvalue)(it.cvalue.value + advance_steps)
             super().__init__(
                 cvalue=cvalue_advanced,
                 numba_type=it.numba_type,

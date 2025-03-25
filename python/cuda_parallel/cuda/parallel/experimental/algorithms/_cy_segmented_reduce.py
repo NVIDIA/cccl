@@ -18,8 +18,20 @@ class _SegmentedReduce:
     # and its instances a live
     _impl = cyb
 
+    __slots__ = [
+        "build_result",
+        "_initialized",
+        "d_in_cccl",
+        "d_out_cccl",
+        "start_offsets_in_cccl",
+        "end_offsets_in_cccl",
+        "h_init_cccl",
+        "op_wrapper",
+    ]
+
     def __del__(self):
-        self._impl.cccl_device_segmented_reduce_cleanup(self.build_result)
+        if self._initialized:
+            self._impl.device_segmented_reduce_cleanup(self.build_result)
 
     def __init__(
         self,
@@ -31,6 +43,8 @@ class _SegmentedReduce:
         h_init: np.ndarray | GpuStruct,
     ):
         self.build_result = self._impl.DeviceSegmentedReduceBuildResult()
+        self._initialized = False
+
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
@@ -54,6 +68,7 @@ class _SegmentedReduce:
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
+        self._initialized = True
 
     def __call__(
         self,
@@ -66,6 +81,7 @@ class _SegmentedReduce:
         h_init,
         stream=None,
     ):
+        assert self._initialized
         set_state_fn = cccl.set_cccl_iterator_state
         set_state_fn(self.d_in_cccl, d_in)
         set_state_fn(self.d_out_cccl, d_out)

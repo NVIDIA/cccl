@@ -1283,6 +1283,7 @@ cdef class DeviceSegmentedReduceBuildResult:
     cdef cy_cccl_device_segmented_reduce_build_result_t get(self):
        return self._build_data
 
+
 cpdef CUresult device_segmented_reduce_build(
     DeviceSegmentedReduceBuildResult build,
     Iterator d_in,
@@ -1350,4 +1351,250 @@ cpdef CUresult device_segmented_reduce_cleanup(
     cdef CUresult status
 
     status = cccl_device_segmented_reduce_cleanup(build.get_ptr())
+    return status
+
+
+# -----------------
+#   DeviceMergeSort
+# -----------------
+
+
+cdef extern from "cccl/c/merge_sort.h":
+    cdef struct cy_cccl_device_merge_sort_build_result_t 'cccl_device_merge_sort_build_result_t':
+        int cc
+        void *cubin
+        size_t cubin_size
+        CUlibrary library
+        CUkernel block_sort_kernel
+        CUkernel partition_kernel
+        CUkernel merge_kernel
+
+    cdef CUresult cccl_device_merge_sort_build(
+        cy_cccl_device_merge_sort_build_result_t *bld_ptr,
+        cy_cccl_iterator_t d_in_keys,
+        cy_cccl_iterator_t d_in_items,
+        cy_cccl_iterator_t d_out_keys,
+        cy_cccl_iterator_t d_out_items,
+        cy_cccl_op_t,
+        int, int, const char*, const char*, const char*, const char*
+    ) nogil
+
+    cdef CUresult cccl_device_merge_sort(
+        cy_cccl_device_merge_sort_build_result_t,
+        void *,
+        size_t *,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        cy_cccl_iterator_t,
+        uint64_t,
+        cy_cccl_op_t,
+        CUstream
+    ) nogil
+
+    cdef CUresult cccl_device_merge_sort_cleanup(
+        cy_cccl_device_merge_sort_build_result_t* bld_ptr
+    ) nogil
+
+
+cdef class DeviceMergeSortBuildResult:
+    cdef cy_cccl_device_merge_sort_build_result_t _build_data
+
+    def __cinit__(self):
+       memset(&self._build_data, 0, sizeof(cy_cccl_device_merge_sort_build_result_t))
+
+    cdef cy_cccl_device_merge_sort_build_result_t* get_ptr(self):
+       return &self._build_data
+
+    cdef cy_cccl_device_merge_sort_build_result_t get(self):
+       return self._build_data
+
+
+cpdef CUresult device_merge_sort_build(
+    DeviceMergeSortBuildResult build,
+    Iterator d_in_keys,
+    Iterator d_in_items,
+    Iterator d_out_keys,
+    Iterator d_out_items,
+    Op op,
+    CommonData common_data
+):
+    cdef CUresult status
+    status = cccl_device_merge_sort_build(
+        build.get_ptr(),
+        d_in_keys.get(),
+        d_in_items.get(),
+        d_out_keys.get(),
+        d_out_items.get(),
+        op.get(),
+        common_data.get_cc_major(),
+        common_data.get_cc_minor(),
+        common_data.cub_path_get_c_str(),
+        common_data.thrust_path_get_c_str(),
+        common_data.libcudacxx_path_get_c_str(),
+        common_data.ctk_path_get_c_str(),
+    )
+    return status
+
+
+cpdef device_merge_sort(
+    DeviceMergeSortBuildResult build,
+    temp_storage_ptr,
+    temp_storage_bytes,
+    Iterator d_in_keys,
+    Iterator d_in_items,
+    Iterator d_out_keys,
+    Iterator d_out_items,
+    size_t num_items,
+    Op op,
+    stream
+):
+    cdef CUresult status
+    cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+    cdef size_t storage_sz = <size_t>temp_storage_bytes
+    cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+    status = cccl_device_merge_sort(
+        build.get(),
+        storage_ptr,
+        &storage_sz,
+        d_in_keys.get(),
+        d_in_items.get(),
+        d_out_keys.get(),
+        d_out_items.get(),
+        <uint64_t>num_items,
+        op.get(),
+        c_stream
+    )
+    return status, <object>storage_sz
+
+cpdef CUresult device_merge_sort_cleanup(
+    DeviceMergeSortBuildResult build
+):
+    cdef CUresult status
+
+    status = cccl_device_merge_sort_cleanup(build.get_ptr())
+    return status
+
+
+# -------------------
+#   DeviceUniqueByKey
+# -------------------
+
+cdef extern from "cccl/c/unique_by_key.h":
+    cdef struct cy_cccl_device_unique_by_key_build_result_t 'cccl_device_unique_by_key_build_result_t':
+        int cc
+        void *cubin
+        size_t cubin_size
+        CUlibrary library
+        CUkernel compact_init_kernel
+        CUkernel sweep_kernel
+        size_t description_bytes_per_tile
+        size_t payload_bytes_per_tile
+
+    cdef CUresult cccl_device_unique_by_key_build(
+        cy_cccl_device_unique_by_key_build_result_t *build_ptr,
+        cy_cccl_iterator_t d_keys_in,
+        cy_cccl_iterator_t d_values_in,
+        cy_cccl_iterator_t d_keys_out,
+        cy_cccl_iterator_t d_values_out,
+        cy_cccl_iterator_t d_num_selected_out,
+        cy_cccl_op_t comparison_op,
+        int, int, const char *, const char *, const char *, const char *
+    ) nogil
+
+    cdef CUresult cccl_device_unique_by_key(
+        cy_cccl_device_unique_by_key_build_result_t build,
+        void *d_storage_ptr,
+        size_t *d_storage_nbytes,
+        cy_cccl_iterator_t d_keys_in,
+        cy_cccl_iterator_t d_values_in,
+        cy_cccl_iterator_t d_keys_out,
+        cy_cccl_iterator_t d_values_out,
+        cy_cccl_iterator_t d_num_selected_out,
+        cy_cccl_op_t comparison_op,
+        size_t num_items,
+        CUstream stream
+    ) nogil
+
+    cdef CUresult cccl_device_unique_by_key_cleanup(
+        cy_cccl_device_unique_by_key_build_result_t *build_ptr,
+    ) nogil
+
+
+cdef class DeviceUniqueByKeyBuildResult:
+    cdef cy_cccl_device_unique_by_key_build_result_t _build_data
+
+    def __cinit__(self):
+       memset(&self._build_data, 0, sizeof(cy_cccl_device_unique_by_key_build_result_t))
+
+    cdef cy_cccl_device_unique_by_key_build_result_t* get_ptr(self):
+       return &self._build_data
+
+    cdef cy_cccl_device_unique_by_key_build_result_t get(self):
+       return self._build_data
+
+cpdef CUresult device_unique_by_key_build(
+    DeviceUniqueByKeyBuildResult build,
+    Iterator d_keys_in,
+    Iterator d_values_in,
+    Iterator d_keys_out,
+    Iterator d_values_out,
+    Iterator d_num_selected_out,
+    Op comparison_op,
+    CommonData common_data
+):
+    cdef CUresult status = 0
+    status = cccl_device_unique_by_key_build(
+        build.get_ptr(),
+        d_keys_in.get(),
+        d_values_in.get(),
+        d_keys_out.get(),
+        d_values_out.get(),
+        d_num_selected_out.get(),
+        comparison_op.get(),
+        common_data.get_cc_major(),
+        common_data.get_cc_minor(),
+        common_data.cub_path_get_c_str(),
+        common_data.thrust_path_get_c_str(),
+        common_data.libcudacxx_path_get_c_str(),
+        common_data.ctk_path_get_c_str(),
+    )
+    return status
+
+cpdef device_unique_by_key(
+    DeviceUniqueByKeyBuildResult build,
+    temp_storage_ptr,
+    temp_storage_bytes,
+    Iterator d_keys_in,
+    Iterator d_values_in,
+    Iterator d_keys_out,
+    Iterator d_values_out,
+    Iterator d_num_selected_out,
+    Op comparison_op,
+    size_t num_items,
+    stream
+):
+    cdef CUresult status
+    cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+    cdef size_t storage_sz = <size_t>temp_storage_bytes
+    cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+    status = cccl_device_unique_by_key(
+        build.get(),
+        storage_ptr,
+        &storage_sz,
+        d_keys_in.get(),
+        d_values_in.get(),
+        d_keys_out.get(),
+        d_values_out.get(),
+        d_num_selected_out.get(),
+        comparison_op.get(),
+        <uint64_t>num_items,
+        c_stream
+    )
+    return status, <object>storage_sz
+
+cpdef CUresult device_unique_by_key_cleanup(DeviceUniqueByKeyBuildResult build):
+    cdef CUresult status
+
+    status = cccl_device_unique_by_key_cleanup(build.get_ptr())
     return status

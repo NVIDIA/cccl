@@ -181,7 +181,7 @@ class DeviceReduceBuildResult:
 
 def device_reduce_build(
     build_data: DeviceReduceBuildResult,
-    d_int: Iterator,
+    d_in: Iterator,
     d_out: Iterator,
     binary_op: Op,
     h_init: Value,
@@ -209,7 +209,7 @@ class DeviceScanBuildResult:
 
 def device_scan_build(
     build_data: DeviceScanBuildResult,
-    d_int: Iterator,
+    d_in: Iterator,
     d_out: Iterator,
     binary_op: Op,
     h_init: Value,
@@ -249,7 +249,7 @@ class DeviceSegmentedReduceBuildResult:
 
 def device_segmented_reduce_build(
     build_data: DeviceSegmentedReduceBuildResult,
-    d_int: Iterator,
+    d_in: Iterator,
     d_out: Iterator,
     start_offsets: Iterator,
     end_offsets: Iterator,
@@ -264,12 +264,78 @@ def device_segmented_reduce(
     build_data: DeviceSegmentedReduceBuildResult,
     temp_storage_ptr: int | None,
     temp_storage_nbytes: int,
-    d_int: Iterator,
+    d_in: Iterator,
     d_out: Iterator,
     num_items: int,
     start_offsets: Iterator,
     end_offsets: Iterator,
     binary_op: Op,
     h_init: Value,
+    stream,
+) -> tuple[int, int]: ...
+
+# ---------------
+# DeviceMergeSort
+# ---------------
+
+class DeviceMergeSortBuildResult:
+    def __init__(self): ...
+
+def device_merge_sort_build(
+    build_data: DeviceMergeSortBuildResult,
+    d_in_keys: Iterator,
+    d_in_items: Iterator,
+    d_out_keys: Iterator,
+    d_out_itemss: Iterator,
+    binary_op: Op,
+    info: CommonData,
+) -> int: ...
+def device_merge_sort_cleanup(
+    build_data: DeviceMergeSortBuildResult,
+) -> int: ...
+def device_merge_sort(
+    build_data: DeviceMergeSortBuildResult,
+    temp_storage_ptr: int,
+    temp_storage_nbytes: int,
+    d_in_keys: Iterator,
+    d_in_items: Iterator,
+    d_out_keys: Iterator,
+    d_out_items: Iterator,
+    num_items: int,
+    binary_op: Op,
+    stream,
+) -> tuple[int, int]: ...
+
+# -----------------
+# DeviceUniqueByKey
+# -----------------
+
+class DeviceUniqueByKeyBuildResult:
+    def __init__(self): ...
+
+def device_unique_by_key_build(
+    build_data: DeviceUniqueByKeyBuildResult,
+    d_keys_in: Iterator,
+    d_values_in: Iterator,
+    d_keys_out: Iterator,
+    d_values_out: Iterator,
+    d_num_selected_out: Iterator,
+    binary_op: Op,
+    info: CommonData,
+) -> int: ...
+def device_unique_by_key_cleanup(
+    build_data: DeviceUniqueByKeyBuildResult,
+) -> int: ...
+def device_unique_by_key(
+    build_data: DeviceUniqueByKeyBuildResult,
+    temp_storage_ptr: int,
+    temp_storage_nbytes: int,
+    d_keys_in: Iterator,
+    d_values_in: Iterator,
+    d_keys_out: Iterator,
+    d_values_out: Iterator,
+    d_num_selected_out: Iterator,
+    binary_op: Op,
+    num_items: int,
     stream,
 ) -> tuple[int, int]: ...
