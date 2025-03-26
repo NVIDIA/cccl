@@ -8,7 +8,7 @@ def test_unique_by_key():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms as algorithms
+    import cuda.parallel.experimental.algorithms._cy_unique_by_key as algorithms
 
     def compare_op(lhs, rhs):
         return np.uint8(lhs == rhs)
