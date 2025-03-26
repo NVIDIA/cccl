@@ -1,3 +1,6 @@
+import ctypes
+from typing import Any
+
 from typing_extensions import Buffer
 
 class IntEnum:
@@ -121,6 +124,8 @@ class IteratorStateView:
 
 class Pointer:
     def __init__(self, arg): ...
+
+def make_pointer_object(ptr: int | ctypes.c_void_p, owner: Any) -> Pointer: ...
 
 class IteratorState(Buffer):
     def __init__(self, arg): ...

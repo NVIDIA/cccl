@@ -168,8 +168,8 @@ def merge_sort(
     Args:
         d_in_keys: Device array or iterator containing the input keys to be sorted
         d_in_items: Optional device array or iterator that contains each key's corresponding item
-        d_in_keys: Device array to store the sorted keys
-        d_in_items: Device array to store the sorted items
+        d_out_keys: Device array to store the sorted keys
+        d_out_items: Device array to store the sorted items
         op: Callable representing the comparison operator
 
     Returns:

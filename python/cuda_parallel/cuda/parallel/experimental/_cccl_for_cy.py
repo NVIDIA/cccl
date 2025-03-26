@@ -23,10 +23,10 @@ from ._cy_bindings import (
     Op,
     OpKind,
     Pointer,
-    PointerProxy,
     TypeEnum,
     TypeInfo,
     Value,
+    make_pointer_object,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .cy_iterators._cy_iterators import IteratorBase
@@ -87,7 +87,7 @@ def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
         # Note: this is slightly slower, but supports all ndarray-like objects
         # as long as they support CAI
         # TODO: switch to use gpumemoryview once it's ready
-        state=array.__cuda_array_interface__["data"][0],
+        state=get_data_pointer(array),
     )
 
 
@@ -189,13 +189,13 @@ def to_cccl_op(op: Callable, sig) -> Op:
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
     if cccl_it.type == IteratorKind.POINTER:
         ptr = get_data_pointer(input_it)
-        cccl_it.state = Pointer(PointerProxy(ptr, input_it))
+        cccl_it.state = make_pointer_object(ptr, input_it)
     else:
         state_ = input_it.state
         if isinstance(state_, (IteratorState, Pointer)):
             cccl_it.state = state_
-        elif isinstance(state_, Pointer):
-            cccl_it.state = Pointer(PointerProxy(state_, input_it))
+        else:
+            cccl_it.state = make_pointer_object(state_, input_it)
 
 
 @functools.lru_cache()

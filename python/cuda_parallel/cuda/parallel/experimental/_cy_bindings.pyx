@@ -594,10 +594,10 @@ cdef class PointerProxy:
     cdef object owner
 
     def __cinit__(self, ptr, owner):
-        if isinstance(ptr, ctypes.c_void_p):
-            self.ptr = int_as_ptr(ptr.value)
-        elif isinstance(ptr, int):
+        if isinstance(ptr, int):
             self.ptr = int_as_ptr(ptr)
+        elif isinstance(ptr, ctypes.c_void_p):
+            self.ptr = int_as_ptr(ptr.value)
         else:
             raise TypeError
         self.owner = owner
@@ -700,6 +700,22 @@ cdef class Pointer(StateBase):
                 f"got type {type(arg)}"
             )
         self.set_state(ptr, ref)
+
+
+def make_pointer_object(ptr, owner):
+    cdef Pointer res = Pointer(0)
+
+    if isinstance(ptr, int):
+        res.ptr = int_as_ptr(ptr)
+    elif isinstance(ptr, ctypes.c_void_p):
+        res.ptr = int_as_ptr(ptr.value)
+    else:
+        raise TypeError(
+            "First argument must be an integer, or ctypes.c_void_p, "
+            f"got {type(ptr)}"
+        )
+    res.ref = owner
+    return res
 
 
 cdef class IteratorState(StateBase):
