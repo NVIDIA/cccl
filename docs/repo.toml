@@ -144,7 +144,6 @@ doxygen_aliases = [
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
     "_CCCL_AND=&&",
-    "_CCCL_ALIAS_ATTRIBUTE(x)=",
     "_CCCL_HOST",
     "_CCCL_DEVICE",
     "_CCCL_EAT_REST(x)=",
@@ -256,7 +255,6 @@ doxygen_aliases = []
 # more information on the format can be found at:
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
-  "_CCCL_ALIAS_ATTRIBUTE(x)=",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
