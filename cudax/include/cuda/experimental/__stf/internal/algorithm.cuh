@@ -40,33 +40,24 @@ private:
     runner_impl(context_t& _ctx, algorithm& _alg, task_dep<Deps>... _deps)
         : alg(_alg)
         , ctx(_ctx)
-        , deps(::std::make_tuple(mv(_deps)...)) {};
+        , deps(mv(_deps)...)
+    {}
 
     template <typename Fun>
     void operator->*(Fun&& fun)
     {
-      // We cannot use ::std::apply with a lambda function here instead
-      // because this would use extended lambda functions within a lambda
-      // function which is prohibited
-      call_with_tuple_impl(::std::forward<Fun>(fun), ::std::index_sequence_for<Deps...>{});
-    }
-
-  private:
-    // Helper function to call fun with context and unpacked tuple arguments
-    template <typename Fun, ::std::size_t... Idx>
-    void call_with_tuple_impl(Fun&& fun, ::std::index_sequence<Idx...>)
-    {
-      // We may simply execute the algorithm within the existing context
-      // if we do not want to generate sub-graphs (eg. to analyze the
-      // advantage of using such algorithms)
-      if (getenv("CUDASTF_ALGORITHM_INLINE"))
-      {
-        alg.run_inline(::std::forward<Fun>(fun), ctx, ::std::get<Idx>(deps)...);
-      }
-      else
-      {
-        alg.run_as_task(::std::forward<Fun>(fun), ctx, ::std::get<Idx>(deps)...);
-      }
+      std::apply(
+        [&](task_dep<Deps>&... unpacked_deps) {
+          if (getenv("CUDASTF_ALGORITHM_INLINE"))
+          {
+            alg.run_inline(std::forward<Fun>(fun), ctx, unpacked_deps...);
+          }
+          else
+          {
+            alg.run_as_task(std::forward<Fun>(fun), ctx, unpacked_deps...);
+          }
+        },
+        deps);
     }
 
     algorithm& alg;
@@ -81,11 +72,10 @@ public:
 
   /* Inject the execution of the algorithm within a CUDA graph */
   template <typename Fun, typename parent_ctx_t, typename... Args>
-  void run_in_graph(Fun fun, parent_ctx_t& parent_ctx, cudaGraph_t graph, Args... args)
+  void run_in_graph(Fun&& fun, parent_ctx_t& parent_ctx, cudaGraph_t graph, Args... args)
   {
-    auto argsTuple = ::std::make_tuple(args...);
-    ::cuda::experimental::stf::hash<decltype(argsTuple)> hasher;
-    size_t hashValue = hasher(argsTuple);
+    auto argsTuple         = ::std::make_tuple(mv(args)...);
+    const size_t hashValue = ::cuda::experimental::stf::hash<decltype(argsTuple)>()(argsTuple);
 
     ::std::shared_ptr<cudaGraph_t> inner_graph;
 
@@ -103,23 +93,18 @@ public:
 
       auto current_place = gctx.default_exec_place();
 
-      // Transform an instance into a new logical data
-      auto logify = [&gctx, &current_place](auto x) {
-        // Our infrastructure currently does not like to work with
-        // constant types for the data interface so we pretend this is
-        // a modifiable data if necessary
-        return gctx.logical_data(to_rw_type_of(x), current_place.affine_data_place());
-      };
-
       // Transform the tuple of instances into a tuple of logical data
       auto logicalArgsTuple = ::std::apply(
-        [&](auto&&... args) {
-          return ::std::tuple(logify(::std::forward<decltype(args)>(args))...);
+        [&](const auto&... args) {
+          // Our infrastructure currently does not like to work with
+          // constant types for the data interface so we pretend this is
+          // a modifiable data if necessary
+          return ::std::tuple(gctx.logical_data(to_rw_type_of(args), current_place.affine_data_place())...);
         },
         argsTuple);
 
       // call fun(gctx, ...logical data...)
-      ::std::apply(fun, ::std::tuple_cat(::std::make_tuple(gctx), logicalArgsTuple));
+      ::std::apply(::std::forward<Fun>(fun), ::std::tuple_cat(::std::make_tuple(gctx), mv(logicalArgsTuple)));
 
       inner_graph = gctx.finalize_as_graph();
 
@@ -137,27 +122,27 @@ public:
    * practice (without bloating the code with both the algorithm and the original
    * code) */
   template <typename context_t, typename Fun, typename... Deps>
-  void run_inline(Fun fun, context_t& ctx, task_dep<Deps>... deps)
+  void run_inline(Fun&& fun, context_t& ctx, const task_dep<Deps>&... deps)
   {
-    ::std::apply(fun,
+    ::std::apply(::std::forward<Fun>(fun),
                  ::std::tuple_cat(::std::make_tuple(ctx), ::std::make_tuple(logical_data<Deps>(deps.get_data())...)));
   }
 
   /* Helper to run the algorithm in a stream_ctx */
   template <typename Fun, typename... Deps>
-  void run_as_task(Fun fun, stream_ctx& ctx, task_dep<Deps>... deps)
+  void run_as_task(Fun&& fun, stream_ctx& ctx, task_dep<Deps>... deps)
   {
-    ctx.task(deps...).set_symbol(symbol)->*[this, &fun, &ctx](cudaStream_t stream, Deps... args) {
-      this->run(fun, ctx, stream, args...);
+    ctx.task(mv(deps)...).set_symbol(symbol)->*[this, &fun, &ctx](cudaStream_t stream, Deps... args) {
+      this->run(::std::forward<Fun>(fun), ctx, stream, mv(args)...);
     };
   }
 
   /* Helper to run the algorithm in a graph_ctx */
   template <typename Fun, typename... Deps>
-  void run_as_task(Fun fun, graph_ctx& ctx, task_dep<Deps>... deps)
+  void run_as_task(Fun&& fun, graph_ctx& ctx, task_dep<Deps>... deps)
   {
     ctx.task(deps...).set_symbol(symbol)->*[this, &fun, &ctx](cudaGraph_t g, Deps... args) {
-      this->run_in_graph(fun, ctx, g, args...);
+      this->run_in_graph(::std::forward<Fun>(fun), ctx, g, args...);
     };
   }
 
@@ -167,18 +152,18 @@ public:
    * As an alternative, the run_as_task_dynamic may take a variable number of dependencies
    */
   template <typename Fun, typename... Deps>
-  void run_as_task(Fun fun, context& ctx, task_dep<Deps>... deps)
+  void run_as_task(Fun&& fun, context& ctx, task_dep<Deps>... deps)
   {
     ::std::visit(
       [&](auto& actual_ctx) {
-        this->run_as_task(fun, actual_ctx, deps...);
+        this->run_as_task(::std::forward<Fun>(fun), actual_ctx, mv(deps)...);
       },
       ctx.payload);
   }
 
   /* Helper to run the algorithm in a stream_ctx */
   template <typename Fun>
-  void run_as_task_dynamic(Fun fun, stream_ctx& ctx, const ::std::vector<task_dep_untyped>& deps)
+  void run_as_task_dynamic(Fun&& fun, stream_ctx& ctx, const ::std::vector<task_dep_untyped>& deps)
   {
     auto t = ctx.task();
     for (auto& d : deps)
@@ -189,13 +174,13 @@ public:
     t.set_symbol(symbol);
 
     t->*[this, &fun, &ctx, &t](cudaStream_t stream) {
-      this->run_dynamic(fun, ctx, stream, t);
+      this->run_dynamic(::std::forward<Fun>(fun), ctx, stream, t);
     };
   }
 
   /* Helper to run the algorithm in a graph_ctx */
   template <typename Fun>
-  void run_as_task_dynamic(Fun /* fun */, graph_ctx& /* ctx */, const ::std::vector<task_dep_untyped>& /* deps */)
+  void run_as_task_dynamic(Fun&& /* fun */, graph_ctx& /* ctx */, const ::std::vector<task_dep_untyped>& /* deps */)
   {
     /// TODO
     abort();
@@ -207,11 +192,11 @@ public:
    * This is an alternative for run_as_task which may take a variable number of dependencies
    */
   template <typename Fun>
-  void run_as_task_dynamic(Fun fun, context& ctx, const ::std::vector<task_dep_untyped>& deps)
+  void run_as_task_dynamic(Fun&& fun, context& ctx, const ::std::vector<task_dep_untyped>& deps)
   {
     ::std::visit(
       [&](auto& actual_ctx) {
-        this->run_as_task_dynamic(fun, actual_ctx, deps);
+        this->run_as_task_dynamic(::std::forward<Fun>(fun), actual_ctx, deps);
       },
       ctx.payload);
   }
@@ -248,7 +233,7 @@ public:
   /* Execute the algorithm as a CUDA graph and launch this graph in a CUDA
    * stream */
   template <typename Fun, typename parent_ctx_t, typename... Args>
-  void run(Fun fun, parent_ctx_t& parent_ctx, cudaStream_t stream, Args... args)
+  void run(Fun&& fun, parent_ctx_t& parent_ctx, cudaStream_t stream, Args... args)
   {
     auto argsTuple = ::std::make_tuple(args...);
     graph_ctx gctx(parent_ctx.async_resources());
@@ -280,7 +265,7 @@ public:
       argsTuple);
 
     // call fun(gctx, ...logical data...)
-    ::std::apply(fun, ::std::tuple_cat(::std::make_tuple(gctx), logicalArgsTuple));
+    ::std::apply(::std::forward<Fun>(fun), ::std::tuple_cat(::std::make_tuple(gctx), logicalArgsTuple));
 
     ::std::shared_ptr<cudaGraph_t> gctx_graph = gctx.finalize_as_graph();
 
@@ -322,7 +307,7 @@ public:
   /* Contrary to `run`, we here have a dynamic set of dependencies for the
    * task, so fun does not take a pack of data instances as a parameter */
   template <typename Fun, typename parent_ctx_t, typename task_t>
-  void run_dynamic(Fun fun, parent_ctx_t& parent_ctx, cudaStream_t stream, task_t& t)
+  void run_dynamic(Fun&& fun, parent_ctx_t& parent_ctx, cudaStream_t stream, task_t& t)
   {
     graph_ctx gctx(parent_ctx.async_resources());
 
@@ -334,7 +319,7 @@ public:
 
     auto current_place = gctx.default_exec_place();
 
-    fun(gctx, t);
+    ::std::forward<Fun>(fun)(gctx, t);
 
     ::std::shared_ptr<cudaGraph_t> gctx_graph = gctx.finalize_as_graph();
 
