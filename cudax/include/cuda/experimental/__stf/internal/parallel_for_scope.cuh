@@ -586,7 +586,7 @@ public:
     else if constexpr (is_extended_host_device_lambda_closure_type)
     {
       // Can run on both - decide dynamically
-      if (e_place == exec_place::host())
+      if (e_place.is_host())
       {
         return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
       }
@@ -595,13 +595,13 @@ public:
     else if constexpr (is_extended_device_lambda_closure_type)
     {
       // Lambda can run only on device - make sure they're not trying it on the host
-      EXPECT(e_place != exec_place::host(), "Attempt to run a device function on the host.");
+      EXPECT(!e_place.is_host(), "Attempt to run a device function on the host.");
       // Fall through for the device implementation
     }
     else
     {
       // Lambda can run only on the host - make sure they're not trying it elsewhere
-      EXPECT(e_place == exec_place::host(), "Attempt to run a host function on a device.");
+      EXPECT(e_place.is_host(), "Attempt to run a host function on a device.");
       return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
     }
 
