@@ -102,7 +102,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const double& __va
 }
 
 template <>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) complex<__nv_bfloat16>
+class _CCCL_TYPE_VISIBILITY_DEFAULT alignas(__nv_bfloat162) complex<__nv_bfloat16>
 {
   __nv_bfloat162 __repr_;
 

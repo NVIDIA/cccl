@@ -36,7 +36,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 #if !_CCCL_COMPILER(NVRTC)
 
 template <typename _Tp>
-struct _CCCL_ALIGNAS(sizeof(_Tp)) __atomic_alignment_wrapper
+struct alignas(sizeof(_Tp)) __atomic_alignment_wrapper
 {
   _Tp __atom;
 };

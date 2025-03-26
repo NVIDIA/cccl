@@ -48,7 +48,7 @@ template <class _Tp>
 struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
 {};
 
-#define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment<_Tp>::value)
+#define _LIBCUDACXX_COMPLEX_ALIGNAS alignas(__complex_alignment<_Tp>::value)
 
 template <class _Tp>
 struct __type_to_vector;

@@ -102,7 +102,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const double& __value) noexce
 }
 
 template <>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__half>
+class _CCCL_TYPE_VISIBILITY_DEFAULT alignas(__half2) complex<__half>
 {
   __half2 __repr_;
 

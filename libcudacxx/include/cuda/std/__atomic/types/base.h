@@ -38,7 +38,7 @@ struct __atomic_storage
                 "std::atomic<Tp> requires that 'Tp' be a trivially copyable type");
 #endif
 
-  _CCCL_ALIGNAS(sizeof(_Tp)) _Tp __a_value;
+  alignas(sizeof(_Tp)) _Tp __a_value;
 
   _CCCL_HIDE_FROM_ABI explicit constexpr __atomic_storage() noexcept = default;
 

@@ -244,7 +244,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   {
     _Tp __data_[1];
   };
-  _CCCL_ALIGNAS_TYPE(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
+  alignas(_ArrayInStructT) _CharType __elems_[sizeof(_ArrayInStructT)];
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type* data() noexcept
   {

@@ -23,8 +23,6 @@ AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: [
-                  '_CCCL_ALIGNAS_TYPE',
-                  '_CCCL_ALIGNAS',
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
                   '_CCCL_DEVICE',

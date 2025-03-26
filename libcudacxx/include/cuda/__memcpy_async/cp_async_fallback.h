@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <_CUDA_VSTD::size_t _Copy_size>
 struct __copy_chunk
 {
-  _CCCL_ALIGNAS(_Copy_size) char data[_Copy_size];
+  alignas(_Copy_size) char data[_Copy_size];
 };
 
 template <_CUDA_VSTD::size_t _Alignment, typename _Group>

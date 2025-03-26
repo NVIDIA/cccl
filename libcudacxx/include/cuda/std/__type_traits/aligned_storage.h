@@ -56,7 +56,7 @@ using __all_types =
               __align_type<int*>>;
 
 template <size_t _Align>
-struct _CCCL_ALIGNAS(_Align) __fallback_overaligned
+struct alignas(_Align) __fallback_overaligned
 {
   static const size_t value = _Align;
   using type                = __fallback_overaligned;
@@ -113,7 +113,7 @@ using aligned_storage_t _CCCL_NODEBUG_ALIAS = typename aligned_storage<_Len, _Al
   template <size_t _Len>                                        \
   struct _CCCL_TYPE_VISIBILITY_DEFAULT aligned_storage<_Len, n> \
   {                                                             \
-    struct _CCCL_ALIGNAS(n) type                                \
+    struct alignas(n) type                                      \
     {                                                           \
       unsigned char __lx[(_Len + n - 1) / n * n];               \
     };                                                          \
