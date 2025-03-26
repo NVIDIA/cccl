@@ -57,7 +57,7 @@ The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the ve
 **CUDA identification/version macros**:
 
 +----------------------------------+-----------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER``      | CUDA compiler is available  |
+| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available  |
 +----------------------------------+-----------------------------+
 | ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7     |
 +----------------------------------+-----------------------------+
@@ -217,8 +217,6 @@ The following macros are required only if the target C++ version does not suppor
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX23``   | Enable ``constexpr`` for C++23 or newer                  |
 +-----------------------------+----------------------------------------------------------+
-| ``_CCCL_INLINE_VAR``        | Portable ``inline constexpr`` variable (before C++17)    |
-+-----------------------------+----------------------------------------------------------+
 
 **Concept-like Macros**:
 
@@ -264,8 +262,6 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NO_UNIQUE_ADDRESS``      | Portable ``[[no_unique_address]]`` attribute                                 |
 +----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_NODISCARD``              | Portable ``[[nodiscard]]`` attribute (before C++17)                          |
-+----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NODISCARD_FRIEND``       | Portable ``[[nodiscard]]`` attribute for ``friend`` functions (before C++17) |
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NORETURN``               | Portable ``[[noreturn]]`` attribute (before C++11)                           |
@@ -300,6 +296,16 @@ Usage example:
 +-----------------------------+--------------------------------------------+
 | ``_CCCL_PRAGMA(X)``         | Portable ``_Pragma(X)`` keyword            |
 +-----------------------------+--------------------------------------------+
+
+**Portable Pragma Macros**
+
++--------------------------------+-------------------------------------------+
+| ``_CCCL_PRAGMA_UNROLL(N)``     | Portable ``#pragma unroll N`` pragma      |
++--------------------------------+-------------------------------------------+
+| ``_CCCL_PRAGMA_UNROLL_FULL()`` | Portable ``#pragma unroll`` pragma        |
++--------------------------------+-------------------------------------------+
+| ``_CCCL_PRAGMA_NOUNROLL()``    | Portable ``#pragma nounroll`` pragma      |
++--------------------------------+-------------------------------------------+
 
 ----
 

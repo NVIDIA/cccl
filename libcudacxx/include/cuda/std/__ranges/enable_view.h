@@ -33,8 +33,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 struct view_base
 {};
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-
 #if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Derived>
@@ -48,8 +46,6 @@ class view_interface;
 
 #endif // _CCCL_NO_CONCEPTS
 
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
-
 _CCCL_TEMPLATE(class _Op, class _Yp)
 _CCCL_REQUIRES(is_convertible_v<_Op*, view_interface<_Yp>*>)
 _LIBCUDACXX_HIDE_FROM_ABI void __is_derived_from_view_interface(const _Op*, const view_interface<_Yp>*);
@@ -57,17 +53,17 @@ _LIBCUDACXX_HIDE_FROM_ABI void __is_derived_from_view_interface(const _Op*, cons
 #if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base> || requires {
+inline constexpr bool enable_view = derived_from<_Tp, view_base> || requires {
   _CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr);
 };
 
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp, class = void>
-_CCCL_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base>;
+inline constexpr bool enable_view = derived_from<_Tp, view_base>;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool
+inline constexpr bool
   enable_view<_Tp, void_t<decltype(_CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr))>> =
     true;
 #endif // _CCCL_NO_CONCEPTS

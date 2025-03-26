@@ -27,7 +27,8 @@ int main(int, char**)
   using days                = cuda::std::chrono::days;
 
   static_assert(noexcept(static_cast<sys_days>(cuda::std::declval<const year_month_day_last>())));
-  ASSERT_SAME_TYPE(sys_days, decltype(static_cast<sys_days>(cuda::std::declval<const year_month_day_last>())));
+  static_assert(
+    cuda::std::is_same_v<sys_days, decltype(static_cast<sys_days>(cuda::std::declval<const year_month_day_last>()))>);
 
   auto constexpr January  = cuda::std::chrono::January;
   auto constexpr November = cuda::std::chrono::November;

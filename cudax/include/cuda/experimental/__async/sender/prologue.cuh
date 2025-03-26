@@ -10,13 +10,14 @@
 #include <cuda/std/detail/__config>
 
 #if defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
-#  __error multiple inclusion of prologue.cuh
+#  error multiple inclusion of prologue.cuh
 #endif
 
 #define _CUDAX_ASYNC_PROLOGUE_INCLUDED
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsubobject-linkage")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-value")
 _CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
 
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")

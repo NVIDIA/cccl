@@ -70,7 +70,7 @@ public:
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr aligned_accessor(default_accessor<_OtherElementType>) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit aligned_accessor(default_accessor<_OtherElementType>) noexcept {}
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))

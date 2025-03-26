@@ -306,7 +306,7 @@ private:
 
     const auto tex_idx_base = tex_offset * TEXTURE_MULTIPLE;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < TEXTURE_MULTIPLE; ++i)
     {
       words[i] = tex1Dfetch<TextureWord>(tex_obj, tex_idx_base + i);

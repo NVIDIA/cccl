@@ -285,9 +285,8 @@ private:
   {
     // check that the fs test root in the environment matches what we were
     // compiled with.
-    static bool checked = checkDynamicTestRoot();
-    ((void) checked);
-    std::string cmd = LIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER;
+    [[maybe_unused]] static bool checked = checkDynamicTestRoot();
+    std::string cmd                      = LIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER;
     cmd += " \"" + raw_cmd + "\"";
     int ret = std::system(cmd.c_str());
     assert(ret == 0);

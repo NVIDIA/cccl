@@ -51,7 +51,7 @@ struct green_context
   green_context& operator=(const green_context&) = delete;
 
   // TODO this probably should be the runtime equivalent once available
-  _CCCL_NODISCARD static green_context from_native_handle(CUgreenCtx __gctx)
+  [[nodiscard]] static green_context from_native_handle(CUgreenCtx __gctx)
   {
     int __id;
     CUcontext __transformed = detail::driver::ctxFromGreenCtx(__gctx);
@@ -61,7 +61,7 @@ struct green_context
     return green_context(__id, __gctx, __transformed);
   }
 
-  _CCCL_NODISCARD CUgreenCtx release() noexcept
+  [[nodiscard]] CUgreenCtx release() noexcept
   {
     __transformed = nullptr;
     __dev_id      = -1;

@@ -38,7 +38,7 @@ namespace linalg
 {
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 conjugate_transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   return conjugated(transposed(__a));

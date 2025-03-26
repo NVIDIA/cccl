@@ -48,7 +48,7 @@ struct get_memory_resource_t
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_resource<_Tp>)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr decltype(auto) operator()(const _Tp& __t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr decltype(auto) operator()(const _Tp& __t) const noexcept
   {
     static_assert(noexcept(__t.get_memory_resource()), "get_memory_resource must be noexcept");
     return __t.get_memory_resource();
@@ -56,7 +56,7 @@ struct get_memory_resource_t
 
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_memory_resource<_Env>)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr decltype(auto) operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr decltype(auto) operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)), "get_memory_resource_t query must be noexcept");
     return __env.query(*this);

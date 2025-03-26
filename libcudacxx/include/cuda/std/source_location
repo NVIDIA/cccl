@@ -45,7 +45,7 @@ private:
   {}
 
 public:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr source_location current(
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr source_location current(
     const char* __file      = _CCCL_BUILTIN_FILE(),
     const char* __func      = _CCCL_BUILTIN_FUNCTION(),
     uint_least32_t __line   = _CCCL_BUILTIN_LINE(),
@@ -56,19 +56,19 @@ public:
 
   _CCCL_HIDE_FROM_ABI constexpr source_location() = default;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t line() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t line() const noexcept
   {
     return __line_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t column() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t column() const noexcept
   {
     return __column_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* file_name() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* file_name() const noexcept
   {
     return __file_name_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* function_name() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* function_name() const noexcept
   {
     return __function_name_;
   }

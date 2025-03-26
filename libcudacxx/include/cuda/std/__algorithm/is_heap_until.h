@@ -60,14 +60,14 @@ __is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Co
 }
 
 template <class _RandomAccessIterator, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
 is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__is_heap_until(__first, __last, static_cast<__comp_ref_type<_Compare>>(__comp));
 }
 
 template <class _RandomAccessIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
 is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   return _CUDA_VSTD::__is_heap_until(__first, __last, __less{});

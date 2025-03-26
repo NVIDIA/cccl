@@ -525,12 +525,10 @@ void generate_unsorted_derived_inputs(
 
   static constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
 
-  const int num_segments = static_cast<int>(d_offsets.size() - 1);
-  const int* offsets     = thrust::raw_pointer_cast(d_offsets.data());
-  KeyT* keys             = thrust::raw_pointer_cast(d_keys.data());
-  ValueT* values         = thrust::raw_pointer_cast(d_values.data());
-
-  (void) values; // Unused for key-only sort.
+  const int num_segments          = static_cast<int>(d_offsets.size() - 1);
+  const int* offsets              = thrust::raw_pointer_cast(d_offsets.data());
+  KeyT* keys                      = thrust::raw_pointer_cast(d_keys.data());
+  [[maybe_unused]] ValueT* values = thrust::raw_pointer_cast(d_values.data());
 
   // Build keys in reversed order from how they'll eventually be sorted:
   thrust::for_each(c2h::nosync_device_policy,
@@ -581,11 +579,9 @@ void validate_sorted_derived_outputs(
 template <typename KeyT, typename ValueT>
 void generate_random_unsorted_inputs(c2h::seed_t seed, //
                                      c2h::device_vector<KeyT>& d_keys,
-                                     c2h::device_vector<ValueT>& d_values)
+                                     [[maybe_unused]] c2h::device_vector<ValueT>& d_values)
 {
   C2H_TIME_SCOPE("generate_random_unsorted_inputs");
-
-  (void) d_values; // Unused for key-only sort.
 
   c2h::gen(make_key_seed(seed), d_keys);
 
@@ -604,13 +600,11 @@ void host_sort_random_inputs(
   const int* h_begin_offsets,
   const int* h_end_offsets,
   c2h::host_vector<KeyT>& h_unsorted_keys,
-  c2h::host_vector<ValueT>& h_unsorted_values = {})
+  [[maybe_unused]] c2h::host_vector<ValueT>& h_unsorted_values = {})
 {
   C2H_TIME_SCOPE("host_sort_random_inputs");
 
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
-
-  (void) h_unsorted_values; // Unused for key-only sort.
 
   for (int segment_i = 0; segment_i < num_segments; segment_i++)
   {
@@ -734,21 +728,15 @@ struct unstable_segmented_value_checker
 // They will not be modified when STABLE.
 template <bool STABLE, typename KeyT, typename ValueT>
 void validate_sorted_random_outputs(
-  int num_segments,
-  const int* d_segment_begin,
-  const int* d_segment_end,
+  [[maybe_unused]] int num_segments,
+  [[maybe_unused]] const int* d_segment_begin,
+  [[maybe_unused]] const int* d_segment_end,
   const c2h::device_vector<KeyT>& d_ref_keys,
   const c2h::device_vector<KeyT>& d_sorted_keys,
-  const c2h::device_vector<ValueT>& d_ref_values,
-  c2h::device_vector<ValueT>& d_sorted_values)
+  [[maybe_unused]] const c2h::device_vector<ValueT>& d_ref_values,
+  [[maybe_unused]] c2h::device_vector<ValueT>& d_sorted_values)
 {
   C2H_TIME_SCOPE("validate_sorted_random_outputs");
-
-  (void) d_ref_values;
-  (void) d_sorted_values;
-  (void) num_segments;
-  (void) d_segment_begin;
-  (void) d_segment_end;
 
   // Verify that the key arrays match exactly:
   REQUIRE((d_ref_keys == d_sorted_keys) == true);
@@ -789,13 +777,13 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
   std::size_t& temp_storage_bytes,
 
   int* keys_selector,
-  int* values_selector,
+  [[maybe_unused]] int* values_selector,
 
   WrappedKeyT* wrapped_input_keys,
   WrappedKeyT* wrapped_output_keys,
 
-  ValueT* input_values,
-  ValueT* output_values,
+  [[maybe_unused]] ValueT* input_values,
+  [[maybe_unused]] ValueT* output_values,
 
   int num_items,
   int num_segments,
@@ -807,11 +795,6 @@ CUB_RUNTIME_FUNCTION cudaError_t call_cub_segmented_sort_api(
 {
   using KeyT                = unwrap_value_t<WrappedKeyT>;
   constexpr bool sort_pairs = !::cuda::std::is_same_v<ValueT, cub::NullType>;
-
-  // Unused for key-only sort.
-  (void) values_selector;
-  (void) input_values;
-  (void) output_values;
 
   auto input_keys  = reinterpret_cast<KeyT*>(wrapped_input_keys);
   auto output_keys = reinterpret_cast<KeyT*>(wrapped_output_keys);

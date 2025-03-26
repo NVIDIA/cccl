@@ -24,7 +24,7 @@ int main(int, char**)
   using year = cuda::std::chrono::year;
 
   static_assert(noexcept(year(1).is_leap()));
-  ASSERT_SAME_TYPE(bool, decltype(year(1).is_leap()));
+  static_assert(cuda::std::is_same_v<bool, decltype(year(1).is_leap())>);
 
   static_assert(!year{1}.is_leap(), "");
   static_assert(!year{2}.is_leap(), "");

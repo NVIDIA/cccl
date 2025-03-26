@@ -24,7 +24,7 @@
 
 // 0 args, return void
 
-STATIC_TEST_GLOBAL_VAR int count = 0;
+TEST_GLOBAL_VARIABLE int count = 0;
 
 __host__ __device__ void f_void_0()
 {

@@ -97,7 +97,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(_Tp __x) noexcept
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(_Tp __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)

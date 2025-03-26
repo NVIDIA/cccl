@@ -97,7 +97,7 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_idx(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_idx(
   _Tp __data,
   bool& __pred,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
@@ -121,7 +121,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_idx(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_idx(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_idx(
   _Tp __data,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
   _CUDA_VSTD::uint32_t __clamp_segmask,
@@ -139,7 +139,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_idx(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_up(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_up(
   _Tp __data,
   bool& __pred,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
@@ -163,7 +163,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_up(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_up(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_up(
   _Tp __data,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
   _CUDA_VSTD::uint32_t __clamp_segmask,
@@ -181,7 +181,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_up(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_down(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_down(
   _Tp __data,
   bool& __pred,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
@@ -205,7 +205,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_down(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_down(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_down(
   _Tp __data,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
   _CUDA_VSTD::uint32_t __clamp_segmask,
@@ -223,7 +223,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_down(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_bfly(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_bfly(
   _Tp __data,
   bool& __pred,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
@@ -247,7 +247,7 @@ _CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_bfly(
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_DEVICE static inline _Tp shfl_sync_bfly(
+[[nodiscard]] _CCCL_DEVICE static inline _Tp shfl_sync_bfly(
   _Tp __data,
   _CUDA_VSTD::uint32_t __lane_idx_offset,
   _CUDA_VSTD::uint32_t __clamp_segmask,

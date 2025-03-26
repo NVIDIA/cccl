@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -303,7 +303,7 @@ struct ReduceAgent
       T* d_in_unqualified = const_cast<T*>(input_it) + block_offset + (threadIdx.x * VECTOR_LOAD_LENGTH);
       VectorLoadIt vec_load_it(reinterpret_cast<Vector*>(d_in_unqualified));
 
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < WORDS; ++i)
       {
         vec_items[i] = vec_load_it[BLOCK_THREADS * i];

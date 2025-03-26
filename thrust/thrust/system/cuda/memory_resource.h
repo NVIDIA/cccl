@@ -55,10 +55,8 @@ template <allocation_fn Alloc, deallocation_fn Dealloc, typename Pointer>
 class cuda_memory_resource final : public mr::memory_resource<Pointer>
 {
 public:
-  Pointer do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  Pointer do_allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-    (void) alignment;
-
     void* ret;
     cudaError_t status = Alloc(&ret, bytes);
 
@@ -71,11 +69,8 @@ public:
     return Pointer(ret);
   }
 
-  void do_deallocate(Pointer p, std::size_t bytes, std::size_t alignment) override
+  void do_deallocate(Pointer p, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment) override
   {
-    (void) bytes;
-    (void) alignment;
-
     cudaError_t status = Dealloc(thrust::detail::pointer_traits<Pointer>::get(p));
 
     if (status != cudaSuccess)

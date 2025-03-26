@@ -58,8 +58,9 @@ CUB_NAMESPACE_BEGIN
  * Bitfield-extract.
  */
 template <typename UnsignedBits, int BYTE_LEN>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<BYTE_LEN> /*byte_len*/)
+//! deprecated [Since 3.0]
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
+  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<BYTE_LEN> /*byte_len*/)
 {
   unsigned int bits;
   asm("bfe.u32 %0, %1, %2, %3;" : "=r"(bits) : "r"((unsigned int) source), "r"(bit_start), "r"(num_bits));
@@ -70,8 +71,9 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  * Bitfield-extract for 64-bit types.
  */
 template <typename UnsignedBits>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<8> /*byte_len*/)
+//! deprecated [Since 3.0]
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
+  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<8> /*byte_len*/)
 {
   const unsigned long long MASK = (1ull << num_bits) - 1;
   return (source >> bit_start) & MASK;
@@ -82,8 +84,9 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  * Bitfield-extract for 128-bit types.
  */
 template <typename UnsignedBits>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<16> /*byte_len*/)
+//! deprecated [Since 3.0]
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
+  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<16> /*byte_len*/)
 {
   const __uint128_t MASK = (__uint128_t{1} << num_bits) - 1;
   return (source >> bit_start) & MASK;
@@ -97,7 +100,9 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::
  * source may be an 8b, 16b, 32b, or 64b unsigned integer type.
  */
 template <typename UnsignedBits>
-_CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
+//! deprecated [Since 3.0]
+CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE
+_CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
   return BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
 }
@@ -160,18 +165,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int RowMajorTid(int block_dim_x, int block_dim_y,
  * @param warp_id Id of virtual warp within architectural warp
  */
 template <int LOGICAL_WARP_THREADS>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask(unsigned int warp_id)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
-  constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == CUB_WARP_THREADS(0);
+  constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == detail::warp_threads;
 
-  unsigned int member_mask = 0xFFFFFFFFu >> (CUB_WARP_THREADS(0) - LOGICAL_WARP_THREADS);
+  unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LOGICAL_WARP_THREADS);
 
   if constexpr (is_pow_of_two && !is_arch_warp)
   {
     member_mask <<= warp_id * LOGICAL_WARP_THREADS;
   }
-  (void) warp_id;
 
   return member_mask;
 }
@@ -246,7 +250,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleUp(T input, int src_offset, int first_th
   shuffle_word    = SHFL_UP_SYNC((unsigned int) input_alias[0], src_offset, first_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
     shuffle_word       = SHFL_UP_SYNC((unsigned int) input_alias[WORD], src_offset, first_thread | SHFL_C, member_mask);
@@ -327,7 +331,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleDown(T input, int src_offset, int last_t
   shuffle_word    = SHFL_DOWN_SYNC((unsigned int) input_alias[0], src_offset, last_thread | SHFL_C, member_mask);
   output_alias[0] = shuffle_word;
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
     shuffle_word = SHFL_DOWN_SYNC((unsigned int) input_alias[WORD], src_offset, last_thread | SHFL_C, member_mask);
@@ -400,7 +404,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   unsigned int shuffle_word;
   shuffle_word    = __shfl_sync(member_mask, (unsigned int) input_alias[0], src_lane, LOGICAL_WARP_THREADS);
   output_alias[0] = shuffle_word;
-#pragma unroll
+
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int WORD = 1; WORD < WORDS; ++WORD)
   {
     shuffle_word       = __shfl_sync(member_mask, (unsigned int) input_alias[WORD], src_lane, LOGICAL_WARP_THREADS);
@@ -438,7 +443,7 @@ struct warp_matcher_t
 };
 
 template <int LABEL_BITS>
-struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
+struct warp_matcher_t<LABEL_BITS, warp_threads>
 {
   // match.any.sync.b32 is slower when matching a few bits
   // using a ballot loop instead
@@ -446,8 +451,8 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
   {
     unsigned int retval;
 
-// Extract masks of common threads for each bit
-#  pragma unroll
+    // Extract masks of common threads for each bit
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int BIT = 0; BIT < LABEL_BITS; ++BIT)
     {
       unsigned int mask;
@@ -499,7 +504,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
  * Compute a 32b mask of threads having the same least-significant
  * LABEL_BITS of \p label as the calling thread.
  */
-template <int LABEL_BITS, int WARP_ACTIVE_THREADS = CUB_PTX_WARP_THREADS>
+template <int LABEL_BITS, int WARP_ACTIVE_THREADS = detail::warp_threads>
 inline _CCCL_DEVICE unsigned int MatchAny(unsigned int label)
 {
   return detail::warp_matcher_t<LABEL_BITS, WARP_ACTIVE_THREADS>::match_any(label);

@@ -44,7 +44,7 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ void runtime_test()
 {
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::bit_width(T(0))));
+  static_assert(cuda::std::is_same_v<int, decltype(cuda::std::bit_width(T(0)))>);
   static_assert(noexcept(cuda::std::bit_width(T(0))));
 
   assert(cuda::std::bit_width(T(0)) == T(0));

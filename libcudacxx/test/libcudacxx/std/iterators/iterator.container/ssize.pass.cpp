@@ -26,11 +26,9 @@
 #  include <cuda/std/string_view>
 #endif
 
-#if defined(__GNUC__)
-#  pragma GCC diagnostic ignored "-Wtype-limits"
-#endif
-
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wtype-limits")
 
 struct short_container
 {
@@ -80,7 +78,7 @@ __host__ __device__ void test_const_array(const T (&array)[Sz])
   assert(cuda::std::ssize(array) == Sz);
 }
 
-STATIC_TEST_GLOBAL_VAR constexpr int arrA[]{1, 2, 3};
+TEST_GLOBAL_VARIABLE constexpr int arrA[]{1, 2, 3};
 
 int main(int, char**)
 {
@@ -98,16 +96,16 @@ int main(int, char**)
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
   test_container(v);
-  ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(v)));
+  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(v))>);
 #endif
 #if defined(_LIBCUDACXX_HAS_LIST)
   test_container(l);
-  ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(l)));
+  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(l))>);
 #endif
   test_container(a);
-  ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(a)));
+  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(a))>);
   test_container(il);
-  ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(il)));
+  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(il))>);
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
   test_const_container(v);
@@ -121,11 +119,11 @@ int main(int, char**)
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
   cuda::std::string_view sv{"ABC"};
   test_container(sv);
-  ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(sv)));
+  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(sv))>);
   test_const_container(sv);
 #endif
 
-  ASSERT_SAME_TYPE(ptrdiff_t, decltype(cuda::std::ssize(arrA)));
+  static_assert(cuda::std::is_same_v<ptrdiff_t, decltype(cuda::std::ssize(arrA))>);
   static_assert(cuda::std::is_signed_v<decltype(cuda::std::ssize(arrA))>, "");
   test_const_array(arrA);
 

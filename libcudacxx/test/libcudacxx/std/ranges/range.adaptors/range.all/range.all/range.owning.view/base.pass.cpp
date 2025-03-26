@@ -34,10 +34,10 @@ __host__ __device__ constexpr bool test()
   decltype(auto) b3 = static_cast<const OwningView&>(ov).base();
   decltype(auto) b4 = static_cast<const OwningView&&>(ov).base();
 
-  ASSERT_SAME_TYPE(decltype(b1), Base&);
-  ASSERT_SAME_TYPE(decltype(b2), Base&&);
-  ASSERT_SAME_TYPE(decltype(b3), const Base&);
-  ASSERT_SAME_TYPE(decltype(b4), const Base&&);
+  static_assert(cuda::std::is_same_v<decltype(b1), Base&>);
+  static_assert(cuda::std::is_same_v<decltype(b2), Base&&>);
+  static_assert(cuda::std::is_same_v<decltype(b3), const Base&>);
+  static_assert(cuda::std::is_same_v<decltype(b4), const Base&&>);
 
   assert(&b1 == &b2);
   assert(&b1 == &b3);

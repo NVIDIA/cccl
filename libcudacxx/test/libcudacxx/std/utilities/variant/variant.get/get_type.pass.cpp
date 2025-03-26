@@ -32,33 +32,33 @@ __host__ __device__ void test_const_lvalue_get()
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42);
-#if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9)
+#if !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 9)
     static_assert(!noexcept(cuda::std::get<int>(v)));
-#endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int>(v)), const int&);
+#endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 9)
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int>(v)), const int&>);
     static_assert(cuda::std::get<int>(v) == 42, "");
   }
   {
     using V = cuda::std::variant<int, const long>;
     const V v(42);
     static_assert(!noexcept(cuda::std::get<int>(v)));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int>(v)), const int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int>(v)), const int&>);
     assert(cuda::std::get<int>(v) == 42);
   }
   {
     using V = cuda::std::variant<int, const long>;
     constexpr V v(42l);
-#if !defined(TEST_COMPILER_MSVC) && !(defined(TEST_COMPILER_GCC) && __GNUC__ < 9)
+#if !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 9)
     static_assert(!noexcept(cuda::std::get<const long>(v)));
-#endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_GCC
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const long>(v)), const long&);
+#endif // !TEST_COMPILER(MSVC) && !TEST_COMPILER(GCC, <, 9)
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const long>(v)), const long&>);
     static_assert(cuda::std::get<const long>(v) == 42, "");
   }
   {
     using V = cuda::std::variant<int, const long>;
     const V v(42l);
     static_assert(!noexcept(cuda::std::get<const long>(v)));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const long>(v)), const long&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const long>(v)), const long&>);
     assert(cuda::std::get<const long>(v) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
@@ -67,21 +67,21 @@ __host__ __device__ void test_const_lvalue_get()
     using V = cuda::std::variant<int&>;
     int x   = 42;
     const V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&>(v)), int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&>(v)), int&>);
     assert(&cuda::std::get<int&>(v) == &x);
   }
   {
     using V = cuda::std::variant<int&&>;
     int x   = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&&>(v)), int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&&>(v)), int&>);
     assert(&cuda::std::get<int&&>(v) == &x);
   }
   {
     using V = cuda::std::variant<const int&&>;
     int x   = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const int&&>(v)), const int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const int&&>(v)), const int&>);
     assert(&cuda::std::get<const int&&>(v) == &x);
   }
 #endif
@@ -93,13 +93,13 @@ __host__ __device__ void test_lvalue_get()
     using V = cuda::std::variant<int, const long>;
     V v(42);
     static_assert(!noexcept(cuda::std::get<int>(v)));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int>(v)), int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int>(v)), int&>);
     assert(cuda::std::get<int>(v) == 42);
   }
   {
     using V = cuda::std::variant<int, const long>;
     V v(42l);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const long>(v)), const long&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const long>(v)), const long&>);
     assert(cuda::std::get<const long>(v) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
@@ -108,28 +108,28 @@ __host__ __device__ void test_lvalue_get()
     using V = cuda::std::variant<int&>;
     int x   = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&>(v)), int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&>(v)), int&>);
     assert(&cuda::std::get<int&>(v) == &x);
   }
   {
     using V = cuda::std::variant<const int&>;
     int x   = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const int&>(v)), const int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const int&>(v)), const int&>);
     assert(&cuda::std::get<const int&>(v) == &x);
   }
   {
     using V = cuda::std::variant<int&&>;
     int x   = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&&>(v)), int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&&>(v)), int&>);
     assert(&cuda::std::get<int&&>(v) == &x);
   }
   {
     using V = cuda::std::variant<const int&&>;
     int x   = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const int&&>(v)), const int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const int&&>(v)), const int&>);
     assert(&cuda::std::get<const int&&>(v) == &x);
   }
 #endif
@@ -141,13 +141,13 @@ __host__ __device__ void test_rvalue_get()
     using V = cuda::std::variant<int, const long>;
     V v(42);
     static_assert(!noexcept(cuda::std::get<int>(cuda::std::move(v))));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int>(cuda::std::move(v))), int&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int>(cuda::std::move(v))), int&&>);
     assert(cuda::std::get<int>(cuda::std::move(v)) == 42);
   }
   {
     using V = cuda::std::variant<int, const long>;
     V v(42l);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const long>(cuda::std::move(v))), const long&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const long>(cuda::std::move(v))), const long&&>);
     assert(cuda::std::get<const long>(cuda::std::move(v)) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
@@ -156,21 +156,21 @@ __host__ __device__ void test_rvalue_get()
     using V = cuda::std::variant<int&>;
     int x   = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&>(cuda::std::move(v))), int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&>(cuda::std::move(v))), int&>);
     assert(&cuda::std::get<int&>(cuda::std::move(v)) == &x);
   }
   {
     using V = cuda::std::variant<const int&>;
     int x   = 42;
     V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const int&>(cuda::std::move(v))), const int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const int&>(cuda::std::move(v))), const int&>);
     assert(&cuda::std::get<const int&>(cuda::std::move(v)) == &x);
   }
   {
     using V = cuda::std::variant<int&&>;
     int x   = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&&>(cuda::std::move(v))), int&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&&>(cuda::std::move(v))), int&&>);
     int&& xref = cuda::std::get<int&&>(cuda::std::move(v));
     assert(&xref == &x);
   }
@@ -178,7 +178,7 @@ __host__ __device__ void test_rvalue_get()
     using V = cuda::std::variant<const int&&>;
     int x   = 42;
     V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const int&&>(cuda::std::move(v))), const int&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const int&&>(cuda::std::move(v))), const int&&>);
     const int&& xref = cuda::std::get<const int&&>(cuda::std::move(v));
     assert(&xref == &x);
   }
@@ -191,13 +191,13 @@ __host__ __device__ void test_const_rvalue_get()
     using V = cuda::std::variant<int, const long>;
     const V v(42);
     static_assert(!noexcept(cuda::std::get<int>(cuda::std::move(v))));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int>(cuda::std::move(v))), const int&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int>(cuda::std::move(v))), const int&&>);
     assert(cuda::std::get<int>(cuda::std::move(v)) == 42);
   }
   {
     using V = cuda::std::variant<int, const long>;
     const V v(42l);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const long>(cuda::std::move(v))), const long&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const long>(cuda::std::move(v))), const long&&>);
     assert(cuda::std::get<const long>(cuda::std::move(v)) == 42);
   }
 // FIXME: Remove these once reference support is reinstated
@@ -206,21 +206,21 @@ __host__ __device__ void test_const_rvalue_get()
     using V = cuda::std::variant<int&>;
     int x   = 42;
     const V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&>(cuda::std::move(v))), int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&>(cuda::std::move(v))), int&>);
     assert(&cuda::std::get<int&>(cuda::std::move(v)) == &x);
   }
   {
     using V = cuda::std::variant<const int&>;
     int x   = 42;
     const V v(x);
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const int&>(cuda::std::move(v))), const int&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const int&>(cuda::std::move(v))), const int&>);
     assert(&cuda::std::get<const int&>(cuda::std::move(v)) == &x);
   }
   {
     using V = cuda::std::variant<int&&>;
     int x   = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<int&&>(cuda::std::move(v))), int&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<int&&>(cuda::std::move(v))), int&&>);
     int&& xref = cuda::std::get<int&&>(cuda::std::move(v));
     assert(&xref == &x);
   }
@@ -228,7 +228,7 @@ __host__ __device__ void test_const_rvalue_get()
     using V = cuda::std::variant<const int&&>;
     int x   = 42;
     const V v(cuda::std::move(x));
-    ASSERT_SAME_TYPE(decltype(cuda::std::get<const int&&>(cuda::std::move(v))), const int&&);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::get<const int&&>(cuda::std::move(v))), const int&&>);
     const int&& xref = cuda::std::get<const int&&>(cuda::std::move(v));
     assert(&xref == &x);
   }

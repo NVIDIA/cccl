@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 
 #include <vector>
 
@@ -51,7 +52,7 @@ protected:
     nodes.erase(::std::unique(nodes.begin(), nodes.end()), nodes.end()); // Remove duplicates
   }
 
-  bool factorize(reserved::event_vector& events) override
+  bool factorize(backend_ctx_untyped& bctx, reserved::event_vector& events) override
   {
     _CCCL_ASSERT(events.size() >= 2, "invalid value");
 
@@ -61,6 +62,9 @@ protected:
       _CCCL_ASSERT(dynamic_cast<const graph_event_impl*>(e.operator->()), "invalid event type");
     }
 
+    auto bctx_epoch        = bctx.epoch();
+    cudaGraph_t bctx_graph = bctx.graph();
+
     // To prevent "infinite" growth of event lists, we factorize long vector of
     // graph events by making them depend on a single node instead
     if (events.size() > 16)
@@ -69,33 +73,45 @@ protected:
 
       ::std::vector<cudaGraphNode_t> nodes;
 
-      // We initialize these variables to prevent compiler from issuing "maybe
-      // uninitialized" warnings
-      cudaGraph_t g0 = nullptr;
-      size_t epoch0  = 0;
-
       // List all graph nodes in the vector of events
       for (const auto& e : events)
       {
         const auto ge = dynamic_cast<const graph_event_impl*>(e.operator->());
-        nodes.push_back(ge->node);
 
-        // We can only have nodes from the same graph
-        _CCCL_ASSERT(!g0 || g0 == ge->g, "inconsistent graphs events (different graphs)");
-        g0 = ge->g;
+        // the current epoch cannot be smaller than existing events
+        _CCCL_ASSERT(bctx_epoch >= ge->epoch, "");
 
-        epoch0 = ::std::max(ge->epoch, epoch0);
+        if (ge->epoch == bctx_epoch)
+        {
+          nodes.push_back(ge->node);
+
+          // We can only have nodes from the same graph
+          _CCCL_ASSERT(bctx_graph == ge->g, "inconsistent graphs events (different graphs)");
+        }
       }
 
-      // We cannot have duplicate entries in dependencies
-      remove_duplicates(nodes);
+      // Note : we do nothing if the list is empty : we will just clear the
+      // events. This could happen if all events where in a previous epoch.
+      if (nodes.size() == 1)
+      {
+        n = nodes[0];
+      }
+      else if (nodes.size() > 1)
+      {
+        // We cannot have duplicate entries in dependencies
+        remove_duplicates(nodes);
 
-      // Create a new empty graph node which depends on the previous ones,
-      // empty the list of events and replace it with this single "empty" event
-      cuda_safe_call(cudaGraphAddEmptyNode(&n, g0, nodes.data(), nodes.size()));
+        // Create a new empty graph node which depends on the previous ones,
+        // empty the list of events and replace it with this single "empty" event
+        cuda_safe_call(cudaGraphAddEmptyNode(&n, bctx_graph, nodes.data(), nodes.size()));
+      }
 
       events.clear();
-      events.push_back(graph_event(n, epoch0, g0));
+
+      if (nodes.size() > 0)
+      {
+        events.push_back(graph_event(n, bctx_epoch, bctx_graph));
+      }
 
       return true;
     }
@@ -111,12 +127,13 @@ public:
 
 // This converts a prereqs and converts it to a vector of graph nodes. As a
 // side-effect, it also remove duplicates from the prereqs list of events
-inline ::std::vector<cudaGraphNode_t> join_with_graph_nodes(event_list& prereqs, size_t current_epoch)
+inline ::std::vector<cudaGraphNode_t>
+join_with_graph_nodes(backend_ctx_untyped& bctx, event_list& prereqs, size_t current_epoch)
 {
   ::std::vector<cudaGraphNode_t> nodes;
 
   // CUDA Graph API does not want to have the same dependency passed multiple times
-  prereqs.optimize();
+  prereqs.optimize(bctx);
 
   for (const auto& e : prereqs)
   {
