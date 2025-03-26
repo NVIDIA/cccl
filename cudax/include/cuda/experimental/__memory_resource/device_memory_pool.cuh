@@ -80,7 +80,7 @@ public:
   //! @return The constructed `device_memory_pool` object
   //!
   //! @note The constructed `device_memory_pool` object takes ownership of the native handle.
-  _CCCL_NODISCARD static device_memory_pool from_native_handle(::cudaMemPool_t __handle) noexcept
+  [[nodiscard]] static device_memory_pool from_native_handle(::cudaMemPool_t __handle) noexcept
   {
     return device_memory_pool(__memory_pool_base::__from_handle_t{}, __handle);
   }

@@ -53,12 +53,12 @@ _CCCL_GLOBAL_CONSTANT execution_policy unseq_host       = execution_policy::unse
 _CCCL_GLOBAL_CONSTANT execution_policy unseq_device     = execution_policy::unsequenced_device;
 
 template <execution_policy _Policy>
-_CCCL_INLINE_VAR constexpr bool __is_parallel_execution_policy =
+inline constexpr bool __is_parallel_execution_policy =
   _Policy == execution_policy::parallel_host || _Policy == execution_policy::parallel_device
   || _Policy == execution_policy::parallel_unsequenced_host || _Policy == execution_policy::parallel_unsequenced_device;
 
 template <execution_policy _Policy>
-_CCCL_INLINE_VAR constexpr bool __is_unsequenced_execution_policy =
+inline constexpr bool __is_unsequenced_execution_policy =
   _Policy == execution_policy::unsequenced_host || _Policy == execution_policy::unsequenced_device
   || _Policy == execution_policy::parallel_unsequenced_host || _Policy == execution_policy::parallel_unsequenced_device;
 
@@ -79,14 +79,14 @@ struct get_execution_policy_t
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_execution_policy<_Tp>)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI execution_policy operator()(const _Tp& __t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution_policy operator()(const _Tp& __t) const noexcept
   {
     return __t.get_execution_policy();
   }
 
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_execution_policy<_Env>)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI execution_policy operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution_policy operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);

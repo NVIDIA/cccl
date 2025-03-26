@@ -1198,8 +1198,8 @@ private:
 
       large_segments_selector.base_segment_offset = current_seg_offset;
       small_segments_selector.base_segment_offset = current_seg_offset;
-      auto current_begin_offset                   = d_begin_offsets + current_seg_offset;
-      auto current_end_offset                     = d_end_offsets + current_seg_offset;
+      [[maybe_unused]] auto current_begin_offset  = d_begin_offsets + current_seg_offset;
+      [[maybe_unused]] auto current_end_offset    = d_end_offsets + current_seg_offset;
 
       auto medium_indices_iterator =
         THRUST_NS_QUALIFIER::make_reverse_iterator(large_and_medium_segments_indices.get() + current_num_segments);
@@ -1226,9 +1226,7 @@ private:
       // `NV_IF_TARGET`.
 #ifndef CUB_RDC_ENABLED
 
-#  define CUB_TEMP_DEVICE_CODE    \
-    (void) &current_begin_offset; \
-    (void) &current_end_offset;
+#  define CUB_TEMP_DEVICE_CODE
 
 #else // CUB_RDC_ENABLED
 

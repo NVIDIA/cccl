@@ -84,14 +84,14 @@ public:
 
   //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr reference operator*() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
   //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr pointer operator->() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
@@ -99,7 +99,7 @@ public:
   //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference of the \p __count th element after the one the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr reference
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST constexpr reference
   operator[](const difference_type __count) const noexcept
   {
     return *(__ptr_ + __count);
@@ -131,14 +131,14 @@ public:
 
   //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr reference operator*() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
   //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr pointer operator->() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
@@ -146,7 +146,7 @@ public:
   //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference of the \p __count th element after the one the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr reference
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr reference
   operator[](const difference_type __count) const noexcept
   {
     return *(__ptr_ + __count);
@@ -178,14 +178,14 @@ public:
 
   //! @brief Dereference a \c heterogeneous_iterator
   //! @return A reference to the element the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr reference operator*() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr reference operator*() const noexcept
   {
     return *__ptr_;
   }
 
   //! @brief Operator arrow on a \c heterogeneous_iterator
   //! @return A pointer to the element the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr pointer operator->() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr pointer operator->() const noexcept
   {
     return __ptr_;
   }
@@ -193,7 +193,7 @@ public:
   //! @brief Dereference a \c heterogeneous_iterator
   //! @param __count The offset at which we want to dereference
   //! @return A reference to the `__count` element after the one the iterator points to
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr reference
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr reference
   operator[](const difference_type __count) const noexcept
   {
     return *(__ptr_ + __count);
@@ -287,7 +287,7 @@ public:
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by \p __count
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator
   operator+(const difference_type __count) const noexcept
   {
     heterogeneous_iterator __temp = *this;
@@ -318,7 +318,7 @@ public:
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
   //! @return A copy of this heterogeneous_iterator advanced by the negative value of \p __count
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator
   operator-(const difference_type __count) const noexcept
   {
     heterogeneous_iterator __temp = *this;
@@ -329,7 +329,7 @@ public:
   //! @brief Distance between two heterogeneous_iterator
   //! @param __other The other heterogeneous_iterator.
   //! @return The distance between the two elements the heterogeneous_iterator point to
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type
   operator-(const heterogeneous_iterator& __other) const noexcept
   {
     return static_cast<difference_type>(this->__ptr_ - __other.__ptr_);
@@ -426,7 +426,7 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Propert
   //! @brief Retrieve the address of the element pointed at by an heterogeneous_iterator
   //! @param __iter A heterogeneous_iterator.
   //! @return A pointer to the element pointed to by the heterogeneous_iterator
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr element_type* to_address(const pointer __iter) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr element_type* to_address(const pointer __iter) noexcept
   {
     return _CUDA_VSTD::to_address(__iter.__unwrap());
   }

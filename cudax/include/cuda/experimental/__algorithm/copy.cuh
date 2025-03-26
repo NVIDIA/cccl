@@ -75,7 +75,7 @@ void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 }
 
 template <typename _SrcExtents, typename _DstExtents>
-_CCCL_NODISCARD bool __copy_bytes_runtime_extents_match(_SrcExtents __src_exts, _DstExtents __dst_exts)
+[[nodiscard]] bool __copy_bytes_runtime_extents_match(_SrcExtents __src_exts, _DstExtents __dst_exts)
 {
   for (typename _SrcExtents::rank_type __i = 0; __i < __src_exts.rank(); __i++)
   {

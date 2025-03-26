@@ -37,12 +37,12 @@ struct __dev_attr_impl
 {
   using type = _Type;
 
-  _CCCL_NODISCARD constexpr operator ::cudaDeviceAttr() const noexcept
+  [[nodiscard]] constexpr operator ::cudaDeviceAttr() const noexcept
   {
     return _Attr;
   }
 
-  _CCCL_NODISCARD type operator()(device_ref __dev_id) const
+  [[nodiscard]] type operator()(device_ref __dev_id) const
   {
     int __value = 0;
     _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, _Attr, __dev_id.get());
@@ -710,7 +710,7 @@ struct __device_attrs
   // capability in a single query
   struct compute_capability_t
   {
-    _CCCL_NODISCARD int operator()(device_ref __dev_id) const
+    [[nodiscard]] int operator()(device_ref __dev_id) const
     {
       return 100 * compute_capability_major(__dev_id) + 10 * compute_capability_minor(__dev_id);
     }

@@ -32,8 +32,7 @@ __host__ __device__ __noinline__ void do_test()
   assert(val == T(0));
   A obj(val);
   assert(obj.load() == T(0));
-  bool b0 = obj.is_lock_free();
-  ((void) b0); // mark as unused
+  [[maybe_unused]] bool b0 = obj.is_lock_free();
   obj.store(T(0));
   assert(obj.load() == T(0));
   assert(obj == T(0));

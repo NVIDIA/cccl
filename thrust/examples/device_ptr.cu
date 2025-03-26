@@ -32,11 +32,10 @@ int main()
   // note: raw_ptr cannot necessarily be accessed by the host!
 
   // conversely, raw pointers can be wrapped
-  thrust::device_ptr<int> wrapped_ptr = thrust::device_pointer_cast(raw_ptr);
+  [[maybe_unused]] thrust::device_ptr<int> wrapped_ptr = thrust::device_pointer_cast(raw_ptr);
 
   // back to where we started
   assert(wrapped_ptr == d_ptr);
-  (void) wrapped_ptr; // for when NDEBUG is defined
 
   // deallocate device memory
   thrust::device_free(d_ptr);

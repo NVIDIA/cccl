@@ -68,8 +68,7 @@ _CCCL_HOST_DEVICE inline void raise_inexact()
 {
   const volatile float tiny = 7.888609052210118054117286e-31; /* 0x1p-100; */
   // needs the volatile to prevent compiler from ignoring it
-  volatile float junk = 1 + tiny;
-  (void) junk;
+  [[maybe_unused]] volatile float junk = 1 + tiny;
 }
 
 _CCCL_HOST_DEVICE inline complex<double> clog_for_large_values(complex<double> z);

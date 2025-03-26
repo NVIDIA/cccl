@@ -54,7 +54,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __popcount(_Tp __t) noexcept
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int popcount(_Tp __t) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int popcount(_Tp __t) noexcept
 {
   auto __ret = _CUDA_VSTD::__popcount(__t);
   _CCCL_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);

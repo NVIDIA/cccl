@@ -251,11 +251,10 @@ private:
   static void DerefEndIterator()
   {
     // testing deref end iterator
-    Container C       = makeContainer(1);
-    iterator i        = C.begin();
-    const_iterator ci = C.cbegin();
-    (void) *i;
-    (void) *ci;
+    Container C                        = makeContainer(1);
+    [[maybe_unused]] iterator i        = C.begin();
+    [[maybe_unused]] const_iterator ci = C.cbegin();
+
     if constexpr (CT != CT_VectorBool)
     {
       i.operator->();
@@ -277,14 +276,14 @@ private:
   static void CopyInvalidatesIterators()
   {
     // copy invalidates iterators
-    Container C1 = makeContainer(3);
-    iterator i   = C1.begin();
-    Container C2 = C1;
+    Container C1                = makeContainer(3);
+    [[maybe_unused]] iterator i = C1.begin();
+    Container C2                = C1;
+
     if constexpr (CT == CT_ForwardList)
     {
       iterator i_next = i;
       ++i_next;
-      (void) *i_next;
       EXPECT_DEATH(C2.erase_after(i));
       C1.erase_after(i);
       EXPECT_DEATH(*i_next);
@@ -292,7 +291,6 @@ private:
     else
     {
       EXPECT_DEATH(C2.erase(i));
-      (void) *i;
       C1.erase(i);
       EXPECT_DEATH(*i);
     }
@@ -301,10 +299,10 @@ private:
   static void MoveInvalidatesIterators()
   {
     // copy move invalidates iterators
-    Container C1 = makeContainer(3);
-    iterator i   = C1.begin();
-    Container C2 = std::move(C1);
-    (void) *i;
+    Container C1                = makeContainer(3);
+    [[maybe_unused]] iterator i = C1.begin();
+    Container C2                = std::move(C1);
+
     if constexpr (CT == CT_ForwardList)
     {
       EXPECT_DEATH(C1.erase_after(i));

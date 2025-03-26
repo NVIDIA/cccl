@@ -18,6 +18,8 @@
 #include <cccl/c/types.h>
 
 struct storage_t;
+struct input_storage_t;
+struct output_storage_t;
 struct items_storage_t; // Used in merge_sort
 
 template <typename StorageT = storage_t>

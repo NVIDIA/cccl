@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // cosh
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float cosh(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float cosh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSHF)
   return _CCCL_BUILTIN_COSHF(__x);
@@ -45,7 +45,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float cosh(float __x) noexcept
 #endif // !_CCCL_BUILTIN_COSHF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float coshf(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float coshf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSHF)
   return _CCCL_BUILTIN_COSHF(__x);
@@ -54,7 +54,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float coshf(float __x) noexcept
 #endif // !_CCCL_BUILTIN_COSHF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double cosh(double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double cosh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_COSH)
   return _CCCL_BUILTIN_COSH(__x);
@@ -64,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double cosh(double __x) noexcept
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double cosh(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double cosh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COSHL)
   return _CCCL_BUILTIN_COSHL(__x);
@@ -73,7 +73,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double cosh(long double __x) noex
 #  endif // !_CCCL_BUILTIN_COSHL
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double coshl(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double coshl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COSHL)
   return _CCCL_BUILTIN_COSHL(__x);
@@ -84,28 +84,28 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double coshl(long double __x) noe
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half cosh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::coshf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 cosh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 cosh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::coshf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double cosh(_Integer __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double cosh(_Integer __x) noexcept
 {
   return _CUDA_VSTD::cosh((double) __x);
 }
 
 // sinh
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float sinh(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float sinh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINHF)
   return _CCCL_BUILTIN_SINHF(__x);
@@ -114,7 +114,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float sinh(float __x) noexcept
 #endif // !_CCCL_BUILTIN_SINHF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float sinhf(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float sinhf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINHF)
   return _CCCL_BUILTIN_SINHF(__x);
@@ -123,7 +123,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float sinhf(float __x) noexcept
 #endif // !_CCCL_BUILTIN_SINHF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double sinh(double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double sinh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SINH)
   return _CCCL_BUILTIN_SINH(__x);
@@ -133,7 +133,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double sinh(double __x) noexcept
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sinh(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double sinh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SINHL)
   return _CCCL_BUILTIN_SINHL(__x);
@@ -142,7 +142,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sinh(long double __x) noex
 #  endif // !_CCCL_BUILTIN_SINHL
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sinhl(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double sinhl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SINHL)
   return _CCCL_BUILTIN_SINHL(__x);
@@ -153,28 +153,28 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double sinhl(long double __x) noe
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half sinh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::sinhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 sinh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 sinh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::sinhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double sinh(_Integer __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double sinh(_Integer __x) noexcept
 {
   return _CUDA_VSTD::sinh((double) __x);
 }
 
 // tanh
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float tanh(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float tanh(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANHF)
   return _CCCL_BUILTIN_TANHF(__x);
@@ -183,7 +183,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float tanh(float __x) noexcept
 #endif // !_CCCL_BUILTIN_TANHF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float tanhf(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float tanhf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANHF)
   return _CCCL_BUILTIN_TANHF(__x);
@@ -192,7 +192,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float tanhf(float __x) noexcept
 #endif // !_CCCL_BUILTIN_TANHF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double tanh(double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double tanh(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_TANH)
   return _CCCL_BUILTIN_TANH(__x);
@@ -202,7 +202,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double tanh(double __x) noexcept
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tanh(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double tanh(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_TANHL)
   return _CCCL_BUILTIN_TANHL(__x);
@@ -211,7 +211,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tanh(long double __x) noex
 #  endif // !_CCCL_BUILTIN_TANHL
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tanhl(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double tanhl(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_TANHL)
   return _CCCL_BUILTIN_TANHL(__x);
@@ -222,21 +222,21 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double tanhl(long double __x) noe
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _LIBCUDACXX_HAS_NVFP16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __half tanh(__half __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __half tanh(__half __x) noexcept
 {
   return __float2half(_CUDA_VSTD::tanhf(__half2float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVFP16()
 
 #if _LIBCUDACXX_HAS_NVBF16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 tanh(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 tanh(__nv_bfloat16 __x) noexcept
 {
   return __float2bfloat16(_CUDA_VSTD::tanhf(__bfloat162float(__x)));
 }
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 template <class _Integer, enable_if_t<_CCCL_TRAIT(is_integral, _Integer), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double tanh(_Integer __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double tanh(_Integer __x) noexcept
 {
   return _CUDA_VSTD::tanh((double) __x);
 }

@@ -109,7 +109,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(_Tp __x) noexcept
 
 // __cccl_clz returns numeric_limits<_Tp>::digits if __x == 0 on both host and device
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(_Tp __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(_Tp __x) noexcept
 {
   static_assert(is_same_v<_Tp, uint32_t> || is_same_v<_Tp, uint64_t>);
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)

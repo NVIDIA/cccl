@@ -60,7 +60,7 @@ constexpr bool has_plus_operator_v = has_plus_operator<T, U>::value;
 
 // Helper function that advances a given iterator only if it supports being advanced by the given offset
 template <typename IteratorT, typename OffsetT>
-_CCCL_HOST_DEVICE IteratorT advance_iterators_if_supported(IteratorT iter, OffsetT offset)
+_CCCL_HOST_DEVICE IteratorT advance_iterators_if_supported(IteratorT iter, [[maybe_unused]] OffsetT offset)
 {
   if constexpr (has_plus_operator_v<IteratorT, OffsetT>)
   {
@@ -70,7 +70,6 @@ _CCCL_HOST_DEVICE IteratorT advance_iterators_if_supported(IteratorT iter, Offse
   else
   {
     // Otherwise, return iter unmodified.
-    static_cast<void>(offset);
     return iter;
   }
 }

@@ -122,7 +122,7 @@ public:
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20_ALLOCATION _Tp* allocate(size_t __n)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20_ALLOCATION _Tp* allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
@@ -140,7 +140,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<_Tp*> allocate_at_least(size_t __n)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<_Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
@@ -183,7 +183,7 @@ public:
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
@@ -225,7 +225,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 allocator(const allocator<_Up>&) noexcept
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 const _Tp* allocate(size_t __n)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 const _Tp* allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
@@ -242,7 +242,7 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<const _Tp*> allocate_at_least(size_t __n)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<const _Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
@@ -278,7 +278,7 @@ public:
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }

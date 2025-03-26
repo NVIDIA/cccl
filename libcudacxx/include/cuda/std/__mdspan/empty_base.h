@@ -52,11 +52,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco_impl
       : __elem_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem& __get() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem& __get() noexcept
   {
     return __elem_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem& __get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem& __get() const noexcept
   {
     return __elem_;
   }
@@ -81,11 +81,11 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco_impl<_Index, _Elem, true> : _Ele
       : _Elem(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem& __get() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem& __get() noexcept
   {
     return *static_cast<_Elem*>(this);
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem& __get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem& __get() const noexcept
   {
     return *static_cast<const _Elem*>(this);
   }
@@ -116,14 +116,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1> : __mdspan_ebco_impl<0, 
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 1))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem1& __get() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Elem1& __get() noexcept
   {
     return static_cast<__base1*>(this)->__get();
   }
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 1))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem1& __get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Elem1& __get() const noexcept
   {
     return static_cast<const __base1*>(this)->__get();
   }
@@ -189,7 +189,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 2))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() noexcept
   {
     if constexpr (_Index == 0)
     {
@@ -204,7 +204,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 2))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() const noexcept
   {
     if constexpr (_Index == 0)
     {
@@ -309,7 +309,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 3))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() noexcept
   {
     if constexpr (_Index == 0)
     {
@@ -328,7 +328,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
 
   _CCCL_TEMPLATE(size_t _Index)
   _CCCL_REQUIRES((_Index < 3))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get() const noexcept
   {
     if constexpr (_Index == 0)
     {

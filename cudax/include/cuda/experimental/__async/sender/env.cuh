@@ -85,25 +85,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   __tuple<_Envs...> __envs_;
 
   template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
+  _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
-    constexpr bool __flags[] = {__queryable<_Envs, _Query>..., false};
+    // NOLINTNEXTLINE (modernize-avoid-c-arrays)
+    constexpr bool __flags[] = {__queryable_with<_Envs, _Query>..., false};
     constexpr size_t __idx   = __async::__find_pos(__flags, __flags + sizeof...(_Envs));
     if constexpr (__idx != __npos)
     {
-      return __async::__cget<__idx>(__envs_);
+      return __async::__cget<__idx>(__self.__envs_);
     }
   }
 
-  template <class _Query, class _Env = env>
-  using __1st_env_t = decltype(__declval<const _Env&>().__get_1st(_Query{}));
-
   template <class _Query>
+  using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const env&>()));
+
+  _CCCL_TEMPLATE(class _Query)
+  _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable<__1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<__1st_env_t<_Query>, _Query>
+    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
-    return __get_1st(__query).query(__query);
+    return env::__get_1st<_Query>(*this).query(__query);
   }
 
   env& operator=(const env&) = delete;
@@ -117,77 +118,50 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;
 
   template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
+  _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
-    if constexpr (__queryable<_Env0, _Query>)
+    if constexpr (__queryable_with<_Env0, _Query>)
     {
-      return (__env0_);
+      return (__self.__env0_);
     }
-    else if constexpr (__queryable<_Env1, _Query>)
+    else
     {
-      return (__env1_);
+      return (__self.__env1_);
     }
   }
 
   template <class _Query, class _Env = env>
-  using __1st_env_t = decltype(__declval<const _Env&>().__get_1st(_Query{}));
+  using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const _Env&>()));
 
-  template <class _Query>
+  _CCCL_TEMPLATE(class _Query)
+  _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable<__1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<__1st_env_t<_Query>, _Query>
+    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
-    return __get_1st(__query).query(__query);
+    return env::__get_1st<_Query>(*this).query(__query);
   }
 
   env& operator=(const env&) = delete;
 };
 
 template <class... _Envs>
-_CUDAX_API env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
+env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
-using empty_env = env<>;
-
-namespace __adl
-{
-template <class _Ty>
-_CUDAX_TRIVIAL_API auto get_env(_Ty* __ty) noexcept //
-  -> decltype(__ty->get_env())
-{
-  static_assert(noexcept(__ty->get_env()));
-  return __ty->get_env();
-}
-
-struct __get_env_t
-{
-  template <class _Ty>
-  _CUDAX_TRIVIAL_API auto operator()(_Ty* __ty) const noexcept //
-    -> decltype(get_env(__ty))
-  {
-    static_assert(noexcept(get_env(__ty)));
-    return get_env(__ty);
-  }
-};
-} // namespace __adl
+using empty_env CCCL_DEPRECATED_BECAUSE("please use env<> instead of empty_env") = env<>;
 
 struct get_env_t
 {
   template <class _Ty>
-  _CUDAX_TRIVIAL_API auto operator()(_Ty&& __ty) const noexcept //
-    -> decltype(__ty.get_env())
+  using __env_of = decltype(declval<_Ty>().get_env());
+
+  template <class _Ty>
+  _CUDAX_TRIVIAL_API auto operator()(_Ty&& __ty) const noexcept -> __env_of<_Ty&>
   {
     static_assert(noexcept(__ty.get_env()));
     return __ty.get_env();
   }
 
-  template <class _Ty>
-  _CUDAX_TRIVIAL_API auto operator()(_Ty* __ty) const noexcept //
-    -> __call_result_t<__adl::__get_env_t, _Ty*>
-  {
-    return __adl::__get_env_t()(__ty);
-  }
-
-  _CUDAX_TRIVIAL_API empty_env operator()(__ignore) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(__ignore) const noexcept -> env<>
   {
     return {};
   }
@@ -201,7 +175,7 @@ _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 using namespace __region;
 
 template <class _Ty>
-using env_of_t = decltype(get_env(__declval<_Ty>()));
+using env_of_t = decltype(__async::get_env(declval<_Ty>()));
 } // namespace cuda::experimental::__async
 
 _CCCL_NV_DIAG_DEFAULT(20012)

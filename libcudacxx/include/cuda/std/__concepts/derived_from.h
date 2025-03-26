@@ -34,7 +34,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Dp, class _Bp>
 concept derived_from = is_base_of_v<_Bp, _Dp> && is_convertible_v<const volatile _Dp*, const volatile _Bp*>;
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Dp, class _Bp>
 _CCCL_CONCEPT_FRAGMENT(
@@ -46,7 +46,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Dp, class _Bp>
 _CCCL_CONCEPT derived_from = _CCCL_FRAGMENT(__derived_from_, _Dp, _Bp);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

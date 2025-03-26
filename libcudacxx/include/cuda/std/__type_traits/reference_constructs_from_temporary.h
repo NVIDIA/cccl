@@ -32,7 +32,7 @@ struct reference_constructs_from_temporary
 {};
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool reference_constructs_from_temporary_v =
+inline constexpr bool reference_constructs_from_temporary_v =
   _CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY(_Tp, _Up);
 
 #else
@@ -44,8 +44,7 @@ struct reference_constructs_from_temporary : integral_constant<bool, false>
 };
 
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool reference_constructs_from_temporary_v =
-  reference_constructs_from_temporary<_Tp, _Up>::value;
+inline constexpr bool reference_constructs_from_temporary_v = reference_constructs_from_temporary<_Tp, _Up>::value;
 
 #endif // !_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY
 

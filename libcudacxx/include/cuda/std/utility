@@ -21,16 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/__config>
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/reference_wrapper.h>

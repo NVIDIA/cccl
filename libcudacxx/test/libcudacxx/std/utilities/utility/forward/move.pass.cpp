@@ -93,23 +93,19 @@ int main(int, char**)
     assert(copy_ctor == 0);
     assert(move_ctor == 0);
 
-    A a2 = a;
-    (void) a2;
+    [[maybe_unused]] A a2 = a;
     assert(copy_ctor == 1);
     assert(move_ctor == 0);
 
-    A a3 = cuda::std::move(a);
-    (void) a3;
+    [[maybe_unused]] A a3 = cuda::std::move(a);
     assert(copy_ctor == 1);
     assert(move_ctor == 1);
 
-    A a4 = ca;
-    (void) a4;
+    [[maybe_unused]] A a4 = ca;
     assert(copy_ctor == 2);
     assert(move_ctor == 1);
 
-    A a5 = cuda::std::move(ca);
-    (void) a5;
+    [[maybe_unused]] A a5 = cuda::std::move(ca);
     assert(copy_ctor == 3);
     assert(move_ctor == 1);
   }
