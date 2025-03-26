@@ -28,13 +28,13 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_neg(__fp_storage_t<_Fmt> __v) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_neg(__fp_storage_t<_Fmt> __v) noexcept
 {
   return static_cast<__fp_storage_t<_Fmt>>(__v ^ __fp_sign_mask_v<_Fmt>);
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_neg(const _Tp& __v) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_neg(const _Tp& __v) noexcept
 {
   if constexpr (__fp_is_native_type_v<_Tp>)
   {

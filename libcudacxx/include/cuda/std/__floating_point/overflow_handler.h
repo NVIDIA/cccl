@@ -45,7 +45,7 @@ template <>
 struct __fp_overflow_handler<__fp_overflow_handler_kind::__no_sat>
 {
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_overflow() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_overflow() noexcept
   {
     constexpr auto __fmt = __fp_format_of_v<_Tp>;
 
@@ -70,7 +70,7 @@ struct __fp_overflow_handler<__fp_overflow_handler_kind::__no_sat>
   }
 
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_underflow() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_underflow() noexcept
   {
     constexpr auto __fmt = __fp_format_of_v<_Tp>;
 
@@ -101,13 +101,13 @@ template <>
 struct __fp_overflow_handler<__fp_overflow_handler_kind::__sat_finite>
 {
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_overflow() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_overflow() noexcept
   {
     return _CUDA_VSTD::__fp_max<_Tp>();
   }
 
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_underflow() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __handle_underflow() noexcept
   {
     return _CUDA_VSTD::__fp_lowest<_Tp>();
   }

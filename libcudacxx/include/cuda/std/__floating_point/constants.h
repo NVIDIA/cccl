@@ -107,7 +107,7 @@ template <class _Tp>
 // __fp_max
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_max() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_max() noexcept
 {
   if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3)
   {
@@ -122,7 +122,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_ma
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_max() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_max() noexcept
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_max<__fp_format_of_v<_Tp>>());
 }
@@ -130,14 +130,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_max() noexcept
 // __fp_min
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_min() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_min() noexcept
 {
   return static_cast<__fp_storage_t<_Fmt>>(
     __fp_storage_t<_Fmt>(__fp_exp_min_v<_Fmt> + __fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>);
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_min() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_min() noexcept
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_min<__fp_format_of_v<_Tp>>());
 }
@@ -145,7 +145,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_min() noexcept
 // __fp_lowest
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_lowest() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_lowest() noexcept
 {
   if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
   {
@@ -158,7 +158,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_lo
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_lowest() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_lowest() noexcept
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_lowest<__fp_format_of_v<_Tp>>());
 }
