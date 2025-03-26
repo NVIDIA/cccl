@@ -653,7 +653,7 @@ struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_
 };
 
 template <class _Ip>
-_CCCL_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__i.operator->()));
+_CCCL_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__cccl_unused(__i.operator->())));
 
 template <class _Ip>
 _CCCL_CONCEPT __has_operator_arrow = _CCCL_FRAGMENT(__has_operator_arrow_, _Ip);
