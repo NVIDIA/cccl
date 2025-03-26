@@ -106,6 +106,7 @@ __host__ __device__ constexpr bool test()
     assert(*r.begin() == 33);
     assert(r.size() == 5);
   }
+#endif // Not yet implemented views
 
   // unbound && take_view
   {
@@ -122,7 +123,6 @@ __host__ __device__ constexpr bool test()
     assert(*r.begin() == 33);
     assert(r.size() == 3);
   }
-#endif // Not yet implemented views
 
   // bound && transform_view
   {
