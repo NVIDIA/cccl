@@ -123,7 +123,7 @@ public:
       (new (&__b->__barrier) __barrier_base(__expected);))
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
     arrival_token __token = {};
@@ -412,7 +412,7 @@ public:
   }
 
   template <class _Rep, class _Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_for(arrival_token&& __token, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur)
   {
     auto __nanosec = _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__dur);
@@ -421,14 +421,14 @@ public:
   }
 
   template <class _Clock, class _Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_until(arrival_token&& __token, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time)
   {
     return try_wait_for(_CUDA_VSTD::move(__token), (__time - _Clock::now()));
   }
 
   template <class _Rep, class _Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_parity_for(bool __phase_parity, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur)
   {
     auto __nanosec = _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__dur);
@@ -437,7 +437,7 @@ public:
   }
 
   template <class _Clock, class _Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_parity_until(bool __phase_parity, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time)
   {
     return try_wait_parity_for(__phase_parity, (__time - _Clock::now()));

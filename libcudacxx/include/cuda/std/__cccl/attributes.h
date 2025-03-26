@@ -94,21 +94,12 @@
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || _CCCL_COMPILER(MSVC)
-#  define _CCCL_NODISCARD [[nodiscard]]
-#else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv
-#  define _CCCL_NODISCARD
-#endif // no nodiscard
-
-// NVCC below 11.3 does not support nodiscard on friend operators
 // It always fails with clang
 #if _CCCL_COMPILER(CLANG)
 #  define _CCCL_NODISCARD_FRIEND friend
 #else
-#  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
+#  define _CCCL_NODISCARD_FRIEND [[nodiscard]] friend
 #endif
-
-#define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
 
 #if _CCCL_COMPILER(MSVC) // vvv _CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict

@@ -30,25 +30,25 @@ _CCCL_PUSH_MACROS
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& max(const _Tp& __a, const _Tp& __b, _Compare __comp)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& max(const _Tp& __a, const _Tp& __b, _Compare __comp)
 {
   return __comp(__a, __b) ? __b : __a;
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& max(const _Tp& __a, const _Tp& __b)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& max(const _Tp& __a, const _Tp& __b)
 {
   return __a < __b ? __b : __a;
 }
 
 template <class _Tp, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp max(initializer_list<_Tp> __t, _Compare __comp)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp max(initializer_list<_Tp> __t, _Compare __comp)
 {
   return *_CUDA_VSTD::__max_element<__comp_ref_type<_Compare>>(__t.begin(), __t.end(), __comp);
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp max(initializer_list<_Tp> __t)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp max(initializer_list<_Tp> __t)
 {
   return *_CUDA_VSTD::max_element(__t.begin(), __t.end(), __less{});
 }

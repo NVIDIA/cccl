@@ -96,14 +96,14 @@ private:
     && _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Determines the allocation size given the alignment and size of `T`
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI static constexpr size_t __get_allocation_size(const size_t __count) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI static constexpr size_t __get_allocation_size(const size_t __count) noexcept
   {
     constexpr size_t __alignment = alignof(_Tp);
     return (__count * sizeof(_Tp) + (__alignment - 1)) & ~(__alignment - 1);
   }
 
   //! @brief Determines the properly aligned start of the buffer given the alignment and size of `T`
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _Tp* __get_data() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _Tp* __get_data() const noexcept
   {
     constexpr size_t __alignment = alignof(_Tp);
     size_t __space               = __get_allocation_size(__count_);
@@ -260,50 +260,50 @@ public:
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer begin() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr pointer begin() noexcept
   {
     return __get_data();
   }
 
   //! @overload
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr const_pointer begin() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr const_pointer begin() const noexcept
   {
     return __get_data();
   }
 
   //! @brief Returns an aligned pointer to the element following the last element of the buffer.
   //! This element acts as a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer end() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr pointer end() noexcept
   {
     return __get_data() + __count_;
   }
 
   //! @overload
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr const_pointer end() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr const_pointer end() const noexcept
   {
     return __get_data() + __count_;
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr pointer data() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr pointer data() noexcept
   {
     return __get_data();
   }
 
   //! @overload
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr const_pointer data() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr const_pointer data() const noexcept
   {
     return __get_data();
   }
 
   //! @brief Returns the size of the buffer
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     return __count_;
   }
 
   //! @brief Returns the size of the buffer in bytes
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr size_type size_bytes() const noexcept
   {
     return __count_ * sizeof(_Tp);
   }
@@ -312,13 +312,13 @@ public:
   //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __async_resource& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __async_resource& get_memory_resource() const noexcept
   {
     return __mr_;
   }
 
   //! @brief Returns the stored stream
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
   {
     return __stream_;
   }

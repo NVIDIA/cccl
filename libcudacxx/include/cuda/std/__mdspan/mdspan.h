@@ -102,19 +102,19 @@ public:
                                          typename _LayoutPolicy::template mapping<_Extents>,
                                          _AccessorPolicy>;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank() noexcept
   {
     return extents_type::rank();
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank_dynamic() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank_dynamic() noexcept
   {
     return extents_type::rank_dynamic();
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(rank_type __r) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(rank_type __r) noexcept
   {
     return extents_type::static_extent(__r);
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(rank_type __r) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(rank_type __r) const noexcept
   {
     return mapping().extents().extent(__r);
   };
@@ -290,7 +290,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherIndexTypes)
   _CCCL_REQUIRES((sizeof...(_OtherIndexTypes) == extents_type::rank())
                    _CCCL_AND __mdspan_detail::__all_convertible_to_index_type<index_type, _OtherIndexTypes...>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](_OtherIndexTypes... __indices) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](_OtherIndexTypes... __indices) const
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
@@ -302,14 +302,14 @@ public:
   _CCCL_TEMPLATE(class _OtherIndexType)
   _CCCL_REQUIRES((extents_type::rank() == 1) _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherIndexType, index_type)
                    _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, _OtherIndexType))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](_OtherIndexType __index) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](_OtherIndexType __index) const
   {
     return accessor().access(data_handle(), mapping()(static_cast<index_type>(_CUDA_VSTD::move(__index))));
   }
 #endif // _LIBCUDACXX_HAS_MULTIARG_OPERATOR_BRACKETS
 
   template <class _OtherIndexType, size_t... _Idxs>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
   __op_bracket(const array<_OtherIndexType, _Extents::rank()>& __indices, index_sequence<_Idxs...>) const noexcept
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
@@ -320,7 +320,7 @@ public:
   }
 
   template <class _OtherIndexType, size_t... _Idxs>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
   __op_bracket(span<_OtherIndexType, _Extents::rank()> __indices, index_sequence<_Idxs...>) const noexcept
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
@@ -333,7 +333,7 @@ public:
   _CCCL_TEMPLATE(class _OtherIndexType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type)
                    _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, const _OtherIndexType&))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
   operator[](const array<_OtherIndexType, extents_type::rank()>& __indices) const
   {
     return accessor().access(data_handle(), __op_bracket(__indices, make_index_sequence<rank()>()));
@@ -342,7 +342,7 @@ public:
   _CCCL_TEMPLATE(class _OtherIndexType)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, const _OtherIndexType&, index_type)
                    _CCCL_AND _CCCL_TRAIT(is_nothrow_constructible, index_type, const _OtherIndexType&))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference
   operator[](span<_OtherIndexType, extents_type::rank()> __indices) const
   {
     return accessor().access(data_handle(), __op_bracket(__indices, make_index_sequence<rank()>()));
@@ -351,7 +351,7 @@ public:
   //! Nonstandard extension to no break our users too hard
   _CCCL_TEMPLATE(class... _Indices)
   _CCCL_REQUIRES(__mdspan_detail::__all_convertible_to_index_type<index_type, _Indices...>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator()(_Indices... __indices) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator()(_Indices... __indices) const
   {
     // Note the standard layouts would also check this, but user provided ones may not, so we
     // check the precondition here
@@ -360,15 +360,14 @@ public:
     return accessor().access(data_handle(), mapping()(__indices...));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
-  __mul_overflow(size_t x, size_t y, size_t* res) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __mul_overflow(size_t x, size_t y, size_t* res) noexcept
   {
     *res = x * y;
     return x && ((*res / x) != y);
   }
 
   template <size_t... _Idxs>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __check_size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __check_size() const noexcept
   {
     size_t __prod = 1;
     for (size_t __r = 0; __r != extents_type::rank(); ++__r)
@@ -382,12 +381,12 @@ public:
   }
 
   template <size_t... _Idxs>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type __op_size(index_sequence<_Idxs...>) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type __op_size(index_sequence<_Idxs...>) const noexcept
   {
     return (size_type{1} * ... * static_cast<size_type>(mapping().extents().extent(_Idxs)));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     // Could leave this as only checked in debug mode: semantically size() is never
     // guaranteed to be related to any accessible range
@@ -396,12 +395,12 @@ public:
   }
 
   template <size_t... _Idxs>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __op_empty(index_sequence<_Idxs...>) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __op_empty(index_sequence<_Idxs...>) const noexcept
   {
     return (((mapping().extents().extent(_Idxs) == index_type{0})) || ...);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
   {
     return __op_empty(make_index_sequence<rank()>());
   }
@@ -411,55 +410,55 @@ public:
     swap(static_cast<__base&>(__x), static_cast<__base&>(__y));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
   {
     return mapping().extents();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const data_handle_type& data_handle() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const data_handle_type& data_handle() const noexcept
   {
     return this->template __get<0>();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const mapping_type& mapping() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const mapping_type& mapping() const noexcept
   {
     return this->template __get<1>();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const accessor_type& accessor() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const accessor_type& accessor() const noexcept
   {
     return this->template __get<2>();
   };
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   is_always_unique() noexcept(noexcept(mapping_type::is_always_unique()))
   {
     return mapping_type::is_always_unique();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   is_always_exhaustive() noexcept(noexcept(mapping_type::is_always_exhaustive()))
   {
     return mapping_type::is_always_exhaustive();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   is_always_strided() noexcept(noexcept(mapping_type::is_always_strided()))
   {
     return mapping_type::is_always_strided();
   };
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const
     noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_unique()))
   {
     return mapping().is_unique();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const
     noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_exhaustive()))
   {
     return mapping().is_exhaustive();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const
     noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_strided()))
   {
     return mapping().is_strided();
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const
   {
     return mapping().stride(__r);
   };

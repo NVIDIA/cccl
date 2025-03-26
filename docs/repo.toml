@@ -144,14 +144,12 @@ doxygen_aliases = [
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
     "_CCCL_AND=&&",
-    "_CCCL_ALIAS_ATTRIBUTE(x)=",
     "_CCCL_HOST",
     "_CCCL_DEVICE",
     "_CCCL_EAT_REST(x)=",
     "_CCCL_HOST_DEVICE",
     "_CCCL_FORCEINLINE",
     "_CCCL_STD_VER",
-    "_CCCL_NODISCARD",
     "_CCCL_VISIBILITY_HIDDEN",
     "_CCCL_SUPPRESS_DEPRECATED_PUSH",
     "_CCCL_SUPPRESS_DEPRECATED_POP",
@@ -256,13 +254,11 @@ doxygen_aliases = []
 # more information on the format can be found at:
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
-  "_CCCL_ALIAS_ATTRIBUTE(x)=",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
-  "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_STD_VER",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
@@ -417,7 +413,6 @@ doxygen_predefined = [
   "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
-  "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_NODISCARD_FRIEND=",
   "_CCCL_STD_VER=2020",
   "_CCCL_TRAIT(x, y)=x<y>::value",

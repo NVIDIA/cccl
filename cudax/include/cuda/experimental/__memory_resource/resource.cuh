@@ -42,7 +42,7 @@ _CCCL_CONCEPT __comparable_resources = _CCCL_REQUIRES_EXPR((_Resource, _OtherRes
 //! @returns Always returns false.
 _CCCL_TEMPLATE(class _Resource, class _OtherResource)
 _CCCL_REQUIRES(__comparable_resources<_Resource, _OtherResource>)
-_CCCL_NODISCARD bool operator==(_Resource const&, _OtherResource const&) noexcept
+[[nodiscard]] bool operator==(_Resource const&, _OtherResource const&) noexcept
 {
   return false;
 }
@@ -54,7 +54,7 @@ _CCCL_NODISCARD bool operator==(_Resource const&, _OtherResource const&) noexcep
 //! @returns Always returns true.
 _CCCL_TEMPLATE(class _Resource, class _OtherResource)
 _CCCL_REQUIRES(__comparable_resources<_Resource, _OtherResource>)
-_CCCL_NODISCARD bool operator!=(_Resource const&, _OtherResource const&) noexcept
+[[nodiscard]] bool operator!=(_Resource const&, _OtherResource const&) noexcept
 {
   return true;
 }

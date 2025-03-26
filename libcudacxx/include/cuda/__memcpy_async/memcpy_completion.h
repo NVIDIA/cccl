@@ -50,7 +50,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 struct __memcpy_completion_impl
 {
   template <typename _Group>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment
   __defer(__completion_mechanism __cm,
           _Group const& __group,
           _CUDA_VSTD::size_t __size,
@@ -104,14 +104,14 @@ struct __memcpy_completion_impl
   }
 
   template <typename _Group, thread_scope _Sco, typename _CompF>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment __defer(
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment __defer(
     __completion_mechanism __cm, _Group const& __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF>& __barrier)
   {
     return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
   }
 
   template <typename _Group, thread_scope _Sco, typename _CompF>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment __defer_non_smem_barrier(
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment __defer_non_smem_barrier(
     __completion_mechanism __cm, _Group const& __group, _CUDA_VSTD::size_t __size, barrier<_Sco, _CompF>& __barrier)
   {
     // Overload for non-smem barriers.
@@ -141,7 +141,7 @@ struct __memcpy_completion_impl
   }
 
   template <typename _Group, thread_scope _Sco>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static async_contract_fulfillment
   __defer(__completion_mechanism __cm, _Group const&, _CUDA_VSTD::size_t, pipeline<_Sco>&)
   {
     switch (__cm)

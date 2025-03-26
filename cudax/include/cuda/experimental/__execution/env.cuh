@@ -83,17 +83,17 @@ public:
       , __policy_(__env.query(execution::get_execution_policy))
   {}
 
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __resource& query(get_memory_resource_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource& query(get_memory_resource_t) const noexcept
   {
     return __mr_;
   }
 
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI __stream_ref query(get_stream_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI __stream_ref query(get_stream_t) const noexcept
   {
     return __stream_;
   }
 
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI execution::execution_policy query(execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution::execution_policy query(execution::get_execution_policy_t) const noexcept
   {
     return __policy_;
   }

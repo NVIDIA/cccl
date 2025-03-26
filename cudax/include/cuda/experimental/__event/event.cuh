@@ -114,7 +114,7 @@ public:
   //! @return event The constructed `event` object
   //!
   //! @note The constructed `event` object takes ownership of the native handle.
-  _CCCL_NODISCARD static event from_native_handle(::cudaEvent_t __evnt) noexcept
+  [[nodiscard]] static event from_native_handle(::cudaEvent_t __evnt) noexcept
   {
     return event(__evnt);
   }
@@ -130,7 +130,7 @@ public:
   //! @return cudaEvent_t The native handle being held by the `event` object.
   //!
   //! @post The event object is in a moved-from state.
-  _CCCL_NODISCARD constexpr ::cudaEvent_t release() noexcept
+  [[nodiscard]] constexpr ::cudaEvent_t release() noexcept
   {
     return _CUDA_VSTD::exchange(__event_, {});
   }

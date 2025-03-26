@@ -37,10 +37,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __val) noexcept;
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __val) noexcept;
 
 template <class _Full>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Full __byteswap_impl_recursive(_Full __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Full __byteswap_impl_recursive(_Full __val) noexcept
 {
   using _Half            = __make_nbit_uint_t<numeric_limits<_Full>::digits / 2>;
   constexpr auto __shift = numeric_limits<_Half>::digits;
@@ -57,7 +57,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Full __byteswap_impl_recurs
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
 #if __cccl_ptx_isa >= 200
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
@@ -85,7 +85,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp 
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __val) noexcept
 {
   constexpr auto __shift = numeric_limits<uint8_t>::digits;
 
@@ -101,7 +101,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __byteswap_impl(_Tp __va
   return __result;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __byteswap_impl(uint16_t __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __byteswap_impl(uint16_t __val) noexcept
 {
 #if defined(_CCCL_BUILTIN_BSWAP16)
   return _CCCL_BUILTIN_BSWAP16(__val);
@@ -117,7 +117,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint16_t __byteswap_impl(uin
 #endif // !_CCCL_BUILTIN_BSWAP16
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __byteswap_impl(uint32_t __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __byteswap_impl(uint32_t __val) noexcept
 {
 #if defined(_CCCL_BUILTIN_BSWAP32)
   return _CCCL_BUILTIN_BSWAP32(__val);
@@ -133,7 +133,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __byteswap_impl(uin
 #endif // !_CCCL_BUILTIN_BSWAP32
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __byteswap_impl(uint64_t __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __byteswap_impl(uint64_t __val) noexcept
 {
 #if defined(_CCCL_BUILTIN_BSWAP64)
   return _CCCL_BUILTIN_BSWAP64(__val);
@@ -150,7 +150,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __byteswap_impl(uin
 }
 
 #if _CCCL_HAS_INT128()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __uint128_t __byteswap_impl(__uint128_t __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __uint128_t __byteswap_impl(__uint128_t __val) noexcept
 {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
   return _CCCL_BUILTIN_BSWAP128(__val);
@@ -162,7 +162,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __uint128_t __byteswap_impl(
 
 _CCCL_TEMPLATE(class _Integer)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer __val) noexcept
 {
   if constexpr (sizeof(_Integer) > 1)
   {

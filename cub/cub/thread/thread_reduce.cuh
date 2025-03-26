@@ -90,7 +90,7 @@ CUB_NAMESPACE_BEGIN
 //!              typename PrefixT,
 //!              typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
 //!              typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
-//!    _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+//!    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 //!    ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 //!
 //! Performance Considerations
@@ -162,7 +162,7 @@ template <typename Input,
           typename ValueT = random_access_value_t<Input>,
 #endif // !_CCCL_DOXYGEN_INVOKED
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
 // forward declaration
 
 /***********************************************************************************************************************
@@ -176,7 +176,7 @@ namespace detail
 
 // NOTE: bit_cast cannot be always used because __half, __nv_bfloat16, etc. are not trivially copyable
 template <typename Output, typename Input>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
 {
   Output output;
   static_assert(sizeof(input) == sizeof(output), "wrong size");
@@ -273,7 +273,7 @@ struct enable_generic_simd_reduction_traits<__nv_bfloat16, ReductionOp>
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_generic_simd_reduction()
+[[nodiscard]] _CCCL_DEVICE constexpr bool enable_generic_simd_reduction()
 {
   using cub::detail::is_one_of;
   using T      = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
@@ -282,7 +282,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_generic_simd_reduction()
 }
 
 template <typename T, typename ReductionOp, int Length>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm90_simd_reduction()
+[[nodiscard]] _CCCL_DEVICE constexpr bool enable_sm90_simd_reduction()
 {
   using cub::detail::is_one_of;
   // ::cuda::std::plus<> not handled: IADD3 always produces less instructions than VIADD2
@@ -292,7 +292,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm90_simd_reduction()
 }
 
 template <typename T, typename ReductionOp, int Length>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
+[[nodiscard]] _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
@@ -317,7 +317,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
 }
 
 template <typename T, typename ReductionOp, int Length>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm70_simd_reduction()
+[[nodiscard]] _CCCL_DEVICE constexpr bool enable_sm70_simd_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
@@ -335,7 +335,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm70_simd_reduction()
 }
 
 template <typename Input, typename ReductionOp, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
@@ -427,7 +427,7 @@ struct enable_ternary_reduction_sm90<__nv_bfloat162, ReductionOp>
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename Input, typename ReductionOp, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
@@ -458,7 +458,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_red
 }
 
 template <typename Input, typename ReductionOp, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_promotion()
+[[nodiscard]] _CCCL_DEVICE constexpr bool enable_promotion()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
@@ -486,8 +486,7 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_promotion()
  **********************************************************************************************************************/
 
 template <typename AccumT, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
   AccumT retval = input[0];
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -499,8 +498,7 @@ ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>();
   auto array            = cub::detail::to_array<AccumT>(input);
@@ -518,8 +516,7 @@ ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>();
   auto array            = cub::detail::to_array<AccumT>(input);
@@ -544,7 +541,7 @@ ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 // never reached. Protect instantion of ThreadReduceSimd with arbitrary types and operators
 _CCCL_TEMPLATE(typename Input, typename ReductionOp)
 _CCCL_REQUIRES((!cub::internal::enable_generic_simd_reduction<Input, ReductionOp>()))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
   -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
   assert(false);
@@ -553,7 +550,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input
 
 _CCCL_TEMPLATE(typename Input, typename ReductionOp)
 _CCCL_REQUIRES((cub::internal::enable_generic_simd_reduction<Input, ReductionOp>()))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp reduction_op)
   -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
   using cub::detail::unsafe_bitcast;
@@ -601,7 +598,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input
  **********************************************************************************************************************/
 
 template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
   static_assert(detail::is_fixed_size_random_access_range_t<Input>::value,
                 "Input must support the subscript operator[] and have a compile-time size");
@@ -683,7 +680,7 @@ template <typename Input,
           typename PrefixT,
           typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
   static_assert(detail::is_fixed_size_random_access_range_t<Input>::value,
@@ -733,7 +730,7 @@ namespace internal
  * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T></tt>
  */
 template <int Length, typename T, typename ReductionOp, typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T>>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* input, ReductionOp reduction_op)
 {
   static_assert(Length > 0, "Length must be greater than 0");
   static_assert(cub::detail::has_binary_call_operator<ReductionOp, T>::value,
@@ -780,7 +777,7 @@ _CCCL_TEMPLATE(int Length,
                typename PrefixT,
                typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>)
 _CCCL_REQUIRES((Length > 0))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
 {
   static_assert(detail::has_binary_call_operator<ReductionOp, T>::value,
@@ -791,7 +788,7 @@ ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
 
 _CCCL_TEMPLATE(int Length, typename T, typename ReductionOp, typename PrefixT)
 _CCCL_REQUIRES((Length == 0))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
 {
   return prefix;
 }

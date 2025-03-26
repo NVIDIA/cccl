@@ -73,7 +73,7 @@ struct stream_ref : ::cuda::stream_ref
    *
    * \return `true` if all operations have completed, or `false` if not.
    */
-  _CCCL_NODISCARD bool is_done() const
+  [[nodiscard]] bool is_done() const
   {
     return ready();
   }
@@ -83,7 +83,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @return A new event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  _CCCL_NODISCARD _CUDAX_HOST_API event record_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CUDAX_HOST_API event record_event(event::flags __flags = event::flags::none) const
   {
     return event(*this, __flags);
   }
@@ -93,7 +93,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @return A new timed event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  _CCCL_NODISCARD _CUDAX_HOST_API timed_event record_timed_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CUDAX_HOST_API timed_event record_timed_event(event::flags __flags = event::flags::none) const
   {
     return timed_event(*this, __flags);
   }
