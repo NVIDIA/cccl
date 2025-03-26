@@ -97,7 +97,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   KeyT key1 = keys_shared[keys1_beg];
   KeyT key2 = keys_shared[keys2_beg];
 
-#pragma unroll
+  _CCCL_SORT_MAYBE_UNROLL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
   {
     const bool p  = (keys2_beg < keys2_end) && ((keys1_beg >= keys1_end) || compare_op(key2, key1));
@@ -376,7 +376,7 @@ public:
       //
       KeyT max_key = oob_default;
 
-#pragma unroll
+      _CCCL_SORT_MAYBE_UNROLL()
       for (int item = 1; item < ITEMS_PER_THREAD; ++item)
       {
         if (ITEMS_PER_THREAD * linear_tid + item < valid_items)
