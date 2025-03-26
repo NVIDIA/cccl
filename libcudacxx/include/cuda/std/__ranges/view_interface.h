@@ -48,8 +48,6 @@ template <class _Tp>
 _CCCL_CONCEPT __can_empty = _CCCL_FRAGMENT(__can_empty_, _Tp);
 #endif //  _CCCL_NO_CONCEPTS
 
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
-
 #if !defined(_CCCL_NO_CONCEPTS)
 template <class _Derived>
   requires is_class_v<_Derived> && same_as<_Derived, remove_cv_t<_Derived>>
@@ -73,14 +71,14 @@ class view_interface
 public:
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(forward_range<_D2>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(forward_range<const _D2>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }
@@ -173,8 +171,6 @@ public:
     return _CUDA_VRANGES::begin(__derived())[__index];
   }
 };
-
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

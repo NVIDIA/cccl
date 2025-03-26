@@ -36,9 +36,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @param __device_object the object residing in device memory
 //! @return Valid pointer to the device object
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _Tp* get_device_address(_Tp& __device_object)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* get_device_address(_Tp& __device_object)
 {
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (return _CUDA_VSTD::addressof(__device_object);),
@@ -48,9 +48,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _Tp* get_device_address(_Tp& __device_
        &__device_ptr,
        __device_object);
      return static_cast<_Tp*>(__device_ptr);))
-#else // ^^^ _CCCL_HAS_CUDA_COMPILER ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER vvv
+#else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
   return _CUDA_VSTD::addressof(__device_object);
-#endif // !_CCCL_HAS_CUDA_COMPILER
+#endif // !_CCCL_HAS_CUDA_COMPILER()
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

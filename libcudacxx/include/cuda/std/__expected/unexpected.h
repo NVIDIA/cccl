@@ -44,13 +44,13 @@ class unexpected;
 namespace __unexpected
 {
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_unexpected = false;
+inline constexpr bool __is_unexpected = false;
 
 template <class _Err>
-_CCCL_INLINE_VAR constexpr bool __is_unexpected<unexpected<_Err>> = true;
+inline constexpr bool __is_unexpected<unexpected<_Err>> = true;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __valid_unexpected =
+inline constexpr bool __valid_unexpected =
   _CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_array, _Tp) && !__is_unexpected<_Tp> && !_CCCL_TRAIT(is_const, _Tp)
   && !_CCCL_TRAIT(is_volatile, _Tp);
 } // namespace __unexpected
@@ -103,22 +103,22 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
@@ -166,10 +166,8 @@ private:
   _Err __unex_;
 };
 
-#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
-#endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

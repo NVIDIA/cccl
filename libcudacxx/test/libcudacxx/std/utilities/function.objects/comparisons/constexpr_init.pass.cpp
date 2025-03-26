@@ -28,18 +28,12 @@
 template <class T>
 __host__ __device__ constexpr bool test_constexpr_context()
 {
-  cuda::std::equal_to<T> eq;
-  ((void) eq);
-  cuda::std::not_equal_to<T> neq;
-  ((void) neq);
-  cuda::std::less<T> l;
-  ((void) l);
-  cuda::std::less_equal<T> le;
-  ((void) le);
-  cuda::std::greater<T> g;
-  ((void) g);
-  cuda::std::greater_equal<T> ge;
-  ((void) ge);
+  [[maybe_unused]] cuda::std::equal_to<T> eq;
+  [[maybe_unused]] cuda::std::not_equal_to<T> neq;
+  [[maybe_unused]] cuda::std::less<T> l;
+  [[maybe_unused]] cuda::std::less_equal<T> le;
+  [[maybe_unused]] cuda::std::greater<T> g;
+  [[maybe_unused]] cuda::std::greater_equal<T> ge;
   return true;
 }
 

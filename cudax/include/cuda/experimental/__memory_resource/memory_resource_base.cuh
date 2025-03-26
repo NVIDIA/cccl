@@ -49,7 +49,7 @@ protected:
   //! @brief Checks whether the passed in alignment is valid.
   //! @param __alignment the alignment to check.
   //! @returns true if \p __alignment is valid.
-  _CCCL_NODISCARD static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
+  [[nodiscard]] static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
     return __alignment <= _CUDA_VMR::default_cuda_malloc_alignment
         && (_CUDA_VMR::default_cuda_malloc_alignment % __alignment == 0);
@@ -70,8 +70,7 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the CUDA API call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate(const size_t __bytes,
-                                 const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
+  [[nodiscard]] void* allocate(const size_t __bytes, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
   {
     if (!__is_valid_alignment(__alignment))
     {
@@ -98,13 +97,13 @@ public:
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
   //! @note The pointer passed to `deallocate` must not be in use in a stream. It is the caller's responsibility to
   //! properly synchronize all relevant streams before calling `deallocate`.
-  void deallocate(void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
+  void deallocate(
+    void* __ptr, const size_t, [[maybe_unused]] const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
     _CCCL_ASSERT_CUDA_API(
       ::cudaFreeAsync, "__memory_resource_base::deallocate failed", __ptr, __cccl_allocation_stream().get());
     __cccl_allocation_stream().wait();
-    (void) __alignment;
   }
 
   //! @brief Allocate device memory of size at least \p __bytes via `cudaMallocFromPoolAsync`.
@@ -114,7 +113,7 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
   {
     if (!__is_valid_alignment(__alignment))
     {
@@ -131,7 +130,7 @@ public:
   //! @param __stream Stream on which to perform allocation.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
   {
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(
@@ -153,12 +152,12 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate_async` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
-  void deallocate_async(void* __ptr, const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  void deallocate_async(
+    void* __ptr, const size_t __bytes, const size_t __alignment, [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
     deallocate_async(__ptr, __bytes, __stream);
-    (void) __alignment;
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -225,14 +224,14 @@ public:
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
   //!
   //! @param __device device for which the access is queried
-  _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
+  [[nodiscard]] bool is_accessible_from(device_ref __device)
   {
     return ::cuda::experimental::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are equal.
-  _CCCL_NODISCARD bool operator==(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] bool operator==(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ == __rhs.__pool_;
   }
@@ -240,63 +239,13 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
-  _CCCL_NODISCARD bool operator!=(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-// TODO Should this be declared in general for two things that satisfy resource concept?
-#if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c __memory_resource_base and another resource.
-  //! @param __rhs The resource to compare to.
-  //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
-  //! resources. Otherwise, returns false.
-  template <class _Resource>
-    requires _CUDA_VMR::__different_resource<__memory_resource_base, _Resource> && __non_polymorphic<_Resource>
-  _CCCL_NODISCARD bool operator==([[maybe_unused]] _Resource const& __rhs) const noexcept
-  {
-    return false;
-  }
-#else // ^^^ C++20 ^^^ / vvv C++17
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator==([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return false;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator==([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return false;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator!=([[maybe_unused]] __memory_resource_base const& __lhs, [[maybe_unused]] _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return true;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto
-  operator!=([[maybe_unused]] _Resource const& __lhs, [[maybe_unused]] __memory_resource_base const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<__memory_resource_base, _Resource>&& __non_polymorphic<_Resource>)
-  {
-    return true;
-  }
-#endif // _CCCL_STD_VER <= 2017
-
-  _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
   }

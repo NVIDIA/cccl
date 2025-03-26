@@ -120,8 +120,7 @@ int main(int, char**)
   }
 #endif
   {
-    constexpr cuda::std::tuple<Empty> t0{Empty()};
-    (void) t0;
+    [[maybe_unused]] constexpr cuda::std::tuple<Empty> t0{Empty()};
   }
   {
     constexpr cuda::std::tuple<A, A> t(3, 2);

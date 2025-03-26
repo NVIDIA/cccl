@@ -42,38 +42,38 @@ struct __string_view
       , __len_(__strlen_(__str))
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept
   {
     return __len_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* data() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* data() const noexcept
   {
     return __str_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* begin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* begin() const noexcept
   {
     return __str_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* end() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* end() const noexcept
   {
     return __str_ + __len_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const& operator[](ptrdiff_t __n) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char const& operator[](ptrdiff_t __n) const noexcept
   {
     return __str_[__n];
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view substr(ptrdiff_t __start, ptrdiff_t __stop) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view substr(ptrdiff_t __start, ptrdiff_t __stop) const
   {
     return __string_view(__str_ + __check_offset(__start, __len_), __check_offset(__stop - __start, __len_));
   }
 
 private:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr int
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr int
   __compare_(char const* __s1, size_t __len1, char const* __s2, size_t __len2, size_t __n) noexcept
   {
     if (__n)
@@ -98,7 +98,7 @@ private:
   }
 
   template <bool _Forward>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t
   __find(const char* __needle, size_t __needle_size, const char* __haystack_begin, const char* __haystack_end) noexcept
   {
     char const* __it = __haystack_begin;
@@ -122,13 +122,13 @@ private:
 
 public:
   template <size_t _Np>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find(const char (&__other)[_Np]) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find(const char (&__other)[_Np]) const noexcept
   {
     return ((_Np - 1) > __len_) ? -1 : __find<true>(__other, _Np - 1, __str_, __str_ + __len_ - (_Np - 1) + 1);
   }
 
   template <size_t _Np>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find_end(const char (&__other)[_Np]) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find_end(const char (&__other)[_Np]) const noexcept
   {
     return ((_Np - 1) > __len_) ? -1 : __find<false>(__other, _Np - 1, __str_ + __len_ - (_Np - 1) + 1, __str_);
   }
@@ -137,7 +137,7 @@ private:
   // This overload is selected when we're not in a constant evaluated context.
   // Compare the two strings' addresses as a shortcut, and fall back to a string
   // comparison it they are not equal.
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI int __compare(__string_view const& __other, false_type) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI int __compare(__string_view const& __other, false_type) const noexcept
   {
     return __str_ == __other.__str_
            ? int(__len_) - int(__other.__len_)
@@ -147,14 +147,13 @@ private:
   // This overload is selected when we're in a constant evaluated context. We
   // cannot compare the two strings' addresses so fall back to a string
   // comparison.
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int
-  __compare(__string_view const& __other, true_type) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __compare(__string_view const& __other, true_type) const noexcept
   {
     return __compare_(__str_, __len_, __other.__str_, __other.__len_, (__min_) (__len_, __other.__len_));
   }
 
 public:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(__string_view const& __other) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(__string_view const& __other) const noexcept
   {
     // If we're in a constant evaluated context, we cannot compare the __str_
     // members for equality.
@@ -210,23 +209,22 @@ public:
 #endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
 private:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __min_(size_t __x, size_t __y) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __min_(size_t __x, size_t __y) noexcept
   {
     return __x < __y ? __x : __y;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t
-  __strlen_0x_(char const* __str, size_t __len) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __strlen_0x_(char const* __str, size_t __len) noexcept
   {
     return *__str ? __strlen_0x_(__str + 1, __len + 1) : __len;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __strlen_(char const* __str) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __strlen_(char const* __str) noexcept
   {
     return _CUDA_VSTD::char_traits<char>::length(__str);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)
   {
     return __diff < 0 || static_cast<size_t>(__diff) > __len
            ? (_CUDA_VSTD::__throw_out_of_range("__string_view index out of range"), size_t(0))

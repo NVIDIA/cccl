@@ -23,17 +23,17 @@ template <class T>
 __host__ __device__ void test_conversions()
 {
   {
-    T p = 0;
+    // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
+    [[maybe_unused]] T p = 0;
     assert(p == nullptr);
-    (void) p; // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
   }
   {
-    T p = nullptr;
+    // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
+    [[maybe_unused]] T p = nullptr;
     assert(p == nullptr);
     assert(nullptr == p);
     assert(!(p != nullptr));
     assert(!(nullptr != p));
-    (void) p; // GCC spuriously claims that p is unused when T is nullptr_t, probably due to optimizations?
   }
 }
 
@@ -53,12 +53,12 @@ struct has_less<T, typename Voider<decltype(cuda::std::declval<T>() < nullptr)>:
 template <class T>
 __host__ __device__ void test_comparisons()
 {
-  T p = nullptr;
+  // GCC spuriously claims that p is unused, probably due to optimizations?
+  [[maybe_unused]] T p = nullptr;
   assert(p == nullptr);
   assert(!(p != nullptr));
   assert(nullptr == p);
   assert(!(nullptr != p));
-  (void) p; // GCC spuriously claims that p is unused, probably due to optimizations?
 }
 
 TEST_DIAG_SUPPRESS_CLANG("-Wnull-conversion")

@@ -22,30 +22,46 @@
 #endif // no system header
 
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
-
-template <class _Rcvr>
-constexpr _Rcvr* __rcvr_ref(_Rcvr& __rcvr) noexcept
+template <class _Rcvr, class _Env = env_of_t<_Rcvr>>
+struct __rcvr_ref
 {
-  return &__rcvr;
-}
+  using receiver_concept = receiver_t;
+  _Rcvr& __rcvr_;
+
+  template <class... _As>
+  _CUDAX_TRIVIAL_API void set_value(_As&&... __as) noexcept
+  {
+    static_cast<_Rcvr&&>(__rcvr_).set_value(static_cast<_As&&>(__as)...);
+  }
+
+  template <class _Error>
+  _CUDAX_TRIVIAL_API void set_error(_Error&& __err) noexcept
+  {
+    static_cast<_Rcvr&&>(__rcvr_).set_error(static_cast<_Error&&>(__err));
+  }
+
+  _CUDAX_TRIVIAL_API void set_stopped() noexcept
+  {
+    static_cast<_Rcvr&&>(__rcvr_).set_stopped();
+  }
+
+  _CUDAX_API auto get_env() const noexcept -> _Env
+  {
+    return __async::get_env(__rcvr_);
+  }
+};
 
 template <class _Rcvr>
-constexpr _Rcvr* __rcvr_ref(_Rcvr* __rcvr) noexcept
-{
-  return __rcvr;
-}
-
-template <class _Rcvr>
-using __rcvr_ref_t = decltype(__async::__rcvr_ref(__declval<_Rcvr>()));
-
+__rcvr_ref(_Rcvr&) -> __rcvr_ref<_Rcvr>;
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_ASYNC_DETAIL_RCVR_REF

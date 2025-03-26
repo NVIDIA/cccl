@@ -25,6 +25,7 @@
 #include <cuda/std/__floating_point/fp.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/limits>
 
 // MSVC and clang cuda need the host side functions included
 #if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
@@ -33,7 +34,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool signbit(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SIGNBIT)
   return _CCCL_BUILTIN_SIGNBIT(__x);
@@ -42,7 +43,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(float __x) noexcept
 #endif // !_CCCL_BUILTIN_SIGNBIT
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SIGNBIT)
   return _CCCL_BUILTIN_SIGNBIT(__x);
@@ -52,7 +53,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SIGNBIT)
   return _CCCL_BUILTIN_SIGNBIT(__x);
@@ -63,11 +64,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __signbit_impl(_Tp __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __signbit_impl(_Tp __x) noexcept
 {
   if constexpr (numeric_limits<_Tp>::is_signed)
   {
-    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_v<_Tp>;
+    return _CUDA_VSTD::__fp_get_storage(__x) & __fp_sign_mask_of_v<_Tp>;
   }
   else
   {
@@ -76,56 +77,56 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __signbit_impl(_Tp __x)
 }
 
 #if _CCCL_HAS_NVFP16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__half __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__half __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_bfloat16 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e4m3 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e4m3 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e5m2 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e5m2 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e8m0) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp8_e8m0) noexcept
 {
   return false;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e2m3 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e2m3 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e3m2 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp6_e3m2 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp4_e2m1 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp4_e2m1 __x) noexcept
 {
   return _CUDA_VSTD::__signbit_impl(__x);
 }
@@ -133,7 +134,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit(__nv_fp4_e2m1 _
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit([[maybe_unused]] _Tp __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool signbit([[maybe_unused]] _Tp __x) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_signed, _Tp))
   {

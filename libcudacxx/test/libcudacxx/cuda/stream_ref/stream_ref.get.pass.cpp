@@ -13,11 +13,16 @@
 #include <cuda/std/cassert>
 #include <cuda/stream_ref>
 
+__host__ __device__ void test()
+{
+  cudaStream_t stream = reinterpret_cast<cudaStream_t>(42);
+  cuda::stream_ref ref{stream};
+  assert(ref.get() == stream);
+}
+
 int main(int argc, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST,
-               (cudaStream_t stream = reinterpret_cast<cudaStream_t>(42); cuda::stream_ref ref{stream};
-                assert(ref.get() == stream);))
+  test();
 
   return 0;
 }

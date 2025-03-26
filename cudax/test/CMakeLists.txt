@@ -121,6 +121,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target async ${cn_target}
+    async/test_concepts.cu
     async/test_conditional.cu
     async/test_continue_on.cu
     async/test_just.cu
@@ -143,8 +144,7 @@ endforeach()
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND
-    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
-    NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)
 endif()

@@ -105,7 +105,6 @@ struct __apply_cvref_cvrr
   using __call _CCCL_NODEBUG_ALIAS = _CCCL_ADD_RVALUE_REFERENCE_WAR(const volatile _Tp);
 };
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class>
 extern __apply_cvref_ __apply_cvref;
 template <class _Tp>
@@ -133,71 +132,6 @@ extern __apply_cvref_cvrr __apply_cvref<const volatile _Tp&&>;
 
 template <class _Tp>
 using __apply_cvref_fn = decltype(__apply_cvref<_Tp>);
-#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES / _CCCL_NO_VARIABLE_TEMPLATES vvv
-template <class>
-struct __apply_cvref
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_;
-};
-template <class _Tp>
-struct __apply_cvref<const _Tp>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_c;
-};
-template <class _Tp>
-struct __apply_cvref<volatile _Tp>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_v;
-};
-template <class _Tp>
-struct __apply_cvref<const volatile _Tp>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_cv;
-};
-template <class _Tp>
-struct __apply_cvref<_Tp&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_lr;
-};
-template <class _Tp>
-struct __apply_cvref<const _Tp&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_clr;
-};
-template <class _Tp>
-struct __apply_cvref<volatile _Tp&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_vlr;
-};
-template <class _Tp>
-struct __apply_cvref<const volatile _Tp&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_cvlr;
-};
-template <class _Tp>
-struct __apply_cvref<_Tp&&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_rr;
-};
-template <class _Tp>
-struct __apply_cvref<const _Tp&&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_crr;
-};
-template <class _Tp>
-struct __apply_cvref<volatile _Tp&&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_vrr;
-};
-template <class _Tp>
-struct __apply_cvref<const volatile _Tp&&>
-{
-  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_cvrr;
-};
-
-template <class _Tp>
-using __apply_cvref_fn _CCCL_NODEBUG_ALIAS = typename __apply_cvref<_Tp>::type;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _From, class _To>
 using __copy_cvref_t = typename __apply_cvref_fn<_From>::template __call<_To>;

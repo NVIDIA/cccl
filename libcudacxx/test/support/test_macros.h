@@ -16,7 +16,7 @@
 // Use the CCCL compiler detection
 #define TEST_COMPILER(...)      _CCCL_COMPILER(__VA_ARGS__)
 #define TEST_CUDA_COMPILER(...) _CCCL_CUDA_COMPILER(__VA_ARGS__)
-#define TEST_HAS_CUDA_COMPILER  _CCCL_HAS_CUDA_COMPILER
+#define TEST_HAS_CUDA_COMPILER  _CCCL_HAS_CUDA_COMPILER()
 
 // Use the CCCL diagnostic suppression
 #define TEST_DIAG_SUPPRESS_CLANG(...) _CCCL_DIAG_SUPPRESS_CLANG(__VA_ARGS__)
@@ -108,8 +108,7 @@
 template <class Tp>
 inline void DoNotOptimize(Tp const& value)
 {
-  const volatile void* volatile unused = __builtin_addressof(value);
-  static_cast<void>(unused);
+  [[maybe_unused]] const volatile void* volatile unused = __builtin_addressof(value);
   _ReadWriteBarrier();
 }
 #else // ^^^ TEST_COMPILER(MSVC) ^^^ / vvv !TEST_COMPILER(MSVC) vvv

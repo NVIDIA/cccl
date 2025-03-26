@@ -46,7 +46,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
   return __log10_approx;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
 {
   return {10,
           100,
@@ -60,7 +60,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint32_t, 
           _CUDA_VSTD::numeric_limits<uint32_t>::max()};
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint64_t, 20> __power_of_10_64bit() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint64_t, 20> __power_of_10_64bit() noexcept
 {
   return {
     10,
@@ -87,7 +87,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint64_t, 
 
 #if _CCCL_HAS_INT128()
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<__uint128_t, 39> __power_of_10_128bit() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<__uint128_t, 39> __power_of_10_128bit() noexcept
 {
   return {
     10,

@@ -143,10 +143,9 @@ public:
    *  \note Memory deallocated by this function must previously have been
    *        allocated with \p allocate.
    */
-  _CCCL_HOST inline void deallocate(pointer p, size_type cnt) noexcept
+  _CCCL_HOST inline void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
   {
     // use "::operator delete" rather than keyword delete
-    (void) cnt;
     device_delete(p);
   } // end deallocate()
 
