@@ -53,10 +53,14 @@ int main(int, char**)
   test_fp_no_sat_overflow_handler(numeric_limits<long double>::infinity(), -numeric_limits<long double>::infinity());
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
-  test_fp_no_sat_overflow_handler(numeric_limits<__half>::infinity(), -numeric_limits<__half>::infinity());
+  test_fp_no_sat_overflow_handler(
+    numeric_limits<__half>::infinity(),
+    cuda::std::copysign(numeric_limits<__half>::infinity(), numeric_limits<__half>::lowest()));
 #endif // _CCCL_HAS_NVFP16()
 #if _CCCL_HAS_NVBF16()
-  test_fp_no_sat_overflow_handler(numeric_limits<__nv_bfloat16>::infinity(), -numeric_limits<__nv_bfloat16>::infinity());
+  test_fp_no_sat_overflow_handler(
+    numeric_limits<__nv_bfloat16>::infinity(),
+    cuda::std::copysign(numeric_limits<__nv_bfloat16>::infinity(), numeric_limits<__nv_bfloat16>::lowest()));
 #endif // _CCCL_HAS_NVBF16()
 #if _CCCL_HAS_NVFP8_E4M3()
   test_fp_no_sat_overflow_handler(
