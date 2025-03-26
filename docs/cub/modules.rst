@@ -5,6 +5,7 @@ CUB Modules
    :hidden:
    :maxdepth: 2
 
+   thread_level
    warp_wide
    block_wide
    device_wide
@@ -14,6 +15,11 @@ CUB provides state-of-the-art, reusable software components for every layer
 of the CUDA programming model:
 
 * **Parallel primitives**
+
+  * :ref:`Thread <thread-module>` primitives
+
+    * Thread-level reduction, etc.
+    * Safely specialized for each underlying CUDA architecture
 
   * :ref:`Warp-wide <warp-module>` "collective" primitives
 
