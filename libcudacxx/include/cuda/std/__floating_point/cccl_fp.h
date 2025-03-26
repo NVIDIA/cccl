@@ -104,14 +104,14 @@ public:
 };
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator+(__cccl_fp<_Fmt> __v) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator+(__cccl_fp<_Fmt> __v) noexcept
 {
   return __v;
 }
 
 _CCCL_TEMPLATE(__fp_format _Fmt)
 _CCCL_REQUIRES(__fp_is_signed_v<_Fmt>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt> __v) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt> __v) noexcept
 {
   return _CUDA_VSTD::__fp_neg(__v);
 }
