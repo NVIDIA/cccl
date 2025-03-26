@@ -72,11 +72,9 @@ public:
 
   /* Inject the execution of the algorithm within a CUDA graph */
   template <typename Fun, typename parent_ctx_t, typename... Args>
-  void run_in_graph(Fun&& fun, parent_ctx_t& parent_ctx, cudaGraph_t graph, Args... args)
+  void run_in_graph(Fun&& fun, parent_ctx_t& parent_ctx, cudaGraph_t graph, const Args&... args)
   {
-    auto argsTuple         = ::std::make_tuple(mv(args)...);
-    const size_t hashValue = ::cuda::experimental::stf::hash<decltype(argsTuple)>()(argsTuple);
-
+    const size_t hashValue = hash_all(args...);
     ::std::shared_ptr<cudaGraph_t> inner_graph;
 
     if (auto search = graph_cache.find(hashValue); search != graph_cache.end())
@@ -91,20 +89,13 @@ public:
       gctx.set_parent_ctx(parent_ctx);
       gctx.get_dot()->set_ctx_symbol("algo: " + symbol);
 
-      auto current_place = gctx.default_exec_place();
+      auto current_data_place = gctx.default_exec_place().affine_data_place();
 
-      // Transform the tuple of instances into a tuple of logical data
-      auto logicalArgsTuple = ::std::apply(
-        [&](const auto&... args) {
-          // Our infrastructure currently does not like to work with
-          // constant types for the data interface so we pretend this is
-          // a modifiable data if necessary
-          return ::std::tuple(gctx.logical_data(to_rw_type_of(args), current_place.affine_data_place())...);
-        },
-        argsTuple);
-
-      // call fun(gctx, ...logical data...)
-      ::std::apply(::std::forward<Fun>(fun), ::std::tuple_cat(::std::make_tuple(gctx), mv(logicalArgsTuple)));
+      // Call fun, transforming the tuple of instances into a tuple of logical data
+      // Our infrastructure currently does not like to work with
+      // constant types for the data interface so we pretend this is
+      // a modifiable data if necessary
+      fun(gctx, gctx.logical_data(to_rw_type_of(args), current_data_place)...);
 
       inner_graph = gctx.finalize_as_graph();
 
@@ -124,25 +115,15 @@ public:
   template <typename context_t, typename Fun, typename... Deps>
   void run_inline(Fun&& fun, context_t& ctx, const task_dep<Deps>&... deps)
   {
-    ::std::apply(::std::forward<Fun>(fun),
-                 ::std::tuple_cat(::std::make_tuple(ctx), ::std::make_tuple(logical_data<Deps>(deps.get_data())...)));
+    fun(ctx, logical_data<Deps>(deps.get_data())...);
   }
 
-  /* Helper to run the algorithm in a stream_ctx */
-  template <typename Fun, typename... Deps>
-  void run_as_task(Fun&& fun, stream_ctx& ctx, task_dep<Deps>... deps)
+  /* Helper to run the algorithm in a stream_ctx or graph_ctx */
+  template <typename Fun, typename stream_or_graph_ctx, typename... Deps>
+  void run_as_task(Fun&& fun, stream_or_graph_ctx& ctx, task_dep<Deps>... deps)
   {
-    ctx.task(mv(deps)...).set_symbol(symbol)->*[this, &fun, &ctx](cudaStream_t stream, Deps... args) {
-      this->run(::std::forward<Fun>(fun), ctx, stream, mv(args)...);
-    };
-  }
-
-  /* Helper to run the algorithm in a graph_ctx */
-  template <typename Fun, typename... Deps>
-  void run_as_task(Fun&& fun, graph_ctx& ctx, task_dep<Deps>... deps)
-  {
-    ctx.task(deps...).set_symbol(symbol)->*[this, &fun, &ctx](cudaGraph_t g, Deps... args) {
-      this->run_in_graph(::std::forward<Fun>(fun), ctx, g, args...);
+    ctx.task(mv(deps)...).set_symbol(symbol)->*[this, &fun, &ctx](auto cuda_stream_or_graph, Deps... args) {
+      this->run(::std::forward<Fun>(fun), ctx, cuda_stream_or_graph, mv(args)...);
     };
   }
 
@@ -235,7 +216,6 @@ public:
   template <typename Fun, typename parent_ctx_t, typename... Args>
   void run(Fun&& fun, parent_ctx_t& parent_ctx, cudaStream_t stream, Args... args)
   {
-    auto argsTuple = ::std::make_tuple(args...);
     graph_ctx gctx(parent_ctx.async_resources());
 
     // Useful for tools
@@ -247,25 +227,13 @@ public:
 
     gctx.update_uncached_allocator(wrapper.allocator());
 
-    auto current_place = gctx.default_exec_place();
+    auto current_data_place = gctx.default_exec_place().affine_data_place();
 
-    // Transform an instance into a new logical data
-    auto logify = [&gctx, &current_place](auto x) {
-      // Our infrastructure currently does not like to work with constant
-      // types for the data interface so we pretend this is a modifiable
-      // data if necessary
-      return gctx.logical_data(to_rw_type_of(x), current_place.affine_data_place());
-    };
-
-    // Transform the tuple of instances into a tuple of logical data
-    auto logicalArgsTuple = ::std::apply(
-      [&](auto&&... args) {
-        return ::std::tuple(logify(::std::forward<decltype(args)>(args))...);
-      },
-      argsTuple);
-
-    // call fun(gctx, ...logical data...)
-    ::std::apply(::std::forward<Fun>(fun), ::std::tuple_cat(::std::make_tuple(gctx), logicalArgsTuple));
+    // Call fun with all arguments transformed to logical data
+    // Our infrastructure currently does not like to work with constant
+    // types for the data interface so we pretend this is a modifiable
+    // data if necessary
+    fun(gctx, gctx.logical_data(to_rw_type_of(args), current_data_place)...);
 
     ::std::shared_ptr<cudaGraph_t> gctx_graph = gctx.finalize_as_graph();
 
