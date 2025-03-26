@@ -60,7 +60,7 @@ struct bad_any_cast : ::std::bad_cast
   }
 };
 
-_CCCL_NORETURN _CUDAX_HOST_API inline void __throw_bad_any_cast()
+[[noreturn]] _CUDAX_HOST_API inline void __throw_bad_any_cast()
 {
 #ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw bad_any_cast();), (_CUDA_VSTD_NOVERSION::terminate();))

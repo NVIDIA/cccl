@@ -110,14 +110,6 @@
 
 #define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
 
-#if _CCCL_COMPILER(MSVC)
-#  define _CCCL_NORETURN __declspec(noreturn)
-#elif _CCCL_HAS_CPP_ATTRIBUTE(noreturn)
-#  define _CCCL_NORETURN [[noreturn]]
-#else
-#  define _CCCL_NORETURN __attribute__((noreturn))
-#endif
-
 #if _CCCL_COMPILER(MSVC) // vvv _CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
