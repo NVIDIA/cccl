@@ -403,7 +403,7 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
  *
  * @tparam deps_t
  */
-template <typename context, typename shape_t, typename partitioner_t, typename... deps_ops_t>
+template <typename context, typename exec_place_t, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
   //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
@@ -421,7 +421,7 @@ public:
   /// @param e_place Execution place for this parallel_for
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
-  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, deps_ops_t... deps)
+  parallel_for_scope(context& ctx, exec_place_t e_place, shape_t shape, deps_ops_t... deps)
       : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
       , deps(mv(deps)...)
       , ctx(ctx)
@@ -586,7 +586,7 @@ public:
     else if constexpr (is_extended_host_device_lambda_closure_type)
     {
       // Can run on both - decide dynamically
-      if (e_place == exec_place::host())
+      if (e_place.is_host())
       {
         return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
       }
@@ -595,18 +595,19 @@ public:
     else if constexpr (is_extended_device_lambda_closure_type)
     {
       // Lambda can run only on device - make sure they're not trying it on the host
-      EXPECT(e_place != exec_place::host(), "Attempt to run a device function on the host.");
+      EXPECT(!e_place.is_host(), "Attempt to run a device function on the host.");
       // Fall through for the device implementation
     }
     else
     {
       // Lambda can run only on the host - make sure they're not trying it elsewhere
-      EXPECT(e_place == exec_place::host(), "Attempt to run a host function on a device.");
+      EXPECT(e_place.is_host(), "Attempt to run a host function on a device.");
       return do_parallel_for_host(::std::forward<Fun>(f), shape, t);
     }
 
     // Device land. Must use the supplemental if constexpr below to avoid compilation errors.
-    if constexpr (is_extended_host_device_lambda_closure_type || is_extended_device_lambda_closure_type)
+    if constexpr (!::std::is_same_v<exec_place_t, exec_place_host> && is_extended_host_device_lambda_closure_type
+                  || is_extended_device_lambda_closure_type)
     {
       if (!e_place.is_grid())
       {
@@ -987,7 +988,7 @@ private:
   ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<deps_ops_t...> deps;
   context& ctx;
-  exec_place e_place;
+  exec_place_t e_place;
   ::std::string symbol;
   shape_t shape;
 };
