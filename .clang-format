@@ -28,7 +28,6 @@ AttributeMacros: [
                   '_CCCL_CONSTEXPR_CXX20',
                   '_CCCL_CONSTEXPR_CXX23',
                   '_CCCL_DEVICE',
-                  '_CCCL_FALLTHROUGH',
                   '_CCCL_FORCEINLINE',
                   '_CCCL_HIDE_FROM_ABI',
                   '_CCCL_HOST_DEVICE',
