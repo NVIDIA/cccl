@@ -31,7 +31,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Predicate>
 class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED_IN_CXX17 unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
+_LIBCUDACXX_DEPRECATED unary_negate : public __unary_function<typename _Predicate::argument_type, bool>
 {
   _Predicate __pred_;
 
@@ -48,8 +48,7 @@ public:
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Predicate>
-_LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI constexpr unary_negate<_Predicate>
-not1(const _Predicate& __pred)
+_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI constexpr unary_negate<_Predicate> not1(const _Predicate& __pred)
 {
   return unary_negate<_Predicate>(__pred);
 }
