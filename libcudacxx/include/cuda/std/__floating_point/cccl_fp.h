@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/conversion_rank_order.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/storage.h>
@@ -101,6 +102,19 @@ public:
   template <class _Tp>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept;
 };
+
+template <__fp_format _Fmt>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator+(__cccl_fp<_Fmt> __v) noexcept
+{
+  return __v;
+}
+
+_CCCL_TEMPLATE(__fp_format _Fmt)
+_CCCL_REQUIRES(__fp_is_signed_v<_Fmt>)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __cccl_fp<_Fmt> operator-(__cccl_fp<_Fmt> __v) noexcept
+{
+  return _CUDA_VSTD::__fp_neg(__v);
+}
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
