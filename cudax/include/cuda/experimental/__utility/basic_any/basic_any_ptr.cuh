@@ -178,7 +178,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   }
 
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
-  _CCCL_NODISCARD _CUDAX_HOST_API auto operator==(basic_any const& __other) const noexcept -> bool
+  [[nodiscard]] _CUDAX_HOST_API auto operator==(basic_any const& __other) const noexcept -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__get_optr()) == *static_cast<__void_ptr_t>(__other.__get_optr());
@@ -201,17 +201,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   using __any_ref_t _CCCL_NODEBUG_ALIAS =
     _CUDA_VSTD::__maybe_const<__is_const_ptr, basic_any<__ireference<_Interface>>>;
 
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator->() const noexcept -> __any_ref_t*
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto operator->() const noexcept -> __any_ref_t*
   {
     return &__ref_;
   }
 
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator*() const noexcept -> __any_ref_t&
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto operator*() const noexcept -> __any_ref_t&
   {
     return __ref_;
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return __ref_.__vptr_ != nullptr
            ? (__is_const_ptr ? *__get_rtti()->__object_info_->__const_pointer_typeid_
@@ -219,12 +219,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
            : _CCCL_TYPEID(void);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return __ref_.__vptr_ != nullptr ? *__get_rtti()->__interface_typeid_ : _CCCL_TYPEID(interface_type);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto has_value() const noexcept -> bool
+  [[nodiscard]] _CUDAX_HOST_API auto has_value() const noexcept -> bool
   {
     return __ref_.__vptr_ != nullptr;
   }
@@ -235,13 +235,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     __ref_.__set_ref(__vptr, nullptr);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API explicit operator bool() const noexcept
+  [[nodiscard]] _CUDAX_HOST_API explicit operator bool() const noexcept
   {
     return __ref_.__vptr_ != nullptr;
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr auto __in_situ() noexcept -> bool
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }
@@ -267,23 +267,23 @@ private:
     __ref_.__set_ref(__to_vptr, __to_optr);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_optr() noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ptr, void>**
+  [[nodiscard]] _CUDAX_HOST_API auto __get_optr() noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ptr, void>**
   {
     return &__ref_.__optr_;
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_optr() const noexcept
+  [[nodiscard]] _CUDAX_HOST_API auto __get_optr() const noexcept
     -> _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*
   {
     return &__ref_.__optr_;
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
+  [[nodiscard]] _CUDAX_HOST_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
   {
     return __ref_.__vptr_;
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_rtti() const noexcept -> __rtti const*
+  [[nodiscard]] _CUDAX_HOST_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __ref_.__vptr_ ? __ref_.__vptr_->__query_interface(iunknown()) : nullptr;
   }

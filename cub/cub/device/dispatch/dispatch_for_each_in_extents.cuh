@@ -104,7 +104,7 @@ public:
 
   // InvokeVariadic is a workaround for an nvcc 11.x/12.x problem with variadic template kernel and index sequence
   template <typename ActivePolicyT, ::cuda::std::size_t... Ranks>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
+  [[nodiscard]] CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::true_type, ::cuda::std::index_sequence<Ranks...>) const
   {
     array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
@@ -134,7 +134,7 @@ public:
   }
 
   template <typename ActivePolicyT, ::cuda::std::size_t... Ranks>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
+  [[nodiscard]] CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::false_type, ::cuda::std::index_sequence<Ranks...>) const
   {
     array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
@@ -166,14 +166,14 @@ public:
   }
 
   template <typename ActivePolicyT, bool StaticBlockSize>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(::cuda::std::bool_constant<StaticBlockSize> v) const
   {
     return InvokeVariadic<ActivePolicyT>(v, seq);
   }
 
   template <typename ActivePolicyT>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
   {
     if (_size == 0)
     {
@@ -183,7 +183,7 @@ public:
     return dispatch_t::Invoke<ActivePolicyT>(::cuda::std::bool_constant<static_block_size>{});
   }
 
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   dispatch(const ExtentsType& ext, const OpType& op, cudaStream_t stream)
   {
     int ptx_version = 0;

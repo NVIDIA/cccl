@@ -38,7 +38,7 @@ extern "C" _CCCL_DEVICE void* __cuda_syscall_aligned_malloc(size_t, size_t);
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !_CCCL_COMPILER(NVRTC)
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST void*
 __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
 {
 #  if _CCCL_COMPILER(MSVC)
@@ -50,7 +50,7 @@ __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t _
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI void* aligned_alloc(size_t __nbytes, size_t __align) noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return _CUDA_VSTD::__aligned_alloc_host(__nbytes, __align);),

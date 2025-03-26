@@ -39,12 +39,12 @@ struct __tagged_ptr<_Tp*>
     __ptr_ = reinterpret_cast<uintptr_t>(__pv) | uintptr_t(__flag);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get() const noexcept -> _Tp*
+  [[nodiscard]] _CUDAX_HOST_API auto __get() const noexcept -> _Tp*
   {
     return reinterpret_cast<_Tp*>(__ptr_ & ~uintptr_t(1));
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __flag() const noexcept -> bool
+  [[nodiscard]] _CUDAX_HOST_API auto __flag() const noexcept -> bool
   {
     return static_cast<bool>(__ptr_ & uintptr_t(1));
   }

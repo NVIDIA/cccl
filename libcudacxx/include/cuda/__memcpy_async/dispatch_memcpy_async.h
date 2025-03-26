@@ -47,7 +47,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  ***********************************************************************/
 
 template <_CUDA_VSTD::size_t _Align, typename _Group>
-_CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_any_to_any(
+[[nodiscard]] _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_any_to_any(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
@@ -60,7 +60,7 @@ _CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_asy
 }
 
 template <_CUDA_VSTD::size_t _Align, typename _Group>
-_CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_global_to_shared(
+[[nodiscard]] _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_async_global_to_shared(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
@@ -105,7 +105,7 @@ _CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_asy
 
 // __dispatch_memcpy_async is the internal entry point for dispatching to the correct memcpy_async implementation.
 template <_CUDA_VSTD::size_t _Align, typename _Group>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memcpy_async(
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memcpy_async(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,
@@ -140,7 +140,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memc
 }
 
 template <_CUDA_VSTD::size_t _Align, typename _Group>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memcpy_async(
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memcpy_async(
   _Group const& __group,
   char* __dest_char,
   char const* __src_char,

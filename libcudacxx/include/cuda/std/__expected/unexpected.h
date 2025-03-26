@@ -103,22 +103,22 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr unexpected& operator=(unexpected&&)      = default;
 
   // [expected.un.obs]
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
   {
     return __unex_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
   {
     return _CUDA_VSTD::move(__unex_);
   }

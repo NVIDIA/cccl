@@ -68,7 +68,7 @@ using __launch_transform_direct_result_t =
 struct __launch_fn
 {
   template <typename _Arg>
-  _CCCL_NODISCARD decltype(auto) operator()([[maybe_unused]] ::cuda::stream_ref __stream, _Arg&& __arg) const
+  [[nodiscard]] decltype(auto) operator()([[maybe_unused]] ::cuda::stream_ref __stream, _Arg&& __arg) const
   {
     if constexpr (_CUDA_VSTD::_IsValidExpansion<__launch_transform_direct_result_t, _Arg>::value)
     {
@@ -91,7 +91,7 @@ using __kernel_transform_direct_result_t = decltype(_CUDA_VSTD::declval<_Arg>().
 struct __kernel_fn
 {
   template <typename _Arg>
-  _CCCL_NODISCARD decltype(auto) operator()(_Arg&& __arg) const
+  [[nodiscard]] decltype(auto) operator()(_Arg&& __arg) const
   {
     if constexpr (_CUDA_VSTD::_IsValidExpansion<__kernel_transform_direct_result_t, _Arg>::value)
     {

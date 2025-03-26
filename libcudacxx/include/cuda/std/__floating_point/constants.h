@@ -30,7 +30,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_inf() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_inf() noexcept
 {
   static_assert(__fp_has_inf_v<_Fmt>, "The format does not support infinity");
 
@@ -38,13 +38,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_in
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_inf() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_inf() noexcept
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_inf<__fp_format_of_v<_Tp>>());
 }
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_nan() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_nan() noexcept
 {
   static_assert(__fp_has_nan_v<_Fmt>, "The format does not support nan");
 
@@ -69,13 +69,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_na
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_nan() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_nan() noexcept
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_nan<__fp_format_of_v<_Tp>>());
 }
 
 template <__fp_format _Fmt>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_nans() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_nans() noexcept
 {
   static_assert(__fp_has_nans_v<_Fmt>, "The format does not support nans");
 
@@ -92,7 +92,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_na
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_nans() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_nans() noexcept
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_nans<__fp_format_of_v<_Tp>>());
 }

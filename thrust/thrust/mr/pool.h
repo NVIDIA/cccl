@@ -257,7 +257,7 @@ public:
     m_cached_oversized = oversized_block_descriptor_ptr();
   }
 
-  _CCCL_NODISCARD virtual void_ptr
+  [[nodiscard]] virtual void_ptr
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     bytes = (std::max)(bytes, m_options.smallest_block_size);

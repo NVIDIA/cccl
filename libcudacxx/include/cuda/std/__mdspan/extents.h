@@ -59,19 +59,19 @@ namespace __mdspan_detail
 template <class _Tp, _Tp... _Values>
 struct __static_array
 {
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
   {
     return sizeof...(_Values);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get(size_t __index) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get(size_t __index) noexcept
   {
     constexpr array<_Tp, sizeof...(_Values)> __array = {_Values...};
     return __array[__index];
   }
 
   template <size_t _Index>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Tp __get()
   {
     return __get(_Index);
   }
@@ -90,11 +90,11 @@ template <class _Tp, size_t _Size>
 struct __possibly_empty_array
 {
   _Tp __vals_[_Size];
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator[](size_t __index)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator[](size_t __index)
   {
     return __vals_[__index];
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator[](size_t __index) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator[](size_t __index) const
   {
     return __vals_[__index];
   }
@@ -142,8 +142,7 @@ struct __possibly_empty_array<_Tp, 0>
 template <size_t... _Values>
 struct __static_partial_sums
 {
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr array<size_t, sizeof...(_Values)>
-  __static_partial_sums_impl()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr array<size_t, sizeof...(_Values)> __static_partial_sums_impl()
   {
     array<size_t, sizeof...(_Values)> __values{_Values...};
     array<size_t, sizeof...(_Values)> __partial_sums{{}};
@@ -156,7 +155,7 @@ struct __static_partial_sums
     return __partial_sums;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __get(size_t __index)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __get(size_t __index)
   {
     constexpr array<size_t, sizeof...(_Values)> __result = __static_partial_sums_impl();
     return __result[__index];
@@ -168,7 +167,7 @@ struct __static_partial_sums
 // ------------------------------------------------------------------
 
 template <class _TStatic, _TStatic _DynTag, _TStatic... _Values>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __count_dynamic()
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __count_dynamic()
 {
   return (size_t(0) + ... + static_cast<size_t>(_Values == _DynTag));
 }
@@ -200,7 +199,7 @@ private:
   using _DynamicIdxMap = __static_partial_sums<static_cast<size_t>(_Values == _DynTag)...>;
 
   template <size_t... Indices>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _DynamicValues __zeros(index_sequence<Indices...>) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _DynamicValues __zeros(index_sequence<Indices...>) noexcept
   {
     return _DynamicValues{((void) Indices, 0)...};
   }
@@ -278,7 +277,7 @@ public:
   }
 
   // access functions
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _TStatic __static_value(size_t __i) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _TStatic __static_value(size_t __i) noexcept
   {
     if constexpr (__size_ > 0)
     {
@@ -287,7 +286,7 @@ public:
     return _StaticValues::__get(__i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic __value(size_t __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic __value(size_t __i) const
   {
     if constexpr (__size_ > 0)
     {
@@ -299,7 +298,7 @@ public:
            : static_cast<_TDynamic>(__static_val);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic operator[](size_t __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _TDynamic operator[](size_t __i) const
   {
     if constexpr (__size_ > 0)
     {
@@ -309,11 +308,11 @@ public:
   }
 
   // observers
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size()
   {
     return __size_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size_dynamic()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size_dynamic()
   {
     return __size_dynamic_;
   }
@@ -329,7 +328,7 @@ static constexpr bool __potentially_narrowing =
 // if _From is not an integral, we just check positivity
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(integral<_To>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as([[maybe_unused]] _From __value)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as([[maybe_unused]] _From __value)
 {
   if constexpr (integral<_From>)
   {
@@ -380,14 +379,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_representable_as([
 
 _CCCL_TEMPLATE(class _To, class... _From)
 _CCCL_REQUIRES(integral<_To>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(_From... __values)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(_From... __values)
 {
   return (__mdspan_detail::__is_representable_as<_To>(__values) && ... && true);
 }
 
 _CCCL_TEMPLATE(class _To, class _From, size_t _Size)
 _CCCL_REQUIRES(integral<_To>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(span<_From, _Size> __values)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __are_representable_as(span<_From, _Size> __values)
 {
   for (size_t __i = 0; __i != _Size; __i++)
   {
@@ -437,20 +436,20 @@ private:
 
 public:
   // [mdspan.extents.obs], observers of multidimensional index space
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank() noexcept
   {
     return __rank_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank_dynamic() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr rank_type rank_dynamic() noexcept
   {
     return __rank_dynamic_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(rank_type __r) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(rank_type __r) const noexcept
   {
     return this->__value(__r);
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(rank_type __r) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t static_extent(rank_type __r) noexcept
   {
     return _Values::__static_value(__r);
   }
@@ -518,7 +517,7 @@ public:
 private:
   // Function to construct extents storage from other extents.
   template <size_t _DynCount, size_t _Idx, class _OtherExtents, class... _DynamicValues>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Values __construct_vals_from_extents(
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Values __construct_vals_from_extents(
     integral_constant<size_t, _DynCount>,
     integral_constant<size_t, _Idx>,
     [[maybe_unused]] const _OtherExtents& __exts,
@@ -705,7 +704,7 @@ struct __is_extents<extents<_IndexType, _ExtentsPack...>> : true_type
 
 _CCCL_TEMPLATE(class _IndexType, class _From)
 _CCCL_REQUIRES(integral<_IndexType>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_IndexType __extent, _From __value)
 {
   if constexpr (integral<_From>)
   {
@@ -743,14 +742,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_index_in_extent(_I
 }
 
 template <size_t... _Idxs, class _Extents, class... _From>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 __is_multidimensional_index_in_impl(index_sequence<_Idxs...>, const _Extents& __ext, _From... __values)
 {
   return (__mdspan_detail::__is_index_in_extent(__ext.extent(_Idxs), __values) && ... && true);
 }
 
 template <class _Extents, class... _From>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 __is_multidimensional_index_in(const _Extents& __ext, _From... __values)
 {
   return __mdspan_detail::__is_multidimensional_index_in_impl(
