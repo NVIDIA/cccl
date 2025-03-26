@@ -147,7 +147,7 @@ def test_Iterator_ctor1():
         cyb.Op(),
         cyb.Op(),
         type_info,
-        cyb.Pointer(cyb.PointerProxy(fake_ptr, None)),
+        cyb.Pointer(fake_ptr),
     )
     assert isinstance(cccl_it, cyb.Iterator)
 
@@ -175,19 +175,6 @@ def test_CommonData():
     gtk_path = "/usr/local/cuda/include"
     common_data = cyb.CommonData(8, 6, cub_path, thrust_path, libcudacxx_path, gtk_path)
     assert isinstance(common_data, cyb.CommonData)
-
-
-def test_cy_PointerProxy():
-    d = cp.ones(128, dtype="u1")
-    ptr = d.data.ptr
-    pp1 = cyb.PointerProxy(ptr, d)
-    ctp = ctypes.c_void_p(ptr)
-    pp2 = cyb.PointerProxy(ctp, d)
-
-    assert pp1.reference is d
-    assert pp2.reference is d
-    assert pp1.pointer == ptr
-    assert pp2.pointer == ptr
 
 
 def test_cy_IteratorStateView():

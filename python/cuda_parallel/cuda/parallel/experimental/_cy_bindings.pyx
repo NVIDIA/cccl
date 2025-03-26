@@ -589,28 +589,6 @@ cdef inline void * int_as_ptr(size_t ptr_val):
     return <void *>(ptr_val)
 
 
-cdef class PointerProxy:
-    cdef void * ptr
-    cdef object owner
-
-    def __cinit__(self, ptr, owner):
-        if isinstance(ptr, int):
-            self.ptr = int_as_ptr(ptr)
-        elif isinstance(ptr, ctypes.c_void_p):
-            self.ptr = int_as_ptr(ptr.value)
-        else:
-            raise TypeError
-        self.owner = owner
-
-    @property
-    def pointer(self):
-        return <size_t>self.ptr
-
-    @property
-    def reference(self):
-        return self.owner
-
-
 cdef class IteratorStateView:
     cdef void * ptr
     cdef size_t size
@@ -678,14 +656,8 @@ cdef class Pointer(StateBase):
     def __cinit__(self, arg):
         cdef void *ptr
         cdef object ref
-        cdef PointerProxy handle
 
-        super().__init__()
-        if isinstance(arg, PointerProxy):
-            handle = <PointerProxy>arg
-            ptr = handle.ptr
-            ref = handle.owner
-        elif isinstance(arg, int):
+        if isinstance(arg, int):
             ptr = int_as_ptr(arg)
             ref = None
         elif isinstance(arg, ctypes._Pointer):
