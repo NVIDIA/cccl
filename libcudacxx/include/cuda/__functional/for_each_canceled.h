@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 #    if __cccl_ptx_isa >= 870
 
 template <int _Index>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
 {
   int __r;
   if constexpr (_Index == 0)

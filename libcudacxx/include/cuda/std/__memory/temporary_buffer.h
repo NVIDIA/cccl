@@ -36,7 +36,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI pair<_Tp*, ptrdiff_t>
+[[nodiscard]] _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI pair<_Tp*, ptrdiff_t>
 get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);

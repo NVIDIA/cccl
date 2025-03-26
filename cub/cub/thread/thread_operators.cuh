@@ -388,7 +388,7 @@ struct SimdMin<::cuda::std::int16_t>
 {
   using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
   operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmins2(a, b);
@@ -400,7 +400,7 @@ struct SimdMin<::cuda::std::uint16_t>
 {
   using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
   operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vminu2(a, b);
@@ -414,7 +414,7 @@ struct SimdMin<__half>
 {
   using simd_type = __half2;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x)),
@@ -433,7 +433,7 @@ struct SimdMin<__half>
 #  if _CCCL_HAS_NVBF16()
 
 // NOTE: __halves2bfloat162 is not always available on older CUDA Toolkits for __CUDA_ARCH__ < 800
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 halves2bfloat162(__nv_bfloat16 a, __nv_bfloat16 b)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 halves2bfloat162(__nv_bfloat16 a, __nv_bfloat16 b)
 {
   ::cuda::std::uint32_t tmp;
   auto a_uint16 = ::cuda::std::bit_cast<::cuda::std::uint16_t>(a);
@@ -449,7 +449,7 @@ struct SimdMin<__nv_bfloat16>
 {
   using simd_type = __nv_bfloat162;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
@@ -479,7 +479,7 @@ struct SimdMax<::cuda::std::int16_t>
 {
   using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
   operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmaxs2(a, b);
@@ -491,7 +491,7 @@ struct SimdMax<::cuda::std::uint16_t>
 {
   using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
   operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmaxu2(a, b);
@@ -505,7 +505,7 @@ struct SimdMax<__half>
 {
   using simd_type = __half2;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x)),
@@ -528,7 +528,7 @@ struct SimdMax<__nv_bfloat16>
 {
   using simd_type = __nv_bfloat162;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
@@ -560,7 +560,7 @@ struct SimdSum<__half>
 {
   using simd_type = __half2;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(__half2float(a.x) + __half2float(b.x), __half2float(a.y) + __half2float(b.y));
@@ -582,7 +582,7 @@ struct SimdSum<__nv_bfloat16>
 {
   using simd_type = __nv_bfloat162;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(
@@ -614,7 +614,7 @@ struct SimdMul<__half>
 {
   using simd_type = __half2;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(__half2float(a.x) * __half2float(b.x), __half2float(a.y) * __half2float(b.y));
@@ -636,7 +636,7 @@ struct SimdMul<__nv_bfloat16>
 {
   using simd_type = __nv_bfloat162;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(

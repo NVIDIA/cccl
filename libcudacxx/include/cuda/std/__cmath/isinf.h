@@ -37,7 +37,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __isinf_impl(_Tp __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __isinf_impl(_Tp __x) noexcept
 {
   static_assert(_CCCL_TRAIT(is_floating_point, _Tp), "Only standard floating-point types are supported");
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -51,7 +51,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __isinf_impl(_Tp __x) n
   return __x > numeric_limits<_Tp>::max() || __x < numeric_limits<_Tp>::lowest();
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(float __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISINF) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC)
   return _CCCL_BUILTIN_ISINF(__x);
@@ -73,7 +73,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(float __x) noexce
 #endif // ^^^ !_CCCL_BUILTIN_ISINF ^^^
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_ISINF) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC)
   return _CCCL_BUILTIN_ISINF(__x);
@@ -96,7 +96,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(double __x) noexc
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(long double __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_ISINF)
   return _CCCL_BUILTIN_ISINF(__x);
@@ -107,7 +107,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(long double __x) 
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 #if _CCCL_HAS_NVFP16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexcept
 {
 #  if _LIBCUDACXX_HAS_NVFP16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -125,7 +125,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__half __x) noexc
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_bfloat16 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_bfloat16 __x) noexcept
 {
 #  if _LIBCUDACXX_HAS_NVBF16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -144,42 +144,42 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_bfloat16 __x
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e4m3) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e4m3) noexcept
 {
   return false;
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e5m2 __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e5m2 __x) noexcept
 {
   return (__x.__x & __fp_exp_mant_mask_of_v<__nv_fp8_e5m2>) == __fp_exp_mask_of_v<__nv_fp8_e5m2>;
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e8m0) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp8_e8m0) noexcept
 {
   return false;
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp6_e2m3) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp6_e2m3) noexcept
 {
   return false;
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp6_e3m2) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp6_e3m2) noexcept
 {
   return false;
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp4_e2m1) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp4_e2m1) noexcept
 {
   return false;
 }
@@ -187,7 +187,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(__nv_fp4_e2m1) no
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(_Tp) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isinf(_Tp) noexcept
 {
   return false;
 }

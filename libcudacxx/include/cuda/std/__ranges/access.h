@@ -84,7 +84,7 @@ struct __fn
 #if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[]) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[]) const noexcept
   {
     return __t + 0;
   }
@@ -92,7 +92,7 @@ struct __fn
 
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
   {
     return __t + 0;
   }
@@ -100,7 +100,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_begin<_Tp>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.begin())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.begin());
@@ -109,7 +109,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_begin<_Tp>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(begin(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(begin(__t));
@@ -189,7 +189,7 @@ struct __fn
 {
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[_Np]) const noexcept
   {
     return __t + _Np;
   }
@@ -197,7 +197,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__member_end<_Tp>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.end())))
   {
     return _LIBCUDACXX_AUTO_CAST(__t.end());
@@ -206,7 +206,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__unqualified_end<_Tp>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(end(__t))))
   {
     return _LIBCUDACXX_AUTO_CAST(end(__t));
@@ -239,7 +239,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::begin(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::begin(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
@@ -249,7 +249,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::begin(static_cast<const _Tp&&>(__t))))
       -> decltype(_CUDA_VRANGES::begin(static_cast<const _Tp&&>(__t)))
   {
@@ -271,7 +271,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::end(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::end(static_cast<const remove_reference_t<_Tp>&>(__t)))
   {
@@ -281,7 +281,7 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t))))
       -> decltype(_CUDA_VRANGES::end(static_cast<const _Tp&&>(__t)))
   {

@@ -23,7 +23,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Predicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 is_partitioned(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   for (; __first != __last; ++__first)

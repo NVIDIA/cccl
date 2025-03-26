@@ -359,14 +359,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Tp>
   using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n)
   {
     return __a.allocate(__n);
   }
 
   template <class _Ap = _Alloc, enable_if_t<__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
   {
     _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -376,7 +376,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Ap                                                                         = _Alloc,
             class                                                                             = void,
             enable_if_t<!__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer)
   {
     return __a.allocate(__n);

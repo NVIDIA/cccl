@@ -33,7 +33,7 @@ class __atomic_semaphore
 {
   __atomic_impl<ptrdiff_t, _Sco> __count;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __fetch_sub_if_slow(ptrdiff_t __old)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool __fetch_sub_if_slow(ptrdiff_t __old)
   {
     while (__old != 0)
     {
@@ -45,7 +45,7 @@ class __atomic_semaphore
     return false;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __fetch_sub_if()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool __fetch_sub_if()
   {
     ptrdiff_t __old = __count.load(memory_order_acquire);
     if (__old == 0)
@@ -72,7 +72,7 @@ class __atomic_semaphore
     }
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
     return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       [this]() {
@@ -83,7 +83,7 @@ class __atomic_semaphore
   }
 
 public:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
   {
     return numeric_limits<ptrdiff_t>::max();
   }
@@ -118,13 +118,13 @@ public:
     }
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire() noexcept
   {
     return __fetch_sub_if();
   }
 
   template <class Clock, class Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -137,7 +137,7 @@ public:
   }
 
   template <class Rep, class Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
   {
     if (try_acquire())
     {
@@ -155,7 +155,7 @@ class __atomic_semaphore<_Sco, 1>
 {
   __atomic_impl<int, _Sco> __available;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
     return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       [this]() {
@@ -165,7 +165,7 @@ class __atomic_semaphore<_Sco, 1>
   }
 
 public:
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
   {
     return 1;
   }
@@ -194,13 +194,13 @@ public:
     }
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire() noexcept
   {
     return 1 == __available.exchange(0, memory_order_acquire);
   }
 
   template <class Clock, class Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_until(chrono::time_point<Clock, Duration> const& __abs_time)
   {
     if (try_acquire())
     {
@@ -213,7 +213,7 @@ public:
   }
 
   template <class Rep, class Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool try_acquire_for(chrono::duration<Rep, Period> const& __rel_time)
   {
     if (try_acquire())
     {

@@ -65,7 +65,7 @@ private:
   //! @brief  Returns the default ``cudaMemPool_t`` for host pinned memory.
   //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
   //! @returns The default memory pool for host pinned memory.
-  _CCCL_NODISCARD static ::cudaMemPool_t __get_default_sysmem_pool()
+  [[nodiscard]] static ::cudaMemPool_t __get_default_sysmem_pool()
   {
     static pinned_memory_pool __default_pool{};
     return __default_pool.get();

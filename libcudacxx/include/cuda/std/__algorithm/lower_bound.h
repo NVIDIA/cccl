@@ -58,7 +58,7 @@ __lower_bound(_Iter __first, _Sent __last, const _Type& __value, _Comp& __comp, 
 }
 
 template <class _ForwardIterator, class _Tp, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   static_assert(__is_callable<_Compare, decltype(*__first), const _Tp&>::value, "The comparator has to be callable");
@@ -67,7 +67,7 @@ lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 }
 
 template <class _ForwardIterator, class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 lower_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
   return _CUDA_VSTD::lower_bound(__first, __last, __value, __less{});

@@ -45,25 +45,25 @@ template <typename Level>
 struct dimensions_query
 {
   template <typename Unit>
-  /* _CCCL_NODISCARD */ _CCCL_DEVICE static auto rank(const Unit& = Unit())
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto rank(const Unit& = Unit())
   {
     return hierarchy::rank<Unit, Level>();
   }
 
   template <typename Unit>
-  /* _CCCL_NODISCARD */ _CCCL_DEVICE static auto count(const Unit& = Unit())
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto count(const Unit& = Unit())
   {
     return hierarchy::count<Unit, Level>();
   }
 
   template <typename Unit>
-  /* _CCCL_NODISCARD */ _CCCL_DEVICE static auto index(const Unit& = Unit())
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto index(const Unit& = Unit())
   {
     return hierarchy::index<Unit, Level>();
   }
 
   template <typename Unit>
-  /* _CCCL_NODISCARD */ _CCCL_DEVICE static auto extents(const Unit& = Unit())
+  /* [[nodiscard]] */ _CCCL_DEVICE static auto extents(const Unit& = Unit())
   {
     return hierarchy::extents<Unit, Level>();
   }
@@ -204,12 +204,12 @@ struct dims_helper;
 template <typename Level>
 struct dims_helper<Level, Level>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
     return dim3(1, 1, 1);
   }
 
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static dim3 index()
   {
     return dim3(0, 0, 0);
   }
@@ -218,12 +218,12 @@ struct dims_helper<Level, Level>
 template <>
 struct dims_helper<thread_level, block_level>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
     return blockDim;
   }
 
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static dim3 index()
   {
     return threadIdx;
   }
@@ -232,12 +232,12 @@ struct dims_helper<thread_level, block_level>
 template <>
 struct dims_helper<block_level, cluster_level>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterDim();), (return dim3(1, 1, 1);));
   }
 
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static dim3 index()
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterRelativeBlockIdx();), (return dim3(0, 0, 0);));
   }
@@ -246,12 +246,12 @@ struct dims_helper<block_level, cluster_level>
 template <>
 struct dims_helper<block_level, grid_level>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
     return gridDim;
   }
 
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static dim3 index()
   {
     return blockIdx;
   }
@@ -260,12 +260,12 @@ struct dims_helper<block_level, grid_level>
 template <>
 struct dims_helper<cluster_level, grid_level>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 extents()
+  [[nodiscard]] _CCCL_DEVICE static dim3 extents()
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterGridDimInClusters();), (return gridDim;));
   }
 
-  _CCCL_NODISCARD _CCCL_DEVICE static dim3 index()
+  [[nodiscard]] _CCCL_DEVICE static dim3 index()
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90, (return __clusterIdx();), (return dim3(0, 0, 0);));
   }
@@ -274,7 +274,7 @@ struct dims_helper<cluster_level, grid_level>
 // Seems like a compiler bug, where NODISCARD is marked as ignored due to void return type,
 // while its not possible to ever have void return type here
 template <typename Unit, typename Level>
-/* _CCCL_NODISCARD */ _CCCL_DEVICE auto extents_impl()
+/* [[nodiscard]] */ _CCCL_DEVICE auto extents_impl()
 {
   if constexpr (::cuda::std::is_same_v<Unit, Level> || can_rhs_stack_on_lhs<Unit, Level>)
   {
@@ -290,7 +290,7 @@ template <typename Unit, typename Level>
 }
 
 template <typename Unit, typename Level>
-/* _CCCL_NODISCARD */ _CCCL_DEVICE auto index_impl()
+/* [[nodiscard]] */ _CCCL_DEVICE auto index_impl()
 {
   if constexpr (::cuda::std::is_same_v<Unit, Level> || detail::can_rhs_stack_on_lhs<Unit, Level>)
   {

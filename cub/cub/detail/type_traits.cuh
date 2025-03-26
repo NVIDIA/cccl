@@ -60,13 +60,13 @@ template <typename Invokable, typename... Args>
 using invoke_result_t = ::cuda::std::invoke_result_t<Invokable, Args...>;
 
 template <typename T, typename... TArgs>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool is_one_of()
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr bool is_one_of()
 {
   return ::cuda::std::disjunction_v<::cuda::std::is_same<T, TArgs>...>;
 }
 
 template <typename...>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool always_false()
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr bool always_false()
 {
   return false;
 }
@@ -145,7 +145,7 @@ struct static_size<::cuda::std::mdspan<T, E, L, A>,
 {};
 
 template <typename T>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()
 {
   return static_size<T>::value;
 }
