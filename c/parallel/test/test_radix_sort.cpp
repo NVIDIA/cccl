@@ -110,17 +110,14 @@ void radix_sort(
 TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[merge_sort]", key_types)
 {
   //   const int num_items              = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  const int num_items              = 10;
-  operation_t decomposer           = make_operation("op", get_radix_sort_decomposer_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
+  const int num_items                 = 10;
+  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
   pointer_t<TestType> input_keys_it(input_keys);
   pointer_t<TestType> output_keys_it(num_items);
 
   pointer_t<item_t> input_items_it, output_items_it;
-
-  std::string decomposer_return_type = type_enum_to_name(get_type_info<TestType>().type) + "*";
 
   int begin_bit          = 0;
   int end_bit            = sizeof(TestType) * 8;
@@ -132,8 +129,8 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[merge_sort]", key_t
     output_keys_it,
     input_items_it,
     output_items_it,
-    decomposer,
-    decomposer_return_type.c_str(),
+    cccl_op_t{},
+    "",
     num_items,
     begin_bit,
     end_bit,

@@ -227,12 +227,12 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 
   return {{256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits},
           {256, onesweep_radix_bits},
-          {onesweep_items_per_thread, onesweep_block_threads, 1, onesweep_radix_bits},
+          {onesweep_block_threads, onesweep_items_per_thread, 1, onesweep_radix_bits},
           {scan_block_threads, scan_items_per_thread},
           {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
           {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
-          {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
-          {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
+          {downsweep_items_per_thread, downsweep_block_threads, primary_radix_bits},
+          {alt_downsweep_items_per_thread, alt_downsweep_block_threads, primary_radix_bits - 1},
           {single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits},
           false};
 };
@@ -435,10 +435,13 @@ CUresult cccl_device_radix_sort_build(
   {
     const char* name = "test";
 
-    const int cc             = cc_major * 10 + cc_minor;
-    const auto policy        = radix_sort::get_policy(cc, key_t.size);
-    const auto key_cpp       = cccl_type_enum_to_name(key_t.type);
-    const std::string op_src = make_kernel_user_decomposer_operator(key_cpp, decomposer, decomposer_return_type);
+    const int cc       = cc_major * 10 + cc_minor;
+    const auto policy  = radix_sort::get_policy(cc, key_t.size);
+    const auto key_cpp = cccl_type_enum_to_name(key_t.type);
+    const std::string op_src =
+      decomposer.name == nullptr
+        ? "using op_wrapper = cub::detail::identity_decomposer_t;"
+        : make_kernel_user_decomposer_operator(key_cpp, decomposer, decomposer_return_type);
     constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
 
     constexpr std::string_view src_template = R"XXX(
@@ -462,53 +465,54 @@ struct agent_exclusive_sum_policy_t {{
   static constexpr int RADIX_BITS = {9};
 }};
 struct agent_onesweep_policy_t {{
-  static constexpr int BLOCK_THREADS = {10};
-  static constexpr int RANK_NUM_PARTS = {11};
-  static constexpr int RADIX_BITS = {12};
+  static constexpr int ITEMS_PER_THREAD = {10};
+  static constexpr int BLOCK_THREADS = {11};
+  static constexpr int RANK_NUM_PARTS = {12};
+  static constexpr int RADIX_BITS = {13};
   static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM       = cub::RADIX_RANK_MATCH_EARLY_COUNTS_ANY;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM       = cub::BLOCK_SCAN_WARP_SCANS;
   static constexpr cub::RadixSortStoreAlgorithm STORE_ALGORITHM = cub::RADIX_SORT_STORE_DIRECT;
 }};
 struct agent_scan_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {13};
-  static constexpr int BLOCK_THREADS = {14};
+  static constexpr int ITEMS_PER_THREAD = {14};
+  static constexpr int BLOCK_THREADS = {15};
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM   = cub::BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER     = cub::LOAD_DEFAULT;
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM   = cub::BLOCK_SCAN_RAKING_MEMOIZE;
   struct detail
   {{
-    using delay_constructor_t = cub::detail::default_delay_constructor_t<{15}>;
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<{16}>;
   }};
 }};
 struct agent_downsweep_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {16};
-  static constexpr int BLOCK_THREADS = {17};
-  static constexpr int RADIX_BITS = {18};
+  static constexpr int ITEMS_PER_THREAD = {17};
+  static constexpr int BLOCK_THREADS = {18};
+  static constexpr int RADIX_BITS = {19};
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
   static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM = cub::RADIX_RANK_BASIC;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
 }};
 struct agent_alt_downsweep_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {19};
-  static constexpr int BLOCK_THREADS = {20};
-  static constexpr int RADIX_BITS = {21};
+  static constexpr int ITEMS_PER_THREAD = {20};
+  static constexpr int BLOCK_THREADS = {21};
+  static constexpr int RADIX_BITS = {22};
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
   static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM = cub::RADIX_RANK_MEMOIZE;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_RAKING_MEMOIZE;
 }};
 struct agent_single_tile_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {22};
-  static constexpr int BLOCK_THREADS = {23};
-  static constexpr int RADIX_BITS = {24};
+  static constexpr int ITEMS_PER_THREAD = {23};
+  static constexpr int BLOCK_THREADS = {24};
+  static constexpr int RADIX_BITS = {25};
   static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT;
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
   static constexpr cub::RadixRankAlgorithm RANK_ALGORITHM = cub::RADIX_RANK_MEMOIZE;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
 }};
-struct {25} {{
+struct {26} {{
   struct ActivePolicy {{
     using HistogramPolicy = agent_histogram_policy_t;
     using ExclusiveSumPolicy = agent_exclusive_sum_policy_t;
@@ -521,7 +525,7 @@ struct {25} {{
     using SingleTilePolicy = agent_single_tile_policy_t;
   }};
 }};
-{26};
+{27};
 )XXX";
 
     const std::string src = std::format(
@@ -536,26 +540,27 @@ struct {25} {{
       policy.histogram.num_parts, // 7
       policy.exclusive_sum.block_threads, // 8
       policy.exclusive_sum.radix_bits, // 9
-      policy.onesweep.block_threads, // 10
-      policy.onesweep.rank_num_parts, // 11
-      policy.onesweep.radix_bits, // 12
-      policy.onesweep.items_per_thread, // 13
-      policy.onesweep.block_threads, // 14
-      key_cpp, // 15
-      policy.downsweep.items_per_thread, // 16
-      policy.downsweep.block_threads, // 17
-      policy.downsweep.radix_bits, // 18
-      policy.alt_downsweep.items_per_thread, // 19
-      policy.alt_downsweep.block_threads, // 20
-      policy.alt_downsweep.radix_bits, // 21
-      policy.single_tile.items_per_thread, // 22
-      policy.single_tile.block_threads, // 23
-      policy.single_tile.radix_bits, // 24
-      chained_policy_t, // 25
-      op_src // 26
+      policy.onesweep.items_per_thread, // 10
+      policy.onesweep.block_threads, // 11
+      policy.onesweep.rank_num_parts, // 12
+      policy.onesweep.radix_bits, // 13
+      policy.onesweep.items_per_thread, // 14
+      policy.onesweep.block_threads, // 15
+      key_cpp, // 16
+      policy.downsweep.items_per_thread, // 17
+      policy.downsweep.block_threads, // 18
+      policy.downsweep.radix_bits, // 19
+      policy.alt_downsweep.items_per_thread, // 20
+      policy.alt_downsweep.block_threads, // 21
+      policy.alt_downsweep.radix_bits, // 22
+      policy.single_tile.items_per_thread, // 23
+      policy.single_tile.block_threads, // 24
+      policy.single_tile.radix_bits, // 25
+      chained_policy_t, // 26
+      op_src // 27
     );
 
-#if false // CCCL_DEBUGGING_SWITCH
+#if true // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
     printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
     fflush(stdout);
