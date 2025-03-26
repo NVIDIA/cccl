@@ -69,7 +69,7 @@ class stream_ctx;
 namespace reserved
 {
 
-template <typename Ctx, typename shape_t, typename partitioner_t, typename... DepsAndOps>
+template <typename Ctx, typename exec_place_t, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
 template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
@@ -1030,26 +1030,30 @@ public:
   /*
    * parallel_for : apply an operation over a shaped index space
    */
-  template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, Deps... deps)
+
+  template <typename exec_place_t,
+            typename S,
+            typename... Deps,
+            typename = ::std::enable_if_t<::std::is_base_of_v<exec_place, exec_place_t>>>
+  auto parallel_for(exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, exec_place_t, S, null_partition, Deps...>(
+      self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
-  template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t, exec_place e_place, S shape, Deps... deps)
+  template <typename partitioner_t,
+            typename exec_place_t,
+            typename S,
+            typename... Deps,
+            typename = ::std::enable_if_t<std::is_base_of_v<exec_place, exec_place_t>>>
+  auto parallel_for(partitioner_t, exec_place_t e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, exec_place_t, S, partitioner_t, Deps...>(
+      self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>
   auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
-
-  template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, Deps... deps)
-  {
-    return parallel_for(mv(p), exec_place(mv(e_place)), mv(shape), mv(deps)...);
-  }
 
   template <typename S, typename... Deps, typename... Ops, bool... flags>
   auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)

@@ -376,6 +376,11 @@ public:
       return "exec(" + affine.to_string() + ")";
     }
 
+    virtual bool is_host() const
+    {
+      return affine.is_host();
+    }
+
     virtual bool is_device() const
     {
       return affine.is_device();
@@ -551,6 +556,11 @@ public:
   void deactivate(backend_ctx_untyped& state, const exec_place& p) const
   {
     pimpl->deactivate(state, p);
+  }
+
+  bool is_host() const
+  {
+    return pimpl->is_host();
   }
 
   bool is_device() const

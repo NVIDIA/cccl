@@ -19,7 +19,7 @@ int main()
   int nqpoints = 3;
   auto ltoken  = ctx.logical_token();
 
-  ctx.parallel_for(exec_place::host(), box(5), ltoken.read())->*[nqpoints] __host__ __device__(size_t, void_interface) {
+  ctx.parallel_for(exec_place::host(), box(5), ltoken.read())->*[nqpoints] __host__(size_t, void_interface) {
     _CCCL_ASSERT(nqpoints == 3, "invalid value");
   };
 

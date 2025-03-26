@@ -52,21 +52,15 @@ private:
   cudaStream_t stream;
 
 public:
-  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE execute_on_stream_base(cudaStream_t stream_ = default_stream())
       : stream(stream_)
   {}
 
-  THRUST_RUNTIME_FUNCTION Derived on(cudaStream_t const& s) const
+  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
   {
     Derived result = derived_cast(*this);
-    result.stream  = s;
+    result.stream  = s.get();
     return result;
-  }
-
-  Derived on(::cuda::stream_ref const& s) const
-  {
-    return on(s.get());
   }
 
 private:
@@ -87,16 +81,11 @@ public:
       : stream(stream_)
   {}
 
-  THRUST_RUNTIME_FUNCTION Derived on(cudaStream_t const& s) const
+  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
   {
     Derived result = derived_cast(*this);
-    result.stream  = s;
+    result.stream  = s.get();
     return result;
-  }
-
-  Derived on(::cuda::stream_ref const& s) const
-  {
-    return on(s.get());
   }
 
 private:
@@ -143,14 +132,9 @@ struct par_t
 
   using stream_attachment_type = execute_on_stream;
 
-  THRUST_RUNTIME_FUNCTION stream_attachment_type on(cudaStream_t const& stream) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
   {
-    return execute_on_stream(stream);
-  }
-
-  stream_attachment_type on(::cuda::stream_ref const& s) const
-  {
-    return on(s.get());
+    return execute_on_stream(s.get());
   }
 };
 
@@ -166,14 +150,9 @@ struct par_nosync_t
 
   using stream_attachment_type = execute_on_stream_nosync;
 
-  THRUST_RUNTIME_FUNCTION stream_attachment_type on(cudaStream_t const& stream) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
   {
-    return execute_on_stream_nosync(stream);
-  }
-
-  stream_attachment_type on(::cuda::stream_ref const& s) const
-  {
-    return on(s.get());
+    return execute_on_stream_nosync(s.get());
   }
 
 private:

@@ -4,28 +4,38 @@
 
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 from cuda.parallel.experimental.struct import gpu_struct
 
 
-def test_segmented_reduce(input_array):
-    "Test for all supported input types"
+@pytest.fixture(params=["i4", "u4", "i8", "u8"])
+def offset_dtype(request):
+    return np.dtype(request.param)
+
+
+def test_segmented_reduce(input_array, offset_dtype):
+    "Test for all supported input types and for some offset types"
 
     def binary_op(a, b):
         return a + b
 
     assert input_array.ndim == 1
     sz = input_array.size
-    rng = np.random.default_rng()
-    n_segments = 2**4
-    h_offsets = np.zeros(n_segments + 1, dtype="int64")
-    h_offsets[1:] = rng.multinomial(sz, [1 / 16] * 16)
+    rng = cp.random
+    n_segments = 16
+    h_offsets = cp.zeros(n_segments + 1, dtype="int64")
+    h_offsets[1:] = rng.multinomial(sz, [1 / n_segments] * n_segments)
 
-    offsets = cp.asarray(h_offsets)
+    offsets = cp.cumsum(cp.asarray(h_offsets, dtype=offset_dtype), dtype=offset_dtype)
 
     start_offsets = offsets[:-1]
-    end_offsets = offsets[:-1]
+    end_offsets = offsets[1:]
+
+    assert offsets.dtype == np.dtype(offset_dtype)
+    assert cp.all(start_offsets <= end_offsets)
+    assert end_offsets[-1] == sz
 
     d_in = cp.asarray(input_array)
     d_out = cp.empty(n_segments, dtype=d_in.dtype)
@@ -67,11 +77,11 @@ def test_segmented_reduce_struct_type():
     def max_g_value(x, y):
         return x if x.g > y.g else y
 
-    def ceil_up(n, m):
+    def align_up(n, m):
         return ((n + m - 1) // m) * m
 
     segment_size = 64
-    n_pixels = ceil_up(4000, 64)
+    n_pixels = align_up(4000, 64)
     offsets = cp.arange(n_pixels + segment_size - 1, step=segment_size, dtype=np.int64)
     start_offsets = offsets[:-1]
     end_offsets = offsets[1:]

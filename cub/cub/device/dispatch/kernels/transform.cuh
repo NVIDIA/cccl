@@ -362,10 +362,11 @@ _CCCL_DEVICE void transform_kernel_impl(
 template <typename It>
 union kernel_arg
 {
+#if _CUB_HAS_TRANSFORM_UBLKCP
   aligned_base_ptr<it_value_t<It>> aligned_ptr; // first member is trivial
-  It iterator; // may not be trivially [default|copy]-constructible
-
   static_assert(::cuda::std::is_trivial_v<decltype(aligned_ptr)>, "");
+#endif
+  It iterator; // may not be trivially [default|copy]-constructible
 
   // Sometimes It is not trivially [default|copy]-constructible (e.g.
   // thrust::normal_iterator<thrust::device_pointer<T>>), so because of

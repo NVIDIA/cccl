@@ -49,7 +49,7 @@ endfunction()
 file(GLOB example_srcs
   RELATIVE "${cudax_SOURCE_DIR}/examples"
   CONFIGURE_DEPENDS
-  *.cu
+  *.cu *.cpp
 )
 
 # Example requires pinned_memory_resource.
@@ -69,10 +69,6 @@ foreach(cudax_target IN LISTS cudax_TARGETS)
     cudax_add_example(example_target "${example_src}" ${cudax_target})
   endforeach()
 endforeach()
-
-# FIXME: Enable MSVC
-if (cudax_ENABLE_CUDASTF AND
-    NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  # STF examples are handled separately:
-  add_subdirectory(stf)
-endif()
+ 
+# STF examples are handled separately:
+add_subdirectory(stf)

@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__cccl/unreachable.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 

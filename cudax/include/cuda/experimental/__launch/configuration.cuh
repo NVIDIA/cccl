@@ -326,7 +326,7 @@ struct __filter_options
     }
     else
     {
-      return ::cuda::std::tuple();
+      return ::cuda::std::tuple{};
     }
   }
 

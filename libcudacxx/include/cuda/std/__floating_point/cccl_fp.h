@@ -35,7 +35,7 @@ class __cccl_fp
 {
   static_assert(_Fmt != __fp_format::__invalid);
 
-  using __storage_type = __fp_storage_t<__cccl_fp>;
+  using __storage_type = __fp_storage_t<_Fmt>;
 
   __storage_type __storage_;
 
@@ -97,9 +97,9 @@ public:
   }
 
   template <class _Tp>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_storage_t<_Tp> __v) noexcept;
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_from_storage(__fp_storage_of_t<_Tp> __v) noexcept;
   template <class _Tp>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Tp> __fp_get_storage(_Tp __v) noexcept;
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_of_t<_Tp> __fp_get_storage(_Tp __v) noexcept;
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD

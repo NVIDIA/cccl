@@ -23,7 +23,7 @@
 template <class T>
 __host__ __device__ void test_fp_storage()
 {
-  using Storage = cuda::std::__fp_storage_t<T>;
+  using Storage = cuda::std::__fp_storage_of_t<T>;
   static_assert(cuda::std::is_integral_v<Storage>);
   static_assert(sizeof(Storage) == sizeof(T));
   static_assert(alignof(Storage) == alignof(T));

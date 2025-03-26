@@ -189,8 +189,14 @@ TEST_CASE("when_all cancels remaining children if cancel is detected", "[when_al
 template <class... Ts>
 struct just_ref
 {
-  using sender_concept        = cudax_async::sender_t;
-  using completion_signatures = cudax_async::completion_signatures<cudax_async::set_value_t(Ts&...)>;
+  using sender_concept = cudax_async::sender_t;
+
+  template <class Self, class... Env>
+  _CCCL_HOST_DEVICE static constexpr auto get_completion_signatures()
+  {
+    return cudax_async::completion_signatures<cudax_async::set_value_t(Ts & ...)>{};
+  }
+
   _CCCL_HOST_DEVICE just_ref connect(cudax_async::__ignore) const
   {
     return {};
