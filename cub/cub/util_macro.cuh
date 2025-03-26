@@ -81,4 +81,11 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
     }
 #endif
 
+// RAPIDS cuDF needs to avoid unrolling some loops in sort to prevent compile time issues
+#if defined(CCCL_AVOID_SORT_UNROLL)
+#  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_NOUNROLL()
+#else // ^^^ CCCL_AVOID_SORT_UNROLL ^^^ / vvv !CCCL_AVOID_SORT_UNROLL vvv
+#  define _CCCL_SORT_MAYBE_UNROLL() _CCCL_PRAGMA_UNROLL_FULL()
+#endif // !CCCL_AVOID_SORT_UNROLL
+
 CUB_NAMESPACE_END
