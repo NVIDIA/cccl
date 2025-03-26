@@ -63,10 +63,16 @@ template <class _From, class _To>
 using __copy_cvref_t = _CUDA_VSTD::__copy_cvref_t<_From, _To>;
 
 template <class _Fn, class... _As>
-using __call_result_t = decltype(__declval<_Fn>()(__declval<_As>()...));
+using __call_result_t = decltype(declval<_Fn>()(declval<_As>()...));
 
 template <class _Fn, class... _As>
 inline constexpr bool __callable = __type_valid_v<__call_result_t, _Fn, _As...>;
+
+template <class _Ty>
+using __decay_copyable_ = decltype(__decay_t<_Ty>(declval<_Ty>()));
+
+template <class... _As>
+inline constexpr bool __decay_copyable = (__type_valid_v<__decay_copyable_, _As> && ...);
 
 #if defined(__CUDA_ARCH__)
 template <class _Fn, class... _As>
@@ -85,31 +91,31 @@ template <class... _As>
 inline constexpr bool __nothrow_copyable = true;
 #else
 template <class _Fn, class... _As>
-using __nothrow_callable_ = _CUDA_VSTD::enable_if_t<noexcept(__declval<_Fn>()(__declval<_As>()...))>;
+using __nothrow_callable_ = _CUDA_VSTD::enable_if_t<noexcept(declval<_Fn>()(declval<_As>()...))>;
 
 template <class _Fn, class... _As>
 inline constexpr bool __nothrow_callable = __type_valid_v<__nothrow_callable_, _Fn, _As...>;
 
 template <class _Ty, class... _As>
-using __nothrow_constructible_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty{__declval<_As>()...})>;
+using __nothrow_constructible_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty{declval<_As>()...})>;
 
 template <class _Ty, class... _As>
 inline constexpr bool __nothrow_constructible = __type_valid_v<__nothrow_constructible_, _Ty, _As...>;
 
 template <class _Ty>
-using __nothrow_decay_copyable_ = _CUDA_VSTD::enable_if_t<noexcept(__decay_t<_Ty>(__declval<_Ty>()))>;
+using __nothrow_decay_copyable_ = _CUDA_VSTD::enable_if_t<noexcept(__decay_t<_Ty>(declval<_Ty>()))>;
 
 template <class... _As>
 inline constexpr bool __nothrow_decay_copyable = (__type_valid_v<__nothrow_decay_copyable_, _As> && ...);
 
 template <class _Ty>
-using __nothrow_movable_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty(__declval<_Ty>()))>;
+using __nothrow_movable_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty(declval<_Ty>()))>;
 
 template <class... _As>
 inline constexpr bool __nothrow_movable = (__type_valid_v<__nothrow_movable_, _As> && ...);
 
 template <class _Ty>
-using __nothrow_copyable_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty(__declval<const _Ty&>()))>;
+using __nothrow_copyable_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty(declval<const _Ty&>()))>;
 
 template <class... _As>
 inline constexpr bool __nothrow_copyable = (__type_valid_v<__nothrow_copyable_, _As> && ...);

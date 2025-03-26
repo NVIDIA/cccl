@@ -49,7 +49,7 @@ endfunction()
 file(GLOB example_srcs
   RELATIVE "${cudax_SOURCE_DIR}/examples"
   CONFIGURE_DEPENDS
-  *.cu
+  *.cu *.cpp
 )
 
 # Example requires pinned_memory_resource.
@@ -72,8 +72,7 @@ endforeach()
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND
-    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
-    NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF examples are handled separately:
   add_subdirectory(stf)
 endif()

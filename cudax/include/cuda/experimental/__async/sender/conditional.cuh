@@ -11,12 +11,31 @@
 #ifndef __CUDAX_ASYNC_DETAIL_CONDITIONAL
 #define __CUDAX_ASYNC_DETAIL_CONDITIONAL
 
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/type_list.h>
+
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/concepts.cuh>
 #include <cuda/experimental/__async/sender/just_from.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
 #include <cuda/experimental/__detail/config.cuh>
+
+#include <exception>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -34,6 +53,8 @@
 
 namespace cuda::experimental::__async
 {
+struct _FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE;
+
 struct __cond_t
 {
   template <class _Pred, class _Then, class _Else>
@@ -44,51 +65,66 @@ struct __cond_t
     _Else __else_;
   };
 
-  template <class... _Args>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
+  template <class... _As>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto __mk_complete_fn(_As&&... __as) noexcept
   {
     return [&](auto __sink) noexcept {
-      return __sink(static_cast<_Args&&>(__args)...);
+      return __sink(static_cast<_As&&>(__as)...);
     };
   }
 
-  template <class... _Args>
-  using __just_from_t = decltype(just_from(__cond_t::__mk_complete_fn(__declval<_Args>()...)));
+  template <class... _As>
+  using __just_from_t = decltype(just_from(__cond_t::__mk_complete_fn(declval<_As>()...)));
+
+  template <class _Pred, class _Then, class _Else, class... _Env>
+  struct __either_sig_fn
+  {
+    template <class... _As>
+    _CUDAX_API constexpr auto operator()() const
+    {
+      if constexpr (!_CUDA_VSTD::__is_callable_v<_Pred, _As&...>)
+      {
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __cond_t),
+                                            _WHAT(_FUNCTION_IS_NOT_CALLABLE),
+                                            _WITH_FUNCTION(_Pred),
+                                            _WITH_ARGUMENTS(_As & ...)>();
+      }
+      else if constexpr (!_CUDA_VSTD::is_convertible_v<_CUDA_VSTD::__call_result_t<_Pred, _As&...>, bool>)
+      {
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __cond_t),
+                                            _WHAT(_FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE),
+                                            _WITH_FUNCTION(_Pred),
+                                            _WITH_ARGUMENTS(_As & ...)>();
+      }
+      else
+      {
+        return concat_completion_signatures(
+          get_completion_signatures<__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
+          get_completion_signatures<__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
+      }
+    }
+  };
 
   template <class _Sndr, class _Rcvr, class _Pred, class _Then, class _Else>
   struct __opstate
   {
     using operation_state_concept = operation_state_t;
+    using __data_t                = __data<_Pred, _Then, _Else>;
+    using __env_t                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
 
-    _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate* __self) noexcept
-    {
-      return get_env(__self->__rcvr_);
-    }
-
-    template <class... _Args>
-    using __value_t = //
-      transform_completion_signatures<
-        completion_signatures_of_t<__call_result_t<_Then, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>,
-        completion_signatures_of_t<__call_result_t<_Else, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>>;
-
-    template <class... _Args>
-    using __opstate_t = //
+    template <class... _As>
+    using __opstate_t =        //
       _CUDA_VSTD::__type_list< //
-        connect_result_t<__call_result_t<_Then, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>,
-        connect_result_t<__call_result_t<_Else, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>>;
+        connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>,
+        connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>>;
 
     using __next_ops_variant_t = //
-      __value_types<completion_signatures_of_t<_Sndr, __opstate*>,
-                    __opstate_t,
-                    __type_concat_into_quote<__variant>::__call>;
+      __value_types<completion_signatures_of_t<_Sndr, __env_t>, __opstate_t, __type_concat_into_quote<__variant>::__call>;
 
-    using completion_signatures = //
-      transform_completion_signatures_of<_Sndr, __opstate*, __async::completion_signatures<>, __value_t>;
-
-    _CUDAX_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __data<_Pred, _Then, _Else>&& __data)
+    _CUDAX_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __data_t&& __data)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
-        , __data_{static_cast<__cond_t::__data<_Pred, _Then, _Else>>(__data)}
-        , __op_{__async::connect(static_cast<_Sndr&&>(__sndr), this)}
+        , __data_{static_cast<__data_t&&>(__data)}
+        , __op_{__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{*this})}
     {}
 
     _CUDAX_API void start() noexcept
@@ -96,25 +132,30 @@ struct __cond_t
       __async::start(__op_);
     }
 
-    template <class... _Args>
-    _CUDAX_API void set_value(_Args&&... __args) noexcept
+    template <class... _As>
+    _CUDAX_API void set_value(_As&&... __as) noexcept
     {
-      if (static_cast<_Pred&&>(__data_.__pred_)(__args...))
-      {
-        auto& __op = __ops_.__emplace_from(
-          connect,
-          static_cast<_Then&&>(__data_.__then_)(just_from(__cond_t::__mk_complete_fn(static_cast<_Args&&>(__args)...))),
-          __rcvr_ref(__rcvr_));
-        __async::start(__op);
-      }
-      else
-      {
-        auto& __op = __ops_.__emplace_from(
-          connect,
-          static_cast<_Else&&>(__data_.__else_)(just_from(__cond_t::__mk_complete_fn(static_cast<_Args&&>(__args)...))),
-          __rcvr_ref(__rcvr_));
-        __async::start(__op);
-      }
+      auto __just = just_from(__cond_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
+      _CUDAX_TRY( //
+        ({        //
+          if (static_cast<_Pred&&>(__data_.__pred_)(__as...))
+          {
+            auto& __op =
+              __ops_.__emplace_from(connect, static_cast<_Then&&>(__data_.__then_)(__just), __rcvr_ref{__rcvr_});
+            __async::start(__op);
+          }
+          else
+          {
+            auto& __op =
+              __ops_.__emplace_from(connect, static_cast<_Else&&>(__data_.__else_)(__just), __rcvr_ref{__rcvr_});
+            __async::start(__op);
+          }
+        }),
+        _CUDAX_CATCH(...) //
+        ({                //
+          __async::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+        }) //
+      )
     }
 
     template <class _Error>
@@ -128,9 +169,14 @@ struct __cond_t
       __async::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
+    _CUDAX_API auto get_env() const noexcept -> __env_t
+    {
+      return get_env(__rcvr_);
+    }
+
     _Rcvr __rcvr_;
-    __cond_t::__data<_Pred, _Then, _Else> __data_;
-    connect_result_t<_Sndr, __opstate*> __op_;
+    __data_t __data_;
+    connect_result_t<_Sndr, __rcvr_ref<__opstate, __env_t>> __op_;
     __next_ops_variant_t __ops_;
   };
 
@@ -176,22 +222,34 @@ struct __cond_t
 template <class _Sndr, class _Pred, class _Then, class _Else>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t
 {
+  using __data_t = __cond_t::__data<_Pred, _Then, _Else>;
   __cond_t __tag_;
-  __cond_t::__data<_Pred, _Then, _Else> __data_;
+  __data_t __data_;
   _Sndr __sndr_;
+
+  template <class _Self, class... _Env>
+  _CUDAX_API static constexpr auto get_completion_signatures()
+  {
+    _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
+    {
+      return concat_completion_signatures(
+        transform_completion_signatures(__child_completions, __either_sig_fn<_Pred, _Then, _Else, _Env...>{}),
+        __eptr_completion());
+    }
+
+    _CCCL_UNREACHABLE();
+  }
 
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
   {
-    return {static_cast<_Sndr&&>(__sndr_),
-            static_cast<_Rcvr&&>(__rcvr),
-            static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_)};
+    return {static_cast<_Sndr&&>(__sndr_), static_cast<_Rcvr&&>(__rcvr), static_cast<__data_t&&>(__data_)};
   }
 
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
   {
-    return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_)};
+    return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__data_t&&>(__data_)};
   }
 
   _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
@@ -204,10 +262,10 @@ template <class _Sndr, class _Pred, class _Then, class _Else>
 _CUDAX_TRIVIAL_API auto __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
-  if constexpr (__is_non_dependent_sender<_Sndr>)
+  if constexpr (!dependent_sender<_Sndr>)
   {
     using __completions = completion_signatures_of_t<__sndr_t<_Sndr, _Pred, _Then, _Else>>;
-    static_assert(__is_completion_signatures<__completions>);
+    static_assert(__valid_completion_signatures<__completions>);
   }
 
   return __sndr_t<_Sndr, _Pred, _Then, _Else>{
@@ -221,10 +279,10 @@ template <class _Sndr>
 _CUDAX_TRIVIAL_API auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
-  if constexpr (__is_non_dependent_sender<_Sndr>)
+  if constexpr (!dependent_sender<_Sndr>)
   {
     using __completions = completion_signatures_of_t<__sndr_t<_Sndr, _Pred, _Then, _Else>>;
-    static_assert(__is_completion_signatures<__completions>);
+    static_assert(__valid_completion_signatures<__completions>);
   }
 
   return __sndr_t<_Sndr, _Pred, _Then, _Else>{

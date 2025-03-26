@@ -42,13 +42,13 @@ struct unknown_unit : public hierarchy_level
 namespace detail
 {
 template <typename _Level>
-_CCCL_NODISCARD _CUDAX_API constexpr auto __as_level(_Level __l) noexcept -> _Level
+[[nodiscard]] _CUDAX_API constexpr auto __as_level(_Level __l) noexcept -> _Level
 {
   return __l;
 }
 
 template <typename _LevelFn>
-_CCCL_NODISCARD _CUDAX_API constexpr auto __as_level(_LevelFn* __fn) noexcept -> decltype(__fn())
+[[nodiscard]] _CUDAX_API constexpr auto __as_level(_LevelFn* __fn) noexcept -> decltype(__fn())
 {
   return {};
 }
@@ -65,7 +65,7 @@ namespace detail
 // Function to sometimes convince the compiler something is a constexpr and not really accessing runtime storage
 // Mostly a work around for what was addressed in P2280 (c++23) by leveraging the argumentless constructor of extents
 template <typename T, size_t... Extents>
-_CCCL_NODISCARD _CUDAX_API constexpr auto fool_compiler(const dimensions<T, Extents...>& ex)
+[[nodiscard]] _CUDAX_API constexpr auto fool_compiler(const dimensions<T, Extents...>& ex)
 {
   if constexpr (dimensions<T, Extents...>::rank_dynamic() == 0)
   {
@@ -104,7 +104,7 @@ template <typename QueryLevel>
 struct get_level_helper
 {
   template <typename TopLevel, typename... Levels>
-  _CCCL_NODISCARD _CUDAX_API constexpr auto& operator()(const TopLevel& top, const Levels&... levels)
+  [[nodiscard]] _CUDAX_API constexpr auto& operator()(const TopLevel& top, const Levels&... levels)
   {
     if constexpr (::cuda::std::is_same_v<QueryLevel, __level_type_of<TopLevel>>)
     {
@@ -151,14 +151,14 @@ template <typename LUnit, bool Reversed = false>
 struct __make_hierarchy
 {
   template <class Levels, size_t... _Ids>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API static constexpr auto
+  [[nodiscard]] _CUDAX_TRIVIAL_API static constexpr auto
   __apply_reverse(const Levels& ls, ::cuda::std::index_sequence<_Ids...>) noexcept
   {
     return __make_hierarchy<LUnit, true>()(::cuda::std::get<_Ids>(ls)...);
   }
 
   template <typename... Levels>
-  _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const Levels&... ls) const noexcept
+  [[nodiscard]] _CUDAX_API constexpr auto operator()(const Levels&... ls) const noexcept
   {
     using UnitOrDefault = ::cuda::std::conditional_t<
       ::cuda::std::is_same_v<void, LUnit>,
@@ -181,7 +181,7 @@ struct __make_hierarchy
 };
 
 template <typename LUnit>
-_CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_end() noexcept
+[[nodiscard]] _CUDAX_API constexpr auto get_levels_range_end() noexcept
 {
   return ::cuda::std::make_tuple();
 }
@@ -189,7 +189,7 @@ _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_end() noexcept
 // Find LUnit in Levels... and discard the rest
 // maybe_unused needed for MSVC
 template <typename LUnit, typename LDims, typename... Levels>
-_CCCL_NODISCARD _CUDAX_API constexpr auto
+[[nodiscard]] _CUDAX_API constexpr auto
 get_levels_range_end(const LDims& l, [[maybe_unused]] const Levels&... levels) noexcept
 {
   if constexpr (::cuda::std::is_same_v<LUnit, __level_type_of<LDims>>)
@@ -204,7 +204,7 @@ get_levels_range_end(const LDims& l, [[maybe_unused]] const Levels&... levels) n
 
 // Find the LTop in Levels... and discard the preceding ones
 template <typename LTop, typename LUnit, typename LTopDims, typename... Levels>
-_CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims& ltop, const Levels&... levels) noexcept
+[[nodiscard]] _CUDAX_API constexpr auto get_levels_range_start(const LTopDims& ltop, const Levels&... levels) noexcept
 {
   if constexpr (::cuda::std::is_same_v<LTop, __level_type_of<LTopDims>>)
   {
@@ -218,32 +218,32 @@ _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims&
 
 // Creates a new hierarchy from Levels... cutting out levels between LTop and LUnit
 template <typename LTop, typename LUnit, typename... Levels>
-_CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range(const Levels&... levels) noexcept
+[[nodiscard]] _CUDAX_API constexpr auto get_levels_range(const Levels&... levels) noexcept
 {
   return get_levels_range_start<LTop, LUnit>(levels...);
 }
 
 template <typename T, size_t... Extents, size_t... Ids>
-_CCCL_NODISCARD _CUDAX_API constexpr auto
+[[nodiscard]] _CUDAX_API constexpr auto
 dims_to_count_helper(const dimensions<T, Extents...>& ex, ::cuda::std::index_sequence<Ids...>)
 {
   return (ex.extent(Ids) * ...);
 }
 
 template <typename T, size_t... Extents>
-_CCCL_NODISCARD _CUDAX_API constexpr auto dims_to_count(const dimensions<T, Extents...>& dims) noexcept
+[[nodiscard]] _CUDAX_API constexpr auto dims_to_count(const dimensions<T, Extents...>& dims) noexcept
 {
   return dims_to_count_helper(dims, ::cuda::std::make_index_sequence<sizeof...(Extents)>{});
 }
 
 template <typename... Levels>
-_CCCL_NODISCARD _CUDAX_API constexpr auto get_level_counts_helper(const Levels&... ls)
+[[nodiscard]] _CUDAX_API constexpr auto get_level_counts_helper(const Levels&... ls)
 {
   return ::cuda::std::make_tuple(dims_to_count(ls.dims)...);
 }
 
 template <typename Unit, typename Level, typename Dims>
-_CCCL_NODISCARD _CUDAX_API constexpr auto replace_with_intrinsics_or_constexpr(const Dims& dims)
+[[nodiscard]] _CUDAX_API constexpr auto replace_with_intrinsics_or_constexpr(const Dims& dims)
 {
   if constexpr (is_core_cuda_hierarchy_level<Level> && is_core_cuda_hierarchy_level<Unit> && Dims::rank_dynamic() != 0)
   {
@@ -265,7 +265,7 @@ template <typename BottomUnit>
 struct hierarchy_extents_helper
 {
   template <typename LTopDims, typename... Levels>
-  _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const LTopDims& ltop, const Levels&... levels) noexcept
+  [[nodiscard]] _CUDAX_API constexpr auto operator()(const LTopDims& ltop, const Levels&... levels) noexcept
   {
     using TopLevel = __level_type_of<LTopDims>;
     if constexpr (sizeof...(Levels) == 0)
@@ -282,7 +282,7 @@ struct hierarchy_extents_helper
 };
 
 template <typename T, size_t... Extents>
-_CCCL_NODISCARD _CCCL_DEVICE constexpr auto static_index_hint(const dimensions<T, Extents...>& dims, dim3 index)
+[[nodiscard]] _CCCL_DEVICE constexpr auto static_index_hint(const dimensions<T, Extents...>& dims, dim3 index)
 {
   using hinted_index_t = dimensions<T, (Extents == 1 ? 0 : ::cuda::std::dynamic_extent)...>;
   return hinted_index_t(index.x, index.y, index.z);
@@ -292,7 +292,7 @@ template <typename BottomUnit>
 struct index_helper
 {
   template <typename LTopDims, typename... Levels>
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr auto operator()(const LTopDims& ltop, const Levels&... levels) noexcept
+  [[nodiscard]] _CCCL_DEVICE constexpr auto operator()(const LTopDims& ltop, const Levels&... levels) noexcept
   {
     using TopLevel = __level_type_of<LTopDims>;
     if constexpr (sizeof...(Levels) == 0)
@@ -314,7 +314,7 @@ template <typename BottomUnit>
 struct rank_helper
 {
   template <typename LTopDims, typename... Levels>
-  _CCCL_NODISCARD _CCCL_DEVICE constexpr auto operator()(const LTopDims& ltop, const Levels&... levels) noexcept
+  [[nodiscard]] _CCCL_DEVICE constexpr auto operator()(const LTopDims& ltop, const Levels&... levels) noexcept
   {
     using TopLevel = __level_type_of<LTopDims>;
     if constexpr (sizeof...(Levels) == 0)
@@ -340,7 +340,7 @@ struct rank_helper
 struct __empty_hierarchy
 {
   template <typename _Other>
-  _CCCL_NODISCARD _Other combine(const _Other& __other) const
+  [[nodiscard]] _Other combine(const _Other& __other) const
   {
     return __other;
   }
@@ -397,7 +397,7 @@ struct hierarchy_dimensions
   {}
 
 #  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool operator==(const hierarchy_dimensions&) const noexcept = default;
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const hierarchy_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
   operator==(const hierarchy_dimensions& left, const hierarchy_dimensions& right) noexcept
@@ -415,7 +415,7 @@ struct hierarchy_dimensions
 private:
   // This being static is a bit of a hack to make extents_type working without incomplete class member access
   template <typename Unit, typename Level>
-  _CCCL_NODISCARD _CUDAX_API static constexpr auto
+  [[nodiscard]] _CUDAX_API static constexpr auto
   levels_range_static(const ::cuda::std::tuple<Levels...>& levels) noexcept
   {
     static_assert(has_level<Level, hierarchy_dimensions<BottomUnit, Levels...>>);
@@ -426,7 +426,7 @@ private:
 
   // TODO is this useful enough to expose?
   template <typename Unit, typename Level>
-  _CCCL_NODISCARD _CUDAX_API constexpr auto levels_range() const noexcept
+  [[nodiscard]] _CUDAX_API constexpr auto levels_range() const noexcept
   {
     return levels_range_static<Unit, Level>(levels);
   }
@@ -435,7 +435,7 @@ private:
   struct fragment_helper
   {
     template <typename... Selected>
-    _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const Selected&... levels) const noexcept
+    [[nodiscard]] _CUDAX_API constexpr auto operator()(const Selected&... levels) const noexcept
     {
       return hierarchy_dimensions<Unit, Selected...>(levels...);
     }
@@ -448,7 +448,7 @@ public:
   template <typename Unit, typename Level>
   using extents_type = decltype(::cuda::std::apply(
     ::cuda::std::declval<detail::hierarchy_extents_helper<Unit>>(),
-    levels_range_static<Unit, Level>(::cuda::std::declval<::cuda::std::tuple<Levels...>>())));
+    hierarchy_dimensions::levels_range_static<Unit, Level>(::cuda::std::declval<::cuda::std::tuple<Levels...>>())));
 
   /**
    * @brief Get a fragment of this hierarchy

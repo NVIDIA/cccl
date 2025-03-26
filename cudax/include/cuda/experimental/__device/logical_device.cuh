@@ -43,20 +43,20 @@ public:
 
   // We might want to make this private depending on how this type ends up looking like long term,
   // not documenting it for now
-  _CCCL_NODISCARD constexpr CUcontext get_context() const noexcept
+  [[nodiscard]] constexpr CUcontext get_context() const noexcept
   {
     return __ctx;
   }
 
   //! @brief Retrieve the device on which this logical device resides
-  _CCCL_NODISCARD constexpr device_ref get_underlying_device() const noexcept
+  [[nodiscard]] constexpr device_ref get_underlying_device() const noexcept
   {
     return __dev_id;
   }
 
   //! @brief Retrieve the kind of logical device stored in this object
   //! The kind indicates if this logical_device holds a device or green_context
-  _CCCL_NODISCARD constexpr kinds get_kind() const noexcept
+  [[nodiscard]] constexpr kinds get_kind() const noexcept
   {
     return __kind;
   }

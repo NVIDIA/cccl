@@ -60,8 +60,8 @@ public:
   //! @param __alignment The requested alignment of the allocation.
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
-  _CCCL_NODISCARD void* allocate(const size_t __bytes,
-                                 const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const
+  [[nodiscard]] void* allocate(const size_t __bytes,
+                               const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
@@ -82,9 +82,9 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void*
+  allocate_async(const size_t __bytes, const size_t __alignment, [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
-    (void) __stream;
     return allocate(__bytes, __alignment);
   }
 
@@ -93,9 +93,8 @@ public:
   //! @param __stream Stream on which to perform allocation.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(const size_t __bytes, [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
-    (void) __stream;
     return allocate(__bytes);
   }
 
@@ -103,13 +102,13 @@ public:
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
   //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  void deallocate(
-    void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const noexcept
+  void deallocate(void* __ptr,
+                  const size_t,
+                  [[maybe_unused]] const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to managed_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(::cudaFree, "managed_memory_resource::deallocate failed", __ptr);
-    (void) __alignment;
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -121,11 +120,12 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate_async` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
-  void deallocate_async(void* __ptr, const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  void deallocate_async(void* __ptr,
+                        const size_t __bytes,
+                        [[maybe_unused]] const size_t __alignment,
+                        [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
     deallocate(__ptr, __bytes);
-    (void) __alignment;
-    (void) __stream;
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -136,16 +136,15 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate_async` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
-  void deallocate_async(void* __ptr, size_t __bytes, const ::cuda::stream_ref __stream)
+  void deallocate_async(void* __ptr, size_t __bytes, [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
     deallocate(__ptr, __bytes);
-    (void) __stream;
   }
 
   //! @brief Equality comparison with another \c managed_memory_resource.
   //! @param __other The other \c managed_memory_resource.
   //! @return Whether both \c managed_memory_resource were constructed with the same flags.
-  _CCCL_NODISCARD constexpr bool operator==(managed_memory_resource const& __other) const noexcept
+  [[nodiscard]] constexpr bool operator==(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
@@ -153,7 +152,7 @@ public:
   //! @brief Inequality comparison with another \c managed_memory_resource.
   //! @param __other The other \c managed_memory_resource.
   //! @return Whether both \c managed_memory_resource were constructed with different flags.
-  _CCCL_NODISCARD constexpr bool operator!=(managed_memory_resource const& __other) const noexcept
+  [[nodiscard]] constexpr bool operator!=(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }

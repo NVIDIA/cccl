@@ -313,10 +313,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
 
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
-#  ifndef _CCCL_NO_INLINE_VARIABLES
 template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
-#  endif // !_CCCL_NO_INLINE_VARIABLES
 
 //! \brief A pointer to a type list, often used as a function argument.
 template <class... _Ts>
@@ -346,18 +344,38 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*)
 
 template <class _Ret, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
-  -> __type_list<_Args...>;
+  -> __type_list<_Ret, _Args...>;
 } // namespace __detail
 
-//! \brief Given a type that is a specialization of a class template, return a
-//! type list of the template arguments.
+//! \brief Given a type that is can be interpreted as a type list, return its
+//! type list interpretation. Types that can be interpreted as a type
+//! list are of the following forms:
+//!
+//! \li `C<Ts...>`, for any class template `C` and types `Ts...`.
+//! \li `C<T, T... Vs>`, for any class template `C`, type `T` and values `Vs...`.
+//!     The resulting type is `_Fn<integral_constant<T, Vs>...>`.
+//! \li `R(As...)`, for any function type `R(As...)`. The resulting type is
+//!     `_Fn<R, As...>`.
 template <class _List>
 using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
 
-//! \brief Given a type that is a specialization of a class template and a
-//! meta-callable, invoke the callable with the template arguments.
+//! \brief Given a type that can be interpreted as a type list and a
+//! meta-callable, invoke the meta-callable with the types in the list.
+//! \c __as_type_list is used to convert the \c _List type to a specialization
+//! of \c __type_list.
+//!
+//! \sa __as_type_list
 template <class _Fn, class _List>
 using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
+
+//! \brief Given a type that can be interpreted as a type list and a class or
+//! alias template, instantiate the template with the types in the list.
+//! \c __as_type_list is used to convert the \c _List type to a specialization
+//! of \c __type_list.
+//!
+//! \sa __as_type_list
+template <template <class...> class _Fn, class _List>
+using __type_apply_q = __type_call<__as_type_list<_List>, __type_quote<_Fn>>;
 
 namespace __detail
 {

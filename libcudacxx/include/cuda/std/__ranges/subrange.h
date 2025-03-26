@@ -303,24 +303,24 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(copyable<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin() const
   {
     return __begin_;
   }
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES((!copyable<_It>) )
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin()
   {
     return _CUDA_VSTD::move(__begin_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent end() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent end() const
   {
     return __end_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
   {
     return __begin_ == __end_;
   }
@@ -341,14 +341,14 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(forward_iterator<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) const&
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) const&
   {
     auto __tmp = *this;
     __tmp.advance(__n);
     return __tmp;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
   {
     advance(__n);
     return _CUDA_VSTD::move(*this);
@@ -356,7 +356,7 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(bidirectional_iterator<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange prev(iter_difference_t<_Iter> __n = 1) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange prev(iter_difference_t<_Iter> __n = 1) const
   {
     auto __tmp = *this;
     __tmp.advance(-__n);

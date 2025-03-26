@@ -88,7 +88,7 @@ enum class __inplace_vector_specialization
 };
 
 template <class _Tp, size_t _Capacity>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __inplace_vector_specialization
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __inplace_vector_specialization
 __select_inplace_vector_specialization()
 {
   if (_Capacity == 0)
@@ -169,44 +169,44 @@ struct __inplace_vector_storage : public __inplace_vector_destruct_base<_Tp, _Ca
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__inplace_vector_storage, __inplace_vector_destruct_base, _Tp, _Capacity);
 
   // [containers.sequences.inplace.vector.members] size/capacity
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     return static_cast<size_type>(this->__size_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
   {
     return this->__size_ == 0;
   }
 
   // [containers.sequences.inplace.vector.data], data access
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _Tp* data() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* data() noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(this->__elems_));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const _Tp* data() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI const _Tp* data() const noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<const _Tp*>(this->__elems_));
   }
 
   // [containers.sequences.inplace.vector.itertators] iterators
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI iterator begin() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI iterator begin() noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(this->__elems_));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const_iterator begin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI const_iterator begin() const noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<const _Tp*>(this->__elems_));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI iterator end() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI iterator end() noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<_Tp*>(this->__elems_) + this->__size_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const_iterator end() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI const_iterator end() const noexcept
   {
     return _CUDA_VSTD::launder(reinterpret_cast<const _Tp*>(this->__elems_) + this->__size_);
   }
@@ -504,44 +504,44 @@ struct __inplace_vector_base<_Tp, _Capacity, __inplace_vector_specialization::__
   _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base& operator=(__inplace_vector_base&&)      = default;
 
   // [containers.sequences.inplace.vector.members] size/capacity
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     return static_cast<size_type>(__size_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
   {
     return __size_ == 0;
   }
 
   // [containers.sequences.inplace.vector.data], data access
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data() noexcept
   {
     return __elems_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* data() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* data() const noexcept
   {
     return __elems_;
   }
 
   // [containers.sequences.inplace.vector.itertators] iterators
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
   {
     return __elems_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
   {
     return __elems_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
   {
     return __elems_ + __size_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
   {
     return __elems_ + __size_;
   }
@@ -605,44 +605,44 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
   _CCCL_HIDE_FROM_ABI constexpr __inplace_vector_base() = default;
 
   // [containers.sequences.inplace.vector.members] size/capacity
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type size() const noexcept
   {
     return 0;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const noexcept
   {
     return true;
   }
 
   // [containers.sequences.inplace.vector.data], data access
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data() noexcept
   {
     return nullptr;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* data() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* data() const noexcept
   {
     return nullptr;
   }
 
   // [containers.sequences.inplace.vector.itertators] iterators
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator begin() noexcept
   {
     return nullptr;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
   {
     return nullptr;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator end() noexcept
   {
     return nullptr;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator end() const noexcept
   {
     return nullptr;
   }
@@ -1018,7 +1018,7 @@ public:
   }
 
   // [containers.sequences.inplace.vector.access], element access
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
   {
     if (__pos > this->size())
     {
@@ -1027,7 +1027,7 @@ public:
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(const size_type __pos) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(const size_type __pos) const
   {
     if (__pos > this->size())
     {
@@ -1036,32 +1036,32 @@ public:
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](const size_type __pos) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](const size_type __pos) noexcept
   {
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
   {
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
   {
     return *this->begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
   {
     return *this->begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
   {
     return *(this->end() - 1);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
   {
     return *(this->end() - 1);
   }
@@ -1072,42 +1072,42 @@ public:
   using __base::begin;
   using __base::end;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
   {
     return reverse_iterator{this->end()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator{this->end()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
   {
     return reverse_iterator{this->begin()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator{this->begin()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
   {
     return this->begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
   {
     return this->end();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
   {
     return const_reverse_iterator{this->end()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator{this->begin()};
   }
@@ -1116,12 +1116,12 @@ public:
   using __base::empty;
   using __base::size;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
   {
     return _Capacity;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type capacity() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type capacity() const noexcept
   {
     return _Capacity;
   }
@@ -1822,44 +1822,44 @@ public:
   }
 
   // [containers.sequences.inplace.vector.access], element access
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(const size_type __pos)
   {
     _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(const size_type __pos) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(const size_type __pos) const
   {
     _CUDA_VSTD::__throw_out_of_range("inplace_vector::at");
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](const size_type __pos) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](const size_type __pos) noexcept
   {
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](const size_type __pos) const noexcept
   {
     return *(this->begin() + __pos);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
   {
     return *this->begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
   {
     return *this->begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
   {
     return *(this->end() - 1);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
   {
     return *(this->end() - 1);
   }
@@ -1870,42 +1870,42 @@ public:
   using __base::begin;
   using __base::end;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rbegin() noexcept
   {
     return reverse_iterator{this->end()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator{this->end()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reverse_iterator rend() noexcept
   {
     return reverse_iterator{this->begin()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator{this->begin()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cbegin() const noexcept
   {
     return this->begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator cend() const noexcept
   {
     return this->end();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crbegin() const noexcept
   {
     return const_reverse_iterator{this->end()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator{this->begin()};
   }
@@ -1914,12 +1914,12 @@ public:
   using __base::empty;
   using __base::size;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
   {
     return 0;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type capacity() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type capacity() const noexcept
   {
     return 0;
   }

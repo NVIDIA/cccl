@@ -89,17 +89,16 @@
     }                                                                                           \
   }
 
-#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                                  \
-  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                                                        \
-  inline constexpr struct WRAPPED_API_NAME##_t                                                         \
-  {                                                                                                    \
-    template <class... As>                                                                             \
-    void operator()(As... args) const                                                                  \
-    {                                                                                                  \
-      launch(WRAPPED_API_NAME##_invocable_t{}, args...);                                               \
-    }                                                                                                  \
-  } WRAPPED_API_NAME; /* TODO(bgruber): mark with [[maybe_unused]] in C++17. Below is a workaround: */ \
-  static_assert(((void) WRAPPED_API_NAME, true), "")
+#define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)           \
+  DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                 \
+  [[maybe_unused]] inline constexpr struct WRAPPED_API_NAME##_t \
+  {                                                             \
+    template <class... As>                                      \
+    void operator()(As... args) const                           \
+    {                                                           \
+      launch(WRAPPED_API_NAME##_invocable_t{}, args...);        \
+    }                                                           \
+  } WRAPPED_API_NAME
 
 #define ESCAPE_LIST(...) __VA_ARGS__
 

@@ -53,7 +53,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT lldiv_t
 };
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr div_t div(int __x, int __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr div_t div(int __x, int __y) noexcept
 {
   div_t __result{};
   __result.quot = __x / __y;
@@ -61,7 +61,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr div_t div(int __x, int __y) 
   return __result;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ldiv_t ldiv(long __x, long __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr ldiv_t ldiv(long __x, long __y) noexcept
 {
   ldiv_t __result{};
   __result.quot = __x / __y;
@@ -69,12 +69,12 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ldiv_t ldiv(long __x, long _
   return __result;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ldiv_t div(long __x, long __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr ldiv_t div(long __x, long __y) noexcept
 {
   return _CUDA_VSTD::ldiv(__x, __y);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr lldiv_t lldiv(long long __x, long long __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr lldiv_t lldiv(long long __x, long long __y) noexcept
 {
   lldiv_t __result{};
   __result.quot = __x / __y;
@@ -82,7 +82,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr lldiv_t lldiv(long long __x,
   return __result;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr lldiv_t div(long long __x, long long __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr lldiv_t div(long long __x, long long __y) noexcept
 {
   return _CUDA_VSTD::lldiv(__x, __y);
 }

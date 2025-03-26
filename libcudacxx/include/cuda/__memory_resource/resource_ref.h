@@ -385,7 +385,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES _Alloc_base : _Resource_ref_base
       , __static_vtable(__static_vtabl_)
   {}
 
-  _CCCL_NODISCARD void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  [[nodiscard]] void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
     return __static_vtable->__alloc_fn(_Get_object(), __bytes, __alignment);
   }
@@ -425,12 +425,12 @@ struct _Async_alloc_base : public _Alloc_base<_Vtable, _Wrapper_type>
       : _Alloc_base<_Vtable, _Wrapper_type>(__object_, __static_vtabl_)
   {}
 
-  _CCCL_NODISCARD void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
     return this->__static_vtable->__async_alloc_fn(this->_Get_object(), __bytes, __alignment, __stream);
   }
 
-  _CCCL_NODISCARD void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
   {
     return this->__static_vtable->__async_alloc_fn(this->_Get_object(), __bytes, alignof(max_align_t), __stream);
   }
@@ -592,7 +592,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                    _CCCL_AND __properties_match<_OtherProperties...>)
-  _CCCL_NODISCARD bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __rhs) const
+  [[nodiscard]] bool operator==(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __rhs) const
   {
     // BUGBUG: comparing function pointers like this can lead to false negatives:
     return (this->__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
@@ -613,7 +613,7 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                    _CCCL_AND __properties_match<_OtherProperties...>)
-  _CCCL_NODISCARD bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __rhs) const
+  [[nodiscard]] bool operator!=(const basic_resource_ref<_Alloc_type, _OtherProperties...>& __rhs) const
   {
     return !(*this == __rhs);
   }

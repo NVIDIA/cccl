@@ -21,8 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/cast.h>
+#include <cuda/std/__floating_point/cccl_fp.h>
 #include <cuda/std/__floating_point/common_type.h>
+#include <cuda/std/__floating_point/constants.h>
 #include <cuda/std/__floating_point/conversion_rank_order.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/mask.h>

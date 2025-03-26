@@ -62,7 +62,7 @@ struct __pipeable
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__pipeable);
 
 template <class _Tp>
-_Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);
+_CCCL_HOST_DEVICE _Tp __derived_from_range_adaptor_closure(__range_adaptor_closure<_Tp>*);
 
 template <class _Tp>
 _CCCL_CONCEPT __is_range_adaptor_closure = _CCCL_REQUIRES_EXPR((_Tp))(
@@ -82,7 +82,7 @@ _CCCL_CONCEPT __range_adaptor_can_pipe_compose = _CCCL_REQUIRES_EXPR((_Closure, 
 
 _CCCL_TEMPLATE(class _Range, class _Closure)
 _CCCL_REQUIRES(__range_adaptor_can_pipe_invoke<_Range, _Closure>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
 operator|(_Range&& __range, _Closure&& __closure) noexcept(is_nothrow_invocable_v<_Closure, _Range>)
 {
   return _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Closure>(__closure), _CUDA_VSTD::forward<_Range>(__range));
@@ -90,7 +90,7 @@ operator|(_Range&& __range, _Closure&& __closure) noexcept(is_nothrow_invocable_
 
 _CCCL_TEMPLATE(class _Closure, class _OtherClosure)
 _CCCL_REQUIRES(__range_adaptor_can_pipe_compose<_Closure, _OtherClosure>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 operator|(_Closure&& __closure, _OtherClosure&& __other_closure) noexcept(
   is_nothrow_constructible_v<decay_t<_Closure>, _Closure>
   && is_nothrow_constructible_v<decay_t<_OtherClosure>, _OtherClosure>)

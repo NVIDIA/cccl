@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2018, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -84,20 +84,20 @@ struct BlockReduceWarpReductions
     WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
     /// The logical warp size for warp reductions
-    LOGICAL_WARP_SIZE = _CUDA_VSTD::min(BLOCK_THREADS, WARP_THREADS),
+    LOGICAL_WARP_SIZE = (BLOCK_THREADS < WARP_THREADS ? BLOCK_THREADS : WARP_THREADS), // MSVC bug with cuda::std::min
 
     /// Whether or not the logical warp size evenly divides the thread block size
     EVEN_WARP_MULTIPLE = (BLOCK_THREADS % LOGICAL_WARP_SIZE == 0)
   };
 
   ///  WarpReduce utility type
-  using WarpReduce = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
+  using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
 
   /// Shared memory storage layout type
   struct _TempStorage
   {
     /// Buffer for warp-synchronous reduction
-    typename WarpReduce::TempStorage warp_reduce[WARPS];
+    typename WarpReduceInternal::TempStorage warp_reduce[WARPS];
 
     /// Shared totals from each warp-synchronous reduction
     T warp_aggregates[WARPS];
@@ -217,7 +217,7 @@ struct BlockReduceWarpReductions
 
     // Warp reduction in every warp
     T warp_aggregate =
-      WarpReduce(temp_storage.warp_reduce[warp_id])
+      WarpReduceInternal(temp_storage.warp_reduce[warp_id])
         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, ::cuda::std::plus<>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
@@ -247,7 +247,7 @@ struct BlockReduceWarpReductions
                          : num_valid - warp_offset;
 
     // Warp reduction in every warp
-    T warp_aggregate = WarpReduce(temp_storage.warp_reduce[warp_id])
+    T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
                          .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s

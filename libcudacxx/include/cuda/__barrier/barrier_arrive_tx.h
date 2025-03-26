@@ -36,7 +36,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();
-_CCCL_NODISCARD _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
+[[nodiscard]] _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token barrier_arrive_tx(
   barrier<thread_scope_block>& __b,
   _CUDA_VSTD::ptrdiff_t __arrive_count_update,
   _CUDA_VSTD::ptrdiff_t __transaction_count_update)

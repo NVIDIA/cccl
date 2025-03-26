@@ -55,7 +55,7 @@ public:
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!
   //! @return int The native device ordinal held by the `device_ref` object
-  _CCCL_NODISCARD constexpr int get() const noexcept
+  [[nodiscard]] constexpr int get() const noexcept
   {
     return __id_;
   }
@@ -97,14 +97,14 @@ public:
   //!
   //! @sa device::attrs
   template <typename _Attr>
-  _CCCL_NODISCARD auto attr(_Attr __attr) const
+  [[nodiscard]] auto attr(_Attr __attr) const
   {
     return __attr(*this);
   }
 
   //! @overload
   template <::cudaDeviceAttr _Attr>
-  _CCCL_NODISCARD auto attr() const
+  [[nodiscard]] auto attr() const
   {
     return attr(detail::__dev_attr<_Attr>());
   }
@@ -112,7 +112,7 @@ public:
   //! @brief Retrieve string with the name of this device.
   //!
   //! @return String containing the name of this device.
-  _CCCL_NODISCARD ::std::string get_name() const
+  [[nodiscard]] ::std::string get_name() const
   {
     constexpr int __max_name_length = 256;
     ::std::string __name(256, 0);

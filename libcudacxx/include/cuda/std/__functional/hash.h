@@ -34,6 +34,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/climits>
 #include <cuda/std/cstdint>
 #include <cuda/std/cstring>
 
@@ -52,7 +53,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _Size __loadword(const void* __p)
 // We use murmur2 when size_t is 32 bits, and cityhash64 when size_t
 // is 64 bits.  This is because cityhash64 uses 64bit x 64bit
 // multiplication, which can be very slow on 32-bit systems.
-template <class _Size, size_t = sizeof(_Size) * __CHAR_BIT__>
+template <class _Size, size_t = sizeof(_Size) * CHAR_BIT>
 struct __murmur2_or_cityhash;
 
 template <class _Size>
@@ -82,10 +83,10 @@ _Size __murmur2_or_cityhash<_Size, 32>::operator()(const void* __key, _Size __le
   {
     case 3:
       __h ^= static_cast<_Size>(__data[2] << 16);
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case 2:
       __h ^= static_cast<_Size>(__data[1] << 8);
-      _CCCL_FALLTHROUGH();
+      [[fallthrough]];
     case 1:
       __h ^= __data[0];
       __h *= __m;

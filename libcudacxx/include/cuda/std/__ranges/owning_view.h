@@ -69,80 +69,80 @@ public:
   _CCCL_HIDE_FROM_ABI owning_view(owning_view&&)            = default;
   _CCCL_HIDE_FROM_ABI owning_view& operator=(owning_view&&) = default;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp& base() & noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp& base() & noexcept
   {
     return __r_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Rp& base() const& noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Rp& base() const& noexcept
   {
     return __r_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp&& base() && noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp&& base() && noexcept
   {
     return _CUDA_VSTD::move(__r_);
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Rp&& base() const&& noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Rp&& base() const&& noexcept
   {
     return _CUDA_VSTD::move(__r_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Rp> begin()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Rp> begin()
   {
     return _CUDA_VRANGES::begin(__r_);
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr sentinel_t<_Rp> end()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr sentinel_t<_Rp> end()
   {
     return _CUDA_VRANGES::end(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto begin() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto begin() const
   {
     return _CUDA_VRANGES::begin(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(range<const _Range>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto end() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto end() const
   {
     return _CUDA_VRANGES::end(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, _Range&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
   {
     return _CUDA_VRANGES::empty(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(invocable<_CUDA_VRANGES::__empty::__fn, const _Range&>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
   {
     return _CUDA_VRANGES::empty(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<_Range>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size()
   {
     return _CUDA_VRANGES::size(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(sized_range<const _Range>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
   {
     return _CUDA_VRANGES::size(__r_);
   }
 
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<_Range>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data()
   {
     return _CUDA_VRANGES::data(__r_);
   }
   _CCCL_TEMPLATE(class _Range = _Rp)
   _CCCL_REQUIRES(contiguous_range<const _Range>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data() const
   {
     return _CUDA_VRANGES::data(__r_);
   }

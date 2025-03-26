@@ -106,7 +106,7 @@ struct __not_fn_t
 
 _CCCL_TEMPLATE(class _Fn)
 _CCCL_REQUIRES(is_constructible_v<decay_t<_Fn>, _Fn> _CCCL_AND is_move_constructible_v<decay_t<_Fn>>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto not_fn(_Fn&& __f)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto not_fn(_Fn&& __f)
 {
   return __not_fn_t<decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__f));
 }
