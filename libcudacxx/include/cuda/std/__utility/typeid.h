@@ -140,10 +140,8 @@ struct __static_nameof
   static constexpr __sstring<_Np> value = _CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, _Np>());
 };
 
-#  if defined(_CCCL_NO_INLINE_VARIABLES)
 template <class _Tp, size_t _Np>
 constexpr __sstring<_Np> __static_nameof<_Tp, _Np>::value;
-#  endif // _CCCL_NO_INLINE_VARIABLES
 
 #endif // _CCCL_COMPILER(GCC, <, 9)
 
