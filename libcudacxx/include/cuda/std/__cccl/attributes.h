@@ -101,8 +101,6 @@
 #  define _CCCL_NODISCARD_FRIEND [[nodiscard]] friend
 #endif
 
-#define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
-
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_NORETURN __declspec(noreturn)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(noreturn)
