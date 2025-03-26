@@ -361,16 +361,10 @@ public:
                  "invalid range in span's constructor (iterator, sentinel): last - first != extent");
   }
 
-#  if _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(MSVC2017)
   template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
   {}
-#  else
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept
-      : __data_{__arr}
-  {}
-#  endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER(MSVC2017)
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
