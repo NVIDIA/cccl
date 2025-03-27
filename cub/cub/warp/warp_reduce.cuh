@@ -44,6 +44,7 @@
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_reduce_optimization.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
@@ -224,7 +225,17 @@ public:
   //!
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
+    // return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
+    if constexpr (_CUDA_VSTD::has_single_bit((unsigned) LogicalWarpThreads))
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, _CUDA_VSTD::plus<>{}, multiple_logical_warps, first_lane_result);
+    }
+    else
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, _CUDA_VSTD::plus<>{}, single_logical_warp, first_lane_result);
+    }
   }
 
   _CCCL_TEMPLATE(typename InputType)
