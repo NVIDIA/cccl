@@ -35,49 +35,49 @@
  **********************************************************************************************************************/
 
 template <typename T, typename Operator>
-inline constexpr T operator_identity_v;
+inline const T operator_identity_v;
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::plus<>> = T{};
+inline const T operator_identity_v<T, cuda::std::plus<>> = T{};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::plus<T>> = T{};
+inline const T operator_identity_v<T, cuda::std::plus<T>> = T{};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::multiplies<>> = T{1};
+inline const T operator_identity_v<T, cuda::std::multiplies<>> = T{1};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::multiplies<T>> = T{1};
+inline const T operator_identity_v<T, cuda::std::multiplies<T>> = T{1};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::bit_and<>> = T{~T{0}};
+inline const T operator_identity_v<T, cuda::std::bit_and<>> = static_cast<T>(~T{0});
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::bit_and<T>> = T{~T{0}};
+inline const T operator_identity_v<T, cuda::std::bit_and<T>> = static_cast<T>(~T{0});
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::bit_or<>> = T{0};
+inline const T operator_identity_v<T, cuda::std::bit_or<>> = T{0};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::bit_or<T>> = T{0};
+inline const T operator_identity_v<T, cuda::std::bit_or<T>> = T{0};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::bit_xor<>> = T{0};
+inline const T operator_identity_v<T, cuda::std::bit_xor<>> = T{0};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::std::bit_xor<T>> = T{0};
+inline const T operator_identity_v<T, cuda::std::bit_xor<T>> = T{0};
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::maximum<>> = ::std::numeric_limits<T>::min();
+inline const T operator_identity_v<T, cuda::maximum<>> = ::std::numeric_limits<T>::min();
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::maximum<T>> = ::std::numeric_limits<T>::min();
+inline const T operator_identity_v<T, cuda::maximum<T>> = ::std::numeric_limits<T>::min();
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::minimum<>> = ::std::numeric_limits<T>::max();
+inline const T operator_identity_v<T, cuda::minimum<>> = ::std::numeric_limits<T>::max();
 
 template <typename T>
-inline constexpr T operator_identity_v<T, cuda::minimum<T>> = ::std::numeric_limits<T>::max();
+inline const T operator_identity_v<T, cuda::minimum<T>> = ::std::numeric_limits<T>::max();
 
 struct custom_plus : cuda::std::plus<>
 {};

@@ -26,7 +26,11 @@
  ******************************************************************************/
 #pragma once
 
+#include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/type_traits>
+
+#include <algorithm>
+#include <cmath>
 
 #include "c2h/catch2_test_helper.h"
 
@@ -35,14 +39,49 @@
  */
 // TODO: Replace this function by REQUIRE_APPROX_EQ once it supports integral vector types like short2
 template <typename T>
-void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
+void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
 {
-  if constexpr (::cuda::std::is_floating_point_v<T>)
+  if constexpr (cuda::std::is_floating_point_v<T>)
   {
     REQUIRE_APPROX_EQ(expected_data, test_results);
+  }
+  else if constexpr (cuda::std::__is_extended_floating_point_v<T>)
+  {
+    REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, 0.05f);
+  }
+  else if constexpr (cuda::std::__is_complex_v<T>)
+  {
+    using value_type  = typename cuda::std::remove_cv_t<T>::value_type;
+    using promotion_t = _CUDA_VSTD::_If<sizeof(value_type) <= sizeof(float), float, double>;
+    c2h::host_vector<value_type> test_results_real(test_results.size());
+    c2h::host_vector<value_type> expected_data_real(expected_data.size());
+    c2h::host_vector<value_type> test_results_img(test_results.size());
+    c2h::host_vector<value_type> expected_data_img(expected_data.size());
+    // zip_iterator does not work with complex<__half>
+    std::transform(test_results.begin(), test_results.end(), test_results_real.begin(), [](T x) {
+      return x.real();
+    });
+    std::transform(test_results.begin(), test_results.end(), test_results_img.begin(), [](T x) {
+      return x.imag();
+    });
+    std::transform(expected_data.begin(), expected_data.end(), expected_data_real.begin(), [](T x) {
+      return x.real();
+    });
+    std::transform(expected_data.begin(), expected_data.end(), expected_data_img.begin(), [](T x) {
+      return x.imag();
+    });
+    verify_results(test_results_real, expected_data_real);
+    verify_results(test_results_img, expected_data_img);
   }
   else
   {
     REQUIRE(expected_data == test_results);
   }
+}
+
+template <typename T>
+void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
+{
+  c2h::host_vector<T> test_results_host = test_results;
+  verify_results(expected_data, test_results_host);
 }

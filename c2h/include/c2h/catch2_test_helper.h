@@ -140,6 +140,13 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
   }
 
+#define REQUIRE_APPROX_EQ_EPSILON(ref, out, eps)                          \
+  {                                                                       \
+    auto vec_ref = detail::to_vec(ref);                                   \
+    auto vec_out = detail::to_vec(out);                                   \
+    REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
+  }
+
 namespace detail
 {
 // Returns true if values are equal, or both NaN:
