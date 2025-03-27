@@ -143,7 +143,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/barrier>
+#include <cuda/__memcpy_async/memcpy_async.h>
 #include <cuda/discard_memory>
 #include <cuda/std/cstdint>
 #include <cuda/std/detail/__access_property>
