@@ -372,3 +372,66 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
             return it_dereference(state)
 
     return AdvancedIterator(it, offset)
+
+
+def get_last_element_ptr(device_array) -> int:
+    shape = device_array.__cuda_array_interface__["shape"]
+    strides = device_array.__cuda_array_interface__.get("strides", None)
+
+    if strides is None:
+        # If strides is None, array is C-contiguous
+        # Calculate strides in bytes
+        strides = []
+        acc = device_array.dtype.itemsize
+        for dim in reversed(shape):
+            strides.insert(0, acc)
+            acc *= dim
+    else:
+        # Convert strides to bytes
+        strides = tuple(s * device_array.dtype.itemsize for s in strides)
+
+    # Calculate offset to last element
+    offset = sum((dim_size - 1) * stride for dim_size, stride in zip(shape, strides))
+
+    ptr = device_array.__cuda_array_interface__["data"][0]
+    return ptr + offset
+
+
+def make_reverse_iterator(it):
+    if isinstance(it, IteratorBase) and isinstance(it.cvalue, ctypes.c_void_p):
+        raise NotImplementedError(
+            f"Reverse iterator is not implemented for type {type(it)}"
+        )
+
+    if hasattr(it, "__cuda_array_interface__"):
+        print(it.__cuda_array_interface__["data"][0])
+        last_element_ptr = get_last_element_ptr(it)
+        print(last_element_ptr)
+        it = RawPointer(last_element_ptr, numba.from_dtype(it.dtype))
+
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class ReverseIteratorKind(IteratorKind):
+        pass
+
+    class ReverseIterator(IteratorBase):
+        iterator_kind_type = ReverseIteratorKind
+
+        def __init__(self, it):
+            self._it = it
+            super().__init__(it.cvalue, it.numba_type, it.value_type)
+
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type(self._it.kind)
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, -distance)
+
+        @staticmethod
+        def dereference(state):
+            return it_dereference(state)
+
+    return ReverseIterator(it)
