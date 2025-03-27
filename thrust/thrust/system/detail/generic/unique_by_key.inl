@@ -29,7 +29,6 @@
 #include <thrust/detail/internal_functional.h>
 #include <thrust/detail/range/head_flags.h>
 #include <thrust/detail/temporary_array.h>
-#include <thrust/iterator/detail/minimum_system.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/system/detail/generic/unique_by_key.h>
