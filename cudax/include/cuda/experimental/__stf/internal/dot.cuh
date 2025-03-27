@@ -212,19 +212,17 @@ public:
     auto sec = ::std::make_shared<dot_section>(mv(symbol));
     int id   = sec->get_id();
 
-    auto& section_stack = current(per_ctx_id);
+    fprintf(stderr, "push section - ctx id %d id %d - symbol %s\n", per_ctx_id, id, symbol.c_str());
 
-    int parent_id  = section_stack.empty() ? 0 : section_stack.back();
-    sec->parent_id = parent_id;
+    // This must at least contain the section of the context
+    auto& section_stack = current(per_ctx_id);
+    sec->parent_id      = section_stack.back();
 
     // Save the section in the map
     dot_get_section_by_id(id) = sec;
 
     // Add the section to the children of its parent if that was not the root
-    if (parent_id > 0)
-    {
-      dot_get_section_by_id(parent_id)->children_ids.push_back(id);
-    }
+    dot_get_section_by_id(sec->parent_id)->children_ids.push_back(id);
 
     // Push the id in the current stack
     section_stack.push_back(id);
@@ -254,6 +252,7 @@ public:
     return 1 + int(id);
   }
 
+  // rename to to_string()
   const ::std::string& get_symbol() const
   {
     return symbol;
@@ -264,8 +263,10 @@ public:
     return depth;
   }
 
+  // id of the parent section (0 if this is a root)
   int parent_id;
 
+  // ids of the children sections (if any)
   ::std::vector<int> children_ids;
 
 private:
@@ -296,11 +297,14 @@ public:
     int id         = sec->get_id();
     sec->parent_id = 0; // until we call set_parent_ctx
 
+    fprintf(stderr, "Creating per_ctx_dot section id %d ctx id %d\n", id, get_unique_id());
+
     // Save the section in the map
     dot_get_section_by_id(id) = sec;
 
     // Push on the stack associated to this context
     auto& section_stack = dot_section::current(get_unique_id());
+    _CCCL_ASSERT(section_stack.size() == 0, "");
     section_stack.push_back(id);
 
     // We could implement a destructor that pops the section of the context
@@ -605,17 +609,17 @@ public:
 
     // Save the ID of the current section in the parent context (this id may
     // describe an actual user-defined section or a context)
-    int parent_section_id        = get_current_section_id(parent_dot->get_unique_id());
-    child_dot->parent_section_id = parent_section_id;
+    int parent_section_id = get_current_section_id(parent_dot->get_unique_id());
 
     // Section automatically associated with the child context : at the bottom of the stack of the ctx
     int child_ctx_section_id = get_bottom_section_id(child_dot->get_unique_id());
     dot_get_section_by_id(parent_section_id)->children_ids.push_back(child_ctx_section_id);
+    dot_get_section_by_id(child_ctx_section_id)->parent_id = parent_section_id;
+
+    fprintf(stderr, "set_parent_ctx sec %d is parent of sec %d\n", parent_section_id, child_ctx_section_id);
   }
 
   ::std::shared_ptr<per_ctx_dot> parent;
-  // id of the section where the context was created
-  int parent_section_id;
   ::std::vector<::std::pair<::std::shared_ptr<per_ctx_dot>, int /* section id */>> children;
 
   const ::std::string& get_ctx_symbol() const
@@ -776,6 +780,22 @@ public:
       bool display_clusters = (per_ctx.size() > 1);
 
       compute_critical_path(outFile);
+
+      for (auto [id, sec] : section_map)
+      {
+        fprintf(stderr, "GOT section %d, depth %d\n", sec->get_id());
+        fprintf(stderr, "   parent section id : %d\n", sec->parent_id);
+        for (int child_id : sec->children_ids)
+        {
+          fprintf(stderr, "   child section id %d\n", child_id);
+        }
+
+        // Find root sections (those with no parents)
+        if (sec->parent_id == 0)
+        {
+          print_section_v2(sec);
+        }
+      }
 
       /*
        * For every context, we write the description of the DAG per
@@ -939,6 +959,16 @@ private:
       //      outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
 
       outFile << "} // end subgraph cluster_" << ctx_id << "\n";
+    }
+  }
+
+  void print_section_v2(::std::shared_ptr<dot_section> sec, int depth = 0)
+  {
+    fprintf(stderr, "print section %d, depth %d\n", sec->get_id(), depth);
+
+    for (int child_id : sec->children_ids)
+    {
+      print_section_v2(section_map[child_id], depth + 1);
     }
   }
 
