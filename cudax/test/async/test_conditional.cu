@@ -46,11 +46,11 @@ TEST_CASE("simple use of conditional runs exactly one of the two closures", "[ad
 
     check_value_types<types<>>(sndr1);
     check_sends_stopped<false>(sndr1);
-#if defined(_CCCL_NO_EXCEPTIONS)
-    check_error_types<>(sndr1);
-#else
+#if TEST_HAS_EXCEPTIONS()
     check_error_types<std::exception_ptr>(sndr1);
-#endif
+#else // ^^^ TEST_HAS_EXCEPTIONS() ^^^ / vvv !TEST_HAS_EXCEPTIONS() vvv
+    check_error_types<>(sndr1);
+#endif // !TEST_HAS_EXCEPTIONS()
 
     auto op = cudax_async::connect(std::move(sndr1), checked_value_receiver<>{});
     cudax_async::start(op);
