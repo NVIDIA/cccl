@@ -30,6 +30,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/execution_policy.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -110,13 +111,13 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  UnaryFunction unary_op,
-  OutputType init,
-  BinaryFunction binary_op);
+_CCCL_HOST_DEVICE thrust::detail::__iter_unary_accumulator_t<InputIterator, OutputType, UnaryFunction, BinaryFunction>
+transform_reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                 InputIterator first,
+                 InputIterator last,
+                 UnaryFunction unary_op,
+                 OutputType init,
+                 BinaryFunction binary_op);
 
 /*! \p transform_reduce fuses the \p transform and \p reduce operations.
  *  \p transform_reduce is equivalent to performing a transformation defined by
@@ -178,7 +179,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
  *  \see \c reduce
  */
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
-OutputType transform_reduce(
+thrust::detail::__iter_unary_accumulator_t<InputIterator, OutputType, UnaryFunction, BinaryFunction> transform_reduce(
   InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op);
 
 /*! \} // end transformed_reductions
