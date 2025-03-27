@@ -172,13 +172,13 @@ struct iequality_comparable_base : interface<iequality_comparable>
   // These overloads are only necessary so that iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
   // `iequality_comparable<>::overloads` alias template below.
-  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
   operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
   }
 
-  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
