@@ -264,8 +264,6 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NODISCARD_FRIEND``       | Portable ``[[nodiscard]]`` attribute for ``friend`` functions (before C++17) |
 +----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_NORETURN``               | Portable ``[[noreturn]]`` attribute (before C++11)                           |
-+----------------------------------+------------------------------------------------------------------------------+
 | ``CCCL_DEPRECATED``              | Portable ``[[deprecated]]`` attribute (before C++14)                         |
 +----------------------------------+------------------------------------------------------------------------------+
 | ``CCCL_DEPRECATED_BECAUSE(MSG)`` | Portable ``[[deprecated]]`` attribute with custom message (before C++14)     |
