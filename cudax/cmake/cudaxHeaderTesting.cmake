@@ -39,8 +39,7 @@ function(cudax_add_header_test label definitions)
     add_dependencies(${config_prefix}.all ${headertest_target})
 
     # FIXME: Enable MSVC
-    if (cudax_ENABLE_CUDASTF AND
-        NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    if (cudax_ENABLE_CUDASTF)
       ###############
       # STF headers #
       set(headertest_target ${config_prefix}.headers.${label}.stf)
