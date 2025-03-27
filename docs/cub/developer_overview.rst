@@ -599,6 +599,7 @@ To gain a better understanding of why we use ``MaxPolicy`` instead of
 minimally reproduces the CUB dispatch layer.
 
 .. code-block:: c++
+
     #include <cuda/std/type_traits>
     #include <cstdio>
 
