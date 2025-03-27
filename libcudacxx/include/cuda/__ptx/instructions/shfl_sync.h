@@ -44,14 +44,14 @@ enum class __dot_shfl_mode
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t __shfl_sync_dst_lane(
   __dot_shfl_mode __shfl_mode, _CUDA_VSTD::uint32_t __lane_idx_offset, _CUDA_VSTD::uint32_t __clamp_segmask)
 {
-  auto __lane              = ::cuda::ptx::get_sreg_laneid();
+  auto __lane              = _CUDA_VPTX::get_sreg_laneid();
   auto __clamp             = __clamp_segmask & 0b11111;
   auto __segmask           = __clamp_segmask >> 8;
   auto __max_lane          = (__lane & __segmask) | (__clamp & ~__segmask);
   _CUDA_VSTD::uint32_t __j = 0;
   if (__shfl_mode == __dot_shfl_mode::__idx)
   {
-    auto __min_lane = __lane & __clamp;
+    auto __min_lane = __lane & __segmask;
     __j             = __min_lane | (__lane_idx_offset & ~__segmask);
   }
   else if (__shfl_mode == __dot_shfl_mode::__up)
@@ -92,7 +92,7 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
   [[maybe_unused]] int __pred;
   _CCCL_ASSERT(__match_all_sync(__activemask(), __lane_mask, &__pred), "all active lanes must have the same lane mask");
 #  endif
-  _CCCL_ASSERT(::cuda::ptx::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,
+  _CCCL_ASSERT(_CUDA_VPTX::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,
                "the destination lane must be a member of the lane mask");
 }
 
