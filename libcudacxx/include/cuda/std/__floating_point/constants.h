@@ -22,12 +22,15 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__floating_point/arithmetic.h>
 #include <cuda/std/__floating_point/format.h>
 #include <cuda/std/__floating_point/mask.h>
 #include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__floating_point/storage.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+// __fp_inf
 
 template <__fp_format _Fmt>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_inf() noexcept
@@ -42,6 +45,8 @@ template <class _Tp>
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_inf<__fp_format_of_v<_Tp>>());
 }
+
+// __fp_nan
 
 template <__fp_format _Fmt>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_nan() noexcept
@@ -74,6 +79,8 @@ template <class _Tp>
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_nan<__fp_format_of_v<_Tp>>());
 }
 
+// __fp_nans
+
 template <__fp_format _Fmt>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_nans() noexcept
 {
@@ -95,6 +102,65 @@ template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_nans() noexcept
 {
   return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_nans<__fp_format_of_v<_Tp>>());
+}
+
+// __fp_max
+
+template <__fp_format _Fmt>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_max() noexcept
+{
+  if constexpr (_Fmt == __fp_format::__fp8_nv_e4m3)
+  {
+    return __fp_storage_t<_Fmt>(0x7eu);
+  }
+  else
+  {
+    return static_cast<__fp_storage_t<_Fmt>>(
+      (__fp_storage_t<_Fmt>(__fp_exp_max_v<_Fmt> + __fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>)
+      | __fp_mant_mask_v<_Fmt>);
+  }
+}
+
+template <class _Tp>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_max() noexcept
+{
+  return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_max<__fp_format_of_v<_Tp>>());
+}
+
+// __fp_min
+
+template <__fp_format _Fmt>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_min() noexcept
+{
+  return static_cast<__fp_storage_t<_Fmt>>(
+    __fp_storage_t<_Fmt>(__fp_exp_min_v<_Fmt> + __fp_exp_bias_v<_Fmt>) << __fp_mant_nbits_v<_Fmt>);
+}
+
+template <class _Tp>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_min() noexcept
+{
+  return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_min<__fp_format_of_v<_Tp>>());
+}
+
+// __fp_lowest
+
+template <__fp_format _Fmt>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_lowest() noexcept
+{
+  if constexpr (_Fmt == __fp_format::__fp8_nv_e8m0)
+  {
+    return _CUDA_VSTD::__fp_min<_Fmt>();
+  }
+  else
+  {
+    return _CUDA_VSTD::__fp_neg<_Fmt>(_CUDA_VSTD::__fp_max<_Fmt>());
+  }
+}
+
+template <class _Tp>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_lowest() noexcept
+{
+  return _CUDA_VSTD::__fp_from_storage<_Tp>(_CUDA_VSTD::__fp_lowest<__fp_format_of_v<_Tp>>());
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
