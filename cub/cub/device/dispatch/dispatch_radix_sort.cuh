@@ -293,12 +293,12 @@ struct DispatchRadixSort
       _CubLog("Invoking single_tile_kernel<<<%d, %d, 0, %lld>>>(), %d items per thread, %d SM occupancy, current bit "
               "%d, bit_grain %d\n",
               1,
-              ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
+              policy.SingleTile().BlockThreads(),
               (long long) stream,
-              ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD,
+              policy.SingleTile().ItemsPerThread(),
               1,
               begin_bit,
-              ActivePolicyT::SingleTilePolicy::RADIX_BITS);
+              policy.RadixBits(policy.SingleTile()));
 #endif
 
       // Invoke upsweep_kernel with same grid size as downsweep_kernel
