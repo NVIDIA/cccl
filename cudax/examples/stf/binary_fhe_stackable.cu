@@ -210,12 +210,16 @@ int main()
   plaintext pB(ctx, vB);
   pB.set_symbol("B");
 
-  auto eA = pA.encrypt().set_symbol("A");
-  auto eB = pB.encrypt().set_symbol("B");
+  auto s_encrypt = ctx.dot_section("encrypt");
+  auto eA        = pA.encrypt().set_symbol("A");
+  auto eB        = pB.encrypt().set_symbol("B");
+  s_encrypt.end();
 
   ctx.push();
 
-  auto out = circuit(eA, eB);
+  auto s_circuit = ctx.dot_section("circuit");
+  auto out       = circuit(eA, eB);
+  s_circuit.end();
 
   ctx.pop();
 
