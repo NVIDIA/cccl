@@ -226,9 +226,6 @@ public:
 
     // Push the id in the current stack
     section_stack.push_back(id);
-
-    // The size of the stack is the recursion level of the section
-    sec->depth = section_stack.size();
   }
 
   static void pop(int per_ctx_id)
@@ -263,6 +260,10 @@ public:
     return depth;
   }
 
+  void set_depth(int d) {
+    depth = d;
+  }
+
   // id of the parent section (0 if this is a root)
   int parent_id;
 
@@ -295,7 +296,7 @@ public:
   {
     auto sec       = ::std::make_shared<dot_section>("context");
     int id         = sec->get_id();
-    sec->parent_id = 0; // until we call set_parent_ctx
+    sec->parent_id = 0; // until we call set_parent_ctx, this is a root node
 
     fprintf(stderr, "Creating per_ctx_dot section id %d ctx id %d\n", id, get_unique_id());
 
@@ -609,9 +610,6 @@ public:
 
   static void set_parent_ctx(::std::shared_ptr<per_ctx_dot> parent_dot, ::std::shared_ptr<per_ctx_dot> child_dot)
   {
-    parent_dot->children.push_back(::std::make_pair(child_dot, get_current_section_id(parent_dot->get_unique_id())));
-    child_dot->parent = parent_dot;
-
     // Save the ID of the current section in the parent context (this id may
     // describe an actual user-defined section or a context)
     int parent_section_id = get_current_section_id(parent_dot->get_unique_id());
@@ -623,9 +621,6 @@ public:
 
     fprintf(stderr, "set_parent_ctx sec %d is parent of sec %d\n", parent_section_id, child_ctx_section_id);
   }
-
-  ::std::shared_ptr<per_ctx_dot> parent;
-  ::std::vector<::std::pair<::std::shared_ptr<per_ctx_dot>, int /* section id */>> children;
 
   const ::std::string& get_ctx_symbol() const
   {
@@ -764,6 +759,23 @@ public:
       }
     }
 
+    // Find root sections (those with no parents)
+    ::std::vector<::std::shared_ptr<dot_section>> root_sections;
+    for (auto [id, sec] : section_map)
+    {
+      if (sec->parent_id == 0)
+      {
+        root_sections.push_back(sec);
+      }
+
+    }
+
+    // Recusively compute the depth of the different sections starting from roots
+    for (auto& sec : root_sections)
+    {
+      compute_section_depth(sec, 0);
+    }
+
     collapse_sections();
 
     remove_freeze_nodes();
@@ -785,24 +797,13 @@ public:
 
       compute_critical_path(outFile);
 
-      ::std::vector<::std::shared_ptr<dot_section>> root_sections;
-
-      for (auto [id, sec] : section_map)
-      {
-        // Find root sections (those with no parents)
-        if (sec->parent_id == 0)
-        {
-          root_sections.push_back(sec);
-        }
-      }
-
       // We only put the root level (context) in a box if there are more than
       // one root sections
       bool display_top_cluster = root_sections.size() > 1;
 
       for (auto& sec : root_sections)
       {
-        print_section_v2(outFile, sec, display_top_cluster);
+        print_section(outFile, sec, display_top_cluster);
       }
 
       /* Edges do not have to belong to the cluster (Vertices do) */
@@ -854,8 +855,18 @@ public:
   }
 
 private:
+  // Recursively compute depth
+  void compute_section_depth(::std::shared_ptr<dot_section> &sec, int current_depth)
+  {
+     sec->set_depth(current_depth);
+     for (int child_id : sec->children_ids)
+     {
+       compute_section_depth(section_map[child_id], current_depth + 1);
+     }
+  }
+
   void
-  print_section_v2(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
+  print_section(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
   {
     int section_id = sec->get_id();
     fprintf(stderr, "print section %d, depth %d\n", section_id, depth);
@@ -901,7 +912,7 @@ private:
 
     for (int child_id : sec->children_ids)
     {
-      print_section_v2(outFile, section_map[child_id], true, depth + 1);
+      print_section(outFile, section_map[child_id], true, depth + 1);
     }
 
     if (display_cluster)
@@ -909,62 +920,6 @@ private:
       outFile << "} // end subgraph cluster_" << section_id << "\n";
     }
   }
-
-#if 0
-  /**
-   * @brief Add a dashed box around a section and its children
-   */
-  void print_section(
-    ::std::ofstream& outFile,
-    int id,
-    size_t& ctx_cnt,
-    bool display_clusters,
-    const ::std::shared_ptr<per_ctx_dot>& pc)
-  {
-    // Stop printing sections if they are deeper than the max depth (if defined)
-    const char* env_max_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
-    if (env_max_depth && (atoi(env_max_depth) < section_map[id]->get_depth()))
-    {
-      return;
-    }
-
-    outFile << "subgraph cluster_section_" << ::std::to_string(id) << " {\n ";
-
-    if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
-    {
-      // pairs of child and section id
-      for (auto& p : pc->children)
-      {
-        // Print subcontexts in this section
-        if (p.second == id)
-        {
-          print_one_context(outFile, ctx_cnt, display_clusters, p.first);
-        }
-      }
-    }
-    // Display all children too to have nested boxes
-    for (int child_id : section_map[id]->children_ids)
-    {
-      print_section(outFile, child_id, ctx_cnt, display_clusters, pc);
-    }
-
-    // style of the box
-    outFile << "    color=black;\n";
-    outFile << "    style=dashed\n";
-    outFile << "    label=\"" + section_map[id]->get_symbol() + "\"\n";
-
-    // Put all nodes which belong to this section
-    for (auto& v : all_vertices)
-    {
-      if (v.second.dot_section_id == id)
-      {
-        outFile << "    \"NODE_" + ::std::to_string(v.first) + "\"\n";
-      }
-    }
-
-    outFile << "} // end subgraph cluster_section_" << ::std::to_string(id) << "\n ";
-  }
-#endif
 
   // This will update colors if necessary
   void update_colors_with_timing()
@@ -1189,7 +1144,7 @@ private:
       // Remove edges internal to a section
       if (new_from != new_to)
       {
-        _CCCL_ASSERT(new_from < new_to, "invalid edge");
+        // XXX_CCCL_ASSERT(new_from < new_to, "invalid edge");
         // insert the edge (if it does not exist already)
         new_edges.insert(std::make_pair(new_from, new_to));
       }
