@@ -115,6 +115,8 @@ class dot_section;
 
 inline ::std::shared_ptr<dot_section>& dot_get_section_by_id(int id);
 
+class per_ctx_dot;
+
 /**
  * @brief A named section in the DOT output to potentially collapse multiple
  * nodes in the same section, this can also be created automatically when there
@@ -134,15 +136,15 @@ public:
   class guard
   {
   public:
-    guard(int _per_ctx_id, ::std::string symbol)
-        : per_ctx_id(_per_ctx_id)
+    guard(::std::shared_ptr<per_ctx_dot> pc_, ::std::string symbol)
+        : pc(mv(pc_))
     {
-      dot_section::push(per_ctx_id, mv(symbol));
+      dot_section::push(pc, mv(symbol));
     }
 
     // Move constructor: transfer ownership and disable the moved-from guard.
     guard(guard&& other) noexcept
-        : per_ctx_id(other.per_ctx_id)
+        : pc(other.pc)
         , active(cuda::std::exchange(other.active, false))
     {}
 
@@ -155,10 +157,10 @@ public:
         // of the existing guard before overwriting it with a new guard.
         if (active)
         {
-          dot_section::pop(per_ctx_id);
+          dot_section::pop(pc);
         }
         // Transfer ownership.
-        per_ctx_id   = other.per_ctx_id;
+        pc   = other.pc;
         active       = other.active;
         other.active = false;
       }
@@ -172,7 +174,7 @@ public:
     void end()
     {
       _CCCL_ASSERT(active, "Attempting to end the same section twice.");
-      dot_section::pop(per_ctx_id);
+      dot_section::pop(pc);
       active = false;
     }
 
@@ -180,63 +182,21 @@ public:
     {
       if (active)
       {
-        dot_section::pop(per_ctx_id);
+        dot_section::pop(pc);
       }
     }
 
   private:
-    // identifier of the per context dot object of the context where this
+    // per context dot object of the context where this
     // section was created
-    int per_ctx_id;
+    ::std::shared_ptr<per_ctx_dot> pc;
 
     // Have we called end() ?
     bool active = true;
   };
 
-  // XXX TODO move this to the per_ctx_dot object
-  // Get the stack of section identifier for a specific STF context
-  static auto& current(int per_ctx_id)
-  {
-    // Indexed by the unique id of the per-ctx dot descriptor (should be ctx id ??)
-    thread_local ::std::unordered_map<int, ::std::vector<int>> s;
-    return s[per_ctx_id];
-  }
-
-  static void push(int per_ctx_id, ::std::string symbol)
-  {
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
-    nvtxRangePushA(symbol.c_str());
-#endif
-
-    // We first create a section object, with its unique id
-    auto sec = ::std::make_shared<dot_section>(mv(symbol));
-    int id   = sec->get_id();
-
-    fprintf(stderr, "push section - ctx id %d id %d - symbol %s\n", per_ctx_id, id, symbol.c_str());
-
-    // This must at least contain the section of the context
-    auto& section_stack = current(per_ctx_id);
-    sec->parent_id      = section_stack.back();
-
-    // Save the section in the map
-    dot_get_section_by_id(id) = sec;
-
-    // Add the section to the children of its parent if that was not the root
-    dot_get_section_by_id(sec->parent_id)->children_ids.push_back(id);
-
-    // Push the id in the current stack
-    section_stack.push_back(id);
-  }
-
-  static void pop(int per_ctx_id)
-  {
-    _CCCL_ASSERT(current(per_ctx_id).size() > 0, "Cannot pop, no section was pushed.");
-    current(per_ctx_id).pop_back();
-
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
-    nvtxRangePop();
-#endif
-  }
+  static void push(::std::shared_ptr<per_ctx_dot> &pc, ::std::string symbol);
+  static void pop(::std::shared_ptr<per_ctx_dot> &pc);
 
   /**
    * @brief Get the unique ID of the section
@@ -304,9 +264,7 @@ public:
     dot_get_section_by_id(id) = sec;
 
     // Push on the stack associated to this context
-    auto& section_stack = dot_section::current(get_unique_id());
-    _CCCL_ASSERT(section_stack.size() == 0, "");
-    section_stack.push_back(id);
+    section_id_stack.push_back(id);
 
     // We could implement a destructor that pops the section of the context
     // but this is done automatically
@@ -317,7 +275,7 @@ public:
     ctx_symbol = mv(s);
 
     // When creating a per-context dot structure, the first entry of the section stack is for the ctx itself
-    int ctx_section_id = get_bottom_section_id(get_unique_id());
+    int ctx_section_id = section_id_stack[0];
     dot_get_section_by_id(ctx_section_id)->symbol = ctx_symbol;
   }
 
@@ -335,7 +293,7 @@ public:
     auto& m = metadata[unique_id];
     m.color = "red";
 
-    m.dot_section_id = get_current_section_id(get_unique_id());
+    m.dot_section_id = section_id_stack.back();
     m.label          = "task fence";
 
     m.type = fence_vertex;
@@ -360,6 +318,13 @@ public:
     {
       proxy_start_unique_id = get_next_prereq_unique_id();
       add_ctx_proxy_vertex(proxy_start_unique_id.value());
+
+      // We create a dependency between in/out nodes (invisible) so that we can
+      // compute the critical path even with empty ctx
+      // do this when both start and end are defined
+      if (proxy_end_unique_id.has_value()) {
+          add_edge(proxy_start_unique_id.value(), proxy_end_unique_id.value(), edge_type::prereqs);
+      }
     }
 
     add_edge(prereq_unique_id, proxy_start_unique_id.value(), edge_type::prereqs);
@@ -377,6 +342,13 @@ public:
     {
       proxy_end_unique_id = get_next_prereq_unique_id();
       add_ctx_proxy_vertex(proxy_end_unique_id.value());
+
+      // We create a dependency between in/out nodes (invisible) so that we can
+      // compute the critical path even with empty ctx
+      // do this when both start and end are defined
+      if (proxy_start_unique_id.has_value()) {
+          add_edge(proxy_start_unique_id.value(), proxy_end_unique_id.value(), edge_type::prereqs);
+      }
     }
 
     add_edge(proxy_end_unique_id.value(), prereq_unique_id, edge_type::prereqs);
@@ -398,7 +370,7 @@ public:
     auto& m = metadata[prereq_unique_id];
     m.color = get_current_color();
 
-    m.dot_section_id = get_current_section_id(get_unique_id());
+    m.dot_section_id = section_id_stack.back();
     m.ctx_id         = get_unique_id();
 
     m.label = symbol;
@@ -421,7 +393,7 @@ public:
 
     auto& m          = metadata[prereq_unique_id];
     m.color          = get_current_color();
-    m.dot_section_id = get_bottom_section_id(get_unique_id());
+    m.dot_section_id = section_id_stack[0];
     m.ctx_id         = get_unique_id();
     m.label          = "proxy";
     m.type           = cluster_proxy_vertex;
@@ -471,10 +443,6 @@ public:
     existing_edges.insert(p);
   }
 
-  // Used to avoid cyclic dependencies, defined later
-  static int get_current_section_id(int per_ctx_id);
-  static int get_bottom_section_id(int per_ctx_id);
-
   // Save the ID of the task in the "vertices" vector, and associate this ID to
   // the metadata of the task, so that we can generate a node for the task
   // later.
@@ -500,7 +468,9 @@ public:
 
     task_metadata.color = get_current_color();
 
-    task_metadata.dot_section_id = get_current_section_id(get_unique_id());
+    task_metadata.dot_section_id = section_id_stack[0];
+
+    task_metadata.dot_section_id = section_id_stack.back();
     task_metadata.ctx_id         = get_unique_id();
 
     // We here create the label of the task, which we may augment later with
@@ -613,10 +583,10 @@ public:
   {
     // Save the ID of the current section in the parent context (this id may
     // describe an actual user-defined section or a context)
-    int parent_section_id = get_current_section_id(parent_dot->get_unique_id());
+    int parent_section_id = parent_dot->section_id_stack.back();
 
     // Section automatically associated with the child context : at the bottom of the stack of the ctx
-    int child_ctx_section_id = get_bottom_section_id(child_dot->get_unique_id());
+    int child_ctx_section_id = child_dot->section_id_stack[0];
     dot_get_section_by_id(parent_section_id)->children_ids.push_back(child_ctx_section_id);
     dot_get_section_by_id(child_ctx_section_id)->parent_id = parent_section_id;
 
@@ -669,6 +639,9 @@ public:
 public:
   // per-context vertices
   ::std::unordered_map<int /* id */, per_vertex_info> metadata;
+
+  // IDs of the sections in this context
+  ::std::vector<int> section_id_stack;
 
 private:
   mutable ::std::string ctx_symbol;
@@ -1436,16 +1409,38 @@ inline ::std::shared_ptr<dot_section>& dot_get_section_by_id(int id)
   return dot::instance().section_map[id];
 }
 
-inline int per_ctx_dot::get_bottom_section_id(int per_ctx_id)
+inline void dot_section::push(::std::shared_ptr<per_ctx_dot> &pc, ::std::string symbol)
 {
-  return dot_section::current(per_ctx_id).front();
-}
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+    nvtxRangePushA(symbol.c_str());
+#endif
 
-inline int per_ctx_dot::get_current_section_id(int per_ctx_id)
-{
-  // Get the stack of IDs, if it's empty return 0, otherwise the id of the section (which are numbered starting from 1)
-  const auto& s = dot_section::current(per_ctx_id);
-  return s.size() == 0 ? 0 : s.back();
-}
+    // We first create a section object, with its unique id
+    auto sec = ::std::make_shared<dot_section>(mv(symbol));
+    int id   = sec->get_id();
+
+    // This must at least contain the section of the context
+    auto& section_stack = pc->section_id_stack;
+    sec->parent_id      = section_stack.back();
+
+    // Save the section in the map
+    dot_get_section_by_id(id) = sec;
+
+    // Add the section to the children of its parent if that was not the root
+    dot_get_section_by_id(sec->parent_id)->children_ids.push_back(id);
+
+    // Push the id in the current stack
+    section_stack.push_back(id);
+  }
+
+inline  void dot_section::pop(::std::shared_ptr<per_ctx_dot> &pc)
+  {
+    pc->section_id_stack.pop_back();
+
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+    nvtxRangePop();
+#endif
+  }
+
 
 } // namespace cuda::experimental::stf::reserved
