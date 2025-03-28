@@ -31,107 +31,55 @@ namespace cuda::experimental::__async
 template <class _Rcvr, class _Env>
 struct __rcvr_with_env_t : _Rcvr
 {
-  using __env_t = __rcvr_with_env_t const&;
+  struct __env_t
+  {
+    template <class _Query>
+    _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const __env_t& __self) noexcept
+    {
+      if constexpr (__queryable_with<_Env, _Query>)
+      {
+        return (__self.__rcvr_->__env_);
+      }
+      else if constexpr (__queryable_with<env_of_t<_Rcvr>, _Query>)
+      {
+        return __async::get_env(static_cast<const _Rcvr&>(*__self.__rcvr_));
+      }
+    }
 
-  _CUDAX_TRIVIAL_API auto __rcvr() noexcept -> _Rcvr&
+    template <class _Query>
+    using __1st_env_t = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
+
+    template <class _Query>
+    _CUDAX_TRIVIAL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
+      -> __query_result_t<__1st_env_t<_Query>, _Query>
+    {
+      return __env_t::__get_1st<_Query>(*this);
+    }
+
+    __rcvr_with_env_t const* __rcvr_;
+  };
+
+  _CUDAX_TRIVIAL_API auto __base() && noexcept -> _Rcvr&&
+  {
+    return static_cast<_Rcvr&&>(*this);
+  }
+
+  _CUDAX_TRIVIAL_API auto __base() & noexcept -> _Rcvr&
   {
     return *this;
   }
 
-  _CUDAX_TRIVIAL_API auto __rcvr() const noexcept -> const _Rcvr&
+  _CUDAX_TRIVIAL_API auto __base() const& noexcept -> _Rcvr const&
   {
     return *this;
   }
 
   _CUDAX_TRIVIAL_API auto get_env() const noexcept -> __env_t
   {
-    return __env_t{*this};
+    return __env_t{this};
   }
 
-  template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
-  {
-    if constexpr (__queryable_with<_Env, _Query>)
-    {
-      return (__env_);
-    }
-    else if constexpr (__queryable_with<env_of_t<_Rcvr>, _Query>)
-    {
-      return __async::get_env(static_cast<const _Rcvr&>(*this));
-    }
-  }
-
-  template <class _Query, class _Self = __rcvr_with_env_t>
-  using __1st_env_t = decltype(declval<const _Self&>().__get_1st(_Query{}));
-
-  template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<__1st_env_t<_Query>, _Query>
-  {
-    return __get_1st(__query).query(__query);
-  }
-
-  _Env __env_;
-};
-
-template <class _Rcvr, class _Env>
-struct __rcvr_with_env_t<_Rcvr*, _Env>
-{
-  using __env_t = __rcvr_with_env_t const&;
-
-  _CUDAX_TRIVIAL_API auto __rcvr() const noexcept -> _Rcvr*
-  {
-    return __rcvr_;
-  }
-
-  template <class... _As>
-  _CUDAX_TRIVIAL_API void set_value(_As&&... __as) && noexcept
-  {
-    __async::set_value(__rcvr_, static_cast<_As&&>(__as)...);
-  }
-
-  template <class _Error>
-  _CUDAX_TRIVIAL_API void set_error(_Error&& __error) && noexcept
-  {
-    __async::set_error(__rcvr_, static_cast<_Error&&>(__error));
-  }
-
-  _CUDAX_TRIVIAL_API void set_stopped() && noexcept
-  {
-    __async::set_stopped(__rcvr_);
-  }
-
-  _CUDAX_TRIVIAL_API auto get_env() const noexcept -> __env_t
-  {
-    return __env_t{*this};
-  }
-
-  template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
-  {
-    if constexpr (__queryable_with<_Env, _Query>)
-    {
-      return (__env_);
-    }
-    else if constexpr (__queryable_with<env_of_t<_Rcvr>, _Query>)
-    {
-      return __async::get_env(__rcvr_);
-    }
-  }
-
-  template <class _Query, class _Self = __rcvr_with_env_t>
-  using __1st_env_t = decltype(declval<const _Self&>().__get_1st(_Query{}));
-
-  template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
-    -> __query_result_t<__1st_env_t<_Query>, _Query>
-  {
-    return __get_1st(__query).query(__query);
-  }
-
-  _Rcvr* __rcvr_;
   _Env __env_;
 };
 
