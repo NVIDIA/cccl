@@ -160,10 +160,10 @@ set(stf_test_mathlib_sources
 )
 
 set(stf_unittested_headers
-  cuda/experimental/stf.cuh
   cuda/experimental/__stf/allocators/buddy_allocator.cuh
   cuda/experimental/__stf/graph/graph_ctx.cuh
   cuda/experimental/__stf/internal/async_resources_handle.cuh
+  cuda/experimental/__stf/internal/context.cuh
   cuda/experimental/__stf/internal/execution_policy.cuh
   cuda/experimental/__stf/internal/interpreted_execution_policy.cuh
   cuda/experimental/__stf/internal/logical_data.cuh
