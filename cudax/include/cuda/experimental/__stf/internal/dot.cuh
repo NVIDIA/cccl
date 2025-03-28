@@ -269,10 +269,10 @@ public:
   // ids of the children sections (if any)
   ::std::vector<int> children_ids;
 
+  ::std::string symbol;
+
 private:
   int depth = ::std::numeric_limits<int>::min();
-
-  ::std::string symbol;
 
   // An identifier for that section. This is movable, but non
   // copyable, but we manipulate section by the means of shared_ptr.
@@ -342,6 +342,10 @@ public:
     m.representative_id = unique_id;
   }
 
+  // To connect a subcontext and its parent context, we can say which events a context depends on
+  //
+  // This is managed by introducing extra edges, and one extra "fake" vertex,
+  // so there is nothing specific to do when collapsing.
   void ctx_add_input_id(int prereq_unique_id)
   {
     if (!is_tracing())
@@ -359,6 +363,7 @@ public:
     add_edge(prereq_unique_id, proxy_start_unique_id.value(), edge_type::prereqs);
   }
 
+  // Same as ctx_add_input_id for output dependencies : these are the events which depend on that context
   void ctx_add_output_id(int prereq_unique_id)
   {
     if (!is_tracing())
@@ -776,38 +781,28 @@ public:
     if (outFile.is_open())
     {
       outFile << "digraph {\n";
-      size_t ctx_cnt        = 0;
       bool display_clusters = (per_ctx.size() > 1);
 
       compute_critical_path(outFile);
 
+      ::std::vector<::std::shared_ptr<dot_section>> root_sections;
+
       for (auto [id, sec] : section_map)
       {
-        fprintf(stderr, "GOT section %d, depth %d\n", sec->get_id());
-        fprintf(stderr, "   parent section id : %d\n", sec->parent_id);
-        for (int child_id : sec->children_ids)
-        {
-          fprintf(stderr, "   child section id %d\n", child_id);
-        }
-
         // Find root sections (those with no parents)
         if (sec->parent_id == 0)
         {
-          print_section_v2(sec);
+          root_sections.push_back(sec);
         }
       }
 
-      /*
-       * For every context, we write the description of the DAG per
-       * epoch. Then we write the edges after removing redundant ones.
-       */
-      for (const auto& pc : per_ctx)
+      // We only put the root level (context) in a box if there are more than
+      // one root sections
+      bool display_top_cluster = root_sections.size() > 1;
+
+      for (auto& sec : root_sections)
       {
-        // If the context has a parent, it will be printed by this parent itself
-        if (!pc->parent)
-        {
-          print_one_context(outFile, ctx_cnt, display_clusters, pc);
-        }
+        print_section_v2(outFile, sec, display_top_cluster);
       }
 
       /* Edges do not have to belong to the cluster (Vertices do) */
@@ -859,29 +854,29 @@ public:
   }
 
 private:
-  void print_one_context(
-    ::std::ofstream& outFile, size_t& ctx_cnt, bool display_clusters, const ::std::shared_ptr<per_ctx_dot>& pc)
+  void
+  print_section_v2(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
   {
-    // Pick up an identifier in DOT (we may update this value later)
-    auto ctx_id = pc->get_unique_id();
-    if (display_clusters)
-    {
-      outFile << "subgraph cluster_" << ctx_id << " {\n";
+    int section_id = sec->get_id();
+    fprintf(stderr, "print section %d, depth %d\n", section_id, depth);
 
-      //      // We need to add "proxy" nodes because we can't make a dependency
-      //      // between a node and a cluster in DOT
-      //      outFile << "\"start_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
-      //      // Rank constraints so that these node appear at the top of bottom of the cluster
-      //      outFile << "{rank=min; " << "\"start_cluster_" << ctx_id << "\"}\n";
+    if (display_cluster)
+    {
+      outFile << "subgraph cluster_" << section_id << " {\n";
+
+      _CCCL_ASSERT(!sec->symbol.empty(), "no symbol for section");
+
+      outFile << "label=\"" << sec->symbol << "\"\n";
     }
 
-    for (const auto& p : all_vertices)
+    // Put all nodes which belong to this section
+    for (auto& v : all_vertices)
     {
-      if (p.second.ctx_id == ctx_id)
+      if (v.second.dot_section_id == section_id)
       {
         // Select the display style of the node based on the type of vertex
         ::std::string style;
-        switch (p.second.type)
+        switch (v.second.type)
         {
           case task_vertex:
           case fence_vertex:
@@ -898,87 +893,30 @@ private:
             fprintf(stderr, "error: unknown vertex type\n");
             abort();
         };
-        outFile << "\"NODE_" << p.first << "\" [style=\"" << style << "\" fillcolor=\"" << p.second.color
-                << "\" label=\"" << p.second.label << "\"]\n";
 
-        // to force the start_cluster node to be at the top, we add dependencies
-        // if (display_clusters) {
-        //   outFile << "\"start_cluster_" << ctx_id << "\" -> \"NODE_" << p.first << "\" [style=invis]\n";
-        //}
-
-        vertex_count++;
+        outFile << "\"NODE_" << v.first << "\" [style=\"" << style << "\" fillcolor=\"" << v.second.color
+                << "\" label=\"" << v.second.label << "\"]\n";
       }
     }
-
-    if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
-    {
-      // pairs of child and section id
-      for (auto& p : pc->children)
-      {
-        // Print subcontexts not in a section
-        if (p.second == 0)
-        {
-          print_one_context(outFile, ctx_cnt, display_clusters, p.first);
-        }
-      }
-    }
-
-    /* Put nodes which belong to a section into their clusters */
-    ::std::unordered_map<int, ::std::vector<int>> section_id_to_nodes;
-    for (auto& p : pc->metadata)
-    {
-      // p.first task id, p.second metadata
-      int dot_section_id = p.second.dot_section_id;
-      if (dot_section_id > 0)
-      {
-        section_id_to_nodes[dot_section_id].push_back(p.first);
-      }
-    }
-
-    /* Display all sections recursively */
-    for (auto [id, sec_ptr] : section_map)
-    {
-      // Select root nodes only
-      if (sec_ptr->parent_id == 0)
-      {
-        print_section(outFile, id, section_id_to_nodes, ctx_cnt, display_clusters, pc);
-      }
-    }
-    if (display_clusters)
-    {
-      if (pc->get_ctx_symbol().empty())
-      {
-        outFile << "label=\"cluster_" << ctx_id << "\"\n";
-      }
-      else
-      {
-        outFile << "label=\"" << pc->get_ctx_symbol() << "\"\n";
-      }
-
-      //      outFile << "\"end_cluster_" << ctx_id << "\" [shape=point, style=invis]\n";
-      //      outFile << "{rank=max; " << "\"end_cluster_" << ctx_id << "\"}\n";
-
-      outFile << "} // end subgraph cluster_" << ctx_id << "\n";
-    }
-  }
-
-  void print_section_v2(::std::shared_ptr<dot_section> sec, int depth = 0)
-  {
-    fprintf(stderr, "print section %d, depth %d\n", sec->get_id(), depth);
 
     for (int child_id : sec->children_ids)
     {
-      print_section_v2(section_map[child_id], depth + 1);
+      print_section_v2(outFile, section_map[child_id], true, depth + 1);
+    }
+
+    if (display_cluster)
+    {
+      outFile << "} // end subgraph cluster_" << section_id << "\n";
     }
   }
 
+#if 0
   /**
    * @brief Add a dashed box around a section and its children
    */
   void print_section(
     ::std::ofstream& outFile,
     int id,
-    ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes,
     size_t& ctx_cnt,
     bool display_clusters,
     const ::std::shared_ptr<per_ctx_dot>& pc)
@@ -1007,7 +945,7 @@ private:
     // Display all children too to have nested boxes
     for (int child_id : section_map[id]->children_ids)
     {
-      print_section(outFile, child_id, section_id_to_nodes, ctx_cnt, display_clusters, pc);
+      print_section(outFile, child_id, ctx_cnt, display_clusters, pc);
     }
 
     // style of the box
@@ -1026,6 +964,7 @@ private:
 
     outFile << "} // end subgraph cluster_section_" << ::std::to_string(id) << "\n ";
   }
+#endif
 
   // This will update colors if necessary
   void update_colors_with_timing()
