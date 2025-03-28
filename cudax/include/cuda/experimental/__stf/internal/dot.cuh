@@ -1244,14 +1244,9 @@ private:
       predecessors[to].push_back(from);
     }
 
-    // Maybe this is not the most efficient, we could use a vector of
-    // pair<int, int> if efficiency matters here.
-    IntPairSet edges_cpy = all_edges;
+    IntPairSet new_edges;
 
-    // We will put back only those needed
-    all_edges.clear();
-
-    for (const auto& [from, to] : edges_cpy)
+    for (const auto& [from, to] : all_edges)
     {
       bool keep   = true;
       auto& preds = predecessors[to];
@@ -1273,9 +1268,11 @@ private:
 
       if (keep)
       {
-        all_edges.insert(::std::pair(from, to));
+        new_edges.insert(::std::pair(from, to));
       }
     }
+
+    ::std::swap(new_edges, all_edges);
   }
 
   void compute_critical_path(::std::ofstream& outFile)
