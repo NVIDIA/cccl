@@ -119,8 +119,8 @@ public:
   }
 
   /* Helper to run the algorithm in a stream_ctx or graph_ctx */
-  template <typename Fun, typename stream_or_graph_ctx, typename... Deps>
-  void run_as_task(Fun&& fun, stream_or_graph_ctx& ctx, task_dep<Deps>... deps)
+  template <typename Fun, typename context_t, typename... Deps>
+  void run_as_task(Fun&& fun, context_t& ctx, task_dep<Deps>... deps)
   {
     ctx.task(mv(deps)...).set_symbol(symbol)->*[this, &fun, &ctx](auto cuda_stream_or_graph, Deps... args) {
       this->run(::std::forward<Fun>(fun), ctx, cuda_stream_or_graph, mv(args)...);
@@ -144,14 +144,10 @@ public:
 
   /* Helper to run the algorithm in a stream_ctx */
   template <typename Fun>
-  void run_as_task_dynamic(Fun&& fun, stream_ctx& ctx, const ::std::vector<task_dep_untyped>& deps)
+  void run_as_task_dynamic(Fun&& fun, stream_ctx& ctx, task_dep_vector_untyped deps)
   {
     auto t = ctx.task();
-    for (auto& d : deps)
-    {
-      t.add_deps(d);
-    }
-
+    t.add_deps(mv(deps));
     t.set_symbol(symbol);
 
     t->*[this, &fun, &ctx, &t](cudaStream_t stream) {
@@ -173,11 +169,11 @@ public:
    * This is an alternative for run_as_task which may take a variable number of dependencies
    */
   template <typename Fun>
-  void run_as_task_dynamic(Fun&& fun, context& ctx, const ::std::vector<task_dep_untyped>& deps)
+  void run_as_task_dynamic(Fun&& fun, context& ctx, task_dep_vector_untyped deps)
   {
     ::std::visit(
       [&](auto& actual_ctx) {
-        this->run_as_task_dynamic(::std::forward<Fun>(fun), actual_ctx, deps);
+        this->run_as_task_dynamic(::std::forward<Fun>(fun), actual_ctx, mv(deps));
       },
       ctx.payload);
   }
@@ -214,7 +210,7 @@ public:
   /* Execute the algorithm as a CUDA graph and launch this graph in a CUDA
    * stream */
   template <typename Fun, typename parent_ctx_t, typename... Args>
-  void run(Fun&& fun, parent_ctx_t& parent_ctx, cudaStream_t stream, Args... args)
+  void run(Fun&& fun, parent_ctx_t& parent_ctx, cudaStream_t stream, const Args&... args)
   {
     graph_ctx gctx(parent_ctx.async_resources());
 
@@ -238,30 +234,26 @@ public:
     ::std::shared_ptr<cudaGraph_t> gctx_graph = gctx.finalize_as_graph();
 
     // Try to reuse existing exec graphs...
-    ::std::shared_ptr<cudaGraphExec_t> eg = nullptr;
-    bool found                            = false;
+    ::std::shared_ptr<cudaGraphExec_t> eg;
+
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
-      if (found)
+      if (reserved::try_updating_executable_graph(*pe, *gctx_graph))
       {
         eg = pe;
         break;
       }
     }
 
-    if (!found)
+    if (!eg)
     {
-      auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
-        cudaGraphExecDestroy(*pGraphExec);
-      };
-      ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
+      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, [](cudaGraphExec_t* p) {
+        cudaGraphExecDestroy(*p);
+      });
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(res.get(), *gctx_graph, 0));
-
-      eg = res;
+      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
 
       cached_exec_graphs[stream].push_back(eg);
     }
@@ -292,30 +284,27 @@ public:
     ::std::shared_ptr<cudaGraph_t> gctx_graph = gctx.finalize_as_graph();
 
     // Try to reuse existing exec graphs...
-    ::std::shared_ptr<cudaGraphExec_t> eg = nullptr;
-    bool found                            = false;
+    ::std::shared_ptr<cudaGraphExec_t> eg;
+
     for (::std::shared_ptr<cudaGraphExec_t>& pe : cached_exec_graphs[stream])
     {
-      found = reserved::try_updating_executable_graph(*pe, *gctx_graph);
-      if (found)
+      if (reserved::try_updating_executable_graph(*pe, *gctx_graph))
       {
         eg = pe;
         break;
       }
     }
 
-    if (!found)
+    if (!eg)
     {
       auto cudaGraphExecDeleter = [](cudaGraphExec_t* pGraphExec) {
         cudaGraphExecDestroy(*pGraphExec);
       };
-      ::std::shared_ptr<cudaGraphExec_t> res(new cudaGraphExec_t, cudaGraphExecDeleter);
+      eg = ::std::shared_ptr<cudaGraphExec_t>(new cudaGraphExec_t, cudaGraphExecDeleter);
 
       dump_algorithm(gctx_graph);
 
-      cuda_try(cudaGraphInstantiateWithFlags(res.get(), *gctx_graph, 0));
-
-      eg = res;
+      cuda_try(cudaGraphInstantiateWithFlags(eg.get(), *gctx_graph, 0));
 
       cached_exec_graphs[stream].push_back(eg);
     }
