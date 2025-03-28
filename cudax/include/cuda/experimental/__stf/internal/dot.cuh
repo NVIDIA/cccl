@@ -420,7 +420,7 @@ public:
 
     auto& m          = metadata[prereq_unique_id];
     m.color          = get_current_color();
-    m.dot_section_id = get_current_section_id(get_unique_id());
+    m.dot_section_id = get_bottom_section_id(get_unique_id());
     m.ctx_id         = get_unique_id();
     m.label          = "proxy";
     m.type           = cluster_proxy_vertex;
@@ -887,6 +887,7 @@ private:
       {
         // Select the display style of the node based on the type of vertex
         ::std::string style;
+        ::std::string shape;
         switch (v.second.type)
         {
           case task_vertex:
@@ -898,14 +899,21 @@ private:
             style = "dashed";
             break;
           case cluster_proxy_vertex:
-            style = "invis";
+            style = "dashed";//"invis";
+            shape = "point";
             break;
           default:
             fprintf(stderr, "error: unknown vertex type\n");
             abort();
         };
 
-        outFile << "\"NODE_" << v.first << "\" [style=\"" << style << "\" fillcolor=\"" << v.second.color
+        outFile << "\"NODE_" << v.first << "\" [style=\"" << style;
+
+        if (!shape.empty()) {
+            outFile << "\" shape=\"" << shape;
+        }
+
+        outFile << "\" fillcolor=\"" << v.second.color
                 << "\" label=\"" << v.second.label << "\"]\n";
       }
     }
@@ -1129,6 +1137,8 @@ private:
 
       // Assign the node to the parent of the section it corresponds to
       all_vertices[p.second[0]].dot_section_id = sec->parent_id;
+
+      all_vertices[p.second[0]].type = section_vertex;
     }
 
     // Replace or condense edges
