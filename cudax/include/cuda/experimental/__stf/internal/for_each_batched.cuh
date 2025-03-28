@@ -38,7 +38,7 @@ public:
   void batched_iterations(Fun&& fun, size_t start, size_t end)
   {
     // Create "untyped" dependencies
-    ::std::vector<task_dep_untyped> deps;
+    task_dep_vector_untyped deps;
     for (size_t i = start; i < end; i++)
     {
       ::std::apply(
