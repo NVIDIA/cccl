@@ -892,6 +892,7 @@ private:
         {
           case task_vertex:
           case fence_vertex:
+          case section_vertex:
             style = "filled";
             break;
           case freeze_vertex:
