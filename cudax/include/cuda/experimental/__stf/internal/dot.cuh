@@ -317,7 +317,8 @@ public:
     ctx_symbol = mv(s);
 
     // When creating a per-context dot structure, the first entry of the section stack is for the ctx itself
-    // TODO FIXME dot_get_section_by_id(get_unique_id())[0].symbol = mv(s);
+    int ctx_section_id = get_bottom_section_id(get_unique_id());
+    dot_get_section_by_id(ctx_section_id)->symbol = mv(s);
   }
 
   void add_fence_vertex(int unique_id)
