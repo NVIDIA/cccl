@@ -318,7 +318,7 @@ public:
 
     // When creating a per-context dot structure, the first entry of the section stack is for the ctx itself
     int ctx_section_id = get_bottom_section_id(get_unique_id());
-    dot_get_section_by_id(ctx_section_id)->symbol = mv(s);
+    dot_get_section_by_id(ctx_section_id)->symbol = ctx_symbol;
   }
 
   void add_fence_vertex(int unique_id)
