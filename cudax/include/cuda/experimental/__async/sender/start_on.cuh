@@ -51,15 +51,16 @@ _CCCL_GLOBAL_CONSTANT struct start_on_t
 {
 private:
   template <class _Rcvr, class _Sch, class _CvSndr>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>
   {
     using operation_state_concept = operation_state_t;
     using __env_t                 = env_of_t<_Rcvr>;
+    using __rcvr_with_sch_t       = __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>;
 
     _CUDAX_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
-        : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), {__sch}}
-        , __opstate1_{connect(schedule(__env_rcvr_.__env_.__sch_), __rcvr_ref{*this})}
-        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{__env_rcvr_})}
+        : __rcvr_with_sch_t{static_cast<_Rcvr&&>(__rcvr), {__sch}}
+        , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref<__opstate_t, __env_t>{*this})}
+        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref<__rcvr_with_sch_t>{*this})}
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);
@@ -74,25 +75,13 @@ private:
       __async::start(__opstate2_);
     }
 
-    template <class _Error>
-    _CUDAX_API void set_error(_Error&& __error) noexcept
-    {
-      __async::set_error(static_cast<_Rcvr&&>(__env_rcvr_.__rcvr()), static_cast<_Error&&>(__error));
-    }
-
-    _CUDAX_API void set_stopped() noexcept
-    {
-      __async::set_stopped(static_cast<_Rcvr&&>(__env_rcvr_.__rcvr()));
-    }
-
     _CUDAX_API auto get_env() const noexcept -> __env_t
     {
-      return __async::get_env(__env_rcvr_.__rcvr());
+      return __async::get_env(this->__base());
     }
 
-    __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>> __env_rcvr_;
-    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
-    connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>>> __opstate2_;
+    connect_result_t<schedule_result_t<_Sch&>, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
   };
 
   template <class _Sch, class _Sndr>
