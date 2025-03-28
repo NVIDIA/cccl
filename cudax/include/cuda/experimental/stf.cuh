@@ -260,6 +260,15 @@ public:
       payload);
   }
 
+  auto stream_to_event_list(cudaStream_t stream, ::std::string str) const
+  {
+    return ::std::visit(
+      [&](auto& self) {
+        return self.stream_to_event_list(stream, mv(str));
+      },
+      payload);
+  }
+
   void set_graph_cache_policy(::std::function<bool()> policy)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -286,6 +295,16 @@ public:
     return ::std::visit(
       [&](auto& self) {
         return self.graph_get_cache_stat();
+      },
+      payload);
+  }
+
+  size_t task_count() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.task_count();
       },
       payload);
   }
@@ -349,13 +368,15 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(::cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
     return ::std::visit(
       [&](auto& self) {
-        return self.freeze(mv(d), m, mv(where));
+        return self.freeze(mv(d), m, mv(where), user_freeze);
       },
       payload);
   }
@@ -672,6 +693,16 @@ public:
       payload);
   }
 
+  void print_logical_data_summary() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [&](auto& self) {
+        self.print_logical_data_summary();
+      },
+      payload);
+  }
+
   /**
    * @brief RAII-style description of a new section in the DOT file identified by its symbol
    */
@@ -761,6 +792,21 @@ public:
     {
       throw ::std::runtime_error("Payload does not hold graph_ctx");
     }
+  }
+
+  /**
+   * @brief Get a stream from the stream pool(s) of the context
+   *
+   * This is a helper routine which can be used to launch graphs, for example. Using the stream after finalize()
+   * results in undefined behavior.
+   */
+  auto pick_dstream()
+  {
+    return ::std::visit(
+      [](auto& self) {
+        return self.pick_dstream();
+      },
+      payload);
   }
 
   /**
@@ -1675,22 +1721,42 @@ public:
     return runner_impl(ctx, *this, mv(deps)...);
   }
 
+  auto setup_allocator(graph_ctx& gctx, cudaStream_t stream)
+  {
+    // Use a pooled allocator: this avoids calling the underlying "uncached"
+    // allocator too often by making larger allocations which can be used for
+    // multiple small allocations
+    gctx.set_allocator(block_allocator<pooled_allocator>(gctx));
+
+    // The uncached allocator allocates the (large) blocks of memory required
+    // by the allocator. Within CUDA graphs, using memory nodes is expensive,
+    // and caching a graph with memory nodes may appear as "leaking" memory.
+    // We thus use the stream_adapter allocator which relies stream-based
+    // asynchronous allocator API (cudaMallocAsync, cudaFreeAsync)
+    // The resources reserved by this allocator can be released asynchronously
+    // after the submission of the CUDA graph.
+    auto wrapper = stream_adapter(gctx, stream);
+
+    gctx.update_uncached_allocator(wrapper.allocator());
+
+    return wrapper;
+  }
+
   /* Execute the algorithm as a CUDA graph and launch this graph in a CUDA
    * stream */
   template <typename Fun, typename parent_ctx_t, typename... Args>
   void run(Fun fun, parent_ctx_t& parent_ctx, cudaStream_t stream, Args... args)
   {
-    auto argsTuple = ::std::make_tuple(args...);
     graph_ctx gctx(parent_ctx.async_resources());
 
     // Useful for tools
     gctx.set_parent_ctx(parent_ctx);
     gctx.get_dot()->set_ctx_symbol("algo: " + symbol);
 
-    // This creates an adapter which "redirects" allocations to the CUDA stream API
-    auto wrapper = stream_adapter(gctx, stream);
-
-    gctx.update_uncached_allocator(wrapper.allocator());
+    // This will setup allocators to avoid created CUDA graph memory nodes, and
+    // defer the allocations and deallocations to the cudaMallocAsync API
+    // instead. These resources need to be released later with .clear()
+    auto adapter = setup_allocator(gctx, stream);
 
     auto current_place = gctx.default_exec_place();
 
@@ -1703,6 +1769,7 @@ public:
     };
 
     // Transform the tuple of instances into a tuple of logical data
+    auto argsTuple        = ::std::make_tuple(args...);
     auto logicalArgsTuple = ::std::apply(
       [&](auto&&... args) {
         return ::std::tuple(logify(::std::forward<decltype(args)>(args))...);
@@ -1746,7 +1813,7 @@ public:
     cuda_safe_call(cudaGraphLaunch(*eg, stream));
 
     // Free resources allocated through the adapter
-    wrapper.clear();
+    adapter.clear();
   }
 
   /* Contrary to `run`, we here have a dynamic set of dependencies for the
@@ -1760,7 +1827,10 @@ public:
     gctx.set_parent_ctx(parent_ctx);
     gctx.get_dot()->set_ctx_symbol("algo: " + symbol);
 
-    gctx.set_allocator(block_allocator<pooled_allocator>(gctx));
+    // This will setup allocators to avoid created CUDA graph memory nodes, and
+    // defer the allocations and deallocations to the cudaMallocAsync API
+    // instead. These resources need to be released later with .clear()
+    auto adapter = setup_allocator(gctx, stream);
 
     auto current_place = gctx.default_exec_place();
 
@@ -1798,6 +1868,9 @@ public:
     }
 
     cuda_safe_call(cudaGraphLaunch(*eg, stream));
+
+    // Free resources allocated through the adapter
+    adapter.clear();
   }
 
 private:
