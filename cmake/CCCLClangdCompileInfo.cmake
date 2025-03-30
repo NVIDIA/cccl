@@ -17,7 +17,9 @@
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Symlink the compile command output to the source dir, where clangd will find it.
-set(compile_commands_file "${CMAKE_BINARY_DIR}/compile_commands.json")
+set(compile_commands_location "${CMAKE_BINARY_DIR}")
+cmake_path(RELATIVE_PATH compile_commands_location BASE_DIRECTORY "${CMAKE_SOURCE_DIR}")
+set(compile_commands_file "${compile_commands_location}/compile_commands.json")
 set(compile_commands_link "${CMAKE_SOURCE_DIR}/compile_commands.json")
 message(STATUS "Creating symlink from ${compile_commands_link} to ${compile_commands_file}...")
 cccl_execute_non_fatal_process(COMMAND

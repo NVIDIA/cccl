@@ -34,6 +34,10 @@
 #  define _CCCL_COUNTER() __LINE__
 #endif
 
+#define _CCCL_PP_FIRST(first, ...)      first
+#define _CCCL_PP_SECOND(_, second, ...) second
+#define _CCCL_PP_THIRD(_1, _2, third)   third
+
 #define _CCCL_PP_EXPAND(...) __VA_ARGS__
 #define _CCCL_PP_EAT(...)
 
@@ -48,6 +52,9 @@
 
 #define _CCCL_PP_CAT4_(_Xp, ...) _Xp##__VA_ARGS__
 #define _CCCL_PP_CAT4(_Xp, ...)  _CCCL_PP_CAT4_(_Xp, __VA_ARGS__)
+
+#define _CCCL_PP_STR2(str) #str
+#define _CCCL_PP_STR(str)  _CCCL_PP_STR2(str)
 
 #define _CCCL_PP_EVAL_(_Xp, _ARGS) _Xp _ARGS
 #define _CCCL_PP_EVAL(_Xp, ...)    _CCCL_PP_EVAL_(_Xp, (__VA_ARGS__))
