@@ -49,6 +49,7 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/grid/grid_mapping.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/std/functional>
@@ -88,6 +89,18 @@ struct AgentReducePolicy : ScalingType
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
 };
+
+namespace detail
+{
+CUB_DETAIL_POLICY_WRAPPER_DEFINE(
+  ReduceAgentPolicy,
+  (GenericAgentPolicy),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int),
+  (VECTOR_LOAD_LENGTH, VectorLoadLength, int),
+  (BLOCK_ALGORITHM, BlockAlgorithm, cub::BlockReduceAlgorithm),
+  (LOAD_MODIFIER, LoadModifier, cub::CacheLoadModifier))
+} // namespace detail
 
 /**
  * Parameterizable tuning policy type for AgentReduce
