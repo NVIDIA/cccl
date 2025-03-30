@@ -103,6 +103,7 @@ class DeviceReduceBuildResult(ctypes.Structure):
         ("single_tile_kernel", ctypes.c_void_p),
         ("single_tile_second_kernel", ctypes.c_void_p),
         ("reduction_kernel", ctypes.c_void_p),
+        ("runtime_policy", ctypes.c_void_p),
     ]
 
 

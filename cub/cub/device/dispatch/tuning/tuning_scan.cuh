@@ -428,7 +428,7 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
+  CUB_RUNTIME_FUNCTION static constexpr auto Scan()
   {
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }

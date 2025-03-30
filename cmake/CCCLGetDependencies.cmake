@@ -22,6 +22,11 @@ macro(cccl_get_fmt)
   CPMAddPackage("gh:fmtlib/fmt#11.0.1")
 endmacro()
 
+macro(cccl_get_json)
+  include("${_cccl_cpm_file}")
+  CPMAddPackage("gh:nlohmann/json@3.11.3")
+endmacro()
+
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:NVIDIA/nvbench#main")
