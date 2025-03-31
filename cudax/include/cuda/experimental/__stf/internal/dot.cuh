@@ -160,7 +160,7 @@ public:
           dot_section::pop(pc);
         }
         // Transfer ownership.
-        pc   = other.pc;
+        pc           = other.pc;
         active       = other.active;
         other.active = false;
       }
@@ -195,8 +195,8 @@ public:
     bool active = true;
   };
 
-  static void push(::std::shared_ptr<per_ctx_dot> &pc, ::std::string symbol);
-  static void pop(::std::shared_ptr<per_ctx_dot> &pc);
+  static void push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string symbol);
+  static void pop(::std::shared_ptr<per_ctx_dot>& pc);
 
   /**
    * @brief Get the unique ID of the section
@@ -220,7 +220,8 @@ public:
     return depth;
   }
 
-  void set_depth(int d) {
+  void set_depth(int d)
+  {
     depth = d;
   }
 
@@ -275,7 +276,7 @@ public:
     ctx_symbol = mv(s);
 
     // When creating a per-context dot structure, the first entry of the section stack is for the ctx itself
-    int ctx_section_id = section_id_stack[0];
+    int ctx_section_id                            = section_id_stack[0];
     dot_get_section_by_id(ctx_section_id)->symbol = ctx_symbol;
   }
 
@@ -322,8 +323,9 @@ public:
       // We create a dependency between in/out nodes (invisible) so that we can
       // compute the critical path even with empty ctx
       // do this when both start and end are defined
-      if (proxy_end_unique_id.has_value()) {
-          add_edge(proxy_start_unique_id.value(), proxy_end_unique_id.value(), edge_type::prereqs);
+      if (proxy_end_unique_id.has_value())
+      {
+        add_edge(proxy_start_unique_id.value(), proxy_end_unique_id.value(), edge_type::prereqs);
       }
     }
 
@@ -346,8 +348,9 @@ public:
       // We create a dependency between in/out nodes (invisible) so that we can
       // compute the critical path even with empty ctx
       // do this when both start and end are defined
-      if (proxy_start_unique_id.has_value()) {
-          add_edge(proxy_start_unique_id.value(), proxy_end_unique_id.value(), edge_type::prereqs);
+      if (proxy_start_unique_id.has_value())
+      {
+        add_edge(proxy_start_unique_id.value(), proxy_end_unique_id.value(), edge_type::prereqs);
       }
     }
 
@@ -467,8 +470,6 @@ public:
     auto& task_metadata = metadata[t.get_unique_id()];
 
     task_metadata.color = get_current_color();
-
-    task_metadata.dot_section_id = section_id_stack[0];
 
     task_metadata.dot_section_id = section_id_stack.back();
     task_metadata.ctx_id         = get_unique_id();
@@ -741,10 +742,9 @@ public:
       {
         root_sections.push_back(sec);
       }
-
     }
 
-    // Recusively compute the depth of the different sections starting from roots
+    // Recursively compute the depth of the different sections starting from roots
     for (auto& sec : root_sections)
     {
       compute_section_depth(sec, 0);
@@ -830,17 +830,16 @@ public:
 
 private:
   // Recursively compute depth
-  void compute_section_depth(::std::shared_ptr<dot_section> &sec, int current_depth)
+  void compute_section_depth(::std::shared_ptr<dot_section>& sec, int current_depth)
   {
-     sec->set_depth(current_depth);
-     for (int child_id : sec->children_ids)
-     {
-       compute_section_depth(section_map[child_id], current_depth + 1);
-     }
+    sec->set_depth(current_depth);
+    for (int child_id : sec->children_ids)
+    {
+      compute_section_depth(section_map[child_id], current_depth + 1);
+    }
   }
 
-  void
-  print_section(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
+  void print_section(::std::ofstream& outFile, ::std::shared_ptr<dot_section> sec, bool display_cluster, int depth = 0)
   {
     int section_id = sec->get_id();
     fprintf(stderr, "print section %d, depth %d\n", section_id, depth);
@@ -874,7 +873,7 @@ private:
             style = "dashed";
             break;
           case cluster_proxy_vertex:
-            style = "dashed";//"invis";
+            style = "dashed"; //"invis";
             shape = "point";
             break;
           default:
@@ -884,12 +883,12 @@ private:
 
         outFile << "\"NODE_" << v.first << "\" [style=\"" << style;
 
-        if (!shape.empty()) {
-            outFile << "\" shape=\"" << shape;
+        if (!shape.empty())
+        {
+          outFile << "\" shape=\"" << shape;
         }
 
-        outFile << "\" fillcolor=\"" << v.second.color
-                << "\" label=\"" << v.second.label << "\"]\n";
+        outFile << "\" fillcolor=\"" << v.second.color << "\" label=\"" << v.second.label << "\"]\n";
       }
     }
 
@@ -1184,7 +1183,9 @@ private:
     }
   }
 
-  bool reachable(int from, int to, ::std::unordered_set<int>& visited)
+  // check if there exists a path between "from" and "to"
+  bool reachable(
+    int from, int to, ::std::unordered_map<int, ::std::vector<int>>& predecessors, ::std::unordered_set<int>& visited)
   {
     visited.insert(to);
 
@@ -1197,7 +1198,7 @@ private:
 
       if (visited.find(p) == visited.end())
       {
-        if (reachable(from, p, visited))
+        if (reachable(from, p, predecessors, visited))
         {
           return true;
         }
@@ -1211,6 +1212,9 @@ private:
   void remove_redundant_edges()
   {
     single_threaded_section guard(mtx);
+
+    ::std::unordered_map<int, ::std::vector<int>> predecessors;
+
     // We first dump the set of edges into a map of predecessors per node
     for (const auto& [from, to] : all_edges)
     {
@@ -1231,7 +1235,7 @@ private:
       for (auto p : preds)
       {
         // Note that it is based on predecessor lists before pruning nodes!
-        if (reachable(from, p, visited))
+        if (reachable(from, p, predecessors, visited))
         {
           // Put this edge back in the set of edges
           keep = false;
@@ -1381,8 +1385,6 @@ private:
   IntPairSet all_edges;
   ::std::unordered_map<int /* id */, per_vertex_info> all_vertices;
 
-  ::std::unordered_map<int, ::std::vector<int>> predecessors;
-
   ::std::string dot_filename;
 
   // Stats
@@ -1409,38 +1411,37 @@ inline ::std::shared_ptr<dot_section>& dot_get_section_by_id(int id)
   return dot::instance().section_map[id];
 }
 
-inline void dot_section::push(::std::shared_ptr<per_ctx_dot> &pc, ::std::string symbol)
+inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string symbol)
 {
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
-    nvtxRangePushA(symbol.c_str());
+  nvtxRangePushA(symbol.c_str());
 #endif
 
-    // We first create a section object, with its unique id
-    auto sec = ::std::make_shared<dot_section>(mv(symbol));
-    int id   = sec->get_id();
+  // We first create a section object, with its unique id
+  auto sec = ::std::make_shared<dot_section>(mv(symbol));
+  int id   = sec->get_id();
 
-    // This must at least contain the section of the context
-    auto& section_stack = pc->section_id_stack;
-    sec->parent_id      = section_stack.back();
+  // This must at least contain the section of the context
+  auto& section_stack = pc->section_id_stack;
+  sec->parent_id      = section_stack.back();
 
-    // Save the section in the map
-    dot_get_section_by_id(id) = sec;
+  // Save the section in the map
+  dot_get_section_by_id(id) = sec;
 
-    // Add the section to the children of its parent if that was not the root
-    dot_get_section_by_id(sec->parent_id)->children_ids.push_back(id);
+  // Add the section to the children of its parent if that was not the root
+  dot_get_section_by_id(sec->parent_id)->children_ids.push_back(id);
 
-    // Push the id in the current stack
-    section_stack.push_back(id);
-  }
+  // Push the id in the current stack
+  section_stack.push_back(id);
+}
 
-inline  void dot_section::pop(::std::shared_ptr<per_ctx_dot> &pc)
-  {
-    pc->section_id_stack.pop_back();
+inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
+{
+  pc->section_id_stack.pop_back();
 
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
-    nvtxRangePop();
+  nvtxRangePop();
 #endif
-  }
-
+}
 
 } // namespace cuda::experimental::stf::reserved
