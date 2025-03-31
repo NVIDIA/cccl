@@ -41,19 +41,19 @@ struct __base_vptr
   {}
 
   template <class _VTable>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API explicit constexpr operator _VTable const*() const noexcept
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API explicit constexpr operator _VTable const*() const noexcept
   {
     auto const* __vptr = static_cast<_VTable const*>(__vptr_);
     _CCCL_ASSERT(_CCCL_TYPEID(_VTable) == *__vptr->__typeid_, "bad vtable cast detected");
     return __vptr;
   }
 
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API explicit constexpr operator bool() const noexcept
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API explicit constexpr operator bool() const noexcept
   {
     return __vptr_ != nullptr;
   }
 
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API constexpr auto operator->() const noexcept -> __rtti_base const*
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API constexpr auto operator->() const noexcept -> __rtti_base const*
   {
     return __vptr_;
   }

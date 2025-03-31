@@ -11,25 +11,33 @@
 #ifndef __CCCL_COMPILER_H
 #define __CCCL_COMPILER_H
 
+#include <cuda/std/__cccl/preprocessor.h>
+
 // Utility to compare version numbers. To use:
-// 1) Define a macro that makes a version number from major and minor numbers, e. g.:
+// 1) Define a macro that makes a pair of (major, minor) numbers:
 //    #define MYPRODUCT_MAKE_VERSION(_MAJOR, _MINOR) (_MAJOR * 100 + _MINOR)
-// 2) Define a macro that you will use to compare versions, e. g.:
+// 2) Define a macro that you will use to compare versions, e.g.:
 //    #define MYPRODUCT(...) _CCCL_VERSION_COMPARE(MYPRODUCT, MYPRODUCT_##__VA_ARGS__)
 //    Signatures:
 //       MYPRODUCT(_PROD)                      - is the product _PROD version non-zero?
-//       MYPRODUCT(_PROD, _OP, _MAJOR)         - compare the product _PROD version to _MAJOR using operator _OP
+//       MYPRODUCT(_PROD, _OP, _MAJOR)         - compare the product _PROD major version to _MAJOR using operator _OP
 //       MYPRODUCT(_PROD, _OP, _MAJOR, _MINOR) - compare the product _PROD version to _MAJOR._MINOR using operator _OP
 // 3) Define the product version macros as a function-like macro that returns the version number or
-// _CCCL_VERSION_INVALID()
-//    if the version cannot be determined, e. g.:
-//    #define MYPRODUCT_1_VERSION() MYPRODUCT_MAKE_VERSION(1, 2)
-//    #define MYPRODUCT_2_VERSION() _CCCL_VERSION_INVALID()
-#define _CCCL_VERSION_INVALID()                             (-1)
-#define _CCCL_VERSION_COMPARE_1(_PREFIX, _VER)              (_VER() != _CCCL_VERSION_INVALID())
-#define _CCCL_VERSION_COMPARE_3(_PREFIX, _VER, _OP, _MAJOR) _CCCL_VERSION_COMPARE_4(_PREFIX, _VER, _OP, _MAJOR, 0)
+//    _CCCL_VERSION_INVALID() if the version cannot be determined, e. g.:
+//    #define MYPRODUCT_<_PROD>() (1, 2)
+//      or
+//    #define MYPRODUCT_<_PROD>() _CCCL_VERSION_INVALID()
+#define _CCCL_VERSION_MAJOR_(_MAJOR, _MINOR)   _MAJOR
+#define _CCCL_VERSION_MAJOR(_PAIR)             _CCCL_VERSION_MAJOR_ _PAIR
+#define _CCCL_VERSION_INVALID()                (-1, -1)
+#define _CCCL_MAKE_VERSION(_PREFIX, _PAIR)     (_CCCL_PP_EVAL(_CCCL_PP_CAT(_PREFIX, MAKE_VERSION), _CCCL_PP_EXPAND _PAIR))
+#define _CCCL_VERSION_IS_INVALID(_PAIR)        (_CCCL_VERSION_MAJOR(_PAIR) == _CCCL_VERSION_MAJOR(_CCCL_VERSION_INVALID()))
+#define _CCCL_VERSION_COMPARE_1(_PREFIX, _VER) (!_CCCL_VERSION_IS_INVALID(_VER()))
+#define _CCCL_VERSION_COMPARE_3(_PREFIX, _VER, _OP, _MAJOR) \
+  (!_CCCL_VERSION_IS_INVALID(_VER()) && (_CCCL_VERSION_MAJOR(_VER()) _OP _MAJOR))
 #define _CCCL_VERSION_COMPARE_4(_PREFIX, _VER, _OP, _MAJOR, _MINOR) \
-  (_CCCL_VERSION_COMPARE_1(_PREFIX, _VER) && (_VER() _OP _PREFIX##MAKE_VERSION(_MAJOR, _MINOR)))
+  (!_CCCL_VERSION_IS_INVALID(_VER())                                \
+   && (_CCCL_MAKE_VERSION(_PREFIX, _VER()) _OP _CCCL_MAKE_VERSION(_PREFIX, (_MAJOR, _MINOR))))
 #define _CCCL_VERSION_SELECT_COUNT(_ARG1, _ARG2, _ARG3, _ARG4, _ARG5, ...) _ARG5
 #define _CCCL_VERSION_SELECT2(_ARGS)                                       _CCCL_VERSION_SELECT_COUNT _ARGS
 // MSVC traditonal preprocessor requires an extra level of indirection
@@ -62,16 +70,16 @@
 #  endif // !CCCL_IGNORE_DEPRECATED_COMPILER
 #elif defined(__NVCOMPILER)
 #  undef _CCCL_COMPILER_NVHPC
-#  define _CCCL_COMPILER_NVHPC() _CCCL_COMPILER_MAKE_VERSION(__NVCOMPILER_MAJOR__, __NVCOMPILER_MINOR__)
+#  define _CCCL_COMPILER_NVHPC() (__NVCOMPILER_MAJOR__, __NVCOMPILER_MINOR__)
 #elif defined(__clang__)
 #  undef _CCCL_COMPILER_CLANG
-#  define _CCCL_COMPILER_CLANG() _CCCL_COMPILER_MAKE_VERSION(__clang_major__, __clang_minor__)
+#  define _CCCL_COMPILER_CLANG() (__clang_major__, __clang_minor__)
 #elif defined(__GNUC__)
 #  undef _CCCL_COMPILER_GCC
-#  define _CCCL_COMPILER_GCC() _CCCL_COMPILER_MAKE_VERSION(__GNUC__, __GNUC_MINOR__)
+#  define _CCCL_COMPILER_GCC() (__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
 #  undef _CCCL_COMPILER_MSVC
-#  define _CCCL_COMPILER_MSVC() _CCCL_COMPILER_MAKE_VERSION(_MSC_VER / 100, _MSC_VER % 100)
+#  define _CCCL_COMPILER_MSVC() (_MSC_VER / 100, _MSC_VER % 100)
 #  if _CCCL_COMPILER(MSVC, <, 19, 20)
 #    ifndef CCCL_IGNORE_DEPRECATED_COMPILER
 #      error \
@@ -88,7 +96,7 @@
 #  endif // _CCCL_COMPILER(MSVC, >=, 19, 30) && _CCCL_COMPILER(MSVC, <, 19, 40)
 #elif defined(__CUDACC_RTC__)
 #  undef _CCCL_COMPILER_NVRTC
-#  define _CCCL_COMPILER_NVRTC() _CCCL_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
+#  define _CCCL_COMPILER_NVRTC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #endif
 
 // The CUDA compiler version shares the implementation with the C++ compiler
@@ -103,7 +111,7 @@
 // Determine the cuda compiler
 #if defined(__NVCC__)
 #  undef _CCCL_CUDA_COMPILER_NVCC
-#  define _CCCL_CUDA_COMPILER_NVCC() _CCCL_CUDA_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
+#  define _CCCL_CUDA_COMPILER_NVCC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #elif defined(_NVHPC_CUDA)
 #  undef _CCCL_CUDA_COMPILER_NVHPC
 #  define _CCCL_CUDA_COMPILER_NVHPC() _CCCL_COMPILER_NVHPC()
@@ -120,9 +128,9 @@
 // clang-cuda does not define __CUDACC_VER_MAJOR__ and friends. They are instead retrieved from the CUDA_VERSION macro
 // defined in "cuda.h". clang-cuda automatically pre-includes "__clang_cuda_runtime_wrapper.h" which includes "cuda.h"
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC) || _CCCL_CUDA_COMPILER(NVRTC)
-#  define _CCCL_CUDACC() _CCCL_CUDACC_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
+#  define _CCCL_CUDACC() (__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #elif _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_CUDACC() _CCCL_CUDACC_MAKE_VERSION(CUDA_VERSION / 1000, (CUDA_VERSION % 1000) / 10)
+#  define _CCCL_CUDACC() (CUDA_VERSION / 1000, (CUDA_VERSION % 1000) / 10)
 #else // ^^^ has cuda compiler ^^^ / vvv no cuda compiler vvv
 #  define _CCCL_CUDACC() _CCCL_VERSION_INVALID()
 #endif // ^^^ no cuda compiler ^^^
@@ -130,20 +138,16 @@
 #define _CCCL_CUDACC_BELOW(...)    _CCCL_VERSION_COMPARE(_CCCL_CUDACC_, _CCCL_CUDACC, <, __VA_ARGS__)
 #define _CCCL_CUDACC_AT_LEAST(...) _CCCL_VERSION_COMPARE(_CCCL_CUDACC_, _CCCL_CUDACC, >=, __VA_ARGS__)
 
-#if _CCCL_CUDACC() != _CCCL_VERSION_INVALID()
-#  define _CCCL_HAS_CUDA_COMPILER() 1
-#else // ^^^ has cuda compiler ^^^ / vvv no cuda compiler vvv
+#if _CCCL_VERSION_IS_INVALID(_CCCL_CUDACC())
 #  define _CCCL_HAS_CUDA_COMPILER() 0
+#else // ^^^ has cuda compiler ^^^ / vvv no cuda compiler vvv
+#  define _CCCL_HAS_CUDA_COMPILER() 1
 #endif // ^^^ no cuda compiler ^^^
 
 #if _CCCL_HAS_CUDA_COMPILER() && _CCCL_CUDACC_BELOW(12) && !defined(CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12)
 #  error "CUDA versions below 12 are not supported." \
 "Define CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12 to suppress this message."
 #endif
-
-// Convert parameter to string
-#define _CCCL_TO_STRING2(_STR) #_STR
-#define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
 
 // Define the pragma for the host compiler
 #if _CCCL_COMPILER(MSVC)

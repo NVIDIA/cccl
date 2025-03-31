@@ -89,7 +89,7 @@ __mempool_set_access(cudaMemPool_t __pool, ::cuda::std::span<const device_ref> _
 //! @param __pool The memory pool to query access for
 //! @param __dev The device to query access for
 //! @returns true if the memory pool is accessible from the device
-_CCCL_NODISCARD inline bool __mempool_get_access(cudaMemPool_t __pool, device_ref __dev)
+[[nodiscard]] inline bool __mempool_get_access(cudaMemPool_t __pool, device_ref __dev)
 {
   cudaMemAccessFlags __result;
   cudaMemLocation __loc;
@@ -163,7 +163,7 @@ private:
   //! @brief  Creates the CUDA memory pool from the passed in arguments.
   //! @throws cuda_error If the creation of the CUDA memory pool failed.
   //! @returns The created CUDA memory pool.
-  _CCCL_NODISCARD static cudaMemPool_t
+  [[nodiscard]] static cudaMemPool_t
   __create_cuda_mempool(__memory_location_type __kind, memory_pool_properties __properties, int __id) noexcept
   {
     ::cudaMemPoolProps __pool_properties{};
@@ -358,14 +358,14 @@ public:
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
   //!
   //! @param __device device for which the access is queried
-  _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
+  [[nodiscard]] bool is_accessible_from(device_ref __device)
   {
     return ::cuda::experimental::__mempool_get_access(__pool_handle_, __device);
   }
 
   //! @brief Equality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are equal.
-  _CCCL_NODISCARD constexpr bool operator==(__memory_pool_base const& __rhs) const noexcept
+  [[nodiscard]] constexpr bool operator==(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ == __rhs.__pool_handle_;
   }
@@ -373,7 +373,7 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another \c __memory_pool_base.
   //! @returns true if the stored ``cudaMemPool_t`` are not equal.
-  _CCCL_NODISCARD constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
+  [[nodiscard]] constexpr bool operator!=(__memory_pool_base const& __rhs) const noexcept
   {
     return __pool_handle_ != __rhs.__pool_handle_;
   }
@@ -408,7 +408,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
-  _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_handle_;
   }

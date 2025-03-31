@@ -80,11 +80,6 @@
 #  define _CCCL_NO_CONCEPTS
 #endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 
-// Inline variables are only available from C++17 onwards
-#if __cpp_inline_variables < 201606L
-#  define _CCCL_NO_INLINE_VARIABLES
-#endif // __cpp_inline_variables < 201606L
-
 // Three way comparison is only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 #  define _CCCL_NO_THREE_WAY_COMPARISON

@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _To, class _From>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _To __fp_cast(_From __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_same, _From, float))
   {

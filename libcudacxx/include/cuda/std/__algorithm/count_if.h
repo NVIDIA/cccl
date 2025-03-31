@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Predicate>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __iter_diff_t<_InputIterator>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __iter_diff_t<_InputIterator>
 count_if(_InputIterator __first, _InputIterator __last, _Predicate __pred)
 {
   __iter_diff_t<_InputIterator> __r{0};

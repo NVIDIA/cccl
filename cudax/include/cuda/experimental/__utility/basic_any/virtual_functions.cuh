@@ -64,8 +64,8 @@ _CUDAX_TRIVIAL_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 }
 
 template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
-_CCCL_NODISCARD _CUDAX_HOST_API auto __override_fn_([[maybe_unused]] _CUDA_VSTD::__maybe_const<_IsConst, void>* __pv,
-                                                    [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
+[[nodiscard]] _CUDAX_HOST_API auto __override_fn_([[maybe_unused]] _CUDA_VSTD::__maybe_const<_IsConst, void>* __pv,
+                                                  [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
   using __value_type _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<_IsConst, _Tp>;
 

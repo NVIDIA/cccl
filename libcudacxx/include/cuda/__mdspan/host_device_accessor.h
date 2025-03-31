@@ -102,7 +102,7 @@ class __host_accessor : public _Accessor
   static constexpr bool __is_offset_noexcept =
     noexcept(_CUDA_VSTD::declval<_Accessor>().offset(_CUDA_VSTD::declval<__data_handle_type>(), 0));
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
@@ -186,13 +186,13 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_host_accessible_pointer(__p);), (return false;))
@@ -217,7 +217,7 @@ class __device_accessor : public _Accessor
   static constexpr bool __is_offset_noexcept =
     noexcept(_CUDA_VSTD::declval<_Accessor>().offset(_CUDA_VSTD::declval<__data_handle_type>(), 0));
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   __is_device_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
@@ -306,13 +306,13 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   __detectably_invalid(data_handle_type __p, size_t) const noexcept
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_device_accessible_pointer(__p);), (return false;))
@@ -337,7 +337,7 @@ class __managed_accessor : public _Accessor
   static constexpr bool __is_offset_noexcept =
     noexcept(_CUDA_VSTD::declval<_Accessor>().offset(_CUDA_VSTD::declval<__data_handle_type>(), 0));
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   __is_managed_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
@@ -405,13 +405,13 @@ public:
     return _Accessor::access(__p, __i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type offset(data_handle_type __p, size_t __i) const
     noexcept(__is_offset_noexcept)
   {
     return _Accessor::offset(__p, __i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   __detectably_invalid([[maybe_unused]] data_handle_type __p, size_t) const noexcept
   {
     NV_IF_ELSE_TARGET(NV_IS_HOST, (return __is_managed_pointer(__p);), (return false;))

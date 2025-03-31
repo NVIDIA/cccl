@@ -245,7 +245,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_optional_access()
+[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_optional_access()
 {
 #ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
@@ -1475,7 +1475,7 @@ private:
 
   _CCCL_TEMPLATE(class _Ref, class _Arg)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Ref, _Arg))
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Ref __make_reference(_Arg&& __arg) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Ref __make_reference(_Arg&& __arg) noexcept
   {
     static_assert(_CCCL_TRAIT(is_reference, _Ref), "optional<T&>: make-reference requires a reference as argument");
     return _Ref(_CUDA_VSTD::forward<_Arg>(__arg));
@@ -1485,11 +1485,11 @@ private:
   template <class>
   friend struct __optional_storage_base;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& __get() noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& __get() noexcept
   {
     return *__value_;
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& __get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& __get() const noexcept
   {
     return *__value_;
   }
