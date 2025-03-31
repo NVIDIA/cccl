@@ -27,7 +27,7 @@
 #elif _CCCL_COMPILER(NVRTC) // NVRTC has no exceptions
 #  define _CCCL_HAS_EXCEPTIONS() 0
 #elif _CCCL_COMPILER(MSVC) // MSVC needs special checks for `_HAS_EXCEPTIONS` and `_CPPUNWIND`
-#  define _CCCL_HAS_EXCEPTIONS() (_HAS_EXCEPTIONS == 0) && (_CPPUNWIND == 0)
+#  define _CCCL_HAS_EXCEPTIONS() (_HAS_EXCEPTIONS != 0) && (_CPPUNWIND != 0)
 #else // other compilers use `__EXCEPTIONS`
 #  define _CCCL_HAS_EXCEPTIONS() __EXCEPTIONS
 #endif // has exceptions
