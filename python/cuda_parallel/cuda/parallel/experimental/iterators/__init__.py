@@ -87,7 +87,7 @@ def CountingIterator(offset):
 def ReverseIterator(sequence):
     """Returns an Iterator over an array in reverse.
 
-    Similar to https://nvidia.github.io/cccl/thrust/api/classthrust_1_1reverse__iterator.html
+    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
 
     Example:
         The code snippet below demonstrates the usage of a ``ReverseIterator``:

@@ -404,9 +404,7 @@ def make_reverse_iterator(it):
         )
 
     if hasattr(it, "__cuda_array_interface__"):
-        print(it.__cuda_array_interface__["data"][0])
         last_element_ptr = get_last_element_ptr(it)
-        print(last_element_ptr)
         it = RawPointer(last_element_ptr, numba.from_dtype(it.dtype))
 
     it_advance = cuda.jit(type(it).advance, device=True)
