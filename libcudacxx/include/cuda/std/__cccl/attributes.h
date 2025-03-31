@@ -49,21 +49,6 @@
 #  define _CCCL_DECLSPEC_EMPTY_BASES
 #endif // !_CCCL_COMPILER(MSVC)
 
-// Use a function like macro to imply that it must be followed by a semicolon
-#if _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
-#  define _CCCL_FALLTHROUGH() [[fallthrough]]
-#elif _CCCL_COMPILER(NVRTC)
-#  define _CCCL_FALLTHROUGH() ((void) 0)
-#elif _CCCL_HAS_CPP_ATTRIBUTE(clang::fallthrough)
-#  define _CCCL_FALLTHROUGH() [[clang::fallthrough]]
-#elif _CCCL_COMPILER(NVHPC)
-#  define _CCCL_FALLTHROUGH()
-#elif _CCCL_HAS_ATTRIBUTE(fallthrough) || _CCCL_COMPILER(GCC, >=, 7)
-#  define _CCCL_FALLTHROUGH() __attribute__((__fallthrough__))
-#else
-#  define _CCCL_FALLTHROUGH() ((void) 0)
-#endif
-
 #if _CCCL_HAS_ATTRIBUTE(__nodebug__)
 #  define _CCCL_NODEBUG __attribute__((__nodebug__))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__nodebug__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__nodebug__) vvv
@@ -99,14 +84,6 @@
 #  define _CCCL_NODISCARD_FRIEND friend
 #else
 #  define _CCCL_NODISCARD_FRIEND [[nodiscard]] friend
-#endif
-
-#if _CCCL_COMPILER(MSVC)
-#  define _CCCL_NORETURN __declspec(noreturn)
-#elif _CCCL_HAS_CPP_ATTRIBUTE(noreturn)
-#  define _CCCL_NORETURN [[noreturn]]
-#else
-#  define _CCCL_NORETURN __attribute__((noreturn))
 #endif
 
 #if _CCCL_COMPILER(MSVC) // vvv _CCCL_COMPILER(MSVC) vvv
