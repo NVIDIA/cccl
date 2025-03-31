@@ -767,7 +767,6 @@ public:
     if (outFile.is_open())
     {
       outFile << "digraph {\n";
-      bool display_clusters = (per_ctx.size() > 1);
 
       compute_critical_path(outFile);
 
