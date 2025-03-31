@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from dataclasses import dataclass
+from dataclasses import dataclass, make_dataclass
 from dataclasses import fields as dataclass_fields
 from typing import Type
 
@@ -19,7 +19,7 @@ from numba.core.extending import (
 from numba.core.typing import signature as nb_signature
 from numba.core.typing.templates import AttributeTemplate, ConcreteTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
-from numba.extending import lower_builtin
+from numba.extending import as_numba_type, lower_builtin
 
 from .typing import GpuStruct
 
@@ -59,7 +59,7 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
     # Set a .dtype attribute on the class that returns the
     # corresponding numpy structure dtype. This makes it convenient to
     # create CuPy/NumPy arrays of this type.
-    setattr(this, "dtype", np.dtype(list(anns.items())))
+    setattr(this, "dtype", np.dtype(list(anns.items()), align=True))
 
     # Define __post_init__ to create a numpy struct from the fields,
     # and keep a reference to it in the `._data` attribute. The data
@@ -88,6 +88,8 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
 
     this_type = ThisType()
 
+    as_numba_type.register(this, this_type)
+
     @typeof_impl.register(this)
     def typeof_this(val, c):
         return ThisType()
@@ -111,10 +113,6 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
             return numba.from_dtype(typ)
 
         setattr(ThisAttrsTemplate, f"resolve_{name}", resolver)
-
-    @cuda_registry.register_attr
-    class ThisAttrs(ThisAttrsTemplate):
-        key = this_type
 
     # Lowering for attribute access:
     for field in fields:
@@ -143,3 +141,10 @@ def gpu_struct(this: type) -> Type[GpuStruct]:
     )
 
     return this
+
+
+def gpu_struct_from_numpy_dtype(name, np_dtype):
+    ret = make_dataclass(
+        name, [(name, dtype) for name, (dtype, _) in np_dtype.fields.items()]
+    )
+    return gpu_struct(ret)

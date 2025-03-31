@@ -11,9 +11,11 @@ from typing import Callable
 import numba
 import numpy as np
 from numba import cuda, types
+from numba.extending import as_numba_type
 
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
+from .struct import gpu_struct_from_numpy_dtype
 from .typing import DeviceArrayLike, GpuStruct
 
 
@@ -337,4 +339,7 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
 def get_value_type(d_in: IteratorBase | DeviceArrayLike):
     if isinstance(d_in, IteratorBase):
         return d_in.value_type
-    return numba.from_dtype(get_dtype(d_in))
+    dtype = get_dtype(d_in)
+    if dtype.type == np.void:
+        return as_numba_type(gpu_struct_from_numpy_dtype("anonymous", dtype))
+    return numba.from_dtype(dtype)
