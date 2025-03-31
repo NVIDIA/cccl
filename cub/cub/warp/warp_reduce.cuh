@@ -593,7 +593,17 @@ public:
   template <typename ReductionOp>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, reduction_op);
+    // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, reduction_op);
+    if constexpr (_CUDA_VSTD::has_single_bit((unsigned) LogicalWarpThreads))
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, reduction_op, multiple_logical_warps, first_lane_result);
+    }
+    else
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, reduction_op, single_logical_warp, first_lane_result);
+    }
   }
 
   //! @rst

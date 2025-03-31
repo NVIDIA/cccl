@@ -26,11 +26,6 @@
 
 #include <cub/config.cuh>
 
-#include <climits>
-
-#include "cuda/std/__internal/namespaces.h"
-#include "cuda/std/__type_traits/num_bits.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -45,6 +40,7 @@
 #include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/ptx>
+#include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/bit>
 #include <cuda/std/complex>
 #include <cuda/std/cstdint>
@@ -95,7 +91,7 @@ namespace detail
 {
 
 template <unsigned LogicalWarpSize>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned shuffle_mask([[maybe_unused]] unsigned step)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE unsigned shuffle_mask([[maybe_unused]] unsigned step)
 {
   if constexpr (_CUDA_VSTD::has_single_bit(LogicalWarpSize))
   {
@@ -110,14 +106,14 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned shuffle_mask([[maybe_unu
 }
 
 template <unsigned LogicalWarpSize, WarpReduceMode Mode>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr unsigned member_mask(warp_reduce_mode_t<Mode> mode)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr unsigned member_mask(warp_reduce_mode_t<Mode> mode)
 {
   static_assert(mode == single_logical_warp || _CUDA_VSTD::has_single_bit(LogicalWarpSize));
   return (mode == single_logical_warp) ? (0xFFFFFFFF >> (warp_threads - LogicalWarpSize)) : 0xFFFFFFFF;
 }
 
 template <int LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult Kind>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm30(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm30(
   Input input, ReductionOp reduction_op, warp_reduce_mode_t<Mode> mode, warp_reduce_result_t<Kind> result_mode)
 {
   using namespace internal;
@@ -167,7 +163,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm30(
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int K = 0; K < Log2Size; K++)
     {
-      shfl_down_add(input, 1u << K, cub::detail::shuffle_mask<LogicalWarpSize>(K), mask);
+      input = shfl_down_op(reduction_op, input, 1u << K, cub::detail::shuffle_mask<LogicalWarpSize>(K), mask);
     }
     if constexpr (result_mode == all_lanes_result)
     {
@@ -183,7 +179,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm30(
 }
 
 template <unsigned LogicalWarpSize, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm80(Input input, ReductionOp)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm80(Input input, ReductionOp)
 {
   using namespace internal;
   static_assert(_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t));
@@ -221,7 +217,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_sm80(Input inpu
 }
 
 template <unsigned LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult Kind>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_generic(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_generic(
   Input input, ReductionOp reduction_op, warp_reduce_mode_t<Mode> mode, warp_reduce_result_t<Kind> result_mode)
 {
   constexpr auto Log2Size         = ::cuda::ilog2(LogicalWarpSize * 2 - 1);
@@ -262,11 +258,11 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_generic(
  **********************************************************************************************************************/
 
 template <int LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult ResultMode>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE
 Input warp_reduce_dispatch(Input, ReductionOp, warp_reduce_mode_t<Mode>, warp_reduce_result_t<ResultMode>);
 
 template <typename Input>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto split_integer(Input input)
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto split_integers(Input input)
 {
   static_assert(_CUDA_VSTD::is_integral_v<Input>);
   constexpr auto half_bits = _CUDA_VSTD::__num_bits_v<Input> / 2;
@@ -280,7 +276,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto split_integer(Input input)
 }
 
 template <typename Input>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integer(Input inputA, Input inputB)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integers(Input inputA, Input inputB)
 {
   static_assert(_CUDA_VSTD::is_integral_v<Input>);
   constexpr auto num_bits = _CUDA_VSTD::__num_bits_v<Input>;
@@ -292,36 +288,36 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integer(Input inputA, 
 _CCCL_TEMPLATE(
   int LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult ResultMode)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursive(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursive(
   Input input,
   ReductionOp reduction_op,
   warp_reduce_mode_t<Mode> warp_mode,
   warp_reduce_result_t<ResultMode> result_mode)
 {
-  using detail::merge_integer;
-  using detail::split_integer;
+  using detail::merge_integers;
+  using detail::split_integers;
   using detail::warp_reduce_dispatch;
-  auto [high, low]    = split_integer(input);
+  auto [high, low]    = split_integers(input);
   auto high_reduction = warp_reduce_dispatch<LogicalWarpSize>(high, reduction_op, warp_mode, result_mode);
   auto low_reduction  = warp_reduce_dispatch<LogicalWarpSize>(low, reduction_op, warp_mode, result_mode);
-  return merge_integer(high_reduction, low_reduction);
+  return merge_integers(high_reduction, low_reduction);
 }
 
 _CCCL_TEMPLATE(
   int LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult ResultMode)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursive(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursive(
   Input input,
   ReductionOp reduction_op,
   warp_reduce_mode_t<Mode> warp_mode,
   warp_reduce_result_t<ResultMode> result_mode)
 {
-  using detail::merge_integer;
-  using detail::split_integer;
+  using detail::merge_integers;
+  using detail::split_integers;
   using detail::warp_reduce_dispatch;
   using internal::identity_v;
   constexpr auto half_bits = _CUDA_VSTD::__num_bits_v<Input> / 2;
-  auto [high, low]         = split_integer(input);
+  auto [high, low]         = split_integers(input);
   auto high_result         = warp_reduce_dispatch<LogicalWarpSize>(high, reduction_op, warp_mode, result_mode);
   if (high_result == 0) // shortcut: input is in range [0, 2^N/2)
   {
@@ -334,37 +330,37 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursiv
     auto low_unsigned          = static_cast<half_size_unsigned_t>(low);
     auto low_selected          = high_result == high ? low_unsigned : identity;
     auto low_result = warp_reduce_dispatch<LogicalWarpSize>(low_selected, reduction_op, warp_mode, result_mode);
-    return static_cast<Input>(merge_integer(static_cast<half_size_unsigned_t>(high_result), low_result));
+    return static_cast<Input>(merge_integers(static_cast<half_size_unsigned_t>(high_result), low_result));
   }
   // signed type and < 0
   using half_size_signed_t = _CUDA_VSTD::__make_nbit_int_t<half_bits, true>;
   constexpr auto identity  = identity_v<ReductionOp, half_size_signed_t>;
-  auto low_selected        = high_result == high ? low : identity;
+  auto low_selected        = high_result == high ? static_cast<half_size_signed_t>(low) : identity;
   auto low_result          = warp_reduce_dispatch<LogicalWarpSize>(low_selected, reduction_op, warp_mode, result_mode);
-  return merge_integer(high_result, low_result);
+  return merge_integers(static_cast<half_size_signed_t>(high_result), low_result);
 }
 
 _CCCL_TEMPLATE(
   int LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult ResultMode)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_recursive(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_recursive(
   Input input,
   ReductionOp reduction_op,
   warp_reduce_mode_t<Mode> warp_mode,
   warp_reduce_result_t<ResultMode> result_mode)
 {
-  using detail::merge_integer;
-  using detail::split_integer;
+  using detail::merge_integers;
+  using detail::split_integers;
   using detail::warp_reduce_dispatch;
-  using unsigned_t        = _CUDA_VSTD::make_unsigned_t<Input>;
-  constexpr auto num_bits = _CUDA_VSTD::__num_bits_v<Input>;
-  auto [high, low]        = split_integer(input);
-  auto high_reduction     = warp_reduce_dispatch<LogicalWarpSize>(high, reduction_op, warp_mode, result_mode);
-  auto low_digits         = static_cast<int32_t>(static_cast<unsigned_t>(low) >> (num_bits - 5));
-  auto carry_out          = warp_reduce_dispatch<LogicalWarpSize>(low_digits, reduction_op, warp_mode, result_mode);
-  auto low_reduction      = warp_reduce_dispatch<LogicalWarpSize>(low, reduction_op, warp_mode, result_mode);
-  auto result_high        = high_reduction + carry_out;
-  return merge_integer(result_high, low_reduction);
+  using unsigned_t         = _CUDA_VSTD::make_unsigned_t<Input>;
+  constexpr auto half_bits = _CUDA_VSTD::__num_bits_v<Input> / 2;
+  auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
+  auto high_reduction      = warp_reduce_dispatch<LogicalWarpSize>(high, reduction_op, warp_mode, result_mode);
+  auto low_digits          = static_cast<uint32_t>(low >> (half_bits - 5));
+  auto carry_out           = warp_reduce_dispatch<LogicalWarpSize>(low_digits, reduction_op, warp_mode, result_mode);
+  auto low_reduction       = warp_reduce_dispatch<LogicalWarpSize>(low, reduction_op, warp_mode, result_mode);
+  auto result_high         = high_reduction + (carry_out >> 5);
+  return merge_integers(result_high, low_reduction);
 }
 
 /***********************************************************************************************************************
@@ -375,7 +371,7 @@ template <typename T>
 inline constexpr bool is_complex_v = _CUDA_VSTD::__is_complex<T>::value;
 
 template <int LogicalWarpSize, typename Input, typename ReductionOp, WarpReduceMode Mode, WarpReduceResult ResultMode>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
   Input input,
   ReductionOp reduction_op,
   warp_reduce_mode_t<Mode> warp_mode,
