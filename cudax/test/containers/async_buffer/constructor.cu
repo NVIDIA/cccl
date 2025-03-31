@@ -193,7 +193,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
   }
 
 #if 0 // Implement exception handling
-#  if TEST_HAS_EXCEPTIONS()
+#  if _CCCL_HAS_EXCEPTIONS()
   SECTION("Exception handling throwing bad_alloc")
   {
     using async_buffer = cudax::async_buffer<int>;
@@ -280,6 +280,6 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
       CUDAX_CHECK(false);
     }
   }
-#  endif // TEST_HAS_EXCEPTIONS()
+#  endif // _CCCL_HAS_EXCEPTIONS()
 #endif // 0
 }
