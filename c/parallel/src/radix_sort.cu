@@ -41,7 +41,7 @@ struct agent_radix_sort_downsweep_policy
 
   int ItemsPerThread() const
   {
-    return block_threads;
+    return items_per_thread;
   }
 };
 
@@ -58,7 +58,7 @@ struct agent_radix_sort_upsweep_policy
 
   int ItemsPerThread() const
   {
-    return block_threads;
+    return items_per_thread;
   }
 };
 
@@ -76,7 +76,7 @@ struct agent_radix_sort_onesweep_policy
 
   int ItemsPerThread() const
   {
-    return block_threads;
+    return items_per_thread;
   }
 };
 
@@ -111,7 +111,7 @@ struct agent_scan_policy
 
   int ItemsPerThread() const
   {
-    return block_threads;
+    return items_per_thread;
   }
 };
 
