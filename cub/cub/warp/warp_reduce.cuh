@@ -148,8 +148,12 @@ class WarpReduce
   static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= detail::warp_threads,
                 "LogicalWarpThreads must be in the range [1, 32]");
 
-  static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
   static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpThreads});
+
+  static constexpr auto reduce_logical_mode_default =
+    is_power_of_two ? detail::ReduceLogicalMode::MultipleReductions : detail::ReduceLogicalMode::SingleReduction;
+
+  static constexpr auto warp_reduce_result_mode_default = detail::WarpReduceResultMode::SingleLane;
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -223,19 +227,12 @@ public:
   //! ``3568``, respectively (and is undefined in other threads).
   //! @endrst
   //!
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(
+    T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
   {
-    // return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
-    if constexpr (_CUDA_VSTD::has_single_bit((unsigned) LogicalWarpThreads))
-    {
-      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
-        input, _CUDA_VSTD::plus<>{}, multiple_logical_warps, first_lane_result);
-    }
-    else
-    {
-      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
-        input, _CUDA_VSTD::plus<>{}, single_logical_warp, first_lane_result);
-    }
+    return detail::warp_reduce_dispatch<LogicalWarpThreads>(input, _CUDA_VSTD::plus<>{}, logical_mode, result_mode);
   }
 
   _CCCL_TEMPLATE(typename InputType)
