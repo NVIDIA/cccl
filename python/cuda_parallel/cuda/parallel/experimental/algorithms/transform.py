@@ -28,7 +28,13 @@ class _UnaryTransform:
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         in_value_type = cccl.get_value_type(d_in)
-        sig = (in_value_type,)
+        out_value_type = cccl.get_value_type(d_out)
+
+        if not out_value_type.is_internal:
+            sig = (in_value_type,)
+        else:
+            sig = out_value_type(in_value_type)
+
         self.op_wrapper = cccl.to_cccl_op(op, sig=sig)
         self.build_result = cccl.DeviceTransformBuildResult()
         self.bindings = get_bindings()
@@ -91,7 +97,14 @@ class _BinaryTransform:
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         in1_value_type = cccl.get_value_type(d_in1)
         in2_value_type = cccl.get_value_type(d_in2)
-        self.op_wrapper = cccl.to_cccl_op(op, sig=(in1_value_type, in2_value_type))
+        out_value_type = cccl.get_value_type(d_out)
+
+        if not out_value_type.is_internal:
+            sig = (in1_value_type, in2_value_type)
+        else:
+            sig = out_value_type(in1_value_type, in2_value_type)
+
+        self.op_wrapper = cccl.to_cccl_op(op, sig=sig)
         self.build_result = cccl.DeviceTransformBuildResult()
         self.bindings = get_bindings()
         error = call_build(
