@@ -249,7 +249,17 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::maximum<>{});
+    // return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::maximum<>{});
+    if constexpr (_CUDA_VSTD::has_single_bit((unsigned) LogicalWarpThreads))
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, ::cuda::maximum<>{}, multiple_logical_warps, first_lane_result);
+    }
+    else
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, ::cuda::maximum<>{}, single_logical_warp, first_lane_result);
+    }
   }
 
   _CCCL_TEMPLATE(typename InputType)
@@ -263,7 +273,17 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input)
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::minimum<>{});
+    // return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::minimum<>{});
+    if constexpr (_CUDA_VSTD::has_single_bit((unsigned) LogicalWarpThreads))
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, ::cuda::minimum<>{}, multiple_logical_warps, first_lane_result);
+    }
+    else
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, ::cuda::minimum<>{}, single_logical_warp, first_lane_result);
+    }
   }
 
   _CCCL_TEMPLATE(typename InputType)

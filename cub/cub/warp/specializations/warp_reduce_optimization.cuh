@@ -26,6 +26,11 @@
 
 #include <cub/config.cuh>
 
+#include <climits>
+
+#include "cuda/std/__internal/namespaces.h"
+#include "cuda/std/__type_traits/num_bits.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -264,7 +269,7 @@ template <typename Input>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto split_integer(Input input)
 {
   static_assert(_CUDA_VSTD::is_integral_v<Input>);
-  constexpr auto half_bits = ::cuda::ceil_div(_CUDA_VSTD::numeric_limits<Input>::digits, 2);
+  constexpr auto half_bits = _CUDA_VSTD::__num_bits_v<Input> / 2;
   using unsigned_t         = _CUDA_VSTD::make_unsigned_t<Input>;
   using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
   using output_t           = _CUDA_VSTD::__make_nbit_int_t<half_bits, _CUDA_VSTD::is_signed_v<Input>>;
@@ -278,10 +283,10 @@ template <typename Input>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integer(Input inputA, Input inputB)
 {
   static_assert(_CUDA_VSTD::is_integral_v<Input>);
-  constexpr auto digits = ::cuda::round_up(_CUDA_VSTD::numeric_limits<Input>::digits, 2);
-  using unsigned_t      = _CUDA_VSTD::__make_nbit_uint_t<digits * 2>;
-  using output_t        = _CUDA_VSTD::__make_nbit_int_t<digits * 2, _CUDA_VSTD::is_signed_v<Input>>;
-  return static_cast<output_t>(static_cast<unsigned_t>(inputA) << digits | inputB);
+  constexpr auto num_bits = _CUDA_VSTD::__num_bits_v<Input>;
+  using unsigned_t        = _CUDA_VSTD::__make_nbit_uint_t<num_bits * 2>;
+  using output_t          = _CUDA_VSTD::__make_nbit_int_t<num_bits * 2, _CUDA_VSTD::is_signed_v<Input>>;
+  return static_cast<output_t>(static_cast<unsigned_t>(inputA) << num_bits | inputB);
 }
 
 _CCCL_TEMPLATE(
@@ -315,7 +320,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursiv
   using detail::split_integer;
   using detail::warp_reduce_dispatch;
   using internal::identity_v;
-  constexpr auto half_bits = ::cuda::ceil_div(_CUDA_VSTD::numeric_limits<Input>::digits, 2);
+  constexpr auto half_bits = _CUDA_VSTD::__num_bits_v<Input> / 2;
   auto [high, low]         = split_integer(input);
   auto high_result         = warp_reduce_dispatch<LogicalWarpSize>(high, reduction_op, warp_mode, result_mode);
   if (high_result == 0) // shortcut: input is in range [0, 2^N/2)
@@ -329,7 +334,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursiv
     auto low_unsigned          = static_cast<half_size_unsigned_t>(low);
     auto low_selected          = high_result == high ? low_unsigned : identity;
     auto low_result = warp_reduce_dispatch<LogicalWarpSize>(low_selected, reduction_op, warp_mode, result_mode);
-    return static_cast<Input>(merge_integer(high_result, low_result));
+    return static_cast<Input>(merge_integer(static_cast<half_size_unsigned_t>(high_result), low_result));
   }
   // signed type and < 0
   using half_size_signed_t = _CUDA_VSTD::__make_nbit_int_t<half_bits, true>;
@@ -351,14 +356,14 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_recursive(
   using detail::merge_integer;
   using detail::split_integer;
   using detail::warp_reduce_dispatch;
-  using unsigned_t      = _CUDA_VSTD::make_unsigned_t<Input>;
-  constexpr auto digits = ::cuda::round_up(_CUDA_VSTD::numeric_limits<Input>::digits, 2);
-  auto [high, low]      = split_integer(input);
-  auto high_reduction   = warp_reduce_dispatch<LogicalWarpSize>(high, reduction_op, warp_mode, result_mode);
-  auto low_digits       = static_cast<int32_t>(static_cast<unsigned_t>(low) >> (digits - 5));
-  auto carry_out        = warp_reduce_dispatch<LogicalWarpSize>(low_digits, reduction_op, warp_mode, result_mode);
-  auto low_reduction    = warp_reduce_dispatch<LogicalWarpSize>(low, reduction_op, warp_mode, result_mode);
-  auto result_high      = high_reduction + carry_out;
+  using unsigned_t        = _CUDA_VSTD::make_unsigned_t<Input>;
+  constexpr auto num_bits = _CUDA_VSTD::__num_bits_v<Input>;
+  auto [high, low]        = split_integer(input);
+  auto high_reduction     = warp_reduce_dispatch<LogicalWarpSize>(high, reduction_op, warp_mode, result_mode);
+  auto low_digits         = static_cast<int32_t>(static_cast<unsigned_t>(low) >> (num_bits - 5));
+  auto carry_out          = warp_reduce_dispatch<LogicalWarpSize>(low_digits, reduction_op, warp_mode, result_mode);
+  auto low_reduction      = warp_reduce_dispatch<LogicalWarpSize>(low, reduction_op, warp_mode, result_mode);
+  auto result_high        = high_reduction + carry_out;
   return merge_integer(result_high, low_reduction);
 }
 
@@ -393,9 +398,9 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
   //
   if constexpr (is_any_floating_point && is_cuda_std_min_max_v<ReductionOp, Input>)
   {
-    constexpr auto digits = ::cuda::round_up(_CUDA_VSTD::numeric_limits<Input>::digits, 2);
-    using signed_t        = _CUDA_VSTD::__make_nbit_int_t<digits, true>;
-    auto result           = warp_reduce_dispatch<LogicalWarpSize>(
+    constexpr auto num_bits = _CUDA_VSTD::__num_bits_v<Input>;
+    using signed_t          = _CUDA_VSTD::__make_nbit_int_t<num_bits, true>;
+    auto result             = warp_reduce_dispatch<LogicalWarpSize>(
       _CUDA_VSTD::bit_cast<signed_t>(input), reduction_op, warp_mode, result_mode);
     return _CUDA_VSTD::bit_cast<Input>(result);
   }
