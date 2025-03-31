@@ -15,8 +15,7 @@
 #include "test_util.h"
 #include <cccl/c/radix_sort.h>
 
-// using key_types = std::tuple<uint8_t, int16_t, uint32_t, double>;
-using key_types = std::tuple<uint32_t>;
+using key_types = std::tuple<uint8_t, int16_t, uint32_t, double>;
 using item_t    = float;
 
 void radix_sort(
@@ -107,10 +106,9 @@ void radix_sort(
   REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
 }
 
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[merge_sort]", key_types)
+TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works for small arrays", "[merge_sort]", key_types)
 {
-  //   const int num_items              = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  const int num_items                 = 10;
+  const int num_items                 = GENERATE_COPY(take(2, random(1, 2000)), values({500, 1000, 2000}));
   std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
   std::vector<TestType> expected_keys = input_keys;
 
@@ -135,4 +133,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[merge_sort]", key_t
     begin_bit,
     end_bit,
     is_overwrite_okay);
+
+  std::sort(expected_keys.begin(), expected_keys.end());
+  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
 }

@@ -216,12 +216,14 @@ mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
 
 radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 {
-  constexpr int onesweep_radix_bits                                        = 8;
-  const int primary_radix_bits                                             = (key_size > 1) ? 7 : 5;
-  const int single_tile_radix_bits                                         = (key_size > 1) ? 6 : 5;
-  const auto [onesweep_items_per_thread, onesweep_block_threads]           = reg_bound_scaling(256, 21, key_size);
-  const auto [scan_items_per_thread, scan_block_threads]                   = mem_bound_scaling(512, 13, key_size);
-  const auto [downsweep_items_per_thread, downsweep_block_threads]         = mem_bound_scaling(160, 39, key_size);
+  constexpr int onesweep_radix_bits                              = 8;
+  const int primary_radix_bits                                   = (key_size > 1) ? 7 : 5;
+  const int single_tile_radix_bits                               = (key_size > 1) ? 6 : 5;
+  const auto [onesweep_items_per_thread, onesweep_block_threads] = reg_bound_scaling(256, 21, key_size);
+  const auto [scan_items_per_thread, scan_block_threads]         = mem_bound_scaling(512, 13, key_size);
+  // const auto [downsweep_items_per_thread, downsweep_block_threads]         = mem_bound_scaling(160, 39, key_size);
+  const int downsweep_items_per_thread                                     = 1;
+  const int downsweep_block_threads                                        = 160;
   const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16, key_size);
   const auto [single_tile_items_per_thread, single_tile_block_threads]     = mem_bound_scaling(256, 19, key_size);
 
@@ -551,7 +553,7 @@ struct {26} {{
       op_src // 27
     );
 
-#if true // CCCL_DEBUGGING_SWITCH
+#if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
     printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
     fflush(stdout);
