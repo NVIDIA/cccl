@@ -68,16 +68,16 @@ template <typename T>
 inline const T operator_identity_v<T, cuda::std::bit_xor<T>> = T{0};
 
 template <typename T>
-inline const T operator_identity_v<T, cuda::maximum<>> = ::std::numeric_limits<T>::min();
+inline const T operator_identity_v<T, cuda::maximum<>> = cuda::std::numeric_limits<T>::lowest();
 
 template <typename T>
-inline const T operator_identity_v<T, cuda::maximum<T>> = ::std::numeric_limits<T>::min();
+inline const T operator_identity_v<T, cuda::maximum<T>> = cuda::std::numeric_limits<T>::lowest();
 
 template <typename T>
-inline const T operator_identity_v<T, cuda::minimum<>> = ::std::numeric_limits<T>::max();
+inline const T operator_identity_v<T, cuda::minimum<>> = cuda::std::numeric_limits<T>::max();
 
 template <typename T>
-inline const T operator_identity_v<T, cuda::minimum<T>> = ::std::numeric_limits<T>::max();
+inline const T operator_identity_v<T, cuda::minimum<T>> = cuda::std::numeric_limits<T>::max();
 
 struct custom_plus : cuda::std::plus<>
 {};

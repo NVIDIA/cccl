@@ -563,6 +563,11 @@ INSTANTIATE(__nv_bfloat16);
 INSTANTIATE(cuda::std::complex<__nv_bfloat16>);
 #endif // TEST_BF_T()
 
+#if _CCCL_HAS_INT128()
+INSTANTIATE(__int128_t);
+INSTANTIATE(__uint128_t);
+#endif
+
 #undef INSTANTIATE_RND
 #undef INSTANTIATE_MOD
 #undef INSTANTIATE
