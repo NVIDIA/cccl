@@ -119,16 +119,15 @@ cdef class IntEnum:
     def value(self):
         return self.attr_value
 
-    @property
-    def _cmp_key(self):
-        return (type(self), self.parent_class, <object>self.attr_value)
-
     def __hash__(self):
-        return hash(self._cmp_key)
+        cdef object _cmp_key = (type(self), self.parent_class, <object>self.attr_value)
+        return hash(_cmp_key)
 
     def __eq__(self, other):
+        cdef IntEnum rhs
         if type(other) == type(self):
-            return self._cmp_key == other._cmp_key
+            rhs = <IntEnum>other
+            return (self.attr_value == rhs.attr_value) and (self.parent_class == rhs.parent_class)
         else:
             return False
 
@@ -152,12 +151,77 @@ cdef class IntEnumBase:
 
 cdef class IntEnum_CCCLType(IntEnumBase):
     "Enumeration of CCCL types"
+    cdef IntEnum _int8
+    cdef IntEnum _int16
+    cdef IntEnum _int32
+    cdef IntEnum _int64
+    cdef IntEnum _uint8
+    cdef IntEnum _uint16
+    cdef IntEnum _uint32
+    cdef IntEnum _uint64
+    cdef IntEnum _float32
+    cdef IntEnum _float64
+    cdef IntEnum _storage
 
     def __cinit__(self):
         self.enum_name = "TypeEnum"
+        self._int8 = self.make_INT8()
+        self._int16 = self.make_INT16()
+        self._int32 = self.make_INT32()
+        self._int64 = self.make_INT64()
+        self._uint8 = self.make_UINT8()
+        self._uint16 = self.make_UINT16()
+        self._uint32 = self.make_UINT32()
+        self._uint64 = self.make_UINT64()
+        self._float32 = self.make_FLOAT32()
+        self._float64 = self.make_FLOAT64()
+        self._storage = self.make_STORAGE()
 
     @property
     def INT8(self):
+        return self._int8
+
+    @property
+    def INT16(self):
+        return self._int16
+
+    @property
+    def INT32(self):
+        return self._int32
+
+    @property
+    def INT64(self):
+        return self._int64
+
+    @property
+    def UINT8(self):
+        return self._uint8
+
+    @property
+    def UINT16(self):
+        return self._uint16
+
+    @property
+    def UINT32(self):
+        return self._uint32
+
+    @property
+    def UINT64(self):
+        return self._uint64
+
+    @property
+    def FLOAT32(self):
+        return self._float32
+
+    @property
+    def FLOAT64(self):
+        return self._float64
+
+    @property
+    def STORAGE(self):
+        return self._storage
+
+    cdef IntEnum make_INT8(self):
         cdef str prop_name = "INT8"
         return IntEnum(
             type(self),
@@ -166,8 +230,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_INT8
         )
 
-    @property
-    def INT16(self):
+    cdef IntEnum make_INT16(self):
         cdef str prop_name = "INT16"
         return IntEnum(
             type(self),
@@ -176,8 +239,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_INT16
         )
 
-    @property
-    def INT32(self):
+    cdef IntEnum make_INT32(self):
         cdef str prop_name = "INT32"
         return IntEnum(
             type(self),
@@ -186,8 +248,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_INT32
         )
 
-    @property
-    def INT64(self):
+    cdef IntEnum make_INT64(self):
         cdef str prop_name = "INT64"
         return IntEnum(
             type(self),
@@ -196,8 +257,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_INT64
         )
 
-    @property
-    def UINT8(self):
+    cdef IntEnum make_UINT8(self):
         cdef str prop_name = "UINT8"
         return IntEnum(
             type(self),
@@ -206,8 +266,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_UINT8
         )
 
-    @property
-    def UINT16(self):
+    cdef IntEnum make_UINT16(self):
         cdef str prop_name = "UINT16"
         return IntEnum(
             type(self),
@@ -216,8 +275,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_UINT16
         )
 
-    @property
-    def UINT32(self):
+    cdef IntEnum make_UINT32(self):
         cdef str prop_name = "UINT32"
         return IntEnum(
             type(self),
@@ -226,8 +284,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_UINT32
         )
 
-    @property
-    def UINT64(self):
+    cdef IntEnum make_UINT64(self):
         cdef str prop_name = "UINT64"
         return IntEnum(
             type(self),
@@ -237,8 +294,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
         )
 
 
-    @property
-    def FLOAT32(self):
+    cdef IntEnum make_FLOAT32(self):
         cdef str prop_name = "FLOAT32"
         return IntEnum(
             type(self),
@@ -247,8 +303,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
             cy_cccl_type_enum.cy_CCCL_FLOAT32
         )
 
-    @property
-    def FLOAT64(self):
+    cdef IntEnum make_FLOAT64(self):
         cdef str prop_name = "FLOAT64"
         return IntEnum(
             type(self),
@@ -258,8 +313,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
         )
 
 
-    @property
-    def STORAGE(self):
+    cdef IntEnum make_STORAGE(self):
         cdef str prop_name = "STORAGE"
         return IntEnum(
             type(self),
@@ -271,12 +325,15 @@ cdef class IntEnum_CCCLType(IntEnumBase):
 
 cdef class IntEnum_OpKind(IntEnumBase):
     "Enumeration of operator kinds"
+    cdef IntEnum _stateless
+    cdef IntEnum _stateful
 
     def __cinit__(self):
         self.enum_name = "OpKindEnum"
+        self._stateless = self.make_STATELESS()
+        self._stateful = self.make_STATEFUL()
 
-    @property
-    def STATELESS(self):
+    cdef IntEnum make_STATELESS(self):
         cdef str prop_name = "STATELESS"
         return IntEnum(
             type(self),
@@ -285,8 +342,7 @@ cdef class IntEnum_OpKind(IntEnumBase):
             cy_cccl_op_kind_t.cy_CCCL_STATELESS
         )
 
-    @property
-    def STATEFUL(self):
+    cdef IntEnum make_STATEFUL(self):
         cdef str prop_name = "STATEFUL"
         return IntEnum(
             type(self),
@@ -296,14 +352,26 @@ cdef class IntEnum_OpKind(IntEnumBase):
         )
 
 
+    @property
+    def STATELESS(self):
+        return self._stateless
+
+    @property
+    def STATEFUL(self):
+        return self._stateful
+
+
 cdef class IntEnum_IteratorKind(IntEnumBase):
     "Enumeration of iterator kinds"
+    cdef IntEnum _pointer
+    cdef IntEnum _iterator
 
     def __cinit__(self):
         self.enum_name = "IteratorKindEnum"
+        self._pointer = self.make_POINTER()
+        self._iterator = self.make_ITERATOR()
 
-    @property
-    def POINTER(self):
+    cdef IntEnum make_POINTER(self):
         cdef str prop_name = "POINTER"
         return IntEnum(
             type(self),
@@ -312,8 +380,7 @@ cdef class IntEnum_IteratorKind(IntEnumBase):
             cy_cccl_iterator_kind_t.cy_CCCL_POINTER
         )
 
-    @property
-    def ITERATOR(self):
+    cdef IntEnum make_ITERATOR(self):
         cdef str prop_name = "ITERATOR"
         return IntEnum(
             type(self),
@@ -321,6 +388,14 @@ cdef class IntEnum_IteratorKind(IntEnumBase):
             prop_name,
             cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR
         )
+
+    @property
+    def POINTER(self):
+        return self._pointer
+
+    @property
+    def ITERATOR(self):
+        return self._iterator
 
 
 TypeEnum = IntEnum_CCCLType()
@@ -830,9 +905,9 @@ cdef class Iterator:
             cdef size_t ptr = 0
             if self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
                 if isinstance(new_value, Pointer):
-                    self.state_obj = new_value.reference
+                    self.state_obj = (<Pointer>new_value).ref
                     self.iter_data.size = state_sz
-                    self.iter_data.state = (<Pointer>new_value).get()
+                    self.iter_data.state = (<Pointer>new_value).ptr
                 elif isinstance(new_value, int):
                     self.state_obj = None
                     self.iter_data.size = state_sz
@@ -874,6 +949,14 @@ cdef class Iterator:
             return IteratorKind.POINTER
         else:
             return IteratorKind.ITERATOR
+
+    def is_kind_pointer(self):
+        cdef cy_cccl_iterator_kind_t it_kind = self.iter_data.type
+        return (it_kind == cy_cccl_iterator_kind_t.cy_CCCL_POINTER)
+
+    def is_kind_iterator(self):
+        cdef cy_cccl_iterator_kind_t it_kind = self.iter_data.type
+        return (it_kind == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR)
 
     def as_bytes(self):
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.iter_data))

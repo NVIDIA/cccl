@@ -187,9 +187,10 @@ def to_cccl_op(op: Callable, sig) -> Op:
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
-    if cccl_it.type == IteratorKind.POINTER:
+    if cccl_it.is_kind_pointer():
         ptr = get_data_pointer(input_it)
-        cccl_it.state = make_pointer_object(ptr, input_it)
+        ptr_obj = make_pointer_object(ptr, input_it)
+        cccl_it.state = ptr_obj
     else:
         state_ = input_it.state
         if isinstance(state_, (IteratorState, Pointer)):
