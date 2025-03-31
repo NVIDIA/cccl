@@ -118,12 +118,19 @@ public:
     fun(ctx, logical_data<Deps>(deps.get_data())...);
   }
 
-  /* Helper to run the algorithm in a stream_ctx or graph_ctx */
-  template <typename Fun, typename context_t, typename... Deps>
-  void run_as_task(Fun&& fun, context_t& ctx, task_dep<Deps>... deps)
+  template <typename Fun, typename... Deps>
+  void run_as_task(Fun&& fun, stream_ctx& ctx, task_dep<Deps>... deps)
   {
-    ctx.task(mv(deps)...).set_symbol(symbol)->*[this, &fun, &ctx](auto cuda_stream_or_graph, Deps... args) {
-      this->run(::std::forward<Fun>(fun), ctx, cuda_stream_or_graph, mv(args)...);
+    ctx.task(mv(deps)...).set_symbol(symbol)->*[this, &fun, &ctx](cudaStream_t stream, const Deps&... args) {
+      this->run(::std::forward<Fun>(fun), ctx, stream, args...);
+    };
+  }
+
+  template <typename Fun, typename... Deps>
+  void run_as_task(Fun&& fun, graph_ctx& ctx, task_dep<Deps>... deps)
+  {
+    ctx.task(mv(deps)...).set_symbol(symbol)->*[this, &fun, &ctx](cudaGraph_t g, const Deps&... args) {
+      this->run_in_graph(::std::forward<Fun>(fun), ctx, g, args...);
     };
   }
 
