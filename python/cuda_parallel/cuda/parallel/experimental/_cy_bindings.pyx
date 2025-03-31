@@ -505,11 +505,11 @@ cdef class Op:
         self.state_bytes = state
         self.op_data.state = <void *><const char *>state
 
-    cdef cy_cccl_op_t* get_ptr(self):
-        return &self.op_data
+    # cdef inline cy_cccl_op_t* get_ptr(self):
+    #    return &self.op_data
 
-    cdef cy_cccl_op_t get(self):
-        return self.op_data
+    # cdef inline cy_cccl_op_t get(self):
+    #    return self.op_data
 
     property state:
         def __get__(self):
@@ -567,11 +567,11 @@ cdef class TypeInfo:
     def typenum(self):
         return self.type_info.type
 
-    cdef cy_cccl_type_info *get_ptr(self):
-        return &self.type_info
+    # cdef inline cy_cccl_type_info *get_ptr(self):
+    #     return &self.type_info
 
-    cdef cy_cccl_type_info get(self):
-        return self.type_info
+    # cdef inline cy_cccl_type_info get(self):
+    #     return self.type_info
 
     def as_bytes(self):
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.type_info))
@@ -587,14 +587,14 @@ cdef class Value:
     def __cinit__(self, TypeInfo value_type, uint8_t[::1] state):
         self.state_obj = state
         self.value_type = value_type
-        self.value_data.type = value_type.get()
+        self.value_data.type = value_type.type_info
         self.value_data.state = <void *>&state[0]
 
-    cdef cy_cccl_value_t * get_ptr(self):
-        return &self.value_data
+    # cdef inline cy_cccl_value_t * get_ptr(self):
+    #     return &self.value_data
 
-    cdef cy_cccl_value_t get(self):
-        return self.value_data
+    # cdef inline cy_cccl_value_t get(self):
+    #     return self.value_data
 
     @property
     def type(self):
@@ -709,12 +709,12 @@ cdef class StateBase:
         self.ptr = NULL
         self.ref = None
 
-    cdef void set_state(self, void *ptr, object ref):
+    cdef inline void set_state(self, void *ptr, object ref):
         self.ptr = ptr
         self.ref = ref
 
-    cdef void * get(self):
-        return self.ptr
+    # cdef inline void * get(self):
+    #    return self.ptr
 
     @property
     def pointer(self):
@@ -790,7 +790,7 @@ cdef class IteratorState(StateBase):
             )
         self.set_state(ptr, ref)
 
-    cdef size_t get_size(self):
+    cdef inline size_t get_size(self):
         return self.size
 
     @property
@@ -829,6 +829,7 @@ cdef class Iterator:
         TypeInfo value_type,
         state = None
     ):
+        cdef cy_cccl_iterator_kind_t it_kind
         _validate_alignment(alignment)
         if not is_IteratorKind(iterator_type):
             raise TypeError("iterator_type must describe iterator kind")
@@ -845,7 +846,7 @@ cdef class Iterator:
             elif isinstance(state, Pointer):
                 self.state_obj = state.reference
                 self.iter_data.size = 0
-                self.iter_data.state = (<Pointer>state).get()
+                self.iter_data.state = (<Pointer>state).ptr
             else:
                 raise TypeError(
                     "Expect for Iterator of kind POINTER, state must have type Pointer or int, "
@@ -858,8 +859,8 @@ cdef class Iterator:
                 self.iter_data.state = NULL
             elif isinstance(state, IteratorState):
                 self.state_obj = state.reference
-                self.iter_data.size = (<IteratorState>state).get_size()
-                self.iter_data.state = (<IteratorState>state).get()
+                self.iter_data.size = (<IteratorState>state).size
+                self.iter_data.state = (<IteratorState>state).ptr
             elif isinstance(state, IteratorStateView):
                 self.state_obj = state.reference
                 self.iter_data.size = <size_t>state.size
@@ -875,15 +876,15 @@ cdef class Iterator:
         self.dereference = dereference_fn
         self.iter_data.alignment = alignment
         self.iter_data.type = <cy_cccl_iterator_kind_t> it_kind
-        self.iter_data.advance = self.advance.get()
-        self.iter_data.dereference = self.dereference.get()
-        self.iter_data.value_type = value_type.get()
+        self.iter_data.advance = self.advance.op_data
+        self.iter_data.dereference = self.dereference.op_data
+        self.iter_data.value_type = value_type.type_info
 
-    cdef cy_cccl_iterator_t *get_ptr(self):
-        return &self.iter_data
+    # cdef inline cy_cccl_iterator_t *get_ptr(self):
+    #     return &self.iter_data
 
-    cdef cy_cccl_iterator_t get(self):
-        return self.iter_data
+    # cdef inline cy_cccl_iterator_t get(self):
+    #     return self.iter_data
 
     @property
     def advance_op(self):
@@ -903,7 +904,8 @@ cdef class Iterator:
         def __set__(self, new_value):
             cdef ssize_t state_sz = 0
             cdef size_t ptr = 0
-            if self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
+            cdef cy_cccl_iterator_kind_t it_kind = self.iter_data.type
+            if it_kind == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
                 if isinstance(new_value, Pointer):
                     self.state_obj = (<Pointer>new_value).ref
                     self.iter_data.size = state_sz
@@ -912,16 +914,20 @@ cdef class Iterator:
                     self.state_obj = None
                     self.iter_data.size = state_sz
                     self.iter_data.state = int_as_ptr(new_value)
+                elif new_value is None:
+                    self.state_obj = None
+                    self.iter_data.size = 0
+                    self.iter_data.state = NULL
                 else:
                     raise TypeError(
                         "For iterator with type POINTER, state value must have type int or type Pointer, "
                         f"got type {type(new_value)}"
                     )
-            elif self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR:
+            elif it_kind == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR:
                 if isinstance(new_value, IteratorState):
                     self.state_obj = new_value.reference
-                    self.iter_data.size = (<IteratorState>new_value).get_size()
-                    self.iter_data.state = (<IteratorState>new_value).get()
+                    self.iter_data.size = (<IteratorState>new_value).size
+                    self.iter_data.state = (<IteratorState>new_value).ptr
                 elif isinstance(new_value, IteratorStateView):
                     self.state_obj = new_value.reference
                     self.iter_data.size = (<IteratorStateView>new_value).size
@@ -930,10 +936,14 @@ cdef class Iterator:
                     self.state_obj = new_value.reference
                     if self.iter_data.size == 0:
                         raise ValueError("Assigning incomplete state value to iterator without state size information")
-                    self.iter_data.state = (<Pointer>new_value).get()
+                    self.iter_data.state = (<Pointer>new_value).ptr
                 elif PyObject_CheckBuffer(new_value):
                     self.iter_data.state = get_buffer_pointer(new_value, &self.iter_data.size)
                     self.state_obj = new_value
+                elif new_value is None:
+                    self.state_obj = None
+                    self.iter_data.size = 0
+                    self.iter_data.state = NULL
                 else:
                     raise TypeError(
                         "For iterator with type ITERATOR, state value must have type IteratorState or type bytes, "
@@ -980,22 +990,22 @@ cdef class CommonData:
         self.encoded_libcudacxx_path = libcudacxx_path.encode("utf-8")
         self.encoded_ctk_path = ctk_path.encode("utf-8")
 
-    cdef int get_cc_major(self):
+    cdef inline int get_cc_major(self):
         return self.cc_major
 
-    cdef int get_cc_minor(self):
+    cdef inline int get_cc_minor(self):
         return self.cc_minor
 
-    cdef const char * cub_path_get_c_str(self):
+    cdef inline const char * cub_path_get_c_str(self):
         return <const char *>self.encoded_cub_path
 
-    cdef const char * thrust_path_get_c_str(self):
+    cdef inline const char * thrust_path_get_c_str(self):
         return <const char *>self.encoded_thrust_path
 
-    cdef const char * libcudacxx_path_get_c_str(self):
+    cdef inline const char * libcudacxx_path_get_c_str(self):
         return <const char *>self.encoded_libcudacxx_path
 
-    cdef const char * ctk_path_get_c_str(self):
+    cdef inline const char * ctk_path_get_c_str(self):
         return <const char *>self.encoded_ctk_path
 
     @property
@@ -1060,16 +1070,16 @@ cdef extern from "cccl/c/reduce.h":
 
 
 cdef class DeviceReduceBuildResult:
-    cdef cy_cccl_device_reduce_build_result_t _build_data
+    cdef cy_cccl_device_reduce_build_result_t build_data
 
     def __cinit__(self):
-       memset(&self._build_data, 0, sizeof(cy_cccl_device_reduce_build_result_t))
+       memset(&self.build_data, 0, sizeof(cy_cccl_device_reduce_build_result_t))
 
-    cdef cy_cccl_device_reduce_build_result_t* get_ptr(self):
-       return &self._build_data
+    # cdef inline cy_cccl_device_reduce_build_result_t* get_ptr(self):
+    #    return &self.build_data
 
-    cdef cy_cccl_device_reduce_build_result_t get(self):
-       return self._build_data
+    # cdef inline cy_cccl_device_reduce_build_result_t get(self):
+    #    return self.build_data
 
 
 cpdef CUresult device_reduce_build(
@@ -1082,11 +1092,11 @@ cpdef CUresult device_reduce_build(
 ):
     cdef CUresult status
     status = cccl_device_reduce_build(
-        build.get_ptr(),
-        d_in.get(),
-        d_out.get(),
-        op.get(),
-        h_init.get(),
+        &build.build_data,
+        d_in.iter_data,
+        d_out.iter_data,
+        op.op_data,
+        h_init.value_data,
         common_data.get_cc_major(),
         common_data.get_cc_minor(),
         common_data.cub_path_get_c_str(),
@@ -1113,14 +1123,14 @@ cpdef device_reduce(
     cdef size_t storage_sz = <size_t>temp_storage_bytes
     cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
     status = cccl_device_reduce(
-        build.get(),
+        build.build_data,
         storage_ptr,
         &storage_sz,
-        d_in.get(),
-        d_out.get(),
+        d_in.iter_data,
+        d_out.iter_data,
         <uint64_t>num_items,
-        op.get(),
-        h_init.get(),
+        op.op_data,
+        h_init.value_data,
         c_stream
     )
     return status, <object>storage_sz
@@ -1129,7 +1139,7 @@ cpdef device_reduce(
 cpdef CUresult device_reduce_cleanup(DeviceReduceBuildResult build):
     cdef CUresult status
 
-    status = cccl_device_reduce_cleanup(build.get_ptr())
+    status = cccl_device_reduce_cleanup(&build.build_data)
     return status
 
 
@@ -1194,16 +1204,16 @@ cdef extern from "cccl/c/scan.h":
 
 
 cdef class DeviceScanBuildResult:
-    cdef cy_cccl_device_scan_build_result_t _build_data
+    cdef cy_cccl_device_scan_build_result_t build_data
 
     def __cinit__(self):
-       memset(&self._build_data, 0, sizeof(cy_cccl_device_scan_build_result_t))
+       memset(&self.build_data, 0, sizeof(cy_cccl_device_scan_build_result_t))
 
-    cdef cy_cccl_device_scan_build_result_t* get_ptr(self):
-       return &self._build_data
+    # cdef inline cy_cccl_device_scan_build_result_t* get_ptr(self):
+    #    return &self.build_data
 
-    cdef cy_cccl_device_scan_build_result_t get(self):
-       return self._build_data
+    # cdef inline cy_cccl_device_scan_build_result_t get(self):
+    #    return self.build_data
 
 
 cpdef CUresult device_scan_build(
@@ -1217,11 +1227,11 @@ cpdef CUresult device_scan_build(
 ):
     cdef CUresult status
     status = cccl_device_scan_build(
-        build.get_ptr(),
-        d_in.get(),
-        d_out.get(),
-        op.get(),
-        h_init.get(),
+        &build.build_data,
+        d_in.iter_data,
+        d_out.iter_data,
+        op.op_data,
+        h_init.value_data,
         force_inclusive,
         common_data.get_cc_major(),
         common_data.get_cc_minor(),
@@ -1249,14 +1259,14 @@ cpdef device_inclusive_scan(
     cdef size_t storage_sz = <size_t>temp_storage_bytes
     cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
     status = cccl_device_inclusive_scan(
-        build.get(),
+        build.build_data,
         storage_ptr,
         &storage_sz,
-        d_in.get(),
-        d_out.get(),
+        d_in.iter_data,
+        d_out.iter_data,
         <uint64_t>num_items,
-        op.get(),
-        h_init.get(),
+        op.op_data,
+        h_init.value_data,
         c_stream
     )
     return status, <object>storage_sz
@@ -1278,14 +1288,14 @@ cpdef device_exclusive_scan(
     cdef size_t storage_sz = <size_t>temp_storage_bytes
     cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
     status = cccl_device_exclusive_scan(
-        build.get(),
+        build.build_data,
         storage_ptr,
         &storage_sz,
-        d_in.get(),
-        d_out.get(),
+        d_in.iter_data,
+        d_out.iter_data,
         <uint64_t>num_items,
-        op.get(),
-        h_init.get(),
+        op.op_data,
+        h_init.value_data,
         c_stream
     )
     return status, <object>storage_sz
@@ -1294,7 +1304,7 @@ cpdef device_exclusive_scan(
 cpdef CUresult device_scan_cleanup(DeviceScanBuildResult build):
     cdef CUresult status
 
-    status = cccl_device_scan_cleanup(build.get_ptr())
+    status = cccl_device_scan_cleanup(&build.build_data)
     return status
 
 
@@ -1343,16 +1353,16 @@ cdef extern from "cccl/c/segmented_reduce.h":
 
 
 cdef class DeviceSegmentedReduceBuildResult:
-    cdef cy_cccl_device_segmented_reduce_build_result_t _build_data
+    cdef cy_cccl_device_segmented_reduce_build_result_t build_data
 
     def __cinit__(self):
-       memset(&self._build_data, 0, sizeof(cy_cccl_device_segmented_reduce_build_result_t))
+       memset(&self.build_data, 0, sizeof(cy_cccl_device_segmented_reduce_build_result_t))
 
-    cdef cy_cccl_device_segmented_reduce_build_result_t* get_ptr(self):
-       return &self._build_data
+    # cdef inline cy_cccl_device_segmented_reduce_build_result_t* get_ptr(self):
+    #    return &self.build_data
 
-    cdef cy_cccl_device_segmented_reduce_build_result_t get(self):
-       return self._build_data
+    # cdef inline cy_cccl_device_segmented_reduce_build_result_t get(self):
+    #    return self.build_data
 
 
 cpdef CUresult device_segmented_reduce_build(
@@ -1367,13 +1377,13 @@ cpdef CUresult device_segmented_reduce_build(
 ):
     cdef CUresult status
     status = cccl_device_segmented_reduce_build(
-        build.get_ptr(),
-        d_in.get(),
-        d_out.get(),
-        start_offsets.get(),
-        end_offsets.get(),
-        op.get(),
-        h_init.get(),
+        &build.build_data,
+        d_in.iter_data,
+        d_out.iter_data,
+        start_offsets.iter_data,
+        end_offsets.iter_data,
+        op.op_data,
+        h_init.value_data,
         common_data.get_cc_major(),
         common_data.get_cc_minor(),
         common_data.cub_path_get_c_str(),
@@ -1402,16 +1412,16 @@ cpdef device_segmented_reduce(
     cdef size_t storage_sz = <size_t>temp_storage_bytes
     cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
     status = cccl_device_segmented_reduce(
-        build.get(),
+        build.build_data,
         storage_ptr,
         &storage_sz,
-        d_in.get(),
-        d_out.get(),
+        d_in.iter_data,
+        d_out.iter_data,
         <uint64_t>num_items,
-        start_offsets.get(),
-        end_offsets.get(),
-        op.get(),
-        h_init.get(),
+        start_offsets.iter_data,
+        end_offsets.iter_data,
+        op.op_data,
+        h_init.value_data,
         c_stream
     )
     return status, <object>storage_sz
@@ -1421,7 +1431,7 @@ cpdef CUresult device_segmented_reduce_cleanup(
 ):
     cdef CUresult status
 
-    status = cccl_device_segmented_reduce_cleanup(build.get_ptr())
+    status = cccl_device_segmented_reduce_cleanup(&build.build_data)
     return status
 
 
@@ -1469,16 +1479,16 @@ cdef extern from "cccl/c/merge_sort.h":
 
 
 cdef class DeviceMergeSortBuildResult:
-    cdef cy_cccl_device_merge_sort_build_result_t _build_data
+    cdef cy_cccl_device_merge_sort_build_result_t build_data
 
     def __cinit__(self):
-       memset(&self._build_data, 0, sizeof(cy_cccl_device_merge_sort_build_result_t))
+       memset(&self.build_data, 0, sizeof(cy_cccl_device_merge_sort_build_result_t))
 
-    cdef cy_cccl_device_merge_sort_build_result_t* get_ptr(self):
-       return &self._build_data
+    # cdef inline cy_cccl_device_merge_sort_build_result_t* get_ptr(self):
+    #    return &self.build_data
 
-    cdef cy_cccl_device_merge_sort_build_result_t get(self):
-       return self._build_data
+    # cdef inline cy_cccl_device_merge_sort_build_result_t get(self):
+    #    return self.build_data
 
 
 cpdef CUresult device_merge_sort_build(
@@ -1492,12 +1502,12 @@ cpdef CUresult device_merge_sort_build(
 ):
     cdef CUresult status
     status = cccl_device_merge_sort_build(
-        build.get_ptr(),
-        d_in_keys.get(),
-        d_in_items.get(),
-        d_out_keys.get(),
-        d_out_items.get(),
-        op.get(),
+        &build.build_data,
+        d_in_keys.iter_data,
+        d_in_items.iter_data,
+        d_out_keys.iter_data,
+        d_out_items.iter_data,
+        op.op_data,
         common_data.get_cc_major(),
         common_data.get_cc_minor(),
         common_data.cub_path_get_c_str(),
@@ -1525,15 +1535,15 @@ cpdef device_merge_sort(
     cdef size_t storage_sz = <size_t>temp_storage_bytes
     cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
     status = cccl_device_merge_sort(
-        build.get(),
+        build.build_data,
         storage_ptr,
         &storage_sz,
-        d_in_keys.get(),
-        d_in_items.get(),
-        d_out_keys.get(),
-        d_out_items.get(),
+        d_in_keys.iter_data,
+        d_in_items.iter_data,
+        d_out_keys.iter_data,
+        d_out_items.iter_data,
         <uint64_t>num_items,
-        op.get(),
+        op.op_data,
         c_stream
     )
     return status, <object>storage_sz
@@ -1543,7 +1553,7 @@ cpdef CUresult device_merge_sort_cleanup(
 ):
     cdef CUresult status
 
-    status = cccl_device_merge_sort_cleanup(build.get_ptr())
+    status = cccl_device_merge_sort_cleanup(&build.build_data)
     return status
 
 
@@ -1593,16 +1603,16 @@ cdef extern from "cccl/c/unique_by_key.h":
 
 
 cdef class DeviceUniqueByKeyBuildResult:
-    cdef cy_cccl_device_unique_by_key_build_result_t _build_data
+    cdef cy_cccl_device_unique_by_key_build_result_t build_data
 
     def __cinit__(self):
-       memset(&self._build_data, 0, sizeof(cy_cccl_device_unique_by_key_build_result_t))
+       memset(&self.build_data, 0, sizeof(cy_cccl_device_unique_by_key_build_result_t))
 
-    cdef cy_cccl_device_unique_by_key_build_result_t* get_ptr(self):
-       return &self._build_data
+    # cdef inline cy_cccl_device_unique_by_key_build_result_t* get_ptr(self):
+    #    return &self.build_data
 
-    cdef cy_cccl_device_unique_by_key_build_result_t get(self):
-       return self._build_data
+    # cdef inline cy_cccl_device_unique_by_key_build_result_t get(self):
+    #    return self.build_data
 
 cpdef CUresult device_unique_by_key_build(
     DeviceUniqueByKeyBuildResult build,
@@ -1616,13 +1626,13 @@ cpdef CUresult device_unique_by_key_build(
 ):
     cdef CUresult status = 0
     status = cccl_device_unique_by_key_build(
-        build.get_ptr(),
-        d_keys_in.get(),
-        d_values_in.get(),
-        d_keys_out.get(),
-        d_values_out.get(),
-        d_num_selected_out.get(),
-        comparison_op.get(),
+        &build.build_data,
+        d_keys_in.iter_data,
+        d_values_in.iter_data,
+        d_keys_out.iter_data,
+        d_values_out.iter_data,
+        d_num_selected_out.iter_data,
+        comparison_op.op_data,
         common_data.get_cc_major(),
         common_data.get_cc_minor(),
         common_data.cub_path_get_c_str(),
@@ -1650,15 +1660,15 @@ cpdef device_unique_by_key(
     cdef size_t storage_sz = <size_t>temp_storage_bytes
     cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
     status = cccl_device_unique_by_key(
-        build.get(),
+        build.build_data,
         storage_ptr,
         &storage_sz,
-        d_keys_in.get(),
-        d_values_in.get(),
-        d_keys_out.get(),
-        d_values_out.get(),
-        d_num_selected_out.get(),
-        comparison_op.get(),
+        d_keys_in.iter_data,
+        d_values_in.iter_data,
+        d_keys_out.iter_data,
+        d_values_out.iter_data,
+        d_num_selected_out.iter_data,
+        comparison_op.op_data,
         <uint64_t>num_items,
         c_stream
     )
@@ -1667,5 +1677,5 @@ cpdef device_unique_by_key(
 cpdef CUresult device_unique_by_key_cleanup(DeviceUniqueByKeyBuildResult build):
     cdef CUresult status
 
-    status = cccl_device_unique_by_key_cleanup(build.get_ptr())
+    status = cccl_device_unique_by_key_cleanup(&build.build_data)
     return status
