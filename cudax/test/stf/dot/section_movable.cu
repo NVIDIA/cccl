@@ -31,7 +31,7 @@ int main()
   }
 
   // Ensure the guard can be stored as an optional
-  ::std::vector<::std::optional<reserved::dot::section::guard>> nested_sections;
+  ::std::vector<::std::optional<reserved::dot_section::guard>> nested_sections;
 
   for (size_t depth = 0; depth < 3; depth++)
   {
