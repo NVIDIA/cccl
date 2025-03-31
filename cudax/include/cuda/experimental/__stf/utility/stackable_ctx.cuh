@@ -816,9 +816,7 @@ public:
     ::std::vector<::std::pair<int, access_mode>> combined_accesses;
     (combine_argument_access_modes(pack, combined_accesses), ...);
 
-    // fprintf(stderr, "process_pack begin.\n");
     (process_argument(offset, pack, combined_accesses), ...);
-    //  fprintf(stderr, "process_pack end.\n");
   }
 
   template <typename... Pack>
@@ -1014,6 +1012,14 @@ class stackable_logical_data
         // cleared and there is no need to do it here.
         if (data_nodes[ctx_offset].has_value())
         {
+          access_mode frozen_mode = get_frozen_mode(parent_offset);
+          if ((frozen_mode == access_mode::rw) && (data_nodes[ctx_offset].value().effective_mode == access_mode::read))
+          {
+            fprintf(stderr,
+                    "Warning : no write access on data pushed with a write mode (may be suboptimal) (symbol %s)\n",
+                    symbol.empty() ? "(no symbol)" : symbol.c_str());
+          }
+
           _CCCL_ASSERT(!data_nodes[ctx_offset].value().frozen_ld.has_value(), "internal error");
           data_nodes[ctx_offset].reset();
         }
@@ -1070,11 +1076,19 @@ class stackable_logical_data
             : ld(mv(ld))
         {}
 
+        ~data_node()
+        {
+          if (!frozen_ld.has_value())
+          {
+            return;
+          }
+        }
+
         // Get the access mode used to freeze data
         access_mode get_frozen_mode() const
         {
           _CCCL_ASSERT(frozen_ld.has_value(), "cannot query frozen mode : not frozen");
-          return frozen_ld.value().get_frozen_mode();
+          return frozen_ld.value().get_access_mode();
         }
 
         void set_symbol(const ::std::string& symbol)
@@ -1091,6 +1105,10 @@ class stackable_logical_data
 
         // Once frozen, count number of calls to get
         mutable int get_cnt;
+
+        // Keep track of actual data accesses, so that we can detect if we
+        // eventually did not need to freeze a data in write mode, for example.
+        access_mode effective_mode = access_mode::none;
       };
 
       auto& get_data_node(int offset)
@@ -1156,6 +1174,16 @@ class stackable_logical_data
         }
 
         return data_nodes[offset].has_value();
+      }
+
+      // Mark how a construct accessed this data node, so that we may detect if
+      // we were overly cautious when freezing data in RW mode. This would
+      // prevent concurrent accesses from different contexts, and may require
+      // to push data in read only, if appropriate.
+      void mark_access(int offset, access_mode m)
+      {
+        _CCCL_ASSERT(data_nodes[offset].has_value(), "");
+        data_nodes[offset].value().effective_mode |= m;
       }
 
       bool is_frozen(int offset) const
@@ -1451,6 +1479,11 @@ class stackable_logical_data
       return impl_state->is_read_only();
     }
 
+    void mark_access(int offset, access_mode m)
+    {
+      return impl_state->mark_access(offset, m);
+    }
+
     bool was_imported(int offset) const
     {
       return impl_state->was_imported(offset);
@@ -1614,6 +1647,10 @@ public:
       _CCCL_ASSERT(access_mode_is_compatible(pimpl->get_frozen_mode(parent_offset), m), "Invalid access mode");
 #endif
 
+      // To potentially detect if we were overly cautious when importing data
+      // in rw mode, we record how we access it in this construct
+      pimpl->mark_access(ctx_offset, m);
+
       // We need to update because the current ctx offset was not the base offset
       return true;
     }
@@ -1642,6 +1679,10 @@ public:
       pimpl->push(offset, push_mode, data_place::current_device());
       path.pop();
     }
+
+    // To potentially detect if we were overly cautious when importing data
+    // in rw mode, we record how we access it in this construct
+    pimpl->mark_access(ctx_offset, m);
 
     return true;
   }
