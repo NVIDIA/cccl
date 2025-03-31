@@ -45,3 +45,8 @@ Math
      - Integer logarithm to the base 10
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`uabs <libcudacxx-extended-api-math-uabs>`
+     - Unsigned absolute value
+     - CCCL 3.0.0
+     - CUDA 13.0
