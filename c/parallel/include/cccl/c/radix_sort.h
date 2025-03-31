@@ -42,8 +42,8 @@ typedef struct cccl_device_radix_sort_build_result_t
 CCCL_C_API CUresult cccl_device_radix_sort_build(
   cccl_device_radix_sort_build_result_t* build,
   cccl_sort_order_t sort_order,
-  cccl_type_info key_t,
-  cccl_type_info value_t,
+  cccl_iterator_t input_keys_it,
+  cccl_iterator_t input_values_it,
   cccl_op_t decomposer,
   const char* decomposer_return_type,
   int cc_major,

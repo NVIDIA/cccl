@@ -49,8 +49,8 @@ void radix_sort(
     == cccl_device_radix_sort_build(
       &build,
       sort_order,
-      d_keys_in.value_type,
-      d_values_in.value_type,
+      d_keys_in,
+      d_values_in,
       decomposer,
       decomposer_return_type,
       cc_major,

@@ -238,11 +238,8 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 };
 
 std::string get_single_tile_kernel_name(
-  std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t, cccl_type_info value_t)
+  std::string_view chained_policy_t, cccl_sort_order_t sort_order, std::string_view key_t, std::string_view value_t)
 {
-  const std::string key   = cccl_type_enum_to_name(key_t.type);
-  const std::string value = cccl_type_enum_to_name(value_t.type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
@@ -250,17 +247,15 @@ std::string get_single_tile_kernel_name(
     "cub::detail::radix_sort::DeviceRadixSortSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t,
     (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
-    key,
-    value,
+    key_t,
+    value_t,
     offset_t,
     "op_wrapper");
 }
 
 std::string get_upsweep_kernel_name(
-  std::string_view chained_policy_t, bool alt_digit_bits, cccl_sort_order_t sort_order, cccl_type_info key_t)
+  std::string_view chained_policy_t, bool alt_digit_bits, cccl_sort_order_t sort_order, std::string_view key_t)
 {
-  const std::string key = cccl_type_enum_to_name(key_t.type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
@@ -269,7 +264,7 @@ std::string get_upsweep_kernel_name(
     chained_policy_t,
     alt_digit_bits ? "true" : "false",
     (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
-    key,
+    key_t,
     offset_t,
     "op_wrapper");
 }
@@ -286,12 +281,9 @@ std::string get_downsweep_kernel_name(
   std::string_view chained_policy_t,
   bool alt_digit_bits,
   cccl_sort_order_t sort_order,
-  cccl_type_info key_t,
-  cccl_type_info value_t)
+  std::string_view key_t,
+  std::string_view value_t)
 {
-  const std::string key   = cccl_type_enum_to_name(key_t.type);
-  const std::string value = cccl_type_enum_to_name(value_t.type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
@@ -300,17 +292,15 @@ std::string get_downsweep_kernel_name(
     chained_policy_t,
     alt_digit_bits ? "true" : "false",
     (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
-    key,
-    value,
+    key_t,
+    value_t,
     offset_t,
     "op_wrapper");
 }
 
 std::string
-get_histogram_kernel_name(std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t)
+get_histogram_kernel_name(std::string_view chained_policy_t, cccl_sort_order_t sort_order, std::string_view key_t)
 {
-  const std::string key = cccl_type_enum_to_name(key_t.type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
@@ -318,7 +308,7 @@ get_histogram_kernel_name(std::string_view chained_policy_t, cccl_sort_order_t s
     "cub::detail::radix_sort::DeviceRadixSortHistogramKernel<{0}, {1}, {2}, {3}, {4}>",
     chained_policy_t,
     (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
-    key,
+    key_t,
     offset_t,
     "op_wrapper");
 }
@@ -332,11 +322,8 @@ std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t)
 }
 
 std::string get_onesweep_kernel_name(
-  std::string_view chained_policy_t, cccl_sort_order_t sort_order, cccl_type_info key_t, cccl_type_info value_t)
+  std::string_view chained_policy_t, cccl_sort_order_t sort_order, std::string_view key_t, std::string_view value_t)
 {
-  const std::string key   = cccl_type_enum_to_name(key_t.type);
-  const std::string value = cccl_type_enum_to_name(value_t.type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
@@ -344,8 +331,8 @@ std::string get_onesweep_kernel_name(
     "cub::detail::radix_sort::DeviceRadixSortOnesweepKernel<{0}, {1}, {2}, {3}, {4}, int, int, {5}>",
     chained_policy_t,
     (sort_order == CCCL_ASCENDING) ? "cub::SortOrder::Ascending" : "cub::SortOrder::Descending",
-    key,
-    value,
+    key_t,
+    value_t,
     offset_t,
     "op_wrapper");
 }
@@ -419,8 +406,8 @@ struct radix_sort_kernel_source
 CUresult cccl_device_radix_sort_build(
   cccl_device_radix_sort_build_result_t* build_ptr,
   cccl_sort_order_t sort_order,
-  cccl_type_info key_t,
-  cccl_type_info value_t,
+  cccl_iterator_t input_keys_it,
+  cccl_iterator_t input_values_it,
   cccl_op_t decomposer,
   const char* decomposer_return_type,
   int cc_major,
@@ -436,8 +423,12 @@ CUresult cccl_device_radix_sort_build(
     const char* name = "test";
 
     const int cc       = cc_major * 10 + cc_minor;
-    const auto policy  = radix_sort::get_policy(cc, key_t.size);
-    const auto key_cpp = cccl_type_enum_to_name(key_t.type);
+    const auto policy  = radix_sort::get_policy(cc, input_keys_it.value_type.size);
+    const auto key_cpp = cccl_type_enum_to_name(input_keys_it.value_type.type);
+    const auto value_cpp =
+      input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
+        ? "cub::NullType"
+        : cccl_type_enum_to_name(input_keys_it.value_type.type);
     const std::string op_src =
       decomposer.name == nullptr
         ? "using op_wrapper = cub::detail::identity_decomposer_t;"
@@ -530,10 +521,10 @@ struct {26} {{
 
     const std::string src = std::format(
       src_template,
-      key_t.size, // 0
-      key_t.alignment, // 1
-      value_t.size, // 2
-      value_t.alignment, // 3
+      input_keys_it.value_type.size, // 0
+      input_keys_it.value_type.alignment, // 1
+      input_values_it.value_type.size, // 2
+      input_values_it.value_type.alignment, // 3
       policy.histogram.items_per_thread, // 4
       policy.histogram.block_threads, // 5
       policy.histogram.radix_bits, // 6
@@ -567,19 +558,19 @@ struct {26} {{
 #endif
 
     std::string single_tile_kernel_name =
-      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_t, value_t);
-    std::string upsweep_kernel_name = radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_t);
+      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp);
+    std::string upsweep_kernel_name = radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp);
     std::string alt_upsweep_kernel_name =
-      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_t);
+      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp);
     std::string scan_bins_kernel_name = radix_sort::get_scan_bins_kernel_name(chained_policy_t);
     std::string downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_t, value_t);
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, value_cpp);
     std::string alt_downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_t, value_t);
-    std::string histogram_kernel_name     = radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_t);
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, value_cpp);
+    std::string histogram_kernel_name = radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp);
     std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t);
     std::string onesweep_kernel_name =
-      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_t, value_t);
+      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp);
     std::string single_tile_kernel_lowered_name;
     std::string upsweep_kernel_lowered_name;
     std::string alt_upsweep_kernel_lowered_name;
