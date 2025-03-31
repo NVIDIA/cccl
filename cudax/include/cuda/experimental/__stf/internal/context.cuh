@@ -552,7 +552,6 @@ public:
     using result_t = unified_scope<reserved::repeat_scope<stream_ctx>, reserved::repeat_scope<graph_ctx>>;
     return ::std::visit(
       [&](auto& self) {
-        using Self = ::std::remove_reference_t<decltype((self))>;
         return result_t(self.repeat(count));
       },
       payload);
@@ -563,7 +562,6 @@ public:
     using result_t = unified_scope<reserved::repeat_scope<stream_ctx>, reserved::repeat_scope<graph_ctx>>;
     return ::std::visit(
       [&](auto& self) {
-        using Self = ::std::remove_reference_t<decltype((self))>;
         return result_t(self.repeat(mv(condition)));
       },
       payload);
