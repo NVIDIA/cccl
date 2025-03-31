@@ -50,37 +50,30 @@ class stackable_task_dep;
 namespace reserved
 {
 
+template <typename T>
+struct is_stackable_task_dep : ::std::false_type
+{};
+
+template <typename T, typename ReduceOp, bool Init>
+struct is_stackable_task_dep<stackable_task_dep<T, ReduceOp, Init>> : ::std::true_type
+{};
+
 // This helper converts stackable_task_dep to the underlying task_dep. If we
 // have a stackable_logical_data A, A.read() is indeed a stackable_task_dep,
 // which we can pass to stream_ctx/graph_ctx constructs by extracting the
 // underlying task_dep.
 //
-// By default, return the argument as-is (perfect forwarding)
 template <typename U>
 decltype(auto) to_task_dep(U&& u)
 {
-  return ::std::forward<U>(u);
-}
-
-// Overload for stackable_task_dep (non-const version)
-template <typename T, typename reduce_op, bool initialize>
-task_dep<T, reduce_op, initialize>& to_task_dep(stackable_task_dep<T, reduce_op, initialize>& sdep)
-{
-  return sdep.underlying_dep();
-}
-
-// Overload for stackable_task_dep (const version)
-template <typename T, typename reduce_op, bool initialize>
-const task_dep<T, reduce_op, initialize>& to_task_dep(const stackable_task_dep<T, reduce_op, initialize>& sdep)
-{
-  return sdep.underlying_dep();
-}
-
-template <typename T, typename reduce_op, bool initialize>
-task_dep<T, reduce_op, initialize> to_task_dep(stackable_task_dep<T, reduce_op, initialize>&& sdep)
-{
-  // Return by value or whatever makes sense:
-  return ::std::move(sdep.underlying_dep());
+  if constexpr (is_stackable_task_dep<::std::decay_t<U>>::value)
+  {
+    return ::std::forward<U>(u).underlying_dep();
+  }
+  else
+  {
+    return ::std::forward<U>(u);
+  }
 }
 
 } // end namespace reserved
@@ -108,6 +101,8 @@ class stackable_ctx
 public:
   class impl
   {
+    friend class stackable_ctx;
+
   private:
     /*
      * State of each nested context
@@ -162,6 +157,11 @@ public:
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
     };
 
+    /* To describe the hierarchy of contexts, and the hierarchy of stackable
+     * logical data which should match the structure of the context hierarchy, this
+     * class describes a tree using a vector of offsets. Every node has an offset,
+     * and we keep track of the parent offset of each node, as well as its
+     * children. */
     class node_hierarchy
     {
     public:
@@ -199,7 +199,9 @@ public:
         return res;
       }
 
-      // Make the offset available again
+      // When a node of the tree is destroyed, we can reuse its offset by
+      // putting it back in the list of available offsets which can describe a
+      // node.
       void discard_node(int offset)
       {
         nvtx_range r("discard_node");
@@ -307,6 +309,7 @@ public:
       // Ensure the node offset was unused
       _CCCL_ASSERT(!nodes[node_offset].has_value(), "inconsistent state");
 
+      // If there is no current context, this is the root context and we use a stream_ctx
       if (head_offset == -1)
       {
         nodes[node_offset].emplace(stream_ctx(), nullptr, nullptr);
@@ -416,11 +419,15 @@ public:
       // Destroy the current node
       nodes[head_offset].reset();
 
+      // Since we have destroyed the node in the tree of contexts, we can put
+      // it offsets back in the list of available offsets so that it can be
+      // reused.
       node_tree.discard_node(head_offset);
 
       return parent_offset;
     }
 
+    // Offset of the root context
     int get_root_offset() const
     {
       return root_offset;
@@ -466,6 +473,7 @@ public:
       return get_node(offset).ctx;
     }
 
+    /* Get the offset of the top context for the current thread */
     int get_head_offset() const
     {
       auto it = head_map.find(::std::this_thread::get_id());
@@ -489,6 +497,17 @@ public:
       return node_tree.get_children(parent);
     }
 
+  private:
+    void print_logical_data_summary() const
+    {
+      traverse_nodes([this](int offset) {
+        auto& ctx = get_ctx(offset);
+        fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
+        ctx.print_logical_data_summary();
+      });
+    }
+
+    /* Recursively apply a function over every node of the context tree */
     template <typename Func>
     void traverse_nodes(Func&& func) const
     {
@@ -512,16 +531,6 @@ public:
       }
     }
 
-    void print_logical_data_summary() const
-    {
-      traverse_nodes([this](int offset) {
-        auto& ctx = get_ctx(offset);
-        fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
-        ctx.print_logical_data_summary();
-      });
-    }
-
-  private:
     void print_cache_stats_summary() const
     {
       if (!display_graph_stats || stats_map.size() == 0)
@@ -1311,6 +1320,7 @@ class stackable_logical_data
     {
       return impl_state->get_data_node(offset).ld;
     }
+
     auto& get_ld(int offset)
     {
       return impl_state->get_data_node(offset).ld;
@@ -1373,6 +1383,9 @@ class stackable_logical_data
       // FAKE IMPORT : use the stream needed to support the (graph) ctx
       cudaStream_t stream = to_node.support_stream;
 
+      // Ensure there is a copy of the data in the data place, we keep a
+      // reference count of each context using this frozen data so that we only
+      // unfreeze once possible.
       T inst  = frozen_ld.get(where, stream);
       auto ld = to_ctx.logical_data(inst, where);
       from_data_node.get_cnt++;
@@ -1424,6 +1437,10 @@ class stackable_logical_data
       impl_state->s[0].set_write_back(flag);
     }
 
+    // Indicate that this logical data will only be used in a read-only mode
+    // now. Implicit data push will therefore be done in a read-only mode,
+    // which allows concurrent read accesses from  different contexts (ie. from
+    // multiple CUDA graphs)
     void set_read_only(bool flag = true)
     {
       impl_state->read_only = flag;
@@ -1432,12 +1449,6 @@ class stackable_logical_data
     bool is_read_only() const
     {
       return impl_state->is_read_only();
-    }
-
-    // TODO why making sctx private or why do we need to expose this at all ?
-    auto& get_sctx()
-    {
-      return sctx;
     }
 
     bool was_imported(int offset) const
