@@ -1991,26 +1991,22 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator emplace(const_iterator, _Args&&...)
   {
     _CUDA_VSTD::__throw_bad_alloc();
-    return nullptr;
   }
 
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference emplace_back(_Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference emplace_back(_Args&&...)
   {
     _CUDA_VSTD::__throw_bad_alloc();
-    return this->unchecked_emplace_back(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(const _Tp& __value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(const _Tp&)
   {
     _CUDA_VSTD::__throw_bad_alloc();
-    return this->unchecked_emplace_back(__value);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(_Tp&& __value)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference push_back(_Tp&&)
   {
     _CUDA_VSTD::__throw_bad_alloc();
-    return this->unchecked_emplace_back(_CUDA_VSTD::move(__value));
   }
 
   template <class... _Args>
@@ -2038,16 +2034,14 @@ public:
 
   using __base::unchecked_emplace_back;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference unchecked_push_back(const _Tp& __value) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference unchecked_push_back(const _Tp&) noexcept
   {
     _CUDA_VSTD_NOVERSION::terminate();
-    return this->unchecked_emplace_back(__value);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference unchecked_push_back(_Tp&& __value) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference unchecked_push_back(_Tp&&) noexcept
   {
     _CUDA_VSTD_NOVERSION::terminate();
-    return this->unchecked_emplace_back(__value);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void pop_back() noexcept

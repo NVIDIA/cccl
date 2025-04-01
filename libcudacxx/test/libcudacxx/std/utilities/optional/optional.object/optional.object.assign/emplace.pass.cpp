@@ -259,7 +259,7 @@ void test_exceptions()
   {
     assert(static_cast<bool>(opt) == true);
     assert(Y::dtor_called() == false);
-    auto& v = opt.emplace(1);
+    [[maybe_unused]] auto& v = opt.emplace(1);
     static_assert(cuda::std::is_same_v<Y&, decltype(v)>, "");
     assert(false);
   }
