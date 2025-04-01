@@ -61,10 +61,8 @@ using LibraryHashTypes = TypeList<
   signed char,
   unsigned char,
   wchar_t,
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   char16_t,
   char32_t,
-#endif
   short,
   unsigned short,
   int,
