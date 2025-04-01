@@ -160,6 +160,18 @@ if __name__ == "__main__":
         "--time", action="store_true", help="Time calls using both bindings"
     )
     parser.add_argument(
+        "--time-pointer",
+        action="store_true",
+        dest="timer_pointer",
+        help="Time calls using both bindings for pointer-based example",
+    )
+    parser.add_argument(
+        "--time-iterator",
+        action="store_true",
+        dest="timer_iterator",
+        help="Time calls using both bindings for iterator-based example",
+    )
+    parser.add_argument(
         "--cprofile",
         action="store_true",
         help="Collect cProfile traces for both bindings",
@@ -187,7 +199,15 @@ if __name__ == "__main__":
 
     n_args_given = sum(
         getattr(args, attr)
-        for attr in ["time", "cprofile", "line_profiler", "run_new", "run_base"]
+        for attr in [
+            "time",
+            "cprofile",
+            "line_profiler",
+            "run_new",
+            "run_base",
+            "timer_pointer",
+            "timer_iterator",
+        ]
     )
 
     if 1 != n_args_given:
@@ -195,6 +215,10 @@ if __name__ == "__main__":
 
     if args.time:
         run_timer()
+    elif args.timer_pointer:
+        run_timer_pointer()
+    elif args.timer_iterator:
+        run_timer_iterator()
     elif args.cprofile:
         run_cprofile()
     elif args.line_profiler:

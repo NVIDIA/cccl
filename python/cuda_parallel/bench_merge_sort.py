@@ -6,6 +6,7 @@ import time
 import cupy as cp
 import line_profiler
 import numpy as np
+import palanteer as ps
 
 import cuda.parallel.experimental.algorithms as impl_base
 import cuda.parallel.experimental.algorithms._cy_merge_sort as impl_new
@@ -15,19 +16,21 @@ import cuda.parallel.experimental.iterators as iter_base
 
 def time_merge_sort_pointer(reps, mod):
     n = 10
-    d = cp.arange(n, dtype="i4")
-    res = cp.empty_like(d)
+    keys = cp.arange(n, dtype="i4")
+    vals = cp.arange(n, dtype="i8")
+    res_keys = cp.empty_like(keys)
+    res_vals = cp.empty_like(vals)
 
     def my_cmp(a: np.int32, b: np.int32) -> np.int32:
         return np.int32(a < b)
 
-    alg = mod.merge_sort(d, None, res, None, my_cmp)
-    temp_bytes = alg(None, d, None, res, None, n)
+    alg = mod.merge_sort(keys, vals, res_keys, res_vals, my_cmp)
+    temp_bytes = alg(None, keys, vals, res_keys, res_vals, n)
     scratch = cp.empty(temp_bytes, dtype=cp.uint8)
 
     t0 = time.perf_counter_ns()
     for i in range(reps):
-        alg(scratch, d, None, res, None, n)
+        alg(scratch, keys, vals, res_keys, res_vals, n)
     t1 = time.perf_counter_ns()
 
     return t1 - t0
@@ -35,20 +38,23 @@ def time_merge_sort_pointer(reps, mod):
 
 def time_merge_sort_iterator(reps, alg_mod, iter_mod):
     n = 10
-    dt = cp.int32
-    d = iter_mod.CountingIterator(np.int32(0))
-    res = cp.empty(n, dtype=dt)
+    keys_dt = cp.int32
+    vals_dt = cp.int64
+    keys = iter_mod.CountingIterator(np.int32(0))
+    vals = iter_mod.CountingIterator(np.int64(0))
+    res_keys = cp.empty(n, dtype=keys_dt)
+    res_vals = cp.empty(n, dtype=vals_dt)
 
     def my_cmp(a: np.int32, b: np.int32) -> np.int32:
         return np.int32(a < b)
 
-    alg = alg_mod.merge_sort(d, None, res, None, my_cmp)
-    temp_bytes = alg(None, d, None, res, None, n)
+    alg = alg_mod.merge_sort(keys, vals, res_keys, res_vals, my_cmp)
+    temp_bytes = alg(None, keys, vals, res_keys, res_vals, n)
     scratch = cp.empty(temp_bytes, dtype=cp.uint8)
 
     t0 = time.perf_counter_ns()
     for i in range(reps):
-        alg(scratch, d, None, res, None, n)
+        alg(scratch, keys, vals, res_keys, res_vals, n)
     t1 = time.perf_counter_ns()
 
     return t1 - t0
@@ -147,6 +153,62 @@ def run_line_profiler():
     lineprofile_reduce(100000, impl_new)
 
 
+def run_palanteer_pointer_impl(reps, mod, tag: str):
+    n = 10
+    keys = cp.arange(n, dtype="i4")
+    vals = cp.arange(n, dtype="i8")
+    res_keys = cp.empty_like(keys)
+    res_vals = cp.empty_like(vals)
+
+    def my_cmp(a: np.int32, b: np.int32) -> np.int32:
+        return np.int32(a < b)
+
+    alg = mod.merge_sort(keys, vals, res_keys, res_vals, my_cmp)
+    temp_bytes = alg(None, keys, vals, res_keys, res_vals, n)
+    scratch = cp.empty(temp_bytes, dtype=cp.uint8)
+
+    with ps.plScope(tag):
+        for i in range(reps):
+            alg(scratch, keys, vals, res_keys, res_vals, n)
+
+    return
+
+
+def run_palanteer_pointer():
+    run_palanteer_pointer_impl(100000, impl_new, "merge_sort_pointer_new")
+    run_palanteer_pointer_impl(100000, impl_base, "merge_sort_pointer_base")
+
+
+def run_palanteer_iterator_impl(reps, alg_mod, iter_mod, tag: str):
+    n = 10
+    keys_dt = cp.int32
+    vals_dt = cp.int64
+    keys = iter_mod.CountingIterator(np.int32(0))
+    vals = iter_mod.CountingIterator(np.int64(0))
+    res_keys = cp.empty(n, dtype=keys_dt)
+    res_vals = cp.empty(n, dtype=vals_dt)
+
+    def my_cmp(a: np.int32, b: np.int32) -> np.int32:
+        return np.int32(a < b)
+
+    alg = alg_mod.merge_sort(keys, vals, res_keys, res_vals, my_cmp)
+    temp_bytes = alg(None, keys, vals, res_keys, res_vals, n)
+    scratch = cp.empty(temp_bytes, dtype=cp.uint8)
+
+    with ps.plScope(tag):
+        for i in range(reps):
+            alg(scratch, keys, vals, res_keys, res_vals, n)
+
+    return
+
+
+def run_palanteer_iterator():
+    run_palanteer_iterator_impl(100000, impl_new, iter_new, "merge_sort_iterator_new")
+    run_palanteer_iterator_impl(
+        100000, impl_base, iter_base, "merge_sort_iterator_base"
+    )
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -156,6 +218,18 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--time", action="store_true", help="Time calls using both bindings"
+    )
+    parser.add_argument(
+        "--time-pointer",
+        action="store_true",
+        dest="timer_pointer",
+        help="Time calls using both bindings for pointer-based example",
+    )
+    parser.add_argument(
+        "--time-iterator",
+        action="store_true",
+        dest="timer_iterator",
+        help="Time calls using both bindings for iterator-based example",
     )
     parser.add_argument(
         "--cprofile",
@@ -180,12 +254,34 @@ if __name__ == "__main__":
         dest="run_base",
         help="Run algorithm using ctypes bindings",
     )
+    parser.add_argument(
+        "--palanteer-pointer",
+        action="store_true",
+        dest="palanteer_pointer",
+        help="Instrument pointer-base example using Palanteer",
+    )
+    parser.add_argument(
+        "--palanteer-iterator",
+        action="store_true",
+        dest="palanteer_iterator",
+        help="Instrument iterator-base example using Palanteer",
+    )
 
     args = parser.parse_args()
 
     n_args_given = sum(
         getattr(args, attr)
-        for attr in ["time", "cprofile", "line_profiler", "run_new", "run_base"]
+        for attr in [
+            "time",
+            "cprofile",
+            "line_profiler",
+            "run_new",
+            "run_base",
+            "timer_pointer",
+            "timer_iterator",
+            "palanteer_iterator",
+            "palanteer_pointer",
+        ]
     )
 
     if 1 != n_args_given:
@@ -193,6 +289,10 @@ if __name__ == "__main__":
 
     if args.time:
         run_timer()
+    elif args.timer_pointer:
+        run_timer_pointer()
+    elif args.timer_iterator:
+        run_timer_iterator()
     elif args.cprofile:
         run_cprofile()
     elif args.line_profiler:
@@ -201,5 +301,9 @@ if __name__ == "__main__":
         run_specific(impl_new)
     elif args.run_base:
         run_specific(impl_base)
+    elif args.palanteer_iterator:
+        run_palanteer_iterator()
+    elif args.palanteer_pointer:
+        run_palanteer_pointer()
     else:
         raise ValueError("Argument not supported")
