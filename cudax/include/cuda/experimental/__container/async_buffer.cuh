@@ -76,7 +76,7 @@ namespace cuda::experimental
 {
 
 //! @rst
-//! .. _cudax-containers-async-vector:
+//! .. _cudax-containers-async-buffer:
 //!
 //! async_buffer
 //! -------------
@@ -84,6 +84,10 @@ namespace cuda::experimental
 //! ``async_buffer`` is a container that provides resizable typed storage allocated from a given :ref:`memory resource
 //! <libcudacxx-extended-api-memory-resources-resource>`. It handles alignment, release and growth of the allocation.
 //! The elements are initialized during construction, which may require a kernel launch.
+//!
+//! In contrast to :ref:`synchronous_buffer <cudax-containers-synchronous-buffer>` it is suitable for use in
+//! asynchronous APIs. This can provide significant performance improvements, but asynchronous memory allocations
+//! require modern toolchains and architectures.
 //!
 //! In addition to being type-safe, ``async_buffer`` also takes a set of :ref:`properties
 //! <libcudacxx-extended-api-memory-resources-properties>` to ensure that e.g. execution space constraints are checked
@@ -109,11 +113,10 @@ public:
   using size_type              = _CUDA_VSTD::size_t;
   using difference_type        = _CUDA_VSTD::ptrdiff_t;
 
-  using __env_t          = ::cuda::experimental::env_t<_Properties...>;
-  using __policy_t       = ::cuda::experimental::execution::execution_policy;
-  using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
-  using __resource_t     = ::cuda::experimental::any_async_resource<_Properties...>;
-  using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;
+  using __env_t      = ::cuda::experimental::env_t<_Properties...>;
+  using __policy_t   = ::cuda::experimental::execution::execution_policy;
+  using __buffer_t   = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
+  using __resource_t = ::cuda::experimental::any_async_resource<_Properties...>;
 
   template <class, class...>
   friend class async_buffer;
@@ -151,12 +154,6 @@ private:
     __select_execution_space<_OtherProperties...> == _ExecutionSpace::__host
       ? (__is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice)
       : (__is_host_only ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice);
-
-  //! @brief Helper to return an async_resource_ref to the currently used resource. Used to grow the async_buffer
-  __resource_ref_t __borrow_resource() const noexcept
-  {
-    return const_cast<__resource_t&>(__buf_.get_memory_resource());
-  }
 
   //! @brief Replaces the content of the async_buffer with the sequence `[__first, __last)`
   //! @param __first Iterator to the first element of the input sequence.
