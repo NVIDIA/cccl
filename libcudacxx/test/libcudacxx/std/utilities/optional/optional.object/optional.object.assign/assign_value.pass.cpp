@@ -268,7 +268,6 @@ struct ThrowAssign
   ThrowAssign& operator=(int)
   {
     TEST_THROW(42);
-    return *this;
   }
   ~ThrowAssign()
   {

@@ -141,7 +141,7 @@ void test_exceptions()
   {
     assert(static_cast<bool>(opt) == true);
     assert(Z::dtor_called() == false);
-    auto& v = opt.emplace({1, 2});
+    [[maybe_unused]] auto& v = opt.emplace({1, 2});
     static_assert(cuda::std::is_same_v<Z&, decltype(v)>, "");
     assert(false);
   }
