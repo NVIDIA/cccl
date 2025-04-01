@@ -68,7 +68,7 @@ public:
     assert(size && (size & (size - 1)) == 0
            && "Allocation requests for this allocator must pass a size that is a power of two.");
     // Initially, the whole memory is free, but depends on init_prereqs
-    free_lists_.back().emplace_back(0, init_prereqs);
+    free_lists_.back().emplace_back(0, mv(init_prereqs));
   }
 
   ::std::ptrdiff_t allocate(size_t size, event_list& prereqs)
@@ -243,19 +243,18 @@ private:
   // Per data place buffer and its corresponding metadata
   struct per_place
   {
-    per_place(void* base_, size_t size, event_list& prereqs)
+    per_place(void* base_, size_t size, event_list prereqs)
         : base(base_)
         , buffer_size(size)
-    {
-      metadata = ::std::make_unique<reserved::buddy_allocator_metadata>(buffer_size, prereqs);
-    }
+        , metadata(buffer_size, mv(prereqs))
+    {}
 
     per_place(const per_place&) = delete;
     per_place(per_place&&)      = default;
 
     void* base         = nullptr;
     size_t buffer_size = 0;
-    ::std::unique_ptr<reserved::buddy_allocator_metadata> metadata;
+    reserved::buddy_allocator_metadata metadata;
   };
 
 public:
@@ -279,7 +278,7 @@ public:
     assert(map.count(memory_node) == 1);
     auto& m = it->second;
 
-    ::std::ptrdiff_t offset = m.metadata->allocate(s, prereqs);
+    ::std::ptrdiff_t offset = m.metadata.allocate(s, prereqs);
     assert(offset != -1);
     return static_cast<char*>(m.base) + offset;
   }
@@ -293,7 +292,7 @@ public:
 
     size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m.base);
 
-    m.metadata->deallocate(offset, sz, prereqs);
+    m.metadata.deallocate(offset, sz, prereqs);
   }
 
   event_list deinit(backend_ctx_untyped& ctx) override
@@ -305,7 +304,7 @@ public:
       event_list local_prereqs;
 
       // Deinitialize the metadata of the buddy allocator for this place
-      pp.metadata->deinit(local_prereqs);
+      pp.metadata.deinit(local_prereqs);
 
       // Deallocate the underlying buffer for this buddy allocator
       auto& a = root_allocator ? root_allocator : ctx.get_uncached_allocator();
