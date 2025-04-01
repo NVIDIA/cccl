@@ -505,12 +505,6 @@ cdef class Op:
         self.state_bytes = state
         self.op_data.state = <void *><const char *>state
 
-    # cdef inline cy_cccl_op_t* get_ptr(self):
-    #    return &self.op_data
-
-    # cdef inline cy_cccl_op_t get(self):
-    #    return self.op_data
-
     property state:
         def __get__(self):
             return self.state_bytes
@@ -566,12 +560,6 @@ cdef class TypeInfo:
     @property
     def typenum(self):
         return self.type_info.type
-
-    # cdef inline cy_cccl_type_info *get_ptr(self):
-    #     return &self.type_info
-
-    # cdef inline cy_cccl_type_info get(self):
-    #     return self.type_info
 
     def as_bytes(self):
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.type_info))
@@ -712,9 +700,6 @@ cdef class StateBase:
     cdef inline void set_state(self, void *ptr, object ref):
         self.ptr = ptr
         self.ref = ref
-
-    # cdef inline void * get(self):
-    #    return self.ptr
 
     @property
     def pointer(self):
@@ -880,12 +865,6 @@ cdef class Iterator:
         self.iter_data.dereference = self.dereference.op_data
         self.iter_data.value_type = value_type.type_info
 
-    # cdef inline cy_cccl_iterator_t *get_ptr(self):
-    #     return &self.iter_data
-
-    # cdef inline cy_cccl_iterator_t get(self):
-    #     return self.iter_data
-
     @property
     def advance_op(self):
         return self.advance
@@ -1034,14 +1013,7 @@ cdef class CommonData:
 
 cdef extern from "cccl/c/reduce.h":
     cdef struct cy_cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
-        int cc
-        void *cubin
-        size_t cubin_size
-        CUlibrary library
-        uint64_t accumulator_size
-        CUkernel single_tile_kernel
-        CUkernel single_tile_second_kernel
-        CUkernel reduction_kernel
+        pass
 
     cdef CUresult cccl_device_reduce_build(
         cy_cccl_device_reduce_build_result_t*,
@@ -1074,12 +1046,6 @@ cdef class DeviceReduceBuildResult:
 
     def __cinit__(self):
        memset(&self.build_data, 0, sizeof(cy_cccl_device_reduce_build_result_t))
-
-    # cdef inline cy_cccl_device_reduce_build_result_t* get_ptr(self):
-    #    return &self.build_data
-
-    # cdef inline cy_cccl_device_reduce_build_result_t get(self):
-    #    return self.build_data
 
 
 cpdef CUresult device_reduce_build(
@@ -1152,17 +1118,7 @@ cdef extern from "cccl/c/scan.h":
     ctypedef bint _Bool
 
     cdef struct cy_cccl_device_scan_build_result_t 'cccl_device_scan_build_result_t':
-        int cc
-        void *cubin
-        size_t cubin_size
-        CUlibrary library
-        cy_cccl_type_info accumulator_type
-        CUkernel init_kernel
-        CUkernel scan_kernel
-        CUkernel reduction_kernel
-        _Bool force_inclusive
-        size_t description_bytes_per_tile
-        size_t payload_bytes_per_tile
+        pass
 
     cdef CUresult cccl_device_scan_build(
         cy_cccl_device_scan_build_result_t*,
@@ -1208,12 +1164,6 @@ cdef class DeviceScanBuildResult:
 
     def __cinit__(self):
        memset(&self.build_data, 0, sizeof(cy_cccl_device_scan_build_result_t))
-
-    # cdef inline cy_cccl_device_scan_build_result_t* get_ptr(self):
-    #    return &self.build_data
-
-    # cdef inline cy_cccl_device_scan_build_result_t get(self):
-    #    return self.build_data
 
 
 cpdef CUresult device_scan_build(
@@ -1315,12 +1265,7 @@ cpdef CUresult device_scan_cleanup(DeviceScanBuildResult build):
 
 cdef extern from "cccl/c/segmented_reduce.h":
     cdef struct cy_cccl_device_segmented_reduce_build_result_t 'cccl_device_segmented_reduce_build_result_t':
-        int cc
-        void *cubin
-        size_t cubin_size
-        CUlibrary library
-        uint64_t accumulator_size
-        CUkernel segmented_reduce_kernel
+        pass
 
     cdef CUresult cccl_device_segmented_reduce_build(
         cy_cccl_device_segmented_reduce_build_result_t*,
@@ -1357,12 +1302,6 @@ cdef class DeviceSegmentedReduceBuildResult:
 
     def __cinit__(self):
        memset(&self.build_data, 0, sizeof(cy_cccl_device_segmented_reduce_build_result_t))
-
-    # cdef inline cy_cccl_device_segmented_reduce_build_result_t* get_ptr(self):
-    #    return &self.build_data
-
-    # cdef inline cy_cccl_device_segmented_reduce_build_result_t get(self):
-    #    return self.build_data
 
 
 cpdef CUresult device_segmented_reduce_build(
@@ -1442,13 +1381,7 @@ cpdef CUresult device_segmented_reduce_cleanup(
 
 cdef extern from "cccl/c/merge_sort.h":
     cdef struct cy_cccl_device_merge_sort_build_result_t 'cccl_device_merge_sort_build_result_t':
-        int cc
-        void *cubin
-        size_t cubin_size
-        CUlibrary library
-        CUkernel block_sort_kernel
-        CUkernel partition_kernel
-        CUkernel merge_kernel
+        pass
 
     cdef CUresult cccl_device_merge_sort_build(
         cy_cccl_device_merge_sort_build_result_t *bld_ptr,
@@ -1484,11 +1417,6 @@ cdef class DeviceMergeSortBuildResult:
     def __cinit__(self):
        memset(&self.build_data, 0, sizeof(cy_cccl_device_merge_sort_build_result_t))
 
-    # cdef inline cy_cccl_device_merge_sort_build_result_t* get_ptr(self):
-    #    return &self.build_data
-
-    # cdef inline cy_cccl_device_merge_sort_build_result_t get(self):
-    #    return self.build_data
 
 
 cpdef CUresult device_merge_sort_build(
@@ -1608,11 +1536,6 @@ cdef class DeviceUniqueByKeyBuildResult:
     def __cinit__(self):
        memset(&self.build_data, 0, sizeof(cy_cccl_device_unique_by_key_build_result_t))
 
-    # cdef inline cy_cccl_device_unique_by_key_build_result_t* get_ptr(self):
-    #    return &self.build_data
-
-    # cdef inline cy_cccl_device_unique_by_key_build_result_t get(self):
-    #    return self.build_data
 
 cpdef CUresult device_unique_by_key_build(
     DeviceUniqueByKeyBuildResult build,
