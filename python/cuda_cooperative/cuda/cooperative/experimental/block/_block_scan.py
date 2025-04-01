@@ -9,6 +9,7 @@ import numba
 from cuda.cooperative.experimental._common import (
     CUB_BLOCK_SCAN_ALGOS,
     make_binary_tempfile,
+    normalize_dim_param,
     normalize_dtype_param,
 )
 from cuda.cooperative.experimental._types import (
@@ -41,7 +42,7 @@ def _scan(
     if items_per_thread < 1:
         raise ValueError("items_per_thread must be greater than or equal to 1")
 
-    # Normalize the dtype parameter.
+    dim = normalize_dim_param(threads_per_block)
     dtype = normalize_dtype_param(dtype)
 
     if mode == "exclusive":
@@ -53,14 +54,18 @@ def _scan(
 
     specialization_kwds = {
         "T": dtype,
-        "BLOCK_DIM_X": threads_per_block,
+        "BLOCK_DIM_X": dim[0],
         "ALGORITHM": CUB_BLOCK_SCAN_ALGOS[algorithm],
+        "BLOCK_DIM_Y": dim[1],
+        "BLOCK_DIM_Z": dim[2],
     }
 
     template_parameters = [
         TemplateParameter("T"),
         TemplateParameter("BLOCK_DIM_X"),
         TemplateParameter("ALGORITHM"),
+        TemplateParameter("BLOCK_DIM_Y"),
+        TemplateParameter("BLOCK_DIM_Z"),
     ]
 
     fake_return = False
@@ -71,7 +76,8 @@ def _scan(
         if items_per_thread == 1:
             parameters = [
                 # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM>(
+                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
                 #     temp_storage
                 # ).<Inclusive|Exclusive>Sum(
                 #     T, # input
@@ -86,7 +92,8 @@ def _scan(
                     DependentReference(Dependency("T"), is_output=True),
                 ],
                 # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM>(
+                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
                 #     temp_storage
                 # ).<Inclusive|Exclusive>Sum(
                 #     T,                     # input
@@ -155,8 +162,6 @@ def _scan(
             ]
 
             specialization_kwds["ITEMS_PER_THREAD"] = items_per_thread
-
-            template_parameters.append(TemplateParameter("ITEMS_PER_THREAD"))
 
     template = Algorithm(
         "BlockScan",
