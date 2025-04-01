@@ -14,7 +14,7 @@ from numba.core.typing.templates import AttributeTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 from numba.cuda.cudaimpl import registry as cuda_lower_registry
 
-from . import _cy_iterators as _iterators
+from . import _iterators
 
 
 @lru_cache
@@ -161,15 +161,35 @@ class NdArrayIterator(_iterators.IteratorBase):
             raise ValueError
 
         state_numba_type = strided_view_iterator_numba_type(value_type, ndim)
-        numba_type = types.CPointer(state_numba_type)
         # build ctypes struct for state of iterator
         host_sav_cvalue = iterator_struct_ctype(ptr, ndim, shape, strides)
         super().__init__(
-            cvalue=host_sav_cvalue,
-            numba_type=numba_type,
-            state_type=state_numba_type,
-            value_type=value_type,
+            cvalue=host_sav_cvalue, numba_type=state_numba_type, value_type=value_type
         )
+
+    @property
+    def ltoirs(self):
+        abi_suffix = _iterators._get_abi_suffix(self.kind)
+        advance_abi_name = f"{self.prefix}advance_{abi_suffix}"
+        deref_abi_name = f"{self.prefix}dereference_{abi_suffix}"
+        state_arg_numba_type = types.CPointer(self.numba_type)
+        advance_ltoir, _ = _iterators.cached_compile(
+            self.__class__.advance,
+            (
+                state_arg_numba_type,
+                types.uint64,  # distance type
+            ),
+            output="ltoir",
+            abi_name=advance_abi_name,
+        )
+
+        deref_ltoir, _ = _iterators.cached_compile(
+            self.__class__.dereference,
+            (state_arg_numba_type,),
+            output="ltoir",
+            abi_name=deref_abi_name,
+        )
+        return {advance_abi_name: advance_ltoir, deref_abi_name: deref_ltoir}
 
     @staticmethod
     def advance(state_ref, distance):

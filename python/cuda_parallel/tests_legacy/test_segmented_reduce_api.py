@@ -8,7 +8,7 @@ def test_device_segmented_reduce():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_segmented_reduce as algorithms
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
 
     def min_op(a, b):
         return a if a < b else b
@@ -61,8 +61,8 @@ def test_device_segmented_reduce_for_rowwise_sum():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_segmented_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
 
     def add_op(a, b):
         return a + b
@@ -112,9 +112,11 @@ def test_segmented_reduce_for_columnwise_max():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_segmented_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
-    from cuda.parallel.experimental.cy_iterators._strided import make_ndarray_iterator
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
+    from cuda.parallel.experimental.iterators_legacy._strided import (
+        make_ndarray_iterator,
+    )
 
     def binary_op(a, b):
         return max(a, b)
@@ -170,9 +172,11 @@ def test_segmented_reduce_for_multiaxis_sum():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_segmented_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
-    from cuda.parallel.experimental.cy_iterators._strided import make_ndarray_iterator
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
+    from cuda.parallel.experimental.iterators_legacy._strided import (
+        make_ndarray_iterator,
+    )
 
     def binary_op(a, b):
         return a + b

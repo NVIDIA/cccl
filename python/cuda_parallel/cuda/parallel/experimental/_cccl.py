@@ -13,7 +13,7 @@ import numpy as np
 from numba import cuda, types
 
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .iterators._iterators import IteratorBase
+from .iterators_legacy._iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
 

@@ -10,8 +10,8 @@ import numba.types
 import numpy as np
 import pytest
 
-import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
-import cuda.parallel.experimental.cy_iterators as iterators
+import cuda.parallel.experimental.algorithms.legacy as algorithms
+import cuda.parallel.experimental.iterators_legacy as iterators
 
 
 def random_int(shape, dtype):
@@ -24,9 +24,9 @@ def type_to_problem_sizes(dtype):
     elif dtype in [np.uint16, np.int16]:
         return [4, 8, 12, 14]
     elif dtype in [np.uint32, np.int32]:
-        return [16, 20, 24, 26]
+        return [16, 20, 24, 28]
     elif dtype in [np.uint64, np.int64]:
-        return [16, 20, 24, 25]
+        return [16, 20, 24, 27]
     else:
         raise ValueError("Unsupported dtype")
 

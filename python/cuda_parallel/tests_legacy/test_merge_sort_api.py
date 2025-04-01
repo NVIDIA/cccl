@@ -8,7 +8,7 @@ def test_merge_sort():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_merge_sort as algorithms
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
 
     def compare_op(lhs, rhs):
         return np.uint8(lhs < rhs)

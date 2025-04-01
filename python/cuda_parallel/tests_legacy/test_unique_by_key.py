@@ -8,8 +8,8 @@ import numba.cuda
 import numpy as np
 import pytest
 
-import cuda.parallel.experimental.algorithms._cy_unique_by_key as algorithms
-import cuda.parallel.experimental.cy_iterators as iterators
+import cuda.parallel.experimental.algorithms.legacy as algorithms
+import cuda.parallel.experimental.iterators_legacy as iterators
 from cuda.parallel.experimental.struct import gpu_struct
 
 DTYPE_LIST = [
@@ -25,7 +25,7 @@ DTYPE_LIST = [
     np.float64,
 ]
 
-PROBLEM_SIZES = [2, 8, 16, 22]
+PROBLEM_SIZES = [2, 8, 16, 24]
 
 DTYPE_SIZE_PAIRS = [
     (dt, 2**log_size) for dt in DTYPE_LIST for log_size in PROBLEM_SIZES

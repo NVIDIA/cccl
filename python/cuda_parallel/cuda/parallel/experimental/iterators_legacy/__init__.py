@@ -1,6 +1,6 @@
 import numba
 
-from . import _cy_iterators as _iterators
+from . import _iterators
 
 
 def CacheModifiedInputIterator(device_array, modifier, prefix=""):

@@ -6,7 +6,7 @@ import cupy as cp
 import numpy as np
 import pytest
 
-import cuda.parallel.experimental.algorithms._cy_segmented_reduce as algorithms
+import cuda.parallel.experimental.algorithms.legacy as algorithms
 from cuda.parallel.experimental.struct import gpu_struct
 
 
@@ -66,7 +66,7 @@ def test_segmented_reduce_struct_type():
     import cupy as cp
     import numpy as np
 
-    from cuda.parallel.experimental import algorithms
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
 
     @gpu_struct
     class Pixel:

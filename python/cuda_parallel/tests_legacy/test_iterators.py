@@ -1,7 +1,7 @@
 import cupy as cp
 import numpy as np
 
-from cuda.parallel.experimental.cy_iterators import (
+from cuda.parallel.experimental.iterators_legacy import (
     CacheModifiedInputIterator,
     ConstantIterator,
     CountingIterator,

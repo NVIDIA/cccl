@@ -8,7 +8,7 @@ def test_device_reduce():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
 
     def min_op(a, b):
         return a if a < b else b
@@ -43,8 +43,8 @@ def test_cache_modified_input_iterator():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
 
     def add_op(a, b):
         return a + b
@@ -79,8 +79,8 @@ def test_constant_iterator():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
 
     def add_op(a, b):
         return a + b
@@ -112,8 +112,8 @@ def test_counting_iterator():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
 
     def add_op(a, b):
         return a + b
@@ -147,8 +147,8 @@ def test_transform_iterator():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
 
     def add_op(a, b):
         return a + b
@@ -185,7 +185,7 @@ def test_reduce_struct_type():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
     from cuda.parallel.experimental.struct import gpu_struct
 
     @gpu_struct
@@ -220,8 +220,8 @@ def test_reduce_struct_type_minmax():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_reduce as algorithms
-    import cuda.parallel.experimental.cy_iterators as iterators
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
+    import cuda.parallel.experimental.iterators_legacy as iterators
     from cuda.parallel.experimental.struct import gpu_struct
 
     @gpu_struct

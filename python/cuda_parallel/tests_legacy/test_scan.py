@@ -9,8 +9,8 @@ import numba.types
 import numpy as np
 import pytest
 
-import cuda.parallel.experimental.algorithms._cy_scan as algorithms
-import cuda.parallel.experimental.cy_iterators as iterators
+import cuda.parallel.experimental.algorithms.legacy as algorithms
+import cuda.parallel.experimental.iterators_legacy as iterators
 from cuda.parallel.experimental.struct import gpu_struct
 
 

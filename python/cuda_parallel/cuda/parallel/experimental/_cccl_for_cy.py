@@ -29,7 +29,7 @@ from ._cy_bindings import (
     make_pointer_object,
 )
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
-from .cy_iterators._cy_iterators import IteratorBase
+from .iterators._iterators import IteratorBase
 from .typing import DeviceArrayLike, GpuStruct
 
 _TYPE_TO_ENUM = {

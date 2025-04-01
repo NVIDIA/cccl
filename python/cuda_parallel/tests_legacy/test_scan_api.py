@@ -8,7 +8,7 @@ def test_exclusive_scan_max():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_scan as algorithms
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
 
     def max_op(a, b):
         return max(a, b)
@@ -40,7 +40,7 @@ def test_inclusive_scan_add():
     import cupy as cp
     import numpy as np
 
-    import cuda.parallel.experimental.algorithms._cy_scan as algorithms
+    import cuda.parallel.experimental.algorithms.legacy as algorithms
 
     def add_op(a, b):
         return a + b

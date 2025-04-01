@@ -13,7 +13,7 @@ from .. import _cccl as cccl
 from .._bindings import call_build, get_bindings
 from .._caching import CachableFunction, cache_with_key
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase
+from ..iterators_legacy._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
 

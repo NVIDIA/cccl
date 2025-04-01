@@ -578,12 +578,6 @@ cdef class Value:
         self.value_data.type = value_type.type_info
         self.value_data.state = <void *>&state[0]
 
-    # cdef inline cy_cccl_value_t * get_ptr(self):
-    #     return &self.value_data
-
-    # cdef inline cy_cccl_value_t get(self):
-    #     return self.value_data
-
     @property
     def type(self):
         return self.value_type
