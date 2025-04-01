@@ -428,12 +428,24 @@ public:
   }
 };
 
-template <class>
+template <class _Tp>
 struct __is_complex : false_type
 {};
 
 template <class _Tp>
 struct __is_complex<complex<_Tp>> : true_type
+{};
+
+template <class _Tp>
+struct __is_complex<const complex<_Tp>> : true_type
+{};
+
+template <class _Tp>
+struct __is_complex<volatile complex<_Tp>> : true_type
+{};
+
+template <class _Tp>
+struct __is_complex<const volatile complex<_Tp>> : true_type
 {};
 
 template <class _Tp>
