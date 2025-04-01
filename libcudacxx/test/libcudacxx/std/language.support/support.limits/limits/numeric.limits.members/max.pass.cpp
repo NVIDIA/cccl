@@ -45,10 +45,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t>(UCHAR_MAX); // ??
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t>(USHRT_MAX);
   test<char32_t>(UINT_MAX);
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short>(SHRT_MAX);
   test<unsigned short>(USHRT_MAX);
   test<int>(INT_MAX);
