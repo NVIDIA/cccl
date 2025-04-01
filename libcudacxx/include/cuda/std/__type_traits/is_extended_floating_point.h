@@ -22,6 +22,7 @@
 
 #include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -117,6 +118,33 @@ struct __is_extended_floating_point<__float128> : true_type
 template <>
 inline constexpr bool __is_extended_floating_point_v<__float128> = true;
 #endif // _CCCL_HAS_FLOAT128()
+
+//----------------------------------------------------------------------------------------------------------------------
+// __is_sub_byte_floating_point
+
+template <typename _Tp, typename = remove_cv_t<_Tp>>
+inline constexpr bool __is_sub_byte_floating_point = false;
+
+#if _CCCL_HAS_NVFP6_E2M3()
+
+template <typename _Tp>
+inline constexpr bool __is_sub_byte_floating_point<_Tp, __nv_fp6_e2m3> = true;
+
+#endif // _CCCL_HAS_NVFP6_E2M3()
+
+#if _CCCL_HAS_NVFP6_E3M2()
+
+template <typename _Tp>
+inline constexpr bool __is_sub_byte_floating_point<_Tp, __nv_fp6_e3m2> = true;
+
+#endif // _CCCL_HAS_NVFP6_E3M2()
+
+#if _CCCL_HAS_NVFP4_E2M1()
+
+template <typename _Tp>
+inline constexpr bool __is_sub_byte_floating_point<_Tp, __nv_fp4_e2m1> = true;
+
+#endif // _CCCL_HAS_NVFP4_E2M1()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
