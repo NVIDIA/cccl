@@ -106,6 +106,8 @@ workflows:
   exclude:
     # GPU runners are not available on Windows.
     - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
+    # Temporarily disable windows builds until the runners are fixed:
+    - {cxx: ['msvc2019', 'msvc14.39', 'msvc2022']}
 
 
 #############################################################################################
