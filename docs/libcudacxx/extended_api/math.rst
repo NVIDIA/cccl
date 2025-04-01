@@ -11,6 +11,7 @@ Math
    math/round_up
    math/round_down
    math/ilog
+   math/uabs
 
 .. list-table::
    :widths: 25 45 30 30
