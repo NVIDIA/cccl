@@ -97,15 +97,11 @@ extern "C++" {
 #    define _LIBCUDACXX_NO_CFI
 #  endif
 
-#  if _CCCL_COMPILER(NVRTC)
-#    define __alignof(x) alignof(x)
-#  endif // _CCCL_COMPILER(NVRTC)
-
-#  if _CCCL_COMPILER(MSVC)
-#    define __alignof__ __alignof
-#  endif
-
-#  define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
+#  if !_CCCL_COMPILER(NVRTC)
+#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_T) __alignof(_T)
+#  else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_T) alignof(_T)
+#  endif // ^^^^ _CCCL_COMPILER(NVRTC) ^^^
 
 #  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
