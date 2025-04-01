@@ -53,6 +53,16 @@ def make_cache_key(
 class _MergeSort:
     _impl = cyb
 
+    __slots__ = [
+        "d_in_keys_cccl",
+        "d_in_items_cccl",
+        "d_out_keys_cccl",
+        "d_out_items_cccl",
+        "op_wrapper",
+        "build_result",
+        "_initialized",
+    ]
+
     def __init__(
         self,
         d_in_keys: DeviceArrayLike | IteratorBase,
@@ -103,14 +113,16 @@ class _MergeSort:
         num_items: int,
         stream=None,
     ):
-        assert (d_in_items is None) == (d_out_items is None)
+        present_in_values = d_in_items is not None
+        present_out_values = d_out_items is not None
+        assert present_in_values == present_out_values
 
         set_state_fn = cccl.set_cccl_iterator_state
         set_state_fn(self.d_in_keys_cccl, d_in_keys)
-        if d_in_items is not None:
+        if present_in_values:
             set_state_fn(self.d_in_items_cccl, d_in_items)
         set_state_fn(self.d_out_keys_cccl, d_out_keys)
-        if d_out_items is not None:
+        if present_out_values:
             set_state_fn(self.d_out_items_cccl, d_out_items)
 
         stream_handle = protocols.validate_and_get_stream(stream)
