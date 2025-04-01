@@ -216,13 +216,17 @@ mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
 
 radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 {
+  // TODO: we hardcode some of these values in order to make sure that the radix_sort tests do not fail due to the
+  // memory op assertions. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
   constexpr int onesweep_radix_bits                              = 8;
   const int primary_radix_bits                                   = (key_size > 1) ? 7 : 5;
   const int single_tile_radix_bits                               = (key_size > 1) ? 6 : 5;
   const auto [onesweep_items_per_thread, onesweep_block_threads] = reg_bound_scaling(256, 21, key_size);
-  const auto [scan_items_per_thread, scan_block_threads]         = mem_bound_scaling(512, 13, key_size);
-  // const auto [downsweep_items_per_thread, downsweep_block_threads]         = mem_bound_scaling(160, 39, key_size);
-  const int downsweep_items_per_thread                                     = 1;
+  // const auto [scan_items_per_thread, scan_block_threads]         = mem_bound_scaling(512, 23, key_size);
+  const int scan_items_per_thread = 10;
+  const int scan_block_threads    = 512;
+  // const auto [downsweep_items_per_thread, downsweep_block_threads] = mem_bound_scaling(160, 39, key_size);
+  const int downsweep_items_per_thread                                     = 10;
   const int downsweep_block_threads                                        = 160;
   const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16, key_size);
   const auto [single_tile_items_per_thread, single_tile_block_threads]     = mem_bound_scaling(256, 19, key_size);
@@ -240,11 +244,12 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 };
 
 std::string get_single_tile_kernel_name(
-  std::string_view chained_policy_t, cccl_sort_order_t sort_order, std::string_view key_t, std::string_view value_t)
+  std::string_view chained_policy_t,
+  cccl_sort_order_t sort_order,
+  std::string_view key_t,
+  std::string_view value_t,
+  std::string_view offset_t)
 {
-  std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
   return std::format(
     "cub::detail::radix_sort::DeviceRadixSortSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t,
@@ -256,11 +261,12 @@ std::string get_single_tile_kernel_name(
 }
 
 std::string get_upsweep_kernel_name(
-  std::string_view chained_policy_t, bool alt_digit_bits, cccl_sort_order_t sort_order, std::string_view key_t)
+  std::string_view chained_policy_t,
+  bool alt_digit_bits,
+  cccl_sort_order_t sort_order,
+  std::string_view key_t,
+  std::string_view offset_t)
 {
-  std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
   return std::format(
     "cub::detail::radix_sort::DeviceRadixSortUpsweepKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t,
@@ -271,11 +277,8 @@ std::string get_upsweep_kernel_name(
     "op_wrapper");
 }
 
-std::string get_scan_bins_kernel_name(std::string_view chained_policy_t)
+std::string get_scan_bins_kernel_name(std::string_view chained_policy_t, std::string_view offset_t)
 {
-  std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
   return std::format("cub::detail::radix_sort::RadixSortScanBinsKernel<{0}, {1}>", chained_policy_t, offset_t);
 }
 
@@ -284,11 +287,9 @@ std::string get_downsweep_kernel_name(
   bool alt_digit_bits,
   cccl_sort_order_t sort_order,
   std::string_view key_t,
-  std::string_view value_t)
+  std::string_view value_t,
+  std::string_view offset_t)
 {
-  std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
   return std::format(
     "cub::detail::radix_sort::DeviceRadixSortDownsweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
     chained_policy_t,
@@ -300,12 +301,9 @@ std::string get_downsweep_kernel_name(
     "op_wrapper");
 }
 
-std::string
-get_histogram_kernel_name(std::string_view chained_policy_t, cccl_sort_order_t sort_order, std::string_view key_t)
+std::string get_histogram_kernel_name(
+  std::string_view chained_policy_t, cccl_sort_order_t sort_order, std::string_view key_t, std::string_view offset_t)
 {
-  std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
   return std::format(
     "cub::detail::radix_sort::DeviceRadixSortHistogramKernel<{0}, {1}, {2}, {3}, {4}>",
     chained_policy_t,
@@ -315,20 +313,18 @@ get_histogram_kernel_name(std::string_view chained_policy_t, cccl_sort_order_t s
     "op_wrapper");
 }
 
-std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t)
+std::string get_exclusive_sum_kernel_name(std::string_view chained_policy_t, std::string_view offset_t)
 {
-  std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
   return std::format("cub::detail::radix_sort::DeviceRadixSortExclusiveSumKernel<{0}, {1}>", chained_policy_t, offset_t);
 }
 
 std::string get_onesweep_kernel_name(
-  std::string_view chained_policy_t, cccl_sort_order_t sort_order, std::string_view key_t, std::string_view value_t)
+  std::string_view chained_policy_t,
+  cccl_sort_order_t sort_order,
+  std::string_view key_t,
+  std::string_view value_t,
+  std::string_view offset_t)
 {
-  std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
   return std::format(
     "cub::detail::radix_sort::DeviceRadixSortOnesweepKernel<{0}, {1}, {2}, {3}, {4}, int, int, {5}>",
     chained_policy_t,
@@ -521,6 +517,9 @@ struct {26} {{
 {27};
 )XXX";
 
+    std::string offset_t;
+    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+
     const std::string src = std::format(
       src_template,
       input_keys_it.value_type.size, // 0
@@ -537,9 +536,9 @@ struct {26} {{
       policy.onesweep.block_threads, // 11
       policy.onesweep.rank_num_parts, // 12
       policy.onesweep.radix_bits, // 13
-      policy.onesweep.items_per_thread, // 14
-      policy.onesweep.block_threads, // 15
-      key_cpp, // 16
+      policy.scan.items_per_thread, // 14
+      policy.scan.block_threads, // 15
+      offset_t, // 16
       policy.downsweep.items_per_thread, // 17
       policy.downsweep.block_threads, // 18
       policy.downsweep.radix_bits, // 19
@@ -560,19 +559,21 @@ struct {26} {{
 #endif
 
     std::string single_tile_kernel_name =
-      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp);
-    std::string upsweep_kernel_name = radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp);
+      radix_sort::get_single_tile_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
+    std::string upsweep_kernel_name =
+      radix_sort::get_upsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, offset_t);
     std::string alt_upsweep_kernel_name =
-      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp);
-    std::string scan_bins_kernel_name = radix_sort::get_scan_bins_kernel_name(chained_policy_t);
+      radix_sort::get_upsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, offset_t);
+    std::string scan_bins_kernel_name = radix_sort::get_scan_bins_kernel_name(chained_policy_t, offset_t);
     std::string downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, value_cpp);
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, false, sort_order, key_cpp, value_cpp, offset_t);
     std::string alt_downsweep_kernel_name =
-      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, value_cpp);
-    std::string histogram_kernel_name = radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp);
-    std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t);
+      radix_sort::get_downsweep_kernel_name(chained_policy_t, true, sort_order, key_cpp, value_cpp, offset_t);
+    std::string histogram_kernel_name =
+      radix_sort::get_histogram_kernel_name(chained_policy_t, sort_order, key_cpp, offset_t);
+    std::string exclusive_sum_kernel_name = radix_sort::get_exclusive_sum_kernel_name(chained_policy_t, offset_t);
     std::string onesweep_kernel_name =
-      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp);
+      radix_sort::get_onesweep_kernel_name(chained_policy_t, sort_order, key_cpp, value_cpp, offset_t);
     std::string single_tile_kernel_lowered_name;
     std::string upsweep_kernel_lowered_name;
     std::string alt_upsweep_kernel_lowered_name;
