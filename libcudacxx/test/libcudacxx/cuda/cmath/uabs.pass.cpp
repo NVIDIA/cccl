@@ -66,6 +66,6 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  // NV_IF_TARGET(NV_IS_HOST, static_assert(test());)
+  static_assert(test());
   return 0;
 }
