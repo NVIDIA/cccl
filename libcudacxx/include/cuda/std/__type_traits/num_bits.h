@@ -21,18 +21,72 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
-#include <cuda/std/__type_traits/is_extended_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
+#include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/climits>
 #include <cuda/std/complex>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(has_unique_object_representations, _Tp) || _CCCL_TRAIT(__is_extended_arithmetic, _Tp)
-               || _CCCL_TRAIT(__is_complex, _Tp))
-inline constexpr int __num_bits_v = sizeof(_Tp) * CHAR_BIT;
+template <typename _Tp>
+struct _PreventInstantiation
+{
+  static_assert(__always_false_v<_Tp>);
+};
+
+template <typename _Tp, typename = remove_cv_t<_Tp>>
+inline constexpr int __num_bits_v = _PreventInstantiation<_Tp>{};
+
+template <typename _Tp>
+inline constexpr int __num_bits_v<_Tp,
+                                  enable_if_t<(has_unique_object_representations_v<_Tp> || is_floating_point_v<_Tp>
+                                               || __is_complex_v<_Tp> || is_same_v<_Tp, bool>)
+                                                && !__is_sub_byte_floating_point<_Tp>,
+                                              remove_cv_t<_Tp>>> = sizeof(_Tp) * CHAR_BIT;
+
+#if _CCCL_HAS_NVFP16()
+
+template <typename _Tp>
+inline constexpr int __num_bits_v<_Tp, __half2> = sizeof(__half2) * CHAR_BIT;
+
+#endif // _CCCL_HAS_NVFP16
+
+#if _CCCL_HAS_NVBF16()
+
+template <typename _Tp>
+inline constexpr int __num_bits_v<_Tp, __nv_bfloat162> = sizeof(__nv_bfloat162) * CHAR_BIT;
+
+#endif // _CCCL_HAS_NVBF16
+
+#if _CCCL_HAS_NVFP6_E3M2()
+
+template <typename _Tp>
+inline constexpr int __num_bits_v<_Tp, __nv_fp6_e3m2> = 6;
+
+#endif // _CCCL_HAS_NVFP6_E3M2()
+
+#if _CCCL_HAS_NVFP6_E2M3()
+
+template <typename _Tp>
+inline constexpr int __num_bits_v<_Tp, __nv_fp6_e2m3> = 6;
+
+#endif // _CCCL_HAS_NVFP6_E3M2()
+
+#if _CCCL_HAS_NVFP4_E2M1()
+
+template <typename _Tp>
+inline constexpr int __num_bits_v<_Tp, __nv_fp4_e2m1> = 4;
+
+#endif // _CCCL_HAS_NVFP8_E8M0()
+
+#if _CCCL_HAS_FLOAT128()
+
+template <typename _Tp>
+inline constexpr int __num_bits_v<_Tp, __float128> = sizeof(__float128) * CHAR_BIT;
+
+#endif // _CCCL_HAS_FLOAT128()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
