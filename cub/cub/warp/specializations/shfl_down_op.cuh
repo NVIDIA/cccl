@@ -164,12 +164,12 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<unsigned>, unsigned, max, u32, r) // shf
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<int>, int, min, s32, r) // shfl_down_min(int)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<unsigned>, unsigned, min, u32, r) // shfl_down_min(unsigned)
 // bitwise
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, unsigned, and, u32, r) // shfl_down_and(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<>, unsigned, or, u32, r) // shfl_down_or(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<>, unsigned, xor, u32, r) // shfl_down_xor(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<unsigned>, unsigned, and, u32, r) // shfl_down_and(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<unsigned>, unsigned, or, u32, r) // shfl_down_or(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<unsigned>, unsigned, xor, u32, r) // shfl_down_xor(unsigned)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, unsigned, and, b32, r) // shfl_down_and(unsigned)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<>, unsigned, or, b32, r) // shfl_down_or(unsigned)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<>, unsigned, xor, b32, r) // shfl_down_xor(unsigned)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<unsigned>, unsigned, and, b32, r) // shfl_down_and(unsigned)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<unsigned>, unsigned, or, b32, r) // shfl_down_or(unsigned)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<unsigned>, unsigned, xor, b32, r) // shfl_down_xor(unsigned)
 #undef _CUB_SHFL_DOWN_OP_32BIT
 
 //----------------------------------------------------------------------------------------------------------------------

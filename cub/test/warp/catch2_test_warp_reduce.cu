@@ -185,74 +185,62 @@ using predefined_op_list = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>
 using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
 
 #else
+// clang-format off
 
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 
 using arithmetic_type_list = c2h::type_list<
-  //  int8_t,
-  //  uint16_t,
-  //  int32_t,
-  int64_t,
+  bool, int8_t, uint16_t, int32_t, int64_t,
+  float, double,
+  cuda::std::complex<float>,
+  cuda::std::complex<double>,
+  ulonglong4, custom_t
 #  if _CCCL_HAS_INT128()
-  __int128_t,
-  __uint128_t>;
+  , __int128_t
 #  endif
-//  float,
-//  double,
-//  cuda::std::complex<float>,
-//  cuda::std::complex<double>,
-// ulonglong4,
-// #  if TEST_HALF_T()
-//   __half,
-//   __half2,
-//   cuda::std::complex<__half>,
-// #  endif // TEST_HALF_T()
-// #  if TEST_BF_T()
-//   __nv_bfloat16,
-//   __nv_bfloat162,
-//   cuda::std::complex<__nv_bfloat16>,
-// #  endif // TEST_BF_T()
-// bool>;
-
-using bitwise_type_list =
-  c2h::type_list<bool,
-                 int8_t,
-                 uint16_t,
-                 int32_t,
-                 int64_t
-#  if _CCCL_HAS_INT128()
-                 ,
-                 __int128_t
-#  endif
-                 >;
-
-using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
-
-using min_max_type_list = c2h::type_list<
-  int8_t,
-  uint16_t,
-  int32_t,
-  int64_t,
-  float,
-  double
 #  if TEST_HALF_T()
-  ,
-  __half
+   , __half
+   , __half2
+   , cuda::std::complex<__half>
 #  endif // TEST_HALF_T()
 #  if TEST_BF_T()
-  ,
-  __nv_bfloat16
+   , __nv_bfloat16
+   , __nv_bfloat162
+   , cuda::std::complex<__nv_bfloat16>
+#  endif // TEST_BF_T()
+>;
+
+using bitwise_type_list = c2h::type_list<//bool, int8_t, uint16_t, int32_t, int64_t
+#  if _CCCL_HAS_INT128()
+     __int128_t
+#  endif
+>;
+
+//using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
+using bitwise_op_list = c2h::type_list<cuda::std::bit_or<>, cuda::std::bit_xor<>>;
+
+// clang-format off
+using min_max_type_list = c2h::type_list<
+  int8_t, uint16_t, int32_t, int64_t,
+  float, double, custom_t
+#  if TEST_HALF_T()
+  , __half
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
+  , __nv_bfloat16
 #  endif // TEST_BF_T()
 #  if _CCCL_HAS_INT128()
-  ,
-  __int128_t
+  , __int128_t
 #  endif
   >;
 
 using min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
 
-using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;
+//using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;
+using logical_warp_threads = c2h::enum_type_list<unsigned, 32>;
+
+// clang-format on
 
 #endif
 
@@ -280,7 +268,7 @@ void compute_host_reference(
     {
       auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread1;
       auto end                     = start + items_per_logical_warp * items_per_thread1;
-      h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, predefined_op{}));
+      h_out[i * logical_warps + j] = std::accumulate(start, end, identity, predefined_op{});
     }
   }
 }
@@ -322,16 +310,15 @@ C2H_TEST(
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
-  c2h::host_vector<T> h_tmp = d_out;
-  // for (size_t i = 0; i < output_size; ++i)
+  // c2h::host_vector<T> h_tmp = d_out;
+  //  for (size_t i = 0; i < output_size; ++i)
   //{
-  //   auto [high1, low1] = cub::detail::split_integers(h_out[i]);
-  //   auto [high2, low2] = cub::detail::split_integers(h_tmp[i]);
-  //   printf("%lu/%lu    %lu/%lu\n", high1, low1, high2, low2);
-  // }
+  //    auto [high1, low1] = cub::detail::split_integers(h_out[i]);
+  //    auto [high2, low2] = cub::detail::split_integers(h_tmp[i]);
+  //    printf("%lu/%lu    %lu/%lu\n", high1, low1, high2, low2);
+  //  }
   verify_results(h_out, d_out);
 }
-#if 0
 
 C2H_TEST(
   "WarpReduce Bitwise", "[reduce][warp][predefined_op][full]", bitwise_type_list, bitwise_op_list, logical_warp_threads)
@@ -349,6 +336,15 @@ C2H_TEST(
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
+  c2h::host_vector<T> h_tmp = d_out;
+  for (size_t i = 0; i < output_size; ++i)
+  {
+    auto [high0, low0] = cub::detail::split_integers(h_in[i]);
+    // auto [high1, low1] = cub::detail::split_integers(h_out[i]);
+    // auto [high2, low2] = cub::detail::split_integers(h_tmp[i]);
+    // printf("%lu/%lu    %lu/%lu\n", high1, low1, high2, low2);
+    printf("%lu/%lu\n", high0, low0);
+  }
   verify_results(h_out, d_out);
 }
 
@@ -378,6 +374,7 @@ C2H_TEST(
   verify_results(h_out, d_out);
 }
 
+#if 0
 
 C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_list, logical_warp_threads)
 {

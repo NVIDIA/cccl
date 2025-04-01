@@ -282,12 +282,11 @@ template <typename Input>
   static_assert(_CUDA_VSTD::is_integral_v<Input>);
   constexpr auto half_bits = _CUDA_VSTD::__num_bits_v<Input> / 2;
   using unsigned_t         = _CUDA_VSTD::make_unsigned_t<Input>;
-  using half_size_t        = _CUDA_VSTD::__make_nbit_uint_t<half_bits>;
   using output_t           = _CUDA_VSTD::__make_nbit_int_t<half_bits, _CUDA_VSTD::is_signed_v<Input>>;
   auto input1              = static_cast<unsigned_t>(input);
-  auto high                = static_cast<half_size_t>(input1 >> half_bits);
-  auto low                 = static_cast<half_size_t>(input1);
-  return _CUDA_VSTD::array<output_t, 2>{static_cast<output_t>(high), static_cast<output_t>(low)};
+  auto high                = static_cast<output_t>(input1 >> half_bits);
+  auto low                 = static_cast<output_t>(input1);
+  return _CUDA_VSTD::array<output_t, 2>{high, low};
 }
 
 template <typename Input>
@@ -297,7 +296,7 @@ template <typename Input>
   constexpr auto num_bits = _CUDA_VSTD::__num_bits_v<Input>;
   using unsigned_t        = _CUDA_VSTD::__make_nbit_uint_t<num_bits * 2>;
   using output_t          = _CUDA_VSTD::__make_nbit_int_t<num_bits * 2, _CUDA_VSTD::is_signed_v<Input>>;
-  return static_cast<output_t>(static_cast<unsigned_t>(inputA) << num_bits | inputB);
+  return static_cast<output_t>((static_cast<unsigned_t>(inputA) << num_bits) | inputB);
 }
 
 _CCCL_TEMPLATE(int LogicalWarpSize,
