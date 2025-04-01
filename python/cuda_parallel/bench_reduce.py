@@ -7,10 +7,10 @@ import cupy as cp
 import line_profiler
 import numpy as np
 
-import cuda.parallel.experimental.algorithms._cy_reduce as impl_new
-import cuda.parallel.experimental.algorithms.reduce as impl_base
-import cuda.parallel.experimental.cy_iterators as iter_new
-import cuda.parallel.experimental.iterators as iter_base
+import cuda.parallel.experimental.algorithms as impl_new
+import cuda.parallel.experimental.algorithms.legacy as impl_base
+import cuda.parallel.experimental.iterators as iter_new
+import cuda.parallel.experimental.iterators_legacy as iter_base
 
 
 def time_reduce_pointer(reps, mod):

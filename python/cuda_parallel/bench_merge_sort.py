@@ -8,10 +8,10 @@ import line_profiler
 import numpy as np
 import palanteer as ps
 
-import cuda.parallel.experimental.algorithms as impl_base
-import cuda.parallel.experimental.algorithms._cy_merge_sort as impl_new
-import cuda.parallel.experimental.cy_iterators as iter_new
-import cuda.parallel.experimental.iterators as iter_base
+import cuda.parallel.experimental.algorithms as impl_new
+import cuda.parallel.experimental.algorithms.legacy as impl_base
+import cuda.parallel.experimental.iterators as iter_new
+import cuda.parallel.experimental.iterators_legacy as iter_base
 
 
 def time_merge_sort_pointer(reps, mod):
