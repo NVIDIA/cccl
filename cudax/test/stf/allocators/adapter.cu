@@ -31,7 +31,11 @@ int main()
   {
     graph_ctx ctx(stream, handle);
 
+    // The uncached allocator of the context will be using cudaMallocAsync(...,
+    // stream) to avoid creating memory nodes in the graph (because they are
+    // costly and caching the graph also keeps memory allocated)
     auto wrapper = stream_adapter(ctx, stream);
+
     ctx.set_allocator(block_allocator<buddy_allocator>(ctx, wrapper.allocator()));
 
     auto A = ctx.logical_data(make_slice(d_ptrA, N), data_place::current_device());
