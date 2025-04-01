@@ -143,17 +143,6 @@ public:
     return "cached_block_allocator";
   }
 
-  /**
-   * @brief Prints additional information about the allocator.
-   *
-   * This function currently prints no additional information.
-   */
-  void print_info() const override
-  {
-    const auto s = to_string();
-    fprintf(stderr, "No additional info for allocator of kind \"%.*s\".\n", static_cast<int>(s.size()), s.data());
-  }
-
 protected:
   /**
    * @brief Underlying root allocator for base buffers
