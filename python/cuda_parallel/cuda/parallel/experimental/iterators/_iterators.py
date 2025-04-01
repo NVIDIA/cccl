@@ -96,8 +96,10 @@ class IteratorBase:
     # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
-        advance_abi_name = f"{self.prefix}advance_" + _get_abi_suffix(self.kind)
-        deref_abi_name = f"{self.prefix}dereference_" + _get_abi_suffix(self.kind)
+        advance_abi_name = f"{self.prefix}advance_" + \
+            _get_abi_suffix(self.kind)
+        deref_abi_name = f"{self.prefix}dereference_" + \
+            _get_abi_suffix(self.kind)
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
@@ -110,7 +112,7 @@ class IteratorBase:
 
         deref_ltoir, _ = cached_compile(
             self.__class__.dereference,
-            (self.numba_type,),
+            (self.numba_type, numba.int32),
             output="ltoir",
             abi_name=deref_abi_name,
         )
@@ -122,11 +124,13 @@ class IteratorBase:
 
     @staticmethod
     def advance(state, distance):
-        raise NotImplementedError("Subclasses must override advance staticmethod")
+        raise NotImplementedError(
+            "Subclasses must override advance staticmethod")
 
     @staticmethod
-    def dereference(state):
-        raise NotImplementedError("Subclasses must override dereference staticmethod")
+    def dereference(state, x):
+        raise NotImplementedError(
+            "Subclasses must override dereference staticmethod")
 
     def __add__(self, offset: int):
         return make_advanced_iterator(self, offset=offset)
@@ -187,6 +191,27 @@ class RawPointer(IteratorBase):
         return state[0][0]
 
 
+class RawOutputPointer(IteratorBase):
+    iterator_kind_type = RawPointerKind
+
+    def __init__(self, ptr: int, value_type: types.Type):
+        cvalue = ctypes.c_void_p(ptr)
+        numba_type = types.CPointer(types.CPointer(value_type))
+        super().__init__(
+            cvalue=cvalue,
+            numba_type=numba_type,
+            value_type=value_type,
+        )
+
+    @staticmethod
+    def advance(state, distance):
+        state[0] = state[0] + distance
+
+    @staticmethod
+    def dereference(state, x):
+        state[0][0] = x
+
+
 def pointer(container, value_type: types.Type) -> RawPointer:
     return RawPointer(container.__cuda_array_interface__["data"][0], value_type)
 
@@ -198,7 +223,8 @@ def load_cs(typingctx, base):
     def codegen(context, builder, sig, args):
         rt = context.get_value_type(sig.return_type)
         if rt is None:
-            raise RuntimeError(f"Unsupported return type: {type(sig.return_type)}")
+            raise RuntimeError(
+                f"Unsupported return type: {type(sig.return_type)}")
         ftype = ir.FunctionType(rt, [rt.as_pointer()])
         bw = sig.return_type.bitwidth
         asm_txt = f"ld.global.cs.b{bw} $0, [$1];"
@@ -391,7 +417,8 @@ def get_last_element_ptr(device_array) -> int:
         strides = tuple(s * device_array.dtype.itemsize for s in strides)
 
     # Calculate offset to last element
-    offset = sum((dim_size - 1) * stride for dim_size, stride in zip(shape, strides))
+    offset = sum((dim_size - 1) * stride for dim_size,
+                 stride in zip(shape, strides))
 
     ptr = device_array.__cuda_array_interface__["data"][0]
     return ptr + offset
@@ -431,5 +458,43 @@ def make_reverse_iterator(it):
         @staticmethod
         def dereference(state):
             return it_dereference(state)
+
+    return ReverseIterator(it)
+
+
+def make_reverse_output_iterator(it):
+    if isinstance(it, IteratorBase) and isinstance(it.cvalue, ctypes.c_void_p):
+        raise NotImplementedError(
+            f"Reverse iterator is not implemented for type {type(it)}"
+        )
+
+    if hasattr(it, "__cuda_array_interface__"):
+        last_element_ptr = get_last_element_ptr(it)
+        it = RawOutputPointer(last_element_ptr, numba.from_dtype(it.dtype))
+
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class ReverseIteratorKind(IteratorKind):
+        pass
+
+    class ReverseIterator(IteratorBase):
+        iterator_kind_type = ReverseIteratorKind
+
+        def __init__(self, it):
+            self._it = it
+            super().__init__(it.cvalue, it.numba_type, it.value_type)
+
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type(self._it.kind)
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, -distance)
+
+        @staticmethod
+        def dereference(state, x):
+            it_dereference(state, x)
 
     return ReverseIterator(it)
