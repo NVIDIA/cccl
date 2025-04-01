@@ -431,7 +431,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unsigned char> : public __unary_functi
   }
 };
 
-#  ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char16_t> : public __unary_function<char16_t, size_t>
 {
@@ -449,7 +448,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char32_t> : public __unary_function<ch
     return static_cast<size_t>(__v);
   }
 };
-#  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
 #  ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 template <>

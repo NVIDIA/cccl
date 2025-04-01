@@ -104,9 +104,7 @@ __host__ __device__ void test_for_all_types()
   test<Atomic<short, Scope>, short, Selector>();
   test<Atomic<unsigned short, Scope>, unsigned short, Selector>();
 
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<Atomic<char16_t, Scope>, char16_t, Selector>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<Atomic<wchar_t, Scope>, wchar_t, Selector>();
 
   test<Atomic<int16_t, Scope>, int16_t, Selector>();

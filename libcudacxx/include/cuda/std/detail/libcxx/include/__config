@@ -134,11 +134,6 @@ extern "C++" {
 
 #  endif //  _CCCL_COMPILER(CLANG)
 
-#  ifdef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-using char16_t = unsigned short;
-using char32_t = unsigned int;
-#  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-
 #  ifdef _LIBCUDACXX_DEBUG
 #    if _LIBCUDACXX_DEBUG == 0
 #      define _LIBCUDACXX_DEBUG_LEVEL 1
