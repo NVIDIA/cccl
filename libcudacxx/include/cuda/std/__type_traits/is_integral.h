@@ -59,14 +59,12 @@ template <>
 struct __cccl_is_integral<char8_t> : public true_type
 {};
 #  endif // _LIBCUDACXX_HAS_CHAR8_T()
-#  ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 template <>
 struct __cccl_is_integral<char16_t> : public true_type
 {};
 template <>
 struct __cccl_is_integral<char32_t> : public true_type
 {};
-#  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 template <>
 struct __cccl_is_integral<short> : public true_type
 {};
