@@ -214,6 +214,13 @@ public:
     return i.it_;
   }
 
+#if TEST_COMPILER(GCC, <, 10)
+  __host__ __device__ TEST_CONSTEXPR It base() const
+  {
+    return it_;
+  }
+#endif // TEST_COMPILER(GCC, <, 10)
+
   template <class T>
   void operator,(T const&) = delete;
 };
