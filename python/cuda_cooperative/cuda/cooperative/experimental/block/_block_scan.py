@@ -195,7 +195,61 @@ def exclusive_sum(
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
 ) -> Callable:
     """
-    Computes an exclusive block-wide prefix sum.
+    Computes an exclusive block-wide prefix scan using addition (+) as the
+    scan operator.  The value of 0 is applied as the initial value, and is
+    assigned to the first output element in the first thread.
+
+    Example:
+        The code snippet below illustrates an exclusive prefix sum of 512
+        integer items that are partitioned in a
+        :ref:`blocked arrangement <flexible-data-arrangement>` across 128
+        threads where each thread owns 4 consecutive items.
+
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin imports
+            :end-before: example-end imports
+
+        Below is the code snippet that demonstrates the usage of the
+        ``exclusive_sum`` API:
+
+        .. literalinclude:: ../../python/cuda_cooperative/tests/test_block_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin exclusive-sum
+            :end-before: example-end exclusive-sum
+
+        Suppose the set of input ``thread_data`` across the block of threads is
+        ``{ [1, 1, 1, 1], [1, 1, 1, 1], ..., [1, 1, 1, 1] }``.
+
+        The corresponding output ``thread_data`` in those threads will be
+        ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [508, 509, 510, 511] }``.
+
+    Args:
+        dtype: Supplies the data type of the input and output arrays.
+
+        threads_per_block: Supplies the number of threads in the block, either
+            as an integer for a 1D block or a tuple of two or three integers
+            for a 2D or 3D block, respectively.
+
+        items_per_thread: Supplies the number of items partitioned onto each
+            thread.
+
+        prefix_op: Optionally supplies a callable that will be invoked by the
+            first warp of threads in a block with the block aggregate value;
+            only the return value of the first lane in the warp is applied as
+            the prefix value.
+
+        algorithm: Optionally supplies the algorithm to use for the block-wide
+            scan.  Must be one of the following: ``"raking"``,
+            ``"raking_memoize"``, or ``"warp_scans"``.  The default is
+            ``"raking"``.
+
+    Returns:
+        A callable that can be linked to a CUDA kernel and invoked to perform
+        the block-wide exclusive prefix scan.
+
     """
     return _scan(
         dtype=dtype,
@@ -216,7 +270,32 @@ def inclusive_sum(
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
 ) -> Callable:
     """
-    Computes an inclusive block-wide prefix sum.
+    Computes an inclusive block-wide prefix scan using addition (+) as the
+    scan operator.
+
+    Args:
+        dtype: Supplies the data type of the input and output arrays.
+
+        threads_per_block: Supplies the number of threads in the block, either
+            as an integer for a 1D block or a tuple of two or three integers
+            for a 2D or 3D block, respectively.
+
+        items_per_thread: Supplies the number of items partitioned onto each
+            thread.
+
+        prefix_op: Optionally supplies a callable that will be invoked by the
+            first warp of threads in a block with the block aggregate value;
+            only the return value of the first lane in the warp is applied as
+            the prefix value.
+
+        algorithm: Optionally supplies the algorithm to use for the block-wide
+            scan.  Must be one of the following: ``"raking"``,
+            ``"raking_memoize"``, or ``"warp_scans"``.  The default is
+            ``"raking"``.
+
+    Returns:
+        A callable that can be linked to a CUDA kernel and invoked to perform
+        the block-wide inclusive prefix scan.
     """
     return _scan(
         dtype=dtype,
