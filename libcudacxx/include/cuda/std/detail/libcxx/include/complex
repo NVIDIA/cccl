@@ -436,6 +436,9 @@ template <class _Tp>
 struct __is_complex<complex<_Tp>> : true_type
 {};
 
+template <class _Tp>
+inline constexpr bool __is_complex_v = __is_complex<_Tp>::value;
+
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
 operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)

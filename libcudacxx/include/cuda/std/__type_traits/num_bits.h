@@ -21,11 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/has_unique_object_representation.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/climits>
+#include <cuda/std/complex>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <typename _Tp>
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(has_unique_object_representations, _Tp) || _CCCL_TRAIT(__is_extended_arithmetic, _Tp)
+               || _CCCL_TRAIT(__is_complex, _Tp))
 inline constexpr int __num_bits_v = sizeof(_Tp) * CHAR_BIT;
 
 _LIBCUDACXX_END_NAMESPACE_STD
