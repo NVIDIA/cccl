@@ -38,11 +38,8 @@ template <>
 struct char_traits<char16_t>;
 template <>
 struct char_traits<char32_t>;
-
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 template <>
 struct char_traits<wchar_t>;
-#endif
 
 template <class _Tp>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator;
@@ -50,11 +47,8 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT allocator;
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string;
 
-using string = basic_string<char>;
-
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
+using string  = basic_string<char>;
 using wstring = basic_string<wchar_t>;
-#endif
 
 #if _LIBCUDACXX_HAS_CHAR8_T()
 using u8string = basic_string<char8_t>;
@@ -68,11 +62,8 @@ namespace pmr
 template <class _CharT, class _Traits = char_traits<_CharT>>
 using basic_string = std::basic_string<_CharT, _Traits, polymorphic_allocator<_CharT>>;
 
-using string = basic_string<char>;
-
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
+using string  = basic_string<char>;
 using wstring = basic_string<wchar_t>;
-#endif // !_LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 
 #if _LIBCUDACXX_HAS_CHAR8_T()
 using u8string = basic_string<char8_t>;
@@ -86,18 +77,14 @@ using u32string = basic_string<char32_t>;
 // clang-format off
 template <class _CharT, class _Traits, class _Allocator>
 class _LIBCUDACXX_PREFERRED_NAME(string)
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
       _LIBCUDACXX_PREFERRED_NAME(wstring)
-#endif // !_LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 #if _LIBCUDACXX_HAS_CHAR8_T()
       _LIBCUDACXX_PREFERRED_NAME(u8string)
 #endif // _LIBCUDACXX_HAS_CHAR8_T()
       _LIBCUDACXX_PREFERRED_NAME(u16string)
       _LIBCUDACXX_PREFERRED_NAME(u32string)
       _LIBCUDACXX_PREFERRED_NAME(pmr::string)
-#  ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
       _LIBCUDACXX_PREFERRED_NAME(pmr::wstring)
-#  endif // !_LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 #  if _LIBCUDACXX_HAS_CHAR8_T()
       _LIBCUDACXX_PREFERRED_NAME(pmr::u8string)
 #  endif // _LIBCUDACXX_HAS_CHAR8_T()
