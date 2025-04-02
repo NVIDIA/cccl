@@ -85,7 +85,7 @@ struct SimdMin
 template <>
 struct SimdMin<int16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vmins2(a, b);), //
@@ -96,7 +96,7 @@ struct SimdMin<int16_t>
 template <>
 struct SimdMin<uint16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vminu2(a, b);), //
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm80(__half2);
 template <>
 struct SimdMin<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);), //
@@ -128,7 +128,7 @@ _CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm80(__n
 template <>
 struct SimdMin<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
@@ -149,7 +149,7 @@ struct SimdMax
 template <>
 struct SimdMax<int16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vmaxs2(a, b);), //
@@ -160,7 +160,7 @@ struct SimdMax<int16_t>
 template <>
 struct SimdMax<uint16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90,
                  (return __vmaxu2(a, b);), //
@@ -173,7 +173,7 @@ struct SimdMax<uint16_t>
 template <>
 struct SimdMax<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
@@ -188,7 +188,7 @@ struct SimdMax<__half>
 template <>
 struct SimdMax<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);), //
@@ -213,7 +213,7 @@ _CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm53(__half2);
 template <>
 struct SimdSum<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hadd2(a, b);), //
@@ -230,7 +230,7 @@ _CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm53(__n
 template <>
 struct SimdSum<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hadd2(a, b);), //
@@ -253,7 +253,7 @@ struct SimdMul
 template <>
 struct SimdMul<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hmul2(a, b);), //
@@ -268,7 +268,7 @@ struct SimdMul<__half>
 template <>
 struct SimdMul<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmul2(a, b);), //

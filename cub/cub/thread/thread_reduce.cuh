@@ -172,7 +172,7 @@ template <typename Input,
           typename ReductionOp,
           typename ValueT = _CUDA_VSTD::iter_value_t<Input>,
           typename AccumT = _CUDA_VSTD::__accumulator_t<ReductionOp, ValueT>>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
 // forward declaration
 
 /***********************************************************************************************************************
@@ -332,7 +332,7 @@ inline constexpr bool enable_ternary_reduction_sm50_v =
       || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 template <typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
   if constexpr (length < 6)
@@ -413,7 +413,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
 
 // NOTE: bit_cast cannot be always used because __half, __nv_bfloat16, etc. are not trivially copyable
 template <typename Output, typename Input>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
 {
   Output output;
   static_assert(sizeof(input) == sizeof(output), "wrong size");
@@ -536,7 +536,7 @@ template <typename Input,
           typename PrefixT,
           typename ValueT = _CUDA_VSTD::iter_value_t<Input>,
           typename AccumT = _CUDA_VSTD::__accumulator_t<ReductionOp, ValueT, PrefixT>>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
   static_assert(detail::is_fixed_size_random_access_range_v<Input>,
