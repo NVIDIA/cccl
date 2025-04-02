@@ -327,7 +327,7 @@ TEST_CASE("global devices vector", "[device]")
 
   try
   {
-    [[maybe_unused]] const cudax::device& dev = cudax::devices.at(cudax::devices.size());
+    [[maybe_unused]] const cudax::device& dev = cudax::devices[cudax::devices.size()];
     CUDAX_REQUIRE(false); // should not get here
   }
   catch (const std::out_of_range&)
