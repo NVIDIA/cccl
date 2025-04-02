@@ -243,6 +243,11 @@ protected:
      */
     void erase_all_logical_data();
 
+    ::std::vector<::std::pair<::std::string, size_t>> previous_logical_data_stats;
+
+    // We need logical_data_untyped_impl to be defined to print this
+    void print_logical_data_summary() const;
+
     ::std::unordered_map<int, reserved::logical_data_untyped_impl&> logical_data_ids;
     mutable ::std::mutex logical_data_ids_mutex;
 
@@ -722,6 +727,11 @@ public:
   bool generate_event_symbols() const
   {
     return pimpl->generate_event_symbols;
+  }
+
+  void print_logical_data_summary() const
+  {
+    pimpl->print_logical_data_summary();
   }
 
   cudaGraph_t graph() const
