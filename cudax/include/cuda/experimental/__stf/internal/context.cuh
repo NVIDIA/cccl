@@ -669,12 +669,12 @@ public:
       payload);
   }
 
-  void print_logical_data_summary() const
+  void enable_logical_data_stats()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [&](auto& self) {
-        self.print_logical_data_summary();
+        self.enable_logical_data_stats();
       },
       payload);
   }
