@@ -34,9 +34,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
+#include <cuda/std/__new/bad_alloc.h>
 #include <cuda/std/limits>
-
-#include <stdexcept>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -143,7 +142,7 @@ public:
   {
     if (cnt > this->max_size())
     {
-      throw std::bad_alloc();
+      ::cuda::std::__throw_bad_alloc();
     } // end if
 
     return pointer(device_malloc<T>(cnt));

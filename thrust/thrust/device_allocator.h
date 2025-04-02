@@ -36,8 +36,6 @@
 
 #include <cuda/std/limits>
 
-#include <stdexcept>
-
 THRUST_NAMESPACE_BEGIN
 
 /** \addtogroup allocators Allocators
