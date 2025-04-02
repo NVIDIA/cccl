@@ -60,10 +60,7 @@ def make_cache_key(
 
 
 class _UniqueByKey:
-    _impl = cyb
-
     __slots__ = [
-        "_initialized",
         "build_result",
         "d_in_keys_cccl",
         "d_in_items_cccl",
@@ -82,9 +79,7 @@ class _UniqueByKey:
         d_out_num_selected: DeviceArrayLike,
         op: Callable,
     ):
-        # Referenced from __del__:
-        self.build_result = self._impl.DeviceUniqueByKeyBuildResult()
-        self._initialized = False
+        self.build_result = cyb.DeviceUniqueByKeyBuildResult()
 
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
@@ -101,8 +96,7 @@ class _UniqueByKey:
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
         error = call_build(
-            self._impl.device_unique_by_key_build,
-            self.build_result,
+            self.build_result.build,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
             self.d_out_keys_cccl,
@@ -112,7 +106,6 @@ class _UniqueByKey:
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building unique_by_key")
-        self._initialized = True
 
     def __call__(
         self,
@@ -125,7 +118,6 @@ class _UniqueByKey:
         num_items: int,
         stream=None,
     ):
-        assert self._initialized
         set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
         set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
         set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
@@ -142,8 +134,7 @@ class _UniqueByKey:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = self._impl.device_unique_by_key(
-            self.build_result,
+        error, temp_storage_bytes = self.build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -160,10 +151,6 @@ class _UniqueByKey:
             raise ValueError("Error in unique by key")
 
         return temp_storage_bytes
-
-    def __del__(self):
-        if self._initialized:
-            self._impl.device_unique_by_key_cleanup(self.build_result)
 
 
 @cache_with_key(make_cache_key)

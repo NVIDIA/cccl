@@ -11,8 +11,9 @@ from numba.cuda.cudadrv import enums
 from .. import _cccl_for_cy as cccl
 from .. import _cy_bindings as cyb
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_for_cy import call_build
+from .._cccl_for_cy import call_build, set_cccl_iterator_state
 from .._utils import protocols
+from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
@@ -51,8 +52,6 @@ def make_cache_key(
 
 
 class _MergeSort:
-    _impl = cyb
-
     __slots__ = [
         "d_in_keys_cccl",
         "d_in_items_cccl",
@@ -60,7 +59,6 @@ class _MergeSort:
         "d_out_items_cccl",
         "op_wrapper",
         "build_result",
-        "_initialized",
     ]
 
     def __init__(
@@ -73,9 +71,7 @@ class _MergeSort:
     ):
         assert (d_in_items is None) == (d_out_items is None)
 
-        # Referenced from __del__:
-        self.build_result = self._impl.DeviceMergeSortBuildResult()
-        self._initialized = False
+        self.build_result = cyb.DeviceMergeSortBuildResult()
 
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
@@ -91,8 +87,7 @@ class _MergeSort:
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
         error = call_build(
-            self._impl.device_merge_sort_build,
-            self.build_result,
+            self.build_result.build,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
             self.d_out_keys_cccl,
@@ -101,7 +96,6 @@ class _MergeSort:
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building merge_sort")
-        self._initialized = True
 
     def __call__(
         self,
@@ -117,15 +111,14 @@ class _MergeSort:
         present_out_values = d_out_items is not None
         assert present_in_values == present_out_values
 
-        set_state_fn = cccl.set_cccl_iterator_state
-        set_state_fn(self.d_in_keys_cccl, d_in_keys)
+        set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
         if present_in_values:
-            set_state_fn(self.d_in_items_cccl, d_in_items)
-        set_state_fn(self.d_out_keys_cccl, d_out_keys)
+            set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
+        set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
         if present_out_values:
-            set_state_fn(self.d_out_items_cccl, d_out_items)
+            set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
 
-        stream_handle = protocols.validate_and_get_stream(stream)
+        stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
             temp_storage_bytes = 0
             d_temp_storage = 0
@@ -133,10 +126,9 @@ class _MergeSort:
             temp_storage_bytes = temp_storage.nbytes
             # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
             # TODO: switch to use gpumemoryview once it's ready
-            d_temp_storage = protocols.get_data_pointer(temp_storage)
+            d_temp_storage = get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = self._impl.device_merge_sort(
-            self.build_result,
+        error, temp_storage_bytes = self.build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -152,10 +144,6 @@ class _MergeSort:
             raise ValueError("Error in merge sort")
 
         return temp_storage_bytes
-
-    def __del__(self):
-        if self._initialized:
-            self._impl.device_merge_sort_cleanup(self.build_result)
 
 
 @cache_with_key(make_cache_key)

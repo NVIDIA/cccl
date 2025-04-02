@@ -178,27 +178,25 @@ class CommonData:
 
 class DeviceReduceBuildResult:
     def __init__(self): ...
-
-def device_reduce_build(
-    build_data: DeviceReduceBuildResult,
-    d_in: Iterator,
-    d_out: Iterator,
-    binary_op: Op,
-    h_init: Value,
-    info: CommonData,
-) -> int: ...
-def device_reduce_cleanup(build_data: DeviceReduceBuildResult) -> int: ...
-def device_reduce(
-    build_data: DeviceReduceBuildResult,
-    temp_storage_ptr: int | None,
-    temp_storage_nbytes: int,
-    d_in: Iterator,
-    d_out: Iterator,
-    num_items: int,
-    binary_op: Op,
-    h_init: Value,
-    stream,
-) -> tuple[int, int]: ...
+    def build(
+        self,
+        d_in: Iterator,
+        d_out: Iterator,
+        binary_op: Op,
+        h_init: Value,
+        info: CommonData,
+    ) -> int: ...
+    def compute(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: Value,
+        stream,
+    ) -> tuple[int, int]: ...
 
 # ----------
 # DeviceScan
@@ -206,39 +204,37 @@ def device_reduce(
 
 class DeviceScanBuildResult:
     def __init__(self): ...
-
-def device_scan_build(
-    build_data: DeviceScanBuildResult,
-    d_in: Iterator,
-    d_out: Iterator,
-    binary_op: Op,
-    h_init: Value,
-    force_inclusive: bool,
-    info: CommonData,
-) -> int: ...
-def device_scan_cleanup(build_data: DeviceScanBuildResult) -> int: ...
-def device_inclusive_scan(
-    build_data: DeviceScanBuildResult,
-    temp_storage_ptr: int | None,
-    temp_storage_nbytes: int,
-    d_in: Iterator,
-    d_out: Iterator,
-    num_items: int,
-    binary_op: Op,
-    h_init: Value,
-    stream,
-) -> tuple[int, int]: ...
-def device_exclusive_scan(
-    build_data: DeviceScanBuildResult,
-    temp_storage_ptr: int | None,
-    temp_storage_nbytes: int,
-    d_in: Iterator,
-    d_out: Iterator,
-    num_items: int,
-    binary_op: Op,
-    h_init: Value,
-    stream,
-) -> tuple[int, int]: ...
+    def build(
+        self,
+        d_in: Iterator,
+        d_out: Iterator,
+        binary_op: Op,
+        h_init: Value,
+        force_inclusive: bool,
+        info: CommonData,
+    ) -> int: ...
+    def compute_inclusive(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: Value,
+        stream,
+    ) -> tuple[int, int]: ...
+    def compute_exclusive(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        binary_op: Op,
+        h_init: Value,
+        stream,
+    ) -> tuple[int, int]: ...
 
 # ---------------------
 # DeviceSegmentedReduce
@@ -246,33 +242,29 @@ def device_exclusive_scan(
 
 class DeviceSegmentedReduceBuildResult:
     def __init__(self): ...
-
-def device_segmented_reduce_build(
-    build_data: DeviceSegmentedReduceBuildResult,
-    d_in: Iterator,
-    d_out: Iterator,
-    start_offsets: Iterator,
-    end_offsets: Iterator,
-    binary_op: Op,
-    h_init: Value,
-    info: CommonData,
-) -> int: ...
-def device_segmented_reduce_cleanup(
-    build_data: DeviceSegmentedReduceBuildResult,
-) -> int: ...
-def device_segmented_reduce(
-    build_data: DeviceSegmentedReduceBuildResult,
-    temp_storage_ptr: int | None,
-    temp_storage_nbytes: int,
-    d_in: Iterator,
-    d_out: Iterator,
-    num_items: int,
-    start_offsets: Iterator,
-    end_offsets: Iterator,
-    binary_op: Op,
-    h_init: Value,
-    stream,
-) -> tuple[int, int]: ...
+    def build(
+        self,
+        d_in: Iterator,
+        d_out: Iterator,
+        start_offsets: Iterator,
+        end_offsets: Iterator,
+        binary_op: Op,
+        h_init: Value,
+        info: CommonData,
+    ) -> int: ...
+    def compute(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        start_offsets: Iterator,
+        end_offsets: Iterator,
+        binary_op: Op,
+        h_init: Value,
+        stream,
+    ) -> tuple[int, int]: ...
 
 # ---------------
 # DeviceMergeSort
@@ -280,31 +272,27 @@ def device_segmented_reduce(
 
 class DeviceMergeSortBuildResult:
     def __init__(self): ...
-
-def device_merge_sort_build(
-    build_data: DeviceMergeSortBuildResult,
-    d_in_keys: Iterator,
-    d_in_items: Iterator,
-    d_out_keys: Iterator,
-    d_out_itemss: Iterator,
-    binary_op: Op,
-    info: CommonData,
-) -> int: ...
-def device_merge_sort_cleanup(
-    build_data: DeviceMergeSortBuildResult,
-) -> int: ...
-def device_merge_sort(
-    build_data: DeviceMergeSortBuildResult,
-    temp_storage_ptr: int,
-    temp_storage_nbytes: int,
-    d_in_keys: Iterator,
-    d_in_items: Iterator,
-    d_out_keys: Iterator,
-    d_out_items: Iterator,
-    num_items: int,
-    binary_op: Op,
-    stream,
-) -> tuple[int, int]: ...
+    def build(
+        self,
+        d_in_keys: Iterator,
+        d_in_items: Iterator,
+        d_out_keys: Iterator,
+        d_out_itemss: Iterator,
+        binary_op: Op,
+        info: CommonData,
+    ) -> int: ...
+    def compute(
+        self,
+        temp_storage_ptr: int,
+        temp_storage_nbytes: int,
+        d_in_keys: Iterator,
+        d_in_items: Iterator,
+        d_out_keys: Iterator,
+        d_out_items: Iterator,
+        num_items: int,
+        binary_op: Op,
+        stream,
+    ) -> tuple[int, int]: ...
 
 # -----------------
 # DeviceUniqueByKey
@@ -312,30 +300,26 @@ def device_merge_sort(
 
 class DeviceUniqueByKeyBuildResult:
     def __init__(self): ...
-
-def device_unique_by_key_build(
-    build_data: DeviceUniqueByKeyBuildResult,
-    d_keys_in: Iterator,
-    d_values_in: Iterator,
-    d_keys_out: Iterator,
-    d_values_out: Iterator,
-    d_num_selected_out: Iterator,
-    binary_op: Op,
-    info: CommonData,
-) -> int: ...
-def device_unique_by_key_cleanup(
-    build_data: DeviceUniqueByKeyBuildResult,
-) -> int: ...
-def device_unique_by_key(
-    build_data: DeviceUniqueByKeyBuildResult,
-    temp_storage_ptr: int,
-    temp_storage_nbytes: int,
-    d_keys_in: Iterator,
-    d_values_in: Iterator,
-    d_keys_out: Iterator,
-    d_values_out: Iterator,
-    d_num_selected_out: Iterator,
-    binary_op: Op,
-    num_items: int,
-    stream,
-) -> tuple[int, int]: ...
+    def build(
+        self,
+        d_keys_in: Iterator,
+        d_values_in: Iterator,
+        d_keys_out: Iterator,
+        d_values_out: Iterator,
+        d_num_selected_out: Iterator,
+        binary_op: Op,
+        info: CommonData,
+    ) -> int: ...
+    def compute(
+        self,
+        temp_storage_ptr: int,
+        temp_storage_nbytes: int,
+        d_keys_in: Iterator,
+        d_values_in: Iterator,
+        d_keys_out: Iterator,
+        d_values_out: Iterator,
+        d_num_selected_out: Iterator,
+        binary_op: Op,
+        num_items: int,
+        stream,
+    ) -> tuple[int, int]: ...

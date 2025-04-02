@@ -22,13 +22,8 @@ from ..typing import DeviceArrayLike, GpuStruct
 
 
 class _Scan:
-    # ensure that module is loaded while the class
-    # and its instances a live
-    _impl = cyb
-
     __slots__ = [
         "build_result",
-        "_initialized",
         "d_in_cccl",
         "d_out_cccl",
         "h_init_cccl",
@@ -45,9 +40,7 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         force_inclusive: bool,
     ):
-        # Referenced from __del__:
-        self.build_result = self._impl.DeviceScanBuildResult()
-        self._initialized = False
+        self.build_result = cyb.DeviceScanBuildResult()
 
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
@@ -59,8 +52,7 @@ class _Scan:
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
         error = call_build(
-            self._impl.device_scan_build,
-            self.build_result,
+            self.build_result.build,
             self.d_in_cccl,
             self.d_out_cccl,
             self.op_wrapper,
@@ -69,13 +61,12 @@ class _Scan:
         )
 
         self.device_scan_fn = (
-            self._impl.device_inclusive_scan
+            self.build_result.compute_inclusive
             if force_inclusive
-            else self._impl.device_exclusive_scan
+            else self.build_result.compute_exclusive
         )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building scan")
-        self._initialized = True
 
     def __call__(
         self,
@@ -86,7 +77,6 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         stream=None,
     ):
-        assert self._initialized
         set_cccl_iterator_state(self.d_in_cccl, d_in)
         set_cccl_iterator_state(self.d_out_cccl, d_out)
 
@@ -102,7 +92,6 @@ class _Scan:
             d_temp_storage = get_data_pointer(temp_storage)
 
         error, temp_storage_bytes = self.device_scan_fn(
-            self.build_result,
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -117,10 +106,6 @@ class _Scan:
             raise ValueError("Error reducing")
 
         return temp_storage_bytes
-
-    def __del__(self):
-        if self._initialized:
-            self._impl.device_scan_cleanup(self.build_result)
 
 
 def make_cache_key(
