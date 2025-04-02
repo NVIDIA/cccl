@@ -9,7 +9,7 @@
    [[nodiscard]] __host__ __device__ inline constexpr
    cuda::std::make_unsigned_t<T> uabs(T value) noexcept;
 
-The functions compute the absolute value of the input value. The result is returned as an unsigned integer type of the same size as the input value. In comparison to the standard ``abs`` function, the ``uabs`` eliminates the undefined behaviour when a signed ``T_MIN`` is passed as an input.
+The function computes the absolute value of the input value. The result is returned as an unsigned integer type of the same size as the input value. In comparison to the standard ``abs`` function, the ``uabs`` eliminates the undefined behaviour when a signed ``T_MIN`` is passed as an input.
 
 **Parameters**
 
