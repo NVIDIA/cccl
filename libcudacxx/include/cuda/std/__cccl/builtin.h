@@ -1200,8 +1200,7 @@
 #  define _CCCL_BUILTIN_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
 
-#if _CCCL_COMPILER(MSVC)
-#  // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
+#if _CCCL_COMPILER(MSVC) // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
 #  if _CCCL_COMPILER(MSVC, >=, 19, 35) && _CCCL_CUDACC_AT_LEAST(12, 3)
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
 #  else // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 35) ^^^ / vvv _CCCL_COMPILER(MSVC, <, 19, 35) vvv
