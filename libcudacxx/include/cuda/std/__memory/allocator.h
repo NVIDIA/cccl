@@ -43,18 +43,18 @@ template <class _Tp>
 class allocator;
 
 #if _CCCL_STD_VER <= 2017
-// These specializations shouldn't be marked _LIBCUDACXX_DEPRECATED_IN_CXX17.
+// These specializations shouldn't be marked _LIBCUDACXX_DEPRECATED.
 // Specializing allocator<void> is deprecated, but not using it.
 template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<void>
 {
 public:
-  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17       = void*;
-  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17 = const void*;
-  using value_type _LIBCUDACXX_DEPRECATED_IN_CXX17    = void;
+  using pointer _LIBCUDACXX_DEPRECATED       = void*;
+  using const_pointer _LIBCUDACXX_DEPRECATED = const void*;
+  using value_type _LIBCUDACXX_DEPRECATED    = void;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
+  struct _LIBCUDACXX_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
@@ -64,12 +64,12 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const void>
 {
 public:
-  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17       = const void*;
-  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17 = const void*;
-  using value_type _LIBCUDACXX_DEPRECATED_IN_CXX17    = const void;
+  using pointer _LIBCUDACXX_DEPRECATED       = const void*;
+  using const_pointer _LIBCUDACXX_DEPRECATED = const void*;
+  using value_type _LIBCUDACXX_DEPRECATED    = const void;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
+  struct _LIBCUDACXX_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
@@ -163,43 +163,43 @@ public:
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17         = _Tp*;
-  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17   = const _Tp*;
-  using reference _LIBCUDACXX_DEPRECATED_IN_CXX17       = _Tp&;
-  using const_reference _LIBCUDACXX_DEPRECATED_IN_CXX17 = const _Tp&;
+  using pointer _LIBCUDACXX_DEPRECATED         = _Tp*;
+  using const_pointer _LIBCUDACXX_DEPRECATED   = const _Tp*;
+  using reference _LIBCUDACXX_DEPRECATED       = _Tp&;
+  using const_reference _LIBCUDACXX_DEPRECATED = const _Tp&;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
+  struct _LIBCUDACXX_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI pointer address(reference __x) const noexcept
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI pointer address(reference __x) const noexcept
   {
     return _CUDA_VSTD::addressof(__x);
   }
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
   {
     return _CUDA_VSTD::addressof(__x);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
   {
     return size_type(~0) / sizeof(_Tp);
   }
 
   template <class _Up, class... _Args>
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void construct(_Up* __p, _Args&&... __args)
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI void construct(_Up* __p, _Args&&... __args)
   {
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) noexcept
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -262,39 +262,39 @@ public:
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  using pointer _LIBCUDACXX_DEPRECATED_IN_CXX17         = const _Tp*;
-  using const_pointer _LIBCUDACXX_DEPRECATED_IN_CXX17   = const _Tp*;
-  using reference _LIBCUDACXX_DEPRECATED_IN_CXX17       = const _Tp&;
-  using const_reference _LIBCUDACXX_DEPRECATED_IN_CXX17 = const _Tp&;
+  using pointer _LIBCUDACXX_DEPRECATED         = const _Tp*;
+  using const_pointer _LIBCUDACXX_DEPRECATED   = const _Tp*;
+  using reference _LIBCUDACXX_DEPRECATED       = const _Tp&;
+  using const_reference _LIBCUDACXX_DEPRECATED = const _Tp&;
 
   template <class _Up>
-  struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
+  struct _LIBCUDACXX_DEPRECATED rebind
   {
     using other = allocator<_Up>;
   };
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
   {
     return _CUDA_VSTD::addressof(__x);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp* allocate(size_t __n, const void*)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
   {
     return size_type(~0) / sizeof(_Tp);
   }
 
   template <class _Up, class... _Args>
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void construct(_Up* __p, _Args&&... __args)
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI void construct(_Up* __p, _Args&&... __args)
   {
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) noexcept
+  _LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
