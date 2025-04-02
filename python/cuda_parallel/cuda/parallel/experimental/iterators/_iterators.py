@@ -294,6 +294,45 @@ class CountingIterator(IteratorBase):
         return state[0]
 
 
+class ReverseIteratorKind(IteratorKind):
+    pass
+
+
+def make_reverse_iterator(it):
+    if isinstance(it, IteratorBase) and isinstance(it.cvalue, ctypes.c_void_p):
+        raise NotImplementedError(
+            f"Reverse iterator is not implemented for type {type(it)}"
+        )
+
+    if hasattr(it, "__cuda_array_interface__"):
+        last_element_ptr = get_last_element_ptr(it)
+        it = RawPointer(last_element_ptr, numba.from_dtype(it.dtype))
+
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class ReverseIterator(IteratorBase):
+        iterator_kind_type = ReverseIteratorKind
+
+        def __init__(self, it):
+            self._it = it
+            super().__init__(it.cvalue, it.numba_type, it.value_type)
+
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type(self._it.kind)
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, -distance)
+
+        @staticmethod
+        def dereference(state):
+            return it_dereference(state)
+
+    return ReverseIterator(it)
+
+
 class TransformIteratorKind(IteratorKind):
     pass
 
@@ -395,42 +434,3 @@ def get_last_element_ptr(device_array) -> int:
 
     ptr = get_data_pointer(device_array)
     return ptr + offset
-
-
-class ReverseIteratorKind(IteratorKind):
-    pass
-
-
-def make_reverse_iterator(it):
-    if isinstance(it, IteratorBase) and isinstance(it.cvalue, ctypes.c_void_p):
-        raise NotImplementedError(
-            f"Reverse iterator is not implemented for type {type(it)}"
-        )
-
-    if hasattr(it, "__cuda_array_interface__"):
-        last_element_ptr = get_last_element_ptr(it)
-        it = RawPointer(last_element_ptr, numba.from_dtype(it.dtype))
-
-    it_advance = cuda.jit(type(it).advance, device=True)
-    it_dereference = cuda.jit(type(it).dereference, device=True)
-
-    class ReverseIterator(IteratorBase):
-        iterator_kind_type = ReverseIteratorKind
-
-        def __init__(self, it):
-            self._it = it
-            super().__init__(it.cvalue, it.numba_type, it.value_type)
-
-        @property
-        def kind(self):
-            return self.__class__.iterator_kind_type(self._it.kind)
-
-        @staticmethod
-        def advance(state, distance):
-            return it_advance(state, -distance)
-
-        @staticmethod
-        def dereference(state):
-            return it_dereference(state)
-
-    return ReverseIterator(it)
