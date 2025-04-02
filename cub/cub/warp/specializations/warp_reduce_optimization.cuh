@@ -26,6 +26,9 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__internal/namespaces.h"
+#include "cuda/std/__type_traits/is_unsigned.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -191,15 +194,15 @@ template <unsigned LogicalWarpSize, typename Input, typename ReductionOp>
   constexpr auto mask = cub::detail::member_mask<LogicalWarpSize>(single_reduction);
   if constexpr (is_cuda_std_bit_and_v<ReductionOp, Input>)
   {
-    return static_cast<Input>(::__reduce_and_sync(mask, static_cast<uint32_t>(input)));
+    return static_cast<Input>(::__reduce_and_sync(mask, input));
   }
   else if constexpr (is_cuda_std_bit_or_v<ReductionOp, Input>)
   {
-    return static_cast<Input>(::__reduce_or_sync(mask, static_cast<uint32_t>(input)));
+    return static_cast<Input>(::__reduce_or_sync(mask, input));
   }
   else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, Input>)
   {
-    return static_cast<Input>(::__reduce_xor_sync(mask, static_cast<uint32_t>(input)));
+    return static_cast<Input>(::__reduce_xor_sync(mask, input));
   }
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input>)
   {
@@ -423,9 +426,10 @@ template <int LogicalWarpSize,
   {
     constexpr auto num_bits = _CUDA_VSTD::__num_bits_v<Input>;
     using signed_t          = _CUDA_VSTD::__make_nbit_int_t<num_bits, true>;
-    auto result             = warp_reduce_dispatch<LogicalWarpSize>(
-      _CUDA_VSTD::bit_cast<signed_t>(input), reduction_op, warp_mode, result_mode);
-    return _CUDA_VSTD::bit_cast<Input>(result);
+    auto a                  = _CUDA_VSTD::bit_cast<signed_t>(input);
+    auto result =
+      warp_reduce_dispatch<LogicalWarpSize>((int) (a < 0 ? 0x80000000 - a : a), reduction_op, warp_mode, result_mode);
+    return _CUDA_VSTD::bit_cast<Input>(result < 0 ? (unsigned) 0x80000000 - result : (unsigned) result);
   }
   else if constexpr (is_complex_v<Input> && is_cuda_std_plus_v<ReductionOp, Input>)
   {
@@ -451,14 +455,13 @@ template <int LogicalWarpSize,
       return Input{real, img};
     }
   }
-  else if constexpr (is_small_integer && warp_mode == single_reduction)
-  {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                      (return warp_reduce_sm80<LogicalWarpSize>(input, reduction_op);),
-                      (return warp_reduce_sm30<LogicalWarpSize>(input, reduction_op, single_reduction, result_mode);));
-  }
   else if constexpr (is_small_integer || is_supported_floating_point)
   {
+    static_assert(!cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> || _CUDA_VSTD::is_unsigned_v<Input>);
+    if constexpr (is_small_integer && warp_mode == single_reduction)
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_sm80<LogicalWarpSize>(input, reduction_op);));
+    }
     return warp_reduce_sm30<LogicalWarpSize>(input, reduction_op, warp_mode, result_mode);
   }
   else if constexpr (_CUDA_VSTD::is_integral_v<Input> && sizeof(Input) > sizeof(uint32_t))

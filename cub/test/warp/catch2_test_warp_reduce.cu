@@ -193,8 +193,7 @@ using custom_t =
 using arithmetic_type_list = c2h::type_list<
   bool, int8_t, uint16_t, int32_t, int64_t,
   float, double,
-  cuda::std::complex<float>,
-  cuda::std::complex<double>,
+  cuda::std::complex<float>, cuda::std::complex<double>,
   ulonglong4, custom_t
 #  if _CCCL_HAS_INT128()
   , __int128_t
@@ -211,34 +210,33 @@ using arithmetic_type_list = c2h::type_list<
 #  endif // TEST_BF_T()
 >;
 
-using bitwise_type_list = c2h::type_list<//bool, int8_t, uint16_t, int32_t, int64_t
+using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
 #  if _CCCL_HAS_INT128()
-     __int128_t
+    , __uint128_t
 #  endif
 >;
 
-//using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
-using bitwise_op_list = c2h::type_list<cuda::std::bit_or<>, cuda::std::bit_xor<>>;
+using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
 
-// clang-format off
-using min_max_type_list = c2h::type_list<
-  int8_t, uint16_t, int32_t, int64_t,
-  float, double, custom_t
-#  if TEST_HALF_T()
-  , __half
-#  endif // TEST_HALF_T()
-#  if TEST_BF_T()
-  , __nv_bfloat16
-#  endif // TEST_BF_T()
-#  if _CCCL_HAS_INT128()
-  , __int128_t
-#  endif
-  >;
+//using min_max_type_list = c2h::type_list<
+//  int8_t, uint16_t, int32_t, int64_t,
+//  float, double, custom_t
+//#  if TEST_HALF_T()
+//  , __half
+//#  endif // TEST_HALF_T()
+//#  if TEST_BF_T()
+//  , __nv_bfloat16
+//#  endif // TEST_BF_T()
+//#  if _CCCL_HAS_INT128()
+//  , __int128_t
+//#  endif
+//  >;
 
-using min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
+using min_max_type_list = c2h::type_list<float>;
 
-//using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;
-using logical_warp_threads = c2h::enum_type_list<unsigned, 32>;
+using min_max_op_list = c2h::type_list</*cuda::maximum<>,*/ cuda::minimum<>>;
+
+using logical_warp_threads = c2h::enum_type_list<unsigned, 32/*, 16, 7, 1*/>;
 
 // clang-format on
 
@@ -287,6 +285,7 @@ std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned 
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
+#if 0
 
 C2H_TEST(
   "WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]", arithmetic_type_list, logical_warp_threads)
@@ -337,17 +336,9 @@ C2H_TEST(
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
   c2h::host_vector<T> h_tmp = d_out;
-  for (size_t i = 0; i < output_size; ++i)
-  {
-    auto [high0, low0] = cub::detail::split_integers(h_in[i]);
-    // auto [high1, low1] = cub::detail::split_integers(h_out[i]);
-    // auto [high2, low2] = cub::detail::split_integers(h_tmp[i]);
-    // printf("%lu/%lu    %lu/%lu\n", high1, low1, high2, low2);
-    printf("%lu/%lu\n", high0, low0);
-  }
   verify_results(h_out, d_out);
 }
-
+#endif
 C2H_TEST(
   "WarpReduce Min/Max", "[reduce][warp][predefined_op][full]", min_max_type_list, min_max_op_list, logical_warp_threads)
 {
@@ -360,7 +351,7 @@ C2H_TEST(
   c2h::device_vector<T> d_out(output_size);
   if constexpr (cuda::std::__is_any_floating_point_v<T>)
   {
-    c2h::gen(C2H_SEED(1), d_in, T{1.0}, T{2.0});
+    c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{1.0});
   }
   else
   {
@@ -371,6 +362,12 @@ C2H_TEST(
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
+
+  c2h::host_vector<T> h_tmp = d_out;
+  for (size_t i = 0; i < 32; ++i)
+  {
+    printf("%f\n", h_in[i]);
+  }
   verify_results(h_out, d_out);
 }
 

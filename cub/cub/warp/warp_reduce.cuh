@@ -151,7 +151,9 @@ class WarpReduce
   static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpThreads});
 
   static constexpr auto reduce_logical_mode_default =
-    is_power_of_two ? detail::ReduceLogicalMode::MultipleReductions : detail::ReduceLogicalMode::SingleReduction;
+    is_power_of_two && LogicalWarpThreads < detail::warp_threads
+      ? detail::ReduceLogicalMode::MultipleReductions
+      : detail::ReduceLogicalMode::SingleReduction;
 
   static constexpr auto warp_reduce_result_mode_default = detail::WarpReduceResultMode::SingleLane;
 
