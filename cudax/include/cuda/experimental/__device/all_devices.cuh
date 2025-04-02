@@ -113,7 +113,15 @@ struct all_devices::__initializer_iterator
 {
   if (__id_ >= size())
   {
-    _CUDA_VSTD::__throw_out_of_range("device index out of range: " + std::to_string(__id_));
+    if (size() == 0)
+    {
+      _CUDA_VSTD::__throw_out_of_range("device was requested but no CUDA devices found");
+    }
+    else
+    {
+      _CUDA_VSTD::__throw_out_of_range(
+        (::std::string("device index out of range: ") + ::std::to_string(__id_)).c_str());
+    }
   }
   return __devices()[__id_];
 }
