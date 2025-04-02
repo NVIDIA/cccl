@@ -42,43 +42,45 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
           static_cast<void (*)(void*, uint64_t*)>(cuda::ptx::clusterlaunchcontrol_try_cancel_multicast));));
 #endif // __cccl_ptx_isa >= 860
 
-#if __cccl_ptx_isa >= 860
+#if _CCCL_HAS_INT128()
+#  if __cccl_ptx_isa >= 860
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 pred_is_canceled, try_cancel_response;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<bool (*)(__int128)>(cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled));));
-#endif // __cccl_ptx_isa >= 860
+#  endif // __cccl_ptx_isa >= 860
 
-#if __cccl_ptx_isa >= 860
+#  if __cccl_ptx_isa >= 860
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 ret_dim, try_cancel_response;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(__int128)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_x));));
-#endif // __cccl_ptx_isa >= 860
+#  endif // __cccl_ptx_isa >= 860
 
-#if __cccl_ptx_isa >= 860
+#  if __cccl_ptx_isa >= 860
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 ret_dim, try_cancel_response;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(__int128)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_y));));
-#endif // __cccl_ptx_isa >= 860
+#  endif // __cccl_ptx_isa >= 860
 
-#if __cccl_ptx_isa >= 860
+#  if __cccl_ptx_isa >= 860
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 ret_dim, try_cancel_response;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<int32_t (*)(__int128)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid_z));));
-#endif // __cccl_ptx_isa >= 860
+#  endif // __cccl_ptx_isa >= 860
 
-#if __cccl_ptx_isa >= 860
+#  if __cccl_ptx_isa >= 860
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (
                    // clusterlaunchcontrol.query_cancel.get_first_ctaid.v4.b32.b128 block_dim, try_cancel_response;
                    * fn_ptr++ = reinterpret_cast<void*>(static_cast<void (*)(int32_t(&block_dim)[4], __int128)>(
                      cuda::ptx::clusterlaunchcontrol_query_cancel_get_first_ctaid));));
-#endif // __cccl_ptx_isa >= 860
+#  endif // __cccl_ptx_isa >= 860
+#endif // _CCCL_HAS_INT128()
 }
