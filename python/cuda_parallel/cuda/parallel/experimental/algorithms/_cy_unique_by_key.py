@@ -11,8 +11,9 @@ from numba.cuda.cudadrv import enums
 from .. import _cccl_for_cy as cccl
 from .. import _cy_bindings as cyb
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_for_cy import call_build
+from .._cccl_for_cy import call_build, set_cccl_iterator_state
 from .._utils import protocols
+from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
@@ -125,14 +126,13 @@ class _UniqueByKey:
         stream=None,
     ):
         assert self._initialized
-        set_state_fn = cccl.set_cccl_iterator_state
-        set_state_fn(self.d_in_keys_cccl, d_in_keys)
-        set_state_fn(self.d_in_items_cccl, d_in_items)
-        set_state_fn(self.d_out_keys_cccl, d_out_keys)
-        set_state_fn(self.d_out_items_cccl, d_out_items)
-        set_state_fn(self.d_out_num_selected_cccl, d_out_num_selected)
+        set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
+        set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
+        set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
+        set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
+        set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
-        stream_handle = protocols.validate_and_get_stream(stream)
+        stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
             temp_storage_bytes = 0
             d_temp_storage = 0
@@ -140,7 +140,7 @@ class _UniqueByKey:
             temp_storage_bytes = temp_storage.nbytes
             # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
             # TODO: switch to use gpumemoryview once it's ready
-            d_temp_storage = protocols.get_data_pointer(temp_storage)
+            d_temp_storage = get_data_pointer(temp_storage)
 
         error, temp_storage_bytes = self._impl.device_unique_by_key(
             self.build_result,

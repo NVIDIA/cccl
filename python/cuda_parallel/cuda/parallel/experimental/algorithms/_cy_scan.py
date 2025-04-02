@@ -14,8 +14,9 @@ from numba.cuda.cudadrv import enums
 from .. import _cccl_for_cy as cccl
 from .. import _cy_bindings as cyb
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_for_cy import call_build
+from .._cccl_for_cy import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
+from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike, GpuStruct
 
@@ -86,20 +87,19 @@ class _Scan:
         stream=None,
     ):
         assert self._initialized
-        set_state_fn = cccl.set_cccl_iterator_state
-        set_state_fn(self.d_in_cccl, d_in)
-        set_state_fn(self.d_out_cccl, d_out)
+        set_cccl_iterator_state(self.d_in_cccl, d_in)
+        set_cccl_iterator_state(self.d_out_cccl, d_out)
 
-        self.h_init_cccl.state = cccl.to_cccl_value_state(h_init)
+        self.h_init_cccl.state = to_cccl_value_state(h_init)
 
-        stream_handle = protocols.validate_and_get_stream(stream)
+        stream_handle = validate_and_get_stream(stream)
 
         if temp_storage is None:
             temp_storage_bytes = 0
             d_temp_storage = 0
         else:
             temp_storage_bytes = temp_storage.nbytes
-            d_temp_storage = protocols.get_data_pointer(temp_storage)
+            d_temp_storage = get_data_pointer(temp_storage)
 
         error, temp_storage_bytes = self.device_scan_fn(
             self.build_result,
