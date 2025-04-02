@@ -21,12 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/climits>
-#include <cuda/std/complex>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

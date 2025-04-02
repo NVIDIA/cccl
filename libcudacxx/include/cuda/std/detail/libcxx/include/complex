@@ -242,6 +242,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/__complex/vector_support.h>
 #include <cuda/std/__fwd/get.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
@@ -427,29 +428,6 @@ public:
     return *this;
   }
 };
-
-template <class _Tp>
-struct __is_complex : false_type
-{};
-
-template <class _Tp>
-struct __is_complex<complex<_Tp>> : true_type
-{};
-
-template <class _Tp>
-struct __is_complex<const complex<_Tp>> : true_type
-{};
-
-template <class _Tp>
-struct __is_complex<volatile complex<_Tp>> : true_type
-{};
-
-template <class _Tp>
-struct __is_complex<const volatile complex<_Tp>> : true_type
-{};
-
-template <class _Tp>
-inline constexpr bool __is_complex_v = __is_complex<_Tp>::value;
 
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
