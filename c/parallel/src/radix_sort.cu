@@ -47,8 +47,8 @@ struct agent_radix_sort_downsweep_policy
 
 struct agent_radix_sort_upsweep_policy
 {
-  int items_per_thread;
   int block_threads;
+  int items_per_thread;
   int radix_bits;
 
   int BlockThreads() const
@@ -223,13 +223,15 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
   const int single_tile_radix_bits                               = (key_size > 1) ? 6 : 5;
   const auto [onesweep_items_per_thread, onesweep_block_threads] = reg_bound_scaling(256, 21, key_size);
   // const auto [scan_items_per_thread, scan_block_threads]         = mem_bound_scaling(512, 23, key_size);
-  const int scan_items_per_thread = 10;
+  const int scan_items_per_thread = 5;
   const int scan_block_threads    = 512;
   // const auto [downsweep_items_per_thread, downsweep_block_threads] = mem_bound_scaling(160, 39, key_size);
-  const int downsweep_items_per_thread                                     = 10;
-  const int downsweep_block_threads                                        = 160;
-  const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16, key_size);
-  const auto [single_tile_items_per_thread, single_tile_block_threads]     = mem_bound_scaling(256, 19, key_size);
+  const int downsweep_items_per_thread = 5;
+  const int downsweep_block_threads    = 160;
+  // const auto [alt_downsweep_items_per_thread, alt_downsweep_block_threads] = mem_bound_scaling(256, 16, key_size);
+  const int alt_downsweep_items_per_thread                             = 5;
+  const int alt_downsweep_block_threads                                = 256;
+  const auto [single_tile_items_per_thread, single_tile_block_threads] = mem_bound_scaling(256, 19, key_size);
 
   return {{256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits},
           {256, onesweep_radix_bits},
@@ -237,8 +239,8 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
           {scan_block_threads, scan_items_per_thread},
           {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
           {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
-          {downsweep_items_per_thread, downsweep_block_threads, primary_radix_bits},
-          {alt_downsweep_items_per_thread, alt_downsweep_block_threads, primary_radix_bits - 1},
+          {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
+          {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
           {single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits},
           false};
 };

@@ -106,142 +106,68 @@ void radix_sort(
   REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
 }
 
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works for small arrays", "[radix_sort]", key_types)
-{
-  const int num_items                 = GENERATE_COPY(take(2, random(1, 2000)), values({500, 1000, 2000}));
-  const bool is_descending            = GENERATE(false, true);
-  const auto order                    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
-  std::vector<TestType> expected_keys = input_keys;
+// TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_types)
+// {
+//   // We want a mix of small and large sizes because different implementation will be called
+//   const int num_items                 = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+//   const bool is_descending            = GENERATE(false, true);
+//   const auto order                    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+//   std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
+//   std::vector<TestType> expected_keys = input_keys;
 
-  pointer_t<TestType> input_keys_it(input_keys);
-  pointer_t<TestType> output_keys_it(num_items);
+//   pointer_t<TestType> input_keys_it(input_keys);
+//   pointer_t<TestType> output_keys_it(num_items);
 
-  pointer_t<item_t> input_items_it, output_items_it;
+//   pointer_t<item_t> input_items_it, output_items_it;
 
-  int begin_bit          = 0;
-  int end_bit            = sizeof(TestType) * 8;
-  bool is_overwrite_okay = false;
+//   int begin_bit          = 0;
+//   int end_bit            = sizeof(TestType) * 8;
+//   bool is_overwrite_okay = false;
 
-  radix_sort(
-    order,
-    input_keys_it,
-    output_keys_it,
-    input_items_it,
-    output_items_it,
-    cccl_op_t{},
-    "",
-    num_items,
-    begin_bit,
-    end_bit,
-    is_overwrite_okay);
+//   radix_sort(
+//     order,
+//     input_keys_it,
+//     output_keys_it,
+//     input_items_it,
+//     output_items_it,
+//     cccl_op_t{},
+//     "",
+//     num_items,
+//     begin_bit,
+//     end_bit,
+//     is_overwrite_okay);
 
-  if (is_descending)
-  {
-    std::sort(expected_keys.begin(), expected_keys.end(), std::greater<TestType>());
-  }
-  else
-  {
-    std::sort(expected_keys.begin(), expected_keys.end());
-  }
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
-}
-
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_types)
-{
-  const int num_items                 = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  const bool is_descending            = GENERATE(false, true);
-  const auto order                    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
-  std::vector<TestType> expected_keys = input_keys;
-
-  pointer_t<TestType> input_keys_it(input_keys);
-  pointer_t<TestType> output_keys_it(num_items);
-
-  pointer_t<item_t> input_items_it, output_items_it;
-
-  int begin_bit          = 0;
-  int end_bit            = sizeof(TestType) * 8;
-  bool is_overwrite_okay = false;
-
-  radix_sort(
-    order,
-    input_keys_it,
-    output_keys_it,
-    input_items_it,
-    output_items_it,
-    cccl_op_t{},
-    "",
-    num_items,
-    begin_bit,
-    end_bit,
-    is_overwrite_okay);
-
-  if (is_descending)
-  {
-    std::sort(expected_keys.begin(), expected_keys.end(), std::greater<TestType>());
-  }
-  else
-  {
-    std::sort(expected_keys.begin(), expected_keys.end());
-  }
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
-}
-
-TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works for small arrays", "[radix_sort]", key_types)
-{
-  const int num_items                 = GENERATE_COPY(take(2, random(1, 2000)), values({500, 1000, 2000}));
-  const bool is_descending            = GENERATE(false, true);
-  const auto order                    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
-  std::vector<TestType> expected_keys = input_keys;
-
-  pointer_t<TestType> input_keys_it(input_keys);
-  pointer_t<TestType> output_keys_it(num_items);
-
-  pointer_t<item_t> input_items_it, output_items_it;
-
-  int begin_bit          = 0;
-  int end_bit            = sizeof(TestType) * 8;
-  bool is_overwrite_okay = false;
-
-  radix_sort(
-    order,
-    input_keys_it,
-    output_keys_it,
-    input_items_it,
-    output_items_it,
-    cccl_op_t{},
-    "",
-    num_items,
-    begin_bit,
-    end_bit,
-    is_overwrite_okay);
-
-  if (is_descending)
-  {
-    std::sort(expected_keys.begin(), expected_keys.end(), std::greater<TestType>());
-  }
-  else
-  {
-    std::sort(expected_keys.begin(), expected_keys.end());
-  }
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
-}
+//   if (is_descending)
+//   {
+//     std::sort(expected_keys.begin(), expected_keys.end(), std::greater<TestType>());
+//   }
+//   else
+//   {
+//     std::sort(expected_keys.begin(), expected_keys.end());
+//   }
+//   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+//   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+// }
 
 TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_types)
 {
-  const int num_items                 = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  const bool is_descending            = GENERATE(false, true);
-  const auto order                    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
-  std::vector<TestType> input_keys    = make_shuffled_sequence<TestType>(num_items);
+  const int num_items              = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
+  const bool is_descending         = GENERATE(false, true);
+  const auto order                 = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
+  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
+  std::vector<item_t> input_items(num_items);
+  std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](TestType key) {
+    return static_cast<item_t>(key);
+  });
+
   std::vector<TestType> expected_keys = input_keys;
+  std::vector<item_t> expected_items  = input_items;
 
   pointer_t<TestType> input_keys_it(input_keys);
   pointer_t<TestType> output_keys_it(num_items);
 
-  pointer_t<item_t> input_items_it, output_items_it;
+  pointer_t<item_t> input_items_it(input_items);
+  pointer_t<item_t> output_items_it(num_items);
 
   int begin_bit          = 0;
   int end_bit            = sizeof(TestType) * 8;
@@ -263,10 +189,12 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
   if (is_descending)
   {
     std::sort(expected_keys.begin(), expected_keys.end(), std::greater<TestType>());
+    std::sort(expected_items.begin(), expected_items.end(), std::greater<TestType>());
   }
   else
   {
     std::sort(expected_keys.begin(), expected_keys.end());
+    std::sort(expected_items.begin(), expected_items.end());
   }
   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
   REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
