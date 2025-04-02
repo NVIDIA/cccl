@@ -37,7 +37,7 @@ _CCCL_HOST_DEVICE inline complex<float> cprojf(const complex<float>& z)
   }
   else
   {
-    // std::numeric_limits<T>::infinity() doesn't run on the GPU
+    // ::cuda::std::numeric_limits<T>::infinity() doesn't run on the GPU
     return complex<float>(infinity<float>(), copysignf(0.0, z.imag()));
   }
 }
@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE inline complex<double> cproj(const complex<double>& z)
   }
   else
   {
-    // std::numeric_limits<T>::infinity() doesn't run on the GPU
+    // ::cuda::std::numeric_limits<T>::infinity() doesn't run on the GPU
     return complex<double>(infinity<double>(), copysign(0.0, z.imag()));
   }
 }

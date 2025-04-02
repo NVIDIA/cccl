@@ -201,7 +201,7 @@ public:
   {
     value_type tmp    = *this;
     value_type result = tmp++;
-    *this             = std::move(tmp);
+    *this             = ::cuda::std::move(tmp);
     return result;
   }
 
@@ -212,7 +212,7 @@ public:
     // system, is to get a copy of it, modify the copy, and then update it.
     value_type tmp = *this;
     --tmp;
-    *this = std::move(tmp);
+    *this = ::cuda::std::move(tmp);
     return derived();
   }
 
@@ -220,7 +220,7 @@ public:
   {
     value_type tmp    = *this;
     value_type result = tmp--;
-    *this             = std::move(tmp);
+    *this             = ::cuda::std::move(tmp);
     return derived();
   }
 

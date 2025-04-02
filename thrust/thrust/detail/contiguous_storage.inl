@@ -32,8 +32,9 @@
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
 
+#include <cuda/std/utility> // for use of std::swap in the WAR below
+
 #include <stdexcept> // for std::runtime_error
-#include <utility> // for use of std::swap in the WAR below
 
 #include <nv/target>
 
@@ -258,8 +259,8 @@ _CCCL_HOST_DEVICE contiguous_storage<T, Alloc>& contiguous_storage<T, Alloc>::op
     m_allocator = ::cuda::std::move(other.m_allocator);
   }
 
-  m_begin = std::move(other.m_begin);
-  m_size  = std::move(other.m_size);
+  m_begin = ::cuda::std::move(other.m_begin);
+  m_size  = ::cuda::std::move(other.m_size);
 
   other.m_begin = pointer(static_cast<T*>(0));
   other.m_size  = 0;

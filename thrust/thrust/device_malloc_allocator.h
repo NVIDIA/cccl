@@ -34,7 +34,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
-#include <limits>
+#include <cuda/std/limits>
+
 #include <stdexcept>
 
 THRUST_NAMESPACE_BEGIN
@@ -164,7 +165,7 @@ public:
    */
   inline size_type max_size() const
   {
-    return (std::numeric_limits<size_type>::max)() / sizeof(T);
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   } // end max_size()
 
   /*! Compares against another \p device_malloc_allocator for equality.

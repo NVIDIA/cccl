@@ -40,7 +40,7 @@
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 
-#  include <cassert>
+#  include <cuda/std/cassert>
 
 #  include <nv/target>
 
