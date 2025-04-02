@@ -71,14 +71,14 @@ class view_interface
 public:
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(forward_range<_D2>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }
 
   _CCCL_TEMPLATE(class _D2 = _Derived)
   _CCCL_REQUIRES(forward_range<const _D2>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }

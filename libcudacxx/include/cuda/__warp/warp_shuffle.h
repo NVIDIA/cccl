@@ -45,7 +45,7 @@ struct WarpShuffleResult
   bool pred;
 
   template <typename _Up = _Tp>
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE
   operator cuda::std::enable_if_t<!cuda::std::is_array_v<_Up>, _Up>() const
   {
     return data;
@@ -53,7 +53,7 @@ struct WarpShuffleResult
 };
 
 template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_idx(
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_idx(
   const _Tp& __data, int __src_lane, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
   constexpr auto __warp_size   = 32u;
@@ -89,14 +89,14 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shu
 }
 
 template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_idx(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::device::warp_shuffle_idx(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
 template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shuffle_up(
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shuffle_up(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
   constexpr auto __warp_size   = 32u;
@@ -138,14 +138,14 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp> warp_shu
 }
 
 template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_up(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::device::warp_shuffle_up(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
 template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_down(
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_down(
   const _Tp& __data, int __delta, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
   constexpr auto __warp_size   = 32u;
@@ -187,14 +187,14 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shu
 }
 
 template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Tp>
 warp_shuffle_down(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::device::warp_shuffle_down(__data, __src_lane, 0xFFFFFFFF, __width);
 }
 
 template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_xor(
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shuffle_xor(
   const _Tp& __data, int __xor_mask, uint32_t __lane_mask = 0xFFFFFFFF, _CUDA_VSTD::integral_constant<int, _Width> = {})
 {
   constexpr auto __warp_size   = 32u;
@@ -236,7 +236,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up> warp_shu
 }
 
 template <int _Width, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE WarpShuffleResult<_Up>
 warp_shuffle_xor(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constant<int, _Width> __width)
 {
   return ::cuda::device::warp_shuffle_xor(__data, __src_lane, 0xFFFFFFFF, __width);

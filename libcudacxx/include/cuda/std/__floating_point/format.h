@@ -47,7 +47,7 @@ enum class __fp_format
 };
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_format __fp_format_of_v_impl() noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_format __fp_format_of_v_impl() noexcept
 {
   if constexpr (_CCCL_TRAIT(is_same, _Tp, float))
   {

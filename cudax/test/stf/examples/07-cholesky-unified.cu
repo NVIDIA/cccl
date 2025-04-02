@@ -179,7 +179,7 @@ public:
               sA(lrow, lcol) = fun(*self, row, col);
             }
           }
-        }
+        };
       }
     }
   }

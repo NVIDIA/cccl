@@ -166,6 +166,60 @@ inline constexpr bool __fp_has_denorm_v = true;
 template <>
 inline constexpr bool __fp_has_denorm_v<__fp_format::__fp8_nv_e8m0> = false;
 
+// __fp_has_inf_v
+
+template <__fp_format _Fmt>
+inline constexpr bool __fp_has_inf_v = true;
+
+template <>
+inline constexpr bool __fp_has_inf_v<__fp_format::__fp8_nv_e4m3> = false;
+
+template <>
+inline constexpr bool __fp_has_inf_v<__fp_format::__fp8_nv_e8m0> = false;
+
+template <>
+inline constexpr bool __fp_has_inf_v<__fp_format::__fp6_nv_e2m3> = false;
+
+template <>
+inline constexpr bool __fp_has_inf_v<__fp_format::__fp6_nv_e3m2> = false;
+
+template <>
+inline constexpr bool __fp_has_inf_v<__fp_format::__fp4_nv_e2m1> = false;
+
+// __fp_has_nan_v
+
+template <__fp_format _Fmt>
+inline constexpr bool __fp_has_nan_v = true;
+
+template <>
+inline constexpr bool __fp_has_nan_v<__fp_format::__fp6_nv_e2m3> = false;
+
+template <>
+inline constexpr bool __fp_has_nan_v<__fp_format::__fp6_nv_e3m2> = false;
+
+template <>
+inline constexpr bool __fp_has_nan_v<__fp_format::__fp4_nv_e2m1> = false;
+
+// __fp_has_nans_v
+
+template <__fp_format _Fmt>
+inline constexpr bool __fp_has_nans_v = true;
+
+template <>
+inline constexpr bool __fp_has_nans_v<__fp_format::__fp8_nv_e4m3> = false;
+
+template <>
+inline constexpr bool __fp_has_nans_v<__fp_format::__fp8_nv_e8m0> = false;
+
+template <>
+inline constexpr bool __fp_has_nans_v<__fp_format::__fp6_nv_e2m3> = false;
+
+template <>
+inline constexpr bool __fp_has_nans_v<__fp_format::__fp6_nv_e3m2> = false;
+
+template <>
+inline constexpr bool __fp_has_nans_v<__fp_format::__fp4_nv_e2m1> = false;
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___FLOATING_POINT_PROPERTIES_H

@@ -33,10 +33,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t, cuda::std::round_toward_zero>();
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t, cuda::std::round_toward_zero>();
   test<char32_t, cuda::std::round_toward_zero>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short, cuda::std::round_toward_zero>();
   test<unsigned short, cuda::std::round_toward_zero>();
   test<int, cuda::std::round_toward_zero>();

@@ -3397,7 +3397,7 @@ year_month_weekday_last::operator-=(const years& __dy) noexcept
   return *this;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned
 __hh_mm_ss_width(uint64_t __n, uint64_t __d = 10, unsigned __w = 0)
 {
   if (__n >= 2 && __d != 0 && __w < 19)

@@ -58,8 +58,8 @@ namespace detail
  * Generic Array-like to Array Conversion
  **********************************************************************************************************************/
 
-template <typename CastType, typename Input, size_t... i>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
+template <typename CastType, typename Input, ::cuda::std::size_t... i>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::detail::static_size_v<Input>()>
 to_array_impl(const Input& input, ::cuda::std::index_sequence<i...>)
 {
   using ArrayType = ::cuda::std::array<CastType, static_size_v<Input>>;
@@ -67,7 +67,7 @@ to_array_impl(const Input& input, ::cuda::std::index_sequence<i...>)
 }
 
 template <typename CastType = void, typename Input>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, static_size_v<Input>>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::detail::static_size_v<Input>()>
 to_array(const Input& input)
 {
   using InputType = cuda::std::iter_value_t<Input>;

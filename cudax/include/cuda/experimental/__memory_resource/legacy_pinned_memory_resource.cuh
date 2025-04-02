@@ -52,8 +52,8 @@ public:
   //! @param __alignment The requested alignment of the allocation.
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
-  _CCCL_NODISCARD void* allocate(const size_t __bytes,
-                                 const size_t __alignment = _CUDA_VMR::default_cuda_malloc_host_alignment) const
+  [[nodiscard]] void* allocate(const size_t __bytes,
+                               const size_t __alignment = _CUDA_VMR::default_cuda_malloc_host_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
@@ -83,7 +83,7 @@ public:
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with the same flags.
-  _CCCL_NODISCARD constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] constexpr bool operator==(legacy_pinned_memory_resource const&) const noexcept
   {
     return true;
   }
@@ -91,7 +91,7 @@ public:
   //! @brief Equality comparison with another \c legacy_pinned_memory_resource.
   //! @param __other The other \c legacy_pinned_memory_resource.
   //! @return Whether both \c legacy_pinned_memory_resource were constructed with different flags.
-  _CCCL_NODISCARD constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
+  [[nodiscard]] constexpr bool operator!=(legacy_pinned_memory_resource const&) const noexcept
   {
     return false;
   }

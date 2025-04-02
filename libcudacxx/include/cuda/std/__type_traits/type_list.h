@@ -313,10 +313,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
 
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
-#  ifndef _CCCL_NO_INLINE_VARIABLES
 template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
-#  endif // !_CCCL_NO_INLINE_VARIABLES
 
 //! \brief A pointer to a type list, often used as a function argument.
 template <class... _Ts>
@@ -450,7 +448,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <=, 19)
+#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")

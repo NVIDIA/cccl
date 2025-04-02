@@ -270,7 +270,7 @@ inline constexpr bool enable_sm70_simd_reduction_v = false;
 // All architectures SIMD
 
 template <typename Input, typename ReductionOp, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
 {
   using T = _CUDA_VSTD::iter_value_t<Input>;
   if constexpr (!_CUDA_VSTD::is_same_v<T, AccumT>)
@@ -361,8 +361,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_red
  **********************************************************************************************************************/
 
 template <typename AccumT, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 {
   auto retval = static_cast<AccumT>(input[0]);
   _CCCL_PRAGMA_UNROLL_FULL()
@@ -374,8 +373,7 @@ ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
@@ -392,8 +390,7 @@ ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 }
 
 template <typename AccumT, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = cub::detail::static_size_v<Input>;
   auto array            = cub::detail::to_array<AccumT>(input);
@@ -468,7 +465,7 @@ inline constexpr bool enable_min_max_promotion_v =
  **********************************************************************************************************************/
 
 template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
   static_assert(detail::is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");

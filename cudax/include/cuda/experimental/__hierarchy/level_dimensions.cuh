@@ -46,7 +46,7 @@ struct dimensions_handler
 {
   static constexpr bool is_type_supported = ::cuda::std::is_integral_v<Dims>;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
   {
     return dimensions<dimensions_index_type, ::cuda::std::dynamic_extent, 1, 1>(static_cast<unsigned int>(d));
   }
@@ -57,7 +57,7 @@ struct dimensions_handler<dim3>
 {
   static constexpr bool is_type_supported = true;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const dim3& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const dim3& d) noexcept
   {
     return dimensions<dimensions_index_type,
                       ::cuda::std::dynamic_extent,
@@ -71,7 +71,7 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
 {
   static constexpr bool is_type_supported = true;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr auto translate(const Dims& d) noexcept
   {
     return dimensions<dimensions_index_type, size_t(d), 1, 1>();
   }
@@ -130,7 +130,7 @@ struct level_dimensions
       : dims(){};
 
 #  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
   operator==(const level_dimensions& left, const level_dimensions& right) noexcept

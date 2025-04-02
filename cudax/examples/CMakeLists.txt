@@ -72,8 +72,7 @@ endforeach()
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND
-    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
-    NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF examples are handled separately:
   add_subdirectory(stf)
 endif()

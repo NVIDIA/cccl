@@ -49,7 +49,7 @@ protected:
   //! @brief Checks whether the passed in alignment is valid.
   //! @param __alignment the alignment to check.
   //! @returns true if \p __alignment is valid.
-  _CCCL_NODISCARD static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
+  [[nodiscard]] static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
   {
     return __alignment <= _CUDA_VMR::default_cuda_malloc_alignment
         && (_CUDA_VMR::default_cuda_malloc_alignment % __alignment == 0);
@@ -70,8 +70,7 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the CUDA API call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate(const size_t __bytes,
-                                 const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
+  [[nodiscard]] void* allocate(const size_t __bytes, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
   {
     if (!__is_valid_alignment(__alignment))
     {
@@ -114,7 +113,7 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
   {
     if (!__is_valid_alignment(__alignment))
     {
@@ -131,7 +130,7 @@ public:
   //! @param __stream Stream on which to perform allocation.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
   {
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(
@@ -225,14 +224,14 @@ public:
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
   //!
   //! @param __device device for which the access is queried
-  _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
+  [[nodiscard]] bool is_accessible_from(device_ref __device)
   {
     return ::cuda::experimental::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are equal.
-  _CCCL_NODISCARD bool operator==(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] bool operator==(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ == __rhs.__pool_;
   }
@@ -240,13 +239,13 @@ public:
 #if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison with another __memory_resource_base.
   //! @returns true if underlying \c cudaMemPool_t are not equal.
-  _CCCL_NODISCARD bool operator!=(__memory_resource_base const& __rhs) const noexcept
+  [[nodiscard]] bool operator!=(__memory_resource_base const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
+  [[nodiscard]] constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
   }

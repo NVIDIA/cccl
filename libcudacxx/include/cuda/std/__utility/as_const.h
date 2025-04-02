@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
 {
   return __t;
 }

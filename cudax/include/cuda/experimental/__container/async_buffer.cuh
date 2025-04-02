@@ -414,49 +414,49 @@ public:
   //! @{
   //! @brief Returns an iterator to the first element of the async_buffer. If the async_buffer is empty, the returned
   //! iterator will be equal to end().
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI iterator begin() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI iterator begin() noexcept
   {
     return iterator{__buf_.data()};
   }
 
   //! @brief Returns an immutable iterator to the first element of the async_buffer. If the async_buffer is empty, the
   //! returned iterator will be equal to end().
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_iterator begin() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator begin() const noexcept
   {
     return const_iterator{__buf_.data()};
   }
 
   //! @brief Returns an immutable iterator to the first element of the async_buffer. If the async_buffer is empty, the
   //! returned iterator will be equal to end().
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_iterator cbegin() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator cbegin() const noexcept
   {
     return const_iterator{__buf_.data()};
   }
 
   //! @brief Returns an iterator to the element following the last element of the async_buffer. This element acts as a
   //! placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI iterator end() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI iterator end() noexcept
   {
     return iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the async_buffer. This element
   //! acts as a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_iterator end() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator end() const noexcept
   {
     return const_iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the async_buffer. This element
   //! acts as a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_iterator cend() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator cend() const noexcept
   {
     return const_iterator{__buf_.data() + __size_};
   }
 
   //! @brief Returns a reverse iterator to the first element of the reversed async_buffer. It corresponds to the last
   //! element of the non-reversed async_buffer. If the async_buffer is empty, the returned iterator is equal to rend().
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reverse_iterator rbegin() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI reverse_iterator rbegin() noexcept
   {
     return reverse_iterator{end()};
   }
@@ -464,7 +464,7 @@ public:
   //! @brief Returns an immutable reverse iterator to the first element of the reversed async_buffer. It corresponds to
   //! the last element of the non-reversed async_buffer. If the async_buffer is empty, the returned iterator is equal to
   //! rend().
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reverse_iterator rbegin() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator rbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
@@ -472,7 +472,7 @@ public:
   //! @brief Returns an immutable reverse iterator to the first element of the reversed async_buffer. It corresponds to
   //! the last element of the non-reversed async_buffer. If the async_buffer is empty, the returned iterator is equal to
   //! rend().
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reverse_iterator crbegin() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator crbegin() const noexcept
   {
     return const_reverse_iterator{end()};
   }
@@ -480,7 +480,7 @@ public:
   //! @brief Returns a reverse iterator to the element following the last element of the reversed async_buffer. It
   //! corresponds to the element preceding the first element of the non-reversed async_buffer. This element acts as a
   //! placeholder, attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reverse_iterator rend() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI reverse_iterator rend() noexcept
   {
     return reverse_iterator{begin()};
   }
@@ -488,7 +488,7 @@ public:
   //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed
   //! async_buffer. It corresponds to the element preceding the first element of the non-reversed async_buffer. This
   //! element acts as a placeholder, attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reverse_iterator rend() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator rend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
@@ -496,21 +496,21 @@ public:
   //! @brief Returns an immutable reverse iterator to the element following the last element of the reversed
   //! async_buffer. It corresponds to the element preceding the first element of the non-reversed async_buffer. This
   //! element acts as a placeholder, attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reverse_iterator crend() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reverse_iterator crend() const noexcept
   {
     return const_reverse_iterator{begin()};
   }
 
   //! @brief Returns a pointer to the first element of the async_buffer. If the async_buffer has not allocated memory
   //! the pointer will be null.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI pointer data() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer data() noexcept
   {
     return __buf_.data();
   }
 
   //! @brief Returns a pointer to the first element of the async_buffer. If the async_buffer has not allocated memory
   //! the pointer will be null.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_pointer data() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer data() const noexcept
   {
     return __buf_.data();
   }
@@ -518,28 +518,28 @@ public:
 #ifndef _CCCL_DOXYGEN_INVOKED
   //! @brief Returns a pointer to the first element of the async_buffer. If the async_buffer is empty, the returned
   //! pointer will be null.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI pointer __unwrapped_begin() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer __unwrapped_begin() noexcept
   {
     return __buf_.data();
   }
 
   //! @brief Returns a const pointer to the first element of the async_buffer. If the async_buffer is empty, the
   //! returned pointer will be null.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_pointer __unwrapped_begin() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer __unwrapped_begin() const noexcept
   {
     return __buf_.data();
   }
 
   //! @brief Returns a pointer to the element following the last element of the async_buffer. This element acts as a
   //! placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI pointer __unwrapped_end() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer __unwrapped_end() noexcept
   {
     return __buf_.data() + __size_;
   }
 
   //! @brief Returns a const pointer to the element following the last element of the async_buffer. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_pointer __unwrapped_end() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer __unwrapped_end() const noexcept
   {
     return __buf_.data() + __size_;
   }
@@ -552,7 +552,7 @@ public:
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access
   //! @note Always synchronizes with the stored stream
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reference get(const size_type __n) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI reference get(const size_type __n) noexcept
   {
     _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
     this->wait();
@@ -562,7 +562,7 @@ public:
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access
   //! @note Always synchronizes with the stored stream
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reference get(const size_type __n) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reference get(const size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
     this->wait();
@@ -572,7 +572,7 @@ public:
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access
   //! @note Does not synchronize with the stored stream
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reference get_unsynchronized(const size_type __n) noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI reference get_unsynchronized(const size_type __n) noexcept
   {
     _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get_unsynchronized out of range!");
     return begin()[__n];
@@ -581,7 +581,7 @@ public:
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access
   //! @note Does not synchronize with the stored stream
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reference get_unsynchronized(const size_type __n) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reference get_unsynchronized(const size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get_unsynchronized out of range!");
     return begin()[__n];
@@ -592,13 +592,13 @@ public:
   //! @addtogroup size
   //! @{
   //! @brief Returns the current number of elements stored in the async_buffer.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI size_type size() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI size_type size() const noexcept
   {
     return __size_;
   }
 
   //! @brief Returns true if the async_buffer is empty.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI bool empty() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI bool empty() const noexcept
   {
     return __size_ == 0;
   }
@@ -607,13 +607,13 @@ public:
   //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the async_buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __resource_t& get_memory_resource() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource_t& get_memory_resource() const noexcept
   {
     return __buf_.get_memory_resource();
   }
 
   //! @brief Returns the stored stream
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
   {
     return __buf_.get_stream();
   }
@@ -636,7 +636,7 @@ public:
   }
 
   //! @brief Returns the execution policy
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __policy_t get_execution_policy() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr __policy_t get_execution_policy() const noexcept
   {
     return __policy_;
   }

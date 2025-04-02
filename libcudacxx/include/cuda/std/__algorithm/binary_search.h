@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _Tp, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)
 {
   __first = _CUDA_VSTD::lower_bound<_ForwardIterator, _Tp, __comp_ref_type<_Compare>>(__first, __last, __value, __comp);
@@ -36,7 +36,7 @@ binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __va
 }
 
 template <class _ForwardIterator, class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value)
 {
   return _CUDA_VSTD::binary_search(__first, __last, __value, __less{});
