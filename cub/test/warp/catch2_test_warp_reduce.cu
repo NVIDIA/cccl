@@ -218,25 +218,25 @@ using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
 
 using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
 
-//using min_max_type_list = c2h::type_list<
-//  int8_t, uint16_t, int32_t, int64_t,
-//  float, double, custom_t
-//#  if TEST_HALF_T()
-//  , __half
-//#  endif // TEST_HALF_T()
-//#  if TEST_BF_T()
-//  , __nv_bfloat16
-//#  endif // TEST_BF_T()
-//#  if _CCCL_HAS_INT128()
-//  , __int128_t
-//#  endif
-//  >;
+using min_max_type_list = c2h::type_list<
+  int8_t, uint16_t, int32_t, int64_t,
+  float, double, custom_t
+#  if TEST_HALF_T()
+  , __half
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
+  , __nv_bfloat16
+#  endif // TEST_BF_T()
+#  if _CCCL_HAS_INT128()
+  , __int128_t
+#  endif
+  >;
 
-using min_max_type_list = c2h::type_list<float>;
+//using min_max_type_list = c2h::type_list<double>;
 
-using min_max_op_list = c2h::type_list</*cuda::maximum<>,*/ cuda::minimum<>>;
+using min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
 
-using logical_warp_threads = c2h::enum_type_list<unsigned, 32/*, 16, 7, 1*/>;
+using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;
 
 // clang-format on
 
@@ -298,7 +298,7 @@ C2H_TEST(
   c2h::device_vector<T> d_out(output_size);
   if constexpr (cuda::std::__is_any_floating_point_v<T>)
   {
-    c2h::gen(C2H_SEED(1), d_in, T{1.0}, T{2.0});
+    c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
   }
   else
   {
@@ -364,10 +364,10 @@ C2H_TEST(
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
 
   c2h::host_vector<T> h_tmp = d_out;
-  for (size_t i = 0; i < 32; ++i)
-  {
-    printf("%f\n", h_in[i]);
-  }
+  // for (size_t i = 0; i < 32; ++i)
+  //{
+  //   printf("%f\n", h_in[i]);
+  // }
   verify_results(h_out, d_out);
 }
 
