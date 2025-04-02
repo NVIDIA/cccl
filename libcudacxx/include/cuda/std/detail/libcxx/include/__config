@@ -97,15 +97,11 @@ extern "C++" {
 #    define _LIBCUDACXX_NO_CFI
 #  endif
 
-#  if _CCCL_COMPILER(NVRTC)
-#    define __alignof(x) alignof(x)
-#  endif // _CCCL_COMPILER(NVRTC)
-
-#  if _CCCL_COMPILER(MSVC)
-#    define __alignof__ __alignof
-#  endif
-
-#  define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
+#  if !_CCCL_COMPILER(NVRTC)
+#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_T) __alignof(_T)
+#  else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
+#    define _LIBCUDACXX_PREFERRED_ALIGNOF(_T) alignof(_T)
+#  endif // ^^^^ _CCCL_COMPILER(NVRTC) ^^^
 
 #  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
@@ -133,11 +129,6 @@ extern "C++" {
 #    endif
 
 #  endif //  _CCCL_COMPILER(CLANG)
-
-#  ifdef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-using char16_t = unsigned short;
-using char32_t = unsigned int;
-#  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
 #  ifdef _LIBCUDACXX_DEBUG
 #    if _LIBCUDACXX_DEBUG == 0
@@ -171,29 +162,15 @@ using char32_t = unsigned int;
 #    else // ^^^ _CCCL_HAS_ATTRIBUTE(deprecated) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(deprecated) vvv
 #      define _LIBCUDACXX_DEPRECATED [[deprecated]]
 #    endif // !_CCCL_HAS_ATTRIBUTE(deprecated)
-#  else
+#  else // ^^^ !_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS ^^^ / vvv _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS vvv
 #    define _LIBCUDACXX_DEPRECATED
-#  endif
-
-#  define _LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_DEPRECATED
-
-#  if _CCCL_STD_VER >= 2014
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX14 _LIBCUDACXX_DEPRECATED
-#  else
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX14
-#  endif
-
-#  if _CCCL_STD_VER >= 2017
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_DEPRECATED
-#  else
-#    define _LIBCUDACXX_DEPRECATED_IN_CXX17
-#  endif
+#  endif // ^^^ _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS ^^^
 
 #  if _CCCL_STD_VER >= 2020
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_DEPRECATED
-#  else
+#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20
-#  endif
+#  endif // ^^^ _CCCL_STD_VER < 2020 ^^^
 
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL

@@ -24,7 +24,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
 
 template <class _Arg, class _Result>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX11 unary_function
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED unary_function
 {
   using argument_type = _Arg;
   using result_type   = _Result;
@@ -36,8 +36,8 @@ template <class _Arg, class _Result>
 struct __unary_function_keep_layout_base
 {
 #if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX17 = _Arg;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX17   = _Result;
+  using argument_type _LIBCUDACXX_DEPRECATED = _Arg;
+  using result_type _LIBCUDACXX_DEPRECATED   = _Result;
 #endif
 };
 

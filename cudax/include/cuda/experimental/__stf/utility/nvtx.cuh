@@ -30,6 +30,9 @@
 #  include <nvtx3/nvToolsExt.h>
 #endif
 
+#include <type_traits>
+#include <utility>
+
 namespace cuda::experimental::stf
 {
 

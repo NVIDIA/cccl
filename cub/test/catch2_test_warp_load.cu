@@ -339,3 +339,40 @@ C2H_TEST("Warp load unguarded range works with cache modified iterator",
   constexpr int expected_error_count = 0;
   REQUIRE(num_errors == expected_error_count);
 }
+
+#if ALGO_TYPE == 3 // Test for cub::WarpLoadAlgorithm::WARP_LOAD_VECTORIZE;
+C2H_TEST("Vectorized warp load with const and non-const datatype and different alignment cases",
+         "[store][warp]",
+         c2h::type_list<const int*, int*>,
+         logical_warp_threads,
+         items_per_thread,
+         algorithm)
+{
+  using params         = params_t<TestType>;
+  using type           = int;
+  using input_ptr_type = typename params::type;
+
+  using delegate_t              = unguarded_load_t;
+  const int offset_for_elements = GENERATE_COPY(0, 1, 2, 3, 4);
+
+  auto d_in_ref =
+    generate_input<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>();
+  c2h::device_vector<int> d_error_counter(1, 0);
+
+  c2h::device_vector<type> d_in(params::total_item_count + offset_for_elements);
+  thrust::copy_n(d_in_ref.begin(), params::total_item_count, d_in.begin() + offset_for_elements);
+
+  warp_load<params::algorithm,
+            params::logical_warp_threads,
+            params::items_per_thread,
+            params::total_warps,
+            type,
+            input_ptr_type>(thrust::raw_pointer_cast(d_in.data()) + offset_for_elements,
+                            delegate_t{},
+                            thrust::raw_pointer_cast(d_error_counter.data()));
+
+  const auto num_errors              = d_error_counter[0];
+  constexpr int expected_error_count = 0;
+  REQUIRE(num_errors == expected_error_count);
+}
+#endif
