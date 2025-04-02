@@ -6,7 +6,7 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Tuple, Union
 
 # Import for type checking only
 if TYPE_CHECKING:
@@ -106,11 +106,64 @@ def find_dim3(name, txt):
     )
 
 
-def normalize_dim_param(dim):
-    x = dim[0] if type(dim) is not int else dim
-    y = dim[1] if type(dim) is not int and len(dim) >= 2 else 1
-    z = dim[2] if type(dim) is not int and len(dim) >= 3 else 1
-    return (x, y, z)
+def normalize_dim_param(
+    dim: Union[dim3, int, Tuple[int, int], Tuple[int, int, int]],
+) -> dim3:
+    """
+    Normalize the dim parameter to a `dim3` (x, y, z) instance.
+
+    The logic for this routine is as follows:
+
+    - If the dim is already a `dim3` instance, return it as is.
+    - If the dim is a positive integer, return a 1D `dim3` instance with the
+      integer value as the x-dimension.  If the dim is a negative integer,
+      raise a ValueError.
+    - If the dim is a tuple:
+        - If the tuple has two elements, return a 2D `dim3` instance with the
+          tuple values as the x and y dimensions.  If either value is
+          negative, raise a ValueError.
+        - If the tuple has three elements, return a 3D `dim3` instance with
+          the tuple values as the x, y, and z dimensions.  If any value is
+          negative, raise a ValueError.
+
+    Args:
+        dim: Supplies the dim parameter to normalize.
+
+    Returns:
+        The normalized dim parameter as a `dim3` instance.
+
+    Raises:
+        ValueError: If the dim is invalid.
+
+    """
+    if isinstance(dim, dim3):
+        return dim
+
+    if isinstance(dim, int):
+        if dim < 0:
+            msg = f"Dimension value must be non-negative, got {dim}"
+            raise ValueError(msg)
+        return dim3(dim, 1, 1)
+
+    if isinstance(dim, tuple):
+        if len(dim) == 2:
+            x, y = dim
+            z = 1
+            if x < 0 or y < 0:
+                msg = f"Dimension values must be non-negative, got {dim}"
+                raise ValueError(msg)
+            return dim3(x, y, z)
+        elif len(dim) == 3:
+            x, y, z = dim
+            if x < 0 or y < 0 or z < 0:
+                msg = f"Dimension values must be non-negative, got {dim}"
+                raise ValueError(msg)
+            return dim3(x, y, z)
+        else:
+            msg = f"Tuple dimension must have 2 or 3 elements, got {len(dim)}"
+            raise ValueError(msg)
+
+    raise ValueError(f"Unsupported dimension type: {type(dim)}")
 
 
 def normalize_dtype_param(
