@@ -33,7 +33,9 @@ The ``_CCCL_COMPILER`` function-like macro can also be used to check the version
    _CCCL_COMPILER(MSVC, <, 19, 24)
    _CCCL_COMPILER(GCC, >=, 9)
 
-*Pitfalls*: ``_CCCL_COMPILER(GCC, >, 9)`` internally expands ``_CCCL_COMPILER(GCC, >, 9, 0)`` to matches any GCC 9.x. Avoid using ``>`` and rather use ``>=``
+*Note*: When used without specifying a minor version number, the macro will only test against
+the compiler's major version number. For example, when the compiler is ``gcc-9.1``, the macro
+``_CCCL_COMPILER(GCC, >, 9)`` will be ``false`` even though ``9.1`` is greater than ``9``.
 
 **CUDA compiler macros**:
 
@@ -57,7 +59,7 @@ The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the ve
 **CUDA identification/version macros**:
 
 +----------------------------------+-----------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER``      | CUDA compiler is available  |
+| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available  |
 +----------------------------------+-----------------------------+
 | ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7     |
 +----------------------------------+-----------------------------+
@@ -217,8 +219,6 @@ The following macros are required only if the target C++ version does not suppor
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX23``   | Enable ``constexpr`` for C++23 or newer                  |
 +-----------------------------+----------------------------------------------------------+
-| ``_CCCL_INLINE_VAR``        | Portable ``inline constexpr`` variable (before C++17)    |
-+-----------------------------+----------------------------------------------------------+
 
 **Concept-like Macros**:
 
@@ -260,15 +260,9 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_ASSUME()``               | Portable ``[[assume]]`` attribute (before C++23)                             |
 +----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_FALLTHROUGH()``          | Portable ``[[fallthrough]]`` attribute (before C++17)                        |
-+----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NO_UNIQUE_ADDRESS``      | Portable ``[[no_unique_address]]`` attribute                                 |
 +----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_NODISCARD``              | Portable ``[[nodiscard]]`` attribute (before C++17)                          |
-+----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NODISCARD_FRIEND``       | Portable ``[[nodiscard]]`` attribute for ``friend`` functions (before C++17) |
-+----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_NORETURN``               | Portable ``[[noreturn]]`` attribute (before C++11)                           |
 +----------------------------------+------------------------------------------------------------------------------+
 | ``CCCL_DEPRECATED``              | Portable ``[[deprecated]]`` attribute (before C++14)                         |
 +----------------------------------+------------------------------------------------------------------------------+

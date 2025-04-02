@@ -22,7 +22,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
+[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
 {
   _CCCL_UNREACHABLE();
 }

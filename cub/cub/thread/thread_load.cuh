@@ -118,18 +118,14 @@ template <CacheLoadModifier MODIFIER, typename T, int... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 UnrolledThreadLoadImpl(T const* src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
 {
-  // TODO(bgruber): replace by fold over comma in C++17
-  int dummy[] = {(dst[Is] = ThreadLoad<MODIFIER>(src + Is), 0)...};
-  (void) dummy;
+  ((dst[Is] = ThreadLoad<MODIFIER>(src + Is)), ...);
 }
 
 template <typename RandomAccessIterator, typename T, int... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence<int, Is...>)
 {
-  // TODO(bgruber): replace by fold over comma in C++17
-  int dummy[] = {(dst[Is] = src[Is], 0)...};
-  (void) dummy;
+  ((dst[Is] = src[Is]), ...);
 }
 } // namespace detail
 

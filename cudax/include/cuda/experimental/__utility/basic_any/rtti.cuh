@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__cccl/unreachable.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
@@ -61,7 +60,7 @@ struct bad_any_cast : ::std::bad_cast
   }
 };
 
-_CCCL_NORETURN _CUDAX_HOST_API inline void __throw_bad_any_cast()
+[[noreturn]] _CUDAX_HOST_API inline void __throw_bad_any_cast()
 {
 #ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw bad_any_cast();), (_CUDA_VSTD_NOVERSION::terminate();))
@@ -137,7 +136,7 @@ struct __rtti : __rtti_base
   {}
 
   template <class... _Interfaces>
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __query_interface(__iset<_Interfaces...>) const noexcept
+  [[nodiscard]] _CUDAX_HOST_API auto __query_interface(__iset<_Interfaces...>) const noexcept
     -> __vptr_for<__iset<_Interfaces...>>
   {
     // TODO: find a way to check at runtime that the requested __iset is a subset
@@ -149,7 +148,7 @@ struct __rtti : __rtti_base
   // comparing typeids. If the requested interface is found, return a pointer to
   // its vtable; otherwise, return nullptr.
   template <class _Interface>
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CUDAX_HOST_API auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     // On sane implementations, comparing type_info objects first compares their
     // addresses and, if that fails, it does a string comparison. What we want is
@@ -201,7 +200,7 @@ struct __rtti_ex : __rtti
 //! interfaces.
 //!
 template <class _SrcInterface, class _DstInterface>
-_CCCL_NODISCARD _CUDAX_HOST_API auto __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept
+[[nodiscard]] _CUDAX_HOST_API auto __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept
   -> __vptr_for<_DstInterface>
 {
   static_assert(_CUDA_VSTD::is_class_v<_SrcInterface> && _CUDA_VSTD::is_class_v<_DstInterface>, "expected class types");
@@ -227,7 +226,7 @@ _CCCL_NODISCARD _CUDAX_HOST_API auto __try_vptr_cast(__vptr_for<_SrcInterface> _
 }
 
 template <class _SrcInterface, class _DstInterface>
-_CCCL_NODISCARD _CUDAX_HOST_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
+[[nodiscard]] _CUDAX_HOST_API auto __vptr_cast(__vptr_for<_SrcInterface> __src_vptr) //
   noexcept(_CUDA_VSTD::is_same_v<_SrcInterface, _DstInterface>) //
   -> __vptr_for<_DstInterface>
 {

@@ -184,10 +184,8 @@ typedef fpos<mbstate_t> wstreampos;
 #  if _LIBCUDACXX_HAS_CHAR8_T()
 typedef fpos<mbstate_t> u8streampos;
 #  endif // _LIBCUDACXX_HAS_CHAR8_T()
-#  ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 typedef fpos<mbstate_t> u16streampos;
 typedef fpos<mbstate_t> u32streampos;
-#  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 #endif // _LIBCUDACXX_HAS_WCHAR_H()
 
 #if defined(_NEWLIB_VERSION)

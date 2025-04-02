@@ -77,9 +77,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __constexpr_tail_overlap_fallback(_Tp* 
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, _Tp* __last)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+__constexpr_tail_overlap(_Tp* __first, _Up* __needle, [[maybe_unused]] _Tp* __last)
 {
-  _LIBCUDACXX_UNUSED_VAR(__last);
 #if defined(_CCCL_BUILTIN_CONSTANT_P)
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),

@@ -43,7 +43,7 @@ concept equivalence_relation = relation<_Rp, _Tp, _Up>;
 template <class _Rp, class _Tp, class _Up>
 concept strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Rp, class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(
@@ -66,7 +66,7 @@ _CCCL_CONCEPT equivalence_relation = relation<_Rp, _Tp, _Up>;
 template <class _Rp, class _Tp, class _Up>
 _CCCL_CONCEPT strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

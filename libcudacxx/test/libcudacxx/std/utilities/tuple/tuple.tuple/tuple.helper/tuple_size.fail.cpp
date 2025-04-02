@@ -18,11 +18,11 @@
 
 int main(int, char**)
 {
-  (void) cuda::std::tuple_size<cuda::std::tuple<>&>::value; // expected-error {{implicit instantiation of undefined
-                                                            // template}}
-  (void) cuda::std::tuple_size<int>::value; // expected-error {{implicit instantiation of undefined template}}
-  (void) cuda::std::tuple_size<cuda::std::tuple<>*>::value; // expected-error {{implicit instantiation of undefined
-                                                            // template}}
+  [[maybe_unused]] cuda::std::tuple_size<cuda::std::tuple<>&>::value; // expected-error {{implicit instantiation of
+                                                                      // undefined template}}
+  [[maybe_unused]] cuda::std::tuple_size<int>::value; // expected-error {{implicit instantiation of undefined template}}
+  [[maybe_unused]] cuda::std::tuple_size<cuda::std::tuple<>*>::value; // expected-error {{implicit instantiation of
+                                                                      // undefined template}}
 
   return 0;
 }

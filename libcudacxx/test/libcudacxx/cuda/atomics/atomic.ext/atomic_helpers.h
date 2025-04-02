@@ -51,10 +51,8 @@ struct TestEachIntegralType
     TestFunctor<long long, Selector, Scope>()();
     TestFunctor<unsigned long long, Selector, Scope>()();
     TestFunctor<wchar_t, Selector, Scope>();
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
     TestFunctor<char16_t, Selector, Scope>()();
     TestFunctor<char32_t, Selector, Scope>()();
-#endif
     TestFunctor<int8_t, Selector, Scope>()();
     TestFunctor<uint8_t, Selector, Scope>()();
     TestFunctor<int16_t, Selector, Scope>()();

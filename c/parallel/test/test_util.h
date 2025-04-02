@@ -303,7 +303,32 @@ static std::string get_unique_by_key_op(cccl_type_enum t)
       return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs == rhs; }";
     case cccl_type_enum::CCCL_FLOAT64:
       return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs == rhs; }";
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+  return "";
+}
 
+static std::string get_unary_op(cccl_type_enum t)
+{
+  switch (t)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "extern \"C\" __device__ char op(char a) { return 2 * a; }";
+    case cccl_type_enum::CCCL_INT32:
+      return "extern \"C\" __device__ int op(int a) { return 2 * a; }";
+    case cccl_type_enum::CCCL_UINT32:
+      return "extern \"C\" __device__ unsigned int op(unsigned int a) { return 2 * a; }";
+    case cccl_type_enum::CCCL_INT64:
+      return "extern \"C\" __device__ long long op(long long a) { return 2 * a; }";
+    case cccl_type_enum::CCCL_UINT64:
+      return "extern \"C\" __device__ unsigned long long op(unsigned long long a) { "
+             " return 2 * a; "
+             "}";
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "extern \"C\" __device__ float op(float a) { return 2 * a; }";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "extern \"C\" __device__ double op(double a) { return 2 * a; }";
     default:
       throw std::runtime_error("Unsupported type");
   }

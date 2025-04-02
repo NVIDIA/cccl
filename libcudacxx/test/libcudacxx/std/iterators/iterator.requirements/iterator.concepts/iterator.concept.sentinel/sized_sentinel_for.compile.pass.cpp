@@ -105,7 +105,7 @@ namespace cuda
 namespace std
 {
 template <>
-_CCCL_INLINE_VAR constexpr bool disable_sized_sentinel_for<double_sized_sentinel, double*> = true;
+inline constexpr bool disable_sized_sentinel_for<double_sized_sentinel, double*> = true;
 }
 } // namespace cuda
 

@@ -34,7 +34,7 @@ namespace detail
 {
 // we can retag an iterator if FromTag converts to ToTag or vice versa
 template <typename FromTag, typename ToTag>
-_CCCL_INLINE_VAR constexpr bool is_retaggable =
+inline constexpr bool is_retaggable =
   ::cuda::std::is_convertible_v<FromTag, ToTag> || ::cuda::std::is_convertible_v<ToTag, FromTag>;
 } // namespace detail
 

@@ -70,11 +70,11 @@ struct __get_size_align<T, _CUDA_VSTD::void_t<decltype(T::align)>>
 struct __single_thread_group
 {
   _LIBCUDACXX_HIDE_FROM_ABI void sync() const {}
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::size_t size() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::size_t size() const
   {
     return 1;
   };
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::size_t thread_rank() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::size_t thread_rank() const
   {
     return 0;
   };

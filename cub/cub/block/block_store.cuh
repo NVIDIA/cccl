@@ -187,22 +187,31 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   // Vector type
   using Vector = typename CubVector<T, VEC_SIZE>::Type;
 
-  // Alias global pointer
-  Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
-
-  // Alias pointers (use "raw" array here which should get optimized away to prevent conservative PTXAS lmem spilling)
-  Vector raw_vector[VECTORS_PER_THREAD];
-  T* raw_items = reinterpret_cast<T*>(raw_vector);
-
-  // Copy
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  // Add the alignment check to ensure the vectorized storing can proceed.
+  if (reinterpret_cast<uintptr_t>(block_ptr) % (alignof(Vector)) == 0)
   {
-    raw_items[ITEM] = items[ITEM];
-  }
+    // Alias global pointer
+    Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
 
-  // Direct-store using vector types
-  StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
+    // Alias pointers (use "raw" array here which should get optimized away to prevent conservative PTXAS lmem spilling)
+    Vector raw_vector[VECTORS_PER_THREAD];
+    T* raw_items = reinterpret_cast<T*>(raw_vector);
+
+    // Copy
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+    {
+      raw_items[ITEM] = items[ITEM];
+    }
+
+    // Direct-store using vector types
+    StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
+  }
+  else
+  {
+    // Direct-store using original type when the address is misaligned
+    StoreDirectBlocked(linear_tid, block_ptr, items);
+  }
 }
 
 //! @}  end member group
@@ -340,9 +349,9 @@ template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
 {
-  int tid         = linear_tid & (CUB_PTX_WARP_THREADS - 1);
-  int wid         = linear_tid >> CUB_PTX_LOG_WARP_THREADS;
-  int warp_offset = wid * CUB_PTX_WARP_THREADS * ITEMS_PER_THREAD;
+  int tid         = linear_tid & (detail::warp_threads - 1);
+  int wid         = linear_tid >> detail::log2_warp_threads;
+  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -350,7 +359,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
-    thread_itr[(ITEM * CUB_PTX_WARP_THREADS)] = items[ITEM];
+    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
   }
 }
 
@@ -392,9 +401,9 @@ template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
 {
-  int tid         = linear_tid & (CUB_PTX_WARP_THREADS - 1);
-  int wid         = linear_tid >> CUB_PTX_LOG_WARP_THREADS;
-  int warp_offset = wid * CUB_PTX_WARP_THREADS * ITEMS_PER_THREAD;
+  int tid         = linear_tid & (detail::warp_threads - 1);
+  int wid         = linear_tid >> detail::log2_warp_threads;
+  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -402,9 +411,9 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
-    if (warp_offset + tid + (ITEM * CUB_PTX_WARP_THREADS) < valid_items)
+    if (warp_offset + tid + (ITEM * detail::warp_threads) < valid_items)
     {
-      thread_itr[(ITEM * CUB_PTX_WARP_THREADS)] = items[ITEM];
+      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
     }
   }
 }
@@ -907,7 +916,7 @@ private:
   {
     enum
     {
-      WARP_THREADS = CUB_WARP_THREADS(0)
+      WARP_THREADS = detail::warp_threads
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
@@ -990,7 +999,7 @@ private:
   {
     enum
     {
-      WARP_THREADS = CUB_WARP_THREADS(0)
+      WARP_THREADS = detail::warp_threads
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS

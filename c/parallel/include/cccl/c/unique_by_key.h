@@ -18,6 +18,7 @@
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
+#include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
@@ -58,7 +59,7 @@ CCCL_C_API CUresult cccl_device_unique_by_key(
   cccl_iterator_t d_values_out,
   cccl_iterator_t d_num_selected_out,
   cccl_op_t op,
-  unsigned long long num_items,
+  uint64_t num_items,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* bld_ptr);

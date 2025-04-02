@@ -430,7 +430,7 @@ CUresult cccl_device_radix_sort_build(
     const std::string op_src =
       decomposer.name == nullptr
         ? "using op_wrapper = cub::detail::identity_decomposer_t;"
-        : make_kernel_user_decomposer_operator(key_cpp, decomposer, decomposer_return_type);
+        : make_kernel_user_unary_operator(key_cpp, decomposer_return_type, decomposer);
     constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
 
     constexpr std::string_view src_template = R"XXX(

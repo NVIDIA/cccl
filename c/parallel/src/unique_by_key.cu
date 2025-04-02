@@ -408,7 +408,7 @@ CUresult cccl_device_unique_by_key(
   cccl_iterator_t d_values_out,
   cccl_iterator_t d_num_selected_out,
   cccl_op_t op,
-  unsigned long long num_items,
+  uint64_t num_items,
   CUstream stream)
 {
   CUresult error = CUDA_SUCCESS;
