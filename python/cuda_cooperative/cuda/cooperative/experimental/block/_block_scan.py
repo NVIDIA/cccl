@@ -22,6 +22,7 @@ from cuda.cooperative.experimental._types import (
     Pointer,
     TemplateParameter,
 )
+from cuda.cooperative.experimental._typing import DimType
 
 if TYPE_CHECKING:
     import numpy as np
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 def _scan(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: int,
+    threads_per_block: DimType,
     items_per_thread: int = 1,
     mode: Literal["exclusive", "inclusive"] = "exclusive",
     scan_op: Literal["+"] = "+",
@@ -189,7 +190,7 @@ def _scan(
 
 def exclusive_sum(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: int,
+    threads_per_block: DimType,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
@@ -264,7 +265,7 @@ def exclusive_sum(
 
 def inclusive_sum(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
-    threads_per_block: int,
+    threads_per_block: DimType,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",

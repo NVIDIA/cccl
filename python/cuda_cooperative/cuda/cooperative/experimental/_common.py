@@ -6,7 +6,9 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Union
+
+from ._typing import DimType
 
 # Import for type checking only
 if TYPE_CHECKING:
@@ -106,9 +108,7 @@ def find_dim3(name, txt):
     )
 
 
-def normalize_dim_param(
-    dim: Union[dim3, int, Tuple[int, int], Tuple[int, int, int]],
-) -> dim3:
+def normalize_dim_param(dim: DimType) -> dim3:
     """
     Normalize the dim parameter to a `dim3` (x, y, z) instance.
 
