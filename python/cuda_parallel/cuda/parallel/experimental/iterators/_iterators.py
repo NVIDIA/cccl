@@ -428,10 +428,9 @@ def _get_last_element_ptr(device_array) -> int:
     if strides_in_bytes is None:
         strides_in_bytes = compute_c_contiguous_strides_in_bytes(shape, dtype.itemsize)
 
-    # Calculate offset to last element
-    offset = sum(
+    offset_to_last_element = sum(
         (dim_size - 1) * stride for dim_size, stride in zip(shape, strides_in_bytes)
     )
 
     ptr = get_data_pointer(device_array)
-    return ptr + offset
+    return ptr + offset_to_last_element
