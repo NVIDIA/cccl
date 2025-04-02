@@ -31,7 +31,7 @@ patch.patch_numba_linker(lto=True)
 
 @pytest.mark.parametrize("T", [types.uint32, types.uint64])
 @pytest.mark.parametrize(
-    "threads_per_block", [32, 64, 128, 256, 512, 1024, (2, 4), (2, 4, 8)]
+    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
 )
 @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
@@ -153,7 +153,7 @@ def impl_block_prefix_callback_op(context, builder, sig, args):
 
 
 @pytest.mark.parametrize(
-    "threads_per_block", [32, 64, 128, 256, 512, 1024, (2, 4), (2, 4, 8)]
+    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
 )
 @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
@@ -277,7 +277,7 @@ def test_block_sum_prefix(threads_per_block, items_per_thread, mode, algorithm):
 
 
 @pytest.mark.parametrize(
-    "threads_per_block", [32, 64, 128, 256, 512, 1024, (2, 4), (2, 4, 8)]
+    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
 )
 @pytest.mark.parametrize("items_per_thread", [0, -1, -127])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
