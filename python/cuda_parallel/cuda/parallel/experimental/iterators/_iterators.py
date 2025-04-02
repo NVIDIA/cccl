@@ -19,6 +19,7 @@ from .._utils.protocols import (
     get_dtype,
     get_shape,
 )
+from ..typing import DeviceArrayLike
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
@@ -298,15 +299,15 @@ class ReverseIteratorKind(IteratorKind):
     pass
 
 
-def make_reverse_iterator(it):
-    if isinstance(it, IteratorBase) and isinstance(it.cvalue, ctypes.c_void_p):
+def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
+    if not hasattr(it, "__cuda_array_interface__") or not isinstance(it, IteratorBase):
         raise NotImplementedError(
             f"Reverse iterator is not implemented for type {type(it)}"
         )
 
     if hasattr(it, "__cuda_array_interface__"):
-        last_element_ptr = get_last_element_ptr(it)
-        it = RawPointer(last_element_ptr, numba.from_dtype(it.dtype))
+        last_element_ptr = _get_last_element_ptr(it)
+        it = RawPointer(last_element_ptr, get_dtype(it))
 
     it_advance = cuda.jit(type(it).advance, device=True)
     it_dereference = cuda.jit(type(it).dereference, device=True)
@@ -419,7 +420,7 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
     return AdvancedIterator(it, offset)
 
 
-def get_last_element_ptr(device_array) -> int:
+def _get_last_element_ptr(device_array) -> int:
     shape = get_shape(device_array)
     dtype = get_dtype(device_array)
 
