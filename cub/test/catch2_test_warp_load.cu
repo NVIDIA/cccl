@@ -343,7 +343,7 @@ C2H_TEST("Warp load unguarded range works with cache modified iterator",
 #if ALGO_TYPE == 3 // Test for cub::WarpLoadAlgorithm::WARP_LOAD_VECTORIZE;
 C2H_TEST("Vectorized warp load with const and non-const datatype and different alignment cases",
          "[store][warp]",
-         c2h::type_list<int*>, // c2h::type_list<const int*, int*>,
+         c2h::type_list<const int*, int*>,
          logical_warp_threads,
          items_per_thread,
          algorithm)

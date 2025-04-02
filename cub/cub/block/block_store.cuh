@@ -197,12 +197,12 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
     Vector raw_vector[VECTORS_PER_THREAD];
     T* raw_items = reinterpret_cast<T*>(raw_vector);
 
-  // Copy
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
-  {
-    raw_items[ITEM] = items[ITEM];
-  }
+    // Copy
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+    {
+      raw_items[ITEM] = items[ITEM];
+    }
 
     // Direct-store using vector types
     StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);

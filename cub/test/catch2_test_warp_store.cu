@@ -300,7 +300,7 @@ C2H_TEST("Vectorized warp store with different alignment cases",
   auto out = thrust::raw_pointer_cast(d_out.data());
 
   warp_store<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
-    thrust::raw_pointer_cast(d_out.data()) + offset_for_elements, unguarded_store_t{});
+    out + offset_for_elements, unguarded_store_t{});
   thrust::copy_n(d_out.begin() + offset_for_elements, params::total_item_count, d_out_ref.begin());
 
   auto d_expected_output =
