@@ -56,7 +56,6 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
-_LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
 #if !defined(_CCCL_NO_CONCEPTS)
 template <class _From, class _To>
@@ -304,24 +303,24 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(copyable<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin() const
   {
     return __begin_;
   }
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES((!copyable<_It>) )
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _It begin()
   {
     return _CUDA_VSTD::move(__begin_);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent end() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent end() const
   {
     return __end_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
   {
     return __begin_ == __end_;
   }
@@ -342,14 +341,14 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(forward_iterator<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) const&
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) const&
   {
     auto __tmp = *this;
     __tmp.advance(__n);
     return __tmp;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange next(iter_difference_t<_Iter> __n = 1) &&
   {
     advance(__n);
     return _CUDA_VSTD::move(*this);
@@ -357,7 +356,7 @@ public:
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(bidirectional_iterator<_It>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange prev(iter_difference_t<_Iter> __n = 1) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange prev(iter_difference_t<_Iter> __n = 1) const
   {
     auto __tmp = *this;
     __tmp.advance(-__n);
@@ -379,12 +378,11 @@ public:
       }
     }
 
-    const auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
+    [[maybe_unused]] const auto __d = __n - _CUDA_VRANGES::advance(__begin_, __n, __end_);
     if constexpr (_StoreSize)
     {
       __size_ -= _CUDA_VSTD::__to_unsigned_like(__d);
     }
-    (void) __d;
     return *this;
   }
 };
@@ -411,8 +409,6 @@ _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(borrowed_range<_Range>)
 _CCCL_HOST_DEVICE subrange(_Range&&, make_unsigned_t<range_difference_t<_Range>>)
   -> subrange<iterator_t<_Range>, sentinel_t<_Range>, subrange_kind::sized>;
-
-_LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 // Not _CCCL_TEMPLATE because we need to forward declare them
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -463,7 +459,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __s
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>
-_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
+inline constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
 
 template <class _Rp>
 using borrowed_subrange_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;

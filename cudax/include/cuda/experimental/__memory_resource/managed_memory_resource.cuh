@@ -60,8 +60,8 @@ public:
   //! @param __alignment The requested alignment of the allocation.
   //! @throw std::invalid_argument in case of invalid alignment or \c cuda::cuda_error of the returned error code.
   //! @return Pointer to the newly allocated memory
-  _CCCL_NODISCARD void* allocate(const size_t __bytes,
-                                 const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const
+  [[nodiscard]] void* allocate(const size_t __bytes,
+                               const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     if (!__is_valid_alignment(__alignment))
@@ -82,9 +82,9 @@ public:
   //! @throws std::invalid_argument In case of invalid alignment.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void*
+  allocate_async(const size_t __bytes, const size_t __alignment, [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
-    (void) __stream;
     return allocate(__bytes, __alignment);
   }
 
@@ -93,9 +93,8 @@ public:
   //! @param __stream Stream on which to perform allocation.
   //! @throws cuda::cuda_error If an error code was return by the cuda api call.
   //! @returns Pointer to the newly allocated memory.
-  _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(const size_t __bytes, [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
-    (void) __stream;
     return allocate(__bytes);
   }
 
@@ -103,13 +102,13 @@ public:
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
   //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  void deallocate(
-    void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const noexcept
+  void deallocate(void* __ptr,
+                  const size_t,
+                  [[maybe_unused]] const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to managed_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(::cudaFree, "managed_memory_resource::deallocate failed", __ptr);
-    (void) __alignment;
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -121,11 +120,12 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate_async` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
-  void deallocate_async(void* __ptr, const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
+  void deallocate_async(void* __ptr,
+                        const size_t __bytes,
+                        [[maybe_unused]] const size_t __alignment,
+                        [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
     deallocate(__ptr, __bytes);
-    (void) __alignment;
-    (void) __stream;
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
@@ -136,16 +136,15 @@ public:
   //! that returned \p __ptr.
   //! @note The pointer passed to `deallocate_async` must not be in use in a stream other than \p __stream.
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
-  void deallocate_async(void* __ptr, size_t __bytes, const ::cuda::stream_ref __stream)
+  void deallocate_async(void* __ptr, size_t __bytes, [[maybe_unused]] const ::cuda::stream_ref __stream)
   {
     deallocate(__ptr, __bytes);
-    (void) __stream;
   }
 
   //! @brief Equality comparison with another \c managed_memory_resource.
   //! @param __other The other \c managed_memory_resource.
   //! @return Whether both \c managed_memory_resource were constructed with the same flags.
-  _CCCL_NODISCARD constexpr bool operator==(managed_memory_resource const& __other) const noexcept
+  [[nodiscard]] constexpr bool operator==(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ == __other.__flags_;
   }
@@ -153,76 +152,13 @@ public:
   //! @brief Inequality comparison with another \c managed_memory_resource.
   //! @param __other The other \c managed_memory_resource.
   //! @return Whether both \c managed_memory_resource were constructed with different flags.
-  _CCCL_NODISCARD constexpr bool operator!=(managed_memory_resource const& __other) const noexcept
+  [[nodiscard]] constexpr bool operator!=(managed_memory_resource const& __other) const noexcept
   {
     return __flags_ != __other.__flags_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-private:
-  template <class _Resource>
-  _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
-  {
-    if constexpr (has_property<_Resource, device_accessible>)
-    {
-      return resource_ref<device_accessible>{*const_cast<managed_memory_resource*>(this)}
-          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
-    }
-    else if constexpr (has_property<_Resource, host_accessible>)
-    {
-      return resource_ref<host_accessible>{*const_cast<managed_memory_resource*>(this)}
-          == __cudax::__as_resource_ref<host_accessible>(const_cast<_Resource&>(__rhs));
-    }
-    else
-    {
-      return false;
-    }
-  }
-
-public:
-#  if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c managed_memory_resource and another resource
-  //! @param __rhs The resource to compare to
-  //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
-  //! resources. Otherwise, returns false.
-  template <class _Resource>
-    requires _CUDA_VMR::__different_resource<managed_memory_resource, _Resource>
-  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
-  {
-    return this->__equal_to(__rhs);
-  }
-#  else // ^^^ C++20 ^^^ / vvv C++17
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
-  {
-    return __lhs.__equal_to(__rhs);
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, managed_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
-  {
-    return __rhs.__equal_to(__lhs);
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
-  {
-    return !__lhs.__equal_to(__rhs);
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __lhs, managed_memory_resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
-  {
-    return !__rhs.__equal_to(__lhs);
-  }
-#  endif // _CCCL_STD_VER <= 2017
-
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property

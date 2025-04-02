@@ -86,7 +86,7 @@ public:
    * outlive the stream identified by the `cudaStream_t` handle.
    *
    */
-  constexpr stream_ref(value_type __stream_) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr stream_ref(value_type __stream_) noexcept
       : __stream{__stream_}
   {}
 
@@ -106,7 +106,8 @@ public:
    * \param rhs The second `stream_ref` to compare
    * \return true if equal, false if unequal
    */
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream == __rhs.__stream;
   }
@@ -121,13 +122,14 @@ public:
    * \param rhs The second `stream_ref` to compare
    * \return true if unequal, false if equal
    */
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream != __rhs.__stream;
   }
 
   /// Returns the wrapped `cudaStream_t` handle.
-  _CCCL_NODISCARD constexpr value_type get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type get() const noexcept
   {
     return __stream;
   }
@@ -150,7 +152,7 @@ public:
    *
    * \return `true` if all operations have completed, or `false` if not.
    */
-  _CCCL_NODISCARD bool ready() const
+  [[nodiscard]] bool ready() const
   {
     const auto __result = ::cudaStreamQuery(get());
     if (__result == ::cudaErrorNotReady)
@@ -175,7 +177,7 @@ public:
    *
    * \return value representing the priority of the wrapped stream.
    */
-  _CCCL_NODISCARD int priority() const
+  [[nodiscard]] int priority() const
   {
     int __result = 0;
     _CCCL_TRY_CUDA_API(::cudaStreamGetPriority, "Failed to get stream priority", get(), &__result);

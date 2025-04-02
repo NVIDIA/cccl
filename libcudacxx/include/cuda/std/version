@@ -48,6 +48,7 @@
 #define __cccl_lib_is_swappable                 201603L
 #define __cccl_lib_launder                      201606L
 #define __cccl_lib_logical_traits               201510L
+#define __cccl_lib_math_constants               201907L
 #if defined(_CCCL_BUILTIN_REFERENCE_CONSTRUCTS_FROM_TEMPORARY) \
   && defined(_CCCL_BUILTIN_REFERENCE_CONVERTS_FROM_TEMPORARY)
 #  define __cpp_lib_reference_from_temporary 202202L
@@ -60,14 +61,10 @@
 #define __cccl_lib_transformation_trait_aliases 201304L
 #define __cccl_lib_tuple_element_t              201402L
 // #define __cpp_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
-#define __cccl_lib_type_identity 201806L
-#define __cccl_lib_unreachable   202202L
-#define __cccl_lib_void_t        201411L
-
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-#  define __cccl_lib_type_trait_variable_templates 201510L
-#  define __cccl_lib_math_constants                201907L
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#define __cccl_lib_type_identity                 201806L
+#define __cccl_lib_type_trait_variable_templates 201510L
+#define __cccl_lib_unreachable                   202202L
+#define __cccl_lib_void_t                        201411L
 
 #define __cccl_lib_as_const     201510L
 #define __cccl_lib_bit_cast     201806L

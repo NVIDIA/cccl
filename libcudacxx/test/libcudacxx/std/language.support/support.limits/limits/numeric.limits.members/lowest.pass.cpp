@@ -40,16 +40,14 @@ int main(int, char**)
 
   test<signed char>(SCHAR_MIN);
   test<unsigned char>(0);
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
   test<wchar_t>(WCHAR_MIN);
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t>(0);
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t>(0);
   test<char32_t>(0);
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short>(SHRT_MIN);
   test<unsigned short>(0);
   test<int>(INT_MIN);

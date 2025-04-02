@@ -10,7 +10,7 @@
 
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/buffer.cuh>
+#include <cuda/experimental/container.cuh>
 #include <cuda/experimental/execution.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -47,9 +47,9 @@ struct test_resource
 
 TEST_CASE("env_t is queryable for all properties we want", "[execution, env]")
 {
-  STATIC_REQUIRE(cudax::__async::__queryable<env_t, cudax::get_stream_t>);
-  STATIC_REQUIRE(cudax::__async::__queryable<env_t, cudax::get_memory_resource_t>);
-  STATIC_REQUIRE(cudax::__async::__queryable<env_t, cudax::execution::get_execution_policy_t>);
+  STATIC_REQUIRE(cudax::__async::__queryable_with<env_t, cudax::get_stream_t>);
+  STATIC_REQUIRE(cudax::__async::__queryable_with<env_t, cudax::get_memory_resource_t>);
+  STATIC_REQUIRE(cudax::__async::__queryable_with<env_t, cudax::execution::get_execution_policy_t>);
 }
 
 TEST_CASE("env_t is default constructible", "[execution, env]")

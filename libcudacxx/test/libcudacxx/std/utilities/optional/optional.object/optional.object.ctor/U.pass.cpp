@@ -22,9 +22,7 @@
 #include "test_convertible.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4244) // conversion from 'const From' to 'short', possible loss of data
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const From' to 'short', possible loss of data
 
 using cuda::std::optional;
 
@@ -82,9 +80,8 @@ enum class IsExplicit
 };
 
 template <IsExplicit is_explicit, class To, class From>
-__host__ __device__ constexpr void test(From input)
+__host__ __device__ constexpr void test([[maybe_unused]] From input)
 {
-  (void) input;
   if constexpr (cuda::std::is_convertible_v<const From&, optional<To>>)
   {
     static_assert(is_explicit == IsExplicit::No);

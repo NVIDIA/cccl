@@ -440,7 +440,7 @@ _CCCL_DEVICE constexpr inline arch_traits_t current_arch()
 
 namespace detail
 {
-_CCCL_NODISCARD inline constexpr arch_traits_t __arch_traits_might_be_unknown(int __device, unsigned int __arch)
+[[nodiscard]] inline constexpr arch_traits_t __arch_traits_might_be_unknown(int __device, unsigned int __arch)
 {
   if (__arch <= __highest_known_arch)
   {

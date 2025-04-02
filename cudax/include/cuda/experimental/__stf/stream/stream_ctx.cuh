@@ -29,6 +29,8 @@
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/cuda_kernel_scope.cuh>
+#include <cuda/experimental/__stf/internal/host_launch_scope.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
@@ -63,11 +65,11 @@ public:
     void* result = nullptr;
 
     // That is a miss, we need to do an allocation
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       cuda_safe_call(cudaMallocHost(&result, s));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaMallocManaged(&result, s));
     }
@@ -120,13 +122,13 @@ public:
       op.set_symbol("cudaFreeAsync");
     }
 
-    if (memory_node == data_place::host)
+    if (memory_node.is_host())
     {
       // XXX TODO defer to deinit (or implement a blocking policy)?
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFreeHost(ptr));
     }
-    else if (memory_node == data_place::managed)
+    else if (memory_node.is_managed())
     {
       cuda_safe_call(cudaStreamSynchronize(dstream.stream));
       cuda_safe_call(cudaFree(ptr));
@@ -212,7 +214,7 @@ public:
 
     // Create an event in the stream
     auto start_e = reserved::record_event_in_stream(dstream);
-    get_stack().add_start_events(event_list(mv(start_e)));
+    get_state().add_start_events(*this, event_list(mv(start_e)));
 
     // When a stream is attached to the context creation, the finalize()
     // semantic is non-blocking
@@ -278,9 +280,9 @@ public:
         ? user_dstream.value()
         : exec_place::current_device().getStream(async_resources(), true /* stream for computation */);
 
-    auto prereqs = get_stack().insert_task_fence(*get_dot());
+    auto prereqs = get_state().insert_task_fence(*get_dot());
 
-    prereqs.optimize();
+    prereqs.optimize(*this);
 
     // The output event is used for the tools in practice so we can ignore it
     /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "task_fence", false);
@@ -503,7 +505,7 @@ public:
 
   void finalize()
   {
-    assert(get_phase() < backend_ctx_untyped::phase::finalized);
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::finalized, "");
     auto& state = this->state();
     if (!state.submitted_stream)
     {
@@ -528,9 +530,8 @@ public:
   void submit()
   {
     auto& state = this->state();
-    assert(!state.submitted_stream);
-
-    assert(get_phase() < backend_ctx_untyped::phase::submitted);
+    _CCCL_ASSERT(!state.submitted_stream, "");
+    _CCCL_ASSERT(get_phase() < backend_ctx_untyped::phase::submitted, "");
 
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;
@@ -617,7 +618,7 @@ public:
   {
     typename owning_container_of<T>::type out;
 
-    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+    task(exec_place::host(), ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       out = owning_container_of<T>::get_value(data);
     };
@@ -1146,7 +1147,7 @@ inline void unit_test_host_pfor()
 {
   stream_ctx ctx;
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(exec_place::host, lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
+  ctx.parallel_for(exec_place::host(), lA.shape(), lA.write())->*[](size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1176,7 +1177,7 @@ inline void unit_test_pfor_mix_host_dev()
     sx(pos) = 17 * pos + 4;
   };
 
-  ctx.parallel_for(exec_place::host, lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
+  ctx.parallel_for(exec_place::host(), lx.shape(), lx.rw())->*[=](size_t pos, auto sx) {
     sx(pos) = sx(pos) * sx(pos);
   };
 
@@ -1203,7 +1204,7 @@ inline void unit_test_untyped_place_pfor()
 {
   stream_ctx ctx;
 
-  exec_place where = exec_place::host;
+  exec_place where = exec_place::host();
 
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
   // We have to put both __host__ __device__ qualifiers as this is resolved

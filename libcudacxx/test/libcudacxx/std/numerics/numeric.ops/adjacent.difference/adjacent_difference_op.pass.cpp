@@ -34,29 +34,26 @@ struct rvalue_subtractable
   bool correctOperatorUsed = false;
 
   // make sure the predicate is passed an rvalue and an lvalue (so check that the first argument was moved)
-  __host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_subtractable
-  operator()(rvalue_subtractable const&, rvalue_subtractable&& r)
+  __host__ __device__ constexpr rvalue_subtractable operator()(rvalue_subtractable const&, rvalue_subtractable&& r)
   {
     r.correctOperatorUsed = true;
     return cuda::std::move(r);
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_subtractable
-operator-(rvalue_subtractable const&, rvalue_subtractable& rhs)
+__host__ __device__ constexpr rvalue_subtractable operator-(rvalue_subtractable const&, rvalue_subtractable& rhs)
 {
   rhs.correctOperatorUsed = false;
   return rhs;
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 rvalue_subtractable
-operator-(rvalue_subtractable const&, rvalue_subtractable&& rhs)
+__host__ __device__ constexpr rvalue_subtractable operator-(rvalue_subtractable const&, rvalue_subtractable&& rhs)
 {
   rhs.correctOperatorUsed = true;
   return cuda::std::move(rhs);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_use_move()
+__host__ __device__ constexpr void test_use_move()
 {
   const cuda::std::size_t size = 100;
   rvalue_subtractable arr[size];
@@ -76,7 +73,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_use_move()
 }
 
 #ifdef _LIBCUDACXX_HAS_STRING
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_string()
+__host__ __device__ constexpr void test_string()
 {
   cuda::std::string sa[] = {"a", "b", "c"};
   cuda::std::string sr[] = {"a", "ba", "cb"};
@@ -90,7 +87,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_string()
 #endif // _LIBCUDACXX_HAS_STRING
 
 template <class InIter, class OutIter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   int ia[]         = {15, 10, 6, 3, 1};
   int ir[]         = {15, 25, 16, 9, 4};
@@ -110,23 +107,23 @@ class X
 {
   int i_;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 X& operator=(const X&);
+  __host__ __device__ constexpr X& operator=(const X&);
 
 public:
-  __host__ __device__ TEST_CONSTEXPR_CXX14 explicit X(int i)
+  __host__ __device__ constexpr explicit X(int i)
       : i_(i)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 X(const X& x)
+  __host__ __device__ constexpr X(const X& x)
       : i_(x.i_)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 X& operator=(X&& x)
+  __host__ __device__ constexpr X& operator=(X&& x)
   {
     i_   = x.i_;
     x.i_ = -1;
     return *this;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 friend X operator-(const X& x, const X& y)
+  __host__ __device__ constexpr friend X operator-(const X& x, const X& y)
   {
     return X(x.i_ - y.i_);
   }
@@ -138,22 +135,22 @@ class Y
 {
   int i_;
 
-  __host__ __device__ TEST_CONSTEXPR_CXX14 Y& operator=(const Y&);
+  __host__ __device__ constexpr Y& operator=(const Y&);
 
 public:
-  __host__ __device__ TEST_CONSTEXPR_CXX14 explicit Y(int i)
+  __host__ __device__ constexpr explicit Y(int i)
       : i_(i)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 Y(const Y& y)
+  __host__ __device__ constexpr Y(const Y& y)
       : i_(y.i_)
   {}
-  __host__ __device__ TEST_CONSTEXPR_CXX14 void operator=(const X& x)
+  __host__ __device__ constexpr void operator=(const X& x)
   {
     i_ = x.i_;
   }
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
   test<cpp17_input_iterator<const int*>, forward_iterator<int*>>();

@@ -314,11 +314,10 @@ template <typename T, size_t N>
  *
  */
 template <typename T, typename P0, typename... P>
-T only_convertible(P0&& p0, P&&... p)
+T only_convertible(P0&& p0, [[maybe_unused]] P&&... p)
 {
   if constexpr (::std::is_convertible_v<P0, T>)
   {
-    ((void) p, ...);
     static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
     return ::std::forward<P0>(p0);
   }
@@ -402,11 +401,10 @@ auto all_convertible(P&&... p)
  * @return T Either the first convertible parameter, or `default_v` if no such parameter is found
  */
 template <typename T, typename... P>
-T only_convertible_or([[maybe_unused]] T default_v, P&&... p)
+T only_convertible_or([[maybe_unused]] T default_v, [[maybe_unused]] P&&... p)
 {
   if constexpr (!(::std::is_convertible_v<P, T> || ...))
   {
-    ((void) p, ...);
     return default_v;
   }
   else

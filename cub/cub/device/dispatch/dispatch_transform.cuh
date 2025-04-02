@@ -345,11 +345,13 @@ struct dispatch_t<StableAddress,
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
     auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
+#ifdef _CUB_HAS_TRANSFORM_UBLKCP
     if constexpr (Algorithm::ublkcp == wrapped_policy.GetAlgorithm())
     {
       return invoke_ublkcp_algorithm<ActivePolicyT>(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{});
     }
     else
+#endif // _CUB_HAS_TRANSFORM_UBLKCP
     {
       return invoke_prefetch_algorithm(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{}, wrapped_policy);
     }
@@ -372,7 +374,7 @@ struct dispatch_t<StableAddress,
     }
 
     int ptx_version = 0;
-    auto error      = CubDebug(PtxVersion(ptx_version));
+    auto error      = CubDebug(launcher_factory.PtxVersion(ptx_version));
     if (cudaSuccess != error)
     {
       return error;

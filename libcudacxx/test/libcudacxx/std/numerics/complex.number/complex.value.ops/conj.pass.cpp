@@ -19,13 +19,13 @@
 #include "test_macros.h"
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test(const cuda::std::complex<T>& z, cuda::std::complex<T> x)
+__host__ __device__ constexpr void test(const cuda::std::complex<T>& z, cuda::std::complex<T> x)
 {
   assert(conj(z) == x);
 }
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   test(cuda::std::complex<T>(1, 2), cuda::std::complex<T>(1, -2));
   test(cuda::std::complex<T>(-1, 2), cuda::std::complex<T>(-1, -2));

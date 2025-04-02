@@ -32,7 +32,7 @@ struct launch_option
   static constexpr bool is_relevant_on_device = false;
 
 protected:
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t&, void*) const noexcept
+  [[nodiscard]] cudaError_t apply(cudaLaunchConfig_t&, void*) const noexcept
   {
     return cudaSuccess;
   }
@@ -135,7 +135,7 @@ struct cooperative_launch : public detail::launch_option
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
+  [[nodiscard]] cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id              = cudaLaunchAttributeCooperative;
@@ -214,7 +214,7 @@ struct dynamic_shared_memory_option : public detail::launch_option
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
+  [[nodiscard]] cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaFuncAttributes attrs;
     int size_needed    = static_cast<int>(size * sizeof(Content));
@@ -302,7 +302,7 @@ struct launch_priority : public detail::launch_option
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
 private:
-  _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
+  [[nodiscard]] cudaError_t apply(cudaLaunchConfig_t& config, void*) const noexcept
   {
     cudaLaunchAttribute attr;
     attr.id           = cudaLaunchAttributePriority;
@@ -318,7 +318,7 @@ template <typename... _OptionsToFilter>
 struct __filter_options
 {
   template <bool _Pred, typename _Option>
-  _CCCL_NODISCARD auto __option_or_empty(const _Option& __option)
+  [[nodiscard]] auto __option_or_empty(const _Option& __option)
   {
     if constexpr (_Pred)
     {
@@ -326,12 +326,12 @@ struct __filter_options
     }
     else
     {
-      return ::cuda::std::tuple();
+      return ::cuda::std::tuple{};
     }
   }
 
   template <typename... _Options>
-  _CCCL_NODISCARD auto operator()(const _Options&... __options)
+  [[nodiscard]] auto operator()(const _Options&... __options)
   {
     return ::cuda::std::tuple_cat(
       __option_or_empty<!detail::__option_present_in_list<_Options, _OptionsToFilter...>>(__options)...);
@@ -389,7 +389,7 @@ struct kernel_config
    * Option to be added to the configuration
    */
   template <typename... NewOptions>
-  _CCCL_NODISCARD auto add(const NewOptions&... new_options) const
+  [[nodiscard]] auto add(const NewOptions&... new_options) const
   {
     return kernel_config<Dimensions, Options..., NewOptions...>(
       dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
@@ -410,7 +410,7 @@ struct kernel_config
    * Other configuration to combine with this configuration
    */
   template <typename _OtherDimensions, typename... _OtherOptions>
-  _CCCL_NODISCARD auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
+  [[nodiscard]] auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
   {
     // can't use fully qualified kernel_config name here because of nvcc bug, TODO remove __make_config_from_tuple once
     // fixed
@@ -431,7 +431,7 @@ struct kernel_config
    * Kernel functor to search for the default configuration
    */
   template <typename _Kernel>
-  _CCCL_NODISCARD auto combine_with_default(const _Kernel& __kernel) const
+  [[nodiscard]] auto combine_with_default(const _Kernel& __kernel) const
   {
     if constexpr (__kernel_has_default_config<_Kernel>)
     {
@@ -476,7 +476,7 @@ template <typename Dimensions,
           typename... Options,
           typename Option,
           typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<detail::launch_option, Option>>>
-_CCCL_NODISCARD constexpr auto
+[[nodiscard]] constexpr auto
 operator&(const kernel_config<Dimensions, Options...>& config, const Option& option) noexcept
 {
   return config.add(option);
@@ -485,7 +485,7 @@ operator&(const kernel_config<Dimensions, Options...>& config, const Option& opt
 template <typename... Levels,
           typename Option,
           typename = ::cuda::std::enable_if_t<::cuda::std::is_base_of_v<detail::launch_option, Option>>>
-_CCCL_NODISCARD constexpr auto operator&(const hierarchy_dimensions<Levels...>& dims, const Option& option) noexcept
+[[nodiscard]] constexpr auto operator&(const hierarchy_dimensions<Levels...>& dims, const Option& option) noexcept
 {
   return kernel_config(dims, option);
 }
@@ -504,7 +504,7 @@ _CCCL_NODISCARD constexpr auto operator&(const hierarchy_dimensions<Levels...>& 
  * Variadic number of launch configuration options to be included in the resulting kernel configuration object
  */
 template <typename BottomUnit, typename... Levels, typename... Opts>
-_CCCL_NODISCARD constexpr auto
+[[nodiscard]] constexpr auto
 make_config(const hierarchy_dimensions<BottomUnit, Levels...>& dims, const Opts&... opts) noexcept
 {
   return kernel_config<hierarchy_dimensions<BottomUnit, Levels...>, Opts...>(dims, opts...);
@@ -536,7 +536,7 @@ constexpr auto distribute(int numElements) noexcept
 }
 
 template <typename... Prev>
-_CCCL_NODISCARD constexpr auto __process_config_args(const ::cuda::std::tuple<Prev...>& previous)
+[[nodiscard]] constexpr auto __process_config_args(const ::cuda::std::tuple<Prev...>& previous)
 {
   if constexpr (sizeof...(Prev) == 0)
   {
@@ -549,7 +549,7 @@ _CCCL_NODISCARD constexpr auto __process_config_args(const ::cuda::std::tuple<Pr
 }
 
 template <typename... Prev, typename Arg, typename... Rest>
-_CCCL_NODISCARD constexpr auto
+[[nodiscard]] constexpr auto
 __process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& arg, const Rest&... rest)
 {
   if constexpr (::cuda::std::is_base_of_v<detail::launch_option, Arg>)
@@ -572,7 +572,7 @@ __process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& ar
 }
 
 template <typename... Args>
-_CCCL_NODISCARD constexpr auto make_config(const Args&... args)
+[[nodiscard]] constexpr auto make_config(const Args&... args)
 {
   return __process_config_args(::cuda::std::make_tuple(), args...);
 }
@@ -587,7 +587,7 @@ inline unsigned int constexpr kernel_config_count_attr_space(const kernel_config
 }
 
 template <typename Dimensions, typename... Options>
-_CCCL_NODISCARD cudaError_t apply_kernel_config(
+[[nodiscard]] cudaError_t apply_kernel_config(
   const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept
 {
   cudaError_t status = cudaSuccess;
@@ -607,7 +607,7 @@ _CCCL_NODISCARD cudaError_t apply_kernel_config(
 
 // Needs to be a char casted to the appropriate type, if it would be a template
 //  different instantiations would clash the extern symbol
-_CCCL_DEVICE _CCCL_NODISCARD static char* get_smem_ptr() noexcept
+_CCCL_DEVICE [[nodiscard]] static char* get_smem_ptr() noexcept
 {
   extern __shared__ char dynamic_smem[];
 

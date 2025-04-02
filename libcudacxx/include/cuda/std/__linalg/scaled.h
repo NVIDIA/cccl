@@ -82,18 +82,18 @@ public:
     return __scaling_factor_ * typename _NestedAccessor::element_type(__nested_accessor_.access(__p, __i));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI
   typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
   {
     return __nested_accessor_.offset(__p, __i);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _NestedAccessor nested_accessor() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _NestedAccessor nested_accessor() const noexcept
   {
     return __nested_accessor_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ScalingFactor scaling_factor() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ScalingFactor scaling_factor() const noexcept
   {
     return __scaling_factor_;
   }
@@ -112,7 +112,7 @@ using __scaled_element_type = add_const_t<typename scaled_accessor<_ScalingFacto
 } // namespace __detail
 
 template <class _ScalingFactor, class _ElementType, class _Extents, class _Layout, class _Accessor>
-_CCCL_NODISCARD
+[[nodiscard]]
 _LIBCUDACXX_HIDE_FROM_ABI constexpr mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
                                            _Extents,
                                            _Layout,

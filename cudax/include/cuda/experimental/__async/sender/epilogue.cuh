@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 #if !defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
-#  __error epilogue.cuh included without a prior inclusion of prologue.cuh
+#  error epilogue.cuh included without a prior inclusion of prologue.cuh
 #endif
 
 #undef _CUDAX_ASYNC_PROLOGUE_INCLUDED

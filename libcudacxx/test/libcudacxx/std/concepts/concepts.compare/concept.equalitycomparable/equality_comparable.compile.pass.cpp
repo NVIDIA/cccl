@@ -86,7 +86,7 @@ static_assert(equality_comparable<cxx20_member_eq>, "");
 static_assert(equality_comparable<cxx20_friend_eq>, "");
 #  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 static_assert(equality_comparable<member_three_way_comparable>, "");
-#    ifndef __NVCC__ // nvbug3908399
+#    if !TEST_CUDA_COMPILER(NVCC) // nvbug3908399
 static_assert(equality_comparable<friend_three_way_comparable>, "");
 #    endif // !__NVCC_
 #  endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -118,9 +118,9 @@ static_assert(!equality_comparable<cxx20_friend_eq_operator_with_deleted_ne>, ""
 static_assert(!equality_comparable<member_three_way_comparable_with_deleted_eq>, "");
 static_assert(!equality_comparable<member_three_way_comparable_with_deleted_ne>, "");
 static_assert(!equality_comparable<friend_three_way_comparable_with_deleted_eq>, "");
-#    ifndef __NVCC__ // nvbug3908399
+#    if !TEST_CUDA_COMPILER(NVCC) // nvbug3908399
 static_assert(!equality_comparable<friend_three_way_comparable_with_deleted_ne>, "");
-#    endif // !__NVCC__
+#    endif // !TEST_CUDA_COMPILER(NVCC)
 
 static_assert(!equality_comparable<eq_returns_explicit_bool>, "");
 static_assert(!equality_comparable<ne_returns_explicit_bool>, "");

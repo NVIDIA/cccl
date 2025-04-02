@@ -50,13 +50,9 @@ extern __fn_t<just_stopped_t>* __just_tag<__stopped, _Void>;
 } // namespace __detail
 
 template <__disposition_t _Disposition>
-struct __just
+struct __just_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
-
   using _JustTag = decltype(__detail::__just_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
@@ -64,7 +60,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept = operation_state_t;
-    using completion_signatures   = __async::completion_signatures<_SetTag(_Ts...)>;
+
     _Rcvr __rcvr_;
     __tuple<_Ts...> __values_;
 
@@ -84,47 +80,59 @@ private:
     }
   };
 
-  template <class... _Ts>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t
-  {
-    using sender_concept        = sender_t;
-    using completion_signatures = __async::completion_signatures<_SetTag(_Ts...)>;
-
-    _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
-    __tuple<_Ts...> __values_;
-
-    template <class _Rcvr>
-    _CUDAX_API __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) && //
-      noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
-    {
-      return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), static_cast<__tuple<_Ts...>&&>(__values_)};
-    }
-
-    template <class _Rcvr>
-    _CUDAX_API __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) const& //
-      noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
-    {
-      return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
-    }
-  };
-
 public:
   template <class... _Ts>
-  _CUDAX_TRIVIAL_API auto operator()(_Ts... __ts) const noexcept
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+
+  template <class... _Ts>
+  _CUDAX_TRIVIAL_API auto operator()(_Ts... __ts) const -> __sndr_t<_Ts...>;
+};
+
+template <__disposition_t _Disposition>
+template <class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
+{
+  using sender_concept = sender_t;
+
+  _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
+  __tuple<_Ts...> __values_;
+
+  template <class _Self, class... _Env>
+  _CUDAX_API static constexpr auto get_completion_signatures() noexcept
   {
-    return __sndr_t<_Ts...>{_JustTag{}, {{static_cast<_Ts&&>(__ts)}...}};
+    return __async::completion_signatures<_SetTag(_Ts...)>();
+  }
+
+  template <class _Rcvr>
+  _CUDAX_API __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) && //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
+  {
+    return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), static_cast<__tuple<_Ts...>&&>(__values_)};
+  }
+
+  template <class _Rcvr>
+  _CUDAX_API __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) const& //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
+  {
+    return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
   }
 };
 
-_CCCL_GLOBAL_CONSTANT struct just_t : __just<__value>
+template <__disposition_t _Disposition>
+template <class... _Ts>
+_CUDAX_TRIVIAL_API auto __just_t<_Disposition>::operator()(_Ts... __ts) const -> __sndr_t<_Ts...>
+{
+  return __sndr_t<_Ts...>{_JustTag{}, {{static_cast<_Ts&&>(__ts)}...}};
+}
+_CCCL_GLOBAL_CONSTANT struct just_t : __just_t<__value>
 {
 } just{};
 
-_CCCL_GLOBAL_CONSTANT struct just_error_t : __just<__error>
+_CCCL_GLOBAL_CONSTANT struct just_error_t : __just_t<__error>
 {
 } just_error{};
 
-_CCCL_GLOBAL_CONSTANT struct just_stopped_t : __just<__stopped>
+_CCCL_GLOBAL_CONSTANT struct just_stopped_t : __just_t<__stopped>
 {
 } just_stopped{};
 } // namespace cuda::experimental::__async

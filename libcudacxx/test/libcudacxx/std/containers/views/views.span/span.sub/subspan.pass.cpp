@@ -32,8 +32,8 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
   auto s2  = sp.subspan(Offset, Count);
   using S1 = decltype(s1);
   using S2 = decltype(s2);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S1::value_type);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S2::value_type);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(S1::extent == Count, "");
   static_assert(S2::extent == cuda::std::dynamic_extent, "");
   return s1.data() == s2.data() && s1.size() == s2.size();
@@ -48,8 +48,8 @@ __host__ __device__ constexpr bool testConstexprSpan(Span sp)
   auto s2  = sp.subspan(Offset);
   using S1 = decltype(s1);
   using S2 = decltype(s2);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S1::value_type);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S2::value_type);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(
     S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset), "");
   static_assert(S2::extent == cuda::std::dynamic_extent, "");
@@ -65,8 +65,8 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   auto s2  = sp.subspan(Offset, Count);
   using S1 = decltype(s1);
   using S2 = decltype(s2);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S1::value_type);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S2::value_type);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(S1::extent == Count, "");
   static_assert(S2::extent == cuda::std::dynamic_extent, "");
   assert(s1.data() == s2.data());
@@ -82,8 +82,8 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   auto s2  = sp.subspan(Offset);
   using S1 = decltype(s1);
   using S2 = decltype(s2);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S1::value_type);
-  ASSERT_SAME_TYPE(typename Span::value_type, typename S2::value_type);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S1::value_type>);
+  static_assert(cuda::std::is_same_v<typename Span::value_type, typename S2::value_type>);
   static_assert(
     S1::extent == (Span::extent == cuda::std::dynamic_extent ? cuda::std::dynamic_extent : Span::extent - Offset), "");
   static_assert(S2::extent == cuda::std::dynamic_extent, "");
@@ -91,8 +91,8 @@ __host__ __device__ void testRuntimeSpan(Span sp)
   assert(s1.size() == s2.size());
 }
 
-STATIC_TEST_GLOBAL_VAR constexpr int carr1[] = {1, 2, 3, 4};
-__device__ int arr1[]                        = {5, 6, 7};
+TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
+__device__ int arr1[]                      = {5, 6, 7};
 
 int main(int, char**)
 {

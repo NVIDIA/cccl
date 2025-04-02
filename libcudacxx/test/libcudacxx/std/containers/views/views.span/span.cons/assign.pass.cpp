@@ -31,10 +31,10 @@ __host__ __device__ constexpr bool doAssign(T lhs, T rhs)
 struct A
 {};
 
-STATIC_TEST_GLOBAL_VAR constexpr int carr1[] = {1, 2, 3, 4};
-STATIC_TEST_GLOBAL_VAR constexpr int carr2[] = {3, 4, 5};
-STATIC_TEST_GLOBAL_VAR constexpr int carr3[] = {7, 8};
-__device__ int arr[]                         = {5, 6, 7, 9};
+TEST_GLOBAL_VARIABLE constexpr int carr1[] = {1, 2, 3, 4};
+TEST_GLOBAL_VARIABLE constexpr int carr2[] = {3, 4, 5};
+TEST_GLOBAL_VARIABLE constexpr int carr3[] = {7, 8};
+__device__ int arr[]                       = {5, 6, 7, 9};
 
 int main(int, char**)
 {

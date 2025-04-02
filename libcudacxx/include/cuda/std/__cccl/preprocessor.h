@@ -11,17 +11,6 @@
 #ifndef __CCCL_PREPROCESSOR_H
 #define __CCCL_PREPROCESSOR_H
 
-#include <cuda/std/__cccl/compiler.h>
-#include <cuda/std/__cccl/system_header.h>
-
-#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
-#  pragma GCC system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
-#  pragma clang system_header
-#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
-#  pragma system_header
-#endif // no system header
-
 #ifdef __has_include
 #  define _CCCL_HAS_INCLUDE(_X) __has_include(_X)
 #else
@@ -33,6 +22,10 @@
 #else
 #  define _CCCL_COUNTER() __LINE__
 #endif
+
+// Convert parameter to string
+#define _CCCL_TO_STRING2(_STR) #_STR
+#define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
 
 #define _CCCL_PP_EXPAND(...) __VA_ARGS__
 #define _CCCL_PP_EAT(...)

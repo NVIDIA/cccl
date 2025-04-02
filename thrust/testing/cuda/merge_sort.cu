@@ -174,7 +174,7 @@ void TestMergeSortDescendingKey()
 DECLARE_UNITTEST(TestMergeSortDescendingKey);
 
 template <typename T>
-void TestMergeSortAscendingKeyValue(const size_t n)
+void TestMergeSortAscendingKeyValue([[maybe_unused]] const size_t n)
 {
 #if 0
     thrust::host_vector<T>   h_keys = unittest::random_integers<T>(n);
@@ -191,7 +191,6 @@ void TestMergeSortAscendingKeyValue(const size_t n)
     ASSERT_EQUAL(h_keys,   d_keys);
     ASSERT_EQUAL(h_values, d_values);
 #else
-  (void) n;
   KNOWN_FAILURE;
 #endif
 }
@@ -222,7 +221,7 @@ void TestMergeSortDescendingKeyValue()
 DECLARE_UNITTEST(TestMergeSortDescendingKeyValue);
 
 template <typename U>
-void TestMergeSortKeyValue(size_t n)
+void TestMergeSortKeyValue([[maybe_unused]] size_t n)
 {
 #if 0
   using T = key_value<U,U>;
@@ -244,7 +243,6 @@ void TestMergeSortKeyValue(size_t n)
 
   ASSERT_EQUAL_QUIET(h_data, d_data);
 #else
-  (void) n;
   KNOWN_FAILURE;
 #endif
 }

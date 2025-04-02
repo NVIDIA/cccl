@@ -274,8 +274,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate(5, 42);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 42);
       }
       catch (std::invalid_argument&)
       {
@@ -290,8 +289,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
     {
       try
       {
-        auto* ptr = res.allocate(5, 1337);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate(5, 1337);
       }
       catch (std::invalid_argument&)
       {
@@ -307,8 +305,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
       cudaStreamCreate(&raw_stream);
       try
       {
-        auto* ptr = res.allocate_async(5, 42, raw_stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 42, raw_stream);
       }
       catch (std::invalid_argument&)
       {
@@ -326,8 +323,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
       cudaStreamCreate(&raw_stream);
       try
       {
-        auto* ptr = res.allocate_async(5, 1337, raw_stream);
-        (void) ptr;
+        [[maybe_unused]] auto* ptr = res.allocate_async(5, 1337, raw_stream);
       }
       catch (std::invalid_argument&)
       {
@@ -465,7 +461,7 @@ TEST_CASE("device_memory_resource comparison", "[memory_resource]")
   }
 }
 
-TEST_CASE("Async memory resource peer access")
+TEST_CASE("Async memory resource access")
 {
   if (cudax::devices.size() > 1)
   {
@@ -488,7 +484,7 @@ TEST_CASE("Async memory resource peer access")
         resource.deallocate(ptr2, sizeof(int));
       };
 
-      resource.enable_peer_access_from(peers);
+      resource.enable_access_from(peers);
 
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
@@ -498,7 +494,7 @@ TEST_CASE("Async memory resource peer access")
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
       allocate_and_check_access(another_resource);
 
-      resource.disable_peer_access_from(peers.front());
+      resource.disable_access_from(peers.front());
       CUDAX_CHECK(!resource.is_accessible_from(peers.front()));
       CUDAX_CHECK(!another_resource.is_accessible_from(peers.front()));
 
@@ -507,21 +503,21 @@ TEST_CASE("Async memory resource peer access")
         CUDAX_CHECK(resource.is_accessible_from(peers[1]));
       }
 
-      resource.disable_peer_access_from(peers);
+      resource.disable_access_from(peers);
 
-      resource.enable_peer_access_from(peers.front());
+      resource.enable_access_from(peers.front());
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
 
       // Check if enable can include the device on which the pool resides
       peers.push_back(cudax::devices[0]);
-      resource.enable_peer_access_from(peers);
+      resource.enable_access_from(peers);
 
       // Check the resource using the default pool
       cudax::device_memory_resource default_pool_resource{};
       cudax::device_memory_resource another_default_pool_resource{};
 
-      default_pool_resource.enable_peer_access_from(peers.front());
+      default_pool_resource.enable_access_from(peers.front());
 
       CUDAX_CHECK(default_pool_resource.is_accessible_from(peers.front()));
       allocate_and_check_access(default_pool_resource);

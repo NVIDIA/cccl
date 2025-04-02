@@ -65,7 +65,7 @@ int main()
           };
 
   /* Check the result on the host */
-  ctx.task(exec_place::host, handle_X.read(), handle_Y.read())->*[&](cudaStream_t s, auto sX, auto sY) {
+  ctx.task(exec_place::host(), handle_X.read(), handle_Y.read())->*[&](cudaStream_t s, auto sX, auto sY) {
     cuda_safe_call(cudaStreamSynchronize(s));
 
     for (size_t ind = 0; ind < N; ind++)

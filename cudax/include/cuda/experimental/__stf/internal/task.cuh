@@ -596,13 +596,13 @@ public:
     state.set_write_prereq(mv(prereq));
   }
 
-  void add_read_prereq(const event_list& _prereq)
+  void add_read_prereq(backend_ctx_untyped& bctx, const event_list& _prereq)
   {
-    state.add_read_prereq(_prereq);
+    state.add_read_prereq(bctx, _prereq);
   }
-  void add_write_prereq(const event_list& _prereq)
+  void add_write_prereq(backend_ctx_untyped& bctx, const event_list& _prereq)
   {
-    state.add_write_prereq(_prereq);
+    state.add_write_prereq(bctx, _prereq);
   }
 
   void clear_read_prereq()

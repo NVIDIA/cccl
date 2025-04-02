@@ -29,6 +29,19 @@ struct offset_to_ptr_op
   }
 };
 
+template <typename IteratorT, typename ValueT>
+struct prepend_n_constants_op
+{
+  IteratorT base_it;
+  ValueT value_for_first_n;
+  ::cuda::std::size_t num_items_to_skip;
+
+  __host__ __device__ __forceinline__ auto operator()(::cuda::std::size_t offset) const
+  {
+    return offset < num_items_to_skip ? value_for_first_n : base_it[offset - num_items_to_skip];
+  }
+};
+
 /**
  * @brief Used for generating a shuffled but cohesive sequence of output-buffer offsets for the
  * sequence of input-buffers.

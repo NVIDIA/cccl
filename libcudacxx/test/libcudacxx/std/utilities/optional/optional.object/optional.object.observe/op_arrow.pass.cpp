@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool test()
   {
     cuda::std::optional<X> opt{};
     unused(opt);
-    ASSERT_SAME_TYPE(decltype(opt.operator->()), X*);
+    static_assert(cuda::std::is_same_v<decltype(opt.operator->()), X*>);
     // static_assert(!noexcept(opt.operator->()));
     // FIXME: This assertion fails with GCC because it can see that
     // (A) operator->() is constexpr, and
@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test()
 
     cuda::std::optional<X&> optref;
     unused(optref);
-    ASSERT_SAME_TYPE(decltype(optref.operator->()), X*);
+    static_assert(cuda::std::is_same_v<decltype(optref.operator->()), X*>);
     static_assert(noexcept(optref.operator->()));
   }
 

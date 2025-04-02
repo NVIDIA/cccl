@@ -12,6 +12,8 @@
 
 #include <cuda/experimental/__async/sender.cuh>
 
+#include "testing.cuh" // IWYU pragma: keep
+
 namespace
 {
 //! Scheduler that returns a sender that always completes inline
@@ -31,7 +33,6 @@ private:
   struct opstate_t : cudax_async::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
-    using completion_signatures   = cudax_async::completion_signatures<cudax_async::set_value_t()>;
 
     Rcvr _rcvr;
 
@@ -43,8 +44,13 @@ private:
 
   struct sndr_t
   {
-    using sender_concept        = cudax_async::sender_t;
-    using completion_signatures = cudax_async::completion_signatures<cudax_async::set_value_t()>;
+    using sender_concept = cudax_async::sender_t;
+
+    template <class Self, class... Env>
+    _CCCL_HOST_DEVICE static constexpr auto get_completion_signatures()
+    {
+      return cudax_async::completion_signatures<cudax_async::set_value_t()>();
+    }
 
     template <class Rcvr>
     _CCCL_HOST_DEVICE opstate_t<Rcvr> connect(Rcvr rcvr) const

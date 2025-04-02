@@ -67,7 +67,7 @@ __host__ __device__ constexpr void test_one()
   const auto it    = cuda::std::move_iterator<It>(It(s));
   const auto sent1 = cuda::std::move_sentinel<sentinel_wrapper<It>>(sentinel_wrapper<It>(It(s)));
   const auto sent2 = cuda::std::move_sentinel<sentinel_wrapper<It>>(sentinel_wrapper<It>(It(s + 1)));
-  ASSERT_SAME_TYPE(decltype(it == sent1), bool);
+  static_assert(cuda::std::is_same_v<decltype(it == sent1), bool>);
   assert((it == sent1));
   assert(!(it != sent1));
   assert(!(it == sent2));

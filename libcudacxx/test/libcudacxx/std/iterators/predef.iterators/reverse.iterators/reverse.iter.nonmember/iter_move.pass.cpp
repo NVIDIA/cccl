@@ -51,7 +51,7 @@ __host__ __device__ constexpr bool test()
   }
 
   // Check the `noexcept` specification.
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 8) // ancient gcc trips over this not being a literal type
+#if !TEST_COMPILER(GCC, <, 8) // ancient gcc trips over this not being a literal type
   {
     {
       struct ThrowingCopyNoexceptDecrement
@@ -157,7 +157,7 @@ __host__ __device__ constexpr bool test()
       static_assert(noexcept(iter_move(cuda::std::declval<RI>())));
     }
   }
-#endif
+#endif // !TEST_COMPILER(GCC, <, 8)
 
   return true;
 }
