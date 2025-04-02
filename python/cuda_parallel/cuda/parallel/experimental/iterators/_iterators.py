@@ -300,7 +300,7 @@ class ReverseIteratorKind(IteratorKind):
 
 
 def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
-    if not hasattr(it, "__cuda_array_interface__") or not isinstance(it, IteratorBase):
+    if not hasattr(it, "__cuda_array_interface__") and not isinstance(it, IteratorBase):
         raise NotImplementedError(
             f"Reverse iterator is not implemented for type {type(it)}"
         )
