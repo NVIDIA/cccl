@@ -165,8 +165,9 @@ protected:
       _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
 #endif
 
-      if (logical_data_stats_enabled) {
-          print_logical_data_summary();
+      if (logical_data_stats_enabled)
+      {
+        print_logical_data_summary();
       }
 
       if (!is_recording_stats)
