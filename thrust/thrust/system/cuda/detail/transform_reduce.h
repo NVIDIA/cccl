@@ -57,8 +57,6 @@
 
 #  include <cuda/std/cstdint>
 
-#  include <iterator>
-
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
