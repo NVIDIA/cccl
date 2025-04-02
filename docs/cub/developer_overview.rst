@@ -616,7 +616,7 @@ minimally reproduces the CUB dispatch layer.
     template <int PTXVersion, typename Policy, typename PrevPolicy>
     struct ChainedPolicy {
       static constexpr int cc = PTXVersion;
-      using ActivePolicy      = ::cuda::std::_If<CUB_PTX_ARCH<PTXVersion, PrevPolicy, Policy>;
+      using ActivePolicy      = ::cuda::std::conditional_t<CUB_PTX_ARCH<PTXVersion, PrevPolicy, Policy>;
       using PrevPolicyT       = PrevPolicy;
       using PolicyT           = Policy;
     };
@@ -637,18 +637,18 @@ minimally reproduces the CUB dispatch layer.
     using MaxPolicy = sm90;
 
     // Kernel instantiated with ActivePolicy
-    template <typename X>
-    __launch_bounds__(X::BLOCK_THREADS) __global__ void bad_kernel() {
+    template <typename ActivePolicy>
+    __launch_bounds__(ActivePolicy::BLOCK_THREADS) __global__ void bad_kernel() {
       if (threadIdx.x == 0) {
-        std::printf("launch bounds %d; block threads %d\n", X::BLOCK_THREADS, blockDim.x);
+        std::printf("launch bounds %d; block threads %d\n", ActivePolicy::BLOCK_THREADS, blockDim.x);
       }
     }
 
     // Kernel instantiated with MaxPolicy
-    template <typename X>
-    __launch_bounds__(X::ActivePolicy::BLOCK_THREADS) __global__ void good_kernel() {
+    template <typename MaxPolicy>
+    __launch_bounds__(MaxPolicy::ActivePolicy::BLOCK_THREADS) __global__ void good_kernel() {
       if (threadIdx.x == 0) {
-        std::printf("launch bounds %d; block threads %d\n", X::ActivePolicy::BLOCK_THREADS, blockDim.x);
+        std::printf("launch bounds %d; block threads %d\n", MaxPolicy::ActivePolicy::BLOCK_THREADS, blockDim.x);
       }
     }
 
