@@ -13,7 +13,12 @@ from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
 from .._caching import CachableFunction
-from .._utils.protocols import compute_c_contiguous_strides_in_bytes, get_data_pointer, get_dtype, get_shape
+from .._utils.protocols import (
+    compute_c_contiguous_strides_in_bytes,
+    get_data_pointer,
+    get_dtype,
+    get_shape,
+)
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
@@ -97,10 +102,8 @@ class IteratorBase:
     # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
-        advance_abi_name = f"{self.prefix}advance_" + \
-            _get_abi_suffix(self.kind)
-        deref_abi_name = f"{self.prefix}dereference_" + \
-            _get_abi_suffix(self.kind)
+        advance_abi_name = f"{self.prefix}advance_" + _get_abi_suffix(self.kind)
+        deref_abi_name = f"{self.prefix}dereference_" + _get_abi_suffix(self.kind)
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
@@ -125,13 +128,11 @@ class IteratorBase:
 
     @staticmethod
     def advance(state, distance):
-        raise NotImplementedError(
-            "Subclasses must override advance staticmethod")
+        raise NotImplementedError("Subclasses must override advance staticmethod")
 
     @staticmethod
     def dereference(state):
-        raise NotImplementedError(
-            "Subclasses must override dereference staticmethod")
+        raise NotImplementedError("Subclasses must override dereference staticmethod")
 
     def __add__(self, offset: int):
         return make_advanced_iterator(self, offset=offset)
@@ -203,8 +204,7 @@ def load_cs(typingctx, base):
     def codegen(context, builder, sig, args):
         rt = context.get_value_type(sig.return_type)
         if rt is None:
-            raise RuntimeError(
-                f"Unsupported return type: {type(sig.return_type)}")
+            raise RuntimeError(f"Unsupported return type: {type(sig.return_type)}")
         ftype = ir.FunctionType(rt, [rt.as_pointer()])
         bw = sig.return_type.bitwidth
         asm_txt = f"ld.global.cs.b{bw} $0, [$1];"
@@ -386,12 +386,12 @@ def get_last_element_ptr(device_array) -> int:
 
     strides_in_bytes = device_array.__cuda_array_interface__["strides"]
     if strides_in_bytes is None:
-        strides_in_bytes = compute_c_contiguous_strides_in_bytes(
-            shape, dtype.itemsize)
+        strides_in_bytes = compute_c_contiguous_strides_in_bytes(shape, dtype.itemsize)
 
     # Calculate offset to last element
-    offset = sum((dim_size - 1) * stride for dim_size,
-                 stride in zip(shape, strides_in_bytes))
+    offset = sum(
+        (dim_size - 1) * stride for dim_size, stride in zip(shape, strides_in_bytes)
+    )
 
     ptr = get_data_pointer(device_array)
     return ptr + offset
