@@ -33,6 +33,8 @@ def time_merge_sort_pointer(reps, mod):
         alg(scratch, keys, vals, res_keys, res_vals, n)
     t1 = time.perf_counter_ns()
 
+    cp.cuda.runtime.deviceSynchronize()
+
     return t1 - t0
 
 
@@ -57,6 +59,8 @@ def time_merge_sort_iterator(reps, alg_mod, iter_mod):
         alg(scratch, keys, vals, res_keys, res_vals, n)
     t1 = time.perf_counter_ns()
 
+    cp.cuda.runtime.deviceSynchronize()
+
     return t1 - t0
 
 
@@ -76,6 +80,7 @@ def cprofile_reduce(reps, mod, pr):
     for i in range(reps):
         alg(scratch, d, res, d.size, h_init)
     pr.disable()
+    cp.cuda.runtime.deviceSynchronize()
 
 
 @line_profiler.profile
@@ -150,7 +155,9 @@ def run_cprofile():
 
 def run_line_profiler():
     lineprofile_reduce(100000, impl_base)
+    cp.cuda.runtime.deviceSynchronize()
     lineprofile_reduce(100000, impl_new)
+    cp.cuda.runtime.deviceSynchronize()
 
 
 def run_palanteer_pointer_impl(reps, mod, tag: str):

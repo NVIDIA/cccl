@@ -31,6 +31,7 @@ def time_reduce_pointer(reps, mod):
         alg(scratch, d, res, n, h_init)
     t1 = time.perf_counter_ns()
 
+    cp.cuda.runtime.deviceSynchronize()
     return t1 - t0
 
 
@@ -52,6 +53,7 @@ def time_reduce_iterator(reps, alg_mod, iter_mod):
     for i in range(reps):
         alg(scratch, d, res, n, h_init)
     t1 = time.perf_counter_ns()
+    cp.cuda.runtime.deviceSynchronize()
 
     return t1 - t0
 
@@ -72,6 +74,7 @@ def cprofile_reduce(reps, mod, pr):
     for i in range(reps):
         alg(scratch, d, res, d.size, h_init)
     pr.disable()
+    cp.cuda.runtime.deviceSynchronize()
 
 
 @line_profiler.profile
@@ -146,7 +149,9 @@ def run_cprofile():
 
 def run_line_profiler():
     lineprofile_reduce(100000, impl_base)
+    cp.cuda.runtime.deviceSynchronize()
     lineprofile_reduce(100000, impl_new)
+    cp.cuda.runtime.deviceSynchronize()
 
 
 if __name__ == "__main__":
