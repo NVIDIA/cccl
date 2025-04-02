@@ -113,8 +113,7 @@ struct all_devices::__initializer_iterator
 {
   if (__id_ >= size())
   {
-    printf("device index out of range: %ld\n", __id_);
-    _CUDA_VSTD::__throw_out_of_range("device index out of range");
+    _CUDA_VSTD::__throw_out_of_range("device index out of range: " + std::to_string(__id_));
   }
   return __devices()[__id_];
 }
