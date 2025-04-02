@@ -1088,6 +1088,9 @@ struct DispatchRadixSort
       // Small, single tile size
       return InvokeSingleTile(kernel_source.RadixSortSingleTileKernel(), wrapped_policy);
     }
+// We guard this because this will instantiate and compile both branches, which is not necessary if we know whether we
+// are using one sweep at compile-time
+#ifdef CCCL_C_EXPERIMENTAL
     else if (wrapped_policy.IsOnesweep())
     {
       // Regular size
@@ -1097,6 +1100,13 @@ struct DispatchRadixSort
     {
       return InvokeManyTiles(detail::bool_constant_v<false>, wrapped_policy);
     }
+#else
+    else
+    {
+      // Regular size
+      return InvokeManyTiles<ActivePolicyT>(detail::bool_constant_v<ActivePolicyT::ONESWEEP>);
+    }
+#endif
   }
 
   //------------------------------------------------------------------------------
