@@ -107,6 +107,7 @@
 #if _CCCL_COMPILER(NVRTC)
 // missing SM_90a
 #  ifndef NV_HAS_FEATURE_SM_90a
+#    define NV_HAS_FEATURE_SM_90a __NV_HAS_FEATURE_SM_90a
 #    if __CUDA_ARCH__ >= 900 && defined(__CUDA_ARCH_FEAT_SM90_ALL)
 #      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_90a 1
 #    else // ^^^ SM90a ^^^ / vvv !SM90a vvv
