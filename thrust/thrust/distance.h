@@ -30,6 +30,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-using ::cuda::std::distance;
+using CCCL_DEPRECATED_BECAUSE("Use cuda::std::distance instead")::cuda::std::distance;
 
 THRUST_NAMESPACE_END
