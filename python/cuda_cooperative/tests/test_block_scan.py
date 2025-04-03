@@ -353,10 +353,6 @@ def test_block_sum_of_user_defined_type(
     )
     temp_storage_bytes = block_scan.temp_storage_bytes
 
-    print("--------------------------------")
-    print(block_scan.files)
-    print("--------------------------------")
-
     @cuda.jit(link=block_scan.files)
     def kernel(input, output):
         tid = row_major_tid()
@@ -486,24 +482,33 @@ def test_block_scan_initial_value_invariants(mode):
     else:
         target_scan = cudax.block.exclusive_scan
 
-    # Test 1: For inclusive scans with items_per_thread == 1, initial values are not supported
+    # Test 1: For inclusive scans with items_per_thread == 1, initial values are
+    # not supported
     if mode == "inclusive":
         with pytest.raises(
             ValueError,
-            match="initial_value is not supported for inclusive scans with items_per_thread == 1",
+            match=(
+                "initial_value is not supported for inclusive "
+                "scans with items_per_thread == 1"
+            ),
         ):
             target_scan(
                 numba.int32, 128, scan_op="+", initial_value=0, items_per_thread=1
             )
 
-    # Test 2: For exclusive scans with items_per_thread == 1 and a block prefix callback, initial values are not supported
+    # Test 2: For exclusive scans with items_per_thread == 1 and a block prefix
+    # callback, initial values are not supported.
     if mode == "exclusive":
         prefix_op = cudax.StatefulFunction(
             BlockPrefixCallbackOp, block_prefix_callback_op_type
         )
         with pytest.raises(
             ValueError,
-            match="initial_value is not supported for exclusive scans with items_per_thread == 1 and a block prefix callback operator",
+            match=(
+                "initial_value is not supported for exclusive "
+                "scans with items_per_thread == 1 and a block "
+                "prefix callback operator"
+            ),
         ):
             target_scan(
                 numba.int32,
@@ -514,10 +519,15 @@ def test_block_scan_initial_value_invariants(mode):
                 prefix_op=prefix_op,
             )
 
-    # Test 3: For both scan types with items_per_thread > 1 and no block prefix callback, initial values are required
+    # Test 3: For both scan types with items_per_thread > 1 and no block prefix
+    # callback, initial values are required.
     with pytest.raises(
         ValueError,
-        match="initial_value is required for both inclusive and exclusive scans when items_per_thread > 1 and no block prefix callback operator has been supplied",
+        match=(
+            "initial_value is required for both inclusive and "
+            "exclusive scans when items_per_thread > 1 and no "
+            "block prefix callback operator has been supplied"
+        ),
     ):
         target_scan(numba.int32, 128, scan_op="+", items_per_thread=2)
 
@@ -525,9 +535,10 @@ def test_block_scan_initial_value_invariants(mode):
 @pytest.mark.parametrize("T", [types.uint32])
 @pytest.mark.parametrize("threads_per_block", [32, 64])
 @pytest.mark.parametrize("items_per_thread", [2, 3])
+@pytest.mark.parametrize("initial_value", [-1, 0, 100])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 def test_block_scan_with_prefix_op_multi_items(
-    T, threads_per_block, items_per_thread, mode
+    T, threads_per_block, items_per_thread, initial_value, mode
 ):
     num_threads_per_block = (
         threads_per_block
@@ -566,7 +577,7 @@ def test_block_scan_with_prefix_op_multi_items(
             thread_data[i] = input[tid * items_per_thread + i]
 
         block_prefix_op = cuda.local.array(shape=1, dtype=block_prefix_callback_op_type)
-        block_prefix_op[0] = BlockPrefixCallbackOp(100)  # Start with prefix of 100
+        block_prefix_op[0] = BlockPrefixCallbackOp(initial_value)
 
         block_scan(temp_storage, thread_data, thread_data, block_prefix_op)
 
@@ -583,18 +594,19 @@ def test_block_scan_with_prefix_op_multi_items(
 
     output = d_output.copy_to_host()
 
-    # Calculate expected results with prefix of 100
+    # Calculate expected results with prefix of `initial_value`.
     if mode == "inclusive":
-        # For inclusive scan with prefix, we need to add the prefix to all elements
+        # For inclusive scan with prefix, we need to add the prefix to all
+        # elements.
         reference = np.zeros_like(h_input)
-        running_total = 100  # Initial prefix
+        running_total = initial_value
         for i in range(items_per_tile):
             running_total = running_total + h_input[i]
             reference[i] = running_total
     else:
-        # For exclusive scan with prefix, the first element gets the prefix
+        # For exclusive scan with prefix, the first element gets the prefix.
         reference = np.zeros_like(h_input)
-        running_total = 100  # Initial prefix
+        running_total = initial_value
         for i in range(items_per_tile):
             reference[i] = running_total
             running_total = running_total + h_input[i]
