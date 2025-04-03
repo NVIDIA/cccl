@@ -50,6 +50,27 @@ __host__ __device__ void test_fp_storage()
   {
     assert(cuda::std::isnan(cuda::std::__fp_nans<T>()));
   }
+
+  // test __fp_max value to match numeric_limits::max()
+  {
+    const auto val = cuda::std::__fp_max<T>();
+    const auto ref = cuda::std::numeric_limits<T>::max();
+    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
+  }
+
+  // test __fp_min value to match numeric_limits::min()
+  {
+    const auto val = cuda::std::__fp_min<T>();
+    const auto ref = cuda::std::numeric_limits<T>::min();
+    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
+  }
+
+  // test __fp_lowest value to match numeric_limits::lowest()
+  {
+    const auto val = cuda::std::__fp_lowest<T>();
+    const auto ref = cuda::std::numeric_limits<T>::lowest();
+    assert(cuda::std::memcmp(&val, &ref, sizeof(T)) == 0);
+  }
 }
 
 int main(int, char**)

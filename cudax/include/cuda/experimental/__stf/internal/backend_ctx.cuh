@@ -165,6 +165,11 @@ protected:
       _CCCL_ASSERT(total_task_cnt == total_finished_task_cnt, "Not all tasks were finished.");
 #endif
 
+      if (logical_data_stats_enabled)
+      {
+        print_logical_data_summary();
+      }
+
       if (!is_recording_stats)
       {
         return;
@@ -243,6 +248,7 @@ protected:
      */
     void erase_all_logical_data();
 
+    bool logical_data_stats_enabled = false;
     ::std::vector<::std::pair<::std::string, size_t>> previous_logical_data_stats;
 
     // We need logical_data_untyped_impl to be defined to print this
@@ -729,9 +735,9 @@ public:
     return pimpl->generate_event_symbols;
   }
 
-  void print_logical_data_summary() const
+  void enable_logical_data_stats()
   {
-    pimpl->print_logical_data_summary();
+    pimpl->logical_data_stats_enabled = true;
   }
 
   cudaGraph_t graph() const

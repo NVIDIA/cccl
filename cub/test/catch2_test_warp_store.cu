@@ -280,3 +280,34 @@ C2H_TEST("Warp store unguarded range works with cache modified iterator",
       valid_items);
   REQUIRE(d_expected_output == d_out);
 }
+
+#if ALGO_TYPE == 3 // cub::WarpStoreAlgorithm::WARP_STORE_VECTORIZE
+C2H_TEST("Vectorized warp store with different alignment cases",
+         "[store][warp]",
+         c2h::type_list<std::int32_t>,
+         logical_warp_threads,
+         items_per_thread,
+         algorithm)
+{
+  using params = params_t<TestType>;
+  using type   = typename params::type;
+
+  c2h::device_vector<type> d_out_ref(params::total_item_count, type{});
+  constexpr int valid_items = params::tile_size;
+
+  const int offset_for_elements = GENERATE_COPY(0, 1, 2, 3, 4);
+  c2h::device_vector<type> d_out(params::total_item_count + offset_for_elements, type{});
+  auto out = thrust::raw_pointer_cast(d_out.data());
+
+  warp_store<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
+    out + offset_for_elements, unguarded_store_t{});
+  thrust::copy_n(d_out.begin() + offset_for_elements, params::total_item_count, d_out_ref.begin());
+
+  auto d_expected_output =
+    compute_reference<params::algorithm, params::logical_warp_threads, params::items_per_thread, params::total_warps, type>(
+      valid_items);
+
+  REQUIRE(d_expected_output == d_out_ref);
+}
+
+#endif

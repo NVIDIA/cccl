@@ -1854,10 +1854,11 @@ inline void reserved::logical_data_untyped_impl::erase()
   auto erased = ctx_st.logical_data_ids.erase(get_unique_id());
   EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
-  ctx_st.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
+  if (ctx_st.logical_data_stats_enabled)
+  {
+    ctx_st.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
+  }
 
-  // fprintf(stderr, "AFTER REMOVE %d from logical_data_ids %p (id count %zu)\n", get_unique_id(),
-  // &logical_data_ids, logical_data_ids.size());
   ctx_st.logical_data_ids_mutex.unlock();
 
   // Make sure this we do not erase this twice. For example after calling

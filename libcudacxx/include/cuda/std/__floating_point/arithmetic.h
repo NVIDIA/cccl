@@ -27,6 +27,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template <__fp_format _Fmt>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __fp_storage_t<_Fmt> __fp_neg(__fp_storage_t<_Fmt> __v) noexcept
+{
+  return static_cast<__fp_storage_t<_Fmt>>(__v ^ __fp_sign_mask_v<_Fmt>);
+}
+
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __fp_neg(const _Tp& __v) noexcept
 {
@@ -36,8 +42,8 @@ template <class _Tp>
   }
   else
   {
-    const auto __res_storage = _CUDA_VSTD::__fp_get_storage(__v) ^ __fp_sign_mask_of_v<_Tp>;
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__res_storage));
+    return _CUDA_VSTD::__fp_from_storage<_Tp>(
+      _CUDA_VSTD::__fp_neg<__fp_format_of_v<_Tp>>(_CUDA_VSTD::__fp_get_storage(__v)));
   }
 }
 

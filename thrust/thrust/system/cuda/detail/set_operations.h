@@ -54,8 +54,7 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 

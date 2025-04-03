@@ -51,9 +51,8 @@
 #  include <thrust/system/cuda/detail/cdp_dispatch.h>
 #  include <thrust/system/cuda/detail/reduce.h>
 
+#  include <cuda/std/cstdint>
 #  include <cuda/std/iterator>
-
-#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
