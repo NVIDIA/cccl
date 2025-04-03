@@ -90,6 +90,10 @@ extern _Tp __cccl_make_dependent;
 template <class _Impl, class... _Args>
 using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
 
+template <typename _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __cccl_unused(_Tp&&) noexcept
+{}
+
 // So that we can refer to the ::cuda::std namespace below
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _LIBCUDACXX_END_NAMESPACE_STD
