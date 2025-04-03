@@ -4,6 +4,7 @@
 
 import cupy as cp
 import numpy as np
+import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 from cuda.parallel.experimental.struct import gpu_struct
@@ -58,7 +59,8 @@ def test_binary_transform(input_array):
     np.testing.assert_allclose(expected, got, rtol=1e-5)
 
 
-def test_transform_struct_type():
+@pytest.mark.xfail(reason="https://github.com/NVIDIA/numba-cuda/issues/175")
+def test_unary_transform_struct_type():
     import cupy as cp
     import numpy as np
 
@@ -93,3 +95,53 @@ def test_transform_struct_type():
 
     np.testing.assert_allclose(got["x"], np.arange(num_values) * 2)
     np.testing.assert_allclose(got["y"], np.ones(num_values) + 10)
+
+
+@pytest.mark.xfail(reason="https://github.com/NVIDIA/numba-cuda/issues/175")
+def test_binary_transform_struct_type():
+    import cupy as cp
+    import numpy as np
+
+    @gpu_struct
+    class MyStruct:
+        x: np.int16
+        y: np.uint64
+
+    def op(a, b):
+        return MyStruct(a.x + b.x, a.y + b.y)
+
+    num_values = 10_000
+
+    h1_in = np.empty(num_values, dtype=MyStruct)
+    h1_in["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
+    h1_in["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
+
+    h2_in = np.empty(num_values, dtype=MyStruct)
+    h2_in["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
+    h2_in["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
+
+    d1_in = cp.empty_like(h1_in)
+    d2_in = cp.empty_like(h2_in)
+
+    cp.cuda.runtime.memcpy(
+        d1_in.data.ptr,
+        h1_in.__array_interface__["data"][0],
+        h1_in.nbytes,
+        cp.cuda.runtime.memcpyHostToDevice,
+    )
+    cp.cuda.runtime.memcpy(
+        d2_in.data.ptr,
+        h2_in.__array_interface__["data"][0],
+        h2_in.nbytes,
+        cp.cuda.runtime.memcpyHostToDevice,
+    )
+
+    d_out = cp.empty_like(d1_in)
+
+    transform = algorithms.binary_transform(d1_in, d2_in, d_out, op)
+    transform(d1_in, d2_in, d_out, len(d1_in))
+
+    got = d_out.get()
+
+    np.testing.assert_allclose(got["x"], h1_in["x"] + h2_in["x"])
+    np.testing.assert_allclose(got["y"], h1_in["y"] + h2_in["y"])
