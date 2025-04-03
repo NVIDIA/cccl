@@ -307,7 +307,7 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
 
     if hasattr(it, "__cuda_array_interface__"):
         last_element_ptr = _get_last_element_ptr(it)
-        it = RawPointer(last_element_ptr, get_dtype(it))
+        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)))
 
     it_advance = cuda.jit(type(it).advance, device=True)
     it_dereference = cuda.jit(type(it).dereference, device=True)
