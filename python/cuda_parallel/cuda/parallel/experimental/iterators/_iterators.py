@@ -12,6 +12,7 @@ from numba.core.extending import intrinsic, overload
 from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
+from .._bindings import IteratorState
 from .._caching import CachableFunction
 from .._utils.protocols import (
     compute_c_contiguous_strides_in_bytes,
@@ -20,7 +21,6 @@ from .._utils.protocols import (
     get_shape,
 )
 from ..typing import DeviceArrayLike
-from .._cy_bindings import IteratorState
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8

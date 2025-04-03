@@ -11,10 +11,10 @@ import numba
 import numpy as np
 from numba.cuda.cudadrv import enums
 
-from .. import _cccl_for_cy as cccl
-from .. import _cy_bindings as cyb
+from .. import _bindings
+from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_for_cy import call_build, set_cccl_iterator_state, to_cccl_value_state
+from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from ..iterators._iterators import IteratorBase
@@ -40,7 +40,7 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         force_inclusive: bool,
     ):
-        self.build_result = cyb.DeviceScanBuildResult()
+        self.build_result = _bindings.DeviceScanBuildResult()
 
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)

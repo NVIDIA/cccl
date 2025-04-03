@@ -36,8 +36,8 @@ set(CMAKE_MODULE_PATH ${_saved_path})
 
 find_package(CUDAToolkit)
 
-add_cython_target(_cy_bindings cuda/parallel/experimental/_cy_bindings.pyx C OUTPUT_VAR _generated_c_src)
-Python_add_library(_cy_bindings MODULE WITH_SOABI ${_generated_c_src})
-target_link_libraries(_cy_bindings PRIVATE cccl.c.parallel CUDA::cuda_driver)
-set_target_properties(_cy_bindings PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
-install(TARGETS _cy_bindings DESTINATION cuda/parallel/experimental)
+add_cython_target(_bindings cuda/parallel/experimental/_bindings.pyx C OUTPUT_VAR _generated_c_src)
+Python_add_library(_bindings MODULE WITH_SOABI ${_generated_c_src})
+target_link_libraries(_bindings PRIVATE cccl.c.parallel CUDA::cuda_driver)
+set_target_properties(_bindings PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
+install(TARGETS _bindings DESTINATION cuda/parallel/experimental)

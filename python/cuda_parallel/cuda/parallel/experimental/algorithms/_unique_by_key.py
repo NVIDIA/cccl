@@ -8,10 +8,10 @@ from typing import Callable
 import numba
 from numba.cuda.cudadrv import enums
 
-from .. import _cccl_for_cy as cccl
-from .. import _cy_bindings as cyb
+from .. import _bindings
+from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
-from .._cccl_for_cy import call_build, set_cccl_iterator_state
+from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from ..iterators._iterators import IteratorBase
@@ -79,7 +79,7 @@ class _UniqueByKey:
         d_out_num_selected: DeviceArrayLike,
         op: Callable,
     ):
-        self.build_result = cyb.DeviceUniqueByKeyBuildResult()
+        self.build_result = _bindings.DeviceUniqueByKeyBuildResult()
 
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
