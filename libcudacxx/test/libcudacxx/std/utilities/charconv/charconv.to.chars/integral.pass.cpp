@@ -1622,31 +1622,37 @@ __host__ __device__ constexpr void test_to_chars(const TestItem& item)
   if (cuda::std::in_range<RangeT>(item.val))
   {
     const auto ref_len = str_len(item.str_signed);
-    char buff[buff_size]{};
+    char buff[buff_size + 1]{};
+    char* buff_start = buff + 1;
 
     const auto value    = static_cast<T>(item.val);
     const char* ref_str = (cuda::std::is_signed_v<T>) ? item.str_signed : item.str_unsigned;
 
     // Check valid buffer size
     {
-      const auto result = cuda::std::to_chars(buff, buff + buff_size, value, Base);
+      const auto result = cuda::std::to_chars(buff_start, buff_start + buff_size, value, Base);
       assert(result.ec == cuda::std::errc{});
-      assert(result.ptr == buff + ref_len);
-      assert(str_equal(buff, ref_str, buff_size));
+      assert(result.ptr == buff_start + ref_len);
+
+      // Compare with reference string
+      assert(str_equal(buff_start, ref_str, buff_size));
+
+      // Check that the operation did not underflow the buffer
+      assert(buff[0] == '\0');
     }
 
     // Check too small buffer
     {
-      const auto result = cuda::std::to_chars(buff, buff + ref_len - 1, value, Base);
+      const auto result = cuda::std::to_chars(buff_start, buff_start + ref_len - 1, value, Base);
       assert(result.ec == cuda::std::errc::value_too_large);
-      assert(result.ptr == buff + ref_len - 1);
+      assert(result.ptr == buff_start + ref_len - 1);
     }
 
     // Check zero buffer
     {
-      const auto result = cuda::std::to_chars(buff, buff, value, Base);
+      const auto result = cuda::std::to_chars(buff_start, buff_start, value, Base);
       assert(result.ec == cuda::std::errc::value_too_large);
-      assert(result.ptr == buff);
+      assert(result.ptr == buff_start);
     }
   }
 }
