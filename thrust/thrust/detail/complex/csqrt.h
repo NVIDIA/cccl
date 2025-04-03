@@ -53,7 +53,8 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/math_private.h>
 
-#include <cmath>
+#include <cuda/std/cmath>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace detail
@@ -83,7 +84,7 @@ _CCCL_HOST_DEVICE inline complex<double> csqrt(const complex<double>& z)
   }
   if (isinf(b))
   {
-    return (complex<double>(infinity<double>(), b));
+    return (complex<double>(::cuda::std::numeric_limits<double>::infinity(), b));
   }
   if (isnan(a))
   {

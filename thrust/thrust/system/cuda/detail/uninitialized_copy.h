@@ -42,8 +42,6 @@
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <iterator>
-
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
