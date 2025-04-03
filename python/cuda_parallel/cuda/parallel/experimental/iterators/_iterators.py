@@ -195,49 +195,53 @@ class RawPointerKind(IteratorKind):
 class RawPointer(IteratorBase):
     iterator_kind_type = RawPointerKind
 
-    def __init__(self, ptr: int, value_type: types.Type):
+    def __init__(self, ptr: int, value_type: types.Type, iterator_io: IteratorIO):
         cvalue = ctypes.c_void_p(ptr)
         numba_type = types.CPointer(types.CPointer(value_type))
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
             value_type=value_type,
-            iterator_io=IteratorIO.INPUT,
+            iterator_io=iterator_io,
+        )
+
+    @property
+    def advance(self):
+        return (
+            RawPointer.input_advance
+            if self.iterator_io is IteratorIO.INPUT
+            else RawPointer.output_advance
+        )
+
+    @property
+    def dereference(self):
+        return (
+            RawPointer.input_dereference
+            if self.iterator_io is IteratorIO.INPUT
+            else RawPointer.output_dereference
         )
 
     @staticmethod
-    def advance(state, distance):
+    def input_advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
-    def dereference(state):
+    def input_dereference(state):
         return state[0][0]
 
-
-class RawOutputPointer(IteratorBase):
-    iterator_kind_type = RawPointerKind
-
-    def __init__(self, ptr: int, value_type: types.Type):
-        cvalue = ctypes.c_void_p(ptr)
-        numba_type = types.CPointer(types.CPointer(value_type))
-        super().__init__(
-            cvalue=cvalue,
-            numba_type=numba_type,
-            value_type=value_type,
-            iterator_io=IteratorIO.OUTPUT,
-        )
-
     @staticmethod
-    def advance(state, distance):
+    def output_advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
-    def dereference(state, x):
+    def output_dereference(state, x):
         state[0][0] = x
 
 
 def pointer(container, value_type: types.Type) -> RawPointer:
-    return RawPointer(container.__cuda_array_interface__["data"][0], value_type)
+    return RawPointer(
+        container.__cuda_array_interface__["data"][0], value_type, IteratorIO.INPUT
+    )
 
 
 @intrinsic
@@ -355,10 +359,12 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
 
     if hasattr(it, "__cuda_array_interface__"):
         last_element_ptr = _get_last_element_ptr(it)
-        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)))
+        it = RawPointer(
+            last_element_ptr, numba.from_dtype(get_dtype(it)), IteratorIO.INPUT
+        )
 
-    it_advance = cuda.jit(type(it).advance, device=True)
-    it_dereference = cuda.jit(type(it).dereference, device=True)
+    it_advance = cuda.jit(it.advance, device=True)
+    it_dereference = cuda.jit(it.dereference, device=True)
 
     class ReverseIterator(IteratorBase):
         iterator_kind_type = ReverseIteratorKind
@@ -396,10 +402,10 @@ def make_reverse_output_iterator(it):
 
     if hasattr(it, "__cuda_array_interface__"):
         last_element_ptr = _get_last_element_ptr(it)
-        it = RawOutputPointer(last_element_ptr, numba.from_dtype(it.dtype))
+        it = RawPointer(last_element_ptr, numba.from_dtype(it.dtype), IteratorIO.OUTPUT)
 
-    it_advance = cuda.jit(type(it).advance, device=True)
-    it_dereference = cuda.jit(type(it).dereference, device=True)
+    it_advance = cuda.jit(it.advance, device=True)
+    it_dereference = cuda.jit(it.dereference, device=True)
 
     class ReverseOutputIterator(IteratorBase):
         iterator_kind_type = ReverseOutputIteratorKind
@@ -433,8 +439,8 @@ def make_transform_iterator(it, op: Callable):
     if hasattr(it, "__cuda_array_interface__"):
         it = pointer(it, numba.from_dtype(it.dtype))
 
-    it_advance = cuda.jit(type(it).advance, device=True)
-    it_dereference = cuda.jit(type(it).dereference, device=True)
+    it_advance = cuda.jit(it.advance, device=True)
+    it_dereference = cuda.jit(it.dereference, device=True)
     op = cuda.jit(op, device=True)
 
     class TransformIterator(IteratorBase):
@@ -477,8 +483,8 @@ def make_transform_iterator(it, op: Callable):
 
 
 def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
-    it_advance = cuda.jit(type(it).advance, device=True)
-    it_dereference = cuda.jit(type(it).dereference, device=True)
+    it_advance = cuda.jit(it.advance, device=True)
+    it_dereference = cuda.jit(it.dereference, device=True)
 
     class AdvancedIteratorKind(IteratorKind):
         pass
