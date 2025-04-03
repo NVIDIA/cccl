@@ -112,11 +112,19 @@ struct square<void>
  *  \{
  */
 
+inline namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead") deprecated
+{
+//! deprecated [since 3.1]
 using ::cuda::std::equal_to;
+//! deprecated [since 3.1]
 using ::cuda::std::greater;
+//! deprecated [since 3.1]
 using ::cuda::std::greater_equal;
+//! deprecated [since 3.1]
 using ::cuda::std::less;
+//! deprecated [since 3.1]
 using ::cuda::std::less_equal;
+//! deprecated [since 3.1]
 using ::cuda::std::not_equal_to;
 
 /*! \}
@@ -127,8 +135,11 @@ using ::cuda::std::not_equal_to;
  *  \{
  */
 
+//! deprecated [since 3.1]
 using ::cuda::std::logical_and;
+//! deprecated [since 3.1]
 using ::cuda::std::logical_not;
+//! deprecated [since 3.1]
 using ::cuda::std::logical_or;
 
 /*! \}
@@ -139,8 +150,11 @@ using ::cuda::std::logical_or;
  *  \{
  */
 
+//! deprecated [since 3.1]
 using ::cuda::std::bit_and;
+//! deprecated [since 3.1]
 using ::cuda::std::bit_or;
+//! deprecated [since 3.1]
 using ::cuda::std::bit_xor;
 
 /*! \}
@@ -151,8 +165,11 @@ using ::cuda::std::bit_xor;
  *  \{
  */
 
+//! deprecated [since 3.1]
 using ::cuda::maximum;
+//! deprecated [since 3.1]
 using ::cuda::minimum;
+} // namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead")deprecated
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
@@ -245,7 +262,11 @@ struct project2nd<void, void>
  *  \{
  */
 
+inline namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead") deprecated
+{
+//! deprecated [since 3.1]
 using ::cuda::std::not_fn;
+} // namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead")deprecated
 
 /*! \}
  */
