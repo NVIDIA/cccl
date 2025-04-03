@@ -50,9 +50,7 @@
 #  define _CCCL_HAS_LONG_DOUBLE() 1
 #endif // !_CCCL_HAS_CUDA_COMPILER()
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>)                                                                \
-                      && ((_CCCL_HAS_CUDA_COMPILER() && !_CCCL_CUDA_COMPILER(NVHPC)) \
-                          || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))                 \
+#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                       && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  undef _CCCL_HAS_NVFP16
 #  define _CCCL_HAS_NVFP16() 1
@@ -68,7 +66,8 @@
 #  define _CCCL_HAS_NVFP8() 1
 #endif
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !defined(CCCL_DISABLE_NVFP6_SUPPORT)
+#if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !_CCCL_CUDA_COMPILER(NVHPC) \
+                      && !defined(CCCL_DISABLE_NVFP6_SUPPORT)
 #  undef _CCCL_HAS_NVFP6
 #  define _CCCL_HAS_NVFP6() 1
 #endif
