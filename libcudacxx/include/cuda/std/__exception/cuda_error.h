@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
 class cuda_error : public ::std::runtime_error
 {
 private:
@@ -62,7 +62,7 @@ __throw_cuda_error([[maybe_unused]] const int __status, [[maybe_unused]] const c
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::cuda::cuda_error(__status, __msg);), (_CUDA_VSTD_NOVERSION::terminate();))
 }
-#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 class cuda_error
 {
 public:
@@ -73,7 +73,7 @@ public:
 {
   _CUDA_VSTD_NOVERSION::terminate();
 }
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

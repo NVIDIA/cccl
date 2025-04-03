@@ -325,6 +325,7 @@ TEST_CASE("global devices vector", "[device]")
     }
   }
 
+#if _CCCL_HAS_EXCEPTIONS()
   try
   {
     [[maybe_unused]] const cudax::device& dev = cudax::devices[cudax::devices.size()];
@@ -334,4 +335,5 @@ TEST_CASE("global devices vector", "[device]")
   {
     CUDAX_REQUIRE(true); // expected
   }
+#endif // _CCCL_HAS_EXCEPTIONS()
 }

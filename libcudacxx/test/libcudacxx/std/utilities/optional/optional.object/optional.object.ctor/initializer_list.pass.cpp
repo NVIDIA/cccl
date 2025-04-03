@@ -74,27 +74,27 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
   int j_ = 0;
 
 public:
-  __host__ __device__ Z()
+  Z()
       : i_(0)
   {}
-  __host__ __device__ Z(int i)
+  Z(int i)
       : i_(i)
   {}
-  __host__ __device__ Z(cuda::std::initializer_list<int> il)
+  Z(cuda::std::initializer_list<int> il)
       : i_(il.begin()[0])
       , j_(il.begin()[1])
   {
     TEST_THROW(6);
   }
 
-  __host__ __device__ friend bool operator==(const Z& x, const Z& y)
+  friend bool operator==(const Z& x, const Z& y)
   {
     return x.i_ == y.i_ && x.j_ == y.j_;
   }
@@ -113,7 +113,7 @@ void test_exceptions()
     assert(i == 6);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -157,9 +157,9 @@ int main(int, char**)
       {}
     };
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }
