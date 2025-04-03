@@ -373,13 +373,15 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(::cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
     return ::std::visit(
       [&](auto& self) {
-        return self.freeze(mv(d), m, mv(where));
+        return self.freeze(mv(d), m, mv(where), user_freeze);
       },
       payload);
   }

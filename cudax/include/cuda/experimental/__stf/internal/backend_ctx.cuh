@@ -515,7 +515,7 @@ protected:
           // Add an edge between that leaf task and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(t_id, fence_unique_id, 1);
+            dot.add_edge(t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -540,7 +540,7 @@ protected:
           // Add an edge between that freeze and the fence node in the DOT output
           if (dot_is_tracing)
           {
-            dot.add_edge(fake_t_id, fence_unique_id, 1);
+            dot.add_edge(fake_t_id, fence_unique_id, reserved::edge_type::fence);
           }
         }
 
@@ -814,7 +814,7 @@ public:
 
   auto dot_section(::std::string symbol) const
   {
-    return reserved::dot::section::guard(mv(symbol));
+    return reserved::dot_section::guard(get_dot(), mv(symbol));
   }
 
   auto get_phase() const
@@ -842,10 +842,12 @@ public:
   {
     async_resources().push_affinity(mv(p));
   }
+
   void push_affinity(::std::shared_ptr<exec_place> p) const
   {
     async_resources().push_affinity(mv(p));
   }
+
   void pop_affinity() const
   {
     async_resources().pop_affinity();
@@ -963,11 +965,13 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
-    return frozen_logical_data<T>(*this, mv(d), m, mv(where));
+    return frozen_logical_data<T>(*this, mv(d), m, mv(where), user_freeze);
   }
 
   /**
