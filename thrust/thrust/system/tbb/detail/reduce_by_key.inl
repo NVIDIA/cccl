@@ -37,8 +37,8 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cassert>
 
-#include <cassert>
 #include <thread>
 
 #include <tbb/blocked_range.h>

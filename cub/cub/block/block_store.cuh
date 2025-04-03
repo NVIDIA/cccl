@@ -187,22 +187,31 @@ StoreDirectBlockedVectorized(int linear_tid, T* block_ptr, T (&items)[ITEMS_PER_
   // Vector type
   using Vector = typename CubVector<T, VEC_SIZE>::Type;
 
-  // Alias global pointer
-  Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
-
-  // Alias pointers (use "raw" array here which should get optimized away to prevent conservative PTXAS lmem spilling)
-  Vector raw_vector[VECTORS_PER_THREAD];
-  T* raw_items = reinterpret_cast<T*>(raw_vector);
-
-  // Copy
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+  // Add the alignment check to ensure the vectorized storing can proceed.
+  if (reinterpret_cast<uintptr_t>(block_ptr) % (alignof(Vector)) == 0)
   {
-    raw_items[ITEM] = items[ITEM];
-  }
+    // Alias global pointer
+    Vector* block_ptr_vectors = reinterpret_cast<Vector*>(const_cast<T*>(block_ptr));
 
-  // Direct-store using vector types
-  StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
+    // Alias pointers (use "raw" array here which should get optimized away to prevent conservative PTXAS lmem spilling)
+    Vector raw_vector[VECTORS_PER_THREAD];
+    T* raw_items = reinterpret_cast<T*>(raw_vector);
+
+    // Copy
+    _CCCL_PRAGMA_UNROLL_FULL()
+    for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
+    {
+      raw_items[ITEM] = items[ITEM];
+    }
+
+    // Direct-store using vector types
+    StoreDirectBlocked(linear_tid, block_ptr_vectors, raw_vector);
+  }
+  else
+  {
+    // Direct-store using original type when the address is misaligned
+    StoreDirectBlocked(linear_tid, block_ptr, items);
+  }
 }
 
 //! @}  end member group

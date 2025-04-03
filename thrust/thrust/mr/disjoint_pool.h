@@ -41,9 +41,8 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
+#include <cuda/std/cassert>
 #include <cuda/std/cstdint>
-
-#include <cassert>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr

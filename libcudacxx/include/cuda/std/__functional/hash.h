@@ -449,7 +449,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<char32_t> : public __unary_function<ch
   }
 };
 
-#  ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<wchar_t> : public __unary_function<wchar_t, size_t>
 {
@@ -458,7 +457,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<wchar_t> : public __unary_function<wch
     return static_cast<size_t>(__v);
   }
 };
-#  endif // _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<short> : public __unary_function<short, size_t>

@@ -259,6 +259,18 @@ public:
       payload);
   }
 
+  /**
+   * @brief Returns an event list which depends on the completion of work in the stream
+   */
+  auto stream_to_event_list(cudaStream_t stream, ::std::string str) const
+  {
+    return ::std::visit(
+      [&](auto& self) {
+        return self.stream_to_event_list(stream, mv(str));
+      },
+      payload);
+  }
+
   void set_graph_cache_policy(::std::function<bool()> policy)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -285,6 +297,19 @@ public:
     return ::std::visit(
       [&](auto& self) {
         return self.graph_get_cache_stat();
+      },
+      payload);
+  }
+
+  /**
+   * @brief Returns the number of tasks created since the context was created or since the last fence (if any)
+   */
+  size_t task_count() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.task_count();
       },
       payload);
   }
@@ -665,6 +690,16 @@ public:
     ::std::visit(
       [&](auto& self) {
         self.set_parent_ctx(parent_ctx.get_dot());
+      },
+      payload);
+  }
+
+  void enable_logical_data_stats()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [&](auto& self) {
+        self.enable_logical_data_stats();
       },
       payload);
   }
