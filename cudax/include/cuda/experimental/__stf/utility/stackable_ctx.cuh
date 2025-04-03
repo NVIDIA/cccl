@@ -371,7 +371,7 @@ public:
       if (display_mem_stats_env && atoi(display_mem_stats_env) != 0)
       {
         fprintf(stderr, "PRINT DATA SUMMARY ctx %s\n", current_node.ctx.get_dot()->get_ctx_symbol().c_str());
-        current_node.ctx.print_logical_data_summary();
+        // current_node.ctx.print_logical_data_summary();
       }
 
       // Automatically pop data if needed
@@ -503,7 +503,7 @@ public:
       traverse_nodes([this](int offset) {
         auto& ctx = get_ctx(offset);
         fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
-        ctx.print_logical_data_summary();
+      //  ctx.print_logical_data_summary();
       });
     }
 
