@@ -9,7 +9,6 @@
 
 // This test also generates spurious warnings when instantiating std::span
 // with a very large extent (like size_t(-2)) -- silence those.
-// ADDITIONAL_COMPILE_FLAGS: -Xclang -verify-ignore-unexpected=warning
 
 // <span>
 
