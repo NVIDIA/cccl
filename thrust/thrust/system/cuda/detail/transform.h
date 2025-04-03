@@ -49,8 +49,7 @@
 #  include <thrust/zip_function.h>
 
 #  include <cuda/__functional/address_stability.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 

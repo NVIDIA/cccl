@@ -38,8 +38,7 @@
 #include <thrust/transform.h>
 
 #include <cuda/std/iterator>
-
-#include <limits>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system

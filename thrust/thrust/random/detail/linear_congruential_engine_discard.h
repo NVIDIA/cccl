@@ -28,7 +28,7 @@
 
 #include <thrust/random/detail/mod.h>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
