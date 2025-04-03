@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 // functions to handle memory alignment
 
