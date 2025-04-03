@@ -15,36 +15,67 @@
 #include <complex>
 
 #include "test_macros.h"
-#include <nv/target>
 
-template <class T, class U>
-void test_comparison()
+template <class T>
+struct test_data
 {
-  ::cuda::std::complex<T> input{static_cast<T>(-1.0), static_cast<T>(1.0)};
+  ::std::complex<T> not_equal_real;
+  ::std::complex<T> not_equal_imag;
+  ::std::complex<T> equal;
+};
 
-  const ::std::complex<U> not_equal_real{static_cast<T>(-1.0), 0};
-  const ::std::complex<U> not_equal_imag{0, static_cast<T>(1.0)};
-  const ::std::complex<U> equal{static_cast<T>(-1.0), static_cast<T>(1.0)};
-
-  assert(!(input == not_equal_real));
-  assert(!(input == not_equal_imag));
-  assert(input == equal);
-
-  assert(input != not_equal_real);
-  assert(input != not_equal_imag);
-  assert(!(input != equal));
+// we need to disable the execution space check for this test, because std::complex is not available in device code
+_CCCL_EXEC_CHECK_DISABLE
+template <class T>
+__host__ __device__ constexpr auto get_test_data()
+{
+  test_data<T> data;
+  data.not_equal_real = ::std::complex<T>{T(-1.0), T()};
+  data.not_equal_imag = ::std::complex<T>{T(), T(1.0)};
+  data.equal          = ::std::complex<T>{T(-1.0), T(1.0)};
+  return data;
 }
 
-void test()
+template <class T, class U>
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS void test_comparison()
+{
+  constexpr test_data<U> data = get_test_data<U>();
+
+  const ::cuda::std::complex<T> input{-1.f, 1.f};
+
+  assert(!(input == data.not_equal_real));
+  assert(!(input == data.not_equal_imag));
+  assert(input == data.equal);
+
+  assert(!(data.not_equal_real == input));
+  assert(!(data.not_equal_imag == input));
+  assert(data.equal == input);
+
+  assert(input != data.not_equal_real);
+  assert(input != data.not_equal_imag);
+  assert(!(input != data.equal));
+
+  assert(data.not_equal_real != input);
+  assert(data.not_equal_imag != input);
+  assert(!(data.equal != input));
+}
+
+__host__ __device__ _LIBCUDACXX_CONSTEXPR_STD_COMPLEX_ACCESS bool test()
 {
   test_comparison<float, float>();
+  test_comparison<float, double>();
   test_comparison<double, float>();
   test_comparison<double, double>();
+
+  return true;
 }
 
 int main(int arg, char** argv)
 {
-  NV_IF_TARGET(NV_IS_HOST, (test();));
+  test();
+#if _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS()
+  static_assert(test());
+#endif // _LIBCUDACXX_HAS_CONSTEXPR_STD_COMPLEX_ACCESS()
 
   return 0;
 }
