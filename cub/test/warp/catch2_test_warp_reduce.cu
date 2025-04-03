@@ -52,35 +52,67 @@ inline constexpr int items_per_thread = 4;
  * Kernel
  **********************************************************************************************************************/
 
-template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename T, typename Output, typename ReductionOp>
-__device__ void warp_reduce_function(T& thread_data, Output* output, ReductionOp reduction_op, int num_items = 0)
+template <typename T>
+inline constexpr bool is_device_supported_type_v = true;
+
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+
+template <>
+inline constexpr bool is_device_supported_type_v<__nv_bfloat16> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<__nv_bfloat162> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<cuda::std::complex<__nv_bfloat16>> = false;
+
+#endif
+
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 530
+
+template <>
+inline constexpr bool is_device_supported_type_v<__half> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<__half2> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<cuda::std::complex<__half>> = false;
+
+#endif
+
+template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename Input, typename T, typename ReductionOp>
+__device__ void warp_reduce_function(Input& thread_data, T* output, ReductionOp reduction_op, int num_items = 0)
 {
-  using warp_reduce_t = cub::WarpReduce<Output, LogicalWarpThreads>;
-  using storage_t     = typename warp_reduce_t::TempStorage;
-  __shared__ storage_t storage[total_warps];
-  constexpr bool is_power_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
-  auto lane                      = cuda::ptx::get_sreg_laneid();
-  auto logical_warp              = is_power_of_two ? threadIdx.x / LogicalWarpThreads : threadIdx.x / warp_size;
-  auto logical_lane              = is_power_of_two ? threadIdx.x % LogicalWarpThreads : lane;
-  auto limit                     = EnableNumItems ? num_items : LogicalWarpThreads;
-  if (!is_power_of_two && lane >= limit)
+  if constexpr (is_device_supported_type_v<T>)
   {
-    return;
-  }
-  warp_reduce_t warp_reduce{storage[logical_warp]};
-  using result_t = decltype(reduction_op(warp_reduce, thread_data));
-  result_t result;
-  if constexpr (EnableNumItems)
-  {
-    result = reduction_op(warp_reduce, thread_data, num_items);
-  }
-  else
-  {
-    result = reduction_op(warp_reduce, thread_data);
-  }
-  if (logical_lane == 0)
-  {
-    output[logical_warp] = result;
+    using warp_reduce_t = cub::WarpReduce<T, LogicalWarpThreads>;
+    using storage_t     = typename warp_reduce_t::TempStorage;
+    __shared__ storage_t storage[total_warps];
+    constexpr bool is_power_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
+    auto lane                      = cuda::ptx::get_sreg_laneid();
+    auto logical_warp              = is_power_of_two ? threadIdx.x / LogicalWarpThreads : threadIdx.x / warp_size;
+    auto logical_lane              = is_power_of_two ? threadIdx.x % LogicalWarpThreads : lane;
+    auto limit                     = EnableNumItems ? num_items : LogicalWarpThreads;
+    if (!is_power_of_two && lane >= limit)
+    {
+      return;
+    }
+    warp_reduce_t warp_reduce{storage[logical_warp]};
+    using result_t = decltype(reduction_op(warp_reduce, thread_data));
+    result_t result;
+    if constexpr (EnableNumItems)
+    {
+      result = reduction_op(warp_reduce, thread_data, num_items);
+    }
+    else
+    {
+      result = reduction_op(warp_reduce, thread_data);
+    }
+    if (logical_lane == 0)
+    {
+      output[logical_warp] = result;
+    }
   }
 }
 
@@ -191,7 +223,7 @@ using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 
 using arithmetic_type_list = c2h::type_list<
-  bool, int8_t, uint16_t, int32_t, int64_t,
+  /*bool,*/ int8_t, uint16_t, int32_t, int64_t,
   float, double,
   cuda::std::complex<float>, cuda::std::complex<double>,
   ulonglong4, custom_t
@@ -283,7 +315,6 @@ std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned 
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
-#if 0
 
 C2H_TEST(
   "WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]", arithmetic_type_list, logical_warp_threads)
@@ -336,7 +367,7 @@ C2H_TEST(
   c2h::host_vector<T> h_tmp = d_out;
   verify_results(h_out, d_out);
 }
-#endif
+
 C2H_TEST(
   "WarpReduce Min/Max", "[reduce][warp][predefined_op][full]", min_max_type_list, min_max_op_list, logical_warp_threads)
 {

@@ -141,8 +141,8 @@ _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, int, add, s32, r) // shfl_down_add(i
 
 #if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 530
 _CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __half, add, f16) // shfl_down_add(__half)
-_CUB_SHFL_DOWN_OP_16BIT_X2(_CUDA_VSTD::plus<>, __half2, add, f16x2, r) // shfl_down_add(__half2)
 _CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<__half>, __half, add, f16) // shfl_down_add(__half)
+_CUB_SHFL_DOWN_OP_16BIT_X2(_CUDA_VSTD::plus<>, __half2, add, f16x2, r) // shfl_down_add(__half2)
 _CUB_SHFL_DOWN_OP_16BIT_X2(_CUDA_VSTD::plus<__half2>, __half2, add, f16x2, r) // shfl_down_add(__half2)
 #endif // _CCCL_HAS_NVFP16()
 
@@ -164,28 +164,48 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<unsigned>, unsigned, max, u32, r) // shf
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<int>, int, min, s32, r) // shfl_down_min(int)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<unsigned>, unsigned, min, u32, r) // shfl_down_min(unsigned)
 
-extern "C" _CCCL_DEVICE float warp_reduce_min_max_is_not_supported_before_sm100a();
+//----------------------------------------------------------------------------------------------------------------------
+// SM100 Min/Max Reduction
+
+extern "C" _CCCL_DEVICE float redux_min_max_sync_is_not_supported_before_sm100a();
 
 #if __cccl_ptx_isa >= 860
 
-#  define _CUB_REDUX_FLOAT_OP(OPERATOR, PTX_OP)                                                             \
-                                                                                                            \
-    template <typename = void>                                                                              \
-    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float redux_float_op(OPERATOR, float value, unsigned mask) \
-    {                                                                                                       \
-      float result;                                                                                         \
-      asm volatile("{"                                                                                      \
-                   "redux.sync." #PTX_OP ".f32 %0, %1, %2;"                                                 \
-                   "}"                                                                                      \
-                   : "=f"(result)                                                                           \
-                   : "f"(value), "r"(mask));                                                                \
-      return result;                                                                                        \
+#  define _CUB_REDUX_FLOAT_OP(OPERATOR, PTX_OP)                                                              \
+                                                                                                             \
+    template <typename = void>                                                                               \
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float redux_sm100a_op(OPERATOR, float value, unsigned mask) \
+    {                                                                                                        \
+      float result;                                                                                          \
+      asm volatile("{"                                                                                       \
+                   "redux.sync." #PTX_OP ".f32 %0, %1, %2;"                                                  \
+                   "}"                                                                                       \
+                   : "=f"(result)                                                                            \
+                   : "f"(value), "r"(mask));                                                                 \
+      return result;                                                                                         \
     }
 
 _CUB_REDUX_FLOAT_OP(::cuda::minimum<float>, min)
 _CUB_REDUX_FLOAT_OP(::cuda::maximum<float>, max)
 
 #endif // __cccl_ptx_isa >= 860
+
+template <typename T, typename ReductionOp>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T reduce_sm100a_sync(ReductionOp reduction_op, T value, unsigned mask)
+{
+  using namespace _CUDA_VSTD;
+#if __cccl_ptx_isa >= 860
+  static_assert(is_same_v<T, float> && cub::internal::is_cuda_std_min_max_v<ReductionOp, T>);
+  NV_IF_TARGET(NV_PROVIDES_SM_100,
+               (return cub::detail::redux_sm100a_op(reduction_op, value, mask);),
+               (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a(); _CCCL_UNREACHABLE();))
+#else
+  static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
+#endif // __cccl_ptx_isa >= 860
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// Bitwise Reduction
 
 // bitwise
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, unsigned, and, b32, r) // shfl_down_and(unsigned)

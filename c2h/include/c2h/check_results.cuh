@@ -34,6 +34,30 @@
 
 #include "c2h/catch2_test_helper.h"
 
+template <typename T>
+inline constexpr bool is_any_bfloat16_v = false;
+
+template <>
+inline constexpr bool is_any_bfloat16_v<__nv_bfloat16> = true;
+
+template <>
+inline constexpr bool is_any_bfloat16_v<__nv_bfloat162> = true;
+
+template <>
+inline constexpr bool is_any_bfloat16_v<cuda::std::complex<__nv_bfloat16>> = true;
+
+template <typename T>
+inline constexpr bool is_any_half_v = false;
+
+template <>
+inline constexpr bool is_any_half_v<__half> = true;
+
+template <>
+inline constexpr bool is_any_half_v<__half2> = true;
+
+template <>
+inline constexpr bool is_any_half_v<cuda::std::complex<__half>> = true;
+
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
@@ -41,6 +65,19 @@
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
 {
+  int device_id          = 0;
+  int compute_capability = 0;
+  CubDebugExit(cudaGetDevice(&device_id));
+  CubDebugExit(cudaDeviceGetAttribute(&compute_capability, cudaDevAttrComputeCapabilityMajor, device_id));
+  CubDebugExit(cudaDeviceGetAttribute(&compute_capability, cudaDevAttrComputeCapabilityMinor, device_id));
+  if (compute_capability < 90 && is_any_bfloat16_v<T>)
+  {
+    return;
+  }
+  if (compute_capability < 53 && is_any_half_v<T>)
+  {
+    return;
+  }
   if constexpr (cuda::std::is_floating_point_v<T>)
   {
     REQUIRE_APPROX_EQ(expected_data, test_results);

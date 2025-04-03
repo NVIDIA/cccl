@@ -157,6 +157,8 @@ class WarpReduce
 
   static constexpr auto warp_reduce_result_mode_default = detail::WarpReduceResultMode::SingleLane;
 
+  static constexpr auto logical_warp_size = cub::detail::logical_warp_size_t<LogicalWarpThreads>{};
+
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
@@ -234,7 +236,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(
     T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
   {
-    return detail::warp_reduce_dispatch<LogicalWarpThreads>(input, _CUDA_VSTD::plus<>{}, logical_mode, result_mode);
+    return detail::warp_reduce_dispatch(input, _CUDA_VSTD::plus<>{}, logical_mode, result_mode, logical_warp_size);
   }
 
   _CCCL_TEMPLATE(typename InputType)
@@ -251,7 +253,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(
     T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
   {
-    return detail::warp_reduce_dispatch<LogicalWarpThreads>(input, ::cuda::maximum<>{}, logical_mode, result_mode);
+    return detail::warp_reduce_dispatch(input, ::cuda::maximum<>{}, logical_mode, result_mode, logical_warp_size);
   }
 
   _CCCL_TEMPLATE(typename InputType)
@@ -268,7 +270,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(
     T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
   {
-    return detail::warp_reduce_dispatch<LogicalWarpThreads>(input, ::cuda::minimum<>{}, logical_mode, result_mode);
+    return detail::warp_reduce_dispatch(input, ::cuda::minimum<>{}, logical_mode, result_mode, logical_warp_size);
   }
 
   _CCCL_TEMPLATE(typename InputType)
@@ -342,7 +344,7 @@ public:
     detail::reduce_logical_mode_t<Mode> logical_mode = {},
     detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
-    return detail::warp_reduce_dispatch<LogicalWarpThreads>(input, reduction_op, logical_mode, result_mode);
+    return detail::warp_reduce_dispatch(input, reduction_op, logical_mode, result_mode, logical_warp_size);
   }
 
   _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
@@ -400,10 +402,23 @@ public:
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  Sum(T input,
+      int valid_items,
+      detail::ReduceLogicalMode logical_mode   = reduce_logical_mode_default,
+      detail::WarpReduceResultMode result_mode = warp_reduce_result_mode_default)
   {
     // Determine if we don't need bounds checking
-    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
+    // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
+    return detail::warp_reduce_dispatch(
+      input,
+      _CUDA_VSTD::plus<>{},
+      logical_mode,
+      result_mode,
+      logical_warp_size,
+      cub::detail::valid_items_t<>{valid_items});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)
