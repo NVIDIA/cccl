@@ -49,7 +49,7 @@ __global__ void test_clusterlaunchcontrol(void** fn_ptr)
                    // clusterlaunchcontrol.query_cancel.is_canceled.pred.b128 pred_is_canceled, try_cancel_response;
                    * fn_ptr++ = reinterpret_cast<void*>(
                      static_cast<bool (*)(longlong2)>(cuda::ptx::clusterlaunchcontrol_query_cancel_is_canceled));));
-#endif // __cccl_ptx_isa >= 860
+#  endif // __cccl_ptx_isa >= 860
 
 #  if __cccl_ptx_isa >= 860
   NV_IF_TARGET(NV_PROVIDES_SM_100,
