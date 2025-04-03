@@ -1,8 +1,9 @@
 import ctypes
 import operator
 import uuid
+from enum import Enum
 from functools import lru_cache
-from typing import Callable, Dict
+from typing import Callable, Dict, Tuple
 
 import numba
 import numpy as np
@@ -23,6 +24,11 @@ from ..typing import DeviceArrayLike
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
+
+
+class IteratorIO(Enum):
+    INPUT = 0
+    OUTPUT = 1
 
 
 @lru_cache(maxsize=256)  # TODO: what's a reasonable value?
@@ -74,6 +80,7 @@ class IteratorBase:
         cvalue: ctypes.c_void_p,
         numba_type: types.Type,
         value_type: types.Type,
+        iterator_io: IteratorIO,
         prefix: str = "",
     ):
         """
@@ -92,6 +99,7 @@ class IteratorBase:
         self.cvalue = cvalue
         self.numba_type = numba_type
         self.value_type = value_type
+        self.iterator_io = iterator_io
         self.prefix = prefix
 
     @property
@@ -107,17 +115,14 @@ class IteratorBase:
         deref_abi_name = f"{self.prefix}dereference_" + _get_abi_suffix(self.kind)
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
-            (
-                self.numba_type,
-                types.uint64,  # distance type
-            ),
+            self._get_advance_signature(),
             output="ltoir",
             abi_name=advance_abi_name,
         )
 
         deref_ltoir, _ = cached_compile(
             self.__class__.dereference,
-            (self.numba_type,),
+            self._get_dereference_signature(),
             output="ltoir",
             abi_name=deref_abi_name,
         )
@@ -132,11 +137,25 @@ class IteratorBase:
         raise NotImplementedError("Subclasses must override advance staticmethod")
 
     @staticmethod
-    def dereference(state):
+    def dereference(state, *args):
         raise NotImplementedError("Subclasses must override dereference staticmethod")
 
     def __add__(self, offset: int):
         return make_advanced_iterator(self, offset=offset)
+
+    def _get_advance_signature(self) -> Tuple:
+        return (
+            self.numba_type,
+            types.uint64,  # distance type
+        )
+
+    def _get_dereference_signature(self) -> Tuple:
+        if self.iterator_io is IteratorIO.INPUT:
+            return (self.numba_type,)
+        else:
+            # numba_type is a double pointer, so we get the datatype it points to
+            dtype = self.numba_type.dtype.dtype
+            return (self.numba_type, dtype)
 
 
 def sizeof_pointee(context, ptr):
@@ -183,6 +202,7 @@ class RawPointer(IteratorBase):
             cvalue=cvalue,
             numba_type=numba_type,
             value_type=value_type,
+            iterator_io=IteratorIO.INPUT,
         )
 
     @staticmethod
@@ -192,6 +212,28 @@ class RawPointer(IteratorBase):
     @staticmethod
     def dereference(state):
         return state[0][0]
+
+
+class RawOutputPointer(IteratorBase):
+    iterator_kind_type = RawPointerKind
+
+    def __init__(self, ptr: int, value_type: types.Type):
+        cvalue = ctypes.c_void_p(ptr)
+        numba_type = types.CPointer(types.CPointer(value_type))
+        super().__init__(
+            cvalue=cvalue,
+            numba_type=numba_type,
+            value_type=value_type,
+            iterator_io=IteratorIO.OUTPUT,
+        )
+
+    @staticmethod
+    def advance(state, distance):
+        state[0] = state[0] + distance
+
+    @staticmethod
+    def dereference(state, x):
+        state[0][0] = x
 
 
 def pointer(container, value_type: types.Type) -> RawPointer:
@@ -231,7 +273,11 @@ class CacheModifiedPointer(IteratorBase):
         value_type = ntype
         numba_type = types.CPointer(types.CPointer(value_type))
         super().__init__(
-            cvalue=cvalue, numba_type=numba_type, value_type=value_type, prefix=prefix
+            cvalue=cvalue,
+            numba_type=numba_type,
+            value_type=value_type,
+            prefix=prefix,
+            iterator_io=IteratorIO.INPUT,
         )
 
     @staticmethod
@@ -258,6 +304,7 @@ class ConstantIterator(IteratorBase):
             cvalue=cvalue,
             numba_type=numba_type,
             value_type=value_type,
+            iterator_io=IteratorIO.INPUT,
         )
 
     @staticmethod
@@ -284,6 +331,7 @@ class CountingIterator(IteratorBase):
             cvalue=cvalue,
             numba_type=numba_type,
             value_type=value_type,
+            iterator_io=IteratorIO.INPUT,
         )
 
     @staticmethod
@@ -317,7 +365,9 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
 
         def __init__(self, it):
             self._it = it
-            super().__init__(it.cvalue, it.numba_type, it.value_type)
+            super().__init__(
+                it.cvalue, it.numba_type, it.value_type, iterator_io=IteratorIO.INPUT
+            )
 
         @property
         def kind(self):
@@ -332,6 +382,47 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
             return it_dereference(state)
 
     return ReverseIterator(it)
+
+
+class ReverseOutputIteratorKind(IteratorKind):
+    pass
+
+
+def make_reverse_output_iterator(it):
+    if not hasattr(it, "__cuda_array_interface__") and not isinstance(it, IteratorBase):
+        raise NotImplementedError(
+            f"Reverse iterator is not implemented for type {type(it)}"
+        )
+
+    if hasattr(it, "__cuda_array_interface__"):
+        last_element_ptr = _get_last_element_ptr(it)
+        it = RawOutputPointer(last_element_ptr, numba.from_dtype(it.dtype))
+
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class ReverseOutputIterator(IteratorBase):
+        iterator_kind_type = ReverseOutputIteratorKind
+
+        def __init__(self, it):
+            self._it = it
+            super().__init__(
+                it.cvalue, it.numba_type, it.value_type, iterator_io=IteratorIO.OUTPUT
+            )
+
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type(self._it.kind)
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, -distance)
+
+        @staticmethod
+        def dereference(state, x):
+            it_dereference(state, x)
+
+    return ReverseOutputIterator(it)
 
 
 class TransformIteratorKind(IteratorKind):
@@ -367,6 +458,7 @@ def make_transform_iterator(it, op: Callable):
                 cvalue=it.cvalue,
                 numba_type=numba_type,
                 value_type=value_type,
+                iterator_io=it.iterator_io,
             )
 
         @property
@@ -403,6 +495,7 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
                 cvalue=cvalue_advanced,
                 numba_type=it.numba_type,
                 value_type=it.value_type,
+                iterator_io=it.iterator_io,
             )
 
         @property
