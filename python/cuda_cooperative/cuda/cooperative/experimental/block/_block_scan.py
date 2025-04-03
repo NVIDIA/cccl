@@ -38,9 +38,9 @@ def _scan(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
     threads_per_block: DimType,
     items_per_thread: int = 1,
+    initial_value: Any = None,
     mode: Literal["exclusive", "inclusive"] = "exclusive",
     scan_op: ScanOpType = ScanOp("+"),
-    initial_value: Any = None,
     block_prefix_callback_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -60,6 +60,40 @@ def _scan(
         if mode != "inclusive":
             raise ValueError(f"Unsupported mode: {mode}")
         cpp_func_prefix = "Inclusive"
+
+    # An initial value is not supported for inclusive scans with a single
+    # item per thread.
+    initial_value_not_supported = items_per_thread == 1 and mode == "inclusive"
+    if initial_value is not None and initial_value_not_supported:
+        raise ValueError(
+            "initial_value is not supported for inclusive scans with "
+            "items_per_thread == 1"
+        )
+
+    # An initial value is not supported for exclusive scans with a
+    # single item per thread and a block prefix callback operator.
+    initial_value_not_supported = (
+        items_per_thread == 1
+        and initial_value is not None
+        and mode == "exclusive"
+        and block_prefix_callback_op is not None
+    )
+    if initial_value_not_supported:
+        raise ValueError(
+            "initial_value is not supported for exclusive scans with "
+            "items_per_thread == 1 and a block prefix callback operator"
+        )
+
+    # An initial value is required for both inclusive and exclusive scans
+    # when items_per_thread > 1 and a block prefix callback operator is
+    # not supplied by the caller.
+    initial_value_required = items_per_thread > 1 and block_prefix_callback_op is None
+    if initial_value_required and initial_value is None:
+        raise ValueError(
+            "initial_value is required for both inclusive and exclusive scans "
+            "when items_per_thread > 1 and no block prefix callback operator "
+            "has been supplied"
+        )
 
     # This will raise an error if scan_op is invalid.
     scan_op = ScanOp(scan_op)
@@ -91,528 +125,311 @@ def _scan(
         specialization_kwds["ITEMS_PER_THREAD"] = items_per_thread
         fake_return = False
 
+    # A "known" scan op is the standard set of associative operators,
+    # e.g. ::cuda::std::plus<>, etc.  A "callable" scan op is a Python
+    # callable that has been furnished by the caller.  Thus, we need to
+    # generate different parameters for each case.
+    if scan_op.is_known:
+
+        def make_dependent_scan_op():
+            return DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp)
+    elif scan_op.is_callable:
+
+        def make_dependent_scan_op():
+            return DependentOperator(
+                Dependency("T"),
+                [Dependency("T"), Dependency("T")],
+                Dependency("ScanOp"),
+            )
+
+    if block_prefix_callback_op is not None:
+
+        def make_dependent_block_prefix_callback_op():
+            return DependentOperator(
+                Dependency("T"),
+                [Dependency("T")],
+                Dependency("BlockPrefixCallbackOp"),
+            )
+
     if scan_op.is_sum:
         if items_per_thread == 1:
-            parameters = [
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # ).<Inclusive|Exclusive>Sum(
-                #     T, # input
-                #     T& # output
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # ).<Inclusive|Exclusive>Sum(
-                #     T,                     # input
-                #     T&,                    # output
-                #     BlockPrefixCallbackOp& # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-            ]
+            if block_prefix_callback_op is None:
+                parameters = [
+                    # Signature:
+                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                    #     temp_storage
+                    # ).<Inclusive|Exclusive>Sum(
+                    #     T, # input
+                    #     T& # output
+                    # )
+                    [
+                        # temp_storage
+                        Pointer(numba.uint8),
+                        # T input
+                        DependentReference(Dependency("T")),
+                        # T& output
+                        DependentReference(Dependency("T"), is_output=True),
+                    ],
+                ]
+            else:
+                parameters = [
+                    # Signature:
+                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                    #     temp_storage
+                    # ).<Inclusive|Exclusive>Sum(
+                    #     T,                     # input
+                    #     T&,                    # output
+                    #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                    # )
+                    [
+                        # temp_storage
+                        Pointer(numba.uint8),
+                        # T input
+                        DependentReference(Dependency("T")),
+                        # T& output
+                        DependentReference(Dependency("T"), is_output=True),
+                        # BlockPrefixCallbackOp& block_prefix_callback_op
+                        make_dependent_block_prefix_callback_op(),
+                    ],
+                ]
 
         else:
             assert items_per_thread > 1, items_per_thread
-            parameters = [
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # ).<Inclusive|Exclusive>Sum(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD]  # output
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # ).<Inclusive|Exclusive>Sum(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     BlockPrefixCallbackOp&   # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-            ]
+            if block_prefix_callback_op is None:
+                parameters = [
+                    # Signature:
+                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                    #     temp_storage
+                    # ).<Inclusive|Exclusive>Sum(
+                    #     T (&)[ITEMS_PER_THREAD], # input
+                    #     T (&)[ITEMS_PER_THREAD]  # output
+                    # )
+                    [
+                        # temp_storage
+                        Pointer(numba.uint8),
+                        # T (&)[ITEMS_PER_THREAD] input
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # T (&)[ITEMS_PER_THREAD] output
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                    ],
+                ]
+            else:
+                parameters = [
+                    # Signature:
+                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                    #     temp_storage
+                    # ).<Inclusive|Exclusive>Sum(
+                    #     T (&)[ITEMS_PER_THREAD], # input
+                    #     T (&)[ITEMS_PER_THREAD], # output
+                    #     BlockPrefixCallbackOp&   # block_prefix_callback_op
+                    # )
+                    [
+                        # temp_storage
+                        Pointer(numba.uint8),
+                        # T (&)[ITEMS_PER_THREAD] input
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # T (&)[ITEMS_PER_THREAD] output
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # BlockPrefixCallbackOp& block_prefix_callback_op
+                        make_dependent_block_prefix_callback_op(),
+                    ],
+                ]
 
-    elif scan_op.is_known:
+    elif scan_op.is_known or scan_op.is_callable:
         if items_per_thread == 1:
-            parameters = [
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,     # input
-                #     T&,    # output
-                #     ScanOp # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,     # input
-                #     T&,    # output
-                #     T,     # initial_value
-                #     ScanOp # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,                     # input
-                #     T&,                    # output
-                #     ScanOp,                # scan_op
-                #     BlockPrefixCallbackOp& # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,                     # input
-                #     T&,                    # output
-                #     T,                     # initial_value
-                #     ScanOp,                # scan_op
-                #     BlockPrefixCallbackOp& # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-            ]
+            if mode == "exclusive":
+                if initial_value is not None:
+                    # We've already verified earlier that block_prefix_callback_op
+                    # isn't supplied by the caller if items_per_thread == 1.
+                    assert block_prefix_callback_op is None
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # )<ScanOp>ExclusiveScan(
+                        #     T,     # input
+                        #     T&,    # output
+                        #     T,     # initial_value
+                        #     ScanOp # scan_op
+                        # )
+                        [
+                            # temp_storage
+                            Pointer(numba.uint8),
+                            # T input
+                            DependentReference(Dependency("T")),
+                            # T& output
+                            DependentReference(Dependency("T"), is_output=True),
+                            # T initial_value
+                            DependentReference(Dependency("T")),
+                            # ScanOp scan_op
+                            make_dependent_scan_op(),
+                        ],
+                    ]
+
+                elif block_prefix_callback_op is not None:
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # )<ScanOp>ExclusiveScan(
+                        #     T,                     # input
+                        #     T&,                    # output
+                        #     ScanOp,                # scan_op
+                        #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                        # )
+                        [
+                            # temp_storage
+                            Pointer(numba.uint8),
+                            # T input
+                            DependentReference(Dependency("T")),
+                            # T& output
+                            DependentReference(Dependency("T"), is_output=True),
+                            # ScanOp scan_op
+                            make_dependent_scan_op(),
+                            # BlockPrefixCallbackOp& block_prefix_callback_op
+                            make_dependent_block_prefix_callback_op(),
+                        ],
+                    ]
+                else:
+                    # We shouldn't ever hit this; if we do, our prior invariant
+                    # checks have failed.
+                    raise RuntimeError("Unreachable code")
+
+            else:
+                assert mode == "inclusive" or initial_value is None
+                if block_prefix_callback_op is None:
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # )<ScanOp><Inclusive|Exclusive>Scan(
+                        #     T,     # input
+                        #     T&,    # output
+                        #     ScanOp # scan_op
+                        # )
+                        [
+                            # temp_storage
+                            Pointer(numba.uint8),
+                            # T input
+                            DependentReference(Dependency("T")),
+                            # T& output
+                            DependentReference(Dependency("T"), is_output=True),
+                            # ScanOp scan_op
+                            make_dependent_scan_op(),
+                        ],
+                    ]
+                else:
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # )<ScanOp><Inclusive|Exclusive>Scan(
+                        #     T,                     # input
+                        #     T&,                    # output
+                        #     ScanOp,                # scan_op
+                        #     BlockPrefixCallbackOp& # block_prefix_callback_op
+                        # )
+                        [
+                            # temp_storage
+                            Pointer(numba.uint8),
+                            # T input
+                            DependentReference(Dependency("T")),
+                            # T& output
+                            DependentReference(Dependency("T"), is_output=True),
+                            # ScanOp scan_op
+                            make_dependent_scan_op(),
+                            # BlockPrefixCallbackOp& block_prefix_callback_op
+                            make_dependent_block_prefix_callback_op(),
+                        ],
+                    ]
 
         else:
             assert items_per_thread > 1, items_per_thread
-            parameters = [
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     ScanOp                   # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     T,                       # initial_value
-                #     ScanOp                   # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     ScanOp,                  # scan_op
-                #     BlockPrefixCallbackOp&   # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     T,                       # initial_value
-                #     ScanOp,                  # scan_op
-                #     BlockPrefixCallbackOp&   # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-            ]
+            if initial_value is not None:
+                # We've already verified earlier that block_prefix_callback_op
+                # isn't supplied by the caller if items_per_thread > 1 and an
+                # initial value is supplied.
+                assert block_prefix_callback_op is None
+                parameters = [
+                    # Signature:
+                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                    #     temp_storage
+                    # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
+                    #     T (&)[ITEMS_PER_THREAD], # input
+                    #     T (&)[ITEMS_PER_THREAD], # output
+                    #     T,                       # initial_value
+                    #     ScanOp                   # scan_op
+                    # )
+                    [
+                        # temp_storage
+                        Pointer(numba.uint8),
+                        # T (&)[ITEMS_PER_THREAD] input
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # T (&)[ITEMS_PER_THREAD] output
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # ScanOp scan_op
+                        make_dependent_scan_op(),
+                    ],
+                ]
+            elif block_prefix_callback_op is not None:
+                parameters = [
+                    # Signature:
+                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                    #     temp_storage
+                    # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
+                    #     T (&)[ITEMS_PER_THREAD], # input
+                    #     T (&)[ITEMS_PER_THREAD], # output
+                    #     ScanOp,                  # scan_op
+                    #     BlockPrefixCallbackOp&   # block_prefix_callback_op
+                    # )
+                    [
+                        # temp_storage
+                        Pointer(numba.uint8),
+                        # T (&)[ITEMS_PER_THREAD] input
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # T (&)[ITEMS_PER_THREAD] output
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # ScanOp scan_op
+                        make_dependent_scan_op(),
+                        # BlockPrefixCallbackOp& block_prefix_callback_op
+                        make_dependent_block_prefix_callback_op(),
+                    ],
+                ]
+            else:
+                parameters = [
+                    # Signature:
+                    # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                    #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                    #     temp_storage
+                    # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
+                    #     T (&)[ITEMS_PER_THREAD], # input
+                    #     T (&)[ITEMS_PER_THREAD], # output
+                    #     ScanOp                   # scan_op
+                    # )
+                    [
+                        # temp_storage
+                        Pointer(numba.uint8),
+                        # T (&)[ITEMS_PER_THREAD] input
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # T (&)[ITEMS_PER_THREAD] output
+                        DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # ScanOp scan_op
+                        make_dependent_scan_op(),
+                    ],
+                ]
 
-    elif scan_op.is_callable:
-        if items_per_thread == 1:
-            parameters = [
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,     # input
-                #     T&,    # output
-                #     ScanOp # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,     # input
-                #     T&,    # output
-                #     T,     # initial_value
-                #     ScanOp # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,                     # input
-                #     T&,                    # output
-                #     ScanOp,                # scan_op
-                #     BlockPrefixCallbackOp& # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ScanOp><Inclusive|Exclusive>Scan(
-                #     T,                     # input
-                #     T&,                    # output
-                #     T,                     # initial_value
-                #     ScanOp,                # scan_op
-                #     BlockPrefixCallbackOp& # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T input
-                    DependentReference(Dependency("T")),
-                    # T& output
-                    DependentReference(Dependency("T"), is_output=True),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-            ]
-        else:
-            assert items_per_thread > 1, items_per_thread
-            parameters = [
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     ScanOp                   # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     T,                       # initial_value
-                #     ScanOp                   # scan_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     ScanOp,                  # scan_op
-                #     BlockPrefixCallbackOp&   # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-                # Signature:
-                # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
-                #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
-                #     temp_storage
-                # )<ITEMS_PER_THREAD, ScanOp><Inclusive|Exclusive>Scan(
-                #     T (&)[ITEMS_PER_THREAD], # input
-                #     T (&)[ITEMS_PER_THREAD], # output
-                #     T,                       # initial_value
-                #     ScanOp,                  # scan_op
-                #     BlockPrefixCallbackOp&   # block_prefix_callback_op
-                # )
-                [
-                    # temp_storage
-                    Pointer(numba.uint8),
-                    # T (&)[ITEMS_PER_THREAD] input
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T (&)[ITEMS_PER_THREAD] output
-                    DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    # T initial_value
-                    DependentReference(Dependency("T")),
-                    # ScanOp scan_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T"), Dependency("T")],
-                        Dependency("ScanOp"),
-                    ),
-                    # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
-                        Dependency("T"),
-                        [Dependency("T")],
-                        Dependency("BlockPrefixCallbackOp"),
-                    ),
-                ],
-            ]
+    else:
+        raise RuntimeError("Unreachable code")
 
     template = Algorithm(
         "BlockScan",
@@ -778,6 +595,7 @@ def exclusive_scan(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
     threads_per_block: DimType,
     scan_op: ScanOpType,
+    initial_value: Any = None,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
@@ -796,13 +614,18 @@ def exclusive_scan(
 
         scan_op: Supplies the scan operator to use for the block-wide scan.
 
-        items_per_thread: Supplies the number of items partitioned onto each
-            thread.
+        initial_value: Optionally supplies the initial value to use for the
+            block-wide scan.  If a non-None value is supplied, `prefix_op`
+            must be None.
+
+        items_per_thread: Optionally supplies the number of items partitioned
+            onto each thread.  Defaults to 1.
 
         prefix_op: Optionally supplies a callable that will be invoked by the
             first warp of threads in a block with the block aggregate value;
             only the return value of the first lane in the warp is applied as
-            the prefix value.
+            the prefix value.  If a non-None value is supplied, `initial_value`
+            must be None.
 
         algorithm: Optionally supplies the algorithm to use for the block-wide
             scan.  Must be one of the following: ``"raking"``,
@@ -821,6 +644,7 @@ def exclusive_scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
+        initial_value=initial_value,
         mode="exclusive",
         scan_op=scan_op,
         block_prefix_callback_op=prefix_op,
@@ -833,6 +657,7 @@ def inclusive_scan(
     dtype: Union[str, type, "np.dtype", "numba.types.Type"],
     threads_per_block: DimType,
     scan_op: ScanOpType,
+    initial_value: Any = None,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
@@ -851,13 +676,18 @@ def inclusive_scan(
 
         scan_op: Supplies the scan operator to use for the block-wide scan.
 
-        items_per_thread: Supplies the number of items partitioned onto each
-            thread.
+        initial_value: Optionally supplies the initial value to use for the
+            block-wide scan.  If a non-None value is supplied, `prefix_op`
+            must be None.  Only supported for ``items_per_thread > 1``.
+
+        items_per_thread: Optionally supplies the number of items partitioned
+            onto each thread.  Defaults to 1.
 
         prefix_op: Optionally supplies a callable that will be invoked by the
             first warp of threads in a block with the block aggregate value;
             only the return value of the first lane in the warp is applied as
-            the prefix value.
+            the prefix value.  If a non-None value is supplied, `initial_value`
+            must be None.
 
         algorithm: Optionally supplies the algorithm to use for the block-wide
             scan.  Must be one of the following: ``"raking"``,
@@ -876,6 +706,7 @@ def inclusive_scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
+        initial_value=initial_value,
         mode="inclusive",
         scan_op=scan_op,
         block_prefix_callback_op=prefix_op,
