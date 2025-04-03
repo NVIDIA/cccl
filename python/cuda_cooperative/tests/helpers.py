@@ -2,8 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import numba
 import numpy as np
 from numba import cuda, types
+from numba.core import cgutils
+from numba.core.extending import (
+    lower_builtin,
+    make_attribute_wrapper,
+    models,
+    register_model,
+    type_callable,
+    typeof_impl,
+)
 
 NUMBA_TYPES_TO_NP = {
     types.int8: np.int8,
@@ -32,3 +42,59 @@ def row_major_tid():
         + (0 if dim.y == 1 else idx.y * dim.x)
         + idx.x
     )
+
+
+class Complex:
+    def __init__(self, real, imag):
+        self.real = real
+        self.imag = imag
+
+    def construct(this):
+        default_value = numba.int32(0)
+        this[0] = Complex(default_value, default_value)
+
+    def assign(this, that):
+        this[0] = Complex(that[0].real, that[0].imag)
+
+
+class ComplexType(types.Type):
+    def __init__(self):
+        super().__init__(name="Complex")
+
+
+complex_type = ComplexType()
+
+
+@typeof_impl.register(Complex)
+def typeof_complex(val, c):
+    return complex_type
+
+
+@type_callable(Complex)
+def type__complex(context):
+    def typer(real, imag):
+        if isinstance(real, types.Integer) and isinstance(imag, types.Integer):
+            return complex_type
+
+    return typer
+
+
+@register_model(ComplexType)
+class ComplexModel(models.StructModel):
+    def __init__(self, dmm, fe_type):
+        members = [("real", types.int32), ("imag", types.int32)]
+        models.StructModel.__init__(self, dmm, fe_type, members)
+
+
+make_attribute_wrapper(ComplexType, "real", "real")
+make_attribute_wrapper(ComplexType, "imag", "imag")
+
+
+@lower_builtin(Complex, types.Integer, types.Integer)
+def impl_complex(context, builder, sig, args):
+    typ = sig.return_type
+    real, imag = args
+    state = cgutils.create_struct_proxy(typ)(context, builder)
+    state.real = real
+    state.imag = imag
+    return state._getvalue()
