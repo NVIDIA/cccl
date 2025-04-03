@@ -1044,9 +1044,10 @@ cdef class DeviceReduceBuildResult:
        self._initialized = 0
 
     def __dealloc__(DeviceReduceBuildResult self):
-        cdef CUresult status
+        cdef CUresult status = -1
         if self._initialized:
-            status = cccl_device_reduce_cleanup(&self.build_data)
+            with nogil:
+                status = cccl_device_reduce_cleanup(&self.build_data)
             if (status != 0):
                 print(f"Return code {status} encountered during reduce result cleanup")
 
@@ -1058,21 +1059,29 @@ cdef class DeviceReduceBuildResult:
         Value h_init,
         CommonData common_data
     ):
-        cdef CUresult status
-        status = cccl_device_reduce_build(
-            &self.build_data,
-            d_in.iter_data,
-            d_out.iter_data,
-            op.op_data,
-            h_init.value_data,
-            common_data.get_cc_major(),
-            common_data.get_cc_minor(),
-            common_data.cub_path_get_c_str(),
-            common_data.thrust_path_get_c_str(),
-            common_data.libcudacxx_path_get_c_str(),
-            common_data.ctk_path_get_c_str(),
-        )
-        self._initialized = (status == 0)
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_reduce_build(
+                &self.build_data,
+                d_in.iter_data,
+                d_out.iter_data,
+                op.op_data,
+                h_init.value_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+            self._initialized = (status == 0)
         return status
 
     cpdef tuple compute(
@@ -1086,23 +1095,24 @@ cdef class DeviceReduceBuildResult:
         Value h_init,
         stream
     ):
-        cdef CUresult status
+        cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
         if not self._initialized:
             raise RuntimeError("DeviceReduce algorithm has not been initialized")
-        status = cccl_device_reduce(
-            self.build_data,
-            storage_ptr,
-            &storage_sz,
-            d_in.iter_data,
-            d_out.iter_data,
-            <uint64_t>num_items,
-            op.op_data,
-            h_init.value_data,
-            c_stream
-        )
+        with nogil:
+            status = cccl_device_reduce(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                h_init.value_data,
+                c_stream
+            )
         return status, <object>storage_sz
 
 
@@ -1165,9 +1175,10 @@ cdef class DeviceScanBuildResult:
        self._initialized = 0
 
     def __dealloc__(DeviceScanBuildResult self):
-        cdef CUresult status
+        cdef CUresult status = -1
         if self._initialized:
-            status = cccl_device_scan_cleanup(&self.build_data)
+            with nogil:
+                status = cccl_device_scan_cleanup(&self.build_data)
             if (status != 0):
                 print(f"Return code {status} encountered during scan result cleanup")
 
@@ -1180,22 +1191,30 @@ cdef class DeviceScanBuildResult:
         bint force_inclusive,
         CommonData common_data
     ):
-        cdef CUresult status
-        status = cccl_device_scan_build(
-            &self.build_data,
-            d_in.iter_data,
-            d_out.iter_data,
-            op.op_data,
-            h_init.value_data,
-            force_inclusive,
-            common_data.get_cc_major(),
-            common_data.get_cc_minor(),
-            common_data.cub_path_get_c_str(),
-            common_data.thrust_path_get_c_str(),
-            common_data.libcudacxx_path_get_c_str(),
-            common_data.ctk_path_get_c_str(),
-        )
-        self._initialized = (status == 0)
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_scan_build(
+                &self.build_data,
+                d_in.iter_data,
+                d_out.iter_data,
+                op.op_data,
+                h_init.value_data,
+                force_inclusive,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+            self._initialized = (status == 0)
         return status
 
     cpdef tuple compute_inclusive(
@@ -1209,24 +1228,25 @@ cdef class DeviceScanBuildResult:
         Value h_init,
         stream
     ):
-        cdef CUresult status
+        cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
 
         if not self._initialized:
             raise RuntimeError("DeviceScan algorithm has not been initialized")
-        status = cccl_device_inclusive_scan(
-            self.build_data,
-            storage_ptr,
-            &storage_sz,
-            d_in.iter_data,
-            d_out.iter_data,
-            <uint64_t>num_items,
-            op.op_data,
-            h_init.value_data,
-            c_stream
-        )
+        with nogil:
+            status = cccl_device_inclusive_scan(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                h_init.value_data,
+                c_stream
+            )
         return status, <object>storage_sz
 
     cpdef tuple compute_exclusive(
@@ -1240,24 +1260,25 @@ cdef class DeviceScanBuildResult:
         Value h_init,
         stream
     ):
-        cdef CUresult status
+        cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
 
         if not self._initialized:
             raise RuntimeError("DeviceScan algorithm has not been initialized")
-        status = cccl_device_exclusive_scan(
-            self.build_data,
-            storage_ptr,
-            &storage_sz,
-            d_in.iter_data,
-            d_out.iter_data,
-            <uint64_t>num_items,
-            op.op_data,
-            h_init.value_data,
-            c_stream
-        )
+        with nogil:
+            status = cccl_device_exclusive_scan(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                h_init.value_data,
+                c_stream
+            )
         return status, <object>storage_sz
 
 
@@ -1309,9 +1330,10 @@ cdef class DeviceSegmentedReduceBuildResult:
        self._initialized = 0
 
     def __dealloc__(DeviceSegmentedReduceBuildResult self):
-        cdef CUresult status
+        cdef CUresult status = -1
         if self._initialized:
-            status = cccl_device_segmented_reduce_cleanup(&self.build_data)
+            with nogil:
+                status = cccl_device_segmented_reduce_cleanup(&self.build_data)
             if (status != 0):
                 print(f"Return code {status} encountered during segmented_reduce result cleanup")
 
@@ -1325,23 +1347,31 @@ cdef class DeviceSegmentedReduceBuildResult:
         Value h_init,
         CommonData common_data
     ):
-        cdef CUresult status
-        status = cccl_device_segmented_reduce_build(
-            &self.build_data,
-            d_in.iter_data,
-            d_out.iter_data,
-            start_offsets.iter_data,
-            end_offsets.iter_data,
-            op.op_data,
-            h_init.value_data,
-            common_data.get_cc_major(),
-            common_data.get_cc_minor(),
-            common_data.cub_path_get_c_str(),
-            common_data.thrust_path_get_c_str(),
-            common_data.libcudacxx_path_get_c_str(),
-            common_data.ctk_path_get_c_str(),
-        )
-        self._initialized = (status == 0)
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_segmented_reduce_build(
+                &self.build_data,
+                d_in.iter_data,
+                d_out.iter_data,
+                start_offsets.iter_data,
+                end_offsets.iter_data,
+                op.op_data,
+                h_init.value_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+            self._initialized = (status == 0)
         return status
 
     cpdef tuple compute(
@@ -1357,25 +1387,26 @@ cdef class DeviceSegmentedReduceBuildResult:
         Value h_init,
         stream
     ):
-        cdef CUresult status
+        cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
         if not self._initialized:
             raise RuntimeError("DeviceSegmentedReduce algorithm has not been initialized")
-        status = cccl_device_segmented_reduce(
-            self.build_data,
-            storage_ptr,
-            &storage_sz,
-            d_in.iter_data,
-            d_out.iter_data,
-            <uint64_t>num_items,
-            start_offsets.iter_data,
-            end_offsets.iter_data,
-            op.op_data,
-            h_init.value_data,
-            c_stream
-        )
+        with nogil:
+            status = cccl_device_segmented_reduce(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                start_offsets.iter_data,
+                end_offsets.iter_data,
+                op.op_data,
+                h_init.value_data,
+                c_stream
+            )
         return status, <object>storage_sz
 
 # -----------------
@@ -1424,9 +1455,10 @@ cdef class DeviceMergeSortBuildResult:
        self._initialized = 0
 
     def __dealloc__(DeviceMergeSortBuildResult self):
-        cdef CUresult status
+        cdef CUresult status = -1
         if self._initialized:
-            status = cccl_device_merge_sort_cleanup(&self.build_data)
+            with nogil:
+                status = cccl_device_merge_sort_cleanup(&self.build_data)
             if (status != 0):
                 print(f"Return code {status} encountered during merge_sort result cleanup")
 
@@ -1439,22 +1471,30 @@ cdef class DeviceMergeSortBuildResult:
         Op op,
         CommonData common_data
     ):
-        cdef CUresult status
-        status = cccl_device_merge_sort_build(
-            &self.build_data,
-            d_in_keys.iter_data,
-            d_in_items.iter_data,
-            d_out_keys.iter_data,
-            d_out_items.iter_data,
-            op.op_data,
-            common_data.get_cc_major(),
-            common_data.get_cc_minor(),
-            common_data.cub_path_get_c_str(),
-            common_data.thrust_path_get_c_str(),
-            common_data.libcudacxx_path_get_c_str(),
-            common_data.ctk_path_get_c_str(),
-        )
-        self._initialized = (status == 0)
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_merge_sort_build(
+                &self.build_data,
+                d_in_keys.iter_data,
+                d_in_items.iter_data,
+                d_out_keys.iter_data,
+                d_out_items.iter_data,
+                op.op_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+            self._initialized = (status == 0)
         return status
 
     cpdef tuple compute(
@@ -1469,24 +1509,25 @@ cdef class DeviceMergeSortBuildResult:
         Op op,
         stream
     ):
-        cdef CUresult status
+        cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
         if not self._initialized:
             raise RuntimeError("DeviceMergeSort algorithm has not been initialized")
-        status = cccl_device_merge_sort(
-            self.build_data,
-            storage_ptr,
-            &storage_sz,
-            d_in_keys.iter_data,
-            d_in_items.iter_data,
-            d_out_keys.iter_data,
-            d_out_items.iter_data,
-            <uint64_t>num_items,
-            op.op_data,
-            c_stream
-        )
+        with nogil:
+            status = cccl_device_merge_sort(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_in_keys.iter_data,
+                d_in_items.iter_data,
+                d_out_keys.iter_data,
+                d_out_items.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                c_stream
+            )
         return status, <object>storage_sz
 
 # -------------------
@@ -1543,9 +1584,10 @@ cdef class DeviceUniqueByKeyBuildResult:
        self._initialized = 0
 
     def __dealloc__(DeviceUniqueByKeyBuildResult self):
-        cdef CUresult status = 0
+        cdef CUresult status = -1
         if self._initialized:
-            status = cccl_device_unique_by_key_cleanup(&self.build_data)
+            with nogil:
+                status = cccl_device_unique_by_key_cleanup(&self.build_data)
             if (status != 0):
                 print(f"Return code {status} encountered during unique_by_key result cleanup")
 
@@ -1559,23 +1601,31 @@ cdef class DeviceUniqueByKeyBuildResult:
         Op comparison_op,
         CommonData common_data
     ):
-        cdef CUresult status = 0
-        status = cccl_device_unique_by_key_build(
-            &self.build_data,
-            d_keys_in.iter_data,
-            d_values_in.iter_data,
-            d_keys_out.iter_data,
-            d_values_out.iter_data,
-            d_num_selected_out.iter_data,
-            comparison_op.op_data,
-            common_data.get_cc_major(),
-            common_data.get_cc_minor(),
-            common_data.cub_path_get_c_str(),
-            common_data.thrust_path_get_c_str(),
-            common_data.libcudacxx_path_get_c_str(),
-            common_data.ctk_path_get_c_str(),
-        )
-        self._initialized = (status == 0)
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_unique_by_key_build(
+                &self.build_data,
+                d_keys_in.iter_data,
+                d_values_in.iter_data,
+                d_keys_out.iter_data,
+                d_values_out.iter_data,
+                d_num_selected_out.iter_data,
+                comparison_op.op_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+            self._initialized = (status == 0)
         return status
 
     cpdef tuple compute(
@@ -1591,23 +1641,24 @@ cdef class DeviceUniqueByKeyBuildResult:
         size_t num_items,
         stream
     ):
-        cdef CUresult status
+        cdef CUresult status = -1
         cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
         cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
         if not self._initialized:
             raise RuntimeError("DeviceUniqueByKey algorithm has not been initialized")
-        status = cccl_device_unique_by_key(
-            self.build_data,
-            storage_ptr,
-            &storage_sz,
-            d_keys_in.iter_data,
-            d_values_in.iter_data,
-            d_keys_out.iter_data,
-            d_values_out.iter_data,
-            d_num_selected_out.iter_data,
-            comparison_op.op_data,
-            <uint64_t>num_items,
-            c_stream
-        )
+        with nogil:
+            status = cccl_device_unique_by_key(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_keys_in.iter_data,
+                d_values_in.iter_data,
+                d_keys_out.iter_data,
+                d_values_out.iter_data,
+                d_num_selected_out.iter_data,
+                comparison_op.op_data,
+                <uint64_t>num_items,
+                c_stream
+            )
         return status, <object>storage_sz
