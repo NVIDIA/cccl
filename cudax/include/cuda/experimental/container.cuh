@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__container/async_buffer.cuh>
+#include <cuda/experimental/__container/synchronous_buffer.cuh>
 #include <cuda/experimental/__container/uninitialized_async_buffer.cuh>
 #include <cuda/experimental/__container/uninitialized_buffer.cuh>
 
