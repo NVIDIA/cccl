@@ -36,6 +36,7 @@ set(stf_test_sources
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
+  places/affinity_gc.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
