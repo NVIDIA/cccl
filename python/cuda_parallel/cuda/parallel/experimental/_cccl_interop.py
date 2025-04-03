@@ -13,7 +13,7 @@ from numba import cuda, types
 
 from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
 
-from ._cy_bindings import (
+from ._bindings import (
     CommonData,
     IntEnum,
     Iterator,
