@@ -2,12 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import operator
+
 import numba
 import numpy as np
 import pytest
 
 from cuda.cooperative.experimental._common import (
+    CUDA_STD_BIT_AND,
+    CUDA_STD_BIT_OR,
+    CUDA_STD_BIT_XOR,
+    CUDA_STD_MAX,
+    CUDA_STD_MIN,
+    CUDA_STD_MULTIPLIES,
+    CUDA_STD_PLUS,
     CudaSharedMemConfig,
+    ScanOp,
+    ScanOpCategory,
     dim3,
     normalize_dim_param,
     normalize_dtype_param,
@@ -339,3 +350,115 @@ class TestCudaSharedMemConfig:
     def test_enum_lookup_by_value(self, value, expected_enum):
         """Test that we can look up enum values by value."""
         assert CudaSharedMemConfig(value) == expected_enum
+
+
+class TestScanOp:
+    @pytest.mark.parametrize(
+        "op, expected_category, expected_cpp",
+        [
+            ("add", ScanOpCategory.Sum, CUDA_STD_PLUS),
+            ("mul", ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
+            ("multiplies", ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
+            ("min", ScanOpCategory.Known, CUDA_STD_MIN),
+            ("minimum", ScanOpCategory.Known, CUDA_STD_MIN),
+            ("max", ScanOpCategory.Known, CUDA_STD_MAX),
+            ("maximum", ScanOpCategory.Known, CUDA_STD_MAX),
+            ("bit_and", ScanOpCategory.Known, CUDA_STD_BIT_AND),
+            ("bit_or", ScanOpCategory.Known, CUDA_STD_BIT_OR),
+            ("bit_xor", ScanOpCategory.Known, CUDA_STD_BIT_XOR),
+        ],
+    )
+    def test_string_names(self, op, expected_category, expected_cpp):
+        """Test that string operators are correctly processed."""
+        scan_op = ScanOp(op)
+        assert scan_op.op == op
+        assert scan_op.op_category == expected_category
+        assert scan_op.op_cpp == expected_cpp
+
+    @pytest.mark.parametrize(
+        "op, expected_category, expected_cpp",
+        [
+            ("+", ScanOpCategory.Sum, CUDA_STD_PLUS),
+            ("*", ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
+            ("&", ScanOpCategory.Known, CUDA_STD_BIT_AND),
+            ("|", ScanOpCategory.Known, CUDA_STD_BIT_OR),
+            ("^", ScanOpCategory.Known, CUDA_STD_BIT_XOR),
+        ],
+    )
+    def test_string_operators(self, op, expected_category, expected_cpp):
+        """Test that string operators are correctly processed."""
+        scan_op = ScanOp(op)
+        assert scan_op.op == op
+        assert scan_op.op_category == expected_category
+        assert scan_op.op_cpp == expected_cpp
+
+    @pytest.mark.parametrize(
+        "op, expected_category, expected_cpp",
+        [
+            (np.add, ScanOpCategory.Sum, CUDA_STD_PLUS),
+            (np.multiply, ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
+            (np.minimum, ScanOpCategory.Known, CUDA_STD_MIN),
+            (np.maximum, ScanOpCategory.Known, CUDA_STD_MAX),
+            (np.bitwise_and, ScanOpCategory.Known, CUDA_STD_BIT_AND),
+            (np.bitwise_or, ScanOpCategory.Known, CUDA_STD_BIT_OR),
+            (np.bitwise_xor, ScanOpCategory.Known, CUDA_STD_BIT_XOR),
+        ],
+    )
+    def test_numpy_functions(self, op, expected_category, expected_cpp):
+        """Test that NumPy functions are correctly processed."""
+        scan_op = ScanOp(op)
+        assert scan_op.op == op
+        assert scan_op.op_category == expected_category
+        assert scan_op.op_cpp == expected_cpp
+
+    # Implement test_python_operator_module_functions.
+    @pytest.mark.parametrize(
+        "op, expected_category, expected_cpp",
+        [
+            (operator.add, ScanOpCategory.Sum, CUDA_STD_PLUS),
+            (operator.mul, ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
+        ],
+    )
+    def test_python_operator_module_functions(
+        self, op, expected_category, expected_cpp
+    ):
+        """Test that Python operator module functions are correctly processed."""
+        scan_op = ScanOp(op)
+        assert scan_op.op == op
+        assert scan_op.op_category == expected_category
+        assert scan_op.op_cpp == expected_cpp
+
+    def test_custom_callable(self):
+        """Test that custom callables are correctly processed."""
+
+        def custom_add(a, b):
+            return a + b
+
+        scan_op = ScanOp(custom_add)
+        assert scan_op.op == custom_add
+        assert scan_op.op_category == ScanOpCategory.Callable
+        assert scan_op.op_cpp is None
+
+    @pytest.mark.parametrize(
+        "op",
+        [
+            "unsupported_op",
+            123,
+            [1, 2, 3],
+            {"op": "+"},
+            None,
+        ],
+    )
+    def test_invalid_operators(self, op):
+        """Test that invalid operators raise ValueError."""
+        with pytest.raises(ValueError):
+            ScanOp(op)
+
+    def test_repr(self):
+        """Test the string representation of ScanOp."""
+        scan_op = ScanOp("+")
+        assert repr(scan_op) == "ScanOp(+)"
+
+        scan_op = ScanOp(np.add)
+        assert "ScanOp(" in repr(scan_op)
+        assert "add" in repr(scan_op)
