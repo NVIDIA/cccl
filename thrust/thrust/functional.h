@@ -112,6 +112,8 @@ struct square<void>
  *  \{
  */
 
+inline namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead") deprecated
+{
 //! deprecated [since 3.1]
 using ::cuda::std::equal_to;
 //! deprecated [since 3.1]
@@ -167,6 +169,7 @@ using ::cuda::std::bit_xor;
 using ::cuda::maximum;
 //! deprecated [since 3.1]
 using ::cuda::minimum;
+} // namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead")deprecated
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
@@ -259,8 +262,11 @@ struct project2nd<void, void>
  *  \{
  */
 
+inline namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead") deprecated
+{
 //! deprecated [since 3.1]
 using ::cuda::std::not_fn;
+} // namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead")deprecated
 
 /*! \}
  */

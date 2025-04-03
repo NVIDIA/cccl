@@ -30,11 +30,16 @@
 
 THRUST_NAMESPACE_BEGIN
 
+inline namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead") deprecated
+{
+
 //! deprecated [since 3.1]
 using ::cuda::std::advance;
 //! deprecated [since 3.1]
 using ::cuda::std::next;
 //! deprecated [since 3.1]
 using ::cuda::std::prev;
+
+} // namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead")deprecated
 
 THRUST_NAMESPACE_END
