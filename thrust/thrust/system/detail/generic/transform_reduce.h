@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/system/detail/generic/tag.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -40,13 +41,13 @@ template <typename ExecutionPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
-  thrust::execution_policy<ExecutionPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  UnaryFunction unary_op,
-  OutputType init,
-  BinaryFunction binary_op);
+_CCCL_HOST_DEVICE thrust::detail::__iter_unary_accumulator_t<InputIterator, OutputType, UnaryFunction, BinaryFunction>
+transform_reduce(thrust::execution_policy<ExecutionPolicy>& exec,
+                 InputIterator first,
+                 InputIterator last,
+                 UnaryFunction unary_op,
+                 OutputType init,
+                 BinaryFunction binary_op);
 
 } // end namespace generic
 } // end namespace detail

@@ -28,6 +28,7 @@
 
 #include <thrust/detail/static_assert.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/detail/generic/reduce.h>
@@ -41,30 +42,28 @@ namespace generic
 {
 
 template <typename ExecutionPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last)
 {
-  using InputType = thrust::detail::it_value_t<InputIterator>;
-
-  // use InputType(0) as init by default
-  return thrust::reduce(exec, first, last, InputType(0));
+  using AccType = thrust::detail::__iter_accumulator_t<InputIterator>;
+  return thrust::reduce(exec, first, last, AccType{});
 } // end reduce()
 
 template <typename ExecutionPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, T>
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
-  // use plus<T> by default
-  return thrust::reduce(exec, first, last, init, thrust::plus<T>());
+  // use plus<> by default
+  return thrust::reduce(exec, first, last, init, thrust::plus<>{});
 } // end reduce()
 
 template <typename ExecutionPolicy, typename RandomAccessIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<RandomAccessIterator, OutputType, BinaryFunction> reduce(
   thrust::execution_policy<ExecutionPolicy>&, RandomAccessIterator, RandomAccessIterator, OutputType, BinaryFunction)
 {
   static_assert(thrust::detail::depend_on_instantiation<RandomAccessIterator, false>::value,
                 "unimplemented for this system");
-  return OutputType();
+  return thrust::detail::__iter_accumulator_t<RandomAccessIterator, OutputType, BinaryFunction>{};
 } // end reduce()
 
 } // end namespace generic

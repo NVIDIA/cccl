@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/reduce.h>
 #include <thrust/system/detail/adl/reduce.h>
@@ -38,7 +39,7 @@ THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator>
 reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last)
 {
   using thrust::system::detail::generic::reduce;
@@ -47,7 +48,7 @@ reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIt
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T reduce(
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, T> reduce(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   using thrust::system::detail::generic::reduce;
@@ -56,12 +57,12 @@ _CCCL_HOST_DEVICE T reduce(
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  T init,
-  BinaryFunction binary_op)
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, T, BinaryFunction>
+reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       T init,
+       BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::reduce;
   return reduce(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init, binary_op);
@@ -149,7 +150,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
 } // end reduce_by_key()
 
 template <typename InputIterator>
-detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last)
+thrust::detail::__iter_accumulator_t<InputIterator> reduce(InputIterator first, InputIterator last)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -161,7 +162,7 @@ detail::it_value_t<InputIterator> reduce(InputIterator first, InputIterator last
 }
 
 template <typename InputIterator, typename T>
-T reduce(InputIterator first, InputIterator last, T init)
+thrust::detail::__iter_accumulator_t<InputIterator, T> reduce(InputIterator first, InputIterator last, T init)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -173,7 +174,8 @@ T reduce(InputIterator first, InputIterator last, T init)
 }
 
 template <typename InputIterator, typename T, typename BinaryFunction>
-T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
+thrust::detail::__iter_accumulator_t<InputIterator, T, BinaryFunction>
+reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;
 

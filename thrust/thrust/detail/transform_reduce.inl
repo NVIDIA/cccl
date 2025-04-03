@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/adl/transform_reduce.h>
 #include <thrust/system/detail/generic/select_system.h>
@@ -38,13 +39,13 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename OutputType,
           typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType transform_reduce(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  UnaryFunction unary_op,
-  OutputType init,
-  BinaryFunction binary_op)
+_CCCL_HOST_DEVICE thrust::detail::__iter_unary_accumulator_t<InputIterator, OutputType, UnaryFunction, BinaryFunction>
+transform_reduce(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+                 InputIterator first,
+                 InputIterator last,
+                 UnaryFunction unary_op,
+                 OutputType init,
+                 BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::transform_reduce;
   return transform_reduce(
@@ -52,7 +53,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
 } // end transform_reduce()
 
 template <typename InputIterator, typename UnaryFunction, typename OutputType, typename BinaryFunction>
-OutputType transform_reduce(
+thrust::detail::__iter_unary_accumulator_t<InputIterator, OutputType, UnaryFunction, BinaryFunction> transform_reduce(
   InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op)
 {
   using thrust::system::detail::generic::select_system;

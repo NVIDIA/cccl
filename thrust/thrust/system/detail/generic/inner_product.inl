@@ -27,6 +27,7 @@
 #endif // no system header
 #include <thrust/detail/internal_functional.h>
 #include <thrust/functional.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/system/detail/generic/inner_product.h>
 #include <thrust/transform_reduce.h>
 #include <thrust/zip_function.h>
@@ -40,16 +41,14 @@ namespace generic
 {
 
 template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-_CCCL_HOST_DEVICE OutputType inner_product(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputType init)
+_CCCL_HOST_DEVICE thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, OutputType>
+inner_product(thrust::execution_policy<DerivedPolicy>& exec,
+              InputIterator1 first1,
+              InputIterator1 last1,
+              InputIterator2 first2,
+              OutputType init)
 {
-  thrust::plus<OutputType> binary_op1;
-  thrust::multiplies<OutputType> binary_op2;
-  return thrust::inner_product(exec, first1, last1, first2, init, binary_op1, binary_op2);
+  return thrust::inner_product(exec, first1, last1, first2, init, thrust::plus<>{}, thrust::multiplies<>{});
 } // end inner_product()
 
 template <typename DerivedPolicy,
@@ -58,14 +57,15 @@ template <typename DerivedPolicy,
           typename OutputType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE OutputType inner_product(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputType init,
-  BinaryFunction1 binary_op1,
-  BinaryFunction2 binary_op2)
+_CCCL_HOST_DEVICE thrust::detail::
+  __inner_product_accumulator_t<InputIterator1, InputIterator2, OutputType, BinaryFunction1, BinaryFunction2>
+  inner_product(thrust::execution_policy<DerivedPolicy>& exec,
+                InputIterator1 first1,
+                InputIterator1 last1,
+                InputIterator2 first2,
+                OutputType init,
+                BinaryFunction1 binary_op1,
+                BinaryFunction2 binary_op2)
 {
   const auto first = thrust::make_zip_iterator(first1, first2);
   const auto last  = thrust::make_zip_iterator(last1, first2); // only first iterator matters

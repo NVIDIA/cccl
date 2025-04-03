@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/generic/tag.h>
 
@@ -37,20 +38,20 @@ namespace generic
 {
 
 template <typename DerivedPolicy, typename InputIterator>
-_CCCL_HOST_DEVICE thrust::detail::it_value_t<InputIterator>
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator>
 reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last);
 
 template <typename DerivedPolicy, typename InputIterator, typename T>
-_CCCL_HOST_DEVICE T
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, T>
 reduce(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, T init);
 
 template <typename DerivedPolicy, typename InputIterator, typename T, typename BinaryFunction>
-_CCCL_HOST_DEVICE T reduce(
-  thrust::execution_policy<DerivedPolicy>& exec,
-  InputIterator first,
-  InputIterator last,
-  T init,
-  BinaryFunction binary_op);
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, T, BinaryFunction>
+reduce(thrust::execution_policy<DerivedPolicy>& exec,
+       InputIterator first,
+       InputIterator last,
+       T init,
+       BinaryFunction binary_op);
 
 } // end namespace generic
 } // end namespace detail

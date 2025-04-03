@@ -30,6 +30,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/detail/function.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -42,18 +43,19 @@ namespace sequential
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-_CCCL_HOST_DEVICE OutputType reduce(
-  sequential::execution_policy<DerivedPolicy>&,
-  InputIterator begin,
-  InputIterator end,
-  OutputType init,
-  BinaryFunction binary_op)
+_CCCL_HOST_DEVICE thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>
+reduce(sequential::execution_policy<DerivedPolicy>&,
+       InputIterator begin,
+       InputIterator end,
+       OutputType init,
+       BinaryFunction binary_op)
 {
+  using AccType = thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>;
   // wrap binary_op
-  thrust::detail::wrapped_function<BinaryFunction, OutputType> wrapped_binary_op{binary_op};
+  thrust::detail::wrapped_function<BinaryFunction, AccType> wrapped_binary_op{binary_op};
 
   // initialize the result
-  OutputType result = init;
+  AccType result = init;
 
   while (begin != end)
   {
@@ -61,7 +63,7 @@ _CCCL_HOST_DEVICE OutputType reduce(
     ++begin;
   } // end while
 
-  return result;
+  return static_cast<OutputType>(result);
 }
 
 } // end namespace sequential

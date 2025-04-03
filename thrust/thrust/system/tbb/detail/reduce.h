@@ -29,6 +29,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 THRUST_NAMESPACE_BEGIN
@@ -40,11 +41,12 @@ namespace detail
 {
 
 template <typename DerivedPolicy, typename InputIterator, typename OutputType, typename BinaryFunction>
-OutputType reduce(execution_policy<DerivedPolicy>& exec,
-                  InputIterator begin,
-                  InputIterator end,
-                  OutputType init,
-                  BinaryFunction binary_op);
+thrust::detail::__iter_accumulator_t<InputIterator, OutputType, BinaryFunction>
+reduce(execution_policy<DerivedPolicy>& exec,
+       InputIterator begin,
+       InputIterator end,
+       OutputType init,
+       BinaryFunction binary_op);
 
 } // end namespace detail
 } // end namespace tbb

@@ -26,6 +26,7 @@
 #  pragma system_header
 #endif // no system header
 #include <thrust/inner_product.h>
+#include <thrust/iterator/detail/accumulator_traits.h>
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/system/detail/adl/inner_product.h>
 #include <thrust/system/detail/generic/inner_product.h>
@@ -34,13 +35,13 @@
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
-template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename OutputType>
-_CCCL_HOST_DEVICE OutputType inner_product(
+template <typename DerivedPolicy, typename InputIterator1, typename InputIterator2, typename InitType>
+_CCCL_HOST_DEVICE thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType> inner_product(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
   InputIterator1 last1,
   InputIterator2 first2,
-  OutputType init)
+  InitType init)
 {
   using thrust::system::detail::generic::inner_product;
   return inner_product(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, init);
@@ -50,17 +51,18 @@ _CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
-          typename OutputType,
+          typename InitType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-_CCCL_HOST_DEVICE OutputType inner_product(
-  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputType init,
-  BinaryFunction1 binary_op1,
-  BinaryFunction2 binary_op2)
+_CCCL_HOST_DEVICE
+thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType, BinaryFunction1, BinaryFunction2>
+inner_product(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+              InputIterator1 first1,
+              InputIterator1 last1,
+              InputIterator2 first2,
+              InitType init,
+              BinaryFunction1 binary_op1,
+              BinaryFunction2 binary_op2)
 {
   using thrust::system::detail::generic::inner_product;
   return inner_product(
@@ -73,8 +75,9 @@ _CCCL_HOST_DEVICE OutputType inner_product(
     binary_op2);
 } // end inner_product()
 
-template <typename InputIterator1, typename InputIterator2, typename OutputType>
-OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init)
+template <typename InputIterator1, typename InputIterator2, typename InitType>
+thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType>
+inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InitType init)
 {
   using thrust::system::detail::generic::select_system;
 
@@ -89,16 +92,16 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputItera
 
 template <typename InputIterator1,
           typename InputIterator2,
-          typename OutputType,
+          typename InitType,
           typename BinaryFunction1,
           typename BinaryFunction2>
-OutputType inner_product(
-  InputIterator1 first1,
-  InputIterator1 last1,
-  InputIterator2 first2,
-  OutputType init,
-  BinaryFunction1 binary_op1,
-  BinaryFunction2 binary_op2)
+thrust::detail::__inner_product_accumulator_t<InputIterator1, InputIterator2, InitType, BinaryFunction1, BinaryFunction2>
+inner_product(InputIterator1 first1,
+              InputIterator1 last1,
+              InputIterator2 first2,
+              InitType init,
+              BinaryFunction1 binary_op1,
+              BinaryFunction2 binary_op2)
 {
   using thrust::system::detail::generic::select_system;
 
