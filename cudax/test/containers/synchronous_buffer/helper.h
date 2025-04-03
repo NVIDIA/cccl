@@ -137,11 +137,11 @@ struct extract_properties<cuda::std::tuple<Properties...>>
 {
   using synchronous_buffer = cudax::synchronous_buffer<int, Properties...>;
   using resource =
-    caching_resource<cuda::std::conditional_t<cuda::mr::__is_host_device_accessible<Properties...>,
-                                              cudax::legacy_pinned_memory_resource,
-                                              cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
-                                                                       host_memory_resource<int>,
-                                                                       device_memory_resource<int>>>>;
+    cuda::std::conditional_t<cuda::mr::__is_host_device_accessible<Properties...>,
+                             cudax::legacy_pinned_memory_resource,
+                             cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
+                                                      host_memory_resource<int>,
+                                                      device_memory_resource<int>>>;
   using iterator       = cudax::heterogeneous_iterator<int, Properties...>;
   using const_iterator = cudax::heterogeneous_iterator<const int, Properties...>;
 

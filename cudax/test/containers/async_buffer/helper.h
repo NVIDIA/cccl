@@ -170,15 +170,15 @@ struct extract_properties<cuda::std::tuple<Properties...>>
   using env          = cudax::env_t<other_property, Properties...>;
   using async_buffer = cudax::async_buffer<int, Properties...>;
   using resource =
-    caching_resource<cuda::std::conditional_t<cuda::mr::__is_host_device_accessible<Properties...>,
+    cuda::std::conditional_t<cuda::mr::__is_host_device_accessible<Properties...>,
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-                                              cudax::pinned_memory_resource,
+                             cudax::pinned_memory_resource,
 #else
-                                              fake_async_pinned_memory_resource,
+                             fake_async_pinned_memory_resource,
 #endif
-                                              cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
-                                                                       host_memory_resource<int>,
-                                                                       cudax::device_memory_resource>>>;
+                             cuda::std::conditional_t<cuda::mr::__is_host_accessible<Properties...>,
+                                                      host_memory_resource<int>,
+                                                      cudax::device_memory_resource>>;
   using iterator       = cudax::heterogeneous_iterator<int, Properties...>;
   using const_iterator = cudax::heterogeneous_iterator<const int, Properties...>;
 
