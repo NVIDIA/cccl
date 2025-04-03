@@ -2,18 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import operator
 import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import Union
 
-from ._typing import DimType
+import numba
+import numpy as np
 
-# Import for type checking only
-if TYPE_CHECKING:
-    import numba
-    import numpy as np
+from ._typing import DimType, ScanOpType
 
 version = namedtuple("version", ("major", "minor"))
 code = namedtuple("code", ("kind", "version", "data"))
@@ -266,3 +265,107 @@ def normalize_dtype_param(
 
     # If we get here, the dtype is not recognized.
     raise ValueError(f"Unrecognized dtype format: {dtype}")
+
+
+class ScanOpCategory(Enum):
+    Sum = "Sum"
+    Known = "Known"
+    Callable = "Callable"
+
+
+CUDA_STD_PLUS = "::cuda::std::plus<T>"
+CUDA_STD_MULTIPLIES = "::cuda::std::multiplies<T>"
+CUDA_STD_MIN = "::cuda::std::min<T>"
+CUDA_STD_MAX = "::cuda::std::max<T>"
+CUDA_STD_BIT_AND = "::cuda::std::bit_and<T>"
+CUDA_STD_BIT_OR = "::cuda::std::bit_or<T>"
+CUDA_STD_BIT_XOR = "::cuda::std::bit_xor<T>"
+
+
+class ScanOp:
+    """
+    Represents an associative binary operator for a prefix scan operation.
+    """
+
+    # Set of all ops interpreted as sum (for (inclusive|exclusive)_sum).
+    SUM_OPS = {
+        "+",
+        "add",
+        "plus",
+        np.add,
+        operator.add,
+    }
+
+    # Map of all known (non-sum) operators to their C++ type representations.
+    KNOWN_OPS = {
+        # String names
+        "mul": CUDA_STD_MULTIPLIES,
+        "multiplies": CUDA_STD_MULTIPLIES,
+        "min": CUDA_STD_MIN,
+        "minimum": CUDA_STD_MIN,
+        "max": CUDA_STD_MAX,
+        "maximum": CUDA_STD_MAX,
+        "bit_and": CUDA_STD_BIT_AND,
+        "bit_or": CUDA_STD_BIT_OR,
+        "bit_xor": CUDA_STD_BIT_XOR,
+        # String operators
+        "*": CUDA_STD_MULTIPLIES,
+        "&": CUDA_STD_BIT_AND,
+        "|": CUDA_STD_BIT_OR,
+        "^": CUDA_STD_BIT_XOR,
+        # NumPy functions
+        np.multiply: CUDA_STD_MULTIPLIES,
+        np.minimum: CUDA_STD_MIN,
+        np.maximum: CUDA_STD_MAX,
+        np.bitwise_and: CUDA_STD_BIT_AND,
+        np.bitwise_or: CUDA_STD_BIT_OR,
+        np.bitwise_xor: CUDA_STD_BIT_XOR,
+        # Python operator module functions.
+        operator.mul: CUDA_STD_MULTIPLIES,
+    }
+
+    def __init__(self, op: ScanOpType):
+        self.op = op
+        self.op_category = None
+        self.op_cpp = None
+
+        # Handle string names and operators.
+        if isinstance(op, str):
+            if op in self.SUM_OPS:
+                self.op_category = ScanOpCategory.Sum
+                self.op_cpp = CUDA_STD_PLUS
+            elif op in self.KNOWN_OPS:
+                self.op_category = ScanOpCategory.Known
+                self.op_cpp = self.KNOWN_OPS[op]
+            else:
+                raise ValueError(f"Unsupported scan operator: {op}")
+
+        # Handle NumPy functions or other callables
+        elif callable(op):
+            # Check if it's a known function in our KNOWN_OPS dictionary
+            if op in self.SUM_OPS:
+                self.op_category = ScanOpCategory.Sum
+                self.op_cpp = CUDA_STD_PLUS
+            elif op in self.KNOWN_OPS:
+                self.op_category = ScanOpCategory.Known
+                self.op_cpp = self.KNOWN_OPS[op]
+            else:
+                # Custom callable; no op_cpp representation.
+                self.op_category = ScanOpCategory.Callable
+        else:
+            raise ValueError(f"Unsupported scan op type: {type(op)}")
+
+    def __repr__(self):
+        return f"ScanOp({self.op})"
+
+    @property
+    def is_sum(self):
+        return self.op_category == ScanOpCategory.Sum
+
+    @property
+    def is_known(self):
+        return self.op_category == ScanOpCategory.Known
+
+    @property
+    def is_callable(self):
+        return self.op_category == ScanOpCategory.Callable
