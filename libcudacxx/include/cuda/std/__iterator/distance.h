@@ -35,29 +35,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_EXEC_CHECK_DISABLE
 template <class _InputIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIter>::difference_type
-__distance(_InputIter __first, _InputIter __last, input_iterator_tag)
-{
-  typename iterator_traits<_InputIter>::difference_type __r(0);
-  for (; __first != __last; ++__first)
-  {
-    ++__r;
-  }
-  return __r;
-}
-
-_CCCL_EXEC_CHECK_DISABLE
-template <class _RandIter>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_RandIter>::difference_type
-__distance(_RandIter __first, _RandIter __last, random_access_iterator_tag)
-{
-  return __last - __first;
-}
-
-template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
-  return _CUDA_VSTD::__distance(__first, __last, typename iterator_traits<_InputIter>::iterator_category());
+  if constexpr (sized_sentinel_for<_InputIter, _InputIter>)
+  {
+    return __last - __first;
+  }
+  else
+  {
+    typename iterator_traits<_InputIter>::difference_type __r(0);
+    for (; __first != __last; ++__first)
+    {
+      ++__r;
+    }
+    return __r;
+  }
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
@@ -68,6 +60,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__distance)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sentinel_for<_Sp, _Ip> && !sized_sentinel_for<_Sp, _Ip>) )
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
@@ -81,6 +74,7 @@ struct __fn
     return __n;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES((sized_sentinel_for<_Sp, decay_t<_Ip>>) )
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
@@ -96,6 +90,7 @@ struct __fn
     _CCCL_UNREACHABLE();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Rp)
   _CCCL_REQUIRES((range<_Rp>) )
   _LIBCUDACXX_HIDE_FROM_ABI constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
