@@ -59,7 +59,7 @@ def test_binary_transform(input_array):
     np.testing.assert_allclose(expected, got, rtol=1e-5)
 
 
-@pytest.mark.xfail(reason="https://github.com/NVIDIA/numba-cuda/issues/175")
+@pytest.mark.skip(reason="https://github.com/NVIDIA/numba-cuda/issues/175")
 def test_unary_transform_struct_type():
     import cupy as cp
     import numpy as np

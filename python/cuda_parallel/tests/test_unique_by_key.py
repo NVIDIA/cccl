@@ -239,7 +239,7 @@ def test_unique_by_key_complex():
     np.testing.assert_array_equal(h_out_items, expected_items)
 
 
-@pytest.mark.xfail(
+@pytest.mark.skip(
     reason="Creating an array of gpu_struct keys does not work currently (see https://github.com/NVIDIA/cccl/issues/3789)"
 )
 def test_unique_by_key_struct_types():
