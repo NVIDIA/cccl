@@ -232,8 +232,6 @@ using min_max_type_list = c2h::type_list<
 #  endif
   >;
 
-//using min_max_type_list = c2h::type_list<double>;
-
 using min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
 
 using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;

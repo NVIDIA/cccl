@@ -163,6 +163,30 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<int>, int, max, s32, r) // shfl_down_max
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<unsigned>, unsigned, max, u32, r) // shfl_down_max(unsigned)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<int>, int, min, s32, r) // shfl_down_min(int)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<unsigned>, unsigned, min, u32, r) // shfl_down_min(unsigned)
+
+extern "C" _CCCL_DEVICE float warp_reduce_min_max_is_not_supported_before_sm100a();
+
+#if __cccl_ptx_isa >= 860
+
+#  define _CUB_REDUX_FLOAT_OP(OPERATOR, PTX_OP)                                                             \
+                                                                                                            \
+    template <typename = void>                                                                              \
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float redux_float_op(OPERATOR, float value, unsigned mask) \
+    {                                                                                                       \
+      float result;                                                                                         \
+      asm volatile("{"                                                                                      \
+                   "redux.sync." #PTX_OP ".f32 %0, %1, %2;"                                                 \
+                   "}"                                                                                      \
+                   : "=f"(result)                                                                           \
+                   : "f"(value), "r"(mask));                                                                \
+      return result;                                                                                        \
+    }
+
+_CUB_REDUX_FLOAT_OP(::cuda::minimum<float>, min)
+_CUB_REDUX_FLOAT_OP(::cuda::maximum<float>, max)
+
+#endif // __cccl_ptx_isa >= 860
+
 // bitwise
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, unsigned, and, b32, r) // shfl_down_and(unsigned)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<>, unsigned, or, b32, r) // shfl_down_or(unsigned)
