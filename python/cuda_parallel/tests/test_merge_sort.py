@@ -160,7 +160,7 @@ def test_merge_sort_pairs_copy(dtype, num_items):
     np.testing.assert_array_equal(h_out_items, h_in_items)
 
 
-@pytest.mark.xfail(
+@pytest.mark.skip(
     reason="Creating an array of gpu_struct keys does not work currently (see https://github.com/NVIDIA/cccl/issues/3789)"
 )
 def test_merge_sort_pairs_struct_type():
