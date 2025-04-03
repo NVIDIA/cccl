@@ -112,12 +112,18 @@ struct square<void>
  *  \{
  */
 
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::equal_to instead")::cuda::std::equal_to;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::greater instead")::cuda::std::greater;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::greater_equal instead")::cuda::std::greater_equal;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::less instead")::cuda::std::less;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::less_equal instead")::cuda::std::less_equal;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_equal_to instead")::cuda::std::not_equal_to;
+//! deprecated [since 3.1]
+using ::cuda::std::equal_to;
+//! deprecated [since 3.1]
+using ::cuda::std::greater;
+//! deprecated [since 3.1]
+using ::cuda::std::greater_equal;
+//! deprecated [since 3.1]
+using ::cuda::std::less;
+//! deprecated [since 3.1]
+using ::cuda::std::less_equal;
+//! deprecated [since 3.1]
+using ::cuda::std::not_equal_to;
 
 /*! \}
  */
@@ -127,9 +133,12 @@ using CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_equal_to instead")::cuda::std:
  *  \{
  */
 
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_and instead")::cuda::std::logical_and;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_not instead")::cuda::std::logical_not;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_or instead")::cuda::std::logical_or;
+//! deprecated [since 3.1]
+using ::cuda::std::logical_and;
+//! deprecated [since 3.1]
+using ::cuda::std::logical_not;
+//! deprecated [since 3.1]
+using ::cuda::std::logical_or;
 
 /*! \}
  */
@@ -139,9 +148,12 @@ using CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_or instead")::cuda::std::l
  *  \{
  */
 
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_and instead")::cuda::std::bit_and;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_or instead")::cuda::std::bit_or;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_xor instead")::cuda::std::bit_xor;
+//! deprecated [since 3.1]
+using ::cuda::std::bit_and;
+//! deprecated [since 3.1]
+using ::cuda::std::bit_or;
+//! deprecated [since 3.1]
+using ::cuda::std::bit_xor;
 
 /*! \}
  */
@@ -151,8 +163,10 @@ using CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_xor instead")::cuda::std::bit_
  *  \{
  */
 
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::maximum instead")::cuda::maximum;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::minimum instead")::cuda::minimum;
+//! deprecated [since 3.1]
+using ::cuda::maximum;
+//! deprecated [since 3.1]
+using ::cuda::minimum;
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
@@ -245,7 +259,8 @@ struct project2nd<void, void>
  *  \{
  */
 
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_fn instead")::cuda::std::not_fn;
+//! deprecated [since 3.1]
+using ::cuda::std::not_fn;
 
 /*! \}
  */

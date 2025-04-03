@@ -30,8 +30,11 @@
 
 THRUST_NAMESPACE_BEGIN
 
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::advance instead")::cuda::std::advance;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::next instead")::cuda::std::next;
-using CCCL_DEPRECATED_BECAUSE("Use cuda::std::prev instead")::cuda::std::prev;
+//! deprecated [since 3.1]
+using ::cuda::std::advance;
+//! deprecated [since 3.1]
+using ::cuda::std::next;
+//! deprecated [since 3.1]
+using ::cuda::std::prev;
 
 THRUST_NAMESPACE_END
