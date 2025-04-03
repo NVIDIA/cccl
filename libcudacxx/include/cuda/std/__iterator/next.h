@@ -48,6 +48,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__next)
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const
@@ -56,6 +57,7 @@ struct __fn
     return __x;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
@@ -64,6 +66,7 @@ struct __fn
     return __x;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
@@ -72,6 +75,7 @@ struct __fn
     return __x;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
