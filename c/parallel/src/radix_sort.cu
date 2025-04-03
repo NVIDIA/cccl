@@ -428,7 +428,7 @@ CUresult cccl_device_radix_sort_build(
     const auto value_cpp =
       input_values_it.type == cccl_iterator_kind_t::CCCL_POINTER && input_values_it.state == nullptr
         ? "cub::NullType"
-        : cccl_type_enum_to_name(input_keys_it.value_type.type);
+        : cccl_type_enum_to_name(input_values_it.value_type.type);
     const std::string op_src =
       decomposer.name == nullptr
         ? "using op_wrapper = cub::detail::identity_decomposer_t;"
