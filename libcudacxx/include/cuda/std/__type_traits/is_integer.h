@@ -32,6 +32,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 inline constexpr bool __cccl_is_integer_v = __cccl_is_signed_integer_v<_Tp> || __cccl_is_unsigned_integer_v<_Tp>;
 
+template <class _Tp>
+inline constexpr bool __cccl_is_cv_integer_v =
+  __cccl_is_cv_signed_integer_v<_Tp> || __cccl_is_cv_unsigned_integer_v<_Tp>;
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H
