@@ -11,6 +11,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -31,7 +32,9 @@ __host__ __device__ constexpr void test_strcpy(const char* str, const char (&ref
 
 __host__ __device__ constexpr bool test()
 {
-  static_assert(cuda::std::is_same_v<char*, decltype(cuda::std::strcpy((char*) {}, (const char*) {}))>);
+  static_assert(
+    cuda::std::is_same_v<char*,
+                         decltype(cuda::std::strcpy(cuda::std::declval<char*>(), cuda::std::declval<const char*>()))>);
 
   test_strcpy("", "\0\0\0");
   test_strcpy("a", "a\0\0");

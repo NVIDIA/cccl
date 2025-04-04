@@ -11,6 +11,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstring>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -22,7 +23,8 @@ __host__ __device__ constexpr void test_strlen(const char* str, cuda::std::size_
 
 __host__ __device__ constexpr bool test()
 {
-  static_assert(cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::std::strlen((const char*) {}))>);
+  static_assert(
+    cuda::std::is_same_v<cuda::std::size_t, decltype(cuda::std::strlen(cuda::std::declval<const char*>()))>);
 
   test_strlen("", 0);
   test_strlen("a", 1);
