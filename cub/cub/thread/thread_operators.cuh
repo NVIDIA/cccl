@@ -39,6 +39,10 @@
 
 #include <cub/config.cuh>
 
+#include <limits>
+
+#include "cuda/__functional/maximum.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -710,6 +714,136 @@ using cub_operator_to_simd_operator_t = typename CubOperatorToSimdOperator<Reduc
 
 template <typename ReduceOp, typename T>
 using simd_type_t = typename CubOperatorToSimdOperator<ReduceOp, T>::simd_type;
+
+//----------------------------------------------------------------------------------------------------------------------
+// Predefined operators
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_plus_v =
+  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::plus<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::plus<T>>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_mul_v =
+  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::multiplies<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::multiplies<T>>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_maximum_v =
+  _CUDA_VSTD::is_same_v<Op, ::cuda::maximum<>> || _CUDA_VSTD::is_same_v<Op, ::cuda::maximum<T>>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_minimum_v =
+  _CUDA_VSTD::is_same_v<Op, ::cuda::minimum<>> || _CUDA_VSTD::is_same_v<Op, ::cuda::minimum<T>>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_bit_and_v =
+  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_and<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_and<T>>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_bit_or_v =
+  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_or<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_or<T>>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_bit_xor_v =
+  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_xor<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_xor<T>>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_min_max_v = is_cuda_maximum_v<Op, T> || is_cuda_minimum_v<Op, T>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_plus_mul_v = is_cuda_std_plus_v<Op, T> || is_cuda_std_mul_v<Op, T>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_bitwise_v =
+  is_cuda_std_bit_and_v<Op, T> || is_cuda_std_bit_or_v<Op, T> || is_cuda_std_bit_xor_v<Op, T>;
+
+template <typename Op, typename T>
+inline constexpr bool is_cuda_std_operator_v =
+  is_cuda_std_min_max_v<Op, T> || //
+  is_cuda_std_plus_mul_v<Op, T> || //
+  is_cuda_std_bitwise_v<Op, T>;
+
+/***********************************************************************************************************************
+ * Extended floating point traits
+ **********************************************************************************************************************/
+// half
+
+template <typename>
+inline constexpr bool is_half_base_v = false;
+
+template <typename>
+inline constexpr bool is_half_X2_base_v = false;
+
+#  if _CCCL_HAS_NVFP16()
+
+template <>
+inline constexpr bool is_half_base_v<__half> = true;
+
+template <>
+inline constexpr bool is_half_X2_base_v<__half2> = true;
+
+#  endif // _CCCL_HAS_NVFP16
+
+template <typename T>
+inline constexpr bool is_half_v = is_half_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_half_X2_v = is_half_X2_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_half_v = is_half_base_v<T> || is_half_X2_base_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// bfloat16
+
+template <typename>
+inline constexpr bool is_bfloat16_base_v = false;
+
+template <typename>
+inline constexpr bool is_bfloat16_X2_base_v = false;
+
+#  if _CCCL_HAS_NVBF16()
+
+template <>
+inline constexpr bool is_bfloat16_base_v<__half> = true;
+
+template <>
+inline constexpr bool is_bfloat16_X2_base_v<__half2> = true;
+
+#  endif // _CCCL_HAS_NVBF16
+
+template <typename T>
+inline constexpr bool is_bfloat16_v = is_bfloat16_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_bfloat16_X2_v = is_bfloat16_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_bfloat16_v = is_bfloat16_v<T> || is_bfloat16_X2_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// half/bfloat16
+
+template <typename T>
+inline constexpr bool is_arithmetic_cuda_floating_point_v =
+  is_half_v<T> || is_bfloat16_v<T> || _CUDA_VSTD::is_floating_point_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// Identity
+
+template <typename Op, typename T>
+inline constexpr T identity_v;
+
+template <typename T>
+inline constexpr T identity_v<::cuda::minimum<>, T> = _CUDA_VSTD::numeric_limits<T>::max();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::minimum<T>, T> = _CUDA_VSTD::numeric_limits<T>::max();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::maximum<>, T> = _CUDA_VSTD::numeric_limits<T>::min();
+
+template <typename T>
+inline constexpr T identity_v<::cuda::maximum<T>, T> = _CUDA_VSTD::numeric_limits<T>::min();
 
 } // namespace internal
 

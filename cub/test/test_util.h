@@ -718,6 +718,26 @@ std::ostream& operator<<(std::ostream& os, const CUB_NS_QUALIFIER::KeyValuePair<
   return os;
 }
 
+#if _CCCL_HAS_NVFP16()
+
+static std::ostream& operator<<(std::ostream& stream, const __half2& value)
+{
+  stream << "(" << value.x << "," << value.y << ")";
+  return stream;
+}
+
+#endif // _CCCL_HAS_HALF
+
+#if _CCCL_HAS_NVBF16()
+
+static std::ostream& operator<<(std::ostream& stream, const __nv_bfloat162& value)
+{
+  stream << "(" << value.x << "," << value.y << ")";
+  return stream;
+}
+
+#endif // _CCCL_HAS_NVBF16
+
 #if _CCCL_HAS_INT128()
 inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
 {

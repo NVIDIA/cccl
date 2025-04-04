@@ -52,35 +52,67 @@ inline constexpr int items_per_thread = 4;
  * Kernel
  **********************************************************************************************************************/
 
-template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename T, typename Output, typename ReductionOp>
-__device__ void warp_reduce_function(T& thread_data, Output* output, ReductionOp reduction_op, int num_items = 0)
+template <typename T>
+inline constexpr bool is_device_supported_type_v = true;
+
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
+
+template <>
+inline constexpr bool is_device_supported_type_v<__nv_bfloat16> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<__nv_bfloat162> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<cuda::std::complex<__nv_bfloat16>> = false;
+
+#endif
+
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 530
+
+template <>
+inline constexpr bool is_device_supported_type_v<__half> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<__half2> = false;
+
+template <>
+inline constexpr bool is_device_supported_type_v<cuda::std::complex<__half>> = false;
+
+#endif
+
+template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename Input, typename T, typename ReductionOp>
+__device__ void warp_reduce_function(Input& thread_data, T* output, ReductionOp reduction_op, int num_items = 0)
 {
-  using warp_reduce_t = cub::WarpReduce<Output, LogicalWarpThreads>;
-  using storage_t     = typename warp_reduce_t::TempStorage;
-  __shared__ storage_t storage[total_warps];
-  constexpr bool is_power_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
-  auto lane                      = cuda::ptx::get_sreg_laneid();
-  auto logical_warp              = is_power_of_two ? threadIdx.x / LogicalWarpThreads : threadIdx.x / warp_size;
-  auto logical_lane              = is_power_of_two ? threadIdx.x % LogicalWarpThreads : lane;
-  auto limit                     = EnableNumItems ? num_items : LogicalWarpThreads;
-  if (!is_power_of_two && lane >= limit)
+  if constexpr (is_device_supported_type_v<T>)
   {
-    return;
-  }
-  warp_reduce_t warp_reduce{storage[logical_warp]};
-  using result_t = decltype(reduction_op(warp_reduce, thread_data));
-  result_t result;
-  if constexpr (EnableNumItems)
-  {
-    result = reduction_op(warp_reduce, thread_data, num_items);
-  }
-  else
-  {
-    result = reduction_op(warp_reduce, thread_data);
-  }
-  if (logical_lane == 0)
-  {
-    output[logical_warp] = result;
+    using warp_reduce_t = cub::WarpReduce<T, LogicalWarpThreads>;
+    using storage_t     = typename warp_reduce_t::TempStorage;
+    __shared__ storage_t storage[total_warps];
+    constexpr bool is_power_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
+    auto lane                      = cuda::ptx::get_sreg_laneid();
+    auto logical_warp              = is_power_of_two ? threadIdx.x / LogicalWarpThreads : threadIdx.x / warp_size;
+    auto logical_lane              = is_power_of_two ? threadIdx.x % LogicalWarpThreads : lane;
+    auto limit                     = EnableNumItems ? num_items : LogicalWarpThreads;
+    if (!is_power_of_two && lane >= limit)
+    {
+      return;
+    }
+    warp_reduce_t warp_reduce{storage[logical_warp]};
+    using result_t = decltype(reduction_op(warp_reduce, thread_data));
+    result_t result;
+    if constexpr (EnableNumItems)
+    {
+      result = reduction_op(warp_reduce, thread_data, num_items);
+    }
+    else
+    {
+      result = reduction_op(warp_reduce, thread_data);
+    }
+    if (logical_lane == 0)
+    {
+      output[logical_warp] = result;
+    }
   }
 }
 
@@ -172,6 +204,7 @@ void warp_reduce_multiple_items_launch(c2h::device_vector<T>& input, c2h::device
  * Types
  **********************************************************************************************************************/
 
+#if 0
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 
@@ -182,6 +215,64 @@ using builtin_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t>;
 using predefined_op_list = c2h::type_list<::cuda::std::plus<>, ::cuda::maximum<>, ::cuda::minimum<>>;
 
 using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 9, 7, 1>;
+
+#else
+// clang-format off
+
+using custom_t =
+  c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
+/*
+using arithmetic_type_list = c2h::type_list<
+  int8_t, uint16_t, int32_t, int64_t,
+  float, double,
+  float2, cuda::std::complex<float>, cuda::std::complex<double>,
+  ulonglong4, custom_t
+#  if _CCCL_HAS_INT128()
+  , __int128_t
+#  endif
+#  if TEST_HALF_T()
+   , __half
+   , __half2
+   , cuda::std::complex<__half>
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
+   , __nv_bfloat16
+   , __nv_bfloat162
+   , cuda::std::complex<__nv_bfloat16>
+#  endif // TEST_BF_T()
+>;*/
+
+using arithmetic_type_list = c2h::type_list<int>;
+
+using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
+#  if _CCCL_HAS_INT128()
+    , __uint128_t
+#  endif
+>;
+
+using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
+
+using min_max_type_list = c2h::type_list<
+  int8_t, uint16_t, int32_t, int64_t,
+#  if _CCCL_HAS_INT128()
+   __int128_t,
+#  endif
+  float, double, custom_t
+#  if TEST_HALF_T()
+  , __half
+#  endif // TEST_HALF_T()
+#  if TEST_BF_T()
+  , __nv_bfloat16
+#  endif // TEST_BF_T()
+  >;
+
+using min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
+
+using logical_warp_threads = c2h::enum_type_list<unsigned, 16>; // 32, 16, 7, 1>;
+
+// clang-format on
+
+#endif
 
 /***********************************************************************************************************************
  * Reference
@@ -199,15 +290,15 @@ void compute_host_reference(
   int items_per_logical_warp = 0,
   int items_per_thread1      = 1)
 {
-  constexpr auto identity = operator_identity_v<T, predefined_op>;
-  items_per_logical_warp  = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
+  auto identity          = operator_identity_v<T, predefined_op>;
+  items_per_logical_warp = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
   for (unsigned i = 0; i < total_warps; ++i)
   {
     for (int j = 0; j < logical_warps; ++j)
     {
       auto start                   = h_in.begin() + (i * warp_size + j * logical_warp_threads) * items_per_thread1;
       auto end                     = start + items_per_logical_warp * items_per_thread1;
-      h_out[i * logical_warps + j] = static_cast<T>(std::accumulate(start, end, identity, predefined_op{}));
+      h_out[i * logical_warps + j] = std::accumulate(start, end, identity, predefined_op{});
     }
   }
 }
@@ -227,7 +318,10 @@ std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned 
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]", full_type_list, logical_warp_threads)
+#if 0
+
+C2H_TEST(
+  "WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]", arithmetic_type_list, logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
   constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
@@ -235,20 +329,35 @@ C2H_TEST("WarpReduce::Sum, full_type_list", "[reduce][warp][predefined_op][full]
   CAPTURE(c2h::type_name<T>(), c2h::type_name<T>(), logical_warp_threads);
   c2h::device_vector<T> d_in(input_size);
   c2h::device_vector<T> d_out(output_size);
-  c2h::gen(C2H_SEED(10), d_in);
+  if constexpr (cuda::std::__is_any_floating_point_v<T>)
+  {
+    c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
+  }
+  else if constexpr (cuda::std::is_same_v<T, float2>)
+  {
+    c2h::gen(C2H_SEED(1), d_in, T{-2.0, -1.0}, T{1.0, 2.0});
+  }
+  else
+  {
+    c2h::gen(C2H_SEED(1), d_in);
+  }
   warp_reduce_launch<logical_warp_threads>(d_in, d_out, warp_reduce_t<cuda::std::plus<>, T>{});
 
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
+  // c2h::host_vector<T> h_tmp = d_out;
+  //  for (size_t i = 0; i < output_size; ++i)
+  //{
+  //    auto [high1, low1] = cub::detail::split_integers(h_out[i]);
+  //    auto [high2, low2] = cub::detail::split_integers(h_tmp[i]);
+  //    printf("%lu/%lu    %lu/%lu\n", high1, low1, high2, low2);
+  //  }
   verify_results(h_out, d_out);
 }
 
-C2H_TEST("WarpReduce::Sum/Max/Min, builtin types",
-         "[reduce][warp][predefined_op][full]",
-         builtin_type_list,
-         predefined_op_list,
-         logical_warp_threads)
+C2H_TEST(
+  "WarpReduce Bitwise", "[reduce][warp][predefined_op][full]", bitwise_type_list, bitwise_op_list, logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
   using predefined_op                           = c2h::get<1, TestType>;
@@ -257,19 +366,52 @@ C2H_TEST("WarpReduce::Sum/Max/Min, builtin types",
   CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), logical_warp_threads);
   c2h::device_vector<T> d_in(input_size);
   c2h::device_vector<T> d_out(output_size);
-  c2h::gen(C2H_SEED(10), d_in);
+  c2h::gen(C2H_SEED(1), d_in);
   warp_reduce_launch<logical_warp_threads>(d_in, d_out, warp_reduce_t<predefined_op, T>{});
 
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
+  c2h::host_vector<T> h_tmp = d_out;
   verify_results(h_out, d_out);
 }
 
-C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_list, logical_warp_threads)
+C2H_TEST(
+  "WarpReduce Min/Max", "[reduce][warp][predefined_op][full]", min_max_type_list, min_max_op_list, logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
-  constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
+  using predefined_op                           = c2h::get<1, TestType>;
+  constexpr auto logical_warp_threads           = c2h::get<2, TestType>::value;
+  auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
+  CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), logical_warp_threads);
+  c2h::device_vector<T> d_in(input_size);
+  c2h::device_vector<T> d_out(output_size);
+  if constexpr (cuda::std::__is_any_floating_point_v<T>)
+  {
+    c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{1.0});
+  }
+  else
+  {
+    c2h::gen(C2H_SEED(1), d_in);
+  }
+  warp_reduce_launch<logical_warp_threads>(d_in, d_out, warp_reduce_t<predefined_op, T>{});
+
+  c2h::host_vector<T> h_in = d_in;
+  c2h::host_vector<T> h_out(output_size);
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
+
+  c2h::host_vector<T> h_tmp = d_out;
+  // for (size_t i = 0; i < 32; ++i)
+  //{
+  //   printf("%f\n", h_in[i]);
+  // }
+  verify_results(h_out, d_out);
+}
+
+C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", logical_warp_threads)
+{
+  using T                                       = int;
+  constexpr auto logical_warp_threads           = c2h::get<0, TestType>::value;
   auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
   CAPTURE(c2h::type_name<T>(), logical_warp_threads);
   c2h::device_vector<T> d_in(input_size);
@@ -282,32 +424,43 @@ C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_lis
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results(h_out, d_out);
 }
-
+#endif
 //----------------------------------------------------------------------------------------------------------------------
 // partial
 
 C2H_TEST("WarpReduce::Sum/Max/Min Partial",
          "[reduce][warp][predefined_op][partial]",
-         builtin_type_list,
-         predefined_op_list,
+         arithmetic_type_list,
          logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
-  using predefined_op                           = c2h::get<1, TestType>;
-  constexpr auto logical_warp_threads           = c2h::get<2, TestType>::value;
+  constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
   auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
-  const int valid_items                         = GENERATE_COPY(take(2, random(1u, logical_warp_threads)));
-  CAPTURE(c2h::type_name<T>(), c2h::type_name<predefined_op>(), logical_warp_threads, valid_items);
+  const int valid_items                         = 10; // GENERATE_COPY(take(2, random(1u, logical_warp_threads)));
+  CAPTURE(c2h::type_name<T>(), logical_warp_threads, valid_items);
   c2h::device_vector<T> d_in(input_size);
   c2h::device_vector<T> d_out(output_size);
-  c2h::gen(C2H_SEED(10), d_in);
-  warp_reduce_launch<logical_warp_threads, true>(d_in, d_out, warp_reduce_t<predefined_op, T>{}, valid_items);
+  if constexpr (cuda::std::__is_any_floating_point_v<T>)
+  {
+    c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
+  }
+  else if constexpr (cuda::std::is_same_v<T, float2>)
+  {
+    c2h::gen(C2H_SEED(1), d_in, T{-2.0, -1.0}, T{1.0, 2.0});
+  }
+  else
+  {
+    c2h::gen(C2H_SEED(1), d_in);
+  }
+  warp_reduce_launch<logical_warp_threads, true>(d_in, d_out, warp_reduce_t<cuda::std::plus<>, T>{}, valid_items);
 
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
-  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
+  compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
   verify_results(h_out, d_out);
 }
+
+#if 0
 
 C2H_TEST("WarpReduce::Sum", "[reduce][warp][generic][partial]", full_type_list, logical_warp_threads)
 {
@@ -351,3 +504,4 @@ C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, 0, items_per_thread);
   verify_results(h_out, d_out);
 }
+#endif

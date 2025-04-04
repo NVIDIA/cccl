@@ -26,23 +26,88 @@
  ******************************************************************************/
 #pragma once
 
+#include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/type_traits>
 
 #include "c2h/catch2_test_helper.h"
+
+template <typename T>
+inline constexpr bool is_any_bfloat16_v = false;
+
+template <>
+inline constexpr bool is_any_bfloat16_v<__nv_bfloat16> = true;
+
+template <>
+inline constexpr bool is_any_bfloat16_v<__nv_bfloat162> = true;
+
+template <>
+inline constexpr bool is_any_bfloat16_v<cuda::std::complex<__nv_bfloat16>> = true;
+
+template <typename T>
+inline constexpr bool is_any_half_v = false;
+
+template <>
+inline constexpr bool is_any_half_v<__half> = true;
+
+template <>
+inline constexpr bool is_any_half_v<__half2> = true;
+
+template <>
+inline constexpr bool is_any_half_v<cuda::std::complex<__half>> = true;
 
 /**
  * @brief Compares the results returned from system under test against the expected results.
  */
 // TODO: Replace this function by REQUIRE_APPROX_EQ once it supports integral vector types like short2
 template <typename T>
-void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
+void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
 {
-  if constexpr (::cuda::std::is_floating_point_v<T>)
+  int device_id                = 0;
+  int compute_capability_major = 0;
+  int compute_capability_minor = 0;
+  CubDebugExit(cudaGetDevice(&device_id));
+  CubDebugExit(cudaDeviceGetAttribute(&compute_capability_major, cudaDevAttrComputeCapabilityMajor, device_id));
+  CubDebugExit(cudaDeviceGetAttribute(&compute_capability_minor, cudaDevAttrComputeCapabilityMinor, device_id));
+  int compute_capability = 10 * compute_capability_major + compute_capability_minor;
+  if (compute_capability < 80 && is_any_bfloat16_v<T>)
+  {
+    return;
+  }
+  if (compute_capability < 53 && is_any_half_v<T>)
+  {
+    return;
+  }
+  if constexpr (cuda::std::is_floating_point_v<T>)
   {
     REQUIRE_APPROX_EQ(expected_data, test_results);
+  }
+  else if constexpr (cuda::std::__is_extended_floating_point_v<T>)
+  {
+    REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, 0.05f);
+  }
+  else if constexpr (cuda::std::__is_complex_v<T> || cuda::std::is_same_v<T, float2>)
+  {
+    for (size_t i = 0; i < test_results.size(); ++i)
+    {
+      if constexpr (cuda::std::is_floating_point_v<T>)
+      {
+        REQUIRE_APPROX_EQ(expected_data[i], test_results[i]);
+      }
+      else if constexpr (cuda::std::__is_extended_floating_point_v<T>)
+      {
+        REQUIRE_APPROX_EQ_EPSILON(expected_data[i], test_results[i], 0.05f);
+      }
+    }
   }
   else
   {
     REQUIRE(expected_data == test_results);
   }
+}
+
+template <typename T>
+void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
+{
+  c2h::host_vector<T> test_results_host = test_results;
+  verify_results(expected_data, test_results_host);
 }

@@ -44,6 +44,8 @@
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_reduce_config.cuh>
+#include <cub/warp/specializations/warp_reduce_optimization.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
 
@@ -147,8 +149,16 @@ class WarpReduce
   static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= detail::warp_threads,
                 "LogicalWarpThreads must be in the range [1, 32]");
 
-  static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
   static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpThreads});
+
+  static constexpr auto reduce_logical_mode_default =
+    is_power_of_two && LogicalWarpThreads < detail::warp_threads
+      ? detail::ReduceLogicalMode::MultipleReductions
+      : detail::ReduceLogicalMode::SingleReduction;
+
+  static constexpr auto warp_reduce_result_mode_default = detail::WarpReduceResultMode::SingleLane;
+
+  static constexpr auto logical_warp_size = detail::logial_warp_size_t<LogicalWarpThreads>{};
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -222,9 +232,12 @@ public:
   //! ``3568``, respectively (and is undefined in other threads).
   //! @endrst
   //!
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(
+    T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
+    return detail::warp_reduce_dispatch(input, _CUDA_VSTD::plus<>{}, logical_mode, result_mode, logical_warp_size);
   }
 
   _CCCL_TEMPLATE(typename InputType)
@@ -236,9 +249,12 @@ public:
       thread_reduction, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(
+    T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::maximum<>{});
+    return detail::warp_reduce_dispatch(input, ::cuda::maximum<>{}, logical_mode, result_mode, logical_warp_size);
   }
 
   _CCCL_TEMPLATE(typename InputType)
@@ -250,9 +266,12 @@ public:
       thread_reduction, LogicalWarpThreads, ::cuda::maximum<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input)
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(
+    T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
   {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::minimum<>{});
+    return detail::warp_reduce_dispatch(input, ::cuda::minimum<>{}, logical_mode, result_mode, logical_warp_size);
   }
 
   _CCCL_TEMPLATE(typename InputType)
@@ -262,6 +281,79 @@ public:
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::minimum<>{});
     return InternalWarpReduce{temp_storage}.template Reduce<true>(
       thread_reduction, LogicalWarpThreads, ::cuda::minimum<>{});
+  }
+
+  //! @}  end member group
+  //! @name Generic reductions
+  //! @{
+
+  //! @rst
+  //! Computes a warp-wide reduction in the calling warp using the specified binary reduction
+  //! functor. The output is valid in warp *lane*\ :sub:`0`.
+  //!
+  //! Supports non-commutative reduction operators
+  //!
+  //! @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates four concurrent warp max reductions within a block of
+  //! 128 threads (one per each of the 32-thread warps).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpReduce for type int
+  //!        using WarpReduce = cub::WarpReduce<int>;
+  //!
+  //!        // Allocate WarpReduce shared memory for 4 warps
+  //!        __shared__ typename WarpReduce::TempStorage temp_storage[4];
+  //!
+  //!        // Obtain one input item per thread
+  //!        int thread_data = ...
+  //!
+  //!        // Return the warp-wide reductions to each lane0
+  //!        int warp_id = threadIdx.x / 32;
+  //!        int aggregate = WarpReduce(temp_storage[warp_id]).Reduce(
+  //!            thread_data, cuda::maximum<>{});
+  //!
+  //! Suppose the set of input ``thread_data`` across the block of threads is
+  //! ``{0, 1, 2, 3, ..., 127}``. The corresponding output ``aggregate`` in threads 0, 32, 64, and
+  //! 96 will be ``31``, ``63``, ``95``, and ``127``, respectively
+  //! (and is undefined in other threads).
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction operator
+  template <typename ReductionOp,
+            detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
+    T input,
+    ReductionOp reduction_op,
+    detail::reduce_logical_mode_t<Mode> logical_mode = {},
+    detail::reduce_result_mode_t<Kind> result_mode   = {})
+  {
+    return detail::warp_reduce_dispatch(input, reduction_op, logical_mode, result_mode, logical_warp_size);
+  }
+
+  _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
+  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
+  {
+    auto thread_reduction = cub::ThreadReduce(input, reduction_op);
+    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, LogicalWarpThreads, reduction_op);
   }
 
   //! @rst
@@ -311,10 +403,23 @@ public:
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
+  template <detail::ReduceLogicalMode Mode    = detail::ReduceLogicalMode::SingleReduction,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  Sum(T input,
+      int valid_items,
+      detail::reduce_logical_mode_t<Mode> logical_mode = {},
+      detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
     // Determine if we don't need bounds checking
-    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
+    // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
+    return detail::warp_reduce_dispatch(
+      input,
+      _CUDA_VSTD::plus<>{},
+      logical_mode,
+      result_mode,
+      logical_warp_size,
+      cub::detail::valid_items_t<>{valid_items});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)
@@ -327,6 +432,77 @@ public:
   {
     // Determine if we don't need bounds checking
     return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::minimum<>{});
+  }
+
+  //! @rst
+  //! Computes a partially-full warp-wide reduction in the calling warp using the specified binary
+  //! reduction functor. The output is valid in warp *lane*\ :sub:`0`.
+  //!
+  //! All threads across the calling warp must agree on the same value for ``valid_items``.
+  //! Otherwise the result is undefined.
+  //!
+  //! Supports non-commutative reduction operators
+  //!
+  //! @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a max reduction within a single, partially-full
+  //! block of 32 threads (one warp).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(int *d_data, int valid_items)
+  //!    {
+  //!        // Specialize WarpReduce for type int
+  //!        using WarpReduce = cub::WarpReduce<int>;
+  //!
+  //!        // Allocate WarpReduce shared memory for one warp
+  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
+  //!
+  //!        // Obtain one input item per thread if in range
+  //!        int thread_data;
+  //!        if (threadIdx.x < valid_items)
+  //!            thread_data = d_data[threadIdx.x];
+  //!
+  //!        // Return the warp-wide reductions to each lane0
+  //!        int aggregate = WarpReduce(temp_storage).Reduce(
+  //!            thread_data, cuda::maximum<>{}, valid_items);
+  //!
+  //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ... }`` and ``valid_items``
+  //! is ``4``. The corresponding output ``aggregate`` in thread0 is ``3`` (and is
+  //! undefined in other threads).
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] reduction_op
+  //!   Binary reduction operator
+  //!
+  //! @param[in] valid_items
+  //!   Total number of valid items in the calling thread's logical warp
+  //!   (may be less than ``LogicalWarpThreads``)
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
+  {
+    // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, reduction_op);
+    if constexpr (_CUDA_VSTD::has_single_bit((unsigned) LogicalWarpThreads))
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
+        input, reduction_op, multiple_reductions, first_lane_result);
+    }
+    else
+    {
+      return detail::warp_reduce_dispatch<LogicalWarpThreads>(input, reduction_op, single_reduction, first_lane_result);
+    }
   }
 
   //! @rst
@@ -435,134 +611,6 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
   {
     return TailSegmentedReduce(input, tail_flag, _CUDA_VSTD::plus<>{});
-  }
-
-  //! @}  end member group
-  //! @name Generic reductions
-  //! @{
-
-  //! @rst
-  //! Computes a warp-wide reduction in the calling warp using the specified binary reduction
-  //! functor. The output is valid in warp *lane*\ :sub:`0`.
-  //!
-  //! Supports non-commutative reduction operators
-  //!
-  //! @smemwarpreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates four concurrent warp max reductions within a block of
-  //! 128 threads (one per each of the 32-thread warps).
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpReduce for type int
-  //!        using WarpReduce = cub::WarpReduce<int>;
-  //!
-  //!        // Allocate WarpReduce shared memory for 4 warps
-  //!        __shared__ typename WarpReduce::TempStorage temp_storage[4];
-  //!
-  //!        // Obtain one input item per thread
-  //!        int thread_data = ...
-  //!
-  //!        // Return the warp-wide reductions to each lane0
-  //!        int warp_id = threadIdx.x / 32;
-  //!        int aggregate = WarpReduce(temp_storage[warp_id]).Reduce(
-  //!            thread_data, cuda::maximum<>{});
-  //!
-  //! Suppose the set of input ``thread_data`` across the block of threads is
-  //! ``{0, 1, 2, 3, ..., 127}``. The corresponding output ``aggregate`` in threads 0, 32, 64, and
-  //! 96 will be ``31``, ``63``, ``95``, and ``127``, respectively
-  //! (and is undefined in other threads).
-  //! @endrst
-  //!
-  //! @tparam ReductionOp
-  //!   **[inferred]** Binary reduction operator type having member
-  //!   `T operator()(const T &a, const T &b)`
-  //!
-  //! @param[in] input
-  //!   Calling thread's input
-  //!
-  //! @param[in] reduction_op
-  //!   Binary reduction operator
-  template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
-  {
-    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, reduction_op);
-  }
-
-  _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
-  {
-    auto thread_reduction = cub::ThreadReduce(input, reduction_op);
-    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, LogicalWarpThreads, reduction_op);
-  }
-  //! @rst
-  //! Computes a partially-full warp-wide reduction in the calling warp using the specified binary
-  //! reduction functor. The output is valid in warp *lane*\ :sub:`0`.
-  //!
-  //! All threads across the calling warp must agree on the same value for ``valid_items``.
-  //! Otherwise the result is undefined.
-  //!
-  //! Supports non-commutative reduction operators
-  //!
-  //! @smemwarpreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates a max reduction within a single, partially-full
-  //! block of 32 threads (one warp).
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(int *d_data, int valid_items)
-  //!    {
-  //!        // Specialize WarpReduce for type int
-  //!        using WarpReduce = cub::WarpReduce<int>;
-  //!
-  //!        // Allocate WarpReduce shared memory for one warp
-  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
-  //!
-  //!        // Obtain one input item per thread if in range
-  //!        int thread_data;
-  //!        if (threadIdx.x < valid_items)
-  //!            thread_data = d_data[threadIdx.x];
-  //!
-  //!        // Return the warp-wide reductions to each lane0
-  //!        int aggregate = WarpReduce(temp_storage).Reduce(
-  //!            thread_data, cuda::maximum<>{}, valid_items);
-  //!
-  //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ... }`` and ``valid_items``
-  //! is ``4``. The corresponding output ``aggregate`` in thread0 is ``3`` (and is
-  //! undefined in other threads).
-  //! @endrst
-  //!
-  //! @tparam ReductionOp
-  //!   **[inferred]** Binary reduction operator type having member
-  //!   `T operator()(const T &a, const T &b)`
-  //!
-  //! @param[in] input
-  //!   Calling thread's input
-  //!
-  //! @param[in] reduction_op
-  //!   Binary reduction operator
-  //!
-  //! @param[in] valid_items
-  //!   Total number of valid items in the calling thread's logical warp
-  //!   (may be less than ``LogicalWarpThreads``)
-  template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
-  {
-    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, reduction_op);
   }
 
   //! @rst
