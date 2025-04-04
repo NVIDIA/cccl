@@ -109,22 +109,23 @@ extern "C" __device__ OUTPUT_T OP_NAME(INPUT_T val);
 struct op_wrapper {
   __device__ OUTPUT_T operator()(INPUT_T val) const {
     return OP_NAME(val);
-  }
-};
+  }}
+}};
 )XXX";
 
   constexpr std::string_view stateful_op = R"XXX(
-struct __align__(OP_ALIGNMENT) op_state {
+struct __align__(OP_ALIGNMENT) op_state {{
   char data[OP_SIZE];
 };
-extern "C" __device__ OUPUT_T OP_NAME(op_state *state, INPUT_T val);
-struct op_wrapper {
+extern "C" __device__ OUPUT_T OP_NAME(op_state* state, INPUT_T val);
+struct op_wrapper
+{
   op_state state;
-  __device__ OUTPUT_T operator()(INPUT_T val) {
+  __device__ OUTPUT_T operator()(INPUT_T val)
+  {
     return OP_NAME(&state, val);
   }
 };
-
 
 )XXX";
 
