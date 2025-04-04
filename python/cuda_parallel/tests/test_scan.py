@@ -94,6 +94,30 @@ def test_scan_iterator_input(force_inclusive):
     "force_inclusive",
     [True, False],
 )
+def test_scan_reverse_counting_iterator_input(force_inclusive):
+    def op(a, b):
+        return a + b
+
+    num_items = 1024
+    d_input = iterators.ReverseIterator(iterators.CountingIterator(np.int32(num_items)))
+    dtype = np.dtype("int32")
+    h_init = np.array([0], dtype=dtype)
+    d_output = cp.empty(num_items, dtype=dtype)
+
+    scan_device(d_input, d_output, num_items, op, h_init, force_inclusive)
+
+    got = d_output.get()
+    expected = scan_host(
+        np.arange(num_items, 0, -1, dtype=dtype), op, h_init, force_inclusive
+    )
+
+    np.testing.assert_allclose(expected, got, rtol=1e-5)
+
+
+@pytest.mark.parametrize(
+    "force_inclusive",
+    [True, False],
+)
 def test_scan_struct_type(force_inclusive):
     @gpu_struct
     class XY:

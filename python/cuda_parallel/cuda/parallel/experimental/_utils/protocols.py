@@ -7,7 +7,7 @@
 Utilities for extracting information from protocols such as `__cuda_array_interface__` and `__cuda_stream__`.
 """
 
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -38,6 +38,15 @@ def get_dtype(arr: DeviceArrayLike) -> np.dtype:
         else:
             # a simple dtype, use the typestr field:
             return np.dtype(typestr)
+
+
+def get_shape(arr: DeviceArrayLike) -> Tuple[int]:
+    try:
+        # TODO: this is a fast path for CuPy until
+        # we have a more general solution.
+        return arr.shape  # type: ignore
+    except AttributeError:
+        return arr.__cuda_array_interface__["shape"]
 
 
 def is_contiguous(arr: DeviceArrayLike) -> bool:
@@ -79,6 +88,21 @@ def is_contiguous(arr: DeviceArrayLike) -> bool:
     else:
         # not contiguous
         return False
+
+
+def compute_c_contiguous_strides_in_bytes(
+    shape: Tuple[int], itemsize: int
+) -> Tuple[int, ...]:
+    """Return C-contiguous strides in bytes for a given shape and itemsize (compatible with NumPy .strides)."""
+
+    strides: List[int] = []
+    acc = itemsize
+
+    for dim in reversed(shape):
+        strides.insert(0, acc)
+        acc *= dim
+
+    return tuple(strides)
 
 
 def validate_and_get_stream(stream) -> Optional[int]:
