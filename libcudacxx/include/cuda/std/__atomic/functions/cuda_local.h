@@ -45,7 +45,7 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
   asm("{\n\t"
       "  .reg .pred p;\n\t"
       "  isspacep.local p, %1;\n\t"
-      "  @p mov.s32 %0, 1;\n\t"
+      "  selp.u32 %0, 1, 0, p;\n\t"
       "}\n\t"
       : "=r"(__tmp)
       : "l"(const_cast<const void*>(__ptr)));
