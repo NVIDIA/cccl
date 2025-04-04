@@ -11,7 +11,7 @@
 #   be linked into the developer build targets, as they include both
 #   cudax.compiler_interface and cccl.compiler_interface_cppXX.
 
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG REQUIRED
+find_package(Thrust CONFIG REQUIRED
   NO_DEFAULT_PATH # Only check the explicit path in HINTS:
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
 )
