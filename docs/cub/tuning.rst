@@ -36,7 +36,7 @@ the following statement:
 .. raw:: html
 
    <div style="display: flex; justify-content: center; align-items: center; height: 10; text-align: center; font-size: 1.5em; color: #76B900;">
-       "For each Compile-time Workload, we tune for its Parameters"
+       "For each Compile-time Workload, we search for the best tuning parameters"
    </div>
 
 
@@ -47,8 +47,6 @@ It searches through a space of parameters to find the combination for a given co
 --------
 
 Following is supplemental terminology that will be used throughout the rest of this tuning guide:
-
-.. * **Parameter Point**: a concrete value of a tuning parameter. <- @giannis: The term Parameter Point is never used throughout this document. Are we sure we want to specify it
 
 .. e.g. :math:`threads\_per\_block=128`
 
@@ -119,11 +117,11 @@ a :code:`nvbench::type_list`. For more details on the benchmark signature, take 
 .. @giannis: not sure if Policy Hub should be part of "Authoring Benchmarks" since it's attached to the Dispatch Layer. Policy Hub
 .. is not supposed to be used only when we run benchmarks, but in general when a primitive is invoked with specific compile time params.
 
-Before proceeding further with the benchmark authoring it is imperative for the user to understand the Policy Hub mechanism.
+Before proceeding further with the benchmark authoring it is imperative to understand the Policy Hub mechanism.
 
-+++++++++++++++
+++++++++++
 Policy Hub
-+++++++++++++++
+++++++++++
 
 Tuning relies on CUB's device algorithms to expose a dispatch layer which can be parameterized by a Policy Hub. The Policy Hub is an intermediate
 class that enables tuning. In other words it translates the SM architecture, the input types etc. which accepts at instantiation as input,
@@ -161,9 +159,9 @@ The following code is included in the benchmark for the policy hub to be enabled
 The custom policy hub used for tuning should only expose a single :code:`MaxPolicy` for CUB to use.
 It must contain all parameters required for the full definition of the search space.
 
-+++++++++++++++
++++++++++
 Main Body
-+++++++++++++++
++++++++++
 
 The :code:`state` passed into the benchmark function allows access to runtime workload axes,
 for example the number of elements to process.
@@ -226,9 +224,9 @@ which contains the second call to a CUB algorithm and performs the actual work w
 This concludes defining the benchmark function.
 Now we need to tell NVBench about it.
 
-+++++++++++++++
+++++++++++++++++++
 NVBench Attributes
-+++++++++++++++
+++++++++++++++++++
 
 .. code:: c++
 
@@ -292,7 +290,7 @@ This logic is already implemented if you use any of the following predefined typ
      - :code:`int32_t, int64_t`
 
 
-User is free to define their own axis names and use the logic above for them (see sort pairs example).
+You are free to define your own axis names and use the logic above for them (see the sort pairs example).
 
 A single benchmark file can define multiple benchmarks (multiple benchmark functions registered with :code:`NVBENCH_BENCH_TYPES`).
 All benchmarks in a single file must share the same compile-time axes.
@@ -322,8 +320,8 @@ Search Process
 
 During the Search Process we are covering all variants for all compile-time workloads to find a variant with a maximum (at least locally) score.
 
-To get started with tuning, CMake needs to be configured.
-The following command can be used:
+To get started with tuning, you need to configure CMake.
+You can use the following command:
 
 .. code:: bash
 
@@ -331,7 +329,7 @@ The following command can be used:
   $ cd build
   $ cmake .. --preset=cub-tune -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
 
-User can run the tuning search for a specific algorithm and compile-time workload. We use a CCCL internal script for that:
+You can then run the tuning search for a specific algorithm and compile-time workload. We use a CCCL internal script for that:
 
 .. code:: bash
 
@@ -381,7 +379,7 @@ as a result of the Cartesian product of all its tuning parameter spaces.
 
 The tuning infrastructure stores the results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
 This database persists across tuning runs.
-If the benchmark script is interrupted and then launched again, only missing benchmark variants will be run.
+If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
 Tuning on multiple GPUs
 --------------------------------------------------------------------------------
@@ -526,7 +524,7 @@ whether a tuning provides a consistent speedup for all runtime workloads.
 Creating tuning policies
 --------------------------------------------------------------------------------
 
-Once a suitable tuning result has been selected, we have to translate it into C++ code that is picked up by CUB.
+Once a suitable tuning result has been selected, we have to translate it into C++ code that will be picked up by CUB.
 The tuning variant name shown by :code:`analyze.py` gives us all the information on the selected tuning values.
 Here is an example:
 
