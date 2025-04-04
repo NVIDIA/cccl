@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
+import cuda.parallel.experimental.iterators as iterators
 from cuda.parallel.experimental.struct import gpu_struct
 
 
@@ -118,36 +119,56 @@ def test_binary_transform_struct_type():
 
     num_values = 10_000
 
-    h1_in = np.empty(num_values, dtype=MyStruct)
-    h1_in["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
-    h1_in["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
+    h_in1 = np.empty(num_values, dtype=MyStruct)
+    h_in1["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
+    h_in1["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
 
-    h2_in = np.empty(num_values, dtype=MyStruct)
-    h2_in["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
-    h2_in["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
+    h_in2 = np.empty(num_values, dtype=MyStruct)
+    h_in2["x"] = np.random.randint(0, num_values, num_values, dtype="int16")
+    h_in2["y"] = np.random.randint(0, num_values, num_values, dtype="uint64")
 
-    d1_in = cp.empty_like(h1_in)
-    d2_in = cp.empty_like(h2_in)
+    d_in1 = cp.empty_like(h_in1)
+    d_in2 = cp.empty_like(h_in2)
 
     cp.cuda.runtime.memcpy(
-        d1_in.data.ptr,
-        h1_in.__array_interface__["data"][0],
-        h1_in.nbytes,
+        d_in1.data.ptr,
+        h_in1.__array_interface__["data"][0],
+        h_in1.nbytes,
         cp.cuda.runtime.memcpyHostToDevice,
     )
     cp.cuda.runtime.memcpy(
-        d2_in.data.ptr,
-        h2_in.__array_interface__["data"][0],
-        h2_in.nbytes,
+        d_in2.data.ptr,
+        h_in2.__array_interface__["data"][0],
+        h_in2.nbytes,
         cp.cuda.runtime.memcpyHostToDevice,
     )
 
-    d_out = cp.empty_like(d1_in)
+    d_out = cp.empty_like(d_in1)
 
-    transform = algorithms.binary_transform(d1_in, d2_in, d_out, op)
-    transform(d1_in, d2_in, d_out, len(d1_in))
+    transform = algorithms.binary_transform(d_in1, d_in2, d_out, op)
+    transform(d_in1, d_in2, d_out, len(d_in1))
 
     got = d_out.get()
 
-    np.testing.assert_allclose(got["x"], h1_in["x"] + h2_in["x"])
-    np.testing.assert_allclose(got["y"], h1_in["y"] + h2_in["y"])
+    np.testing.assert_allclose(got["x"], h_in1["x"] + h_in2["x"])
+    np.testing.assert_allclose(got["y"], h_in1["y"] + h_in2["y"])
+
+
+def test_transform_iterator_input():
+    def op(a, b):
+        return a + b
+
+    d_in1 = iterators.CountingIterator(np.int32(0))
+    d_in2 = iterators.CountingIterator(np.int32(1))
+
+    num_items = 1024
+    d_out = cp.empty(num_items, dtype=np.int32)
+
+    binary_transform_device(d_in1, d_in2, d_out, num_items, op)
+
+    got = d_out.get()
+    expected = np.arange(0, num_items, dtype=np.int32) + np.arange(
+        1, num_items + 1, dtype=np.int32
+    )
+
+    np.testing.assert_allclose(expected, got)

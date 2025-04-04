@@ -93,6 +93,7 @@ class IteratorBase:
         self.numba_type = numba_type
         self.value_type = value_type
         self.prefix = prefix
+        self._ltoirs: Dict[str, bytes] | None = None
 
     @property
     def kind(self):
@@ -103,25 +104,35 @@ class IteratorBase:
     # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
-        advance_abi_name = f"{self.prefix}advance_" + _get_abi_suffix(self.kind)
-        deref_abi_name = f"{self.prefix}dereference_" + _get_abi_suffix(self.kind)
-        advance_ltoir, _ = cached_compile(
-            self.__class__.advance,
-            (
-                self.numba_type,
-                types.uint64,  # distance type
-            ),
-            output="ltoir",
-            abi_name=advance_abi_name,
-        )
+        if self._ltoirs is None:
+            advance_abi_name = f"{self.prefix}advance_" + _get_abi_suffix(self.kind)
+            deref_abi_name = f"{self.prefix}dereference_" + _get_abi_suffix(self.kind)
+            advance_ltoir, _ = cached_compile(
+                self.__class__.advance,
+                (
+                    self.numba_type,
+                    types.uint64,  # distance type
+                ),
+                output="ltoir",
+                abi_name=advance_abi_name,
+            )
 
-        deref_ltoir, _ = cached_compile(
-            self.__class__.dereference,
-            (self.numba_type,),
-            output="ltoir",
-            abi_name=deref_abi_name,
-        )
-        return {advance_abi_name: advance_ltoir, deref_abi_name: deref_ltoir}
+            deref_ltoir, _ = cached_compile(
+                self.__class__.dereference,
+                (self.numba_type,),
+                output="ltoir",
+                abi_name=deref_abi_name,
+            )
+            self._ltoirs = {
+                advance_abi_name: advance_ltoir,
+                deref_abi_name: deref_ltoir,
+            }
+        assert self._ltoirs is not None
+        return self._ltoirs
+
+    @ltoirs.setter
+    def ltoirs(self, value):
+        self._ltoirs = value
 
     @property
     def state(self) -> ctypes.c_void_p:
@@ -434,3 +445,32 @@ def _get_last_element_ptr(device_array) -> int:
 
     ptr = get_data_pointer(device_array)
     return ptr + offset_to_last_element
+
+
+def _replace_duplicate_values(*ds, replacement_value=None):
+    # given a sequence of dictionaries, return a sequence of dictionaries
+    # such that for any found duplicate keys, the value is set to `scrub_value`.
+    if len(ds) <= 1:
+        return ds
+    seen = set(ds[0].keys())
+    for d in ds[1:]:
+        for key in d:
+            if key in seen:
+                d[key] = b""
+        seen.update(d.keys())
+    return ds
+
+
+def scrub_duplicate_ltoirs(*array_or_iterators):
+    # extract just the iterators:
+    iterators = [it for it in array_or_iterators if isinstance(it, IteratorBase)]
+
+    # replace duplicate ltoirs with empty byte strings:
+    ltoirs = _replace_duplicate_values(
+        *(it.ltoirs for it in iterators), replacement_value=b""
+    )
+    for it, ltoir in zip(iterators, ltoirs):
+        it.ltoirs = ltoir
+
+    return array_or_iterators
+

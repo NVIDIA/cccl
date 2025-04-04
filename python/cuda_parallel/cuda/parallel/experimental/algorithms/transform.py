@@ -12,7 +12,7 @@ from .. import _cccl as cccl
 from .._bindings import call_build, get_bindings
 from .._caching import CachableFunction, cache_with_key
 from .._utils import protocols
-from ..iterators._iterators import IteratorBase
+from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike
 
 
@@ -46,7 +46,7 @@ class _UnaryTransform:
             self.op_wrapper,
         )
         if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building transform")
+            raise ValueError("Error building unary transform")
 
     def __call__(
         self,
@@ -71,15 +71,14 @@ class _UnaryTransform:
         )
 
         if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error reducing")
+            raise ValueError("Error performing unary transform")
 
         return None
 
     def __del__(self):
         if self.build_result is None:
             return
-        bindings = get_bindings()
-        bindings.cccl_device_transform_cleanup(ctypes.byref(self.build_result))
+        self.bindings.cccl_device_transform_cleanup(ctypes.byref(self.build_result))
 
 
 class _BinaryTransform:
@@ -92,6 +91,9 @@ class _BinaryTransform:
     ):
         # Referenced from __del__:
         self.build_result = None
+
+        d_in1, d_in2 = scrub_duplicate_ltoirs(d_in1, d_in2)
+
         self.d_in1_cccl = cccl.to_cccl_iter(d_in1)
         self.d_in2_cccl = cccl.to_cccl_iter(d_in2)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
@@ -116,7 +118,7 @@ class _BinaryTransform:
             self.op_wrapper,
         )
         if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building transform")
+            raise ValueError("Error building binary transform")
 
     def __call__(
         self,
@@ -144,15 +146,14 @@ class _BinaryTransform:
         )
 
         if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error reducing")
+            raise ValueError("Error performing binary transform")
 
         return None
 
     def __del__(self):
         if self.build_result is None:
             return
-        bindings = get_bindings()
-        bindings.cccl_device_transform_cleanup(ctypes.byref(self.build_result))
+        self.bindings.cccl_device_transform_cleanup(ctypes.byref(self.build_result))
 
 
 def make_unary_transform_cache_key(
