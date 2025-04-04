@@ -154,7 +154,24 @@ def test_binary_transform_struct_type():
     np.testing.assert_allclose(got["y"], h_in1["y"] + h_in2["y"])
 
 
-def test_transform_iterator_input():
+def test_unary_transform_iterator_input():
+    def op(a):
+        return a + 1
+
+    d_in = iterators.CountingIterator(np.int32(0))
+
+    num_items = 1024
+    d_out = cp.empty(num_items, dtype=np.int32)
+
+    unary_transform_device(d_in, d_out, num_items, op)
+
+    got = d_out.get()
+    expected = np.arange(1, num_items + 1, dtype=np.int32)
+
+    np.testing.assert_allclose(expected, got)
+
+
+def test_binary_transform_iterator_input():
     def op(a, b):
         return a + b
 
@@ -172,3 +189,40 @@ def test_transform_iterator_input():
     )
 
     np.testing.assert_allclose(expected, got)
+
+
+def test_unary_transform_with_stream(cuda_stream):
+    def op(a):
+        return a + 1
+
+    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
+
+    with cp_stream:
+        d_in = cp.arange(10, dtype=np.int32)
+        d_out = cp.empty_like(d_in)
+
+    unary_transform_device(d_in, d_out, len(d_in), op, stream=cuda_stream)
+
+    got = d_out.get()
+    expected = unary_transform_host(d_in.get(), op)
+
+    np.testing.assert_allclose(expected, got, rtol=1e-5)
+
+
+def test_binary_transform_with_stream(cuda_stream):
+    def op(a, b):
+        return a + b
+
+    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
+
+    with cp_stream:
+        d_in1 = cp.arange(10, dtype=np.int32)
+        d_in2 = cp.arange(10, dtype=np.int32)
+        d_out = cp.empty_like(d_in1)
+
+    binary_transform_device(d_in1, d_in2, d_out, len(d_in1), op, stream=cuda_stream)
+
+    got = d_out.get()
+    expected = binary_transform_host(d_in1.get(), d_in2.get(), op)
+
+    np.testing.assert_allclose(expected, got, rtol=1e-5)
