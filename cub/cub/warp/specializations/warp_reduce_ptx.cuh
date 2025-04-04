@@ -35,10 +35,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/thread/thread_reduce.cuh>
+#include <cub/detail/unsafe_bitcast.cuh>
 
 #include <cuda/functional>
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/bit>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 #if _CCCL_HAS_NVFP16()
@@ -54,137 +56,159 @@ namespace detail
 {
 
 //----------------------------------------------------------------------------------------------------------------------
-// SHUFFLE DOWN + OP: __half, __nv_bfloat16
+// 16-bit shfl_down_op
 
-#define _CUB_SHFL_DOWN_OP_16BIT(OPERATOR, TYPE, PTX_OP, PTX_TYPE)                                                      \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                        \
-    OPERATOR, TYPE value, unsigned source_offset, unsigned shfl_c, unsigned mask)                                      \
-  {                                                                                                                    \
-    [[maybe_unused]] int pred;                                                                                         \
-    auto tmp = cub::detail::unsafe_bitcast<uint16_t>(value);                                                           \
-    asm volatile(                                                                                                      \
-      "{                                                                                                       \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t"  \
-      ".reg .b16  dummy;                                                                                      \n\t\t"  \
-      ".reg .b16  h1;                                                                                         \n\t\t"  \
-      ".reg .b32  r0;                                                                                         \n\t\t"  \
-      "mov.b32 r0, {%0, dummy};                                                                               \n\t\t"  \
-      "shfl.sync.down.b32 r0|p, r0, %2, %3, %4;                                                               \n\t\t"  \
-      "mov.b32 {h1, dummy}, r0;                                                                               \n\t\t"  \
-      "@p " #PTX_OP "." #PTX_TYPE "                                                                           \n\t\t"  \
-      " %0, h1, %0;                                                                                           \n\t\t"  \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
-      "}"                                                                                                              \
-      : "+h"(tmp), "=r"(pred)                                                                                          \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                     \
-  }
-
-//----------------------------------------------------------------------------------------------------------------------
-// SHUFFLE DOWN + OP: __half2, __nv_bfloat162
-
-#define _CUB_SHFL_DOWN_OP_16BIT_X2(OPERATOR, TYPE, PTX_OP, PTX_TYPE)                                                   \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                      \
-    OPERATOR, TYPE value, unsigned source_offset, unsigned shfl_c, unsigned mask)                                      \
-  {                                                                                                                    \
-    [[maybe_unused]] int pred;                                                                                         \
-    auto tmp = cub::detail::unsafe_bitcast<unsigned>(value);                                                           \
-    asm volatile(                                                                                                      \
-      "{                                                                                                       \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t"  \
-      ".reg .b32  r0;                                                                                         \n\t\t"  \
-      "shfl.sync.down.b32 r0|p, %0, %2, %3, %4;                                                               \n\t\t"  \
-      "@p " #PTX_OP "." #PTX_TYPE "                                                                           \n\t\t"  \
-      " %0, r0, %0;                                                                                           \n\t\t"  \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t"  \
-      "}"                                                                                                              \
-      : "+r"(tmp), "=r"(pred)                                                                                          \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                     \
-  }
-
-//----------------------------------------------------------------------------------------------------------------------
-// SHUFFLE DOWN + OP: float, int
-
-#define _CUB_SHFL_DOWN_OP_32BIT(OPERATOR, TYPE, PTX_OP, PTX_TYPE, PTX_REG_TYPE)                                       \
+#define _CUB_SHFL_DOWN_OP_16BIT(OPERATOR, TYPE, PTX_OP)                                                               \
                                                                                                                       \
   template <typename = void>                                                                                          \
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                     \
-    OPERATOR, TYPE value, unsigned source_offset, unsigned shfl_c, unsigned mask)                                     \
+  [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                       \
+    OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
   {                                                                                                                   \
-    [[maybe_unused]] int pred;                                                                                        \
+    auto tmp = cub::detail::unsafe_bitcast<uint16_t>(value);                                                          \
     asm volatile(                                                                                                     \
       "{                                                                                                      \n\t\t" \
       ".reg .pred p;                                                                                          \n\t\t" \
+      ".reg .b16  dummy;                                                                                      \n\t\t" \
+      ".reg .b16  h1;                                                                                         \n\t\t" \
       ".reg .b32  r0;                                                                                         \n\t\t" \
-      "shfl.sync.down.b32 r0|p, %0, %2, %3, %4;                                                               \n\t\t" \
-      "@p " #PTX_OP "." #PTX_TYPE "                                                                           \n\t\t" \
-      " %0, r0, %0;                                                                                           \n\t\t" \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t" \
+      "mov.b32 r0, {%0, dummy};                                                                               \n\t\t" \
+      "shfl.sync.down.b32 r0|p, r0, %1, %2, %3;                                                               \n\t\t" \
+      "mov.b32 {h1, dummy}, r0;                                                                               \n\t\t" \
+      "@p " #PTX_OP " %0, h1, %0;                                                                             \n\t\t" \
       "}"                                                                                                             \
-      : "+" #PTX_REG_TYPE(value), "=r"(pred)                                                                          \
+      : "+h"(tmp)                                                                                                     \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
-    return value;                                                                                                     \
+    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                    \
   }
 
-// add
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<float>, float, add, f32, f) // shfl_down_add(float)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<unsigned>, unsigned, add, u32, r) // shfl_down_add(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<int>, int, add, s32, r) // shfl_down_add(int)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, add, f32, f) // shfl_down_add(float)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, unsigned, add, u32, r) // shfl_down_add(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, int, add, s32, r) // shfl_down_add(int)
+//----------------------------------------------------------------------------------------------------------------------
+// 32-bit shfl_down_op
+
+#define _CUB_SHFL_DOWN_OP_32BIT(OPERATOR, TYPE, PTX_OP)                                                                \
+                                                                                                                       \
+  template <typename = void>                                                                                           \
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                      \
+    OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                      \
+  {                                                                                                                    \
+    auto tmp = cub::detail::unsafe_bitcast<uint32_t>(value);                                                           \
+    asm volatile(                                                                                                      \
+      "{                                                                                                       \n\t\t" \
+      ".reg .pred p;                                                                                          \n\t\t"  \
+      ".reg .b32  r0;                                                                                         \n\t\t"  \
+      "shfl.sync.down.b32 r0|p, %0, %1, %2, %3;                                                               \n\t\t"  \
+      "@p " #PTX_OP " %0, r0, %0;                                                                             \n\t\t"  \
+      "}"                                                                                                              \
+      : "+r"(tmp)                                                                                                      \
+      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
+    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                     \
+  }
+
+//----------------------------------------------------------------------------------------------------------------------
+// 64-bit shfl_down_op
+
+#define _CUB_SHFL_DOWN_OP_64BIT(OPERATOR, TYPE, PTX_OP)                                                               \
+                                                                                                                      \
+  template <typename = void>                                                                                          \
+  [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                       \
+    OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
+  {                                                                                                                   \
+    auto tmp = cub::detail::unsafe_bitcast<uint64_t>(value);                                                          \
+    asm volatile(                                                                                                     \
+      "{                                                                                                      \n\t\t" \
+      ".reg .pred p;                                                                                          \n\t\t" \
+      ".reg .u32 lo;                                                                                          \n\t\t" \
+      ".reg .u32 hi;                                                                                          \n\t\t" \
+      ".reg .b64 r1;                                                                                          \n\t\t" \
+      "mov.b64 {lo, hi}, %0;                                                                                  \n\t\t" \
+      "shfl.sync.down.b32 lo,   lo, %1, %2, %3;                                                               \n\t\t" \
+      "shfl.sync.down.b32 hi|p, hi, %1, %2, %3;                                                               \n\t\t" \
+      "mov.b64 r1, {lo, hi};                                                                                  \n\t\t" \
+      "@p " #PTX_OP " %0, r1, %0;                                                                             \n\t\t" \
+      "}"                                                                                                             \
+      : "+l"(tmp)                                                                                                     \
+      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
+    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                    \
+  }
+
+//----------------------------------------------------------------------------------------------------------------------
+// cuda::std::plus Instantiations
+
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, add.f32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<float>, float, add.f32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, uint32_t, add.u32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<uint32_t>, uint32_t, add.u32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, int, add.s32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<int>, int, add.s32)
+
+#if _CCCL_HAS_NVFP16() && __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
+_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, float2, add.f32x2)
+_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<float>, float2, add.f32x2)
+#endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 530
-_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __half, add, f16) // shfl_down_add(__half)
-_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<__half>, __half, add, f16) // shfl_down_add(__half)
-_CUB_SHFL_DOWN_OP_16BIT_X2(_CUDA_VSTD::plus<>, __half2, add, f16x2) // shfl_down_add(__half2)
-_CUB_SHFL_DOWN_OP_16BIT_X2(_CUDA_VSTD::plus<__half2>, __half2, add, f16x2) // shfl_down_add(__half2)
+_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __half, add.f16)
+_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<__half>, __half, add.f16)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, __half2, add.f16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<__half2>, __half2, add.f16x2)
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 900
-_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __nv_bfloat16, add, bf16) // shfl_down_add(__nv_bfloat16)
-_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<__nv_bfloat16>, __nv_bfloat16, add, bf16) // shfl_down_add(__nv_bfloat16)
-_CUB_SHFL_DOWN_OP_16BIT_X2(_CUDA_VSTD::plus<>, __nv_bfloat162, add, bf16x2) // shfl_down_add(__nv_bfloat162)
-_CUB_SHFL_DOWN_OP_16BIT_X2(
-  _CUDA_VSTD::plus<__nv_bfloat162>, __nv_bfloat162, add, bf16x2) // shfl_down_add(__nv_bfloat162)
+_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __nv_bfloat16, add.bf16)
+_CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<__nv_bfloat16>, __nv_bfloat16, add.bf16)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, __nv_bfloat162, add.bf16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<__nv_bfloat162>, __nv_bfloat162, add.bf16x2)
 #endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 900
 
+_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, double, add.f64)
+_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<double>, double, add.f64)
+
+//----------------------------------------------------------------------------------------------------------------------
+// cuda::std::maximum/minimum Instantiations
+
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, int, max.s32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<int>, int, max.s32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, uint32_t, max.u32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<uint32_t>, uint32_t, max.u32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, int, min.s32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<int>, int, min.s32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, uint32_t, min.u32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<uint32_t>, uint32_t, min.u32)
+
 #if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __half, min, f16) // shfl_down_min(__half)
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<__half>, __half, min, f16) // shfl_down_min(__half)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::minimum<>, __half2, min, f16x2) // shfl_down_min(__half2)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::minimum<__half2>, __half2, min, f16x2) // shfl_down_min(__half2)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __half, min.f16)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<__half>, __half, min.f16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __half2, min.f16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<__half2>, __half2, min.f16x2)
 
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __half, max, f16) // shfl_down_max(__half)
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<__half>, __half, max, f16) // shfl_down_max(__half)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::maximum<>, __half2, max, f16x2) // shfl_down_max(__half2)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::maximum<__half2>, __half2, max, f16x2) // shfl_down_max(__half2)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __half, max.f16)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<__half>, __half, max.f16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __half2, max.f16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<__half2>, __half2, max.f16x2)
 
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __nv_bfloat16, min, bf16) // shfl_down_min(__nv_bfloat16)
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<__nv_bfloat16>, __nv_bfloat16, min, bf16) // shfl_down_min(__nv_bfloat16)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::minimum<>, __nv_bfloat162, min, bf16x2) // shfl_down_min(__nv_bfloat16)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::minimum<__nv_bfloat162>, __nv_bfloat162, min, bf16x2) // shfl_down_min(__nv_bfloat16)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __nv_bfloat16, min.bf16)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<__nv_bfloat16>, __nv_bfloat16, min.bf16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __nv_bfloat162, min.bf16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<__nv_bfloat162>, __nv_bfloat162, min.bf16x2)
 
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __nv_bfloat16, max, bf16) // shfl_down_max(__nv_bfloat16)
-_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<__nv_bfloat16>, __nv_bfloat16, max, bf16) // shfl_down_max(__nv_bfloat16)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::maximum<>, __nv_bfloat162, min, bf16x2) // shfl_down_max(__nv_bfloat162)
-_CUB_SHFL_DOWN_OP_16BIT_X2(::cuda::maximum<__nv_bfloat162>, __nv_bfloat162, min, bf16x2) // shfl_down_max(__nv_bfloat162)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __nv_bfloat16, max.bf16)
+_CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<__nv_bfloat16>, __nv_bfloat16, max.bf16)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __nv_bfloat162, max.bf16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<__nv_bfloat162>, __nv_bfloat162, max.bf16x2)
 #endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
 
-// min/max
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, int, max, s32, r) // shfl_down_max(int)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, unsigned, max, u32, r) // shfl_down_max(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, int, min, s32, r) // shfl_down_min(int)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, unsigned, min, u32, r) // shfl_down_min(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<int>, int, max, s32, r) // shfl_down_max(int)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<unsigned>, unsigned, max, u32, r) // shfl_down_max(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<int>, int, min, s32, r) // shfl_down_min(int)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<unsigned>, unsigned, min, u32, r) // shfl_down_min(unsigned)
+//----------------------------------------------------------------------------------------------------------------------
+// cuda::std::bit_and/bit_or/bit_xor Instantiations
+
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, uint32_t, and.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<uint32_t>, uint32_t, and.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<>, uint32_t, or.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<uint32_t>, uint32_t, or.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<>, uint32_t, xor.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<uint32_t>, uint32_t, xor.b32)
+
+#undef _CUB_SHFL_DOWN_OP_16BIT
+#undef _CUB_SHFL_DOWN_OP_32BIT
+#undef _CUB_SHFL_DOWN_OP_64BIT
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM100 Min/Max Reduction
@@ -196,7 +220,7 @@ extern "C" _CCCL_DEVICE float redux_min_max_sync_is_not_supported_before_sm100a(
 #  define _CUB_REDUX_FLOAT_OP(OPERATOR, PTX_OP)                                                              \
                                                                                                              \
     template <typename = void>                                                                               \
-    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float redux_sm100a_op(OPERATOR, float value, unsigned mask) \
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float redux_sm100a_op(OPERATOR, float value, uint32_t mask) \
     {                                                                                                        \
       float result;                                                                                          \
       asm volatile("{"                                                                                       \
@@ -213,7 +237,7 @@ _CUB_REDUX_FLOAT_OP(::cuda::maximum<float>, max)
 #endif // __cccl_ptx_isa >= 860
 
 template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T reduce_sm100a_sync(ReductionOp reduction_op, T value, unsigned mask)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T reduce_sm100a_sync(ReductionOp reduction_op, T value, uint32_t mask)
 {
   using namespace _CUDA_VSTD;
 #if __cccl_ptx_isa >= 860
@@ -227,49 +251,23 @@ template <typename T, typename ReductionOp>
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// Bitwise Reduction
+// shuffle_mask
 
-// bitwise
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, unsigned, and, b32, r) // shfl_down_and(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<>, unsigned, or, b32, r) // shfl_down_or(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<>, unsigned, xor, b32, r) // shfl_down_xor(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<unsigned>, unsigned, and, b32, r) // shfl_down_and(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<unsigned>, unsigned, or, b32, r) // shfl_down_or(unsigned)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<unsigned>, unsigned, xor, b32, r) // shfl_down_xor(unsigned)
-#undef _CUB_SHFL_DOWN_OP_32BIT
-
-//----------------------------------------------------------------------------------------------------------------------
-// SHUFFLE DOWN + OP: double
-
-#define _CUB_SHFL_OP_64BIT(OPERATOR, TYPE, PTX_OP, PTX_TYPE)                                                          \
-                                                                                                                      \
-  template <typename = void>                                                                                          \
-  [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                       \
-    OPERATOR, TYPE value, unsigned source_offset, unsigned shfl_c, unsigned mask)                                     \
-  {                                                                                                                   \
-    [[maybe_unused]] int pred;                                                                                        \
-    asm volatile(                                                                                                     \
-      "{                                                                                                      \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t" \
-      ".reg .u32 lo;                                                                                          \n\t\t" \
-      ".reg .u32 hi;                                                                                          \n\t\t" \
-      ".reg ." #PTX_TYPE " r1;                                                                                \n\t\t" \
-      "mov.b64 {lo, hi}, %0;                                                                                  \n\t\t" \
-      "shfl.sync.down.b32 lo,   lo, %2, %3, %4;                                                               \n\t\t" \
-      "shfl.sync.down.b32 hi|p, hi, %2, %3, %4;                                                               \n\t\t" \
-      "mov.b64 r1, {lo, hi};                                                                                  \n\t\t" \
-      "@p " #PTX_OP "." #PTX_TYPE "                                                                           \n\t\t" \
-      " %0, r1, %0;                                                                                           \n\t\t" \
-      "selp.s32 %1, 1, 0, p;                                                                                    \n\t" \
-      "}"                                                                                                             \
-      : "+d"(value), "=r"(pred)                                                                                       \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
-    return value;                                                                                                     \
+template <size_t ValidItems>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t
+shuffle_mask([[maybe_unused]] uint32_t step, _CUDA_VSTD::extents<int, ValidItems> valid_items)
+{
+  if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
+  {
+    const auto clamp   = 1u << step;
+    const auto segmask = 0b11110u << (step + 8);
+    return clamp | segmask;
   }
-
-_CUB_SHFL_OP_64BIT(_CUDA_VSTD::plus<>, double, add, f64) // shfl_down_add (double)
-_CUB_SHFL_OP_64BIT(_CUDA_VSTD::plus<double>, double, add, f64) // shfl_down_add (double)
-#undef _CUB_SHFL_OP_64BIT
+  else
+  {
+    return valid_items.extent(0);
+  }
+}
 
 } // namespace detail
 CUB_NAMESPACE_END

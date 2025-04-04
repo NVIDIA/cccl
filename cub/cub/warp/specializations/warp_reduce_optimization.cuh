@@ -34,6 +34,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_ptx.cuh>
 
@@ -41,6 +42,7 @@
 #include <cuda/functional>
 #include <cuda/ptx>
 #include <cuda/std/__complex/is_complex.h>
+#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/bit>
 #include <cuda/std/complex>
@@ -91,9 +93,6 @@ namespace detail
  * Utilities
  **********************************************************************************************************************/
 
-template <int LogicalWarpSize>
-using logical_warp_size_t = _CUDA_VSTD::integral_constant<int, LogicalWarpSize>;
-
 template <size_t ValidItems = _CUDA_VSTD::dynamic_extent>
 using valid_items_t = _CUDA_VSTD::extents<int, ValidItems>;
 
@@ -120,24 +119,8 @@ inline constexpr bool is_warp_reduce_supported_floating_point_v<__nv_bfloat162> 
 
 #endif // _CCCL_HAS_NVBF16()
 
-template <size_t ValidItems>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE unsigned
-shuffle_mask([[maybe_unused]] unsigned step, valid_items_t<ValidItems> valid_items)
-{
-  if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
-  {
-    const auto clamp   = 1u << step;
-    const auto segmask = 0b11110u << (step + 8);
-    return clamp | segmask;
-  }
-  else
-  {
-    return valid_items.extent(0);
-  }
-}
-
 template <ReduceLogicalMode LogicalMode, size_t ValidItems>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr unsigned
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr uint32_t
 member_mask(reduce_logical_mode_t<LogicalMode> logical_mode, valid_items_t<ValidItems> valid_items)
 {
   return (logical_mode == single_reduction) ? (0xFFFFFFFF >> (warp_threads - valid_items.extent(0))) : 0xFFFFFFFF;
@@ -157,7 +140,7 @@ warp_reduce_sm80(Input input, ReductionOp reduction_op, valid_items_t<ValidItems
   constexpr auto mask = cub::detail::member_mask(single_reduction, valid_items);
   if constexpr (is_integral_v<Input>)
   {
-    using cast_t = _If<is_signed_v<Input>, int32_t, uint32_t>;
+    using cast_t = _If<is_signed_v<Input>, int, uint32_t>;
     if constexpr (is_cuda_std_bit_and_v<ReductionOp, Input>)
     {
       return static_cast<Input>(::__reduce_and_sync(mask, input));
@@ -194,85 +177,70 @@ warp_reduce_sm80(Input input, ReductionOp reduction_op, valid_items_t<ValidItems
   }
 }
 
-template <typename Input,
-          typename ReductionOp,
-          ReduceLogicalMode LogicalMode,
-          WarpReduceResultMode Kind,
-          int LogicalWarpSize,
-          size_t ValidItems>
+template <typename Input, typename ReductionOp, ReduceLogicalMode LogicalMode, WarpReduceResultMode Kind, size_t ValidItems>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_shuffle_op(
   Input input,
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<Kind> result_mode,
-  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
   using namespace internal;
-  constexpr auto mask = cub::detail::member_mask(logical_mode, valid_items);
   static_assert(is_integral_v<Input> || is_warp_reduce_supported_floating_point_v<Input>,
                 "invalid input type/reduction operator combination");
-  constexpr auto Log2Size = ::cuda::ilog2(LogicalWarpSize * 2 - 1);
-  using cast_t            = _If<is_integral_v<Input> && sizeof(Input) < sizeof(int), int, Input>;
-  auto input1             = static_cast<cast_t>(input);
+  constexpr uint32_t logical_size = (valid_items.rank_dynamic() == 0) ? valid_items.static_extent(0) : warp_threads;
+  constexpr auto mask             = cub::detail::member_mask(logical_mode, valid_items);
+  constexpr auto log2_size        = ::cuda::ilog2(logical_size * 2 - 1);
+  using cast_t                    = _If<is_integral_v<Input> && sizeof(Input) < sizeof(int), int, Input>;
+  auto input1                     = static_cast<cast_t>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int K = 0; K < Log2Size; K++)
+  for (int K = 0; K < log2_size; K++)
   {
     auto shuffle_mask = cub::detail::shuffle_mask(K, valid_items);
     input1            = cub::detail::shfl_down_op(reduction_op, input1, 1u << K, shuffle_mask, mask);
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    input1 = _CUDA_VDEV::warp_shuffle_idx(input1, 0, mask, logical_size);
+    input1 = _CUDA_VDEV::warp_shuffle_idx<logical_size>(input1, 0, mask);
   }
   return input1;
 }
 
-template <typename Input,
-          typename ReductionOp,
-          ReduceLogicalMode LogicalMode,
-          WarpReduceResultMode Kind,
-          int LogicalWarpSize,
-          size_t ValidItems>
+template <typename Input, typename ReductionOp, ReduceLogicalMode LogicalMode, WarpReduceResultMode Kind, size_t ValidItems>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_generic(
   Input input,
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<Kind> result_mode,
-  logical_warp_size_t<LogicalWarpSize>,
   valid_items_t<ValidItems> valid_items)
 {
-  constexpr unsigned LogicalWarpSizeU = LogicalWarpSize;
-  constexpr auto Log2Size             = ::cuda::ilog2(LogicalWarpSize * 2 - 1);
-  constexpr auto mask                 = cub::detail::member_mask(logical_mode, valid_items);
-  constexpr auto LogicalWarpSize1     = _CUDA_VSTD::has_single_bit(LogicalWarpSizeU) ? LogicalWarpSize : warp_threads;
-  constexpr auto LogicalWidth         = _CUDA_VSTD::integral_constant<int, LogicalWarpSize1>{};
+  constexpr uint32_t logical_size = (valid_items.rank_dynamic() == 0) ? valid_items.static_extent(0) : warp_threads;
+  constexpr auto log2_size        = ::cuda::ilog2(logical_size * 2 - 1);
+  constexpr auto mask             = cub::detail::member_mask(logical_mode, valid_items);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int K = 0; K < Log2Size; K++)
+  for (int K = 0; K < log2_size; K++)
   {
-    if constexpr (_CUDA_VSTD::has_single_bit(LogicalWarpSizeU) && valid_items.rank_dynamic() == 0)
+    _CUDA_VDEV::WarpShuffleResult<Input> res;
+    if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(logical_size))
     {
-      auto res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, LogicalWidth);
-      if (res.pred)
-      {
-        input = reduction_op(input, res.data);
-      }
+      res = _CUDA_VDEV::warp_shuffle_down<logical_size>(input, 1u << K, mask);
     }
     else
     {
       auto lane_id = _CUDA_VPTX::get_sreg_laneid();
       auto dest    = ::min(lane_id + (1u << K), valid_items.extent(0) - 1);
-      auto res     = _CUDA_VDEV::warp_shuffle_idx(input, dest, mask, LogicalWidth);
-      if (lane_id + (1u << K) < valid_items.extent(0))
-      {
-        input = reduction_op(input, res.data);
-      }
+      res          = _CUDA_VDEV::warp_shuffle_idx<warp_threads>(input, dest, mask);
+      res.pred     = lane_id + (1u << K) < valid_items.extent(0);
+    }
+    if (res.pred)
+    {
+      input = reduction_op(input, res.data);
     }
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    input = _CUDA_VDEV::warp_shuffle_idx(input, 0, LogicalWidth);
+    input = _CUDA_VDEV::warp_shuffle_idx<logical_size>(input, 0, mask);
   }
   return input;
 }
@@ -323,21 +291,18 @@ template <typename Input,
           typename ReductionOp,
           ReduceLogicalMode LogicalMode,
           WarpReduceResultMode ResultMode,
-          int LogicalWarpSize,
-          size_t ValidItems = LogicalWarpSize>
+          size_t ValidItems>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
   Input,
   ReductionOp,
   reduce_logical_mode_t<LogicalMode>,
   reduce_result_mode_t<ResultMode>,
-  logical_warp_size_t<LogicalWarpSize>,
   valid_items_t<ValidItems> = {});
 
 _CCCL_TEMPLATE(typename Input,
                typename ReductionOp,
                ReduceLogicalMode LogicalMode,
                WarpReduceResultMode ResultMode,
-               int LogicalWarpSize,
                size_t ValidItems)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursive(
@@ -345,15 +310,14 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AN
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using detail::merge_integers;
   using detail::split_integers;
   using detail::warp_reduce_dispatch;
   auto [high, low]    = split_integers(input);
-  auto high_reduction = warp_reduce_dispatch(high, reduction_op, logical_mode, result_mode, logical_size, valid_items);
-  auto low_reduction  = warp_reduce_dispatch(low, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+  auto high_reduction = warp_reduce_dispatch(high, reduction_op, logical_mode, result_mode, valid_items);
+  auto low_reduction  = warp_reduce_dispatch(low, reduction_op, logical_mode, result_mode, valid_items);
   return merge_integers(high_reduction, low_reduction);
 }
 
@@ -361,7 +325,6 @@ _CCCL_TEMPLATE(typename Input,
                typename ReductionOp,
                ReduceLogicalMode LogicalMode,
                WarpReduceResultMode ResultMode,
-               int LogicalWarpSize,
                size_t ValidItems)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input warp_reduce_recursive(
@@ -369,7 +332,6 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input> _CCCL_AN
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
@@ -379,27 +341,25 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input> _CCCL_AN
   using internal::identity_v;
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   auto [high, low]         = split_integers(input);
-  auto high_result = warp_reduce_dispatch(high, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+  auto high_result         = warp_reduce_dispatch(high, reduction_op, logical_mode, result_mode, valid_items);
   if (high_result == 0) // shortcut: input is in range [0, 2^N/2)
   {
-    return warp_reduce_dispatch(low, reduction_op, logical_mode, result_mode, logical_size);
+    return warp_reduce_dispatch(low, reduction_op, logical_mode, result_mode, valid_items);
   }
-  if (is_unsigned_v<Input> || high_result > 0) // >= 2^N/2 -> perform the computation as unsigned
+  if (is_unsigned_v<Input> || high_result > 0) // >= 2^N/2 -> perform the computation as uint32_t
   {
     using half_size_unsigned_t = __make_nbit_uint_t<half_bits>;
     constexpr auto identity    = identity_v<ReductionOp, half_size_unsigned_t>;
     auto low_unsigned          = static_cast<half_size_unsigned_t>(low);
     auto low_selected          = high_result == high ? low_unsigned : identity;
-    auto low_result =
-      warp_reduce_dispatch(low_selected, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+    auto low_result = warp_reduce_dispatch(low_selected, reduction_op, logical_mode, result_mode, valid_items);
     return static_cast<Input>(merge_integers(static_cast<half_size_unsigned_t>(high_result), low_result));
   }
   // signed type and < 0
   using half_size_signed_t = __make_nbit_int_t<half_bits, true>;
   constexpr auto identity  = identity_v<ReductionOp, half_size_signed_t>;
   auto low_selected        = high_result == high ? static_cast<half_size_signed_t>(low) : identity;
-  auto low_result =
-    warp_reduce_dispatch(low_selected, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+  auto low_result          = warp_reduce_dispatch(low_selected, reduction_op, logical_mode, result_mode, valid_items);
   return merge_integers(static_cast<half_size_signed_t>(high_result), low_result);
 }
 
@@ -407,7 +367,6 @@ _CCCL_TEMPLATE(typename Input,
                typename ReductionOp,
                ReduceLogicalMode LogicalMode,
                WarpReduceResultMode ResultMode,
-               int LogicalWarpSize,
                size_t ValidItems)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_recursive(
@@ -415,7 +374,6 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
@@ -425,11 +383,11 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
   using unsigned_t         = make_unsigned_t<Input>;
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
-  auto high_reduction = warp_reduce_dispatch(high, reduction_op, logical_mode, result_mode, logical_size, valid_items);
-  auto low_digits     = static_cast<uint32_t>(low >> (half_bits - 5));
-  auto carry_out = warp_reduce_dispatch(low_digits, reduction_op, logical_mode, result_mode, logical_size, valid_items);
-  auto low_reduction = warp_reduce_dispatch(low, reduction_op, logical_mode, result_mode, logical_size, valid_items);
-  auto result_high   = high_reduction + (carry_out >> 5);
+  auto high_reduction      = warp_reduce_dispatch(high, reduction_op, logical_mode, result_mode, valid_items);
+  auto low_digits          = static_cast<uint32_t>(low >> (half_bits - 5));
+  auto carry_out           = warp_reduce_dispatch(low_digits, reduction_op, logical_mode, result_mode, valid_items);
+  auto low_reduction       = warp_reduce_dispatch(low, reduction_op, logical_mode, result_mode, valid_items);
+  auto result_high         = high_reduction + (carry_out >> 5);
   return merge_integers(result_high, low_reduction);
 }
 
@@ -441,14 +399,12 @@ template <typename Input,
           typename ReductionOp,
           ReduceLogicalMode LogicalMode,
           WarpReduceResultMode ResultMode,
-          int LogicalWarpSize,
           size_t ValidItems>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(
   Input input,
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using cub::detail::make_floating_point_int_comparible;
@@ -460,7 +416,7 @@ template <typename Input,
   using cub::detail::warp_reduce_sm80;
   using namespace cub::internal;
   using namespace _CUDA_VSTD;
-  if constexpr (::cuda::is_floating_point_v<Input> && is_cuda_std_min_max_v<ReductionOp, Input>)
+  if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && ::cuda::is_floating_point_v<Input>)
   {
     if constexpr (is_same_v<Input, float> && logical_mode == single_reduction)
     {
@@ -469,14 +425,13 @@ template <typename Input,
     else if constexpr (is_same_v<Input, __half> || is_same_v<Input, __half2> || is_same_v<Input, __nv_bfloat16>
                        || is_same_v<Input, __nv_bfloat162>)
     {
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_80,
-        (return warp_reduce_shuffle_op(input, reduction_op, logical_mode, result_mode, logical_size, valid_items);));
+      NV_IF_TARGET(NV_PROVIDES_SM_80,
+                   (return warp_reduce_shuffle_op(input, reduction_op, logical_mode, result_mode, valid_items);));
     }
-    using signed_t = __make_nbit_int_t<__num_bits_v<Input>, true>;
-    auto input_int = cub::detail::unsafe_bitcast<signed_t>(input);
-    auto input_cmp = make_floating_point_int_comparible(input_int);
-    auto result = warp_reduce_dispatch(input_cmp, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+    using signed_t  = __make_nbit_int_t<__num_bits_v<Input>, true>;
+    auto input_int  = cub::detail::unsafe_bitcast<signed_t>(input);
+    auto input_cmp  = make_floating_point_int_comparible(input_int);
+    auto result     = warp_reduce_dispatch(input_cmp, reduction_op, logical_mode, result_mode, valid_items);
     auto result_rev = make_floating_point_int_comparible(result); // reverse
     return unsafe_bitcast<Input>(result_rev);
   }
@@ -486,7 +441,7 @@ template <typename Input,
     if constexpr (is_same_v<typename Input::value_type, __half>)
     {
       auto half2_value = unsafe_bitcast<__half2>(input);
-      auto ret = warp_reduce_dispatch(half2_value, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+      auto ret         = warp_reduce_dispatch(half2_value, reduction_op, logical_mode, result_mode, valid_items);
       return unsafe_bitcast<Input>(ret);
     }
 #endif // _CCCL_HAS_NVFP16()
@@ -494,40 +449,50 @@ template <typename Input,
     if constexpr (is_same_v<typename Input::value_type, __nv_bfloat16>)
     {
       auto bfloat2_value = unsafe_bitcast<__nv_bfloat162>(input);
-      auto ret =
-        warp_reduce_dispatch(bfloat2_value, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+      auto ret           = warp_reduce_dispatch(bfloat2_value, reduction_op, logical_mode, result_mode, valid_items);
       return unsafe_bitcast<Input>(ret);
     }
 #endif // _CCCL_HAS_NVBF16()
-    auto real = warp_reduce_dispatch(input.real(), reduction_op, logical_mode, result_mode, logical_size, valid_items);
-    auto img  = warp_reduce_dispatch(input.imag(), reduction_op, logical_mode, result_mode, logical_size, valid_items);
+    if constexpr (is_same_v<typename Input::value_type, float>)
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_100,
+                   (auto float2_value = unsafe_bitcast<float2>(input);
+                    return warp_reduce_shuffle_op(float2_value, reduction_op, logical_mode, result_mode, valid_items);))
+    }
+    auto real = warp_reduce_dispatch(input.real(), reduction_op, logical_mode, result_mode, valid_items);
+    auto img  = warp_reduce_dispatch(input.imag(), reduction_op, logical_mode, result_mode, valid_items);
     return Input{real, img};
   }
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input>
                      && (is_same_v<Input, __nv_bfloat16> || is_same_v<Input, __nv_bfloat162>) )
   {
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_90,
-      (return warp_reduce_shuffle_op(input, reduction_op, logical_mode, result_mode, logical_size, valid_items);),
-      (return warp_reduce_generic(input, reduction_op, logical_mode, result_mode, logical_size, valid_items);));
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+                 (return warp_reduce_shuffle_op(input, reduction_op, logical_mode, result_mode, valid_items);),
+                 (return warp_reduce_generic(input, reduction_op, logical_mode, result_mode, valid_items);));
+  }
+  else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && (is_same_v<Input, float2>) )
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_100,
+                 (return warp_reduce_shuffle_op(input, reduction_op, logical_mode, result_mode, valid_items);),
+                 (return warp_reduce_generic(input, reduction_op, logical_mode, result_mode, valid_items);));
   }
   else if constexpr (is_integral_v<Input> && sizeof(Input) > sizeof(uint32_t))
   {
-    return warp_reduce_recursive(input, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+    return warp_reduce_recursive(input, reduction_op, logical_mode, result_mode, valid_items);
   }
   else if constexpr (is_integral_v<Input> || is_warp_reduce_supported_floating_point_v<Input>)
   {
     static_assert(!is_cuda_std_bitwise_v<ReductionOp, Input> || is_unsigned_v<Input>,
-                  "Bitwise reduction operations are only supported for unsigned integral types.");
+                  "Bitwise reduction operations are only supported for uint32_t integral types.");
     if constexpr (is_integral_v<Input> && logical_mode == single_reduction)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_sm80(input, reduction_op, valid_items);));
     }
-    return warp_reduce_shuffle_op(input, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+    return warp_reduce_shuffle_op(input, reduction_op, logical_mode, result_mode, valid_items);
   }
   else
   {
-    return warp_reduce_generic(input, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+    return warp_reduce_generic(input, reduction_op, logical_mode, result_mode, valid_items);
   }
 }
 

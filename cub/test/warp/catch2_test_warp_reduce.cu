@@ -223,9 +223,9 @@ using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 
 using arithmetic_type_list = c2h::type_list<
-  /*bool,*/ int8_t, uint16_t, int32_t, int64_t,
+  int8_t, uint16_t, int32_t, int64_t,
   float, double,
-  cuda::std::complex<float>, cuda::std::complex<double>,
+  float2, cuda::std::complex<float>, cuda::std::complex<double>,
   ulonglong4, custom_t
 #  if _CCCL_HAS_INT128()
   , __int128_t
@@ -252,6 +252,9 @@ using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>
 
 using min_max_type_list = c2h::type_list<
   int8_t, uint16_t, int32_t, int64_t,
+#  if _CCCL_HAS_INT128()
+   __int128_t,
+#  endif
   float, double, custom_t
 #  if TEST_HALF_T()
   , __half
@@ -259,9 +262,6 @@ using min_max_type_list = c2h::type_list<
 #  if TEST_BF_T()
   , __nv_bfloat16
 #  endif // TEST_BF_T()
-#  if _CCCL_HAS_INT128()
-  , __int128_t
-#  endif
   >;
 
 using min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
@@ -328,6 +328,10 @@ C2H_TEST(
   if constexpr (cuda::std::__is_any_floating_point_v<T>)
   {
     c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
+  }
+  else if constexpr (cuda::std::is_same_v<T, float2>)
+  {
+    c2h::gen(C2H_SEED(1), d_in, T{-2.0, -1.0}, T{1.0, 2.0});
   }
   else
   {
@@ -399,7 +403,6 @@ C2H_TEST(
   // }
   verify_results(h_out, d_out);
 }
-
 #if 0
 
 C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_list, logical_warp_threads)
@@ -418,7 +421,6 @@ C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", full_type_lis
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results(h_out, d_out);
 }
-
 //----------------------------------------------------------------------------------------------------------------------
 // partial
 

@@ -43,6 +43,7 @@
 
 #include <cub/detail/array_utils.cuh> // to_array()
 #include <cub/detail/type_traits.cuh> // are_same()
+#include <cub/detail/unsafe_bitcast.cuh>
 #include <cub/thread/thread_load.cuh> // UnrolledCopy
 #include <cub/thread/thread_operators.cuh> // cub_operator_to_dpx_t
 #include <cub/util_namespace.cuh>
@@ -170,21 +171,6 @@ template <typename Input,
  **********************************************************************************************************************/
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-namespace detail
-{
-
-// NOTE: bit_cast cannot be always used because __half, __nv_bfloat16, etc. are not trivially copyable
-template <typename Output, typename Input>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
-{
-  Output output;
-  static_assert(sizeof(input) == sizeof(output), "wrong size");
-  ::memcpy(static_cast<void*>(&output), static_cast<const void*>(&input), sizeof(input));
-  return output;
-}
-
-} // namespace detail
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
 namespace internal

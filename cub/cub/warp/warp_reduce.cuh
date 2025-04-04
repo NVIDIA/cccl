@@ -157,7 +157,7 @@ class WarpReduce
 
   static constexpr auto warp_reduce_result_mode_default = detail::WarpReduceResultMode::SingleLane;
 
-  static constexpr auto logical_warp_size = cub::detail::logical_warp_size_t<LogicalWarpThreads>{};
+  static constexpr auto logical_warp_size = cub::detail::valid_items_t<LogicalWarpThreads>{};
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -413,12 +413,7 @@ public:
     // Determine if we don't need bounds checking
     // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
     return detail::warp_reduce_dispatch(
-      input,
-      _CUDA_VSTD::plus<>{},
-      logical_mode,
-      result_mode,
-      logical_warp_size,
-      cub::detail::valid_items_t<>{valid_items});
+      input, _CUDA_VSTD::plus<>{}, logical_mode, result_mode, cub::detail::valid_items_t<>{valid_items});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)

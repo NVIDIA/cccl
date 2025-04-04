@@ -29,9 +29,6 @@
 #include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/type_traits>
 
-#include <algorithm>
-#include <cmath>
-
 #include "c2h/catch2_test_helper.h"
 
 template <typename T>
@@ -65,11 +62,13 @@ inline constexpr bool is_any_half_v<cuda::std::complex<__half>> = true;
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
 {
-  int device_id          = 0;
-  int compute_capability = 0;
+  int device_id                = 0;
+  int compute_capability_major = 0;
+  int compute_capability_minor = 0;
   CubDebugExit(cudaGetDevice(&device_id));
-  CubDebugExit(cudaDeviceGetAttribute(&compute_capability, cudaDevAttrComputeCapabilityMajor, device_id));
-  CubDebugExit(cudaDeviceGetAttribute(&compute_capability, cudaDevAttrComputeCapabilityMinor, device_id));
+  CubDebugExit(cudaDeviceGetAttribute(&compute_capability_major, cudaDevAttrComputeCapabilityMajor, device_id));
+  CubDebugExit(cudaDeviceGetAttribute(&compute_capability_minor, cudaDevAttrComputeCapabilityMinor, device_id));
+  int compute_capability = 10 * compute_capability_major + compute_capability_minor;
   if (compute_capability < 80 && is_any_bfloat16_v<T>)
   {
     return;
@@ -86,29 +85,19 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   {
     REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, 0.05f);
   }
-  else if constexpr (cuda::std::__is_complex_v<T>)
+  else if constexpr (cuda::std::__is_complex_v<T> || cuda::std::is_same_v<T, float2>)
   {
-    using value_type  = typename cuda::std::remove_cv_t<T>::value_type;
-    using promotion_t = _CUDA_VSTD::_If<sizeof(value_type) <= sizeof(float), float, double>;
-    c2h::host_vector<value_type> test_results_real(test_results.size());
-    c2h::host_vector<value_type> expected_data_real(expected_data.size());
-    c2h::host_vector<value_type> test_results_img(test_results.size());
-    c2h::host_vector<value_type> expected_data_img(expected_data.size());
-    // zip_iterator does not work with complex<__half>
-    std::transform(test_results.begin(), test_results.end(), test_results_real.begin(), [](T x) {
-      return x.real();
-    });
-    std::transform(test_results.begin(), test_results.end(), test_results_img.begin(), [](T x) {
-      return x.imag();
-    });
-    std::transform(expected_data.begin(), expected_data.end(), expected_data_real.begin(), [](T x) {
-      return x.real();
-    });
-    std::transform(expected_data.begin(), expected_data.end(), expected_data_img.begin(), [](T x) {
-      return x.imag();
-    });
-    verify_results(test_results_real, expected_data_real);
-    verify_results(test_results_img, expected_data_img);
+    for (size_t i = 0; i < test_results.size(); ++i)
+    {
+      if constexpr (cuda::std::is_floating_point_v<T>)
+      {
+        REQUIRE_APPROX_EQ(expected_data[i], test_results[i]);
+      }
+      else if constexpr (cuda::std::__is_extended_floating_point_v<T>)
+      {
+        REQUIRE_APPROX_EQ_EPSILON(expected_data[i], test_results[i], 0.05f);
+      }
+    }
   }
   else
   {
