@@ -29,7 +29,8 @@ void radix_sort(
   uint64_t num_items,
   int begin_bit,
   int end_bit,
-  bool is_overwrite_okay)
+  bool is_overwrite_okay,
+  int* selector)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
@@ -82,6 +83,7 @@ void radix_sort(
       begin_bit,
       end_bit,
       is_overwrite_okay,
+      selector,
       0));
 
   pointer_t<uint8_t> temp_storage(temp_storage_bytes);
@@ -101,6 +103,7 @@ void radix_sort(
       begin_bit,
       end_bit,
       is_overwrite_okay,
+      selector,
       0));
 
   REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
@@ -122,7 +125,8 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
 
   int begin_bit          = 0;
   int end_bit            = sizeof(TestType) * 8;
-  bool is_overwrite_okay = false;
+  bool is_overwrite_okay = GENERATE(false, true);
+  int selector           = -1;
 
   radix_sort(
     order,
@@ -135,7 +139,10 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
     num_items,
     begin_bit,
     end_bit,
-    is_overwrite_okay);
+    is_overwrite_okay,
+    &selector);
+
+  assert(selector == 0 || selector == 1);
 
   if (is_descending)
   {
@@ -145,8 +152,9 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
   {
     std::sort(expected_keys.begin(), expected_keys.end());
   }
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+
+  auto& output_keys = (is_overwrite_okay && selector == 0) ? input_keys_it : output_keys_it;
+  REQUIRE(expected_keys == std::vector<TestType>(output_keys));
 }
 
 TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_types)
@@ -171,7 +179,8 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
 
   int begin_bit          = 0;
   int end_bit            = sizeof(TestType) * 8;
-  bool is_overwrite_okay = false;
+  bool is_overwrite_okay = GENERATE(false, true);
+  int selector           = -1;
 
   radix_sort(
     order,
@@ -184,7 +193,10 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
     num_items,
     begin_bit,
     end_bit,
-    is_overwrite_okay);
+    is_overwrite_okay,
+    &selector);
+
+  assert(selector == 0 || selector == 1);
 
   if (is_descending)
   {
@@ -196,6 +208,9 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
     std::sort(expected_keys.begin(), expected_keys.end());
     std::sort(expected_items.begin(), expected_items.end());
   }
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
-  REQUIRE(expected_keys == std::vector<TestType>(output_keys_it));
+
+  auto& output_keys  = (is_overwrite_okay && selector == 0) ? input_keys_it : output_keys_it;
+  auto& output_items = (is_overwrite_okay && selector == 0) ? input_items_it : output_items_it;
+  REQUIRE(expected_keys == std::vector<TestType>(output_keys));
+  REQUIRE(expected_items == std::vector<item_t>(output_items));
 }

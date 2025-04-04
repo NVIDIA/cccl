@@ -66,6 +66,7 @@ CCCL_C_API CUresult cccl_device_ascending_radix_sort(
   int begin_bit,
   int end_bit,
   bool is_overwrite_okay,
+  int* selector,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_descending_radix_sort(
@@ -81,6 +82,7 @@ CCCL_C_API CUresult cccl_device_descending_radix_sort(
   int begin_bit,
   int end_bit,
   bool is_overwrite_okay,
+  int* selector,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_radix_sort_cleanup(cccl_device_radix_sort_build_result_t* bld_ptr);

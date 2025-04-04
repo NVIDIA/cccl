@@ -670,6 +670,7 @@ CUresult cccl_device_radix_sort(
   int begin_bit,
   int end_bit,
   bool is_overwrite_okay,
+  int* selector,
   CUstream stream)
 {
   if (cccl_iterator_kind_t::CCCL_POINTER != d_keys_in.type || cccl_iterator_kind_t::CCCL_POINTER != d_values_in.type
@@ -718,6 +719,8 @@ CUresult cccl_device_radix_sort(
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {d_keys_in.value_type.size});
+
+    *selector = d_keys_buffer.selector;
   }
   catch (const std::exception& exc)
   {
@@ -749,6 +752,7 @@ CUresult cccl_device_ascending_radix_sort(
   int begin_bit,
   int end_bit,
   bool is_overwrite_okay,
+  int* selector,
   CUstream stream)
 {
   assert(build.order == CCCL_ASCENDING);
@@ -765,6 +769,7 @@ CUresult cccl_device_ascending_radix_sort(
     begin_bit,
     end_bit,
     is_overwrite_okay,
+    selector,
     stream);
 }
 
@@ -781,6 +786,7 @@ CUresult cccl_device_descending_radix_sort(
   int begin_bit,
   int end_bit,
   bool is_overwrite_okay,
+  int* selector,
   CUstream stream)
 {
   assert(build.order == CCCL_DESCENDING);
@@ -797,6 +803,7 @@ CUresult cccl_device_descending_radix_sort(
     begin_bit,
     end_bit,
     is_overwrite_okay,
+    selector,
     stream);
 }
 
