@@ -1104,7 +1104,7 @@ struct DispatchRadixSort
     else
     {
       // Regular size
-      return InvokeManyTiles<ActivePolicyT>(detail::bool_constant_v<ActivePolicyT::ONESWEEP>);
+      return InvokeManyTiles(detail::bool_constant_v<ActivePolicyT::ONESWEEP>, wrapped_policy);
     }
 #endif
   }
