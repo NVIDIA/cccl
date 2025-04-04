@@ -70,7 +70,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   CubDebugExit(cudaGetDevice(&device_id));
   CubDebugExit(cudaDeviceGetAttribute(&compute_capability, cudaDevAttrComputeCapabilityMajor, device_id));
   CubDebugExit(cudaDeviceGetAttribute(&compute_capability, cudaDevAttrComputeCapabilityMinor, device_id));
-  if (compute_capability < 90 && is_any_bfloat16_v<T>)
+  if (compute_capability < 80 && is_any_bfloat16_v<T>)
   {
     return;
   }

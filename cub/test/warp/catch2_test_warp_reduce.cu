@@ -55,7 +55,7 @@ inline constexpr int items_per_thread = 4;
 template <typename T>
 inline constexpr bool is_device_supported_type_v = true;
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 900
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
 
 template <>
 inline constexpr bool is_device_supported_type_v<__nv_bfloat16> = false;
