@@ -41,7 +41,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr char*
 __cccl_constexpr_strcpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src) noexcept
 {
   char* __dst_it = __dst;
-  while ((*__dst_it++ = *__src++))
+  while ((*__dst_it++ = *__src++) != '\0')
   {
   }
   return __dst;
@@ -91,7 +91,7 @@ strncpy(char* _CCCL_RESTRICT __dst, const char* _CCCL_RESTRICT __src, size_t __n
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __cccl_constexpr_strlen(const char* __ptr) noexcept
 {
   size_t __len = 0;
-  while (*__ptr++)
+  while (*__ptr++ != '\0')
   {
     ++__len;
   }
@@ -211,7 +211,7 @@ template <class _Tp>
   }
 
   _Tp* __last{};
-  while (*__ptr)
+  while (*__ptr != '\0')
   {
     if (*__ptr == static_cast<char>(__c))
     {
