@@ -191,6 +191,25 @@ def unary_transform(
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
 ):
+    """
+    Apply a transformation to each element of the input according to the
+    unary operation ``op``.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_transform.py
+           :language: python
+           :dedent:
+           :start-after: example-begin transform-unary
+           :end-before: example-end transform-unary
+
+    Args:
+        d_in: Device array or iterator containing the input sequence of data items.
+        d_out: Device array or iterator to store the result of the transformation.
+        op: Unary operation to apply to each element of the input.
+
+    Returns:
+        A callable that performs the transformation.
+    """
     return _UnaryTransform(d_in, d_out, op)
 
 
@@ -201,4 +220,24 @@ def binary_transform(
     d_out: DeviceArrayLike | IteratorBase,
     op: Callable,
 ):
+    """
+    Apply a transformation to the given pair of input sequences according to the
+    binary operation ``op``.
+
+    Example:
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_transform.py
+           :language: python
+           :dedent:
+           :start-after: example-begin transform-binary
+           :end-before: example-end transform-binary
+
+    Args:
+        d_in1: Device array or iterator containing the first input sequence of data items.
+        d_in2: Device array or iterator containing the second input sequence of data items.
+        d_out: Device array or iterator to store the result of the transformation.
+        op: Binary operation to apply to each pair of items from the input sequences.
+
+    Returns:
+        A callable that performs the transformation.
+    """
     return _BinaryTransform(d_in1, d_in2, d_out, op)
