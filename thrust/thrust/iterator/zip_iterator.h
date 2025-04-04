@@ -46,7 +46,10 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/type_traits/integer_sequence.h>
 
+#include <cuda/std/iterator>
 #include <cuda/std/tuple>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -192,7 +195,25 @@ public:
   //!
   //! \param iterator_tuple The \p tuple of iterators to copy from.
   inline _CCCL_HOST_DEVICE zip_iterator(IteratorTuple iterator_tuple)
-      : m_iterator_tuple(iterator_tuple)
+      : m_iterator_tuple(::cuda::std::move(iterator_tuple))
+  {}
+
+  //! This constructor creates a new \p zip_iterator from a pack of iterators.
+  //!
+  //! \param iterators A pack of iterators to zip.
+  template <
+    typename... Iterators,
+    ::cuda::std::enable_if_t<!(::cuda::std::is_same_v<::cuda::std::decay_t<Iterators>, zip_iterator> || ...), int> = 0,
+    ::cuda::std::enable_if_t<
+      (::cuda::std::input_or_output_iterator<::cuda::std::remove_cvref_t<Iterators>> && ...)
+      // FIXME(bgruber): Adding this constraint causes a difficult compilation error:
+      // &&
+      // ::cuda::std::is_constructible_v<::cuda::std::tuple<::cuda::std::remove_cvref_t<Iterators>...>,
+      // Iterators...>
+      ,
+      int> = 0>
+  _CCCL_HOST_DEVICE zip_iterator(Iterators&&... iterators)
+      : m_iterator_tuple(::cuda::std::forward<Iterators>(iterators)...)
   {}
 
   //! This copy constructor creates a new \p zip_iterator from another \p zip_iterator.
@@ -296,6 +317,13 @@ private:
   //! \endcond
 };
 
+template <typename... Iterators>
+_CCCL_HOST_DEVICE zip_iterator(_CUDA_VSTD::tuple<Iterators...>) -> zip_iterator<_CUDA_VSTD::tuple<Iterators...>>;
+
+template <typename... Iterators,
+          ::cuda::std::enable_if_t<(::cuda::std::input_or_output_iterator<Iterators> && ...), int> = 0>
+_CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<_CUDA_VSTD::tuple<Iterators...>>;
+
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!
 //! \param t The \p tuple of iterators to copy.
@@ -305,20 +333,25 @@ template <typename... Iterators>
 inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>>
 make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t)
 {
-  return zip_iterator<_CUDA_VSTD::tuple<Iterators...>>(t);
+  return {::cuda::std::move(t)};
 }
 
-//! \p make_zip_iterator creates a \p zip_iterator from
-//! iterators.
+//! \p make_zip_iterator creates a \p zip_iterator from iterators.
 //!
 //! \param its The iterators to copy.
 //! \return A newly created \p zip_iterator which zips the iterators.
 //!
 //! \see zip_iterator
-template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_iterator(Iterators... its)
+template <
+  typename... Iterators,
+  ::cuda::std::enable_if_t<
+    (::cuda::std::input_or_output_iterator<::cuda::std::remove_reference_t<Iterators>> && ...)
+      && ::cuda::std::is_constructible_v<_CUDA_VSTD::tuple<::cuda::std::remove_reference_t<Iterators>...>, Iterators...>,
+    int> = 0>
+inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<::cuda::std::remove_reference_t<Iterators>...>>
+make_zip_iterator(Iterators&&... its)
 {
-  return make_zip_iterator(_CUDA_VSTD::make_tuple(its...));
+  return {::cuda::std::forward<Iterators>(its)...};
 }
 
 //! \} // end fancyiterators
