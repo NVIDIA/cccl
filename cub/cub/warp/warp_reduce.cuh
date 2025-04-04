@@ -44,6 +44,7 @@
 #include <cub/thread/thread_reduce.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_reduce_config.cuh>
 #include <cub/warp/specializations/warp_reduce_optimization.cuh>
 #include <cub/warp/specializations/warp_reduce_shfl.cuh>
 #include <cub/warp/specializations/warp_reduce_smem.cuh>
@@ -157,7 +158,7 @@ class WarpReduce
 
   static constexpr auto warp_reduce_result_mode_default = detail::WarpReduceResultMode::SingleLane;
 
-  static constexpr auto logical_warp_size = cub::detail::valid_items_t<LogicalWarpThreads>{};
+  static constexpr auto logical_warp_size = detail::logial_warp_size_t<LogicalWarpThreads>{};
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -402,18 +403,23 @@ public:
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
-  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+  template <detail::ReduceLogicalMode Mode    = detail::ReduceLogicalMode::SingleReduction,
             detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Sum(T input,
       int valid_items,
-      detail::ReduceLogicalMode logical_mode   = reduce_logical_mode_default,
-      detail::WarpReduceResultMode result_mode = warp_reduce_result_mode_default)
+      detail::reduce_logical_mode_t<Mode> logical_mode = {},
+      detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
     // Determine if we don't need bounds checking
     // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
     return detail::warp_reduce_dispatch(
-      input, _CUDA_VSTD::plus<>{}, logical_mode, result_mode, cub::detail::valid_items_t<>{valid_items});
+      input,
+      _CUDA_VSTD::plus<>{},
+      logical_mode,
+      result_mode,
+      logical_warp_size,
+      cub::detail::valid_items_t<>{valid_items});
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)

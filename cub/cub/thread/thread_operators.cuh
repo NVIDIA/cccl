@@ -762,6 +762,71 @@ inline constexpr bool is_cuda_std_operator_v =
   is_cuda_std_plus_mul_v<Op, T> || //
   is_cuda_std_bitwise_v<Op, T>;
 
+/***********************************************************************************************************************
+ * Extended floating point traits
+ **********************************************************************************************************************/
+// half
+
+template <typename>
+inline constexpr bool is_half_base_v = false;
+
+template <typename>
+inline constexpr bool is_half_X2_base_v = false;
+
+#  if _CCCL_HAS_NVFP16()
+
+template <>
+inline constexpr bool is_half_base_v<__half> = true;
+
+template <>
+inline constexpr bool is_half_X2_base_v<__half2> = true;
+
+#  endif // _CCCL_HAS_NVFP16
+
+template <typename T>
+inline constexpr bool is_half_v = is_half_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_half_X2_v = is_half_X2_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_half_v = is_half_base_v<T> || is_half_X2_base_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// bfloat16
+
+template <typename>
+inline constexpr bool is_bfloat16_base_v = false;
+
+template <typename>
+inline constexpr bool is_bfloat16_X2_base_v = false;
+
+#  if _CCCL_HAS_NVBF16()
+
+template <>
+inline constexpr bool is_bfloat16_base_v<__half> = true;
+
+template <>
+inline constexpr bool is_bfloat16_X2_base_v<__half2> = true;
+
+#  endif // _CCCL_HAS_NVBF16
+
+template <typename T>
+inline constexpr bool is_bfloat16_v = is_bfloat16_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_bfloat16_X2_v = is_bfloat16_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_bfloat16_v = is_bfloat16_v<T> || is_bfloat16_X2_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// half/bfloat16
+
+template <typename T>
+inline constexpr bool is_arithmetic_cuda_floating_point_v =
+  is_half_v<T> || is_bfloat16_v<T> || _CUDA_VSTD::is_floating_point_v<T>;
+
 //----------------------------------------------------------------------------------------------------------------------
 // Identity
 

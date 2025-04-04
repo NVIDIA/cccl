@@ -36,6 +36,8 @@
 #endif // no system header
 
 #include <cub/detail/unsafe_bitcast.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/warp/specializations/warp_reduce_config.cuh>
 
 #include <cuda/functional>
 #include <cuda/std/__mdspan/extents.h>
@@ -174,7 +176,7 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<int>, int, min.s32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, uint32_t, min.u32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<uint32_t>, uint32_t, min.u32)
 
-#if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
+#if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 800
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __half, min.f16)
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<__half>, __half, min.f16)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __half2, min.f16x2)
@@ -184,7 +186,9 @@ _CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __half, max.f16)
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<__half>, __half, max.f16)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __half2, max.f16x2)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<__half2>, __half2, max.f16x2)
+#endif // _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 800
 
+#if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __nv_bfloat16, min.bf16)
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<__nv_bfloat16>, __nv_bfloat16, min.bf16)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __nv_bfloat162, min.bf16x2)
@@ -251,11 +255,11 @@ template <typename T, typename ReductionOp>
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// shuffle_mask
+// reduce_shuffle_mask
 
 template <size_t ValidItems>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t
-shuffle_mask([[maybe_unused]] uint32_t step, _CUDA_VSTD::extents<int, ValidItems> valid_items)
+reduce_shuffle_mask([[maybe_unused]] uint32_t step, _CUDA_VSTD::extents<int, ValidItems> valid_items)
 {
   if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
   {
@@ -266,6 +270,25 @@ shuffle_mask([[maybe_unused]] uint32_t step, _CUDA_VSTD::extents<int, ValidItems
   else
   {
     return valid_items.extent(0);
+  }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// reduce_member_mask
+
+template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_member_mask(
+  reduce_logical_mode_t<LogicalMode> logical_mode,
+  logial_warp_size_t<LogicalWarpSize>,
+  valid_items_t<ValidItems> valid_items)
+{
+  if constexpr (valid_items.rank_dynamic() == 1)
+  {
+    return ::__activemask();
+  }
+  else
+  {
+    return (logical_mode == single_reduction) ? (0xFFFFFFFF >> (warp_threads - LogicalWarpSize)) : 0xFFFFFFFF;
   }
 }
 
