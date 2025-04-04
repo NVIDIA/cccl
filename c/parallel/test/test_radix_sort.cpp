@@ -111,7 +111,7 @@ void radix_sort(
 
 TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_types)
 {
-  // We want a mix of small and large sizes because different implementation will be called
+  // We want a mix of small and large sizes because different implementations will be called
   const int num_items                 = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   const bool is_descending            = GENERATE(false, true);
   const auto order                    = is_descending ? CCCL_DESCENDING : CCCL_ASCENDING;
