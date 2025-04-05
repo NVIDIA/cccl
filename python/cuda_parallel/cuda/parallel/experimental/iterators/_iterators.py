@@ -95,9 +95,6 @@ class IteratorBase:
     def kind(self):
         return self.__class__.iterator_kind_type(self.value_type)
 
-    # TODO: should we cache this? Current docs environment doesn't allow
-    # using Python > 3.7. We could use a hand-rolled cached_property if
-    # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
         if self._ltoirs is None:
@@ -475,4 +472,3 @@ def scrub_duplicate_ltoirs(*maybe_iterators: Any) -> tuple[Any, ...]:
         it.ltoirs = ltoir
 
     return maybe_iterators
-
