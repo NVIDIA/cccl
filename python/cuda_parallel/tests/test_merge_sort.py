@@ -264,12 +264,8 @@ def test_merge_sort_pairs_copy_iterator_input(dtype, num_items):
     d_out_keys = numba.cuda.to_device(h_out_keys)
     d_out_items = numba.cuda.to_device(h_out_items)
 
-    i_input_keys = iterators.CacheModifiedInputIterator(
-        d_in_keys, modifier="stream", prefix="keys"
-    )
-    i_input_items = iterators.CacheModifiedInputIterator(
-        d_in_items, modifier="stream", prefix="items"
-    )
+    i_input_keys = iterators.CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_input_items = iterators.CacheModifiedInputIterator(d_in_items, modifier="stream")
 
     merge_sort_device(
         i_input_keys, i_input_items, d_out_keys, d_out_items, compare_op, num_items
