@@ -63,7 +63,7 @@ _CCCL_HOST pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, 
 template <typename Pointer>
 _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std::ptrdiff_t n)
 {
-  void* void_ptr = reinterpret_pointer_cast<void*>(ptr);
+  void* void_ptr = raw_pointer_cast(ptr);
 
   cudaError_t status = cudaFreeAsync(void_ptr , nullptr);
 
@@ -109,7 +109,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 template <typename Pointer>
 _CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointer ptr, ::cuda::std::ptrdiff_t n)
 {
-  void* void_ptr = reinterpret_pointer_cast<void*>(ptr);
+  void* void_ptr = raw_pointer_cast(ptr);
 
   cudaError_t status = cudaFreeAsync(void_ptr, get_stream(system));
 
