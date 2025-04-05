@@ -67,7 +67,7 @@ typedef struct cccl_op_t
 typedef enum cccl_iterator_kind_t
 {
   CCCL_POINTER  = 0,
-  CCCL_ITERATOR = 1
+  CCCL_ITERATOR = 1,
 } cccl_iterator_kind_t;
 
 typedef struct cccl_value_t
@@ -86,5 +86,11 @@ typedef struct cccl_iterator_t
   cccl_type_info value_type;
   void* state;
 } cccl_iterator_t;
+
+typedef enum cccl_sort_order_t
+{
+  CCCL_ASCENDING  = 0,
+  CCCL_DESCENDING = 1
+} cccl_sort_order_t;
 
 CCCL_C_EXTERN_C_END

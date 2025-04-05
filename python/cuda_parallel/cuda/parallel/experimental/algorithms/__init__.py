@@ -4,6 +4,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from .merge_sort import merge_sort as merge_sort
+from .radix_sort import DoubleBuffer, SortOrder
+from .radix_sort import radix_sort as radix_sort
 from .reduce import reduce_into as reduce_into
 from .scan import exclusive_scan as exclusive_scan
 from .scan import inclusive_scan as inclusive_scan
@@ -17,4 +19,7 @@ __all__ = [
     "inclusive_scan",
     "segmented_reduce",
     "unique_by_key",
+    "radix_sort",
+    "DoubleBuffer",
+    "SortOrder",
 ]

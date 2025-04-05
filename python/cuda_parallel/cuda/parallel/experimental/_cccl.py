@@ -44,6 +44,12 @@ class IteratorKind(ctypes.c_int):
     ITERATOR = 1
 
 
+# MUST match `cccl_sort_order_t` in c/include/cccl/c/types.h
+class SortOrder(ctypes.c_int):
+    ASCENDING = 0
+    DESCENDING = 1
+
+
 # MUST match `cccl_type_info` in c/include/cccl/c/types.h
 class TypeInfo(ctypes.Structure):
     _fields_ = [
@@ -89,6 +95,26 @@ class DeviceMergeSortBuildResult(ctypes.Structure):
         ("block_sort_kernel", ctypes.c_void_p),
         ("partition_kernel", ctypes.c_void_p),
         ("merge_kernel", ctypes.c_void_p),
+    ]
+
+
+# MUST match `cccl_device_radix_sort_build_result_t` in c/include/cccl/c/radix_sort.h
+class DeviceRadixSortBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("single_tile_kernel", ctypes.c_void_p),
+        ("upsweep_kernel", ctypes.c_void_p),
+        ("alt_upsweep_kernel", ctypes.c_void_p),
+        ("scan_bins_kernel", ctypes.c_void_p),
+        ("downsweep_kernel", ctypes.c_void_p),
+        ("alt_downsweep_kernel", ctypes.c_void_p),
+        ("histogram_kernel", ctypes.c_void_p),
+        ("exclusive_sum_kernel", ctypes.c_void_p),
+        ("onesweep_kernel", ctypes.c_void_p),
+        ("order", SortOrder),
     ]
 
 
@@ -300,7 +326,18 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def to_cccl_op(op: Callable, sig) -> Op:
+def to_cccl_op(op: Callable | None, sig) -> Op:
+    if op is None:
+        return Op(
+            OpKind.STATELESS,
+            None,
+            None,
+            0,
+            0,
+            0,
+            None,
+        )
+
     ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
     name = op.__name__.encode("utf-8")
     return Op(
