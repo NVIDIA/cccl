@@ -212,19 +212,19 @@ struct __type_info_ptr_
 {
   _CCCL_HIDE_FROM_ABI constexpr __type_info_ptr_() noexcept = default;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ptr_(__type_info_impl (*__pfn_)() noexcept) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ptr_(__type_info_impl (*__pfn_)() noexcept) noexcept
       : __pfn_(__pfn_)
   {}
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_ operator*() const noexcept;
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_ operator*() const noexcept;
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
   operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_;
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
   operator!=(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return !(__a == __b);
@@ -239,49 +239,49 @@ struct __type_info
 {
   __type_info() = delete;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
       : __pfn_(__pfn)
   {}
 
   template <class _Tp>
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static constexpr __type_info_impl __get_ti_for() noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE static constexpr __type_info_impl __get_ti_for() noexcept
   {
     return __type_info_impl{_CUDA_VSTD::__pretty_nameof<_Tp>()};
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr char const* name() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr char const* name() const noexcept
   {
     return __pfn_().__name_.begin();
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __string_view __name_view() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __name_view() const noexcept
   {
     return __pfn_().__name_;
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool before(__type_info const& __other) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool before(__type_info const& __other) const noexcept
   {
     return __pfn_().__name_ < __other.__pfn_().__name_;
   }
 
   // Not yet implemented:
-  // [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr size_t hash_code() const noexcept
+  // [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr size_t hash_code() const noexcept
   // {
   //   return ;
   // }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ptr_ operator&() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ptr_ operator&() const noexcept
   {
     return __type_info_ptr_{__pfn_};
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
   operator==(__type_info const& __a, __type_info const& __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_ || __a.__pfn_().__name_ == __b.__pfn_().__name_;
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
   operator!=(__type_info const& __a, __type_info const& __b) noexcept
   {
     return !(__a == __b);
@@ -299,20 +299,21 @@ private:
 
 struct __type_info_ref_ : __type_info
 {
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_(__type_info_impl (*__pfn)() noexcept) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_(__type_info_impl (*__pfn)() noexcept) noexcept
       : __type_info(__pfn)
   {}
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_(__type_info const& __other) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_(__type_info const& __other) noexcept
       : __type_info(__other)
   {}
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
       : __type_info(__other)
   {}
 };
 
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_
+__type_info_ptr_::operator*() const noexcept
 {
   return __type_info_ref_(__pfn_);
 }
