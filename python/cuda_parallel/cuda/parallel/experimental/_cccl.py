@@ -11,9 +11,11 @@ from typing import Callable
 import numba
 import numpy as np
 from numba import cuda, types
+from numba.extending import as_numba_type
 
 from ._utils.protocols import get_data_pointer, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
+from .struct import gpu_struct_from_numpy_dtype
 from .typing import DeviceArrayLike, GpuStruct
 
 
@@ -145,6 +147,18 @@ class DeviceUniqueByKeyBuildResult(ctypes.Structure):
         ("sweep_kernel", ctypes.c_void_p),
         ("description_bytes_per_tile", ctypes.c_size_t),
         ("payload_bytes_per_tile", ctypes.c_size_t),
+    ]
+
+
+# MUST match `cccl_device_transform_build_result_t` in c/include/cccl/c/transform.h
+class DeviceTransformBuildResult(ctypes.Structure):
+    _fields_ = [
+        ("cc", ctypes.c_int),
+        ("cubin", ctypes.c_void_p),
+        ("cubin_size", ctypes.c_size_t),
+        ("library", ctypes.c_void_p),
+        ("transform_kernel", ctypes.c_void_p),
+        ("loaded_bytes_per_iteration", ctypes.c_int),
     ]
 
 
@@ -320,3 +334,12 @@ def set_cccl_iterator_state(cccl_it: Iterator, input_it):
         cccl_it.state = get_data_pointer(input_it)
     else:
         cccl_it.state = input_it.state
+
+
+def get_value_type(d_in: IteratorBase | DeviceArrayLike):
+    if isinstance(d_in, IteratorBase):
+        return d_in.value_type
+    dtype = get_dtype(d_in)
+    if dtype.type == np.void:
+        return as_numba_type(gpu_struct_from_numpy_dtype("anonymous", dtype))
+    return numba.from_dtype(dtype)

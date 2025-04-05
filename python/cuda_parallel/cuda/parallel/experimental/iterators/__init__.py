@@ -3,7 +3,7 @@ import numba
 from . import _iterators
 
 
-def CacheModifiedInputIterator(device_array, modifier, prefix=""):
+def CacheModifiedInputIterator(device_array, modifier):
     """Random Access Cache Modified Iterator that wraps a native device pointer.
 
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
@@ -32,7 +32,6 @@ def CacheModifiedInputIterator(device_array, modifier, prefix=""):
     return _iterators.CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
         numba.from_dtype(device_array.dtype),
-        prefix,
     )
 
 
