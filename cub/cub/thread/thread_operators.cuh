@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -47,25 +47,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh> // always_false
 #include <cub/util_type.cuh>
 
 #include <cuda/functional> // cuda::maximum, cuda::minimum
-#include <cuda/std/bit> // cuda::std::bit_cast
+#include <cuda/std/cstdint> // cuda::std::uint32_t
 #include <cuda/std/functional> // cuda::std::plus
-#include <cuda/std/type_traits> // cuda::std::common_type
-#include <cuda/std/utility> // cuda::std::forward
-
-#if _CCCL_HAS_NVFP16()
-#  include <cuda_fp16.h>
-#endif // _CCCL_HAS_NVFP16()
-
-#if _CCCL_HAS_NVBF16()
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _CCCL_HAS_NVBF16()
 
 CUB_NAMESPACE_BEGIN
 
@@ -86,7 +72,7 @@ struct InequalityWrapper
   template <typename T, typename U>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u)
   {
-    return !op(::cuda::std::forward<T>(t), ::cuda::std::forward<U>(u));
+    return !op(_CUDA_VSTD::forward<T>(t), _CUDA_VSTD::forward<U>(u));
   }
 };
 
@@ -205,7 +191,7 @@ struct basic_binary_op_t
 };
 
 template <typename T>
-struct basic_binary_op_t<::cuda::std::plus<T>>
+struct basic_binary_op_t<_CUDA_VSTD::plus<T>>
 {
   static constexpr bool value = true;
 };
@@ -374,342 +360,43 @@ struct ReduceByKeyOp
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
+//----------------------------------------------------------------------------------------------------------------------
+// Predefined operators
+
 namespace internal
 {
 
-template <typename T>
-struct SimdMin
-{
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
-};
+template <typename ReductionOp, typename T>
+inline constexpr bool is_cuda_std_min_max_v =
+  cub::detail::is_one_of_v<ReductionOp, //
+                           ::cuda::minimum<>,
+                           ::cuda::minimum<T>,
+                           ::cuda::maximum<>,
+                           ::cuda::maximum<T>>;
 
-template <>
-struct SimdMin<::cuda::std::int16_t>
-{
-  using simd_type = ::cuda::std::uint32_t;
+template <typename ReductionOp, typename T>
+inline constexpr bool is_cuda_std_plus_mul_v =
+  cub::detail::is_one_of_v<ReductionOp, //
+                           _CUDA_VSTD::plus<>,
+                           _CUDA_VSTD::plus<T>,
+                           _CUDA_VSTD::multiplies<>,
+                           _CUDA_VSTD::multiplies<T>>;
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
-  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
-  {
-    return __vmins2(a, b);
-  }
-};
+template <typename ReductionOp, typename T>
+inline constexpr bool is_cuda_std_bitwise_v =
+  cub::detail::is_one_of_v<ReductionOp,
+                           _CUDA_VSTD::bit_and<>,
+                           _CUDA_VSTD::bit_and<T>,
+                           _CUDA_VSTD::bit_or<>,
+                           _CUDA_VSTD::bit_or<T>,
+                           _CUDA_VSTD::bit_xor<>,
+                           _CUDA_VSTD::bit_xor<T>>;
 
-template <>
-struct SimdMin<::cuda::std::uint16_t>
-{
-  using simd_type = ::cuda::std::uint32_t;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
-  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
-  {
-    return __vminu2(a, b);
-  }
-};
-
-#  if _CCCL_HAS_NVFP16()
-
-template <>
-struct SimdMin<__half>
-{
-  using simd_type = __half2;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2half2_rn(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x)),
-                             ::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmin2(a, b);),
-                 (return __halves2half2(__float2half(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x))),
-                                        __float2half(::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVFP16()
-
-#  if _CCCL_HAS_NVBF16()
-
-// NOTE: __halves2bfloat162 is not always available on older CUDA Toolkits for __CUDA_ARCH__ < 800
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 halves2bfloat162(__nv_bfloat16 a, __nv_bfloat16 b)
-{
-  ::cuda::std::uint32_t tmp;
-  auto a_uint16 = ::cuda::std::bit_cast<::cuda::std::uint16_t>(a);
-  auto b_uint16 = ::cuda::std::bit_cast<::cuda::std::uint16_t>(b);
-  asm("{mov.b32 %0, {%1,%2};}\n" : "=r"(tmp) : "h"(a_uint16), "h"(b_uint16));
-  __nv_bfloat162 ret;
-  ::memcpy(&ret, &tmp, sizeof(ret));
-  return ret; // TODO: replace with ::cuda::std::bit_cast<__nv_bfloat162>(tmp);
-}
-
-template <>
-struct SimdMin<__nv_bfloat16>
-{
-  using simd_type = __nv_bfloat162;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2bfloat162_rn(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
-                                 ::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmin2(a, b);),
-                 (return cub::internal::halves2bfloat162(
-                           __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
-                           __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVBF16()
-
-//----------------------------------------------------------------------------------------------------------------------
-
-template <typename T>
-struct SimdMax
-{
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
-};
-
-template <>
-struct SimdMax<::cuda::std::int16_t>
-{
-  using simd_type = ::cuda::std::uint32_t;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
-  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
-  {
-    return __vmaxs2(a, b);
-  }
-};
-
-template <>
-struct SimdMax<::cuda::std::uint16_t>
-{
-  using simd_type = ::cuda::std::uint32_t;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
-  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
-  {
-    return __vmaxu2(a, b);
-  }
-};
-
-#  if _CCCL_HAS_NVFP16()
-
-template <>
-struct SimdMax<__half>
-{
-  using simd_type = __half2;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2half2_rn(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x)),
-                             ::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmax2(a, b);),
-                 (return __halves2half2(__float2half(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x))),
-                                        __float2half(::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVFP16()
-
-#  if _CCCL_HAS_NVBF16()
-
-template <>
-struct SimdMax<__nv_bfloat16>
-{
-  using simd_type = __nv_bfloat162;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2bfloat162_rn(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
-                                 ::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmax2(a, b);),
-                 (return cub::internal::halves2bfloat162(
-                           __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
-                           __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVBF16()
-
-//----------------------------------------------------------------------------------------------------------------------
-
-template <typename T>
-struct SimdSum
-{
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
-};
-
-#  if _CCCL_HAS_NVFP16()
-
-template <>
-struct SimdSum<__half>
-{
-  using simd_type = __half2;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2half2_rn(__half2float(a.x) + __half2float(b.x), __half2float(a.y) + __half2float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (return __hadd2(a, b);),
-                 (return __halves2half2(__float2half(__half2float(a.x) + __half2float(b.x)),
-                                        __float2half(__half2float(a.y) + __half2float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVFP16()
-
-#  if _CCCL_HAS_NVBF16()
-
-template <>
-struct SimdSum<__nv_bfloat16>
-{
-  using simd_type = __nv_bfloat162;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2bfloat162_rn(
-      __bfloat162float(a.x) + __bfloat162float(b.x), __bfloat162float(a.y) + __bfloat162float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(
-      NV_PROVIDES_SM_80,
-      (return __hadd2(a, b);),
-      (return cub::internal::halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) + __bfloat162float(b.x)),
-                                              __float2bfloat16(__bfloat162float(a.y) + __bfloat162float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVBF16()
-
-//----------------------------------------------------------------------------------------------------------------------
-
-template <typename T>
-struct SimdMul
-{
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
-};
-
-#  if _CCCL_HAS_NVFP16()
-
-template <>
-struct SimdMul<__half>
-{
-  using simd_type = __half2;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2half2_rn(__half2float(a.x) * __half2float(b.x), __half2float(a.y) * __half2float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (return __hmul2(a, b);),
-                 (return __halves2half2(__float2half(__half2float(a.x) * __half2float(b.x)),
-                                        __float2half(__half2float(a.y) * __half2float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVFP16()
-
-#  if _CCCL_HAS_NVBF16()
-
-template <>
-struct SimdMul<__nv_bfloat16>
-{
-  using simd_type = __nv_bfloat162;
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
-  {
-#    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
-    return __floats2bfloat162_rn(
-      __bfloat162float(a.x) * __bfloat162float(b.x), __bfloat162float(a.y) * __bfloat162float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmul2(a, b);),
-                 (return halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) * __bfloat162float(b.x)),
-                                          __float2bfloat16(__bfloat162float(a.y) * __bfloat162float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
-  }
-};
-
-#  endif // _CCCL_HAS_NVBF16()
-
-//----------------------------------------------------------------------------------------------------------------------
-
-template <typename ReduceOp, typename T>
-struct CubOperatorToSimdOperator
-{
-  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
-};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::minimum<>, T>
-{
-  using type      = SimdMin<T>;
-  using simd_type = typename type::simd_type;
-};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::minimum<T>, T> : CubOperatorToSimdOperator<::cuda::minimum<>, T>
-{};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::maximum<>, T>
-{
-  using type      = SimdMax<T>;
-  using simd_type = typename type::simd_type;
-};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::maximum<T>, T> : CubOperatorToSimdOperator<::cuda::maximum<>, T>
-{};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
-{
-  using type      = SimdSum<T>;
-  using simd_type = typename type::simd_type;
-};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::std::plus<T>, T> : CubOperatorToSimdOperator<::cuda::std::plus<>, T>
-{};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
-{
-  using type      = SimdMul<T>;
-  using simd_type = typename type::simd_type;
-};
-
-template <typename T>
-struct CubOperatorToSimdOperator<::cuda::std::multiplies<T>, T>
-    : CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
-{};
-
-template <typename ReduceOp, typename T>
-using cub_operator_to_simd_operator_t = typename CubOperatorToSimdOperator<ReduceOp, T>::type;
-
-template <typename ReduceOp, typename T>
-using simd_type_t = typename CubOperatorToSimdOperator<ReduceOp, T>::simd_type;
+template <typename ReductionOp, typename T>
+inline constexpr bool is_cuda_std_operator_v =
+  is_cuda_std_min_max_v<ReductionOp, T> || //
+  is_cuda_std_plus_mul_v<ReductionOp, T> || //
+  is_cuda_std_bitwise_v<ReductionOp, T>;
 
 } // namespace internal
 
