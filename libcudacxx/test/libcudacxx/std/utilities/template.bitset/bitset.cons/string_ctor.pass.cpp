@@ -27,7 +27,7 @@ int main(int, char**)
 #  include "test_macros.h"
 
 template <cuda::std::size_t N>
-TEST_CONSTEXPR_CXX14 void test_string_ctor()
+constexpr void test_string_ctor()
 {
 #  ifndef TEST_HAS_NO_EXCEPTIONS
   if (!TEST_IS_CONSTANT_EVALUATED)
@@ -157,7 +157,7 @@ struct Nonsense
   virtual ~Nonsense() {}
 };
 
-TEST_CONSTEXPR_CXX14 void test_for_non_eager_instantiation()
+constexpr void test_for_non_eager_instantiation()
 {
   // Ensure we don't accidentally instantiate `cuda::std::basic_string<Nonsense>`
   // since it may not be well formed and can cause an error in the
@@ -167,7 +167,7 @@ TEST_CONSTEXPR_CXX14 void test_for_non_eager_instantiation()
     !cuda::std::is_constructible<cuda::std::bitset<3>, Nonsense*, cuda::std::size_t, Nonsense&, Nonsense&>::value, "");
 }
 
-TEST_CONSTEXPR_CXX14 bool test()
+constexpr bool test()
 {
   test_string_ctor<0>();
   test_string_ctor<1>();

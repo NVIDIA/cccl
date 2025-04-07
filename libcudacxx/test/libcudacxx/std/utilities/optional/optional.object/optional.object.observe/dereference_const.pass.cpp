@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test()
   {
     const optional<X> opt{};
     unused(opt);
-    ASSERT_SAME_TYPE(decltype(*opt), X const&);
+    static_assert(cuda::std::is_same_v<decltype(*opt), X const&>);
     static_assert(noexcept(*opt), "");
     // static_assert(!noexcept(*opt));
     // FIXME: This assertion fails with GCC because it can see that
@@ -65,7 +65,7 @@ __host__ __device__ constexpr bool test()
 
     const optional<X&> optref;
     unused(optref);
-    ASSERT_SAME_TYPE(decltype(*optref), X&);
+    static_assert(cuda::std::is_same_v<decltype(*optref), X&>);
     static_assert(noexcept(*optref), "");
     static_assert(noexcept(*optref));
   }

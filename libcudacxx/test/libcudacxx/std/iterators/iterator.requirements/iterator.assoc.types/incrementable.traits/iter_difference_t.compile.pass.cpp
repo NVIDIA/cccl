@@ -19,10 +19,10 @@ inline constexpr bool has_no_iter_difference_t = !requires { typename cuda::std:
 
 #else
 template <class T, class = void>
-_CCCL_INLINE_VAR constexpr bool has_no_iter_difference_t = true;
+inline constexpr bool has_no_iter_difference_t = true;
 
 template <class T>
-_CCCL_INLINE_VAR constexpr bool has_no_iter_difference_t<T, cuda::std::void_t<cuda::std::iter_difference_t<T>>> = false;
+inline constexpr bool has_no_iter_difference_t<T, cuda::std::void_t<cuda::std::iter_difference_t<T>>> = false;
 #endif
 
 template <class T, class Expected>

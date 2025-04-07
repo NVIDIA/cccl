@@ -26,7 +26,7 @@ int main(int, char**)
   static_assert(cuda::bitfield_extract(T{0}, -1, 1));
   static_assert(cuda::bitfield_extract(T{0}, 0, -1));
   static_assert(cuda::bitfield_extract(T{0}, 0, 33));
-  static_assert(cuda::bitfield_extract(T{0}, 31, 1));
+  static_assert(cuda::bitfield_extract(T{0}, 32, 1));
   static_assert(cuda::bitfield_extract(T{0}, 20, 20));
   return 0;
 }

@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, int __cnt) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, int __cnt) noexcept
 {
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   if constexpr (is_same_v<_Tp, uint32_t>)
@@ -46,7 +46,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, int __cn
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, int __cnt) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, int __cnt) noexcept
 {
   constexpr auto __digits = numeric_limits<_Tp>::digits;
   if constexpr (is_same_v<_Tp, uint32_t>)
@@ -62,7 +62,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, int __cn
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotl(_Tp __t, int __cnt) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotl(_Tp __t, int __cnt) noexcept
 {
   if (__cnt < 0)
   {
@@ -74,7 +74,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotl(_Tp __t, int __cnt)
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotr(_Tp __t, int __cnt) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp rotr(_Tp __t, int __cnt) noexcept
 {
   if (__cnt < 0)
   {

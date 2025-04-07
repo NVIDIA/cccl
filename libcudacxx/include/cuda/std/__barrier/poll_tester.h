@@ -38,7 +38,7 @@ public:
       , __phase(_CUDA_VSTD::move(__phase_))
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
   {
     return __this->__try_wait(__phase);
   }
@@ -56,21 +56,21 @@ public:
       , __parity(__parity_)
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
   {
     return __this->__try_wait_parity(__parity);
   }
 };
 
 template <class _Barrier>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
 __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
 {
   return __b.__try_wait(_CUDA_VSTD::move(__phase));
 }
 
 template <class _Barrier>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __call_try_wait_parity(const _Barrier& __b, bool __parity)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool __call_try_wait_parity(const _Barrier& __b, bool __parity)
 {
   return __b.__try_wait_parity(__parity);
 }

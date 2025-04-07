@@ -39,10 +39,8 @@ template <typename F, typename SFINAE = void>
 struct proclaims_copyable_arguments : _CUDA_VSTD::false_type
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <typename F, typename... Args>
-_CCCL_INLINE_VAR constexpr bool proclaims_copyable_arguments_v = proclaims_copyable_arguments<F, Args...>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool proclaims_copyable_arguments_v = proclaims_copyable_arguments<F, Args...>::value;
 
 // Wrapper for a callable to mark it as permitting copied arguments
 template <typename F>
@@ -61,7 +59,7 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 //! implementation.
 //! @see proclaims_copyable_arguments
 template <typename F>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto proclaim_copyable_arguments(F&& f)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto proclaim_copyable_arguments(F&& f)
   -> __callable_permitting_copied_arguments<::cuda::std::decay_t<F>>
 {
   return {::cuda::std::forward<F>(f)};

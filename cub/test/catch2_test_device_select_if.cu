@@ -32,7 +32,9 @@
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 
 #include <thrust/distance.h>
+#include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/offset_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 #include <thrust/logical.h>
 #include <thrust/partition.h>
@@ -413,4 +415,30 @@ try
 catch (std::bad_alloc&)
 {
   // Exceeding memory is not a failure.
+}
+
+C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]")
+{
+  using type = int;
+
+  const int num_items = 10'000;
+  c2h::device_vector<type> in(num_items);
+  thrust::sequence(in.begin(), in.end());
+  c2h::device_vector<type> out(num_items);
+  using thrust::placeholders::_1;
+
+  // select twice, appending the second selection to the first one without bringing the first selection's count to the
+  // host
+  c2h::device_vector<int> num_selected_out(2);
+  select_if(in.begin(), out.begin(), num_selected_out.begin(), num_items, _1 < 1000); // [0;999]
+  auto output_end = thrust::offset_iterator{out.begin(), num_selected_out.begin()};
+  select_if(in.begin(), output_end, num_selected_out.begin() + 1, num_items, _1 >= 9000); // [9000;9999]
+
+  c2h::device_vector<type> expected(2000);
+  thrust::sequence(expected.begin(), expected.begin() + 1000);
+  thrust::sequence(expected.begin() + 1000, expected.end(), 9000);
+
+  out.resize(2000);
+  REQUIRE(num_selected_out == c2h::device_vector<int>{1000, 1000});
+  REQUIRE(out == expected);
 }

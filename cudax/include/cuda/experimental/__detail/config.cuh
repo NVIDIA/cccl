@@ -24,7 +24,7 @@
 // Debuggers do not step into functions marked with __attribute__((__artificial__)).
 // This is useful for small wrapper functions that just dispatch to other functions and
 // that are inlined into the caller.
-#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_CUDACC
+#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_HAS_CUDA_COMPILER()
 #  define _CUDAX_ARTIFICIAL __attribute__((__artificial__))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__artificial__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__artificial__) vvv
 #  define _CUDAX_ARTIFICIAL
@@ -46,12 +46,22 @@
 #define _CUDAX_TRIVIAL_HOST_API   _CUDAX_HOST_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _CCCL_NODEBUG
 #define _CUDAX_TRIVIAL_DEVICE_API _CUDAX_DEVICE_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _CCCL_NODEBUG
 
+// _CUDAX_DEFAULTED_API is used on `= default` functions to ensure they are hidden from the ABI.
+#define _CUDAX_DEFAULTED_API _CCCL_HIDE_FROM_ABI
+
 // GCC struggles with guaranteed copy elision of immovable types.
 #if _CCCL_COMPILER(GCC)
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&)
 #else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&) = delete
 #endif // !_CCCL_COMPILER(GCC)
+
+#if _CCCL_STD_VER <= 2017 || __cpp_consteval < 201811L
+#  define _CUDAX_NO_CONSTEVAL
+#  define _CUDAX_CONSTEVAL constexpr
+#else
+#  define _CUDAX_CONSTEVAL consteval
+#endif
 
 namespace cuda::experimental
 {

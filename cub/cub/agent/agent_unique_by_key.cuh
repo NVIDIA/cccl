@@ -277,7 +277,7 @@ struct AgentUniqueByKey
     OffsetT num_selections_prefix,
     OffsetT /*num_selections*/)
   {
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -289,9 +289,9 @@ struct AgentUniqueByKey
 
     __syncthreads();
 
-// Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
-// types
-#pragma unroll 1
+    // Preventing loop unrolling helps avoid perf degradation when switching from signed to unsigned 32-bit offset
+    // types
+    _CCCL_PRAGMA_NOUNROLL()
     for (int item = threadIdx.x; item < num_tile_selections; item += BLOCK_THREADS)
     {
       items_out[num_selections_prefix + item] = GetShared(tag)[item];
@@ -356,7 +356,8 @@ struct AgentUniqueByKey
     __syncthreads();
 
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity).FlagHeads(selection_flags, keys, inequality_op);
-#pragma unroll
+
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items
@@ -476,7 +477,7 @@ struct AgentUniqueByKey
     BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
       .FlagHeads(selection_flags, keys, inequality_op, tile_predecessor);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
       // Set selection_flags for out-of-bounds items

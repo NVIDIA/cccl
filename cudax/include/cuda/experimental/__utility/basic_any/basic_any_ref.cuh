@@ -71,7 +71,7 @@ struct __ireference : _Interface
 template <class _Interface>
 struct __basic_any_reference_conversion_base
 {
-  _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
+  [[nodiscard]] _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
   {
     return basic_any<__ireference<_Interface const>>(static_cast<basic_any<__ireference<_Interface>> const&>(*this));
   }
@@ -118,7 +118,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
 #if !defined(_CCCL_NO_CONCEPTS)
   //! \brief A non-const basic_any reference can be implicitly converted to a
   //! const basic_any reference.
-  _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
+  [[nodiscard]] _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
     requires(!__is_const_ref)
   {
     return basic_any<__ireference<_Interface const>>(*this);
@@ -127,14 +127,14 @@ struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
 
   //! \brief Returns a const reference to the type_info for the decayed type
   //! of the type-erased object.
-  _CCCL_NODISCARD _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return *__get_rtti()->__object_info_->__object_typeid_;
   }
 
   //! \brief Returns a const reference to the type_info for the decayed type
   //! of the type-erased object.
-  _CCCL_NODISCARD _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return *__get_rtti()->__interface_typeid_;
   }
@@ -145,13 +145,13 @@ struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
   //! The dynamic interface is the interface that was used to construct the
   //! object, which may be different from the current object's interface if
   //! there was a conversion.
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr auto has_value() noexcept -> bool
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API static constexpr auto has_value() noexcept -> bool
   {
     return true;
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr auto __in_situ() noexcept -> bool
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }

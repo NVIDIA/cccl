@@ -16,10 +16,6 @@
 //     iter_swap(const reverse_iterator& x,
 //               const reverse_iterator<Iterator2>& y) noexcept(see below);
 
-#ifdef __clang__
-#  pragma clang diagnostic ignored "-Wunevaluated-expression"
-#endif
-
 #include <cuda/std/cassert>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
@@ -27,6 +23,8 @@
 
 #include "test_iterators.h"
 #include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_CLANG("-Wunevaluated-expression")
 
 struct ThrowingCopyNoexceptDecrement
 {

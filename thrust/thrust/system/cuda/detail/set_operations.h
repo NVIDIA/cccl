@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>
@@ -54,8 +54,7 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -390,7 +389,7 @@ struct SetOpAgent
     {
       if (IS_FULL_TILE)
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
         {
           int idx      = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -408,7 +407,7 @@ struct SetOpAgent
       }
       else
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           int idx = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -423,7 +422,7 @@ struct SetOpAgent
     template <class T, class It>
     THRUST_DEVICE_FUNCTION void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
     {
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         int idx     = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -442,7 +441,8 @@ struct SetOpAgent
       int tile_output_count)
     {
       int local_scatter_idx = thread_output_prefix - tile_output_prefix;
-#  pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (active_mask & (1 << ITEM))
@@ -610,7 +610,7 @@ struct SetOpAgent
 
         // gather items from shared mem
         //
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           if (active_mask & (1 << ITEM))
@@ -807,7 +807,7 @@ struct serial_set_intersection
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pA = compare_op(aKey, bKey);
@@ -863,7 +863,7 @@ struct serial_set_symmetric_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -925,7 +925,7 @@ struct serial_set_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -987,7 +987,7 @@ struct serial_set_union
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;

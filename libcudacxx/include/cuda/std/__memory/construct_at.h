@@ -198,10 +198,9 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int>                 = 0,
           enable_if_t<_CCCL_TRAIT(is_trivially_destructible, _Tp), int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at([[maybe_unused]] _Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
-  (void) __loc;
 }
 
 template <class _Tp, enable_if_t<_CCCL_TRAIT(is_array, _Tp), int> = 0>

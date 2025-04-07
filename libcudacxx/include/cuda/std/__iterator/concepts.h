@@ -340,7 +340,7 @@ template <class _Sp, class _Ip>
 _CCCL_CONCEPT sentinel_for = _CCCL_FRAGMENT(__sentinel_for_, _Sp, _Ip);
 
 template <class, class>
-_CCCL_INLINE_VAR constexpr bool disable_sized_sentinel_for = false;
+inline constexpr bool disable_sized_sentinel_for = false;
 
 template <class _Sp, class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
@@ -592,16 +592,16 @@ template <class _In, class _Out>
 _CCCL_CONCEPT indirectly_copyable_storable = _CCCL_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
 
 template <class _Ip, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_iter_category = false;
+inline constexpr bool __has_iter_category = false;
 
 template <class _Ip>
-_CCCL_INLINE_VAR constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
+inline constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
 
 template <class _Ip, class = void>
-_CCCL_INLINE_VAR constexpr bool __has_iter_concept = false;
+inline constexpr bool __has_iter_concept = false;
 
 template <class _Ip>
-_CCCL_INLINE_VAR constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
+inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
 #endif // _CCCL_NO_CONCEPTS
 

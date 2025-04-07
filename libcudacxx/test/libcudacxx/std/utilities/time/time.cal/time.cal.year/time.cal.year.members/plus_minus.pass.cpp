@@ -40,8 +40,8 @@ int main(int, char**)
   static_assert(noexcept(+cuda::std::declval<year>()));
   static_assert(noexcept(-cuda::std::declval<year>()));
 
-  ASSERT_SAME_TYPE(year, decltype(+cuda::std::declval<year>()));
-  ASSERT_SAME_TYPE(year, decltype(-cuda::std::declval<year>()));
+  static_assert(cuda::std::is_same_v<year, decltype(+cuda::std::declval<year>())>);
+  static_assert(cuda::std::is_same_v<year, decltype(-cuda::std::declval<year>())>);
 
   static_assert(testConstexpr<year>(), "");
 

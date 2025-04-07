@@ -73,20 +73,20 @@ __host__ __device__ constexpr bool test()
     decltype(auto) b3 = static_cast<const OwningView&>(ov).begin();
     decltype(auto) b4 = static_cast<const OwningView&&>(ov).begin();
 
-    ASSERT_SAME_TYPE(decltype(b1), int*);
-    ASSERT_SAME_TYPE(decltype(b2), int*);
-    ASSERT_SAME_TYPE(decltype(b3), char*);
-    ASSERT_SAME_TYPE(decltype(b4), char*);
+    static_assert(cuda::std::is_same_v<decltype(b1), int*>);
+    static_assert(cuda::std::is_same_v<decltype(b2), int*>);
+    static_assert(cuda::std::is_same_v<decltype(b3), char*>);
+    static_assert(cuda::std::is_same_v<decltype(b4), char*>);
 
     decltype(auto) e1 = static_cast<OwningView&>(ov).end();
     decltype(auto) e2 = static_cast<OwningView&&>(ov).end();
     decltype(auto) e3 = static_cast<const OwningView&>(ov).end();
     decltype(auto) e4 = static_cast<const OwningView&&>(ov).end();
 
-    ASSERT_SAME_TYPE(decltype(e1), sentinel_wrapper<int*>);
-    ASSERT_SAME_TYPE(decltype(e2), sentinel_wrapper<int*>);
-    ASSERT_SAME_TYPE(decltype(e3), sentinel_wrapper<char*>);
-    ASSERT_SAME_TYPE(decltype(e4), sentinel_wrapper<char*>);
+    static_assert(cuda::std::is_same_v<decltype(e1), sentinel_wrapper<int*>>);
+    static_assert(cuda::std::is_same_v<decltype(e2), sentinel_wrapper<int*>>);
+    static_assert(cuda::std::is_same_v<decltype(e3), sentinel_wrapper<char*>>);
+    static_assert(cuda::std::is_same_v<decltype(e4), sentinel_wrapper<char*>>);
 
     assert(b1 == e1);
     assert(b2 == e2);
@@ -110,8 +110,8 @@ __host__ __device__ constexpr bool test()
     using OwningView = cuda::std::ranges::owning_view<DecayChecker>;
     OwningView ov;
     unused(ov);
-    ASSERT_SAME_TYPE(decltype(ov.begin()), int*);
-    ASSERT_SAME_TYPE(decltype(ov.end()), int*);
+    static_assert(cuda::std::is_same_v<decltype(ov.begin()), int*>);
+    static_assert(cuda::std::is_same_v<decltype(ov.end()), int*>);
   }
   {
     // Test an empty view.

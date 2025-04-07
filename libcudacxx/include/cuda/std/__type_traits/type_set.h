@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
 
@@ -37,10 +38,8 @@ template <class _Set, class... _Ty>
 struct __type_set_contains : __fold_and<_CCCL_TRAIT(is_base_of, type_identity<_Ty>, _Set)...>
 {};
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Set, class... _Ty>
-_CCCL_INLINE_VAR constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_v<type_identity<_Ty>, _Set>...>;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_v<type_identity<_Ty>, _Set>...>;
 
 namespace __set
 {
@@ -105,10 +104,8 @@ template <class _ExpectedSet, class... _Ts>
 using __type_set_eq =
   conjunction<bool_constant<sizeof...(_Ts) == _ExpectedSet::__size()>, __type_set_contains<_ExpectedSet, _Ts...>>;
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _ExpectedSet, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
 
 template <class... _Ts>
 using __type_set = __set::__tupl<_Ts...>;
@@ -123,10 +120,8 @@ template <class _Ty, class... _Ts>
 struct __is_included_in : __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>
 {};
 
-#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Ty, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
-#endif // _CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

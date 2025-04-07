@@ -24,12 +24,8 @@
 
 #include "test_macros.h"
 
-// MSVC warns about unsigned/signed comparisons and addition/subtraction
-// Silence these warnings, but not the ones within the header itself.
-#if defined(_MSC_VER)
-#  pragma warning(disable : 4307)
-#  pragma warning(disable : 4308)
-#endif
+TEST_DIAG_SUPPRESS_MSVC(4307) // potential overflow
+TEST_DIAG_SUPPRESS_MSVC(4308) // unsigned/signed comparisons
 
 template <typename M, typename Ms>
 __host__ __device__ constexpr bool testConstexpr()
@@ -63,8 +59,8 @@ int main(int, char**)
   static_assert(noexcept(cuda::std::declval<month>() - cuda::std::declval<months>()));
   static_assert(noexcept(cuda::std::declval<month>() - cuda::std::declval<month>()));
 
-  ASSERT_SAME_TYPE(month, decltype(cuda::std::declval<month>() - cuda::std::declval<months>()));
-  ASSERT_SAME_TYPE(months, decltype(cuda::std::declval<month>() - cuda::std::declval<month>()));
+  static_assert(cuda::std::is_same_v<month, decltype(cuda::std::declval<month>() - cuda::std::declval<months>())>);
+  static_assert(cuda::std::is_same_v<months, decltype(cuda::std::declval<month>() - cuda::std::declval<month>())>);
 
   static_assert(testConstexpr<month, months>(), "");
 

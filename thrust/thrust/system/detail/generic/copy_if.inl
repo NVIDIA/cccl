@@ -40,8 +40,6 @@
 
 #include <cuda/std/limits>
 
-#include <limits>
-
 THRUST_NAMESPACE_BEGIN
 namespace system
 {

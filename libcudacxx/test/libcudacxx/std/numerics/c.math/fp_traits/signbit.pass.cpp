@@ -50,7 +50,7 @@ __host__ __device__ constexpr void test_signbit(const T pos)
 template <class T>
 __host__ __device__ constexpr void test_type()
 {
-  ASSERT_SAME_TYPE(bool, decltype(cuda::std::signbit(T{})));
+  static_assert(cuda::std::is_same_v<bool, decltype(cuda::std::signbit(T{}))>);
 
   // __nv_fp8_e8m0 cannot represent 0
 #if _CCCL_HAS_NVFP8_E8M0()

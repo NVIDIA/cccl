@@ -13,6 +13,13 @@ from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
 from .._caching import CachableFunction
+from .._utils.protocols import (
+    compute_c_contiguous_strides_in_bytes,
+    get_data_pointer,
+    get_dtype,
+    get_shape,
+)
+from ..typing import DeviceArrayLike
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
@@ -288,6 +295,45 @@ class CountingIterator(IteratorBase):
         return state[0]
 
 
+class ReverseIteratorKind(IteratorKind):
+    pass
+
+
+def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
+    if not hasattr(it, "__cuda_array_interface__") and not isinstance(it, IteratorBase):
+        raise NotImplementedError(
+            f"Reverse iterator is not implemented for type {type(it)}"
+        )
+
+    if hasattr(it, "__cuda_array_interface__"):
+        last_element_ptr = _get_last_element_ptr(it)
+        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)))
+
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class ReverseIterator(IteratorBase):
+        iterator_kind_type = ReverseIteratorKind
+
+        def __init__(self, it):
+            self._it = it
+            super().__init__(it.cvalue, it.numba_type, it.value_type)
+
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type(self._it.kind)
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, -distance)
+
+        @staticmethod
+        def dereference(state):
+            return it_dereference(state)
+
+    return ReverseIterator(it)
+
+
 class TransformIteratorKind(IteratorKind):
     pass
 
@@ -372,3 +418,19 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
             return it_dereference(state)
 
     return AdvancedIterator(it, offset)
+
+
+def _get_last_element_ptr(device_array) -> int:
+    shape = get_shape(device_array)
+    dtype = get_dtype(device_array)
+
+    strides_in_bytes = device_array.__cuda_array_interface__["strides"]
+    if strides_in_bytes is None:
+        strides_in_bytes = compute_c_contiguous_strides_in_bytes(shape, dtype.itemsize)
+
+    offset_to_last_element = sum(
+        (dim_size - 1) * stride for dim_size, stride in zip(shape, strides_in_bytes)
+    )
+
+    ptr = get_data_pointer(device_array)
+    return ptr + offset_to_last_element

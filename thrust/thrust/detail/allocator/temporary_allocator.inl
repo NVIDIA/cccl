@@ -29,7 +29,7 @@
 #include <thrust/detail/temporary_buffer.h>
 #include <thrust/system/detail/bad_alloc.h>
 
-#include <cassert>
+#include <cuda/std/cassert>
 
 #include <nv/target>
 

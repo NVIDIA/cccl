@@ -36,15 +36,15 @@ __host__ __device__ constexpr void test_eq(const T tested, const T expected)
   }
   else
   {
-    assert(cuda::std::__cccl_fp_get_storage(tested) == cuda::std::__cccl_fp_get_storage(expected));
+    assert(cuda::std::__fp_get_storage(tested) == cuda::std::__fp_get_storage(expected));
   }
 }
 
 template <class T, cuda::std::enable_if_t<cuda::is_floating_point_v<T>, int> = 0>
 __host__ __device__ void constexpr test_fabs_abs(const T pos)
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::fabs(T{})));
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::abs(T{})));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::fabs(T{}))>);
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::abs(T{}))>);
 
   // 1. Test fabs on positive input
   test_eq(cuda::std::fabs(pos), pos);
@@ -91,7 +91,7 @@ __host__ __device__ void constexpr test_fabs_abs(const T pos)
 template <class T, cuda::std::enable_if_t<cuda::std::is_integral_v<T>, int> = 0>
 __host__ __device__ void constexpr test_fabs_abs(const T pos)
 {
-  ASSERT_SAME_TYPE(double, decltype(cuda::std::fabs(T{})));
+  static_assert(cuda::std::is_same_v<double, decltype(cuda::std::fabs(T{}))>);
 
   const double pos_ref = cuda::std::fabs(static_cast<double>(pos));
 

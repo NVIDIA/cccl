@@ -15,10 +15,10 @@
 
 #include "test_macros.h"
 
-STATIC_TEST_GLOBAL_VAR constexpr int gi   = 5;
-STATIC_TEST_GLOBAL_VAR constexpr float gf = 8.f;
+TEST_GLOBAL_VARIABLE constexpr int gi   = 5;
+TEST_GLOBAL_VARIABLE constexpr float gf = 8.f;
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   assert(cuda::std::launder(&gi) == &gi);
   assert(cuda::std::launder(&gf) == &gf);

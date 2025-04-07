@@ -89,7 +89,7 @@ struct hierarchy_query_result : public dimensions<T, Extents...>
 namespace detail
 {
 template <typename OpType>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t merge_extents(size_t e1, size_t e2)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr size_t merge_extents(size_t e1, size_t e2)
 {
   if (e1 == ::cuda::std::dynamic_extent || e2 == ::cuda::std::dynamic_extent)
   {
@@ -103,7 +103,7 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_t merge_extents(size_t e1, size
 }
 
 template <typename DstType, typename OpType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 dims_op(const OpType& op, const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
   // For now target only 3 dim extents
@@ -117,26 +117,26 @@ dims_op(const OpType& op, const dimensions<T1, Extents1...>& h1, const dimension
 }
 
 template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 dims_product(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
   return dims_op<DstType>(::cuda::std::multiplies(), h1, h2);
 }
 
 template <typename DstType, typename T1, size_t... Extents1, typename T2, size_t... Extents2>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto
 dims_sum(const dimensions<T1, Extents1...>& h1, const dimensions<T2, Extents2...>& h2) noexcept
 {
   return dims_op<DstType>(::cuda::std::plus(), h1, h2);
 }
 
 template <typename T, size_t... Extents>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto convert_to_query_result(const dimensions<T, Extents...>& result)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto convert_to_query_result(const dimensions<T, Extents...>& result)
 {
   return hierarchy_query_result<T, Extents...>(result);
 }
 
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto dim3_to_dims(const dim3& dims)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto dim3_to_dims(const dim3& dims)
 {
   return dimensions<dimensions_index_type,
                     ::cuda::std::dynamic_extent,
@@ -145,7 +145,7 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto dim3_to_dims(const dim3& dims)
 }
 
 template <typename TyTrunc, typename Index, typename Dims>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto index_to_linear(const Index& index, const Dims& dims)
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr auto index_to_linear(const Index& index, const Dims& dims)
 {
   static_assert(Dims::rank() == 3);
 

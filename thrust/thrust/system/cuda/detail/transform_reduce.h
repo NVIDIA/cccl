@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_reduce.cuh>
@@ -55,8 +55,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
-#  include <iterator>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

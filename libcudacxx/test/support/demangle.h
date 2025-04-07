@@ -16,7 +16,7 @@
 
 #if !defined(TEST_HAS_NO_DEMANGLE)
 #  if defined(__GNUC__) || defined(__clang__)
-#    if __has_include("cxxabi.h") && !defined(TEST_COMPILER_MSVC)
+#    if _CCCL_HAS_INCLUDE("cxxabi.h") && !TEST_COMPILER(MSVC)
 #      include "cxxabi.h"
 #    else
 #      define TEST_HAS_NO_DEMANGLE

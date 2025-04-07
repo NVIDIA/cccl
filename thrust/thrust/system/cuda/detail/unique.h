@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -53,7 +53,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -224,7 +224,7 @@ struct UniqueAgent
       Size num_selections_prefix,
       Size /*num_selections*/)
     {
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         int local_scatter_offset = selection_indices[ITEM] - num_selections_prefix;
@@ -281,7 +281,7 @@ struct UniqueAgent
           .FlagHeads(selection_flags, items_loc, predicate, tile_predecessor);
       }
 
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set selection_flags for out-of-bounds items

@@ -47,7 +47,7 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ void runtime_test()
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::rotl(T(0), 0)));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::rotl(T(0), 0))>);
   static_assert(noexcept(cuda::std::rotl(T(0), 0)));
   const T val = cuda::std::numeric_limits<T>::max() - 1;
 

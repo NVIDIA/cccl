@@ -216,7 +216,7 @@ struct BlockReduceRaking
         int valid_raking_threads = (IS_FULL_TILE) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
         // sync before re-using shmem (warp_storage/raking_grid are aliased)
-        static_assert(RAKING_THREADS <= CUB_PTX_WARP_THREADS, "RAKING_THREADS must be <= warp size.");
+        static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");
         unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
         __syncwarp(mask);
 

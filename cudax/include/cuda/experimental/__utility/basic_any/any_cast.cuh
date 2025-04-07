@@ -40,13 +40,13 @@ namespace cuda::experimental
 //! __valid_any_cast
 //!
 template <class _Interface, class _Tp>
-_CCCL_INLINE_VAR constexpr bool __valid_any_cast = true;
+inline constexpr bool __valid_any_cast = true;
 
 template <class _Interface, class _Tp>
-_CCCL_INLINE_VAR constexpr bool __valid_any_cast<_Interface*, _Tp> = false;
+inline constexpr bool __valid_any_cast<_Interface*, _Tp> = false;
 
 template <class _Interface, class _Tp>
-_CCCL_INLINE_VAR constexpr bool __valid_any_cast<_Interface*, _Tp*> =
+inline constexpr bool __valid_any_cast<_Interface*, _Tp*> =
   !_CUDA_VSTD::is_const_v<_Interface> || _CUDA_VSTD::is_const_v<_Tp>;
 
 //!
@@ -54,7 +54,7 @@ _CCCL_INLINE_VAR constexpr bool __valid_any_cast<_Interface*, _Tp*> =
 //!
 _CCCL_TEMPLATE(class _Tp, class _Interface)
 _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-_CCCL_NODISCARD _CUDAX_HOST_API auto any_cast(basic_any<_Interface>* __self) noexcept -> _Tp*
+[[nodiscard]] _CUDAX_HOST_API auto any_cast(basic_any<_Interface>* __self) noexcept -> _Tp*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
@@ -66,7 +66,7 @@ _CCCL_NODISCARD _CUDAX_HOST_API auto any_cast(basic_any<_Interface>* __self) noe
 
 _CCCL_TEMPLATE(class _Tp, class _Interface)
 _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-_CCCL_NODISCARD _CUDAX_HOST_API auto any_cast(basic_any<_Interface> const* __self) noexcept -> _Tp const*
+[[nodiscard]] _CUDAX_HOST_API auto any_cast(basic_any<_Interface> const* __self) noexcept -> _Tp const*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))

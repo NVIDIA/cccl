@@ -49,6 +49,7 @@
 
 #include <thrust/type_traits/integer_sequence.h>
 
+#include <cuda/bit>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>
@@ -119,7 +120,7 @@ struct BFEDigitExtractor : BaseDigitExtractor<KeyT>
 
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t Digit(UnsignedBits key) const
   {
-    return BFE(this->ProcessFloatMinusZero(key), bit_start, num_bits);
+    return ::cuda::bitfield_extract(this->ProcessFloatMinusZero(key), bit_start, num_bits);
   }
 };
 
@@ -177,8 +178,7 @@ template <class F, class... Ts, ::cuda::std::size_t... Is>
 _CCCL_HOST_DEVICE void
 for_each_member_impl_helper(F f, const ::cuda::std::tuple<Ts&...>& tpl, THRUST_NS_QUALIFIER::index_sequence<Is...>)
 {
-  auto sink = {(f(::cuda::std::get<Is>(tpl)), 0)...};
-  (void) sink;
+  [[maybe_unused]] auto sink = {(f(::cuda::std::get<Is>(tpl)), 0)...};
 }
 
 template <class F, class... Ts>

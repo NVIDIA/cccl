@@ -116,7 +116,7 @@ vector_base<T, Alloc>::vector_base(vector_base&& v)
     : m_storage(copy_allocator_t(), v.m_storage)
     , m_size(0)
 {
-  *this = std::move(v);
+  *this = ::cuda::std::move(v);
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
@@ -139,8 +139,8 @@ template <typename T, typename Alloc>
 vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(vector_base&& v)
 {
   m_storage.destroy(begin(), end());
-  m_storage = std::move(v.m_storage);
-  m_size    = std::move(v.m_size);
+  m_storage = ::cuda::std::move(v.m_storage);
+  m_size    = ::cuda::std::move(v.m_size);
 
   v.m_storage = contiguous_storage<T, Alloc>(copy_allocator_t(), m_storage);
   v.m_size    = 0;
@@ -185,7 +185,7 @@ vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(const std::vector<OtherT
 } // end vector_base::operator=()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(std::initializer_list<T> il)
+vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il)
     : m_storage()
     , m_size(0)
 {
@@ -193,7 +193,7 @@ vector_base<T, Alloc>::vector_base(std::initializer_list<T> il)
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>::vector_base(std::initializer_list<T> il, const Alloc& alloc)
+vector_base<T, Alloc>::vector_base(::cuda::std::initializer_list<T> il, const Alloc& alloc)
     : m_storage(alloc)
     , m_size(0)
 {
@@ -201,7 +201,7 @@ vector_base<T, Alloc>::vector_base(std::initializer_list<T> il, const Alloc& all
 } // end vector_base::vector_base()
 
 template <typename T, typename Alloc>
-vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(std::initializer_list<T> il)
+vector_base<T, Alloc>& vector_base<T, Alloc>::operator=(::cuda::std::initializer_list<T> il)
 {
   assign(il.begin(), il.end());
 

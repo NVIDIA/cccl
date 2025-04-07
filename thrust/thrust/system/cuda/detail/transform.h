@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_transform.cuh>
@@ -49,8 +49,7 @@
 #  include <thrust/zip_function.h>
 
 #  include <cuda/__functional/address_stability.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 

@@ -18,12 +18,12 @@
 #include "cuda/std/__type_traits/underlying_type.h"
 #include "test_macros.h"
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
 #  include <cstdint>
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 template <class T, class U>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   constexpr auto maxv = cuda::std::numeric_limits<T>::max();
   using CommonType    = cuda::std::common_type_t<T, U>;
@@ -59,7 +59,7 @@ struct relaxed_underlying_type<T, cuda::std::void_t<cuda::std::underlying_type_t
 };
 
 template <class T1, class U1>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_enum()
+__host__ __device__ constexpr void test_enum()
 {
   using T          = typename relaxed_underlying_type<T1>::type;
   using U          = typename relaxed_underlying_type<U1>::type;
@@ -93,7 +93,7 @@ enum class Enum2 : long
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+__host__ __device__ constexpr void test()
 {
   // Builtin integer types:
   test<T, char>();
@@ -117,7 +117,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test_enum<Enum1, T>();
   test_enum<Enum2, T>();
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   // cstdint types:
   test<T, std::size_t>();
   test<T, std::ptrdiff_t>();
@@ -133,7 +133,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   test<T, std::uint16_t>();
   test<T, std::uint32_t>();
   test<T, std::uint64_t>();
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 #if _CCCL_HAS_INT128()
   test<T, __int128_t>();
@@ -141,7 +141,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 #endif // _CCCL_HAS_INT128()
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   // Builtin integer types:
   test<char>();
@@ -160,7 +160,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test<long long>();
   test<unsigned long long>();
 
-#if !defined(TEST_COMPILER_NVRTC)
+#if !TEST_COMPILER(NVRTC)
   // cstdint types:
   test<std::size_t>();
   test<std::ptrdiff_t>();
@@ -176,7 +176,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test<std::uint16_t>();
   test<std::uint32_t>();
   test<std::uint64_t>();
-#endif // !TEST_COMPILER_NVRTC
+#endif // !TEST_COMPILER(NVRTC)
 
 #if _CCCL_HAS_INT128()
   test<__int128_t>();

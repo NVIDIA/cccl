@@ -84,6 +84,30 @@ def CountingIterator(offset):
     return _iterators.CountingIterator(offset)
 
 
+def ReverseIterator(sequence):
+    """Returns an Iterator over an array in reverse.
+
+    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
+
+    Example:
+        The code snippet below demonstrates the usage of a ``ReverseIterator``:
+
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin reverse-iterator
+            :end-before: example-end reverse-iterator
+
+    Args:
+        sequence: The iterator or CUDA device array to be reversed
+
+    Returns:
+        A ``ReverseIterator`` object initialized with ``sequence``
+
+    """
+    return _iterators.make_reverse_iterator(sequence)
+
+
 def TransformIterator(it, op):
     """Returns an Iterator representing a transformed sequence of values.
 

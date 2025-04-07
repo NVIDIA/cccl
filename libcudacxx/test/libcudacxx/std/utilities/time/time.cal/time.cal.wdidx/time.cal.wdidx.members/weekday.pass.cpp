@@ -24,7 +24,8 @@ int main(int, char**)
   using weekday_indexed = cuda::std::chrono::weekday_indexed;
 
   static_assert(noexcept(cuda::std::declval<const weekday_indexed>().weekday()));
-  ASSERT_SAME_TYPE(cuda::std::chrono::weekday, decltype(cuda::std::declval<const weekday_indexed>().weekday()));
+  static_assert(
+    cuda::std::is_same_v<cuda::std::chrono::weekday, decltype(cuda::std::declval<const weekday_indexed>().weekday())>);
 
   static_assert(weekday_indexed{}.weekday() == weekday{}, "");
   static_assert(weekday_indexed{cuda::std::chrono::Tuesday, 0}.weekday() == cuda::std::chrono::Tuesday, "");
