@@ -92,7 +92,7 @@ def radix_sort_device(
 
 def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tuple:
     if begin_bit is not None and end_bit is not None:
-        num_bits = end_bit - begin_bit + 1
+        num_bits = end_bit - begin_bit
         mask = np.array(((1 << (num_bits)) - 1) << begin_bit, dtype=h_in_keys.dtype)
 
         h_in_keys_copy = (h_in_keys & mask) >> begin_bit
@@ -228,7 +228,7 @@ def test_radix_sort_keys_bit_window(dtype, num_items, order):
             continue
 
         begin_bit = 0
-        end_bit = 8
+        end_bit = 00
 
         print("in here")
         print(f"{begin_bit=}")
