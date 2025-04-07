@@ -336,7 +336,12 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
 
         def __init__(self, it):
             self._it = it
-            super().__init__(it.cvalue, it.numba_type, it.value_type)
+            super().__init__(
+                cvalue=it.cvalue,
+                numba_type=it.numba_type,
+                state_type=it.state_type,
+                value_type=it.value_type,
+            )
 
         @property
         def kind(self):
