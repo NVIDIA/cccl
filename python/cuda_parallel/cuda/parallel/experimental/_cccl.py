@@ -105,6 +105,8 @@ class DeviceRadixSortBuildResult(ctypes.Structure):
         ("cubin", ctypes.c_void_p),
         ("cubin_size", ctypes.c_size_t),
         ("library", ctypes.c_void_p),
+        ("key_type", TypeInfo),
+        ("value_type", TypeInfo),
         ("single_tile_kernel", ctypes.c_void_p),
         ("upsweep_kernel", ctypes.c_void_p),
         ("alt_upsweep_kernel", ctypes.c_void_p),
