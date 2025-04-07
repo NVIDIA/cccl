@@ -26,14 +26,7 @@ DTYPE_LIST = [
 
 PROBLEM_SIZES = [2, 12, 24]
 
-SORT_ORDERS = [algorithms.SortOrder.ASCENDING, algorithms.SortOrder.DESCENDING]
-
-DTYPE_SIZE_ORDER = [
-    (dt, 2**log_size, order)
-    for dt in DTYPE_LIST
-    for log_size in PROBLEM_SIZES
-    for order in SORT_ORDERS
-]
+DTYPE_SIZE = [(dt, 2**log_size) for dt in DTYPE_LIST for log_size in PROBLEM_SIZES]
 
 
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
@@ -43,7 +36,7 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
             max_value = np.iinfo(dtype).max
         return rng.integers(max_value, size=size, dtype=dtype)
     elif np.isdtype(dtype, "real floating"):
-        return rng.random(size=size, dtype=dtype)
+        return np.random.uniform(low=-10.0, high=10.0, size=size).astype(dtype)
     else:
         raise ValueError(f"Unsupported dtype {dtype}")
 
@@ -90,12 +83,49 @@ def radix_sort_device(
     )
 
 
+def get_floating_point_keys(array):
+    """
+    This function computes the keys for floating point types.
+    From the cub docs, this is the required behavior:
+
+    For positive floating point values, the sign bit is inverted.
+    For negative floating point values, the full key is inverted.
+    """
+    if array.dtype == np.float32:
+        uint_type = np.uint32
+        sign_mask = np.uint32(0x80000000)
+    elif array.dtype == np.float64:
+        uint_type = np.uint64
+        sign_mask = np.uint64(0x8000000000000000)
+
+    # Get the binary representation as unsigned integers
+    binary = array.copy().view(uint_type)
+
+    # Create masks for positive and negative numbers
+    is_positive = array >= 0
+    is_negative = ~is_positive
+
+    # For positive numbers: flip the sign bit (leftmost bit)
+    binary[is_positive] ^= sign_mask
+
+    # For negative numbers: invert all bits
+    binary[is_negative] = ~binary[is_negative]
+
+    return binary
+
+
 def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tuple:
     if begin_bit is not None and end_bit is not None:
         num_bits = end_bit - begin_bit
-        mask = np.array(((1 << (num_bits)) - 1) << begin_bit, dtype=h_in_keys.dtype)
+        mask = np.array(((1 << (num_bits)) - 1) << begin_bit, dtype=np.uint64)
 
-        h_in_keys_copy = (h_in_keys & mask) >> begin_bit
+        if np.issubdtype(h_in_keys.dtype, np.floating):
+            h_in_keys_copy = get_floating_point_keys(h_in_keys)
+        else:
+            h_in_keys_copy = h_in_keys
+
+        h_in_keys_copy = h_in_keys_copy.astype(np.uint64)
+        h_in_keys_copy = (h_in_keys_copy & mask) >> begin_bit
     else:
         h_in_keys_copy = h_in_keys
 
@@ -114,10 +144,11 @@ def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tu
 
 
 @pytest.mark.parametrize(
-    "dtype, num_items, order",
-    DTYPE_SIZE_ORDER,
+    "dtype, num_items",
+    DTYPE_SIZE,
 )
-def test_radix_sort_keys(dtype, num_items, order):
+def test_radix_sort_keys(dtype, num_items):
+    order = algorithms.SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
@@ -134,10 +165,11 @@ def test_radix_sort_keys(dtype, num_items, order):
 
 
 @pytest.mark.parametrize(
-    "dtype, num_items, order",
-    DTYPE_SIZE_ORDER,
+    "dtype, num_items",
+    DTYPE_SIZE,
 )
-def test_radix_sort_pairs(dtype, num_items, order):
+def test_radix_sort_pairs(dtype, num_items):
+    order = algorithms.SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -162,10 +194,11 @@ def test_radix_sort_pairs(dtype, num_items, order):
 
 
 @pytest.mark.parametrize(
-    "dtype, num_items, order",
-    DTYPE_SIZE_ORDER,
+    "dtype, num_items",
+    DTYPE_SIZE,
 )
-def test_radix_sort_keys_double_buffer(dtype, num_items, order):
+def test_radix_sort_keys_double_buffer(dtype, num_items):
+    order = algorithms.SortOrder.DESCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_out_keys = np.empty(num_items, dtype=dtype)
 
@@ -184,10 +217,11 @@ def test_radix_sort_keys_double_buffer(dtype, num_items, order):
 
 
 @pytest.mark.parametrize(
-    "dtype, num_items, order",
-    DTYPE_SIZE_ORDER,
+    "dtype, num_items",
+    DTYPE_SIZE,
 )
-def test_radix_sort_pairs_double_buffer(dtype, num_items, order):
+def test_radix_sort_pairs_double_buffer(dtype, num_items):
+    order = algorithms.SortOrder.ASCENDING
     h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
@@ -214,44 +248,104 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items, order):
     np.testing.assert_array_equal(h_out_values, h_in_values)
 
 
+# These tests take longer to execute so we reduce the number of test cases
+DTYPE_SIZE_BIT_WINDOW = [
+    (dt, 2**log_size)
+    for dt in [np.uint8, np.int16, np.uint32, np.int64, np.float64]
+    for log_size in [2, 24]
+]
+
+
 @pytest.mark.parametrize(
-    "dtype, num_items, order",
-    DTYPE_SIZE_ORDER,
+    "dtype, num_items",
+    DTYPE_SIZE_BIT_WINDOW,
 )
-def test_radix_sort_keys_bit_window(dtype, num_items, order):
+def test_radix_sort_pairs_bit_window(dtype, num_items):
+    order = algorithms.SortOrder.ASCENDING
     num_bits = dtype().itemsize
-    begin_bits = [0, num_bits / 3, 3 * num_bits / 4, num_bits]
-    end_bits = [0, num_bits / 3, 3 * num_bits / 4, num_bits]
+    begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
+    end_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
 
     for begin_bit, end_bit in itertools.product(begin_bits, end_bits):
         if end_bit < begin_bit:
             continue
 
-        begin_bit = 0
-        end_bit = 00
-
-        print("in here")
-        print(f"{begin_bit=}")
-        print(f"{end_bit=}")
-
-        # h_in_keys = random_array(num_items, dtype)
-        h_in_keys = np.array([147, 152, 95, 215], dtype=dtype)
+        h_in_keys = random_array(num_items, dtype)
+        h_in_values = random_array(num_items, np.float32)
         h_out_keys = np.empty(num_items, dtype=dtype)
+        h_out_values = np.empty(num_items, dtype=np.float32)
 
         d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_in_values = numba.cuda.to_device(h_in_values)
         d_out_keys = numba.cuda.to_device(h_out_keys)
+        d_out_values = numba.cuda.to_device(h_out_values)
 
-        # keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
-
-        # radix_sort_device(keys_double_buffer, None,
-        #                   None, None, order, num_items, begin_bit, end_bit)
         radix_sort_device(
-            d_in_keys, None, d_out_keys, None, order, num_items, begin_bit, end_bit
+            d_in_keys,
+            d_in_values,
+            d_out_keys,
+            d_out_values,
+            order,
+            num_items,
+            begin_bit,
+            end_bit,
         )
 
-        # h_out_keys = keys_double_buffer.current().copy_to_host()
         h_out_keys = d_out_keys.copy_to_host()
+        h_out_values = d_out_values.copy_to_host()
 
-        h_in_keys, _ = host_sort(h_in_keys, None, order, begin_bit, end_bit)
+        h_in_keys, h_in_values = host_sort(
+            h_in_keys, h_in_values, order, begin_bit, end_bit
+        )
 
         np.testing.assert_array_equal(h_out_keys, h_in_keys)
+        np.testing.assert_array_equal(h_out_values, h_in_values)
+
+
+@pytest.mark.parametrize(
+    "dtype, num_items",
+    DTYPE_SIZE_BIT_WINDOW,
+)
+def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
+    order = algorithms.SortOrder.DESCENDING
+    num_bits = dtype().itemsize
+    begin_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
+    end_bits = [0, num_bits // 3, 3 * num_bits // 4, num_bits]
+
+    for begin_bit, end_bit in itertools.product(begin_bits, end_bits):
+        if end_bit < begin_bit:
+            continue
+
+        h_in_keys = random_array(num_items, dtype)
+        h_in_values = random_array(num_items, np.float32)
+        h_out_keys = np.empty(num_items, dtype=dtype)
+        h_out_values = np.empty(num_items, dtype=np.float32)
+
+        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_in_values = numba.cuda.to_device(h_in_values)
+        d_out_keys = numba.cuda.to_device(h_out_keys)
+        d_out_values = numba.cuda.to_device(h_out_values)
+
+        keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
+        values_double_buffer = algorithms.DoubleBuffer(d_in_values, d_out_values)
+
+        radix_sort_device(
+            keys_double_buffer,
+            values_double_buffer,
+            None,
+            None,
+            order,
+            num_items,
+            begin_bit,
+            end_bit,
+        )
+
+        h_out_keys = keys_double_buffer.current().copy_to_host()
+        h_out_values = values_double_buffer.current().copy_to_host()
+
+        h_in_keys, h_in_values = host_sort(
+            h_in_keys, h_in_values, order, begin_bit, end_bit
+        )
+
+        np.testing.assert_array_equal(h_out_keys, h_in_keys)
+        np.testing.assert_array_equal(h_out_values, h_in_values)
