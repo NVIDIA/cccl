@@ -244,3 +244,53 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
     check_result_helper.check_all_results_correct();
   }
 }
+
+C2H_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]")
+{
+  using offset_t        = ::cuda::std::int64_t;
+  using segment_index_t = ::cuda::std::int64_t;
+  using segment_size_t  = int; // fixed size segmented reduce supports only `int` as segment size
+
+  CAPTURE(c2h::type_name<offset_t>());
+
+  const auto num_segments = static_cast<segment_index_t>(::cuda::std::numeric_limits<std::int32_t>::max()) + 1;
+  constexpr segment_size_t segment_size = 257; // smallest large segment size which will use block reduction
+  const ::cuda::std::int64_t num_items  = num_segments * segment_size;
+
+  // // Input data
+  const auto segment_index_it = thrust::make_counting_iterator(segment_index_t{});
+
+  // Segment offsets
+  segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{0, num_segments, segment_size, num_items};
+  auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
+
+  CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<segment_index_t>(), num_segments, segment_size, num_items);
+
+  SECTION("segmented reduce")
+  {
+    using sum_t = ::cuda::std::int64_t;
+
+    // Use a custom operator to increase test coverage
+    using op_t = custom_sum_op;
+
+    // Initial value of reduction
+    const auto init_val = sum_t{0};
+
+    // Binary reduction operator
+    const auto reduction_op = op_t{};
+
+    // Prepare helper to check results
+    auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
+    auto offset_pair_it              = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
+    auto expected_result_it          = thrust::make_transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
+    auto check_result_helper         = detail::large_problem_test_helper(num_segments);
+    auto check_result_it             = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+    // Run test
+    const auto input_it = thrust::make_counting_iterator(sum_t{});
+    device_segmented_reduce(input_it, check_result_it, num_segments, segment_size, reduction_op, init_val);
+
+    // Verify all results were written as expected
+    check_result_helper.check_all_results_correct();
+  }
+}
