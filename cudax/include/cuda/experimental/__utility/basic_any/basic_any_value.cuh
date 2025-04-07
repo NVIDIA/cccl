@@ -274,13 +274,13 @@ public:
 #endif // _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
 
   //! \brief Implicitly convert to a `basic_any` non-const reference type:
-  _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface>>() & noexcept
+  [[nodiscard]] _CUDAX_HOST_API operator basic_any<__ireference<_Interface>>() & noexcept
   {
     return basic_any<__ireference<_Interface>>(*this);
   }
 
   //! \brief Implicitly convert to a `basic_any` const reference type:
-  _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const& noexcept
+  [[nodiscard]] _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const& noexcept
   {
     return basic_any<__ireference<_Interface const>>(*this);
   }
@@ -336,7 +336,7 @@ public:
   }
 
   //! \brief Tests whether the `basic_any` object contains a value.
-  _CCCL_NODISCARD _CUDAX_HOST_API auto has_value() const noexcept -> bool
+  [[nodiscard]] _CUDAX_HOST_API auto has_value() const noexcept -> bool
   {
     return __get_vptr() != nullptr;
   }
@@ -356,7 +356,7 @@ public:
 
   //! \brief Returns a reference to a type_info object representing the type of
   //! the contained object.
-  _CCCL_NODISCARD _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
     {
@@ -373,7 +373,7 @@ public:
   //! The dynamic interface is the interface that was used to construct the
   //! object, which may be different from the current object's interface if
   //! there was a conversion.
-  _CCCL_NODISCARD _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
+  [[nodiscard]] _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
     {
@@ -385,7 +385,7 @@ public:
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __in_situ() const noexcept -> bool
+  [[nodiscard]] _CUDAX_HOST_API auto __in_situ() const noexcept -> bool
   {
     return __vptr_.__flag();
   }
@@ -488,12 +488,12 @@ private:
     return *this;
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_vptr() const noexcept -> __vptr_for<_Interface>
+  [[nodiscard]] _CUDAX_HOST_API auto __get_vptr() const noexcept -> __vptr_for<_Interface>
   {
     return __vptr_.__get();
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_optr() noexcept -> void*
+  [[nodiscard]] _CUDAX_HOST_API auto __get_optr() noexcept -> void*
   {
     void* __pv = __buffer_;
     return __in_situ() ? __pv : *static_cast<void**>(__pv);
@@ -501,14 +501,14 @@ private:
 
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code (srsly where, msvc?)
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_optr() const noexcept -> void const*
+  [[nodiscard]] _CUDAX_HOST_API auto __get_optr() const noexcept -> void const*
   {
     void const* __pv = __buffer_;
     return __in_situ() ? __pv : *static_cast<void const* const*>(__pv);
   }
   _CCCL_DIAG_POP
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_rtti() const noexcept -> __rtti const*
+  [[nodiscard]] _CUDAX_HOST_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __get_vptr()->__query_interface(iunknown());
   }

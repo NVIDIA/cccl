@@ -54,33 +54,33 @@ __host__ __device__ void test_primary_template()
   { // Testing (1)
     int x = 101;
     cuda::std::tuple t1(42);
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int>>);
     cuda::std::tuple t2(x, 0.0, nullptr);
-    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, double, decltype(nullptr)>);
+    static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, double, decltype(nullptr)>>);
     unused(t1);
     unused(t2);
   }
   { // Testing (2)
     cuda::std::pair<int, char> p1(1, 'c');
     cuda::std::tuple t1(p1);
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int, char>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int, char>>);
 
     cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(
       1, cuda::std::tuple<char, long, void*>('c', 3l, nullptr));
     cuda::std::tuple t2(p2);
-    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>);
+    static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char, long, void*>>>);
 
     int i = 3;
     cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(cuda::std::ref(i), 'c');
     cuda::std::tuple t3(p3);
-    ASSERT_SAME_TYPE(decltype(t3), cuda::std::tuple<cuda::std::reference_wrapper<int>, char>);
+    static_assert(cuda::std::is_same_v<decltype(t3), cuda::std::tuple<cuda::std::reference_wrapper<int>, char>>);
 
     cuda::std::pair<int&, char> p4(i, 'c');
     cuda::std::tuple t4(p4);
-    ASSERT_SAME_TYPE(decltype(t4), cuda::std::tuple<int&, char>);
+    static_assert(cuda::std::is_same_v<decltype(t4), cuda::std::tuple<int&, char>>);
 
     cuda::std::tuple t5(cuda::std::pair<int, char>(1, 'c'));
-    ASSERT_SAME_TYPE(decltype(t5), cuda::std::tuple<int, char>);
+    static_assert(cuda::std::is_same_v<decltype(t5), cuda::std::tuple<int, char>>);
     unused(t5);
   }
   { // Testing (3)
@@ -88,55 +88,55 @@ __host__ __device__ void test_primary_template()
     static_assert(!cuda::std::is_convertible<T const&, T>::value, "");
 
     cuda::std::tuple t1(T{});
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<T>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
 
-#if defined(__GNUC__) && (__GNUC__ < 11)
+#if TEST_COMPILER(GCC, <, 11)
     const T v{};
     cuda::std::tuple t2(T{}, 101l, v);
-    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<T, long, T>);
-#endif
+    static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
+#endif // TEST_COMPILER(GCC, <, 11)
   }
   // cuda::std::allocator not supported
   /*
   { // Testing (4)
     int x = 101;
     cuda::std::tuple t1(AT, A, 42);
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int>>);
 
     cuda::std::tuple t2(AT, A, 42, 0.0, x);
-    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, double, int>);
+    static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int, double, int>>);
   }
   { // Testing (5)
     using T = ExplicitTestTypes::TestType;
     static_assert(!cuda::std::is_convertible<T const&, T>::value, "");
 
     cuda::std::tuple t1(AT, A, T{});
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<T>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<T>>);
 
     const T v{};
     cuda::std::tuple t2(AT, A, T{}, 101l, v);
-    ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<T, long, T>);
+    static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<T, long, T>>);
   }
   { // Testing (6)
     cuda::std::pair<int, char> p1(1, 'c');
     cuda::std::tuple t1(AT, A, p1);
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<int, char>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<int, char>>);
 
     cuda::std::pair<int, cuda::std::tuple<char, long, void*>> p2(1, cuda::std::tuple<char, long, void*>('c', 3l,
-  nullptr)); cuda::std::tuple t2(AT, A, p2); ASSERT_SAME_TYPE(decltype(t2), cuda::std::tuple<int, cuda::std::tuple<char,
-  long, void*>>);
+  nullptr)); cuda::std::tuple t2(AT, A, p2); static_assert(cuda::std::is_same_v<decltype(t2), cuda::std::tuple<int,
+  cuda::std::tuple<char, long, void*>>>);
 
     int i = 3;
     cuda::std::pair<cuda::std::reference_wrapper<int>, char> p3(cuda::std::ref(i), 'c');
     cuda::std::tuple t3(AT, A, p3);
-    ASSERT_SAME_TYPE(decltype(t3), cuda::std::tuple<cuda::std::reference_wrapper<int>, char>);
+    static_assert(cuda::std::is_same_v<decltype(t3), cuda::std::tuple<cuda::std::reference_wrapper<int>, char>>);
 
     cuda::std::pair<int&, char> p4(i, 'c');
     cuda::std::tuple t4(AT, A, p4);
-    ASSERT_SAME_TYPE(decltype(t4), cuda::std::tuple<int&, char>);
+    static_assert(cuda::std::is_same_v<decltype(t4), cuda::std::tuple<int&, char>>);
 
     cuda::std::tuple t5(AT, A, cuda::std::pair<int, char>(1, 'c'));
-    ASSERT_SAME_TYPE(decltype(t5), cuda::std::tuple<int, char>);
+    static_assert(cuda::std::is_same_v<decltype(t5), cuda::std::tuple<int, char>>);
   }
   */
   { // Testing (7)
@@ -144,13 +144,13 @@ __host__ __device__ void test_primary_template()
     const Tup t(42, nullptr);
 
     cuda::std::tuple t1(t);
-    ASSERT_SAME_TYPE(decltype(t1), Tup);
+    static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
     unused(t1);
   }
   { // Testing (8)
     using Tup = cuda::std::tuple<void*, unsigned, char>;
     cuda::std::tuple t1(Tup(nullptr, 42, 'a'));
-    ASSERT_SAME_TYPE(decltype(t1), Tup);
+    static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
     unused(t1);
   }
   // cuda::std::allocator not supported
@@ -160,13 +160,13 @@ __host__ __device__ void test_primary_template()
     const Tup t(42, nullptr);
 
     cuda::std::tuple t1(AT, A, t);
-    ASSERT_SAME_TYPE(decltype(t1), Tup);
+    static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
     unused(t1);
   }
   { // Testing (10)
     using Tup = cuda::std::tuple<void*, unsigned, char>;
     cuda::std::tuple t1(AT, A, Tup(nullptr, 42, 'a'));
-    ASSERT_SAME_TYPE(decltype(t1), Tup);
+    static_assert(cuda::std::is_same_v<decltype(t1), Tup>);
     unused(t1);
   }
   */
@@ -190,25 +190,25 @@ __host__ __device__ void test_empty_specialization()
   unused(AT);
   { // Testing (1)
     cuda::std::tuple t1{};
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
     unused(t1);
   }
   // cuda::std::allocator not supported
   /*
   { // Testing (2)
     cuda::std::tuple t1{AT, A};
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
   */
   { // Testing (3)
     const cuda::std::tuple<> t{};
     cuda::std::tuple t1(t);
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
     unused(t1);
   }
   { // Testing (4)
     cuda::std::tuple t1(cuda::std::tuple<>{});
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
     unused(t1);
   }
   // cuda::std::allocator not supported
@@ -216,11 +216,11 @@ __host__ __device__ void test_empty_specialization()
   { // Testing (5)
     const cuda::std::tuple<> t{};
     cuda::std::tuple t1(AT, A, t);
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
   { // Testing (6)
     cuda::std::tuple t1(AT, A, cuda::std::tuple<>{});
-    ASSERT_SAME_TYPE(decltype(t1), cuda::std::tuple<>);
+    static_assert(cuda::std::is_same_v<decltype(t1), cuda::std::tuple<>>);
   }
   */
 }

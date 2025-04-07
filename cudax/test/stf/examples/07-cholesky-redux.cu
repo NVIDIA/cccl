@@ -17,9 +17,8 @@
  */
 
 #include <cuda/experimental/__stf/stream/interfaces/slice_reduction_ops.cuh>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/stf.cuh>
-
-#include <nvtx3/nvToolsExt.h>
 
 #define TILED
 
@@ -93,7 +92,7 @@ public:
 
     for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
+      size_t low_rowb = sym_matrix ? colb : 0;
       for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         T* addr_h = get_block_h(rowb, colb);
@@ -169,11 +168,11 @@ public:
   template <typename Fun>
   void fill(Fun&& fun)
   {
-    nvtxRangePushA("FILL");
+    nvtx_range r("fill");
     // Fill blocks by blocks
     for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
+      size_t low_rowb = sym_matrix ? colb : 0;
       for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         // Each task fills a block
@@ -188,7 +187,6 @@ public:
           };
       }
     }
-    nvtxRangePop();
   }
 
   std::vector<T> h_array;
@@ -389,6 +387,8 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
 
 void PDPOTRF(matrix<double>& A)
 {
+  nvtx_range r("PDPOTRF");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("yellow");
 #endif
@@ -401,7 +401,6 @@ void PDPOTRF(matrix<double>& A)
 
   cuda_safe_call(cudaSetDevice(0));
 
-  nvtxRangePushA("SUBMIT_PDPOTRF");
   for (int K = 0; K < NBLOCKS; K++)
   {
     int dev_akk = A.get_preferred_devid(K, K);
@@ -424,8 +423,6 @@ void PDPOTRF(matrix<double>& A)
     }
   }
   cuda_safe_call(cudaSetDevice(0));
-
-  nvtxRangePop();
 }
 
 // Algorithm from PLASMA
@@ -437,6 +434,8 @@ void PDTRSM(cublasSideMode_t side,
             class matrix<double>& A,
             class matrix<double>& B)
 {
+  nvtx_range r("PDTRSM");
+
   //    std::cout << "[PDTRSM] START B MT " << B.mt << " NT " << B.nt << std::endl;
 
   if (side == CUBLAS_SIDE_LEFT)
@@ -509,6 +508,8 @@ void PDTRSM(cublasSideMode_t side,
 
 void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
 {
+  nvtx_range r("PDPOTRS");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("green");
 #endif
@@ -540,6 +541,8 @@ void PDGEMM(cublasOperation_t transa,
             double beta,
             class matrix<double>& C)
 {
+  nvtx_range r("PDGEMM");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("blue");
 #endif

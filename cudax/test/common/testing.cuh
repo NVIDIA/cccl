@@ -58,6 +58,7 @@ __device__ inline void cudax_require_impl(
 {
   if (!condition)
   {
+#if !_CCCL_CUDA_COMPILER(CLANG)
     // TODO do warp aggregate prints for easier readability?
     printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
            filename,
@@ -70,6 +71,7 @@ __device__ inline void cudax_require_impl(
            threadIdx.y,
            threadIdx.z,
            condition_text);
+#endif
     __trap();
   }
 }

@@ -15,10 +15,11 @@
 #include <cuda/std/cstddef>
 
 #include "concurrent_agents.h"
+#include "test_macros.h"
 
-#if defined(__clang__) && defined(__CUDA__)
+#if TEST_CUDA_COMPILER(CLANG)
 #  include <new>
-#endif
+#endif // TEST_CUDA_COMPILER(CLANG)
 
 #if _CCCL_COMPILER(NVRTC)
 #  define LAMBDA [=]
@@ -144,7 +145,7 @@ public:
   static const constexpr cuda::std::size_t prefix_size   = Provider<T, SharedOffset>::prefix_size;
   static const constexpr cuda::std::size_t shared_offset = Provider<T, SharedOffset>::shared_offset;
 
-  TEST_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   template <typename... Ts>
   __host__ __device__ T* construct(Ts&&... ts)
   {
@@ -157,7 +158,7 @@ public:
     return ptr;
   }
 
-  TEST_EXEC_CHECK_DISABLE
+  _CCCL_EXEC_CHECK_DISABLE
   __host__ __device__ ~memory_selector()
   {
     execute_on_main_thread([&] {

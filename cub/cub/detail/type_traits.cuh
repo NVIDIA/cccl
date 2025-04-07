@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2021, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -45,14 +45,11 @@
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_namespace.cuh>
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
-#include <cuda/std/array>
-#if __cccl_lib_mdspan
-#  include <cuda/std/mdspan>
-#endif // __cccl_lib_mdspan
 #include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
+#include <cuda/std/array>
+#include <cuda/std/cstddef>
+#include <cuda/std/functional>
+#include <cuda/std/mdspan>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
@@ -61,103 +58,63 @@ namespace detail
 {
 
 template <typename Invokable, typename... Args>
-using invoke_result_t = ::cuda::std::invoke_result_t<Invokable, Args...>;
+using invoke_result_t = _CUDA_VSTD::invoke_result_t<Invokable, Args...>;
 
 template <typename T, typename... TArgs>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool is_one_of()
-{
-  return ::cuda::std::disjunction_v<::cuda::std::is_same<T, TArgs>...>;
-}
-
-template <typename...>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool always_false()
-{
-  return false;
-}
+inline constexpr bool is_one_of_v = (_CCCL_TRAIT(_CUDA_VSTD::is_same, T, TArgs) || ...);
 
 template <typename T, typename V, typename = void>
-struct has_binary_call_operator : ::cuda::std::false_type
+struct has_binary_call_operator : _CUDA_VSTD::false_type
 {};
 
 template <typename T, typename V>
 struct has_binary_call_operator<
   T,
   V,
-  ::cuda::std::void_t<decltype(::cuda::std::declval<T>()(::cuda::std::declval<V>(), ::cuda::std::declval<V>()))>>
-    : ::cuda::std::true_type
+  _CUDA_VSTD::void_t<decltype(_CUDA_VSTD::declval<T>()(_CUDA_VSTD::declval<V>(), _CUDA_VSTD::declval<V>()))>>
+    : _CUDA_VSTD::true_type
 {};
 
 /***********************************************************************************************************************
  * Array-like type traits
  **********************************************************************************************************************/
 
-template <typename T, typename = void>
-struct is_fixed_size_random_access_range : ::cuda::std::false_type
-{};
+template <typename T>
+inline constexpr bool is_fixed_size_random_access_range_v = false;
 
-template <typename T, ::cuda::std::size_t N>
-struct is_fixed_size_random_access_range<T[N], void> : ::cuda::std::true_type
-{};
+template <typename T, size_t N>
+inline constexpr bool is_fixed_size_random_access_range_v<T[N]> = true;
 
-template <typename T, ::cuda::std::size_t N>
-struct is_fixed_size_random_access_range<::cuda::std::array<T, N>, void> : ::cuda::std::true_type
-{};
+template <typename T, size_t N>
+inline constexpr bool is_fixed_size_random_access_range_v<_CUDA_VSTD::array<T, N>> = true;
 
-#if __cccl_lib_mdspan
+template <typename T, size_t N>
+inline constexpr bool is_fixed_size_random_access_range_v<_CUDA_VSTD::span<T, N>> = N != _CUDA_VSTD::dynamic_extent;
 
 template <typename T, typename E, typename L, typename A>
-struct is_fixed_size_random_access_range<
-  ::cuda::std::mdspan<T, E, L, A>,
-  ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>> : ::cuda::std::true_type
-{};
-
-#endif // __cccl_lib_mdspan
-
-template <typename T>
-using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access_range<T>::type;
+inline constexpr bool is_fixed_size_random_access_range_v<_CUDA_VSTD::mdspan<T, E, L, A>> =
+  E::rank == 1 && E::rank_dynamic() == 0;
 
 /***********************************************************************************************************************
  * static_size: a type trait that returns the number of elements in an Array-like type
  **********************************************************************************************************************/
-// static_size is useful where size(obj) cannot be checked at compile time
-// e.g.
-// using Array = NonTriviallyConstructible[8];
-// std::size(Array{})   // compile error
-// static_size<Array>() // ok
-
-template <typename T, typename = void>
-struct static_size
-{
-  static_assert(cub::detail::always_false<T>(), "static_size not supported for this type");
-};
-
-template <typename T, ::cuda::std::size_t N>
-struct static_size<T[N], void> : ::cuda::std::integral_constant<int, N>
-{};
-
-template <typename T, ::cuda::std::size_t N>
-struct static_size<::cuda::std::array<T, N>, void> : ::cuda::std::integral_constant<int, N>
-{};
-
-template <typename T, ::cuda::std::size_t N>
-struct static_size<::cuda::std::span<T, N>, void> : ::cuda::std::integral_constant<int, N>
-{};
-
-#if __cccl_lib_mdspan
-
-template <typename T, typename E, typename L, typename A>
-struct static_size<::cuda::std::mdspan<T, E, L, A>,
-                   ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>>
-    : ::cuda::std::integral_constant<int, E::static_extent(1)>
-{};
-
-#endif // __cccl_lib_mdspan
 
 template <typename T>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()
-{
-  return static_size<T>::value;
-}
+inline constexpr int static_size_v = _CUDA_VSTD::enable_if_t<_CUDA_VSTD::__always_false_v<T>>{};
+
+template <typename T, size_t N>
+inline constexpr int static_size_v<T[N]> = N;
+
+template <typename T, size_t N>
+inline constexpr int static_size_v<_CUDA_VSTD::array<T, N>> = N;
+
+template <typename T, size_t N>
+inline constexpr int static_size_v<_CUDA_VSTD::span<T, N>> =
+  _CUDA_VSTD::enable_if_t<N != _CUDA_VSTD::dynamic_extent, int>{N};
+
+template <typename T, typename E, typename L, typename A>
+inline constexpr int static_size_v<_CUDA_VSTD::mdspan<T, E, L, A>> =
+  _CUDA_VSTD::enable_if_t<E::rank == 1 && E::rank_dynamic() == 0, int>{E::static_extent(0)};
 
 template <typename T>
 using implicit_prom_t = decltype(+T{});

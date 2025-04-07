@@ -45,8 +45,8 @@ __host__ __device__ constexpr bool constexpr_test()
 template <typename T>
 __host__ __device__ void runtime_test()
 {
-  ASSERT_SAME_TYPE(T, decltype(cuda::std::bit_ceil(T(0))));
-  LIBCPP_ASSERT_NOEXCEPT(cuda::std::bit_ceil(T(0)));
+  static_assert(cuda::std::is_same_v<T, decltype(cuda::std::bit_ceil(T(0)))>);
+  static_assert(noexcept(cuda::std::bit_ceil(T(0))));
 
   assert(cuda::std::bit_ceil(T(60)) == T(64));
   assert(cuda::std::bit_ceil(T(61)) == T(64));

@@ -40,7 +40,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _Up>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _Up>
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: 'b' must be positive");
@@ -75,7 +75,7 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _CUDA_VSTD::underlying_type_t<_Up>>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _CUDA_VSTD::underlying_type_t<_Up>>
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::ceil_div(__a, _CUDA_VSTD::to_underlying(__b));
@@ -88,7 +88,7 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>, _Up>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>, _Up>
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::ceil_div(_CUDA_VSTD::to_underlying(__a), __b);
@@ -101,7 +101,7 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
-_CCCL_NODISCARD
+[[nodiscard]]
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>,
                                                               _CUDA_VSTD::underlying_type_t<_Up>>
 ceil_div(const _Tp __a, const _Up __b) noexcept

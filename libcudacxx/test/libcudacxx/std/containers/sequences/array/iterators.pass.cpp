@@ -33,34 +33,34 @@
 
 struct NoDefault
 {
-  __host__ __device__ TEST_CONSTEXPR NoDefault(int) {}
+  __host__ __device__ constexpr NoDefault(int) {}
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
+__host__ __device__ constexpr void check_noexcept(T& c)
 {
-  ASSERT_NOEXCEPT(c.begin());
-  ASSERT_NOEXCEPT(c.end());
-  ASSERT_NOEXCEPT(c.cbegin());
-  ASSERT_NOEXCEPT(c.cend());
-  ASSERT_NOEXCEPT(c.rbegin());
-  ASSERT_NOEXCEPT(c.rend());
-  ASSERT_NOEXCEPT(c.crbegin());
-  ASSERT_NOEXCEPT(c.crend());
+  static_assert(noexcept(c.begin()));
+  static_assert(noexcept(c.end()));
+  static_assert(noexcept(c.cbegin()));
+  static_assert(noexcept(c.cend()));
+  static_assert(noexcept(c.rbegin()));
+  static_assert(noexcept(c.rend()));
+  static_assert(noexcept(c.crbegin()));
+  static_assert(noexcept(c.crend()));
 
   const T& cc = c;
   unused(cc);
-  ASSERT_NOEXCEPT(cc.begin());
-  ASSERT_NOEXCEPT(cc.end());
-  ASSERT_NOEXCEPT(cc.rbegin());
-  ASSERT_NOEXCEPT(cc.rend());
+  static_assert(noexcept(cc.begin()));
+  static_assert(noexcept(cc.end()));
+  static_assert(noexcept(cc.rbegin()));
+  static_assert(noexcept(cc.rend()));
 }
 
 // gcc-7 and gcc-8 are really helpful here
 __host__ __device__
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
-  TEST_CONSTEXPR_CXX14
-#endif // (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if !TEST_COMPILER(GCC, <, 8)
+  constexpr
+#endif // !TEST_COMPILER(GCC, <, 8)
   bool
   tests()
 {
@@ -232,8 +232,8 @@ __host__ __device__
 int main(int, char**)
 {
   tests();
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !TEST_COMPILER(GCC, <, 8)
   static_assert(tests(), "");
-#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !TEST_COMPILER(GCC, <, 8)
   return 0;
 }

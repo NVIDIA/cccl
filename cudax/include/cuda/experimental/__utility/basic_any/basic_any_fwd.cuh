@@ -111,7 +111,7 @@ constexpr size_t __default_buffer_align = alignof(_CUDA_VSTD::max_align_t);
 
 using __make_type_list _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>;
 
-_CCCL_NORETURN _CUDAX_HOST_API void __throw_bad_any_cast();
+[[noreturn]] _CUDAX_HOST_API void __throw_bad_any_cast();
 
 enum class __vtable_kind : uint8_t
 {

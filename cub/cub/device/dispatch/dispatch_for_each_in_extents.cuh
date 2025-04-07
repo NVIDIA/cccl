@@ -37,39 +37,37 @@
 #  pragma system_header
 #endif // no system header
 
-#if __cccl_lib_mdspan
+#include <cub/detail/mdspan_utils.cuh> // size(extent)
+#include <cub/device/dispatch/kernels/for_each_in_extents_kernel.cuh>
+#include <cub/device/dispatch/tuning/tuning_for.cuh>
+#include <cub/util_device.cuh>
+#include <cub/util_namespace.cuh>
 
-#  include <cub/detail/mdspan_utils.cuh> // size(extent)
-#  include <cub/device/dispatch/kernels/for_each_in_extents_kernel.cuh>
-#  include <cub/device/dispatch/tuning/tuning_for.cuh>
-#  include <cub/util_device.cuh>
-#  include <cub/util_namespace.cuh>
+#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#include <cuda/std/__type_traits/integral_constant.h> // cuda::std::integral_constant
+#include <cuda/std/__utility/integer_sequence.h> // cuda::std::index_sequence
+#include <cuda/std/array> // cuda::std::array
+#include <cuda/std/cstddef> // size_t
 
-#  include <cuda/std/__type_traits/integral_constant.h> // cuda::std::integral_constant
-#  include <cuda/std/__utility/integer_sequence.h> // cuda::std::index_sequence
-#  include <cuda/std/array> // cuda::std::array
-#  include <cuda/std/cstddef> // size_t
+#define _CUB_RETURN_IF_ERROR(STATUS)       \
+  {                                        \
+    cudaError_t error_ = CubDebug(STATUS); \
+    if (error_ != cudaSuccess)             \
+    {                                      \
+      return error_;                       \
+    }                                      \
+  }
 
-#  define _CUB_RETURN_IF_ERROR(STATUS)       \
-    {                                        \
-      cudaError_t error_ = CubDebug(STATUS); \
-      if (error_ != cudaSuccess)             \
-      {                                      \
-        return error_;                       \
-      }                                      \
-    }
-
-#  define _CUB_RETURN_IF_STREAM_ERROR(STREAM)                         \
-    {                                                                 \
-      cudaError_t error_ = CubDebug(detail::DebugSyncStream(STREAM)); \
-      if (error_ != cudaSuccess)                                      \
-      {                                                               \
-        CubDebug(error_ = SyncStream(STREAM));                        \
-        return error_;                                                \
-      }                                                               \
-    }
+#define _CUB_RETURN_IF_STREAM_ERROR(STREAM)                         \
+  {                                                                 \
+    cudaError_t error_ = CubDebug(detail::DebugSyncStream(STREAM)); \
+    if (error_ != cudaSuccess)                                      \
+    {                                                               \
+      CubDebug(error_ = SyncStream(STREAM));                        \
+      return error_;                                                \
+    }                                                               \
+  }
 
 CUB_NAMESPACE_BEGIN
 
@@ -106,7 +104,7 @@ public:
 
   // InvokeVariadic is a workaround for an nvcc 11.x/12.x problem with variadic template kernel and index sequence
   template <typename ActivePolicyT, ::cuda::std::size_t... Ranks>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
+  [[nodiscard]] CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::true_type, ::cuda::std::index_sequence<Ranks...>) const
   {
     array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
@@ -115,13 +113,13 @@ public:
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
     unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
-#  ifdef CUB_DEBUG_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,
             _stream,
             items_per_thread);
-#  endif
+#endif
     auto status =
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
         .doit(detail::for_each_in_extents::
@@ -136,7 +134,7 @@ public:
   }
 
   template <typename ActivePolicyT, ::cuda::std::size_t... Ranks>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
+  [[nodiscard]] CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::false_type, ::cuda::std::index_sequence<Ranks...>) const
   {
     array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
@@ -153,13 +151,13 @@ public:
     _CUB_RETURN_IF_ERROR(status)
     unsigned num_cta = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
-#  ifdef CUB_DEBUG_LOG
+#ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,
             _stream,
             items_per_thread);
-#  endif
+#endif
     status = THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
                .doit(kernel, _op, _ext, sub_sizes_div_array, extents_div_array);
     _CUB_RETURN_IF_ERROR(status)
@@ -168,14 +166,14 @@ public:
   }
 
   template <typename ActivePolicyT, bool StaticBlockSize>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(::cuda::std::bool_constant<StaticBlockSize> v) const
   {
     return InvokeVariadic<ActivePolicyT>(v, seq);
   }
 
   template <typename ActivePolicyT>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
   {
     if (_size == 0)
     {
@@ -185,7 +183,7 @@ public:
     return dispatch_t::Invoke<ActivePolicyT>(::cuda::std::bool_constant<static_block_size>{});
   }
 
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
+  [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   dispatch(const ExtentsType& ext, const OpType& op, cudaStream_t stream)
   {
     int ptx_version = 0;
@@ -204,5 +202,3 @@ private:
 } // namespace detail::for_each_in_extents
 
 CUB_NAMESPACE_END
-
-#endif // __cccl_lib_mdspan

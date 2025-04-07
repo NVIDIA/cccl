@@ -106,12 +106,13 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_buffer/iterators.cu
     containers/async_buffer/properties.cu
     containers/async_buffer/swap.cu
+    containers/async_buffer/transform.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
     memory_resource/any_async_resource.cu
     memory_resource/any_resource.cu
-    memory_resource/device_memory_pool.cu
+    memory_resource/memory_pools.cu
     memory_resource/device_memory_resource.cu
     memory_resource/get_memory_resource.cu
     memory_resource/managed_memory_resource.cu
@@ -120,6 +121,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target async ${cn_target}
+    async/test_concepts.cu
     async/test_conditional.cu
     async/test_continue_on.cu
     async/test_just.cu
@@ -142,8 +144,7 @@ endforeach()
 
 # FIXME: Enable MSVC
 if (cudax_ENABLE_CUDASTF AND
-    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
-    NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)
 endif()

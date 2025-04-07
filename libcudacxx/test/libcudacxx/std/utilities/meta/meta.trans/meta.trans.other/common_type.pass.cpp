@@ -209,7 +209,7 @@ __host__ __device__ void test_bullet_three_three()
     static_assert((cuda::std::is_same<cuda::std::common_type<T2, T1>::type, Expect>::value), "");
   }
   // Test that there is no ::type member when the ternary op is ill-formed
-#ifndef TEST_COMPILER_MSVC
+#if !TEST_COMPILER(MSVC)
   // TODO: Investigate why this fails.
   {
     typedef int T1;
@@ -217,7 +217,7 @@ __host__ __device__ void test_bullet_three_three()
     static_assert((no_common_type<T1, T2>::value), "");
     static_assert((no_common_type<T2, T1>::value), "");
   }
-#endif
+#endif // !TEST_COMPILER(MSVC)
   {
     typedef int T1;
     typedef X<int> T2;

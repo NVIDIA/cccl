@@ -34,8 +34,7 @@
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>
 
-#include <limits>
-#include <stdexcept>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -69,7 +68,7 @@ public:
       : m_upstream(upstream)
   {}
 
-  _CCCL_NODISCARD _CCCL_HOST virtual pointer
+  [[nodiscard]] _CCCL_HOST virtual pointer
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     return pointer(m_upstream->do_allocate(bytes, alignment).get());

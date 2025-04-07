@@ -281,7 +281,7 @@ public:
   {
     // no-op ... we unfortunately cannot unpin memory safely yet because
     // the graph may be executed a long time after this unpinning occurs.
-    /// assert(memory_node == data_place::host);
+    /// assert(memory_node.is_host());
 
     /// const auto& common = this->common;
     /// const auto& per_inst = this->instance(instance_id);

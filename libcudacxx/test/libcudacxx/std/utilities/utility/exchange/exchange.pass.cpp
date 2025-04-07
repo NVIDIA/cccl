@@ -24,7 +24,7 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_constexpr()
+__host__ __device__ constexpr bool test_constexpr()
 {
   int v = 12;
 
@@ -55,31 +55,31 @@ struct TestNoexcept
   __host__ __device__ TestNoexcept& operator=(TestNoexcept&&) noexcept(Assign);
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_noexcept()
+__host__ __device__ constexpr bool test_noexcept()
 {
   {
     int x = 42;
-    ASSERT_NOEXCEPT(cuda::std::exchange(x, 42));
+    static_assert(noexcept(cuda::std::exchange(x, 42)));
     assert(x == 42);
   }
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
   {
     TestNoexcept<true, true> x{};
-    ASSERT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
-    ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, x)); // copy-assignment is not noexcept
+    static_assert(noexcept(cuda::std::exchange(x, cuda::std::move(x))));
+    static_assert(!noexcept(cuda::std::exchange(x, x))); // copy-assignment is not noexcept
     unused(x);
   }
   {
     TestNoexcept<true, false> x{};
-    ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
+    static_assert(!noexcept(cuda::std::exchange(x, cuda::std::move(x))));
     unused(x);
   }
   {
     TestNoexcept<false, true> x{};
-    ASSERT_NOT_NOEXCEPT(cuda::std::exchange(x, cuda::std::move(x)));
+    static_assert(!noexcept(cuda::std::exchange(x, cuda::std::move(x))));
     unused(x);
   }
-#endif // !TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // !TEST_COMPILER(NVHPC)
 
   return true;
 }

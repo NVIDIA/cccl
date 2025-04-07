@@ -36,10 +36,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t>(0);
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t>(0);
   test<char32_t>(0);
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short>(0);
   test<unsigned short>(0);
   test<int>(0);
@@ -81,6 +79,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1>(make_fp4_e2m1(0.5));
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128>(__float128(0.5));
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }

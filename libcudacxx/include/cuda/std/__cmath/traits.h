@@ -21,10 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cmath/fp_utils.h>
 #include <cuda/std/__cmath/isnan.h>
+#include <cuda/std/__floating_point/nvfp_types.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -36,20 +37,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // isgreater
 
-template <class _Tp>
-struct __is_extended_arithmetic
-{
-  static constexpr bool value = _CCCL_TRAIT(is_arithmetic, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
-};
-
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_extended_arithmetic_v =
-  is_arithmetic_v<_Tp> || __is_extended_floating_point_v<_Tp>;
-#endif // !_CCCL_NO_INLINE_VARIABLES
-
 template <class _A1, enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1), int> = 0>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreater(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreater(_A1 __x, _A1 __y) noexcept
 {
   if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
   {
@@ -61,7 +50,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreater(_A1 __x
 template <class _A1,
           class _A2,
           enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1) && _CCCL_TRAIT(__is_extended_arithmetic, _A2), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isgreater(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool isgreater(_A1 __x, _A2 __y) noexcept
 {
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -72,7 +61,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isgreater(_A1 __x, _A2 __y) noexc
 // isgreaterequal
 
 template <class _A1, enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1), int> = 0>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreaterequal(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreaterequal(_A1 __x, _A1 __y) noexcept
 {
   if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
   {
@@ -84,7 +73,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isgreaterequal(_A
 template <class _A1,
           class _A2,
           enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1) && _CCCL_TRAIT(__is_extended_arithmetic, _A2), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isgreaterequal(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool isgreaterequal(_A1 __x, _A2 __y) noexcept
 {
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -95,7 +84,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isgreaterequal(_A1 __x, _A2 __y) 
 // isless
 
 template <class _A1, enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1), int> = 0>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isless(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isless(_A1 __x, _A1 __y) noexcept
 {
   if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
   {
@@ -107,7 +96,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_isless(_A1 __x, _
 template <class _A1,
           class _A2,
           enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1) && _CCCL_TRAIT(__is_extended_arithmetic, _A2), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isless(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool isless(_A1 __x, _A2 __y) noexcept
 {
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -118,7 +107,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isless(_A1 __x, _A2 __y) noexcept
 // islessequal
 
 template <class _A1, enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1), int> = 0>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessequal(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessequal(_A1 __x, _A1 __y) noexcept
 {
   if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
   {
@@ -130,7 +119,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessequal(_A1 _
 template <class _A1,
           class _A2,
           enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1) && _CCCL_TRAIT(__is_extended_arithmetic, _A2), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool islessequal(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool islessequal(_A1 __x, _A2 __y) noexcept
 {
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -141,7 +130,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool islessequal(_A1 __x, _A2 __y) noe
 // islessgreater
 
 template <class _A1, enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1), int> = 0>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessgreater(_A1 __x, _A1 __y) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessgreater(_A1 __x, _A1 __y) noexcept
 {
   if (_CUDA_VSTD::isnan(__x) || _CUDA_VSTD::isnan(__y))
   {
@@ -153,7 +142,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI bool __device_islessgreater(_A1
 template <class _A1,
           class _A2,
           enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1) && _CCCL_TRAIT(__is_extended_arithmetic, _A2), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool islessgreater(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool islessgreater(_A1 __x, _A2 __y) noexcept
 {
   using type = __promote_t<_A1, _A2>;
   NV_IF_ELSE_TARGET(NV_IS_HOST,
@@ -166,7 +155,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool islessgreater(_A1 __x, _A2 __y) n
 template <class _A1,
           class _A2,
           enable_if_t<_CCCL_TRAIT(__is_extended_arithmetic, _A1) && _CCCL_TRAIT(__is_extended_arithmetic, _A2), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isunordered(_A1 __x, _A2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool isunordered(_A1 __x, _A2 __y) noexcept
 {
   using type = __promote_t<_A1, _A2>;
   return _CUDA_VSTD::isnan((type) __x) || _CUDA_VSTD::isnan((type) __y);

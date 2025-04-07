@@ -292,7 +292,7 @@ public:
     // Initialize histogram bin counts to zeros
     int histo_offset = 0;
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (; histo_offset + BLOCK_THREADS <= BINS; histo_offset += BLOCK_THREADS)
     {
       histogram[histo_offset + linear_tid] = 0;

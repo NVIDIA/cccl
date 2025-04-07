@@ -10,6 +10,34 @@
 
 #include <unittest/unittest.h>
 
+template <typename ValueType, typename DifferenceType>
+inline constexpr bool diff_type_is =
+  ::cuda::std::is_same_v<typename thrust::counting_iterator<ValueType>::difference_type, DifferenceType>;
+
+static_assert(diff_type_is<int8_t, int>);
+static_assert(diff_type_is<uint8_t, int>);
+static_assert(diff_type_is<int16_t, int>);
+static_assert(diff_type_is<uint16_t, int>);
+static_assert(diff_type_is<int32_t, ptrdiff_t>);
+static_assert(diff_type_is<uint32_t, ptrdiff_t>);
+static_assert(diff_type_is<int64_t, ptrdiff_t>);
+static_assert(diff_type_is<uint64_t, ptrdiff_t>);
+#if _CCCL_HAS_INT128()
+static_assert(diff_type_is<__int128_t, ptrdiff_t>);
+static_assert(diff_type_is<__uint128_t, ptrdiff_t>);
+#endif
+static_assert(diff_type_is<float, ptrdiff_t>);
+static_assert(diff_type_is<double, ptrdiff_t>);
+
+struct custom_int
+{
+  _CCCL_HOST_DEVICE custom_int(int) {}
+  _CCCL_HOST_DEVICE operator int() const;
+};
+static_assert(thrust::detail::is_numeric<custom_int>::value);
+
+static_assert(diff_type_is<custom_int, ptrdiff_t>);
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 

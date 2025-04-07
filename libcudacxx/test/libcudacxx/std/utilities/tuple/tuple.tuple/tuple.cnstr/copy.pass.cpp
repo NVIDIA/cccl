@@ -61,9 +61,8 @@ int main(int, char**)
   {
     typedef cuda::std::tuple<Empty> T;
     constexpr T t0;
-    constexpr T t     = t0;
-    constexpr Empty e = cuda::std::get<0>(t);
-    ((void) e); // Prevent unused warning
+    constexpr T t                      = t0;
+    [[maybe_unused]] constexpr Empty e = cuda::std::get<0>(t);
   }
 
   return 0;

@@ -36,15 +36,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/detail/type_traits.h>
 #  include <thrust/distance.h>
 #  include <thrust/iterator/transform_iterator.h>
 #  include <thrust/system/cuda/detail/scan.h>
 
 #  include <cuda/std/type_traits>
-
-#  include <iterator>
 
 THRUST_NAMESPACE_BEGIN
 

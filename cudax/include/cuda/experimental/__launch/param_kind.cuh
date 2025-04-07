@@ -36,13 +36,13 @@ enum class __param_kind : unsigned
   _inout = 3
 };
 
-_CCCL_NODISCARD _CCCL_HOST_DEVICE inline constexpr __param_kind operator&(__param_kind __a, __param_kind __b) noexcept
+[[nodiscard]] _CCCL_HOST_DEVICE inline constexpr __param_kind operator&(__param_kind __a, __param_kind __b) noexcept
 {
   return __param_kind(unsigned(__a) & unsigned(__b));
 }
 
 template <typename _Ty, __param_kind _Kind>
-struct _CCCL_NODISCARD __box
+struct [[nodiscard]] __box
 {
   ::cuda::std::__maybe_const<_Kind == __param_kind::_in, _Ty>& __val;
 };

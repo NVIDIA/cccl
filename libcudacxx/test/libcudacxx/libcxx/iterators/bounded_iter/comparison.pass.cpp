@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 template <class Iter>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
+__host__ __device__ constexpr bool tests()
 {
   int array[]                                 = {0, 1, 2, 3, 4};
   int* b                                      = array + 0;

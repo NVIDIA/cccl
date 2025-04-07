@@ -33,10 +33,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
     : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_member_object_pointer_v = _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_member_object_pointer_v = _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER vvv
 
@@ -45,10 +43,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
     : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_obj>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
+inline constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>::value;
 
 #endif // !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER
 

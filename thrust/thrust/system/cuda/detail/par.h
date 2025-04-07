@@ -39,6 +39,8 @@
 #include <thrust/system/cuda/detail/execution_policy.h>
 #include <thrust/system/cuda/detail/util.h>
 
+#include <cuda/stream_ref>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -50,15 +52,14 @@ private:
   cudaStream_t stream;
 
 public:
-  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE execute_on_stream_base(cudaStream_t stream_ = default_stream())
       : stream(stream_)
   {}
 
-  THRUST_RUNTIME_FUNCTION Derived on(cudaStream_t const& s) const
+  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
   {
     Derived result = derived_cast(*this);
-    result.stream  = s;
+    result.stream  = s.get();
     return result;
   }
 
@@ -80,10 +81,10 @@ public:
       : stream(stream_)
   {}
 
-  THRUST_RUNTIME_FUNCTION Derived on(cudaStream_t const& s) const
+  _CCCL_HOST_DEVICE Derived on(::cuda::stream_ref s) const
   {
     Derived result = derived_cast(*this);
-    result.stream  = s;
+    result.stream  = s.get();
     return result;
   }
 
@@ -119,7 +120,6 @@ struct execute_on_stream_nosync : execute_on_stream_nosync_base<execute_on_strea
       : base_t(stream) {};
 };
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct par_t
     : execution_policy<par_t>
     , thrust::detail::allocator_aware_execution_policy<execute_on_stream_base>
@@ -132,14 +132,12 @@ struct par_t
 
   using stream_attachment_type = execute_on_stream;
 
-  THRUST_RUNTIME_FUNCTION stream_attachment_type on(cudaStream_t const& stream) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
   {
-    return execute_on_stream(stream);
+    return execute_on_stream(s.get());
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 struct par_nosync_t
     : execution_policy<par_nosync_t>
     , thrust::detail::allocator_aware_execution_policy<execute_on_stream_nosync_base>
@@ -152,9 +150,9 @@ struct par_nosync_t
 
   using stream_attachment_type = execute_on_stream_nosync;
 
-  THRUST_RUNTIME_FUNCTION stream_attachment_type on(cudaStream_t const& stream) const
+  _CCCL_HOST_DEVICE stream_attachment_type on(::cuda::stream_ref s) const
   {
-    return execute_on_stream_nosync(stream);
+    return execute_on_stream_nosync(s.get());
   }
 
 private:
@@ -165,7 +163,6 @@ private:
     return false;
   }
 };
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 _CCCL_GLOBAL_CONSTANT par_t par;
 

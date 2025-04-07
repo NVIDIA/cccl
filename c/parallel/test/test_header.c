@@ -5,6 +5,7 @@
 #include <cccl/c/reduce.h>
 #include <cccl/c/scan.h>
 #include <cccl/c/segmented_reduce.h>
+#include <cccl/c/unique_by_key.h>
 
 int main(void)
 {

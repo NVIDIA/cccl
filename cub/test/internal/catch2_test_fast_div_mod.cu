@@ -26,10 +26,8 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-#if __cccl_lib_mdspan
-
-#  include "c2h/catch2_test_helper.h"
-#  include "c2h/utility.h"
+#include "c2h/catch2_test_helper.h"
+#include "c2h/utility.h"
 
 /***********************************************************************************************************************
  * TEST CASES
@@ -42,11 +40,11 @@ using index_types =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if _CCCL_HAS_INT128()
+#if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
-#  endif
+#endif
                  >;
 
 C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
@@ -79,5 +77,3 @@ C2H_TEST("FastDivMod edge cases", "[FastDivMod][EdgeCases]", index_types)
   REQUIRE(0 == div_mod_min(0).quotient);
   REQUIRE(0 == div_mod_min(0).remainder);
 }
-
-#endif // __cccl_lib_mdspan

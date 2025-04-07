@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr underlying_type_t<_Tp> to_underlying(_Tp __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr underlying_type_t<_Tp> to_underlying(_Tp __val) noexcept
 {
   return static_cast<underlying_type_t<_Tp>>(__val);
 }

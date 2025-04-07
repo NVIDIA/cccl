@@ -36,7 +36,7 @@ __host__ __device__ void test()
   using C = cuda::std::complex<T>;
 
   static_assert(HasTupleSize<C>::value, "");
-  ASSERT_SAME_TYPE(size_t, typename cuda::std::tuple_size<C>::value_type);
+  static_assert(cuda::std::is_same_v<size_t, typename cuda::std::tuple_size<C>::value_type>);
   static_assert(cuda::std::tuple_size<C>() == 2, "");
 }
 

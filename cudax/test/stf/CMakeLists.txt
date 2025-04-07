@@ -36,6 +36,7 @@ set(stf_test_sources
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
+  places/affinity_gc.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -127,7 +128,6 @@ set(stf_test_codegen_sources
   parallel_for/parallel_for_box.cu
   parallel_for/parallel_for_repeat.cu
   parallel_for/test2_parallel_for_context.cu
-  parallel_for/test_parallel_for.cu
   parallel_for/tiled_loops.cu
   parallel_for/parallel_for_host.cu
   places/cuda_stream_place.cu
@@ -161,10 +161,10 @@ set(stf_test_mathlib_sources
 )
 
 set(stf_unittested_headers
-  cuda/experimental/stf.cuh
   cuda/experimental/__stf/allocators/buddy_allocator.cuh
   cuda/experimental/__stf/graph/graph_ctx.cuh
   cuda/experimental/__stf/internal/async_resources_handle.cuh
+  cuda/experimental/__stf/internal/context.cuh
   cuda/experimental/__stf/internal/execution_policy.cuh
   cuda/experimental/__stf/internal/interpreted_execution_policy.cuh
   cuda/experimental/__stf/internal/logical_data.cuh

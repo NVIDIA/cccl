@@ -7,14 +7,19 @@ Bit
    :hidden:
    :maxdepth: 1
 
-   cuda::bitmask <bit/bitmask>
-   cuda::bit_reverse <bit/bit_reverse>
-   cuda::bitfield_insert <bit/bitfield_insert>
-   cuda::bitfield_extract <bit/bitfield_extract>
+   bit/bitmask
+   bit/bit_reverse
+   bit/bitfield_insert
+   bit/bitfield_extract
 
 .. list-table::
    :widths: 25 45 30 30
-   :header-rows: 0
+   :header-rows: 1
+
+   * - **Header**
+     - **Content**
+     - **CCCL Availability**
+     - **CUDA Toolkit Availability**
 
    * - :ref:`bitmask <libcudacxx-extended-api-bit-bitmask>`
      - Generate a bitmask

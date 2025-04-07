@@ -66,7 +66,7 @@ __host__ __device__ constexpr bool test()
   {
     const optional<X> opt{};
     assert(opt.value_or(Y(3)) == 4);
-    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X>>().value_or(Y(3))), X);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const optional<X>>().value_or(Y(3))), X>);
   }
 
   X val{2};
@@ -74,23 +74,23 @@ __host__ __device__ constexpr bool test()
     const optional<X&> opt(val);
     const Y y(3);
     assert(opt.value_or(y) == 2);
-    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(y)), X);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const optional<X&>>().value_or(y)), X>);
   }
   {
     const optional<X&> opt(val);
     assert(opt.value_or(Y(3)) == 2);
-    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(Y(3))), X);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const optional<X&>>().value_or(Y(3))), X>);
   }
   {
     const optional<X&> opt{};
     const Y y(3);
     assert(opt.value_or(y) == 3);
-    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X>>().value_or(y)), X);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const optional<X>>().value_or(y)), X>);
   }
   {
     const optional<X&> opt{};
     assert(opt.value_or(Y(3)) == 4);
-    ASSERT_SAME_TYPE(decltype(cuda::std::declval<const optional<X&>>().value_or(Y(3))), X);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const optional<X&>>().value_or(Y(3))), X>);
   }
 
   return true;

@@ -50,9 +50,9 @@ For more information about design and development practices for each CCCL compon
 #### CUB
 
 - [CUB Developer Guide](docs/cub/developer_overview.rst) - General overview of the design of CUB internals
-- [CUB Test Overview](docs/cub/test_overview.rst) - Overview of how to write CUB unit tests
+- [CUB Tests](docs/cub/test_overview.rst) - Overview of how to write CUB unit tests
 - [CUB Benchmarks](docs/cub/benchmarking.rst) - Overview of CUB's performance benchmarks
-- [CUB Tuning Infrastructure](docs/cub/tuning.rst) - Overview of CUB's performance tuning infrastructure
+- [CUB Tunings](docs/cub/tuning.rst) - Overview of CUB's performance tuning infrastructure
 
 #### Thrust
 
@@ -131,15 +131,15 @@ The `dev` presets are intended as a base for general development while the other
 
 #### Using CMake Presets via Command Line
 
-CMake automatically generates the preset build directories. You can configure, build and test for a specific preset (e.g. `thrust-cpp11`) via cmake from the root directory by appending `--preset=thrust-cpp11` to the corresponding commands. For example:
+CMake automatically generates the preset build directories. You can configure, build and test for a specific preset (e.g. `thrust-cpp17`) via cmake from the root directory by appending `--preset=thrust-cpp17` to the corresponding commands. For example:
 
 ```bash
-cmake --preset=thrust-cpp11
-cmake --build --preset=thrust-cpp11
-ctest --preset=thrust-cpp11
+cmake --preset=thrust-cpp17
+cmake --build --preset=thrust-cpp17
+ctest --preset=thrust-cpp17
 ```
 
-That will create `build/<optional devcontainer name>/thrust-cpp11/` and build everything in there. The devcontainer name is inserted automatically on devcontainer builds to keep build artifacts separate for the different toolchains.
+That will create `build/<optional devcontainer name>/thrust-cpp17/` and build everything in there. The devcontainer name is inserted automatically on devcontainer builds to keep build artifacts separate for the different toolchains.
 
 It's also worth mentioning that additional cmake options can still be passed in and will override the preset settings.
 

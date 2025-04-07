@@ -57,10 +57,10 @@ struct layout_stride
 namespace __mdspan_detail
 {
 template <class _Layout, class _Extents, class = void>
-_CCCL_INLINE_VAR constexpr bool __is_valid_layout_mapping = false;
+inline constexpr bool __is_valid_layout_mapping = false;
 
 template <class _Layout, class _Extents>
-_CCCL_INLINE_VAR constexpr bool
+inline constexpr bool
   __is_valid_layout_mapping<_Layout, _Extents, void_t<typename _Layout::template mapping<_Extents>>> = true;
 } // namespace __mdspan_detail
 

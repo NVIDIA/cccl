@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 concept regular = semiregular<_Tp> && equality_comparable<_Tp>;
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 // [concept.object]
 
@@ -43,7 +43,7 @@ _CCCL_CONCEPT_FRAGMENT(__regular_, requires()(requires(semiregular<_Tp>), requir
 template <class _Tp>
 _CCCL_CONCEPT regular = _CCCL_FRAGMENT(__regular_, _Tp);
 
-#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
