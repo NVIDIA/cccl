@@ -18,7 +18,19 @@
 __host__ __device__ constexpr void test_strncmp(const char* lhs, const char* rhs, cuda::std::size_t n, int expected)
 {
   const auto ret = cuda::std::strncmp(lhs, rhs, n);
-  assert(ret == expected);
+
+  if (expected == 0)
+  {
+    assert(ret == 0);
+  }
+  else if (expected < 0)
+  {
+    assert(ret < 0);
+  }
+  else
+  {
+    assert(ret > 0);
+  }
 }
 
 __host__ __device__ constexpr bool test()
