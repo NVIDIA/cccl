@@ -167,11 +167,19 @@ class _RadixSort:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
 
+        print("before")
+        print(f"{begin_bit=}")
+        print(f"{end_bit=}")
+
         if begin_bit is None:
             begin_bit = 0
         if end_bit is None:
             key_type = protocols.get_dtype(d_in_keys_array)
             end_bit = key_type.itemsize * 8
+
+        print("after")
+        print(f"{begin_bit=}")
+        print(f"{end_bit=}")
 
         selector = ctypes.c_int(-1)
 

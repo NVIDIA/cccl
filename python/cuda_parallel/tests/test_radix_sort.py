@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import itertools
 from typing import Tuple
 
 import numba
@@ -89,13 +90,21 @@ def radix_sort_device(
     )
 
 
-def host_sort(h_in_keys, h_in_values, order) -> Tuple:
-    if order is algorithms.SortOrder.DESCENDING:
-        # We do this for stability. We need to cast to a signed integer to properly negate the keys
-        signed_dtype = np.dtype(h_in_keys.dtype.name.replace("uint", "int"))
-        argsort = np.argsort(-h_in_keys.astype(signed_dtype), stable=True)
+def host_sort(h_in_keys, h_in_values, order, begin_bit=None, end_bit=None) -> Tuple:
+    if begin_bit is not None and end_bit is not None:
+        num_bits = end_bit - begin_bit + 1
+        mask = np.array(((1 << (num_bits)) - 1) << begin_bit, dtype=h_in_keys.dtype)
+
+        h_in_keys_copy = (h_in_keys & mask) >> begin_bit
     else:
-        argsort = np.argsort(h_in_keys, stable=True)
+        h_in_keys_copy = h_in_keys
+
+    if order is algorithms.SortOrder.DESCENDING:
+        # We do this for stability. We need to cast to a signed integer to properly negate the keys.
+        signed_dtype = np.dtype(h_in_keys_copy.dtype.name.replace("uint", "int"))
+        argsort = np.argsort(-h_in_keys_copy.astype(signed_dtype), stable=True)
+    else:
+        argsort = np.argsort(h_in_keys_copy, stable=True)
 
     h_in_keys = h_in_keys[argsort]
     if h_in_values is not None:
@@ -129,13 +138,10 @@ def test_radix_sort_keys(dtype, num_items, order):
     DTYPE_SIZE_ORDER,
 )
 def test_radix_sort_pairs(dtype, num_items, order):
-    h_in_keys = random_array(num_items, dtype, max_value=2)
+    h_in_keys = random_array(num_items, dtype, max_value=20)
     h_in_values = random_array(num_items, np.float32)
     h_out_keys = np.empty(num_items, dtype=dtype)
     h_out_values = np.empty(num_items, dtype=np.float32)
-
-    print(h_in_keys)
-    print(h_in_values)
 
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_in_values = numba.cuda.to_device(h_in_values)
@@ -206,3 +212,46 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items, order):
 
     np.testing.assert_array_equal(h_out_keys, h_in_keys)
     np.testing.assert_array_equal(h_out_values, h_in_values)
+
+
+@pytest.mark.parametrize(
+    "dtype, num_items, order",
+    DTYPE_SIZE_ORDER,
+)
+def test_radix_sort_keys_bit_window(dtype, num_items, order):
+    num_bits = dtype().itemsize
+    begin_bits = [0, num_bits / 3, 3 * num_bits / 4, num_bits]
+    end_bits = [0, num_bits / 3, 3 * num_bits / 4, num_bits]
+
+    for begin_bit, end_bit in itertools.product(begin_bits, end_bits):
+        if end_bit < begin_bit:
+            continue
+
+        begin_bit = 0
+        end_bit = 8
+
+        print("in here")
+        print(f"{begin_bit=}")
+        print(f"{end_bit=}")
+
+        # h_in_keys = random_array(num_items, dtype)
+        h_in_keys = np.array([147, 152, 95, 215], dtype=dtype)
+        h_out_keys = np.empty(num_items, dtype=dtype)
+
+        d_in_keys = numba.cuda.to_device(h_in_keys)
+        d_out_keys = numba.cuda.to_device(h_out_keys)
+
+        # keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
+
+        # radix_sort_device(keys_double_buffer, None,
+        #                   None, None, order, num_items, begin_bit, end_bit)
+        radix_sort_device(
+            d_in_keys, None, d_out_keys, None, order, num_items, begin_bit, end_bit
+        )
+
+        # h_out_keys = keys_double_buffer.current().copy_to_host()
+        h_out_keys = d_out_keys.copy_to_host()
+
+        h_in_keys, _ = host_sort(h_in_keys, None, order, begin_bit, end_bit)
+
+        np.testing.assert_array_equal(h_out_keys, h_in_keys)
