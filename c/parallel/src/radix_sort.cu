@@ -399,6 +399,16 @@ struct radix_sort_kernel_source
   {
     return build.onesweep_kernel;
   }
+
+  std::size_t KeySize() const
+  {
+    return build.key_type.size;
+  }
+
+  std::size_t ValueSize() const
+  {
+    return build.value_type.size;
+  }
 };
 
 } // namespace radix_sort
@@ -643,6 +653,8 @@ struct {26} {{
     build_ptr->cc         = cc;
     build_ptr->cubin      = (void*) result.data.release();
     build_ptr->cubin_size = result.size;
+    build_ptr->key_type   = input_keys_it.value_type;
+    build_ptr->value_type = input_values_it.value_type;
     build_ptr->order      = sort_order;
   }
   catch (const std::exception& exc)
