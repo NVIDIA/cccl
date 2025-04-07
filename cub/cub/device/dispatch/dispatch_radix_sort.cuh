@@ -98,6 +98,16 @@ struct DeviceRadixSortKernelSource
   CUB_DEFINE_KERNEL_GETTER(
     RadixSortOnesweepKernel,
     DeviceRadixSortOnesweepKernel<MaxPolicyT, Order, KeyT, ValueT, OffsetT, int, int, DecomposerT>);
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t KeySize()
+  {
+    return sizeof(KeyT);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t ValueSize()
+  {
+    return sizeof(ValueT);
+  }
 };
 
 template <typename MaxPolicyT,
@@ -135,6 +145,16 @@ struct DeviceSegmentedRadixSortKernelSource
       EndOffsetIteratorT,
       SegmentSizeT,
       DecomposerT>);
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t KeySize()
+  {
+    return sizeof(KeyT);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t ValueSize()
+  {
+    return sizeof(ValueT);
+  }
 };
 
 } // namespace detail::radix_sort
@@ -559,14 +579,14 @@ struct DispatchRadixSort
     PortionOffsetT max_num_blocks     = ::cuda::ceil_div(
       static_cast<int>(_CUDA_VSTD::min(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
-    size_t value_size         = KEYS_ONLY ? 0 : sizeof(ValueT);
+    size_t value_size         = KEYS_ONLY ? 0 : kernel_source.ValueSize();
     size_t allocation_sizes[] = {
       // bins
       num_portions * num_passes * RADIX_DIGITS * sizeof(OffsetT),
       // lookback
       max_num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT),
       // extra key buffer
-      is_overwrite_okay || num_passes <= 1 ? 0 : num_items * sizeof(KeyT),
+      is_overwrite_okay || num_passes <= 1 ? 0 : num_items * kernel_source.KeySize(),
       // extra value buffer
       is_overwrite_okay || num_passes <= 1 ? 0 : num_items * value_size,
       // counters
@@ -878,10 +898,10 @@ struct DispatchRadixSort
         spine_length * sizeof(OffsetT),
 
         // bytes needed for 3rd keys buffer
-        (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),
+        (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
         // bytes needed for 3rd values buffer
-        (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),
+        (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * kernel_source.ValueSize(),
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
@@ -1012,8 +1032,8 @@ struct DispatchRadixSort
 #endif
     cudaError_t error = cudaSuccess;
 
-    error = CubDebug(
-      cudaMemcpyAsync(d_keys.Alternate(), d_keys.Current(), num_items * sizeof(KeyT), cudaMemcpyDefault, stream));
+    error = CubDebug(cudaMemcpyAsync(
+      d_keys.Alternate(), d_keys.Current(), num_items * kernel_source.KeySize(), cudaMemcpyDefault, stream));
     if (cudaSuccess != error)
     {
       return error;
@@ -1033,7 +1053,7 @@ struct DispatchRadixSort
       _CubLog("Invoking async copy of %lld values on stream %lld\n", (long long) num_items, (long long) stream);
 #endif
       error = CubDebug(cudaMemcpyAsync(
-        d_values.Alternate(), d_values.Current(), num_items * sizeof(ValueT), cudaMemcpyDefault, stream));
+        d_values.Alternate(), d_values.Current(), num_items * kernel_source.ValueSize(), cudaMemcpyDefault, stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -1512,7 +1532,7 @@ struct DispatchSegmentedRadixSort
       void* allocations[2]       = {};
       size_t allocation_sizes[2] = {
         // bytes needed for 3rd keys buffer
-        (is_overwrite_okay) ? 0 : num_items * sizeof(KeyT),
+        (is_overwrite_okay) ? 0 : num_items * kernel_source.KeySize(),
 
         // bytes needed for 3rd values buffer
         (is_overwrite_okay || (KEYS_ONLY)) ? 0 : num_items * sizeof(ValueT),

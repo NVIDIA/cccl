@@ -27,6 +27,8 @@ typedef struct cccl_device_radix_sort_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  cccl_type_info key_type;
+  cccl_type_info value_type;
   CUkernel single_tile_kernel;
   CUkernel upsweep_kernel;
   CUkernel alt_upsweep_kernel;
