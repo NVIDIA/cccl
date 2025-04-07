@@ -32,17 +32,24 @@ def cached_compile(func, sig, abi_name=None, **kwargs):
 
 
 class IteratorKind:
-    def __init__(self, value_type):
+    def __init__(self, value_type, state_type):
         self.value_type = value_type
+        self.state_type = state_type
 
     def __repr__(self):
-        return f"{self.__class__.__name__}[{str(self.value_type)}]"
+        return (
+            f"{self.__class__.__name__}[{str(self.value_type), str(self.state_type)}]"
+        )
 
     def __eq__(self, other):
-        return type(self) is type(other) and self.value_type == other.value_type
+        return (
+            type(self) is type(other)
+            and self.value_type == other.value_type
+            and self.state_type == other.state_type
+        )
 
     def __hash__(self):
-        return hash((type(self), self.value_type))
+        return hash((type(self), self.value_type, self.state_type))
 
 
 @lru_cache(maxsize=None)
@@ -98,7 +105,7 @@ class IteratorBase:
         self.state_type = state_type
         self.value_type = value_type
         self.prefix = prefix
-        self.kind_ = self.__class__.iterator_kind_type(self.value_type)
+        self.kind_ = self.__class__.iterator_kind_type(self.value_type, self.state_type)
         self.state_ = IteratorState(self.cvalue)
 
     @property
@@ -342,10 +349,9 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
                 state_type=it.state_type,
                 value_type=it.value_type,
             )
-
-        @property
-        def kind(self):
-            return self.__class__.iterator_kind_type(self._it.kind)
+            self.kind_ = self.__class__.iterator_kind_type(
+                (it.kind, it.value_type), it.state_type
+            )
 
         @staticmethod
         def advance(state, distance):
@@ -384,7 +390,7 @@ def make_transform_iterator(it, op: Callable):
             _, op_retty = cached_compile(
                 op,
                 (self._it.value_type,),
-                abi_name=f"{op.__name__}_{_get_abi_suffix(self.kind)}",
+                abi_name=f"{op.__name__}_{_get_abi_suffix(self._it.kind)}",
                 output="ltoir",
             )
             value_type = op_retty
@@ -394,10 +400,9 @@ def make_transform_iterator(it, op: Callable):
                 state_type=state_type,
                 value_type=value_type,
             )
-
-        @property
-        def kind(self):
-            return self.__class__.iterator_kind_type((self._it.kind, self._op))
+            self.kind_ = self.__class__.iterator_kind_type(
+                (value_type, self._it.kind, self._op), state_type
+            )
 
         @staticmethod
         def advance(state, distance):
@@ -429,10 +434,9 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
                 state_type=it.state_type,
                 value_type=it.value_type,
             )
-
-        @property
-        def kind(self):
-            return self.__class__.iterator_kind_type(self._it.kind)
+            self.kind_ = self.__class__.iterator_kind_type(
+                (it.value_type, self._it.kind), it.state_type
+            )
 
         @staticmethod
         def advance(state, distance):
