@@ -204,6 +204,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   {
     if constexpr (sizeof...(_OtherSigs) == 0) // short-circuit some common cases
     {
+      (void) __other;
       return *this;
     }
     else if constexpr (sizeof...(_Sigs) == 0)

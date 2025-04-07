@@ -34,6 +34,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT from_chars_result
   {
     return ec == errc{};
   }
+
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator==(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
+  {
+    return __lhs.ptr == __rhs.ptr && __lhs.ec == __rhs.ec;
+  }
+
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator!=(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
+  {
+    return !(__lhs == __rhs);
+  }
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
