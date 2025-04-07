@@ -5,6 +5,7 @@
 import itertools
 from typing import Tuple
 
+import cupy as cp
 import numba
 import numpy as np
 import pytest
@@ -349,3 +350,22 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
 
         np.testing.assert_array_equal(h_out_keys, h_in_keys)
         np.testing.assert_array_equal(h_out_values, h_in_values)
+
+
+def test_radix_sort_with_stream(cuda_stream):
+    cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
+    num_items = 10000
+
+    with cp_stream:
+        h_in_keys = random_array(num_items, np.int32)
+        d_in_keys = cp.asarray(h_in_keys)
+        d_out_keys = cp.empty_like(d_in_keys)
+
+    radix_sort_device(
+        d_in_keys, None, d_out_keys, None, algorithms.SortOrder.ASCENDING, num_items
+    )
+
+    got = d_out_keys.get()
+    h_in_keys.sort()
+
+    np.testing.assert_array_equal(got, h_in_keys)
