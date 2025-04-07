@@ -8,11 +8,14 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
-    - {jobs: ['test_ext'],  project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc12', 'clang'], gpu: 'rtx2080'}
+    - {jobs: ['test_ext'],                project: 'cudax',      std: 'max', gpu: 'h100', sm: 'gpu' }
+    - {jobs: ['test_ext'],                project: 'cudax',      std: 'max', gpu: 'h100', sm: 'gpu' }
+    - {jobs: ['test_ext'],  project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc', 'clang'], gpu: 'rtx2080'}
     - {jobs: ['test_ext'],                project: 'cudax',      std: 'max', gpu: ['v100', 't4', 'l4', 'h100'], sm: '70;75;89;90;100'}
-    - {jobs: ['test_ext'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']  , gpu: 'rtx2080'}
-    - {jobs: ['test_ext'], project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14'], gpu: 'rtx2080'}
-    - {jobs: ['test_ext'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang18'], gpu: 'rtx2080'}
+    - {jobs: ['test_ext'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['gcc12']  , gpu: 'rtx2080'}
+    - {jobs: ['test_ext'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc']  ,   gpu: 'rtx2080'}
+    - {jobs: ['test_ext'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14'], gpu: 'rtx2080'}
+    - {jobs: ['test_ext'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang'],   gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK/compiler
