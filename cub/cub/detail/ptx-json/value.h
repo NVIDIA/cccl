@@ -86,6 +86,7 @@ struct value<V, cuda::std::index_sequence<Is...>>
 #pragma nv_diag_default 842
   __forceinline__ __device__ static void emit()
   {
+    // See the definition of storage_helper for why laundering the string through it is necessary.
     asm volatile("\"%0\"" ::"C"(storage_helper<V.str[Is]...>::value) : "memory");
   }
 };

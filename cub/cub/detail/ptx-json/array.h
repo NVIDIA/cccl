@@ -63,6 +63,6 @@ struct is_array : cuda::std::false_type
 {};
 
 template <auto... NKV>
-struct is_array<object<NKV...>> : cuda::std::true_type
+struct is_array<array<NKV...>> : cuda::std::true_type
 {};
 } // namespace ptx_json

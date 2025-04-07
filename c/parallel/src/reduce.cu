@@ -277,7 +277,6 @@ CUresult cccl_device_reduce_build(
       st_policy_str,
       segment_policy_str);
 
-
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
     printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
@@ -366,12 +365,12 @@ CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchReduce<indirect_arg_t,
-                        indirect_arg_t,
-                        ::cuda::std::size_t,
-                        indirect_arg_t,
-                        indirect_arg_t,
-                        void,
+    cub::DispatchReduce<indirect_arg_t, // InputIteratorT
+                        indirect_arg_t, // OutputIteratorT
+                        ::cuda::std::size_t, // OffsetT
+                        indirect_arg_t, // ReductionOpT
+                        indirect_arg_t, // InitT
+                        void, // AccumT
                         ::cuda::std::__identity, // TransformOpT
                         reduce::reduce_runtime_tuning_policy, // PolicyHub
                         reduce::reduce_kernel_source, // KernelSource
