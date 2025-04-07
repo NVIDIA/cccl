@@ -551,7 +551,7 @@ namespace detail
 
 #if defined(CUB_ENABLE_POLICY_PTX_JSON)
 #  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD(field) \
-    key<_CCCL_PP_STR(_CCCL_PP_FIRST field)>() = value<(int) StaticPolicyT::_CCCL_PP_FIRST field>(),
+    key<_CCCL_TO_STRING(_CCCL_PP_FIRST field)>() = value<(int) StaticPolicyT::_CCCL_PP_FIRST field>(),
 
 #  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)                                     \
     _CCCL_DEVICE static constexpr auto EncodedPolicy()                                      \
@@ -574,10 +574,10 @@ namespace detail
 
 #  define CUB_DETAIL_POLICY_WRAPPER_GET_FIELD(field)  \
     ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field) = \
-      static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_PP_STR(_CCCL_PP_FIRST field)].get<int>());
+      static_cast<_CCCL_PP_THIRD field>(subpolicy[_CCCL_TO_STRING(_CCCL_PP_FIRST field)].get<int>());
 
 #  define CUB_DETAIL_POLICY_WRAPPER_FIELD_STRING(field) \
-    _CCCL_PP_STR(static constexpr auto _CCCL_PP_FIRST field = static_cast<_CCCL_PP_THIRD field>({});) "\n"
+    _CCCL_TO_STRING(static constexpr auto _CCCL_PP_FIRST field = static_cast<_CCCL_PP_THIRD field>({});) "\n"
 
 #  define CUB_DETAIL_POLICY_WRAPPER_FIELD_VALUE(field) , (int) ap._CCCL_PP_CAT(runtime_, _CCCL_PP_FIRST field)
 

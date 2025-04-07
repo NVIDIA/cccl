@@ -24,12 +24,8 @@
 #  define _NV_COMPILER_CLANG_CUDA
 #endif
 
-#if ((defined(__cplusplus) && __cplusplus >= 201103L) || (defined(_MSC_VER) && _MSVC_LANG >= 201103L))
-#  define _NV_TARGET_CPP11
-#endif
-
 // Hide `if target` support from NVRTC
-#if defined(_NV_TARGET_CPP11) && !defined(__CUDACC_RTC__)
+#if !defined(__CUDACC_RTC__)
 
 #  if defined(_NV_COMPILER_NVCXX)
 #    define _NV_BITSET_ATTRIBUTE [[nv::__target_bitset]]

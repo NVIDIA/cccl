@@ -59,8 +59,7 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 
 #  include <cuda/cmath>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 #  if _CCCL_HAS_NVFP16()
 #    include <cuda_fp16.h>

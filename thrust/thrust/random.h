@@ -29,7 +29,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 // RNGs
 #include <thrust/random/discard_block_engine.h>

@@ -18,7 +18,7 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 @pytest.mark.parametrize("T", [types.int8, types.int16, types.uint32, types.uint64])
-@pytest.mark.parametrize("threads_per_block", [32, 128, 256, (4, 8), (2, 4, 8)])
+@pytest.mark.parametrize("threads_per_block", [32, 128, 256, (8, 16), (2, 4, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 3])
 @pytest.mark.parametrize(
     "algorithm",

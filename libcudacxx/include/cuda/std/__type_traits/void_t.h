@@ -25,9 +25,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class...>
 using void_t = void;
 
-template <class...>
-using __void_t _LIBCUDACXX_DEPRECATED = void;
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_VOID_T_H
