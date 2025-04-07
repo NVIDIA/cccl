@@ -184,8 +184,8 @@ its various parameters and the return values.
 
 The last bit necessary to make all of this work is the preprocessing and embedding step. In it, the `jit_entry.h` header
 file is preprocessed with the C++ compiler, with an additional definition of the macro
-`_CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS`. The result of this preprocessing is then turn into a source file with it as
-a global char array, called `jit_template_header_contents`, and compiled into a static library.
+`_CCCL_C_PARALLEL_JIT_TEMPLATES_PREPROCESS`. The result of this preprocessing is then turned into a source file with it
+as a global char array, called `jit_template_header_contents`, and compiled into a static library.
 
 > [!IMPORTANT]
 > Please read the following before authoring jit template and/or mapping headers!
