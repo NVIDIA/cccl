@@ -145,6 +145,16 @@ struct DeviceSegmentedRadixSortKernelSource
       EndOffsetIteratorT,
       SegmentSizeT,
       DecomposerT>);
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t KeySize()
+  {
+    return sizeof(KeyT);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t ValueSize()
+  {
+    return sizeof(ValueT);
+  }
 };
 
 } // namespace detail::radix_sort
