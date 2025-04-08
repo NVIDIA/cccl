@@ -130,6 +130,17 @@ struct expecter
     }
   };
 
+  template <typename... Msgs>
+  [[noreturn]] static _LIBCUDACXX_HIDE_FROM_ABI void
+  __throw_stf_failure([[maybe_unused]] _CUDA_VSTD::source_location loc, [[maybe_unused]] const Msgs&... msgs)
+  {
+#  ifndef _CCCL_NO_EXCEPTIONS
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (throw failure(loc, msgs...);), (_CUDA_VSTD_NOVERSION::terminate();))
+#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+    _CUDA_VSTD_NOVERSION::terminate();
+#  endif // _CCCL_NO_EXCEPTIONS
+  }
+
   /*
    * @brief Wrapper for a comparison operation using one of `==`, `!=`, `<`, `>`, `<=`, `>=`. Includes the result and
    * the operands.
@@ -283,25 +294,17 @@ struct expecter
     if constexpr (sizeof...(msgs) == 0)
     {
       using U = ::std::remove_reference_t<T>;
-#  ifndef _CCCL_NO_EXCEPTIONS
-      throw failure(
+      __throw_stf_failure(
         loc,
         "Tested expression of type " + ::std::string(type_name<T>) + " is "
           + (std::is_same_v<const U, const bool> ? "false"
              : ::std::is_arithmetic_v<U>         ? "zero"
                                                  : "null")
           + ".\n");
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
-      _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _CCCL_NO_EXCEPTIONS
     }
     else
     {
-#  ifndef _CCCL_NO_EXCEPTIONS
-      throw failure(loc, msgs...);
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
-      _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _CCCL_NO_EXCEPTIONS
+      __throw_stf_failure(loc, msgs...);
     }
   }
 
@@ -320,11 +323,7 @@ struct expecter
     {
       return ::std::forward<L>(e.lhs);
     }
-#  ifndef _CCCL_NO_EXCEPTIONS
-    throw failure(loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
-    _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _CCCL_NO_EXCEPTIONS
+    __throw_stf_failure(loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
   }
 };
 
