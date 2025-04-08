@@ -76,6 +76,7 @@ add_custom_command(
     DEPENDS "${pyx_source_file}"
     DEPFILE "${_depfile}"
 )
+set_source_files_properties("${_generated_extension_src}" PROPERTIES GENERATED TRUE)
 add_custom_target(cythonize_bindings ALL
     DEPENDS "${_generated_extension_src}"
 )
