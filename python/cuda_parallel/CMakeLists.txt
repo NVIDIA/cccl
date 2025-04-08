@@ -25,7 +25,7 @@ install(
     DESTINATION cuda/parallel/experimental/cccl
 )
 
-find_package(Python3 REQUIRED COMPONENTS Development.Module)
+find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
 get_filename_component(_python_path "${Python3_EXECUTABLE}" PATH)
 find_program(
@@ -67,8 +67,8 @@ string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
 set(pyx_source_file "${cuda_parallel_SOURCE_DIR}/cuda/parallel/experimental/_bindings.pyx")
-set(_generated_extension_src "${CMAKE_BINARY_DIR}/_bindings.c")
-set(_depfile "${CMAKE_BINARY_DIR}/_bindings.c.dep")
+set(_generated_extension_src "${cuda_parallel_BINARY_DIR}/_bindings.c")
+set(_depfile "${cuda_parallel_BINARY_DIR}/_bindings.c.dep")
 add_custom_command(
     OUTPUT "${_generated_extension_src}"
     COMMAND ${CYTHON_EXECUTABLE}
