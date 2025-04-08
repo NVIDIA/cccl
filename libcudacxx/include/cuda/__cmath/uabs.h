@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @pre \p __v must be an integer type
 //! @return The unsigned absolute value of \p __v
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::make_unsigned_t<_Tp> uabs(_Tp __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
