@@ -268,7 +268,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
     cudaStreamDestroy(raw_stream);
   }
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   { // allocate with too small alignment
     while (true)
     {
@@ -333,7 +333,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 }
 
 enum class AccessibilityType

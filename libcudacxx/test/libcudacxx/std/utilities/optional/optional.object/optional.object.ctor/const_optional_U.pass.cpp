@@ -155,7 +155,7 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
@@ -174,7 +174,7 @@ public:
 };
 
 template <class T, class U>
-__host__ __device__ void test_exception(const optional<U>& rhs)
+void test_exception(const optional<U>& rhs)
 {
   try
   {
@@ -195,7 +195,7 @@ void test_exceptions()
   optional<U> rhs(U{3});
   test_exception<T>(rhs);
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -214,9 +214,9 @@ int main(int, char**)
   }
   static_assert(!(cuda::std::is_constructible<optional<X>, const optional<Y>&>::value), "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }
