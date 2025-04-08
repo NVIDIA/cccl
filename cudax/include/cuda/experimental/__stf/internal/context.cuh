@@ -791,11 +791,7 @@ public:
     }
     else
     {
-#ifndef _CCCL_NO_EXCEPTIONS
-      throw ::std::runtime_error("Payload does not hold graph_ctx");
-#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
-      _CUDA_VSTD_NOVERSION::terminate();
-#endif // _CCCL_NO_EXCEPTIONS
+      ::cuda::std::__throw_runtime_error("Payload does not hold graph_ctx");
     }
   }
 
