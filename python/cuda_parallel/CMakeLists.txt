@@ -25,17 +25,17 @@ install(
     DESTINATION cuda/parallel/experimental/cccl
 )
 
-find_package(Python REQUIRED COMPONENTS Development.Module)
+find_package(Python3 REQUIRED COMPONENTS Development.Module)
 
-get_filename_component(_python_path ${Python_EXECUTABLE} PATH)
+get_filename_component(_python_path ${Python3_EXECUTABLE} PATH)
 find_program(
     CYTHON_EXECUTABLE
     NAMES cython cython.bat cython3
-    HINTS ${_python_path}
+    HINTS "${_python_path}"
     DOC "path to the cython executable"
 )
 
-set(CYTHON_version_command ${CYTHON_EXECUTABLE} --version)
+set(CYTHON_version_command "${CYTHON_EXECUTABLE}" --version)
 execute_process(COMMAND ${CYTHON_version_command}
     OUTPUT_VARIABLE CYTHON_version_output
     ERROR_VARIABLE CYTHON_version_error
@@ -66,13 +66,13 @@ mark_as_advanced(CYTHON_EXECUTABLE CYTHON_VERSION)
 # -M generates depfile
 # -t cythonizes if PYX is newer than preexisting output
 # -w sets working directory
-set(CYTHON_FLAGS "-3 -M -t -w \"${CMAKE_SOURCE_DIR}\"")
+set(CYTHON_FLAGS "-3 -M -t -w \"${cuda_parallel_SOURCE_DIR}\"")
 string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
 
 message(STATUS "Using Cython ${CYTHON_VERSION}")
-set(pyx_source_file ${CMAKE_SOURCE_DIR}/cuda/parallel/experimental/_bindings.pyx)
-set(_generated_extension_src ${CMAKE_BINARY_DIR}/_bindings.c)
-set(_depfile ${CMAKE_BINARY_DIR}/_bindings.c.dep)
+set(pyx_source_file "${cuda_parallel_SOURCE_DIR}/cuda/parallel/experimental/_bindings.pyx")
+set(_generated_extension_src "${CMAKE_BINARY_DIR}/_bindings.c")
+set(_depfile "${CMAKE_BINARY_DIR}/_bindings.c.dep")
 add_custom_command(
     OUTPUT ${_generated_extension_src}
     COMMAND ${CYTHON_EXECUTABLE}
@@ -84,7 +84,7 @@ add_custom_target(cythonize_bindings ALL
     DEPENDS ${_generated_extension_src}
 )
 
-Python_add_library(_bindings MODULE WITH_SOABI ${_generated_extension_src})
+Python3_add_library(_bindings MODULE WITH_SOABI ${_generated_extension_src})
 add_dependencies(_bindings cythonize_bindings)
 target_link_libraries(_bindings PRIVATE cccl.c.parallel CUDA::cuda_driver)
 set_target_properties(_bindings PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
