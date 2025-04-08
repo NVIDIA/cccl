@@ -86,6 +86,8 @@ class DeviceMergeSortBuildResult(ctypes.Structure):
         ("cubin", ctypes.c_void_p),
         ("cubin_size", ctypes.c_size_t),
         ("library", ctypes.c_void_p),
+        ("key_type", TypeInfo),
+        ("item_type", TypeInfo),
         ("block_sort_kernel", ctypes.c_void_p),
         ("partition_kernel", ctypes.c_void_p),
         ("merge_kernel", ctypes.c_void_p),
