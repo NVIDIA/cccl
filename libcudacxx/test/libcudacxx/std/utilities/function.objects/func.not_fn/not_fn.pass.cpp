@@ -499,10 +499,10 @@ void throws_in_constructor_test()
     {
       NV_IF_TARGET(NV_IS_HOST, throw 42;)
     }
-    bool operator()() const
+    [[noreturn]] bool operator()() const
     {
       assert(false);
-      _CCCL_UNREACHABLE();
+      cuda::std::unreachable();
     }
   };
   try
