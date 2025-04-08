@@ -173,7 +173,7 @@ struct item_pair
 
 TEST_CASE("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]")
 {
-  const size_t num_items = GENERATE_COPY(take(2, random(1, 10)), values({5, 100, 200}));
+  const size_t num_items = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
   operation_t op         = make_operation(
     "op",
     "struct key_pair { short a; size_t b; };\n"
