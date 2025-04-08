@@ -183,12 +183,18 @@ public:
   {
     _CCCL_ASSERT(__count_ > 0, "Iterator already at or past end.");
     --__count_;
-    auto __guard = _CUDA_VSTD::__make_exception_guard([&] {
-      ++__count_;
-    });
-    __current_++;
-    __guard.__complete();
-    return _CUDA_VSTD::move(__current_);
+#ifndef _CCCL_NO_EXCEPTIONS
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      (
+        try { return __current_++; } catch (...) {
+          ++__count_;
+          throw;
+        }),
+      (return __current_++;))
+#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+    return __current_++;
+#endif // _CCCL_NO_EXCEPTIONS
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
@@ -221,14 +227,14 @@ public:
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(random_access_iterator<_I2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counted_iterator operator+(iter_difference_t<_I2> __n) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr counted_iterator operator+(iter_difference_t<_I2> __n) const
   {
     return counted_iterator(__current_ + __n, __count_ - __n);
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(random_access_iterator<_I2>)
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr counted_iterator
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr counted_iterator
   operator+(iter_difference_t<_I2> __n, const counted_iterator& __x)
   {
     return __x + __n;
@@ -362,7 +368,7 @@ public:
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr strong_ordering
   operator<=>(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
-    return __lhs.__count_ <=> __rhs.__count_;
+    return __rhs.__count_ <=> __lhs.__count_;
   }
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
