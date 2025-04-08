@@ -401,7 +401,7 @@
 // C++ library extensions
 
 #ifdef CCCL_ENABLE_OPTIONAL_REF
-#  define __cpp_lib_optional_ref 202602L
+#  define __cccl_lib_optional_ref 202602L
 #endif // CCCL_ENABLE_OPTIONAL_REF
 
 #endif // _CUDA_STD_VERSION
