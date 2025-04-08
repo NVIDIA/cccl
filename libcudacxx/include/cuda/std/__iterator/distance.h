@@ -37,7 +37,11 @@ template <class _InputIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr typename iterator_traits<_InputIter>::difference_type
 distance(_InputIter __first, _InputIter __last)
 {
-  if constexpr (sized_sentinel_for<_InputIter, _InputIter>)
+  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
+  {
+    return __last - __first;
+  }
+  else if constexpr (sized_sentinel_for<_InputIter, _InputIter>)
   {
     return __last - __first;
   }

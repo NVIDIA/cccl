@@ -40,11 +40,11 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(_InputIter& __i, _Distance __or
 {
   using _Difference = typename iterator_traits<_InputIter>::difference_type;
   _Difference __n   = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
-  if constexpr (random_access_iterator<_InputIter>)
+  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
   {
     __i += __n;
   }
-  else if constexpr (bidirectional_iterator<_InputIter>)
+  else if constexpr (__is_cpp17_bidirectional_iterator<_InputIter>::value)
   {
     if (__n >= 0)
     {
