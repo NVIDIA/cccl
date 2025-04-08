@@ -2,6 +2,10 @@
 # cython: language_level=3
 # cython: linetrace=True
 
+# Python signatures are declared in the companion Python stub file _bindings.pyi
+# Make sure to update PYI with change to Python API to ensure that Python
+# static type checker tools like mypy green-lights cuda.parallel
+
 from libc.string cimport memset, memcpy
 from libc.stdint cimport uint8_t, uint32_t, uint64_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
@@ -704,7 +708,7 @@ def make_pointer_object(ptr, owner):
 
 cdef class IteratorState(StateBase):
     "Represents blob referenced by pointer"
-    cdef size_t size
+    cdef size_t state_nbytes
 
     def __cinit__(self, arg):
         cdef size_t buffer_size = 0
@@ -715,11 +719,11 @@ cdef class IteratorState(StateBase):
         if isinstance(arg, ctypes._Pointer):
             ptr = ctypes_typed_pointer_payload_ptr(arg)
             ref = arg.contents
-            self.size = ctypes.sizeof(ref)
+            self.state_nbytes = ctypes.sizeof(ref)
         elif PyObject_CheckBuffer(arg):
             ptr = get_buffer_pointer(arg, &buffer_size)
             ref = arg
-            self.size = buffer_size
+            self.state_nbytes = buffer_size
         else:
             raise TypeError(
                 "Expected a ctypes pointer with content, or object of type bytes or bytearray, "
@@ -728,14 +732,14 @@ cdef class IteratorState(StateBase):
         self.set_state(ptr, ref)
 
     cdef inline size_t get_size(self):
-        return self.size
+        return self.state_nbytes
 
     @property
     def size(self):
-        return self.size
+        return self.state_nbytes
 
     def __getbuffer__(self, Py_buffer *buffer, int flags):
-        cdef Py_ssize_t cast_size = <Py_ssize_t>self.size
+        cdef Py_ssize_t cast_size = <Py_ssize_t>self.state_nbytes
         buffer.buf = <char *>self.ptr
         buffer.obj = self
         buffer.len = cast_size
@@ -743,7 +747,7 @@ cdef class IteratorState(StateBase):
         buffer.itemsize = 1
         buffer.format = "B"  # unsigned char
         buffer.ndim = 1
-        buffer.shape = <Py_ssize_t *>&self.size
+        buffer.shape = <Py_ssize_t *>&self.state_nbytes
         buffer.strides = &buffer.itemsize
         buffer.suboffsets = NULL
         buffer.internal = NULL
