@@ -37,8 +37,9 @@ option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." ${CCCL_TOPLEVEL
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ${CCCL_TOPLEVEL_PROJECT})
 option(CCCL_ENABLE_C "Enable CUDA C Core Library." OFF)
 
-option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
-if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
+else()
   set(CCCL_ENABLE_BENCHMARKS OFF)
 endif()
 
