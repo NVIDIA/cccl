@@ -18,7 +18,7 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 template <class It>
 class ThrowsOnInc
 {
@@ -55,7 +55,7 @@ public:
     throw 42;
   }
 };
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 struct InputOrOutputArchetype
 {
@@ -141,7 +141,7 @@ int main(int, char**)
     static_assert(cuda::std::is_same_v<decltype(iter++), void>);
     static_assert(cuda::std::is_same_v<decltype(++iter), Counted&>);
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   {
     using Counted = cuda::std::counted_iterator<ThrowsOnInc<int*>>;
     cuda::std::counted_iterator iter(ThrowsOnInc<int*>{buffer}, 8);
@@ -159,7 +159,7 @@ int main(int, char**)
     static_assert(cuda::std::is_same_v<decltype(iter++), ThrowsOnInc<int*>>);
     static_assert(cuda::std::is_same_v<decltype(++iter), Counted&>);
   }
-#endif // TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

@@ -183,7 +183,7 @@ public:
   {
     _CCCL_ASSERT(__count_ > 0, "Iterator already at or past end.");
     --__count_;
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
     NV_IF_ELSE_TARGET(
       NV_IS_HOST,
       (
@@ -192,9 +192,9 @@ public:
           throw;
         }),
       (return __current_++;))
-#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
     return __current_++;
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
   }
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
