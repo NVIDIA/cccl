@@ -153,9 +153,7 @@ class IteratorBase:
         if self.iterator_io is IteratorIO.INPUT:
             return (self.numba_type,)
         else:
-            # numba_type is a double pointer, so we get the datatype it points to
-            dtype = self.numba_type.dtype.dtype
-            return (self.numba_type, dtype)
+            return (self.numba_type, self.value_type)
 
 
 def sizeof_pointee(context, ptr):
