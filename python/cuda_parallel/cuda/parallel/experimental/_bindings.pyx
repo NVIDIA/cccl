@@ -90,7 +90,7 @@ cdef object arg_type_check(
         )
 
 
-cdef class IntEnum:
+cdef class IntEnumerationMember:
     """
     Represents enumeration member which records the enumeration it is a part of
     for type-checking.
@@ -137,9 +137,9 @@ cdef class IntEnum:
         return hash(_cmp_key)
 
     def __eq__(self, other):
-        cdef IntEnum rhs
+        cdef IntEnumerationMember rhs
         if type(other) == type(self):
-            rhs = <IntEnum>other
+            rhs = <IntEnumerationMember>other
             return (self.attr_value == rhs.attr_value) and (self.parent_class == rhs.parent_class)
         else:
             return False
@@ -164,17 +164,17 @@ cdef class IntEnumerationBase:
 
 cdef class Enumeration_CCCLType(IntEnumerationBase):
     "Enumeration of CCCL types"
-    cdef IntEnum _int8
-    cdef IntEnum _int16
-    cdef IntEnum _int32
-    cdef IntEnum _int64
-    cdef IntEnum _uint8
-    cdef IntEnum _uint16
-    cdef IntEnum _uint32
-    cdef IntEnum _uint64
-    cdef IntEnum _float32
-    cdef IntEnum _float64
-    cdef IntEnum _storage
+    cdef IntEnumerationMember _int8
+    cdef IntEnumerationMember _int16
+    cdef IntEnumerationMember _int32
+    cdef IntEnumerationMember _int64
+    cdef IntEnumerationMember _uint8
+    cdef IntEnumerationMember _uint16
+    cdef IntEnumerationMember _uint32
+    cdef IntEnumerationMember _uint64
+    cdef IntEnumerationMember _float32
+    cdef IntEnumerationMember _float64
+    cdef IntEnumerationMember _storage
 
     def __cinit__(self):
         self.enum_name = "TypeEnum"
@@ -234,72 +234,72 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
     def STORAGE(self):
         return self._storage
 
-    cdef IntEnum make_INT8(self):
+    cdef IntEnumerationMember make_INT8(self):
         cdef str prop_name = "INT8"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_INT8
         )
 
-    cdef IntEnum make_INT16(self):
+    cdef IntEnumerationMember make_INT16(self):
         cdef str prop_name = "INT16"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_INT16
         )
 
-    cdef IntEnum make_INT32(self):
+    cdef IntEnumerationMember make_INT32(self):
         cdef str prop_name = "INT32"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_INT32
         )
 
-    cdef IntEnum make_INT64(self):
+    cdef IntEnumerationMember make_INT64(self):
         cdef str prop_name = "INT64"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_INT64
         )
 
-    cdef IntEnum make_UINT8(self):
+    cdef IntEnumerationMember make_UINT8(self):
         cdef str prop_name = "UINT8"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_UINT8
         )
 
-    cdef IntEnum make_UINT16(self):
+    cdef IntEnumerationMember make_UINT16(self):
         cdef str prop_name = "UINT16"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_UINT16
         )
 
-    cdef IntEnum make_UINT32(self):
+    cdef IntEnumerationMember make_UINT32(self):
         cdef str prop_name = "UINT32"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_UINT32
         )
 
-    cdef IntEnum make_UINT64(self):
+    cdef IntEnumerationMember make_UINT64(self):
         cdef str prop_name = "UINT64"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
@@ -307,18 +307,18 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
         )
 
 
-    cdef IntEnum make_FLOAT32(self):
+    cdef IntEnumerationMember make_FLOAT32(self):
         cdef str prop_name = "FLOAT32"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_type_enum.CCCL_FLOAT32
         )
 
-    cdef IntEnum make_FLOAT64(self):
+    cdef IntEnumerationMember make_FLOAT64(self):
         cdef str prop_name = "FLOAT64"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
@@ -326,9 +326,9 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
         )
 
 
-    cdef IntEnum make_STORAGE(self):
+    cdef IntEnumerationMember make_STORAGE(self):
         cdef str prop_name = "STORAGE"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
@@ -338,26 +338,26 @@ cdef class Enumeration_CCCLType(IntEnumerationBase):
 
 cdef class Enumeration_OpKind(IntEnumerationBase):
     "Enumeration of operator kinds"
-    cdef IntEnum _stateless
-    cdef IntEnum _stateful
+    cdef IntEnumerationMember _stateless
+    cdef IntEnumerationMember _stateful
 
     def __cinit__(self):
         self.enum_name = "OpKindEnum"
         self._stateless = self.make_STATELESS()
         self._stateful = self.make_STATEFUL()
 
-    cdef IntEnum make_STATELESS(self):
+    cdef IntEnumerationMember make_STATELESS(self):
         cdef str prop_name = "STATELESS"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_op_kind_t.CCCL_STATELESS
         )
 
-    cdef IntEnum make_STATEFUL(self):
+    cdef IntEnumerationMember make_STATEFUL(self):
         cdef str prop_name = "STATEFUL"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
@@ -376,26 +376,26 @@ cdef class Enumeration_OpKind(IntEnumerationBase):
 
 cdef class Enumeration_IteratorKind(IntEnumerationBase):
     "Enumeration of iterator kinds"
-    cdef IntEnum _pointer
-    cdef IntEnum _iterator
+    cdef IntEnumerationMember _pointer
+    cdef IntEnumerationMember _iterator
 
     def __cinit__(self):
         self.enum_name = "IteratorKindEnum"
         self._pointer = self.make_POINTER()
         self._iterator = self.make_ITERATOR()
 
-    cdef IntEnum make_POINTER(self):
+    cdef IntEnumerationMember make_POINTER(self):
         cdef str prop_name = "POINTER"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
             cccl_iterator_kind_t.CCCL_POINTER
         )
 
-    cdef IntEnum make_ITERATOR(self):
+    cdef IntEnumerationMember make_ITERATOR(self):
         cdef str prop_name = "ITERATOR"
-        return IntEnum(
+        return IntEnumerationMember(
             type(self),
             self.enum_name,
             prop_name,
@@ -416,17 +416,17 @@ OpKind = Enumeration_OpKind()
 IteratorKind = Enumeration_IteratorKind()
 
 
-cpdef bint is_TypeEnum(IntEnum attr):
+cpdef bint is_TypeEnum(IntEnumerationMember attr):
     "Return True is attribute represents a type enumerator"
     return attr.parent_class is Enumeration_CCCLType
 
 
-cpdef bint is_OpKind(IntEnum attr):
+cpdef bint is_OpKind(IntEnumerationMember attr):
     "Return True is attribute represents an enumerator of operator kinds"
     return attr.parent_class is Enumeration_OpKind
 
 
-cpdef bint is_IteratorKind(IntEnum attr):
+cpdef bint is_IteratorKind(IntEnumerationMember attr):
     "Return True is attribute represents an enumerator of iterator kinds"
     return attr.parent_class is Enumeration_IteratorKind
 
@@ -480,7 +480,7 @@ cdef class Op:
         arg_type_check(arg_name="ltoir", expected_type=bytes, arg=ltoir)
         arg_type_check(arg_name="state", expected_type=bytes, arg=state)
         arg_type_check(arg_name="state_alignment", expected_type=int, arg=state_alignment)
-        arg_type_check(arg_name="operator_type", expected_type=IntEnum, arg=operator_type)
+        arg_type_check(arg_name="operator_type", expected_type=IntEnumerationMember, arg=operator_type)
         if not is_OpKind(operator_type):
             raise TypeError(
                 f"The operator_type argument should be an enumerator of operator kinds"
@@ -533,7 +533,7 @@ cdef class Op:
 cdef class TypeInfo:
     cdef cccl_type_info type_info
 
-    def __cinit__(self, int size, int alignment, IntEnum type_enum):
+    def __cinit__(self, int size, int alignment, IntEnumerationMember type_enum):
         if size < 1:
             raise ValueError("Size argument must be positive")
         _validate_alignment(alignment)
@@ -764,7 +764,7 @@ cdef class Iterator:
 
     def __cinit__(self,
         int alignment,
-        IntEnum iterator_type,
+        IntEnumerationMember iterator_type,
         Op advance_fn,
         Op dereference_fn,
         TypeInfo value_type,

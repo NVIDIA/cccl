@@ -15,7 +15,7 @@ from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
 
 from ._bindings import (
     CommonData,
-    IntEnum,
+    IntEnumerationMember,
     Iterator,
     IteratorKind,
     IteratorState,
@@ -45,7 +45,7 @@ _TYPE_TO_ENUM = {
 }
 
 
-def _type_to_enum(numba_type: types.Type) -> IntEnum:
+def _type_to_enum(numba_type: types.Type) -> IntEnumerationMember:
     if numba_type in _TYPE_TO_ENUM:
         return _TYPE_TO_ENUM[numba_type]
     return TypeEnum.STORAGE
