@@ -28,7 +28,7 @@
 
 #include <thrust/detail/alignment.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 #define THRUST_MR_DEFAULT_ALIGNMENT alignof(THRUST_NS_QUALIFIER::detail::max_align_t)
 

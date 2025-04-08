@@ -33,7 +33,7 @@
 // #include this for size_t
 #include <thrust/device_ptr.h>
 
-#include <cstddef>
+#include <cuda/std/cstddef>
 
 THRUST_NAMESPACE_BEGIN
 

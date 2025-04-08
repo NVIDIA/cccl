@@ -8,6 +8,8 @@ import pytest
 
 from cuda.cooperative.experimental._common import (
     CudaSharedMemConfig,
+    dim3,
+    normalize_dim_param,
     normalize_dtype_param,
 )
 
@@ -141,6 +143,131 @@ class TestNormalizeDtypeParam:
         with pytest.raises(ValueError) as excinfo:
             normalize_dtype_param(dtype)
         assert "Unrecognized dtype format:" in str(excinfo.value)
+
+
+class TestNormalizeDimParam:
+    def test_dim3_instance(self):
+        """Test that dim3 instances are returned as-is."""
+        dim = dim3(2, 3, 4)
+        assert normalize_dim_param(dim) is dim
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            1,
+            10,
+            256,
+        ],
+    )
+    def test_positive_integer(self, value):
+        """Test conversion of positive integers to 1D dim3."""
+        result = normalize_dim_param(value)
+        assert isinstance(result, dim3)
+        assert result.x == value
+        assert result.y == 1
+        assert result.z == 1
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            -1,
+            -10,
+        ],
+    )
+    def test_negative_integer(self, value):
+        """Test that negative integers raise ValueError."""
+        with pytest.raises(ValueError) as excinfo:
+            normalize_dim_param(value)
+        assert "Dimension value must be non-negative" in str(excinfo.value)
+
+    @pytest.mark.parametrize(
+        "dim_tuple,expected",
+        [
+            ((2, 3), dim3(2, 3, 1)),
+            ((10, 20), dim3(10, 20, 1)),
+            ((256, 128), dim3(256, 128, 1)),
+        ],
+    )
+    def test_2d_tuple(self, dim_tuple, expected):
+        """Test conversion of 2D tuples to dim3."""
+        result = normalize_dim_param(dim_tuple)
+        assert isinstance(result, dim3)
+        assert result.x == expected.x
+        assert result.y == expected.y
+        assert result.z == expected.z
+
+    @pytest.mark.parametrize(
+        "dim_tuple",
+        [
+            (2, -3),
+            (-10, 20),
+            (-1, -1),
+        ],
+    )
+    def test_2d_tuple_negative(self, dim_tuple):
+        """Test that 2D tuples with negative values raise ValueError."""
+        with pytest.raises(ValueError) as excinfo:
+            normalize_dim_param(dim_tuple)
+        assert "Dimension values must be non-negative" in str(excinfo.value)
+
+    @pytest.mark.parametrize(
+        "dim_tuple,expected",
+        [
+            ((2, 3, 4), dim3(2, 3, 4)),
+            ((10, 20, 30), dim3(10, 20, 30)),
+            ((256, 128, 64), dim3(256, 128, 64)),
+        ],
+    )
+    def test_3d_tuple(self, dim_tuple, expected):
+        """Test conversion of 3D tuples to dim3."""
+        result = normalize_dim_param(dim_tuple)
+        assert isinstance(result, dim3)
+        assert result.x == expected.x
+        assert result.y == expected.y
+        assert result.z == expected.z
+
+    @pytest.mark.parametrize(
+        "dim_tuple",
+        [
+            (2, 3, -4),
+            (10, -20, 30),
+            (-1, -1, -1),
+        ],
+    )
+    def test_3d_tuple_negative(self, dim_tuple):
+        """Test that 3D tuples with negative values raise ValueError."""
+        with pytest.raises(ValueError) as excinfo:
+            normalize_dim_param(dim_tuple)
+        assert "Dimension values must be non-negative" in str(excinfo.value)
+
+    @pytest.mark.parametrize(
+        "dim_tuple",
+        [
+            (),
+            (1,),
+            (1, 2, 3, 4),
+        ],
+    )
+    def test_invalid_tuple_length(self, dim_tuple):
+        """Test that tuples with invalid lengths raise ValueError."""
+        with pytest.raises(ValueError) as excinfo:
+            normalize_dim_param(dim_tuple)
+        assert "Tuple dimension must have 2 or 3 elements" in str(excinfo.value)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "string",
+            [1, 2, 3],
+            {"x": 1, "y": 2, "z": 3},
+            None,
+        ],
+    )
+    def test_unsupported_type(self, value):
+        """Test that unsupported types raise ValueError."""
+        with pytest.raises(ValueError) as excinfo:
+            normalize_dim_param(value)
+        assert "Unsupported dimension type:" in str(excinfo.value)
 
 
 class TestCudaSharedMemConfig:

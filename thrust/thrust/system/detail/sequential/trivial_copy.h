@@ -31,7 +31,7 @@
 #endif // no system header
 #include <thrust/system/detail/sequential/general_copy.h>
 
-#include <cstring>
+#include <cuda/std/cstring>
 
 #include <nv/target>
 
@@ -49,18 +49,13 @@ _CCCL_HOST_DEVICE T* trivial_copy_n(const T* first, std::ptrdiff_t n, T* result)
   if (n == 0)
   {
     // If `first` or `result` is an invalid pointer,
-    // the behavior of `std::memmove` is undefined, even if `n` is zero.
+    // the behavior of `cuda::std::memmove` is undefined, even if `n` is zero.
     return result;
   }
 
-  T* return_value = nullptr;
+  ::cuda::std::memmove(result, first, n * sizeof(T));
 
-  NV_IF_TARGET(NV_IS_HOST,
-               (std::memmove(result, first, n * sizeof(T)); return_value = result + n;),
-               ( // NV_IS_DEVICE:
-                 return_value = thrust::system::detail::sequential::general_copy_n(first, n, result);));
-
-  return return_value;
+  return result + n;
 } // end trivial_copy_n()
 
 } // end namespace sequential

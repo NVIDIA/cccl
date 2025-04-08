@@ -45,10 +45,8 @@ int main(int, char**)
   test<bool>();
   test<char>();
   test<wchar_t>();
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t>();
   test<char32_t>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<signed char>();
   test<unsigned char>();
   test<signed short>();

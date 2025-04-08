@@ -29,8 +29,8 @@
 #include <thrust/detail/mpl/math.h>
 #include <thrust/detail/type_traits.h>
 
-#include <cstddef>
-#include <limits>
+#include <cuda/std/cstddef>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -69,7 +69,7 @@ struct lshift_w
 };
 
 template <typename UIntType, UIntType lhs, UIntType rhs>
-struct lshift : lshift_w<UIntType, std::numeric_limits<UIntType>::digits, lhs, rhs>
+struct lshift : lshift_w<UIntType, ::cuda::std::numeric_limits<UIntType>::digits, lhs, rhs>
 {};
 
 template <typename UIntType, int p>
@@ -193,7 +193,7 @@ struct xor_combine_engine_max_aux : xor_combine_engine_max_aux_1<result_type, a,
 template <typename Engine1, size_t s1, typename Engine2, size_t s2, typename result_type>
 struct xor_combine_engine_max
 {
-  static const size_t w = std::numeric_limits<result_type>::digits;
+  static const size_t w = ::cuda::std::numeric_limits<result_type>::digits;
 
   static const result_type m1 = math::
     min<result_type, result_type(Engine1::max - Engine1::min), two_to_the_power<result_type, w - s1>::value - 1>::value;

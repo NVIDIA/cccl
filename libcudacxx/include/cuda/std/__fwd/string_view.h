@@ -34,16 +34,12 @@ using u8string_view = basic_string_view<char8_t>;
 #endif // _LIBCUDACXX_HAS_CHAR8_T()
 using u16string_view = basic_string_view<char16_t>;
 using u32string_view = basic_string_view<char32_t>;
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
-using wstring_view = basic_string_view<wchar_t>;
-#endif
+using wstring_view   = basic_string_view<wchar_t>;
 
 // clang-format off
 template <class _CharT, class _Traits>
 class _LIBCUDACXX_PREFERRED_NAME(string_view)
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
       _LIBCUDACXX_PREFERRED_NAME(wstring_view)
-#endif
 #if _LIBCUDACXX_HAS_CHAR8_T()
       _LIBCUDACXX_PREFERRED_NAME(u8string_view)
 #endif // _LIBCUDACXX_HAS_CHAR8_T()
