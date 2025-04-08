@@ -87,6 +87,10 @@ cdef object arg_type_check(
 
 
 cdef class IntEnum:
+    """
+    Represents enumeration member which records the enumeration it is a part of
+    for type-checking.
+    """
     cdef object parent_class
     cdef str enum_name
     cdef str attr_name
@@ -109,15 +113,20 @@ cdef class IntEnum:
 
     @property
     def parent_class(self):
+        "Type of parental enumeration"
         return self.parent_class
 
     @property
     def name(self):
+        "Name of the enumeration member"
         return self.attr_name
 
     @property
     def value(self):
         return self.attr_value
+
+    def __int__(self):
+        return int(self.attr_value)
 
     def __hash__(self):
         cdef object _cmp_key = (type(self), self.parent_class, <object>self.attr_value)
@@ -132,7 +141,7 @@ cdef class IntEnum:
             return False
 
 
-cdef class IntEnumBase:
+cdef class IntEnumerationBase:
     cdef str enum_name
 
     def __cinit__(self):
@@ -149,7 +158,7 @@ cdef class IntEnumBase:
         return f"<enum '{self.enum_name}'>"
 
 
-cdef class IntEnum_CCCLType(IntEnumBase):
+cdef class Enumeration_CCCLType(IntEnumerationBase):
     "Enumeration of CCCL types"
     cdef IntEnum _int8
     cdef IntEnum _int16
@@ -323,7 +332,7 @@ cdef class IntEnum_CCCLType(IntEnumBase):
         )
 
 
-cdef class IntEnum_OpKind(IntEnumBase):
+cdef class Enumeration_OpKind(IntEnumerationBase):
     "Enumeration of operator kinds"
     cdef IntEnum _stateless
     cdef IntEnum _stateful
@@ -361,7 +370,7 @@ cdef class IntEnum_OpKind(IntEnumBase):
         return self._stateful
 
 
-cdef class IntEnum_IteratorKind(IntEnumBase):
+cdef class Enumeration_IteratorKind(IntEnumerationBase):
     "Enumeration of iterator kinds"
     cdef IntEnum _pointer
     cdef IntEnum _iterator
@@ -398,24 +407,24 @@ cdef class IntEnum_IteratorKind(IntEnumBase):
         return self._iterator
 
 
-TypeEnum = IntEnum_CCCLType()
-OpKind = IntEnum_OpKind()
-IteratorKind = IntEnum_IteratorKind()
+TypeEnum = Enumeration_CCCLType()
+OpKind = Enumeration_OpKind()
+IteratorKind = Enumeration_IteratorKind()
 
 
 cpdef bint is_TypeEnum(IntEnum attr):
     "Return True is attribute represents a type enumerator"
-    return attr.parent_class is IntEnum_CCCLType
+    return attr.parent_class is Enumeration_CCCLType
 
 
 cpdef bint is_OpKind(IntEnum attr):
     "Return True is attribute represents an enumerator of operator kinds"
-    return attr.parent_class is IntEnum_OpKind
+    return attr.parent_class is Enumeration_OpKind
 
 
 cpdef bint is_IteratorKind(IntEnum attr):
     "Return True is attribute represents an enumerator of iterator kinds"
-    return attr.parent_class is IntEnum_IteratorKind
+    return attr.parent_class is Enumeration_IteratorKind
 
 
 cdef object _validate_alignment(int alignment):

@@ -18,7 +18,7 @@ class IntEnum:
     def __hash__(self) -> int: ...
     def __eq__(self, other) -> bool: ...
 
-class IntEnum_CCCLType:
+class Enumeration_CCCLType:
     @property
     def INT8(self) -> IntEnum: ...
     @property
@@ -42,21 +42,21 @@ class IntEnum_CCCLType:
     @property
     def STORAGE(self) -> IntEnum: ...
 
-class IntEnum_OpKind:
+class Enumeration_OpKind:
     @property
     def STATELESS(self) -> IntEnum: ...
     @property
     def STATEFUL(self) -> IntEnum: ...
 
-class IntEnum_IteratorKind:
+class Enumeration_IteratorKind:
     @property
     def POINTER(self) -> IntEnum: ...
     @property
     def ITERATOR(self) -> IntEnum: ...
 
-TypeEnum: IntEnum_CCCLType
-OpKind: IntEnum_OpKind
-IteratorKind: IntEnum_IteratorKind
+TypeEnum: Enumeration_CCCLType
+OpKind: Enumeration_OpKind
+IteratorKind: Enumeration_IteratorKind
 
 def is_TypeEnum(obj) -> bool: ...
 def is_OpKind(obj) -> bool: ...
