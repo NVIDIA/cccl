@@ -7,6 +7,8 @@ project(
     LANGUAGES CUDA CXX C
 )
 
+find_package(CUDAToolkit)
+
 set(_cccl_root ../..)
 
 include(${_cccl_root}/cmake/AppendOptionIfAvailable.cmake)
@@ -25,19 +27,66 @@ install(
 
 find_package(Python REQUIRED COMPONENTS Development.Module)
 
-set(CYTHON_FLAGS "-t -w \"${CMAKE_SOURCE_DIR}\"")
-message(STATUS "$ENV{Cython_DIR}")
-message(STATUS "$ENV{Cython_ROOT}")
+get_filename_component(_python_path ${Python_EXECUTABLE} PATH)
+find_program(
+    CYTHON_EXECUTABLE
+    NAMES cython cython.bat cython3
+    HINTS ${_python_path}
+    DOC "path to the cython executable"
+)
 
-set(_saved_path ${CMAKE_MODULE_PATH})
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/resources/cmake)
-find_package(Cython REQUIRED)
-set(CMAKE_MODULE_PATH ${_saved_path})
+set(CYTHON_version_command ${CYTHON_EXECUTABLE} --version)
+execute_process(COMMAND ${CYTHON_version_command}
+    OUTPUT_VARIABLE CYTHON_version_output
+    ERROR_VARIABLE CYTHON_version_error
+    RESULT_VARIABLE CYTHON_version_result
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_STRIP_TRAILING_WHITESPACE
+)
 
-find_package(CUDAToolkit)
+if(NOT ${CYTHON_version_result} EQUAL 0)
+    set(_error_msg "Command \"${CYTHON_version_command}\" failed with")
+    set(_error_msg "${_error_msg} output:\n${CYTHON_version_error}")
+    message(FATAL_ERROR "${_error_msg}")
+else()
+    if("${CYTHON_version_output}" MATCHES "^[Cc]ython version ([^,]+)")
+        set(CYTHON_VERSION "${CMAKE_MATCH_1}")
+    else()
+        if("${CYTHON_version_error}" MATCHES "^[Cc]ython version ([^,]+)")
+            set(CYTHON_VERSION "${CMAKE_MATCH_1}")
+        endif()
+    endif()
+endif()
 
-add_cython_target(_bindings cuda/parallel/experimental/_bindings.pyx C OUTPUT_VAR _generated_c_src)
-Python_add_library(_bindings MODULE WITH_SOABI ${_generated_c_src})
+include(FindPackageHandleStandardArgs)
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(Cython REQUIRED_VARS CYTHON_EXECUTABLE CYTHON_VERSION)
+mark_as_advanced(CYTHON_EXECUTABLE CYTHON_VERSION)
+
+# -3 generates source for Python 3
+# -M generates depfile
+# -t cythonizes if PYX is newer than preexisting output
+# -w sets working directory
+set(CYTHON_FLAGS "-3 -M -t -w \"${CMAKE_SOURCE_DIR}\"")
+string(REGEX REPLACE " " ";" CYTHON_FLAGS_LIST "${CYTHON_FLAGS}")
+
+message(STATUS "Using Cython ${CYTHON_VERSION}")
+set(pyx_source_file ${CMAKE_SOURCE_DIR}/cuda/parallel/experimental/_bindings.pyx)
+set(_generated_extension_src ${CMAKE_BINARY_DIR}/_bindings.c)
+set(_depfile ${CMAKE_BINARY_DIR}/_bindings.c.dep)
+add_custom_command(
+    OUTPUT ${_generated_extension_src}
+    COMMAND ${CYTHON_EXECUTABLE}
+    ARGS ${CYTHON_FLAGS_LIST} ${pyx_source_file} --output-file ${_generated_extension_src}
+    DEPENDS ${pyx_source_file}
+    DEPFILE ${_depfile}
+)
+add_custom_target(cythonize_bindings ALL
+    DEPENDS ${_generated_extension_src}
+)
+
+Python_add_library(_bindings MODULE WITH_SOABI ${_generated_extension_src})
+add_dependencies(_bindings cythonize_bindings)
 target_link_libraries(_bindings PRIVATE cccl.c.parallel CUDA::cuda_driver)
 set_target_properties(_bindings PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
+
 install(TARGETS _bindings DESTINATION cuda/parallel/experimental)
