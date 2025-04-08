@@ -82,7 +82,8 @@ struct __fn
 private:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter_difference>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
+  __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b
