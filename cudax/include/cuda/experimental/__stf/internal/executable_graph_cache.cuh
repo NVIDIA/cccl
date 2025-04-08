@@ -198,8 +198,7 @@ private:
     size_t reclaimed = 0;
 
     // Use a priority queue (min-heap) to track least recently used entries
-    using key_type         = ::std::pair<size_t, size_t>;
-    using per_device_map_t = ::std::unordered_multimap<key_type, entry, hash_pair>;
+    using key_type = ::std::pair<size_t, size_t>;
 
     auto& device_cache = cached_graphs[dev_id];
 
