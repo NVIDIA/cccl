@@ -23,7 +23,7 @@
 
 #if TEST_HAS_EXCEPTIONS()
 template <typename T>
-__host__ __device__ void test_max(cuda::std::size_t count)
+void test_max(cuda::std::size_t count)
 {
   cuda::std::allocator<T> a;
   try
@@ -36,7 +36,7 @@ __host__ __device__ void test_max(cuda::std::size_t count)
 }
 
 template <typename T>
-__host__ __device__ void test()
+void test()
 {
   // Bug 26812 -- allocating too large
   typedef cuda::std::allocator<T> A;
