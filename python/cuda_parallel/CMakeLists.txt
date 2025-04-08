@@ -27,7 +27,7 @@ install(
 
 find_package(Python3 REQUIRED COMPONENTS Development.Module)
 
-get_filename_component(_python_path ${Python3_EXECUTABLE} PATH)
+get_filename_component(_python_path "${Python3_EXECUTABLE}" PATH)
 find_program(
     CYTHON_EXECUTABLE
     NAMES cython cython.bat cython3
