@@ -81,7 +81,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     auto* ptr = res.allocate_async(42, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
+    stream.sync();
     ensure_managed_ptr(ptr);
 
     res.deallocate_async(ptr, 42, stream);
@@ -91,7 +91,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     auto* ptr = res.allocate_async(42, 4, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
+    stream.sync();
     ensure_managed_ptr(ptr);
 
     res.deallocate_async(ptr, 42, 4, stream);

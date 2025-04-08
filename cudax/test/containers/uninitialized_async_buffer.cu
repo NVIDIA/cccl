@@ -184,7 +184,7 @@ TEMPLATE_TEST_CASE(
     if constexpr (!cuda::std::is_same_v<TestType, do_not_construct>)
     {
       uninitialized_async_buffer buf{resource, stream, 42};
-      stream.wait();
+      stream.sync();
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
       const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
       CUDAX_CHECK(res == TestType{84});

@@ -87,7 +87,7 @@ TEMPLATE_TEST_CASE("pinned_memory_resource allocation", "[memory_resource]", TES
       auto* ptr = res.allocate_async(42, stream);
       static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-      stream.wait();
+      stream.sync();
       ensure_pinned_ptr(ptr);
 
       res.deallocate_async(ptr, 42, stream);
@@ -97,7 +97,7 @@ TEMPLATE_TEST_CASE("pinned_memory_resource allocation", "[memory_resource]", TES
       auto* ptr = res.allocate_async(42, 4, stream);
       static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-      stream.wait();
+      stream.sync();
       ensure_pinned_ptr(ptr);
 
       res.deallocate_async(ptr, 42, 4, stream);
