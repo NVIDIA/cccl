@@ -56,10 +56,11 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_reads<ValueT>(elements);
   state.add_global_memory_writes<ValueT>(unique_elements);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::unique_by_key_copy(
-      policy(alloc, launch), in_keys.cbegin(), in_keys.cend(), in_vals.cbegin(), out_keys.begin(), out_vals.begin());
-  });
+  state.exec(
+    nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+      thrust::unique_by_key_copy(
+        policy(alloc, launch), in_keys.cbegin(), in_keys.cend(), in_vals.cbegin(), out_keys.begin(), out_vals.begin());
+    });
 }
 
 using key_types =

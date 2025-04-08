@@ -103,7 +103,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init_t{}, launch.get_stream());
   });
