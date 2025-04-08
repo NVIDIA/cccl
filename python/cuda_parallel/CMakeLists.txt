@@ -58,10 +58,6 @@ else()
     endif()
 endif()
 
-include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(Cython REQUIRED_VARS CYTHON_EXECUTABLE CYTHON_VERSION)
-mark_as_advanced(CYTHON_EXECUTABLE CYTHON_VERSION)
-
 # -3 generates source for Python 3
 # -M generates depfile
 # -t cythonizes if PYX is newer than preexisting output
@@ -74,14 +70,14 @@ set(pyx_source_file "${cuda_parallel_SOURCE_DIR}/cuda/parallel/experimental/_bin
 set(_generated_extension_src "${CMAKE_BINARY_DIR}/_bindings.c")
 set(_depfile "${CMAKE_BINARY_DIR}/_bindings.c.dep")
 add_custom_command(
-    OUTPUT ${_generated_extension_src}
+    OUTPUT "${_generated_extension_src}"
     COMMAND ${CYTHON_EXECUTABLE}
-    ARGS ${CYTHON_FLAGS_LIST} ${pyx_source_file} --output-file ${_generated_extension_src}
-    DEPENDS ${pyx_source_file}
-    DEPFILE ${_depfile}
+    ARGS ${CYTHON_FLAGS_LIST} "${pyx_source_file}" --output-file ${_generated_extension_src}
+    DEPENDS "${pyx_source_file}"
+    DEPFILE "${_depfile}"
 )
 add_custom_target(cythonize_bindings ALL
-    DEPENDS ${_generated_extension_src}
+    DEPENDS "${_generated_extension_src}"
 )
 
 Python3_add_library(_bindings MODULE WITH_SOABI "${_generated_extension_src}")
