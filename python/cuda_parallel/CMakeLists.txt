@@ -84,7 +84,7 @@ add_custom_target(cythonize_bindings ALL
     DEPENDS ${_generated_extension_src}
 )
 
-Python3_add_library(_bindings MODULE WITH_SOABI ${_generated_extension_src})
+Python3_add_library(_bindings MODULE WITH_SOABI "${_generated_extension_src}")
 add_dependencies(_bindings cythonize_bindings)
 target_link_libraries(_bindings PRIVATE cccl.c.parallel CUDA::cuda_driver)
 set_target_properties(_bindings PROPERTIES INSTALL_RPATH "$ORIGIN/cccl")
