@@ -323,7 +323,11 @@ void cuda_try(Status status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD:
 {
   if (status)
   {
+#ifndef _CCCL_NO_EXCEPTIONS
     throw cuda_exception(status, loc);
+#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+    _CUDA_VSTD_NOVERSION::terminate();
+#endif // _CCCL_NO_EXCEPTIONS
   }
 }
 

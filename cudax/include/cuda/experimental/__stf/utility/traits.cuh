@@ -365,8 +365,10 @@ auto all_convertible(P&&... p)
   unsigned char buffer[size * sizeof(T)];
   auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
   size_t i     = 0; // marks the already-constructed portion of the array
+#ifndef _CCCL_NO_EXCEPTIONS
   try
   {
+#endif // _CCCL_NO_EXCEPTIONS
     each_in_pack(
       [&](auto&& e) {
         if constexpr (::std::is_convertible_v<decltype(e), T>)
@@ -377,6 +379,7 @@ auto all_convertible(P&&... p)
       },
       ::std::forward<P>(p)...);
     return mv(result);
+#ifndef _CCCL_NO_EXCEPTIONS
   }
   catch (...)
   {
@@ -386,6 +389,7 @@ auto all_convertible(P&&... p)
     }
     throw;
   }
+#endif // _CCCL_NO_EXCEPTIONS
 }
 
 /*

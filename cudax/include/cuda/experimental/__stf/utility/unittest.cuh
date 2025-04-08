@@ -283,6 +283,7 @@ struct expecter
     if constexpr (sizeof...(msgs) == 0)
     {
       using U = ::std::remove_reference_t<T>;
+#  ifndef _CCCL_NO_EXCEPTIONS
       throw failure(
         loc,
         "Tested expression of type " + ::std::string(type_name<T>) + " is "
@@ -290,10 +291,17 @@ struct expecter
              : ::std::is_arithmetic_v<U>         ? "zero"
                                                  : "null")
           + ".\n");
+#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+      _CUDA_VSTD_NOVERSION::terminate();
+#  endif // _CCCL_NO_EXCEPTIONS
     }
     else
     {
+#  ifndef _CCCL_NO_EXCEPTIONS
       throw failure(loc, msgs...);
+#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+      _CUDA_VSTD_NOVERSION::terminate();
+#  endif // _CCCL_NO_EXCEPTIONS
     }
   }
 
@@ -312,7 +320,11 @@ struct expecter
     {
       return ::std::forward<L>(e.lhs);
     }
+#  ifndef _CCCL_NO_EXCEPTIONS
     throw failure(loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
+#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+    _CUDA_VSTD_NOVERSION::terminate();
+#  endif // _CCCL_NO_EXCEPTIONS
   }
 };
 
@@ -527,6 +539,7 @@ UNITTEST("Numeric NOP test.", int(), float(), double())
 };
 #  endif // STF_HAS_UNITTEST_WITH_ARGS
 
+#  ifndef _CCCL_NO_EXCEPTIONS
 UNITTEST("EXPECT")
 {
   //! [EXPECT]
@@ -545,6 +558,7 @@ UNITTEST("EXPECT")
   }
   //! [EXPECT]
 };
+#  endif // _CCCL_NO_EXCEPTIONS
 
 /* Warning! All occurrences of `babe699bbb083d2b0aac2460e75bca96` below will be replaced with `UNITTEST` in
  * postprocessing. This is because we instructed doxygen to NOT generate documentation for the symbol UNITTEST, but we
