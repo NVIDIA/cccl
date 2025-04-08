@@ -78,11 +78,11 @@ cdef extern from "cccl/c/types.h":
         void *state
 
 
-cdef object arg_type_check(
+cdef void arg_type_check(
     str arg_name,
     object expected_type,
     object arg
-):
+) except *:
     if not isinstance(arg, expected_type):
         raise TypeError(
             f"Expected {arg_name} to have type '{expected_type}', "
