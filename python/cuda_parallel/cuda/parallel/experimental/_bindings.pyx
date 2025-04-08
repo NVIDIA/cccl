@@ -403,25 +403,6 @@ OpKind = IntEnum_OpKind()
 IteratorKind = IntEnum_IteratorKind()
 
 
-def pointer_as_bytes(size_t ptr):
-    """
-    Return bytes object whose content stores a pointer value
-
-    Returns bytes(ctypes.c_void_p(ptr)) but faster.
-
-    .. Note:
-
-       # In [6]: %timeit cb.pointer_as_bytes(ptr)
-       # 55.1 ns ± 0.904 ns per loop (mean ± std. dev. of 7 runs, 10,000,000 loops each)
-       #
-       # In [7]: %timeit bytes(ctypes.c_void_p(ptr))
-       # 103 ns ± 0.0436 ns per loop (mean ± std. dev. of 7 runs, 10,000,000 loops each)
-       #
-
-    """
-    return PyBytes_FromStringAndSize(<char *>&ptr, sizeof(size_t))
-
-
 cpdef bint is_TypeEnum(IntEnum attr):
     "Return True is attribute represents a type enumerator"
     return attr.parent_class is IntEnum_CCCLType
@@ -460,14 +441,14 @@ cdef class Op:
     cdef cy_cccl_op_t op_data
 
 
-    cdef void _set_members(self, cy_cccl_op_kind_t type, str name, bytes lto_ir, bytes state, int state_alignment):
+    cdef void _set_members(self, cy_cccl_op_kind_t op_type, str name, bytes lto_ir, bytes state, int state_alignment):
         memset(&self.op_data, 0, sizeof(cy_cccl_op_t))
         # Reference Python objects in the class to ensure lifetime
         self.op_encoded_name = name.encode("utf-8")
         self.ltoir_bytes = lto_ir
         self.state_bytes = state
         # set fields of op_data struct
-        self.op_data.type = type
+        self.op_data.type = op_type
         self.op_data.name = <const char *>self.op_encoded_name
         self.op_data.ltoir = <const char *>lto_ir
         self.op_data.ltoir_size = len(lto_ir)
@@ -505,12 +486,13 @@ cdef class Op:
         self.state_bytes = state
         self.op_data.state = <void *><const char *>state
 
-    property state:
-        def __get__(self):
-            return self.state_bytes
+    @property
+    def state(self):
+       return self.state_bytes
 
-        def __set__(self, bytes new_value):
-            self.set_state(<bytes>new_value)
+    @state.setter
+    def state(self, bytes new_value):
+        self.set_state(<bytes>new_value)
 
     @property
     def name(self):
@@ -529,6 +511,7 @@ cdef class Op:
         return self.op_data.type
 
     def as_bytes(self):
+        "Debugging utility to view memory content of library struct"
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.op_data))
         memcpy(&mem_view[0], &self.op_data, sizeof(self.op_data))
         return bytes(mem_view)
@@ -562,6 +545,7 @@ cdef class TypeInfo:
         return self.type_info.type
 
     def as_bytes(self):
+        "Debugging utility to view memory content of library struct"
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.type_info))
         memcpy(&mem_view[0], &self.type_info, sizeof(self.type_info))
         return bytes(mem_view)
@@ -582,18 +566,20 @@ cdef class Value:
     def type(self):
         return self.value_type
 
-    property state:
-        def __get__(self):
-            return self.state_obj
+    @property
+    def state(self):
+        return self.state_obj
 
-        def __set__(self, uint8_t[::1] new_value):
-            if (len(self.state_obj) == len(new_value)):
-                self.state_obj = new_value
-                self.value_data.state = <void *>&self.state_obj[0]
-            else:
-                raise ValueError("Size mismatch")
+    @state.setter
+    def state(self, uint8_t[::1] new_value):
+        if (len(self.state_obj) == len(new_value)):
+            self.state_obj = new_value
+            self.value_data.state = <void *>&self.state_obj[0]
+        else:
+            raise ValueError("Size mismatch")
 
     def as_bytes(self):
+        "Debugging utility to view memory of native struct"
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.value_data))
         memcpy(&mem_view[0], &self.value_data, sizeof(self.value_data))
         return bytes(mem_view)
@@ -644,43 +630,6 @@ cdef void * ctypes_value_ptr(object ctypes_cdata):
 
 cdef inline void * int_as_ptr(size_t ptr_val):
     return <void *>(ptr_val)
-
-
-cdef class IteratorStateView:
-    cdef void * ptr
-    cdef size_t size
-    cdef object owner
-
-    def __cinit__(self, ptr, size_t size, owner):
-        if isinstance(ptr, int):
-            self.ptr = int_as_ptr(ptr)
-            self.size = size
-        elif isinstance(ptr, ctypes._Pointer):
-            self.ptr = ctypes_typed_pointer_payload_ptr(ptr)
-            self.size = ctypes.sizeof(ptr.contents)
-        elif isinstance(ptr, ctypes.c_void_p):
-            self.ptr = int_as_ptr(ptr.value)
-            self.size = size
-        elif PyObject_CheckBuffer(ptr):
-            self.ptr = get_buffer_pointer(ptr, &self.size)
-        else:
-            raise TypeError(
-                "First argument must be int, type ctypes pointer, or ctypes.c_void_p, "
-                f"got type {type(ptr)}"
-            )
-        self.owner = owner
-
-    @property
-    def pointer(self):
-        return <size_t>self.ptr
-
-    @property
-    def size(self):
-        return self.size
-
-    @property
-    def reference(self):
-        return self.owner
 
 
 cdef class StateBase:
@@ -840,13 +789,9 @@ cdef class Iterator:
                 self.state_obj = state.reference
                 self.iter_data.size = (<IteratorState>state).size
                 self.iter_data.state = (<IteratorState>state).ptr
-            elif isinstance(state, IteratorStateView):
-                self.state_obj = state.reference
-                self.iter_data.size = <size_t>state.size
-                self.iter_data.state = <void *>((<IteratorStateView>state).ptr)
             else:
                 raise TypeError(
-                    "For Iterator of kind ITERATOR, state must have type IteratorState or IteratorStateView, "
+                    "For Iterator of kind ITERATOR, state must have type IteratorState, "
                     f"got type {type(state)}"
                 )
         else:  # pragma: no cover
@@ -867,63 +812,60 @@ cdef class Iterator:
     def dereference_or_assign_op(self):
         return self.dereference
 
-    property state:
-        def __get__(self):
-            if self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
-                return <size_t>self.iter_data.state
-            else:
-                return self.state_obj
+    @property
+    def state(self):
+        if self.iter_data.type == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
+            return <size_t>self.iter_data.state
+        else:
+            return self.state_obj
 
-        def __set__(self, new_value):
-            cdef ssize_t state_sz = 0
-            cdef size_t ptr = 0
-            cdef cy_cccl_iterator_kind_t it_kind = self.iter_data.type
-            if it_kind == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
-                if isinstance(new_value, Pointer):
-                    self.state_obj = (<Pointer>new_value).ref
-                    self.iter_data.size = state_sz
-                    self.iter_data.state = (<Pointer>new_value).ptr
-                elif isinstance(new_value, int):
-                    self.state_obj = None
-                    self.iter_data.size = state_sz
-                    self.iter_data.state = int_as_ptr(new_value)
-                elif new_value is None:
-                    self.state_obj = None
-                    self.iter_data.size = 0
-                    self.iter_data.state = NULL
-                else:
-                    raise TypeError(
-                        "For iterator with type POINTER, state value must have type int or type Pointer, "
-                        f"got type {type(new_value)}"
-                    )
-            elif it_kind == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR:
-                if isinstance(new_value, IteratorState):
-                    self.state_obj = new_value.reference
-                    self.iter_data.size = (<IteratorState>new_value).size
-                    self.iter_data.state = (<IteratorState>new_value).ptr
-                elif isinstance(new_value, IteratorStateView):
-                    self.state_obj = new_value.reference
-                    self.iter_data.size = (<IteratorStateView>new_value).size
-                    self.iter_data.state = (<IteratorStateView>new_value).ptr
-                elif isinstance(new_value, Pointer):
-                    self.state_obj = new_value.reference
-                    if self.iter_data.size == 0:
-                        raise ValueError("Assigning incomplete state value to iterator without state size information")
-                    self.iter_data.state = (<Pointer>new_value).ptr
-                elif PyObject_CheckBuffer(new_value):
-                    self.iter_data.state = get_buffer_pointer(new_value, &self.iter_data.size)
-                    self.state_obj = new_value
-                elif new_value is None:
-                    self.state_obj = None
-                    self.iter_data.size = 0
-                    self.iter_data.state = NULL
-                else:
-                    raise TypeError(
-                        "For iterator with type ITERATOR, state value must have type IteratorState or type bytes, "
-                        f"got type {type(new_value)}"
-                    )
+    @state.setter
+    def state(self, new_value):
+        cdef ssize_t state_sz = 0
+        cdef size_t ptr = 0
+        cdef cy_cccl_iterator_kind_t it_kind = self.iter_data.type
+        if it_kind == cy_cccl_iterator_kind_t.cy_CCCL_POINTER:
+            if isinstance(new_value, Pointer):
+                self.state_obj = (<Pointer>new_value).ref
+                self.iter_data.size = state_sz
+                self.iter_data.state = (<Pointer>new_value).ptr
+            elif isinstance(new_value, int):
+                self.state_obj = None
+                self.iter_data.size = state_sz
+                self.iter_data.state = int_as_ptr(new_value)
+            elif new_value is None:
+                self.state_obj = None
+                self.iter_data.size = 0
+                self.iter_data.state = NULL
             else:
-                raise TypeError("The new value should be an integer for iterators of POINTER kind, and bytes for ITERATOR kind")
+                raise TypeError(
+                    "For iterator with type POINTER, state value must have type int or type Pointer, "
+                    f"got type {type(new_value)}"
+                )
+        elif it_kind == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR:
+            if isinstance(new_value, IteratorState):
+                self.state_obj = new_value.reference
+                self.iter_data.size = (<IteratorState>new_value).size
+                self.iter_data.state = (<IteratorState>new_value).ptr
+            elif isinstance(new_value, Pointer):
+                self.state_obj = new_value.reference
+                if self.iter_data.size == 0:
+                    raise ValueError("Assigning incomplete state value to iterator without state size information")
+                self.iter_data.state = (<Pointer>new_value).ptr
+            elif PyObject_CheckBuffer(new_value):
+                self.iter_data.state = get_buffer_pointer(new_value, &self.iter_data.size)
+                self.state_obj = new_value
+            elif new_value is None:
+                self.state_obj = None
+                self.iter_data.size = 0
+                self.iter_data.state = NULL
+            else:
+                raise TypeError(
+                    "For iterator with type ITERATOR, state value must have type IteratorState or type bytes, "
+                    f"got type {type(new_value)}"
+                )
+        else:
+            raise TypeError("The new value should be an integer for iterators of POINTER kind, and bytes for ITERATOR kind")
 
     @property
     def type(self):
@@ -942,6 +884,7 @@ cdef class Iterator:
         return (it_kind == cy_cccl_iterator_kind_t.cy_CCCL_ITERATOR)
 
     def as_bytes(self):
+        "Debugging ulitity to get memory view into library struct"
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.iter_data))
         memcpy(&mem_view[0], &self.iter_data, sizeof(self.iter_data))
         return bytes(mem_view)

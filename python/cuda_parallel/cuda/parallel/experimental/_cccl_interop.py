@@ -19,7 +19,6 @@ from ._bindings import (
     Iterator,
     IteratorKind,
     IteratorState,
-    IteratorStateView,
     Op,
     OpKind,
     Pointer,
@@ -122,7 +121,7 @@ def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
         advance_op,
         deref_op,
         _numba_type_to_info(it.value_type),
-        state=IteratorStateView(it.state, size, it),
+        state=it.state,
     )
 
 

@@ -67,14 +67,6 @@ def test_IteratorKind_negative(cccl_op_kind):
     assert not bindings.is_IteratorKind(cccl_op_kind)
 
 
-def test_pointer_as_bytes():
-    ptr_test_value = 42
-    b1 = bindings.pointer_as_bytes(ptr_test_value)
-    assert isinstance(b1, bytes)
-    b2 = bytes(ctypes.c_void_p(ptr_test_value))
-    assert b1 == b2
-
-
 def test_Op_default():
     res = bindings.Op()
     assert isinstance(res, bindings.Op)
@@ -162,7 +154,7 @@ def test_Iterator_ctor2():
         bindings.Op(),
         type_info,
         bindings.IteratorState(
-            bindings.pointer_as_bytes(fake_ptr),
+            ctypes.c_void_p(fake_ptr),
         ),
     )
     assert isinstance(cccl_it, bindings.Iterator)
@@ -177,20 +169,3 @@ def test_CommonData():
         8, 6, cub_path, thrust_path, libcudacxx_path, gtk_path
     )
     assert isinstance(common_data, bindings.CommonData)
-
-
-def test_cy_IteratorStateView():
-    # typed pointer
-    p = ctypes.pointer(ctypes.c_int(42))
-    sv1 = bindings.IteratorStateView(p, 4, p)
-    vp = ctypes.cast(p, ctypes.c_void_p)
-    sv2 = bindings.IteratorStateView(vp, 4, p)
-    sv3 = bindings.IteratorStateView(vp.value, 4, p)
-
-    assert sv1.pointer == vp.value
-    assert sv2.pointer == vp.value
-    assert sv3.pointer == vp.value
-
-    assert sv1.reference is p
-    assert sv2.reference is p
-    assert sv3.reference is p
