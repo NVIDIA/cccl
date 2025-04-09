@@ -222,8 +222,8 @@ CUresult cccl_device_unary_transform_build(
 struct __align__({1}) input_storage_t {{
   char data[{0}];
 }};
-struct __align__({2}) output_storage_t {{
-  char data[{3}];
+struct __align__({3}) output_storage_t {{
+  char data[{2}];
 }};
 {8}
 {9}
