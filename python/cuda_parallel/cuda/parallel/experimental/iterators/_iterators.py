@@ -112,8 +112,9 @@ class IteratorBase:
     @property
     def ltoirs(self) -> Dict[str, bytes]:
         if self._ltoirs is None:
-            advance_abi_name = "advance_" + _get_abi_suffix(self.kind)
-            deref_abi_name = "dereference_" + _get_abi_suffix(self.kind)
+            abi_suffix = _get_abi_suffix(self.kind)
+            advance_abi_name = f"advance_{abi_suffix}"
+            deref_abi_name = f"dereference_{abi_suffix}"
             advance_ltoir, _ = cached_compile(
                 self.__class__.advance,
                 (
@@ -477,14 +478,14 @@ def _get_last_element_ptr(device_array) -> int:
 
 def _replace_duplicate_values(*ds, replacement_value):
     # given a sequence of dictionaries, return a sequence of dictionaries
-    # such that for any found duplicate keys, the value is set to `scrub_value`.
+    # such that for any found duplicate keys, the value is set to `replacement_value`.
     if len(ds) <= 1:
         return ds
     seen = set(ds[0].keys())
     for d in ds[1:]:
         for key in d:
             if key in seen:
-                d[key] = b""
+                d[key] = replacement_value
         seen.update(d.keys())
     return ds
 

@@ -8,6 +8,7 @@ from typing import Callable
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
+from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike
@@ -50,8 +51,8 @@ class _UnaryTransform:
         num_items: int,
         stream=None,
     ):
-        cccl.set_cccl_iterator_state(self.d_in_cccl, d_in)
-        cccl.set_cccl_iterator_state(self.d_out_cccl, d_out)
+        set_cccl_iterator_state(self.d_in_cccl, d_in)
+        set_cccl_iterator_state(self.d_out_cccl, d_out)
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
             self.d_in_cccl,
@@ -109,9 +110,9 @@ class _BinaryTransform:
         num_items: int,
         stream=None,
     ):
-        cccl.set_cccl_iterator_state(self.d_in1_cccl, d_in1)
-        cccl.set_cccl_iterator_state(self.d_in2_cccl, d_in2)
-        cccl.set_cccl_iterator_state(self.d_out_cccl, d_out)
+        set_cccl_iterator_state(self.d_in1_cccl, d_in1)
+        set_cccl_iterator_state(self.d_in2_cccl, d_in2)
+        set_cccl_iterator_state(self.d_out_cccl, d_out)
         stream_handle = protocols.validate_and_get_stream(stream)
         self.build_result.compute(
             self.d_in1_cccl,

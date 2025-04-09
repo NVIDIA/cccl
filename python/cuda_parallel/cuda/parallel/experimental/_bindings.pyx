@@ -1616,12 +1616,7 @@ cdef class DeviceUniqueByKeyBuildResult:
 # --------------------------------------------
 cdef extern from "cccl/c/transform.h":
     cdef struct cccl_device_transform_build_result_t:
-        int cc
-        void *cubin
-        size_t cubin_size
-        CUlibrary library
-        CUkernel transform_kernel
-        int loaded_bytes_per_iteration
+        pass
 
     cdef CUresult cccl_device_unary_transform_build(
         cccl_device_transform_build_result_t *build_ptr,

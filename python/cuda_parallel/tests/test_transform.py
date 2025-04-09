@@ -184,9 +184,7 @@ def test_binary_transform_iterator_input():
     binary_transform_device(d_in1, d_in2, d_out, num_items, op)
 
     got = d_out.get()
-    expected = np.arange(0, num_items, dtype=np.int32) + np.arange(
-        1, num_items + 1, dtype=np.int32
-    )
+    expected = np.arange(1, 2 * num_items + 1, step=2, dtype=np.int32)
 
     np.testing.assert_allclose(expected, got)
 
@@ -197,11 +195,13 @@ def test_unary_transform_with_stream(cuda_stream):
 
     cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
 
+    n = 10
+
     with cp_stream:
-        d_in = cp.arange(10, dtype=np.int32)
+        d_in = cp.arange(n, dtype=np.int32)
         d_out = cp.empty_like(d_in)
 
-    unary_transform_device(d_in, d_out, len(d_in), op, stream=cuda_stream)
+    unary_transform_device(d_in, d_out, n, op, stream=cuda_stream)
 
     got = d_out.get()
     expected = unary_transform_host(d_in.get(), op)
@@ -215,12 +215,14 @@ def test_binary_transform_with_stream(cuda_stream):
 
     cp_stream = cp.cuda.ExternalStream(cuda_stream.ptr)
 
+    n = 10
+
     with cp_stream:
-        d_in1 = cp.arange(10, dtype=np.int32)
-        d_in2 = cp.arange(10, dtype=np.int32)
+        d_in1 = cp.arange(n, dtype=np.int32)
+        d_in2 = cp.arange(n, dtype=np.int32)
         d_out = cp.empty_like(d_in1)
 
-    binary_transform_device(d_in1, d_in2, d_out, len(d_in1), op, stream=cuda_stream)
+    binary_transform_device(d_in1, d_in2, d_out, n, op, stream=cuda_stream)
 
     got = d_out.get()
     expected = binary_transform_host(d_in1.get(), d_in2.get(), op)
