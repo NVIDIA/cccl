@@ -329,7 +329,7 @@ class DeviceUnaryTransform:
         d_out: Iterator,
         num_items: int,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> None: ...
 
 # ---------------------
 # DeviceBinaryTransform
@@ -351,4 +351,4 @@ class DeviceBinaryTransform:
         d_out: Iterator,
         num_items: int,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> None: ...
