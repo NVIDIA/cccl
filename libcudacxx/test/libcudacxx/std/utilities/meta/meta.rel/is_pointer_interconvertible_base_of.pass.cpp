@@ -17,20 +17,20 @@ struct BaseA
 struct BaseB
 {};
 
-struct A : BaseA
+struct _CCCL_DECLSPEC_EMPTY_BASES A : BaseA
 {};
 
-struct B : BaseB
+struct _CCCL_DECLSPEC_EMPTY_BASES B : BaseB
 {};
 
-struct C
+struct _CCCL_DECLSPEC_EMPTY_BASES C
     : A
     , B
 {
   float m;
 };
 
-struct NonStandard
+struct _CCCL_DECLSPEC_EMPTY_BASES NonStandard
     : BaseA
     , BaseB
 {
