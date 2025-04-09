@@ -34,7 +34,7 @@ struct NonStandard
     : BaseA
     , BaseB
 {
-  virtual ~NonStandard() {}
+  virtual ~NonStandard() = default;
 
   int m;
 };

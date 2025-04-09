@@ -16,7 +16,7 @@ struct A
   int ma1;
   unsigned ma2;
 
-  void fn() {}
+  __host__ __device__ void fn() {}
 };
 
 struct B
@@ -24,7 +24,7 @@ struct B
   int mb1;
   unsigned mb2;
 
-  void fn() {}
+  __host__ __device__ void fn() {}
 };
 
 union U
@@ -37,7 +37,7 @@ struct NonStandard
     : A
     , B
 {
-  virtual ~NonStandard() {}
+  virtual ~NonStandard() = default;
 
   int mns1;
 };

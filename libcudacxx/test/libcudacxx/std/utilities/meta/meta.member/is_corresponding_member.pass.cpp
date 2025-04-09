@@ -18,7 +18,7 @@ struct A
   float m3;
   double m4;
 
-  void fn() {}
+  __host__ __device__ void fn() {}
 };
 
 struct B
@@ -28,14 +28,14 @@ struct B
   float m3;
   double m4;
 
-  void fn() {}
+  __host__ __device__ void fn() {}
 };
 
 struct NonStandard
     : A
     , B
 {
-  virtual ~NonStandard() {}
+  virtual ~NonStandard() = default;
 
   int m;
 };
