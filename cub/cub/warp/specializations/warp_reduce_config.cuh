@@ -69,7 +69,7 @@ template <size_t ValidItems = _CUDA_VSTD::dynamic_extent>
 using valid_items_t = _CUDA_VSTD::extents<int, ValidItems>;
 
 template <size_t LogicalSize>
-using logial_warp_size_t = _CUDA_VSTD::integral_constant<int, LogicalSize>;
+using logical_warp_size_t = _CUDA_VSTD::integral_constant<int, LogicalSize>;
 
 } // namespace detail
 

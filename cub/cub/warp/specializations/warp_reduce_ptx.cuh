@@ -279,7 +279,7 @@ template <typename T, typename ReductionOp>
 
 template <int LogicalWarpSize, size_t ValidItems>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_mask(
-  [[maybe_unused]] uint32_t step, logial_warp_size_t<LogicalWarpSize>, valid_items_t<ValidItems> valid_items)
+  [[maybe_unused]] uint32_t step, logical_warp_size_t<LogicalWarpSize>, valid_items_t<ValidItems> valid_items)
 {
   if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
   {
@@ -299,12 +299,12 @@ template <int LogicalWarpSize, size_t ValidItems>
 template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_member_mask(
   reduce_logical_mode_t<LogicalMode> logical_mode,
-  logial_warp_size_t<LogicalWarpSize>,
+  logical_warp_size_t<LogicalWarpSize>,
   valid_items_t<ValidItems> valid_items)
 {
   if constexpr (valid_items.rank_dynamic() == 1)
   {
-    return ::__activemask();
+    return ::__activemask(); // equivalent to (0xFFFFFFFF >> (warp_threads - valid_items))
   }
   else
   {

@@ -64,7 +64,7 @@ template <typename Input, typename ReductionOp, int LogicalWarpSize, size_t Vali
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_redux_op(
   Input input,
   ReductionOp reduction_op,
-  logial_warp_size_t<LogicalWarpSize> logical_size,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
@@ -121,7 +121,7 @@ template <typename Input,
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<Kind> result_mode,
-  logial_warp_size_t<LogicalWarpSize> logical_size,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
@@ -140,11 +140,10 @@ template <typename Input,
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    constexpr auto logical_width =
-      _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize}) ? LogicalWarpSize : warp_threads;
-    input1 = _CUDA_VDEV::warp_shuffle_idx<logical_width>(input1, 0, mask);
+    constexpr auto is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize});
+    constexpr auto logical_width   = is_power_of_two ? LogicalWarpSize : warp_threads;
+    input1                         = _CUDA_VDEV::warp_shuffle_idx<logical_width>(input1, 0, mask);
   }
-
   return input1;
 }
 
@@ -159,9 +158,10 @@ template <typename Input,
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<Kind> result_mode,
-  logial_warp_size_t<LogicalWarpSize> logical_size,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
+  constexpr auto is_power_of_two    = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize});
   constexpr auto logical_size_round = _CUDA_VSTD::bit_ceil(uint32_t{LogicalWarpSize});
   constexpr auto log2_size          = ::cuda::ilog2(LogicalWarpSize * 2 - 1);
   const auto mask                   = cub::detail::reduce_member_mask(logical_mode, logical_size, valid_items);
@@ -169,16 +169,16 @@ template <typename Input,
   for (int K = 0; K < log2_size; K++)
   {
     _CUDA_VDEV::WarpShuffleResult<Input> res;
-    if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize}))
+    if constexpr (valid_items.rank_dynamic() == 0 && is_power_of_two)
     {
       res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
     }
     else
     {
-      auto lane_id = logical_lane_id(LogicalWarpSize);
-      auto dest    = ::min(lane_id + (1u << K), valid_items.extent(0) - 1);
-      res          = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input, dest, mask);
-      res.pred     = lane_id + (1u << K) < valid_items.extent(0);
+      auto lane_dst = cub::detail::logical_lane_id(LogicalWarpSize) + (1u << K);
+      auto dest     = ::min(lane_dst, valid_items.extent(0) - 1);
+      res           = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input, dest, mask);
+      res.pred      = lane_dst < valid_items.extent(0);
     }
     if (res.pred)
     {
@@ -208,7 +208,7 @@ template <typename Input,
   ReductionOp,
   reduce_logical_mode_t<LogicalMode>,
   reduce_result_mode_t<ResultMode>,
-  logial_warp_size_t<LogicalWarpSize>,
+  logical_warp_size_t<LogicalWarpSize>,
   valid_items_t<ValidItems> = {});
 
 _CCCL_TEMPLATE(typename Input,
@@ -223,7 +223,7 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AN
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logial_warp_size_t<LogicalWarpSize> logical_size,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using detail::merge_integers;
@@ -247,7 +247,7 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input> _CCCL_AN
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logial_warp_size_t<LogicalWarpSize> logical_size,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
@@ -293,7 +293,7 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logial_warp_size_t<LogicalWarpSize> logical_size,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
@@ -326,7 +326,7 @@ template <typename Input,
   ReductionOp reduction_op,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   reduce_result_mode_t<ResultMode> result_mode,
-  logial_warp_size_t<LogicalWarpSize> logical_size,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
   using cub::detail::comparable_int_to_floating_point;

@@ -160,7 +160,7 @@ class WarpReduce
 
   static constexpr auto warp_reduce_result_mode_default = detail::WarpReduceResultMode::SingleLane;
 
-  static constexpr auto logical_warp_size = detail::logial_warp_size_t<LogicalWarpThreads>{};
+  static constexpr auto logical_warp_size = detail::logical_warp_size_t<LogicalWarpThreads>{};
 
 public:
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
