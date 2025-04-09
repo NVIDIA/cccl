@@ -185,7 +185,7 @@ class _RadixSort:
 
         selector = -1
 
-        error, temp_storage_bytes, selector = self.radix_sort_fn(
+        temp_storage_bytes, selector = self.radix_sort_fn(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -201,13 +201,7 @@ class _RadixSort:
             stream_handle,
         )
 
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error in radix sort")
-
-        print(f"{temp_storage_bytes=}")
-
         if is_overwrite_okay and temp_storage is not None:
-            print(f"{selector=}")
             assert selector in {0, 1}
             assert isinstance(d_in_keys, DoubleBuffer)
             d_in_keys.selector = selector

@@ -349,7 +349,7 @@ class DeviceRadixSortBuildResult:
         is_overwrite_okay: bool,
         selector: int,
         stream,
-    ) -> tuple[int, int, int]: ...
+    ) -> tuple[int, int]: ...
     def compute_descending(
         self,
         temp_storage_ptr: int | None,
@@ -365,4 +365,4 @@ class DeviceRadixSortBuildResult:
         is_overwrite_okay: bool,
         selector: int,
         stream,
-    ) -> tuple[int, int, int]: ...
+    ) -> tuple[int, int]: ...
