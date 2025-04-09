@@ -325,15 +325,6 @@ class DeviceUniqueByKeyBuildResult:
 
 class DeviceRadixSortBuildResult:
     def __init__(self): ...
-    def build(
-        self,
-        order: Enumeration_IteratorKind,
-        d_keys_in: Iterator,
-        d_values_in: Iterator,
-        decomposer_op: Op,
-        decomposer_return_type: str,
-        info: CommonData,
-    ) -> int: ...
     def compute_ascending(
         self,
         temp_storage_ptr: int | None,
