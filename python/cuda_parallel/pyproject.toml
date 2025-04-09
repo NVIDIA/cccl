@@ -26,7 +26,13 @@ dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-xdist", "cupy-cuda12x", "typing_extensions"]
+test = [
+  "pytest",
+  "pytest-xdist",
+  "cupy-cuda12x",
+  "typing_extensions",
+  "pytest-benchmark",
+]
 
 [project.urls]
 Homepage = "https://developer.nvidia.com/"

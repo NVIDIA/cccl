@@ -25,17 +25,17 @@
 
 #include <nv/target>
 
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
 #  ifdef __cpp_lib_expected
 #    include <expected>
 #  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
 #    include <exception>
 #  endif // !__cpp_lib_expected
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
 
 #  ifdef __cpp_lib_expected
 
@@ -104,18 +104,18 @@ private:
 };
 #  endif // !__cpp_lib_expected
 
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Err, class _Arg>
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_expected_access([[maybe_unused]] _Arg&& __arg)
 {
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw _CUDA_VSTD::bad_expected_access<_Err>(_CUDA_VSTD::forward<_Arg>(__arg));),
-                    (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+                    ((void) __arg; _CUDA_VSTD_NOVERSION::terminate();))
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

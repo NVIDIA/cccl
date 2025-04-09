@@ -36,7 +36,7 @@ _CCCL_PUSH_MACROS
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
+_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp) _CCCL_AND _CCCL_TRAIT(__cccl_is_integer, _Up))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
@@ -55,14 +55,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
+_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp) _CCCL_AND _CCCL_TRAIT(__cccl_is_integer, _Up))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_equal(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
+_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp) _CCCL_AND _CCCL_TRAIT(__cccl_is_integer, _Up))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
@@ -81,28 +81,28 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
+_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp) _CCCL_AND _CCCL_TRAIT(__cccl_is_integer, _Up))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less(__u, __t);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
+_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp) _CCCL_AND _CCCL_TRAIT(__cccl_is_integer, _Up))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_greater(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
+_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp) _CCCL_AND _CCCL_TRAIT(__cccl_is_integer, _Up))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_less(__t, __u);
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(__cccl_is_integer_v<_Tp> _CCCL_AND __cccl_is_integer_v<_Up>)
+_CCCL_REQUIRES(_CCCL_TRAIT(__cccl_is_integer, _Tp) _CCCL_AND _CCCL_TRAIT(__cccl_is_integer, _Up))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())

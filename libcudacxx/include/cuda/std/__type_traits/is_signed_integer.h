@@ -25,30 +25,30 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-inline constexpr bool __cccl_is_signed_integer_impl_v = false;
+inline constexpr bool __cccl_is_signed_integer_v = false;
 
 template <>
-inline constexpr bool __cccl_is_signed_integer_impl_v<signed char> = true;
+inline constexpr bool __cccl_is_signed_integer_v<signed char> = true;
 
 template <>
-inline constexpr bool __cccl_is_signed_integer_impl_v<signed short> = true;
+inline constexpr bool __cccl_is_signed_integer_v<signed short> = true;
 
 template <>
-inline constexpr bool __cccl_is_signed_integer_impl_v<signed int> = true;
+inline constexpr bool __cccl_is_signed_integer_v<signed int> = true;
 
 template <>
-inline constexpr bool __cccl_is_signed_integer_impl_v<signed long> = true;
+inline constexpr bool __cccl_is_signed_integer_v<signed long> = true;
 
 template <>
-inline constexpr bool __cccl_is_signed_integer_impl_v<signed long long> = true;
+inline constexpr bool __cccl_is_signed_integer_v<signed long long> = true;
 
 #if _CCCL_HAS_INT128()
 template <>
-inline constexpr bool __cccl_is_signed_integer_impl_v<__int128_t> = true;
+inline constexpr bool __cccl_is_signed_integer_v<__int128_t> = true;
 #endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
-inline constexpr bool __cccl_is_signed_integer_v = __cccl_is_signed_integer_impl_v<remove_cv_t<_Tp>>;
+inline constexpr bool __cccl_is_cv_signed_integer_v = __cccl_is_signed_integer_v<remove_cv_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
