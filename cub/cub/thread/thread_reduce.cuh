@@ -452,7 +452,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     return ThreadReduceSequential<AccumT>(input, reduction_op);
   }
 
-  [[maybe_unused]] constexpr auto length = cub::detail::static_size_v<Input>;
+  constexpr auto length = cub::detail::static_size_v<Input>;
   if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm90_simd_reduction_v<Input, ReductionOp, length>())
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSimd(input, reduction_op);))
