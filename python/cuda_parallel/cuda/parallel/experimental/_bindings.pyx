@@ -1609,3 +1609,190 @@ cdef class DeviceUniqueByKeyBuildResult:
                 f"Failed executing unique_by_key, error code: {status}"
             )
         return storage_sz
+
+
+# --------------------------------------------
+#   DeviceUnaryTransform/DeviceBinaryTransform
+# --------------------------------------------
+cdef extern from "cccl/c/transform.h":
+    cdef struct cccl_device_transform_build_result_t:
+        int cc
+        void *cubin
+        size_t cubin_size
+        CUlibrary library
+        CUkernel transform_kernel
+        int loaded_bytes_per_iteration
+
+    cdef CUresult cccl_device_unary_transform_build(
+        cccl_device_transform_build_result_t *build_ptr,
+        cccl_iterator_t d_in,
+        cccl_iterator_t d_out,
+        cccl_op_t op,
+        int, int, const char *, const char *, const char *, const char *
+    ) nogil
+
+    cdef CUresult cccl_device_unary_transform(
+      cccl_device_transform_build_result_t build,
+      cccl_iterator_t d_in,
+      cccl_iterator_t d_out,
+      unsigned long long num_items,
+      cccl_op_t op,
+      CUstream stream) nogil
+
+    cdef CUresult cccl_device_binary_transform_build(
+      cccl_device_transform_build_result_t* build_ptr,
+      cccl_iterator_t d_in1,
+      cccl_iterator_t d_in2,
+      cccl_iterator_t d_out,
+      cccl_op_t op,
+      int, int, const char *, const char *, const char *, const char *
+    ) nogil
+
+    cdef CUresult cccl_device_binary_transform(
+      cccl_device_transform_build_result_t build,
+      cccl_iterator_t d_in1,
+      cccl_iterator_t d_in2,
+      cccl_iterator_t d_out,
+      unsigned long long num_items,
+      cccl_op_t op,
+      CUstream stream) nogil
+
+    cdef CUresult cccl_device_transform_cleanup(
+        cccl_device_transform_build_result_t *build_ptr,
+    ) nogil
+
+
+cdef class DeviceUnaryTransform:
+    cdef cccl_device_transform_build_result_t build_data
+
+    def __cinit__(
+        self,
+        Iterator d_in,
+        Iterator d_out,
+        Op op,
+        CommonData common_data
+    ):
+        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_unary_transform_build(
+                &self.build_data,
+                d_in.iter_data,
+                d_out.iter_data,
+                op.op_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError("Failed to build unary transform")
+
+    def __dealloc__(DeviceUnaryTransform self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_transform_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during unary transform result cleanup")
+
+    cpdef void compute(
+        DeviceUnaryTransform self,
+        Iterator d_in,
+        Iterator d_out,
+        size_t num_items,
+        Op op,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        with nogil:
+            status = cccl_device_unary_transform(
+                self.build_data,
+                d_in.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                c_stream
+            )
+        if (status != 0):
+            raise RuntimeError("Failed to compute unary transform")
+
+
+cdef class DeviceBinaryTransform:
+    cdef cccl_device_transform_build_result_t build_data
+
+    def __cinit__(
+        self,
+        Iterator d_in1,
+        Iterator d_in2,
+        Iterator d_out,
+        Op op,
+        CommonData common_data
+    ):
+        memset(&self.build_data, 0, sizeof(cccl_device_transform_build_result_t))
+
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        with nogil:
+            status = cccl_device_binary_transform_build(
+                &self.build_data,
+                d_in1.iter_data,
+                d_in2.iter_data,
+                d_out.iter_data,
+                op.op_data,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError("Failed to build binary transform")
+
+    def __dealloc__(DeviceBinaryTransform self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_transform_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during binary transform result cleanup")
+
+    cpdef void compute(
+        DeviceBinaryTransform self,
+        Iterator d_in1,
+        Iterator d_in2,
+        Iterator d_out,
+        size_t num_items,
+        Op op,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        with nogil:
+            status = cccl_device_binary_transform(
+                self.build_data,
+                d_in1.iter_data,
+                d_in2.iter_data,
+                d_out.iter_data,
+                <uint64_t>num_items,
+                op.op_data,
+                c_stream
+            )
+        if (status != 0):
+            raise RuntimeError("Failed to compute binary transform")
