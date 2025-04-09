@@ -61,11 +61,13 @@ class IteratorBase:
     """
     An Iterator is a wrapper around a pointer, and must define the following:
 
-    - an `advance` (static) method that receives the pointer and performs
-      an action that advances the pointer by the offset `distance`
-      (returns nothing).
-    - a `dereference` (static) method that dereferences the pointer
-      and returns a value.
+    - an `advance` property that returns a (static) method which receives the
+      pointer and performs an action that advances the pointer by the offset
+      `distance` (returns nothing).
+    - a `dereference` property that returns a (static) method which accepts the
+      pointer and returns a value. For output iterators, `dereference` is used
+      to write to the pointer, so it also the value to be written as an
+      argument.
 
     Iterators are not meant to be used directly. They are constructed and passed
     to algorithms (e.g., `reduce`), which internally invoke their methods.
@@ -89,12 +91,17 @@ class IteratorBase:
         cvalue
           A ctypes type representing the object pointed to by the iterator.
         numba_type
-          A numba type representing the type of the input to the advance
-          and dereference functions.
+          A numba type representing the type of the input to the advance and
+          dereference functions.
         value_type
           The numba type of the value returned by the dereference operation.
+        iterator_io
+          An enumerator specifying whether the iterator will be used as an input
+          or output. This is used to select what methods that the `advance` and
+          `dereference` properties will return.
         prefix
-          An optional prefix added to the iterator's methods to prevent name collisions.
+          An optional prefix added to the iterator's methods to prevent name
+          collisions.
         """
         self.cvalue = cvalue
         self.numba_type = numba_type
@@ -132,13 +139,13 @@ class IteratorBase:
     def state(self) -> ctypes.c_void_p:
         return ctypes.cast(ctypes.pointer(self.cvalue), ctypes.c_void_p)
 
-    @staticmethod
-    def advance(state, distance):
-        raise NotImplementedError("Subclasses must override advance staticmethod")
+    @property
+    def advance(state):
+        raise NotImplementedError("Subclasses must override advance property")
 
-    @staticmethod
+    @property
     def dereference(state, *args):
-        raise NotImplementedError("Subclasses must override dereference staticmethod")
+        raise NotImplementedError("Subclasses must override dereference property")
 
     def __add__(self, offset: int):
         return make_advanced_iterator(self, offset=offset)
@@ -282,12 +289,20 @@ class CacheModifiedPointer(IteratorBase):
             iterator_io=IteratorIO.INPUT,
         )
 
+    @property
+    def advance(self):
+        return self.input_advance
+
+    @property
+    def dereference(self):
+        return self.input_dereference
+
     @staticmethod
-    def advance(state, distance):
+    def input_advance(state, distance):
         state[0] = state[0] + distance
 
     @staticmethod
-    def dereference(state):
+    def input_dereference(state):
         return load_cs(state[0])
 
 
@@ -309,12 +324,20 @@ class ConstantIterator(IteratorBase):
             iterator_io=IteratorIO.INPUT,
         )
 
+    @property
+    def advance(self):
+        return self.input_advance
+
+    @property
+    def dereference(self):
+        return self.input_dereference
+
     @staticmethod
-    def advance(state, distance):
+    def input_advance(state, distance):
         pass
 
     @staticmethod
-    def dereference(state):
+    def input_dereference(state):
         return state[0]
 
 
@@ -336,12 +359,20 @@ class CountingIterator(IteratorBase):
             iterator_io=IteratorIO.INPUT,
         )
 
+    @property
+    def advance(self):
+        return self.input_advance
+
+    @property
+    def dereference(self):
+        return self.input_dereference
+
     @staticmethod
-    def advance(state, distance):
+    def input_advance(state, distance):
         state[0] += distance
 
     @staticmethod
-    def dereference(state):
+    def input_dereference(state):
         return state[0]
 
 
@@ -383,9 +414,9 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase, iterator_io: Itera
         def kind(self):
             return self.__class__.iterator_kind_type(self._it.kind)
 
-        @staticmethod
-        def advance(state, distance):
-            return it_advance(state, -distance)
+        @property
+        def advance(self):
+            return self.input_output_advance
 
         @property
         def dereference(self):
@@ -394,6 +425,10 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase, iterator_io: Itera
                 if self.iterator_io is IteratorIO.INPUT
                 else ReverseIterator.output_dereference
             )
+
+        @staticmethod
+        def input_output_advance(state, distance):
+            return it_advance(state, -distance)
 
         @staticmethod
         def input_dereference(state):
@@ -446,12 +481,20 @@ def make_transform_iterator(it, op: Callable):
         def kind(self):
             return self.__class__.iterator_kind_type((self._it.kind, self._op))
 
+        @property
+        def advance(self):
+            return self.input_advance
+
+        @property
+        def dereference(self):
+            return self.input_dereference
+
         @staticmethod
-        def advance(state, distance):
+        def input_advance(state, distance):
             return it_advance(state, distance)
 
         @staticmethod
-        def dereference(state):
+        def input_dereference(state):
             return op(it_dereference(state))
 
     return TransformIterator(it, op)
@@ -483,12 +526,20 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
         def kind(self):
             return self.__class__.iterator_kind_type(self._it.kind)
 
+        @property
+        def advance(self):
+            return self.input_advance
+
+        @property
+        def dereference(self):
+            return self.input_dereference
+
         @staticmethod
-        def advance(state, distance):
+        def input_advance(state, distance):
             return it_advance(state, distance)
 
         @staticmethod
-        def dereference(state):
+        def input_dereference(state):
             return it_dereference(state)
 
     return AdvancedIterator(it, offset)
