@@ -13,7 +13,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
-from ..iterators._iterators import IteratorBase
+from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike
 
 
