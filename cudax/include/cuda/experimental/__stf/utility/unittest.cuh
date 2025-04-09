@@ -538,7 +538,6 @@ UNITTEST("Numeric NOP test.", int(), float(), double())
 };
 #  endif // STF_HAS_UNITTEST_WITH_ARGS
 
-#  ifndef _CCCL_NO_EXCEPTIONS
 UNITTEST("EXPECT")
 {
   //! [EXPECT]
@@ -546,6 +545,10 @@ UNITTEST("EXPECT")
   EXPECT(1 + 1 == 2, "All we know about mathematics has been upended!"); // pass
   auto p = EXPECT(malloc(100) != nullptr); // pass, put the pointer to allocated memory in p
   free(p);
+
+  // This test is specifically about how we handle exceptions, so we disable it
+  // when exceptions are not allowed
+#  ifndef _CCCL_NO_EXCEPTIONS
   try
   {
     EXPECT(41 == 102); // fail, will throw exception
@@ -555,9 +558,9 @@ UNITTEST("EXPECT")
     // The exception message will contain the actual numbers 41 and 102.
     EXPECT(::std::string_view(e.what()).find("41 == 102 is false") != ::std::string_view::npos);
   }
+#  endif // _CCCL_NO_EXCEPTIONS
   //! [EXPECT]
 };
-#  endif // _CCCL_NO_EXCEPTIONS
 
 /* Warning! All occurrences of `babe699bbb083d2b0aac2460e75bca96` below will be replaced with `UNITTEST` in
  * postprocessing. This is because we instructed doxygen to NOT generate documentation for the symbol UNITTEST, but we
