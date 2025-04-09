@@ -273,7 +273,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void* memchr(void* __ptr, int __c, size_t __n) noexcep
                     (return const_cast<void*>(_CUDA_VSTD::memchr(const_cast<const void*>(__ptr), __c, __n));))
 }
 
-// mommove
+// memmove
 
 #if _CCCL_HAS_CUDA_COMPILER()
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __memmove_device(void* __dst, const void* __src, size_t __n) noexcept
