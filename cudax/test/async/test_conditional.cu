@@ -24,7 +24,7 @@
 
 namespace
 {
-TEST_CASE("simple use of conditional runs exactly one of the two closures", "[adaptors][conditional]")
+C2H_TEST("simple use of conditional runs exactly one of the two closures", "[adaptors][conditional]")
 {
   for (int i = 42; i < 44; ++i)
   {

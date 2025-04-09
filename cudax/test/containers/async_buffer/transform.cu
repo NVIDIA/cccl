@@ -63,12 +63,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg(
 }
 
 using algorithms =
-  ::cuda::std::__type_list<::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>
+  c2h::type_list<::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-                           ,
-                           ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>
+                 ,
+                 ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-                           >;
+                 >;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 #  define FILTER_UBLKCP                                \
@@ -88,11 +88,10 @@ using algorithms =
   FILTER_UBLKCP                                                           \
   _CCCL_DIAG_POP
 
-TEMPLATE_LIST_TEST_CASE(
-  "DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]", algorithms)
+C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]", algorithms)
 {
   using type         = int;
-  constexpr auto alg = TestType::value;
+  constexpr auto alg = c2h::get<0, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
   const int num_items = 1 << 24;
 
