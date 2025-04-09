@@ -185,7 +185,7 @@ def test_reduce_struct_type():
     import cupy as cp
     import numpy as np
 
-    from cuda.parallel.experimental import algorithms
+    import cuda.parallel.experimental.algorithms as algorithms
     from cuda.parallel.experimental.struct import gpu_struct
 
     @gpu_struct

@@ -34,8 +34,7 @@
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/device_memory_resource.h>
 
-#include <limits>
-#include <stdexcept>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 

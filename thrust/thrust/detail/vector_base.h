@@ -38,9 +38,9 @@
 #include <thrust/iterator/reverse_iterator.h>
 
 #include <cuda/std/__iterator/iterator_traits.h>
+#include <cuda/std/initializer_list>
 #include <cuda/std/utility>
 
-#include <initializer_list>
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
@@ -140,18 +140,18 @@ public:
   /*! This constructor builds a \p vector_base from an intializer_list.
    *  \param il The intializer_list.
    */
-  vector_base(std::initializer_list<T> il);
+  vector_base(::cuda::std::initializer_list<T> il);
 
   /*! This constructor builds a \p vector_base from an intializer_list.
    *  \param il The intializer_list.
    *  \param alloc The allocator to use by this device_vector.
    */
-  vector_base(std::initializer_list<T> il, const Alloc& alloc);
+  vector_base(::cuda::std::initializer_list<T> il, const Alloc& alloc);
 
   /*! Assign operator copies from an initializer_list
    *  \param il The initializer_list.
    */
-  vector_base& operator=(std::initializer_list<T> il);
+  vector_base& operator=(::cuda::std::initializer_list<T> il);
 
   /*! Copy constructor copies from an exemplar vector_base with different
    *  type.

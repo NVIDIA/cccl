@@ -3,14 +3,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from .merge_sort import merge_sort as merge_sort
-from .radix_sort import DoubleBuffer, SortOrder
-from .radix_sort import radix_sort as radix_sort
-from .reduce import reduce_into as reduce_into
-from .scan import exclusive_scan as exclusive_scan
-from .scan import inclusive_scan as inclusive_scan
-from .segmented_reduce import segmented_reduce
-from .unique_by_key import unique_by_key as unique_by_key
+from ._merge_sort import merge_sort as merge_sort
+from ._radix_sort import DoubleBuffer, SortOrder
+from ._radix_sort import radix_sort as radix_sort
+from ._reduce import reduce_into as reduce_into
+from ._scan import exclusive_scan as exclusive_scan
+from ._scan import inclusive_scan as inclusive_scan
+from ._segmented_reduce import segmented_reduce
+from ._unique_by_key import unique_by_key as unique_by_key
 
 __all__ = [
     "merge_sort",

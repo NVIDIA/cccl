@@ -204,6 +204,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   {
     if constexpr (sizeof...(_OtherSigs) == 0) // short-circuit some common cases
     {
+      (void) __other;
       return *this;
     }
     else if constexpr (sizeof...(_Sigs) == 0)
@@ -823,17 +824,17 @@ _CUDAX_API constexpr auto transform_completion_signatures(
   }
 }
 
-#if defined(_CCCL_NO_EXCEPTIONS)
-_CUDAX_API inline constexpr auto __eptr_completion() noexcept
-{
-  return completion_signatures{};
-}
-#else
+#if _CCCL_HAS_EXCEPTIONS()
 _CUDAX_API inline constexpr auto __eptr_completion() noexcept
 {
   return completion_signatures<set_error_t(::std::exception_ptr)>();
 }
-#endif
+#else  // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
+_CUDAX_API inline constexpr auto __eptr_completion() noexcept
+{
+  return completion_signatures{};
+}
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
 template <bool _PotentiallyThrowing>
 _CUDAX_API constexpr auto __eptr_completion_if() noexcept

@@ -30,7 +30,9 @@
 #include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
+#include <map>
 #include <mutex>
 #include <optional>
 
@@ -1852,6 +1854,11 @@ inline void reserved::logical_data_untyped_impl::erase()
   auto erased = ctx_st.logical_data_ids.erase(get_unique_id());
   EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
+  if (ctx_st.logical_data_stats_enabled)
+  {
+    ctx_st.previous_logical_data_stats.push_back(::std::make_pair(get_symbol(), dinterface->data_footprint()));
+  }
+
   ctx_st.logical_data_ids_mutex.unlock();
 
   // Make sure this we do not erase this twice. For example after calling
@@ -2066,15 +2073,15 @@ inline void fetch_data(
 
     // This will initiate a copy if the data was not valid
     d.enforce_msi_protocol(instance_id, mode, stf_prereq);
-
-    stf_prereq.optimize(bctx);
-
-    // Gather all prereqs required to fetch this piece of data into the
-    // dependencies of the task.
-    // Even temporary allocation may require to enforce dependencies
-    // because we are reclaiming data for instance.
-    result.merge(mv(stf_prereq));
   }
+
+  stf_prereq.optimize(bctx);
+
+  // Gather all prereqs required to fetch this piece of data into the
+  // dependencies of the task.
+  // Even temporary allocation may require to enforce dependencies
+  // because we are reclaiming data for instance.
+  result.merge(mv(stf_prereq));
 }
 
 }; // namespace reserved
@@ -2154,6 +2161,93 @@ inline void backend_ctx_untyped::impl::erase_all_logical_data()
     auto& d = p.second;
     d.erase();
   }
+}
+
+inline void backend_ctx_untyped::impl::print_logical_data_summary() const
+{
+  ::std::lock_guard<::std::mutex> guard(logical_data_ids_mutex);
+
+  fprintf(stderr, "Context current logical data summary\n");
+  fprintf(stderr, "====================================\n");
+
+  size_t total_footprint = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> data_summary;
+
+  for (const auto& [id, data_impl] : logical_data_ids)
+  {
+    size_t footprint = data_impl.dinterface->data_footprint();
+    total_footprint += footprint;
+
+    ::std::string symbol = data_impl.get_symbol();
+    data_summary[symbol][footprint]++;
+  }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Current footprint : %s\n", pretty_print_bytes(total_footprint).c_str());
+  fprintf(stderr, "====================================\n");
+
+  size_t total_footprint_destroyed = 0;
+
+  // Map to aggregate counts based on (symbol, footprint)
+  ::std::map<::std::string, ::std::map<size_t, size_t>> destroyed_data_summary;
+
+  for (const auto& [symbol, footprint] : previous_logical_data_stats)
+  {
+    total_footprint_destroyed += footprint;
+    destroyed_data_summary[symbol][footprint]++;
+  }
+
+  // Print summary
+  for (const auto& [symbol, footprints] : destroyed_data_summary)
+  {
+    fprintf(stderr, "- %s,", symbol.c_str());
+    bool first = true;
+    for (const auto& [footprint, count] : footprints)
+    {
+      if (!first)
+      {
+        fprintf(stderr, " |");
+      }
+      first = false;
+
+      fprintf(stderr, " %s", pretty_print_bytes(footprint).c_str());
+      if (count > 1)
+      {
+        fprintf(stderr, " (x%zu)", count);
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Destroyed footprint : %s\n", pretty_print_bytes(total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
+  fprintf(stderr, "Total footprint : %s\n", pretty_print_bytes(total_footprint + total_footprint_destroyed).c_str());
+  fprintf(stderr, "====================================\n");
 }
 
 // Defined here to avoid circular dependencies

@@ -103,13 +103,71 @@
 #  endif
 #endif // __cccl_ptx_isa >= 800
 
-// NVRTC uses its own <nv/target> header, so we need to manually tell it when we expect SM90a to be available
-#if _CCCL_COMPILER(NVRTC) && !defined(NV_HAS_FEATURE_SM_90a)
-#  if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) && defined(__CUDA_ARCH_FEAT_SM90_ALL))
-#    define NV_HAS_FEATURE_SM_90a NV_PROVIDES_SM_90
-#  else // ^^^ SM90a ^^^ / vvv !SM90a vvv
-#    define NV_HAS_FEATURE_SM_90a NV_NO_TARGET
-#  endif //
-#endif // _CCCL_COMPILER(NVRTC) && !NV_HAS_FEATURE_SM_90a
+// NVRTC ships a built-in copy of <nv/detail/__target_macros>, so including CCCL's version of this header will omit the
+// content since the header guards are already defined. To make older NVRTC versions have a few newer feature macros
+// required for the PTX tests, we define them here outside the header guards.
+// TODO(bgruber): limit this workaround to NVRTC versions older than the first one shipping those macros
+#if _CCCL_COMPILER(NVRTC)
+// missing SM_90a
+#  ifndef NV_HAS_FEATURE_SM_90a
+#    define NV_HAS_FEATURE_SM_90a __NV_HAS_FEATURE_SM_90a
+#    if __CUDA_ARCH__ >= 900 && defined(__CUDA_ARCH_FEAT_SM90_ALL)
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_90a 1
+#    else // ^^^ SM90a ^^^ / vvv !SM90a vvv
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_90a 0
+#    endif
+#  endif // NV_HAS_FEATURE_SM_90a
+
+// missing SM_100
+#  ifndef NV_PROVIDES_SM_100
+#    define _NV_TARGET_VAL_SM_100 1000
+#    define NV_PROVIDES_SM_100    __NV_PROVIDES_SM_100
+#    define NV_IS_EXACTLY_SM_100  __NV_IS_EXACTLY_SM_100
+#    if (__CUDA_ARCH__ == _NV_TARGET_VAL_SM_100)
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_100 1
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_100      1
+#    else
+#      define _NV_TARGET_BOOL___NV_IS_EXACTLY_SM_100 0
+#      define _NV_TARGET___NV_IS_EXACTLY_SM_100      0
+#    endif
+#    if (__CUDA_ARCH__ >= _NV_TARGET_VAL_SM_100)
+#      define _NV_TARGET___NV_PROVIDES_SM_100      1
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_100 1
+#    else
+#      define _NV_TARGET___NV_PROVIDES_SM_100      0
+#      define _NV_TARGET_BOOL___NV_PROVIDES_SM_100 0
+#    endif
+#  endif // !NV_PROVIDES_SM_100
+
+// missing SM_100a
+#  ifndef NV_HAS_FEATURE_SM_100a
+#    define NV_HAS_FEATURE_SM_100a __NV_HAS_FEATURE_SM_100a
+#    if __CUDA_ARCH__ >= 1000 && defined(__CUDA_ARCH_FEAT_SM100_ALL)
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100a 1
+#    else // ^^^ SM100a ^^^ / vvv !SM100a vvv
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_100a 0
+#    endif
+#  endif // !NV_HAS_FEATURE_SM_100a
+
+// missing SM_101a
+#  ifndef NV_HAS_FEATURE_SM_101a
+#    define NV_HAS_FEATURE_SM_101a __NV_HAS_FEATURE_SM_101a
+#    if __CUDA_ARCH__ >= 1010 && defined(__CUDA_ARCH_FEAT_SM101_ALL)
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 1
+#    else // ^^^ SM101a ^^^ / vvv !SM101a vvv
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_101a 0
+#    endif
+#  endif // NV_HAS_FEATURE_SM_101a
+
+// missing SM_120a
+#  ifndef NV_HAS_FEATURE_SM_120a
+#    define NV_HAS_FEATURE_SM_120a __NV_HAS_FEATURE_SM_120a
+#    if __CUDA_ARCH__ >= 1200 && defined(__CUDA_ARCH_FEAT_SM120_ALL)
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120a 1
+#    else // ^^^ SM120a ^^^ / vvv !SM120a vvv
+#      define _NV_TARGET_BOOL___NV_HAS_FEATURE_SM_120a 0
+#    endif
+#  endif // NV_HAS_FEATURE_SM_120a
+#endif // _CCCL_COMPILER(NVRTC)
 
 #endif // __CCCL_PTX_ISA_H_

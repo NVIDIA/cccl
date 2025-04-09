@@ -35,7 +35,7 @@
 #include <thrust/system/detail/generic/scan_by_key.h>
 #include <thrust/transform.h>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace system

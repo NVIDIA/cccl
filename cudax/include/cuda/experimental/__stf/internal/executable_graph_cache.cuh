@@ -198,36 +198,43 @@ private:
     size_t reclaimed = 0;
 
     // Use a priority queue (min-heap) to track least recently used entries
-    using entry_iter = per_device_map_t::iterator;
-    auto cmp         = [](const entry_iter& a, const entry_iter& b) {
-      return a->second.last_use > b->second.last_use;
-    };
-    ::std::priority_queue<entry_iter, ::std::vector<entry_iter>, decltype(cmp)> lru_queue(cmp);
+    using key_type = ::std::pair<size_t, size_t>;
 
-    // Populate the priority queue with all cache entries
-    for (auto it = cached_graphs[dev_id].begin(); it != cached_graphs[dev_id].end(); ++it)
+    auto& device_cache = cached_graphs[dev_id];
+
+    auto cmp = [&device_cache](const key_type& key_a, const key_type& key_b) {
+      auto iter_a = device_cache.find(key_a);
+      auto iter_b = device_cache.find(key_b);
+
+      // Directly compare last_use timestamps
+      return iter_a->second.last_use > iter_b->second.last_use;
+    };
+
+    // Priority queue storing keys, ordered by least recently used
+    ::std::priority_queue<key_type, ::std::vector<key_type>, decltype(cmp)> lru_queue(cmp);
+
+    // Populate queue with keys from the cache
+    for (const auto& kv : device_cache)
     {
-      lru_queue.push(it);
+      lru_queue.push(kv.first);
     }
 
-    // Remove LRU entries until we've reclaimed enough space
+    // Reclaim least recently used entries
     while (!lru_queue.empty() && reclaimed < to_reclaim)
     {
-      auto lru_it = lru_queue.top();
+      key_type key = lru_queue.top();
       lru_queue.pop();
 
-      reclaimed += lru_it->second.footprint;
-      total_cache_footprint[dev_id] -= lru_it->second.footprint;
-      cached_graphs[dev_id].erase(lru_it);
-    }
+      // Find the entry before erasing
+      auto it = device_cache.find(key);
+      if (it != device_cache.end())
+      {
+        reclaimed += it->second.footprint;
+        total_cache_footprint[dev_id] -= it->second.footprint;
 
-#if 0
-    fprintf(stderr,
-            "Reclaimed %s in cache graph (asked %s remaining %s)\n",
-            pretty_print_bytes(reclaimed).c_str(),
-            pretty_print_bytes(to_reclaim).c_str(),
-            pretty_print_bytes(total_cache_footprint[dev_id]).c_str());
-#endif
+        device_cache.erase(it);
+      }
+    }
   }
 
   // cached graphs index per device, then index per pair of edge/vertex count within each device

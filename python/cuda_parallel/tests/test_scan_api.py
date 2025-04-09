@@ -65,3 +65,33 @@ def test_inclusive_scan_add():
     expected = np.asarray([-5, -5, -3, -6, -4, 0, 0, -1, 1, 9])
     np.testing.assert_equal(d_output.get(), expected)
     # example-end inclusive-scan-add
+
+
+def test_reverse_iterator():
+    # example-begin reverse-iterator
+    import cupy as cp
+    import numpy as np
+
+    import cuda.parallel.experimental.algorithms as algorithms
+    import cuda.parallel.experimental.iterators as iterators
+
+    def add_op(a, b):
+        return a + b
+
+    h_init = np.array([0], dtype="int32")
+    d_input = cp.array([-5, 0, 2, -3, 2, 4, 0, -1, 2, 8], dtype="int32")
+    d_output = cp.empty_like(d_input, dtype="int32")
+    reverse_it = iterators.ReverseIterator(d_input)
+
+    # Instantiate scan, determine storage requirements, and allocate storage
+    inclusive_scan = algorithms.inclusive_scan(reverse_it, d_output, add_op, h_init)
+    temp_storage_size = inclusive_scan(None, reverse_it, d_output, len(d_input), h_init)
+    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+
+    # Run reduction
+    inclusive_scan(d_temp_storage, reverse_it, d_output, len(d_input), h_init)
+
+    # Check the result is correct
+    expected = np.asarray([8, 10, 9, 9, 13, 15, 12, 14, 14, 9])
+    np.testing.assert_equal(d_output.get(), expected)
+    # example-end reverse-iterator
