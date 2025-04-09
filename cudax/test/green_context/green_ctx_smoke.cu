@@ -15,7 +15,7 @@
 #include <utility.cuh>
 
 #if CUDART_VERSION >= 12050
-TEST_CASE("Green context", "[green_context]")
+C2H_TEST("Green context", "[green_context]")
 {
   if (test::cuda_driver_version() < 12050)
   {
@@ -62,7 +62,7 @@ TEST_CASE("Green context", "[green_context]")
 }
 #else
 // For some reason CI fails with empty test, add a dummy test case
-TEST_CASE("Dummy test case")
+C2H_TEST("Dummy test case", "")
 {
   CUDAX_REQUIRE(1 == 1);
 }

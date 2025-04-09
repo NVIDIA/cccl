@@ -25,7 +25,7 @@ struct with_get_execution_policy_const_lvalue
     return pol_;
   }
 };
-TEST_CASE("Can call get_execution_policy on a type with a get_execution_policy method that returns a const lvalue",
+C2H_TEST("Can call get_execution_policy on a type with a get_execution_policy method that returns a const lvalue",
           "[execution, policies]")
 {
   with_get_execution_policy_const_lvalue val{};
@@ -43,7 +43,7 @@ struct with_get_execution_policy_rvalue
     return pol_;
   }
 };
-TEST_CASE("Can call get_execution_policy on a type with a get_execution_policy method returns an rvalue",
+C2H_TEST("Can call get_execution_policy on a type with a get_execution_policy method returns an rvalue",
           "[execution, policies]")
 {
   with_get_execution_policy_rvalue val{};
@@ -61,7 +61,7 @@ struct with_get_execution_policy_non_const
     return pol_;
   }
 };
-TEST_CASE("Cannot call get_execution_policy on a type with a non-const get_execution_policy method",
+C2H_TEST("Cannot call get_execution_policy on a type with a non-const get_execution_policy method",
           "[execution, policies]")
 {
   STATIC_REQUIRE(!::cuda::std::is_invocable_v<cuda::experimental::execution::get_execution_policy_t,
@@ -77,7 +77,7 @@ struct env_with_query_const_ref
     return pol_;
   }
 };
-TEST_CASE("Can call get_execution_policy on an env with a get_execution_policy query that returns a const lvalue",
+C2H_TEST("Can call get_execution_policy on an env with a get_execution_policy query that returns a const lvalue",
           "[execution, policies]")
 {
   env_with_query_const_ref val{};
@@ -95,7 +95,7 @@ struct env_with_query_rvalue
     return pol_;
   }
 };
-TEST_CASE("Can call get_execution_policy on an env with a get_execution_policy query that returns an rvalue",
+C2H_TEST("Can call get_execution_policy on an env with a get_execution_policy query that returns an rvalue",
           "[execution, policies]")
 {
   env_with_query_rvalue val{};
@@ -113,7 +113,7 @@ struct env_with_query_non_const
     return pol_;
   }
 };
-TEST_CASE("Cannot call get_execution_policy on an env with a non-const query", "[execution, policies]")
+C2H_TEST("Cannot call get_execution_policy on an env with a non-const query", "[execution, policies]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<cuda::experimental::execution::get_execution_policy_t, const env_with_query_non_const&>);
@@ -133,7 +133,7 @@ struct env_with_query_and_method
     return pol_;
   }
 };
-TEST_CASE("Can call get_execution_policy on a type with both get_execution_policy and query", "[execution, policies]")
+C2H_TEST("Can call get_execution_policy on a type with both get_execution_policy and query", "[execution, policies]")
 {
   env_with_query_and_method val{};
   auto&& res = cuda::experimental::execution::get_execution_policy(val);

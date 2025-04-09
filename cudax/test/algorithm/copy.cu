@@ -10,7 +10,7 @@
 
 #include "common.cuh"
 
-TEST_CASE("1d Copy", "[data_manipulation]")
+C2H_TEST("1d Copy", "[data_manipulation]")
 {
   cudax::stream _stream;
 
@@ -131,7 +131,7 @@ void test_mdspan_copy_bytes(
   }
 }
 
-TEST_CASE("Mdspan copy", "[data_manipulation]")
+C2H_TEST("Mdspan copy", "[data_manipulation]")
 {
   cudax::stream stream;
 
@@ -169,7 +169,7 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
   }
 }
 
-TEST_CASE("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
+C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
 {
   cudax::stream stream;
   {

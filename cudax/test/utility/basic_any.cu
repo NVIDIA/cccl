@@ -566,7 +566,7 @@ struct any_regular_ref : cudax::basic_any<iregular<>&>
   using cudax::basic_any<iregular<>&>::basic_any;
 };
 
-TEST_CASE("basic_any test for ambiguous conversions", "[utility][basic_any]")
+C2H_TEST("basic_any test for ambiguous conversions", "[utility][basic_any]")
 {
   int i = 42;
   any_regular_ref ref{i};

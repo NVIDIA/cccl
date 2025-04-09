@@ -12,7 +12,7 @@
 
 #include "testing.cuh"
 
-TEST_CASE("this is a dummy test", "[just]")
+C2H_TEST("this is a dummy test", "[just]")
 {
   CUDAX_REQUIRE(1 == 1);
 }
