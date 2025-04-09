@@ -10,8 +10,7 @@ from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
-from .._utils import protocols
-from .._utils.protocols import get_data_pointer, validate_and_get_stream
+from .._utils.protocols import get_data_pointer, get_dtype, validate_and_get_stream
 from ..typing import DeviceArrayLike
 
 
@@ -43,13 +42,13 @@ def make_cache_key(
         _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
     )
 
-    d_in_keys_key = protocols.get_dtype(d_in_keys_array)
+    d_in_keys_key = get_dtype(d_in_keys_array)
     d_in_values_key = (
-        None if d_in_values_array is None else protocols.get_dtype(d_in_values_array)
+        None if d_in_values_array is None else get_dtype(d_in_values_array)
     )
-    d_out_keys_key = protocols.get_dtype(d_out_keys_array)
+    d_out_keys_key = get_dtype(d_out_keys_array)
     d_out_values_key = (
-        None if d_out_values_array is None else protocols.get_dtype(d_out_values_array)
+        None if d_out_values_array is None else get_dtype(d_out_values_array)
     )
 
     return (
@@ -174,7 +173,7 @@ class _RadixSort:
         if begin_bit is None:
             begin_bit = 0
         if end_bit is None:
-            key_type = protocols.get_dtype(d_in_keys_array)
+            key_type = get_dtype(d_in_keys_array)
             end_bit = key_type.itemsize * 8
 
         selector = -1
