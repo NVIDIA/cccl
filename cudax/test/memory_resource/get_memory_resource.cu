@@ -27,7 +27,7 @@ struct with_get_resource_const_lvalue
   }
 };
 C2H_TEST("Can call get_memory_resource on a type with a get_memory_resource method that returns a const lvalue",
-          "[resource]")
+         "[resource]")
 {
   with_get_resource_const_lvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -77,7 +77,7 @@ struct env_with_query_const_ref
   }
 };
 C2H_TEST("Can call get_memory_resource on an env with a get_memory_resource query that returns a const lvalue",
-          "[resource]")
+         "[resource]")
 {
   env_with_query_const_ref val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -94,8 +94,7 @@ struct env_with_query_rvalue
     return res_;
   }
 };
-C2H_TEST("Can call get_memory_resource on an env with a get_memory_resource query that returns an rvalue",
-          "[resource]")
+C2H_TEST("Can call get_memory_resource on an env with a get_memory_resource query that returns an rvalue", "[resource]")
 {
   env_with_query_rvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);

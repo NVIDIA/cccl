@@ -204,8 +204,8 @@ struct just_ref
 };
 
 C2H_TEST("when_all has the values_type based on the children, decayed and as rvalue "
-          "references",
-          "[when_all]")
+         "references",
+         "[when_all]")
 {
   check_value_types<types<int>>(cudax_async::when_all(cudax_async::just(13)));
   check_value_types<types<double>>(cudax_async::when_all(cudax_async::just(3.14)));

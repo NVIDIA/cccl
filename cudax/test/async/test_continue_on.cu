@@ -195,7 +195,7 @@ C2H_TEST("continue_on keeps error_types from scheduler's sender", "[adaptors][co
 }
 
 C2H_TEST("continue_on sends an exception_ptr if value types are potentially throwing when copied",
-          "[adaptors][continue_on]")
+         "[adaptors][continue_on]")
 {
   inline_scheduler sched{};
 

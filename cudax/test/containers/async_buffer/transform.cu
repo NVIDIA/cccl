@@ -65,10 +65,10 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg(
 using algorithms =
   c2h::type_list<::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-                           ,
-                           ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>
+                 ,
+                 ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-                           >;
+                 >;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 #  define FILTER_UBLKCP                                \
