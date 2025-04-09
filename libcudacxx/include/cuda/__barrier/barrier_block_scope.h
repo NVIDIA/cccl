@@ -23,7 +23,7 @@
 
 #include <cuda/__fwd/barrier.h>
 #include <cuda/__fwd/barrier_native_handle.h>
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
@@ -123,7 +123,7 @@ public:
       (new (&__b->__barrier) __barrier_base(__expected);))
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1)
   {
     _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
     arrival_token __token = {};
@@ -170,9 +170,8 @@ public:
   }
 
 private:
-  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_sm_80(arrival_token __token) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_sm_80([[maybe_unused]] arrival_token __token) const
   {
-    (void) __token;
     int32_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
@@ -186,9 +185,8 @@ private:
   }
 
   // Document de drop > uint32_t for __nanosec on public for APIs
-  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait(arrival_token __token) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait([[maybe_unused]] arrival_token __token) const
   {
-    (void) __token;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
       (
@@ -268,9 +266,8 @@ private:
                 _CUDA_VSTD::chrono::nanoseconds(__nanosec));))
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_parity_sm_80(bool __phase_parity) const
+  _LIBCUDACXX_HIDE_FROM_ABI bool __test_wait_parity_sm_80([[maybe_unused]] bool __phase_parity) const
   {
-    (void) __phase_parity;
     uint16_t __ready = 0;
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_80,
@@ -415,7 +412,7 @@ public:
   }
 
   template <class _Rep, class _Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_for(arrival_token&& __token, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur)
   {
     auto __nanosec = _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__dur);
@@ -424,14 +421,14 @@ public:
   }
 
   template <class _Clock, class _Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_until(arrival_token&& __token, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time)
   {
     return try_wait_for(_CUDA_VSTD::move(__token), (__time - _Clock::now()));
   }
 
   template <class _Rep, class _Period>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_parity_for(bool __phase_parity, const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __dur)
   {
     auto __nanosec = _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__dur);
@@ -440,7 +437,7 @@ public:
   }
 
   template <class _Clock, class _Duration>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI bool
   try_wait_parity_until(bool __phase_parity, const _CUDA_VSTD::chrono::time_point<_Clock, _Duration>& __time)
   {
     return try_wait_parity_for(__phase_parity, (__time - _Clock::now()));

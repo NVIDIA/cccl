@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = ["scikit-build-core>=0.10"]
+requires = ["scikit-build-core>=0.10", "cython"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -26,7 +26,13 @@ dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-xdist", "cupy-cuda12x", "typing_extensions"]
+test = [
+  "pytest",
+  "pytest-xdist",
+  "cupy-cuda12x",
+  "typing_extensions",
+  "pytest-benchmark",
+]
 
 [project.urls]
 Homepage = "https://developer.nvidia.com/"

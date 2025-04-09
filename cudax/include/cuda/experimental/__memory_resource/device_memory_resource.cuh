@@ -62,7 +62,7 @@ private:
   //! @brief  Returns the default ``cudaMemPool_t`` from the specified device.
   //! @throws cuda_error if retrieving the default ``cudaMemPool_t`` fails.
   //! @returns The default memory pool of the specified device.
-  _CCCL_NODISCARD static ::cudaMemPool_t __get_default_device_mem_pool(const int __device_id)
+  [[nodiscard]] static ::cudaMemPool_t __get_default_device_mem_pool(const int __device_id)
   {
     ::cuda::experimental::__verify_device_supports_stream_ordered_allocations(__device_id);
 

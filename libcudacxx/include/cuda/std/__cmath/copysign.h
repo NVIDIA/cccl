@@ -38,7 +38,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysign(float __x, float __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float copysign(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_COPYSIGNF)
   return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
@@ -47,7 +47,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysign(float __x, float __y) n
 #endif // !_CCCL_BUILTIN_COPYSIGNF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysignf(float __x, float __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI float copysignf(float __x, float __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_COPYSIGNF)
   return _CCCL_BUILTIN_COPYSIGNF(__x, __y);
@@ -56,7 +56,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float copysignf(float __x, float __y) 
 #endif // !_CCCL_BUILTIN_COPYSIGNF
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y) noexcept
 {
 #if defined(_CCCL_BUILTIN_COPYSIGN)
   return _CCCL_BUILTIN_COPYSIGN(__x, __y);
@@ -66,7 +66,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double copysign(double __x, double __y
 }
 
 #if _CCCL_HAS_LONG_DOUBLE()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, long double __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COPYSIGNL)
   return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
@@ -75,7 +75,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysign(long double __x, 
 #  endif // !_CCCL_BUILTIN_COPYSIGNL
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysignl(long double __x, long double __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI long double copysignl(long double __x, long double __y) noexcept
 {
 #  if defined(_CCCL_BUILTIN_COPYSIGNL)
   return _CCCL_BUILTIN_COPYSIGNL(__x, __y);
@@ -86,13 +86,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double copysignl(long double __x,
 #endif // _CCCL_HAS_LONG_DOUBLE()
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __copysign_impl(_Tp __x, [[maybe_unused]] _Tp __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __copysign_impl(_Tp __x, [[maybe_unused]] _Tp __y) noexcept
 {
   if constexpr (numeric_limits<_Tp>::is_signed)
   {
-    const auto __val = (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_v<_Tp>)
-                     | (_CUDA_VSTD::__fp_get_storage(__y) & __fp_sign_mask_v<_Tp>);
-    return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_t<_Tp>>(__val));
+    const auto __val = (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<_Tp>)
+                     | (_CUDA_VSTD::__fp_get_storage(__y) & __fp_sign_mask_of_v<_Tp>);
+    return _CUDA_VSTD::__fp_from_storage<_Tp>(static_cast<__fp_storage_of_t<_Tp>>(__val));
   }
   else
   {
@@ -101,56 +101,56 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __copysign_impl(_Tp __x,
 }
 
 #if _CCCL_HAS_NVFP16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, __half __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __half copysign(__half __x, __half __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
 #endif // _CCCL_HAS_NVFP16()
 
 #if _CCCL_HAS_NVBF16()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
 #endif // _CCCL_HAS_NVBF16()
 
 #if _CCCL_HAS_NVFP8_E4M3()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 copysign(__nv_fp8_e4m3 __x, __nv_fp8_e4m3 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e4m3 copysign(__nv_fp8_e4m3 __x, __nv_fp8_e4m3 __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 
 #if _CCCL_HAS_NVFP8_E5M2()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 copysign(__nv_fp8_e5m2 __x, __nv_fp8_e5m2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e5m2 copysign(__nv_fp8_e5m2 __x, __nv_fp8_e5m2 __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 
 #if _CCCL_HAS_NVFP8_E8M0()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 copysign(__nv_fp8_e8m0 __x, __nv_fp8_e8m0 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp8_e8m0 copysign(__nv_fp8_e8m0 __x, __nv_fp8_e8m0 __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 
 #if _CCCL_HAS_NVFP6_E2M3()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 copysign(__nv_fp6_e2m3 __x, __nv_fp6_e2m3 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e2m3 copysign(__nv_fp6_e2m3 __x, __nv_fp6_e2m3 __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 
 #if _CCCL_HAS_NVFP6_E3M2()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 copysign(__nv_fp6_e3m2 __x, __nv_fp6_e3m2 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp6_e3m2 copysign(__nv_fp6_e3m2 __x, __nv_fp6_e3m2 __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 
 #if _CCCL_HAS_NVFP4_E2M1()
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 copysign(__nv_fp4_e2m1 __x, __nv_fp4_e2m1 __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 copysign(__nv_fp4_e2m1 __x, __nv_fp4_e2m1 __y) noexcept
 {
   return _CUDA_VSTD::__copysign_impl(__x, __y);
 }
@@ -158,7 +158,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_fp4_e2m1 copysign(__nv_
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr double copysign(_Tp __x, [[maybe_unused]] _Tp __y) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr double copysign(_Tp __x, [[maybe_unused]] _Tp __y) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_signed, _Tp))
   {

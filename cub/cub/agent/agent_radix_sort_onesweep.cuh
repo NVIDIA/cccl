@@ -124,7 +124,7 @@ struct AgentRadixSortOnesweep
     RADIX_DIGITS          = 1 << RADIX_BITS,
     BINS_PER_THREAD       = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
     FULL_BINS             = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
-    WARP_THREADS          = CUB_PTX_WARP_THREADS,
+    WARP_THREADS          = warp_threads,
     BLOCK_WARPS           = BLOCK_THREADS / WARP_THREADS,
     WARP_MASK             = ~0,
     LOOKBACK_PARTIAL_MASK = 1 << (PortionOffsetT(sizeof(PortionOffsetT)) * 8 - 2),

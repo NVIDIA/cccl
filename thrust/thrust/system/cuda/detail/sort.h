@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <thrust/system/cuda/config.h>
 
 #  include <cub/device/device_merge_sort.cuh>
@@ -59,8 +59,7 @@
 #  include <thrust/type_traits/is_contiguous_iterator.h>
 
 #  include <cuda/cmath>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 #  if _CCCL_HAS_NVFP16()
 #    include <cuda_fp16.h>

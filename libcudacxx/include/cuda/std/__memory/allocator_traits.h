@@ -44,21 +44,11 @@ _CCCL_NV_DIAG_SUPPRESS(1215)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
-#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY)   \
-    template <class _Tp, class = void>                           \
-    struct NAME : false_type                                     \
-    {};                                                          \
-    template <class _Tp>                                         \
-    struct NAME<_Tp, void_t<typename _Tp::PROPERTY>> : true_type \
-    {}
-#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
-#  define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY) \
-    template <class _Tp, class = void>                         \
-    _CCCL_INLINE_VAR constexpr bool NAME##_v = false;          \
-    template <class _Tp>                                       \
-    _CCCL_INLINE_VAR constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#define _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(NAME, PROPERTY) \
+  template <class _Tp, class = void>                         \
+  inline constexpr bool NAME##_v = false;                    \
+  template <class _Tp>                                       \
+  inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 
 // __pointer
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer);
@@ -369,14 +359,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Tp>
   using rebind_traits = allocator_traits<rebind_alloc<_Tp>>;
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n)
   {
     return __a.allocate(__n);
   }
 
   template <class _Ap = _Alloc, enable_if_t<__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer __hint)
   {
     _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -386,7 +376,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
   template <class _Ap                                                                         = _Alloc,
             class                                                                             = void,
             enable_if_t<!__has_allocate_hint<_Ap, size_type, const_void_pointer>::value, int> = 0>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
   allocate(allocator_type& __a, size_type __n, const_void_pointer)
   {
     return __a.allocate(__n);
@@ -473,11 +463,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__begin2),
-#ifdef _CCCL_NO_EXCEPTIONS
+#if !_CCCL_HAS_EXCEPTIONS()
                 _CUDA_VSTD::move(*__begin1)
-#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
                 _CUDA_VSTD::move_if_noexcept(*__begin1)
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
       );
     }
   }
@@ -535,11 +525,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__end2 - 1),
-#ifdef _CCCL_NO_EXCEPTIONS
+#if !_CCCL_HAS_EXCEPTIONS()
                 _CUDA_VSTD::move(*--__end1)
-#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
                 _CUDA_VSTD::move_if_noexcept(*--__end1)
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
       );
       --__end2;
     }

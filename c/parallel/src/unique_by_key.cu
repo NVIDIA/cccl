@@ -148,7 +148,8 @@ std::string get_sweep_kernel_name(
   check(nvrtcGetTypeName<op_wrapper>(&equality_op_t));
 
   return std::format(
-    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, "
+    "device_unique_by_key_vsmem_helper>",
     chained_policy_t,
     input_keys_iterator_t,
     input_values_iterator_t,
@@ -230,7 +231,7 @@ CUresult cccl_device_unique_by_key_build(
   const char* cub_path,
   const char* thrust_path,
   const char* libcudacxx_path,
-  const char* ctk_path) noexcept
+  const char* ctk_path)
 {
   CUresult error = CUDA_SUCCESS;
 
@@ -308,6 +309,24 @@ struct agent_policy_t {{
 struct device_unique_by_key_policy {{
   struct ActivePolicy {{
     using UniqueByKeyPolicyT = agent_policy_t;
+  }};
+}};
+struct device_unique_by_key_vsmem_helper {{
+  template<typename ActivePolicyT, typename... Ts>
+  struct VSMemHelperDefaultFallbackPolicyT {{
+    using agent_policy_t = agent_policy_t;
+    using agent_t = cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
+    using static_temp_storage_t = typename cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>::TempStorage;
+    static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
+      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem, ::cuda::std::size_t linear_block_id)
+    {{
+        return static_temp_storage;
+    }}
+    template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
+    static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
+    {{
+      return false;
+    }}
   }};
 }};
 {13}
@@ -407,8 +426,8 @@ CUresult cccl_device_unique_by_key(
   cccl_iterator_t d_values_out,
   cccl_iterator_t d_num_selected_out,
   cccl_op_t op,
-  unsigned long long num_items,
-  CUstream stream) noexcept
+  uint64_t num_items,
+  CUstream stream)
 {
   CUresult error = CUDA_SUCCESS;
   bool pushed    = false;
@@ -463,7 +482,7 @@ CUresult cccl_device_unique_by_key(
   return error;
 }
 
-CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* build_ptr) noexcept
+CUresult cccl_device_unique_by_key_cleanup(cccl_device_unique_by_key_build_result_t* build_ptr)
 {
   try
   {

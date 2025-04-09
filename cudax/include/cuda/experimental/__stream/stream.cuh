@@ -124,7 +124,7 @@ struct stream : stream_ref
   //! @return stream The constructed `stream` object
   //!
   //! @note The constructed `stream` object takes ownership of the native handle.
-  _CCCL_NODISCARD static stream from_native_handle(::cudaStream_t __handle)
+  [[nodiscard]] static stream from_native_handle(::cudaStream_t __handle)
   {
     return stream(__handle);
   }
@@ -140,7 +140,7 @@ struct stream : stream_ref
   //! @return cudaStream_t The native handle being held by the `stream` object.
   //!
   //! @post The stream object is in a moved-from state.
-  _CCCL_NODISCARD ::cudaStream_t release()
+  [[nodiscard]] ::cudaStream_t release()
   {
     return _CUDA_VSTD::exchange(__stream, detail::__invalid_stream);
   }

@@ -14,8 +14,6 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
-#include "nvrtc_workaround.h"
-// above header needs to be included before the generated test header
 #include "generated/fence.h"
 #include "generated/fence_mbarrier_init.h"
 #include "generated/fence_proxy_alias.h"

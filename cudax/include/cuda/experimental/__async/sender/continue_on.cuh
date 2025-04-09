@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
@@ -28,6 +29,7 @@
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/queries.cuh>
+#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
@@ -38,10 +40,7 @@ namespace cuda::experimental::__async
 {
 struct continue_on_t
 {
-#if !_CCCL_CUDA_COMPILER(NVCC)
-
 private:
-#endif // !_CCCL_CUDA_COMPILER(NVCC)
   template <class... _As>
   using __set_value_tuple_t = __tuple<set_value_t, __decay_t<_As>...>;
 
@@ -51,18 +50,6 @@ private:
   using __set_stopped_tuple_t = __tuple<set_stopped_t>;
 
   using __complete_fn = void (*)(void*) noexcept;
-
-  template <class... _Ts>
-  using __set_value_completion =
-    _CUDA_VSTD::conditional_t<__nothrow_decay_copyable<_Ts...>,
-                              completion_signatures<set_value_t(__decay_t<_Ts>...)>,
-                              completion_signatures<set_value_t(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>>;
-
-  template <class _Error>
-  using __set_error_completion =
-    _CUDA_VSTD::conditional_t<__nothrow_decay_copyable<_Error>,
-                              completion_signatures<set_error_t(__decay_t<_Error>)>,
-                              completion_signatures<set_error_t(__decay_t<_Error>), set_error_t(::std::exception_ptr)>>;
 
   template <class _Rcvr, class _Result>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
@@ -89,13 +76,14 @@ private:
       else
       {
         _CUDAX_TRY( //
-          ({ //
+          ({        //
             __result_.template __emplace<__tupl_t>(_Tag(), static_cast<_As&&>(__as)...);
           }),
-          _CUDAX_CATCH(...)( //
-            { //
-              __async::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
-            }))
+          _CUDAX_CATCH(...) //
+          ({                //
+            __async::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
+          }) //
+        )
       }
       __complete_ = +[](void* __ptr) noexcept {
         auto& __self = *static_cast<__rcvr_t*>(__ptr);
@@ -129,43 +117,16 @@ private:
   template <class _Rcvr, class _CvSndr, class _Sch>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
-    _CUDAX_API friend auto get_env(const __opstate_t* __self) noexcept -> env_of_t<_Rcvr>
-    {
-      return __async::get_env(__self->__rcvr_.__rcvr);
-    }
-
     using operation_state_concept = operation_state_t;
+    using __env_t                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
+
     using __result_t =
-      __transform_completion_signatures<completion_signatures_of_t<_CvSndr, __opstate_t*>,
-                                        __set_value_tuple_t,
-                                        __set_error_tuple_t,
-                                        __set_stopped_tuple_t,
-                                        __variant>;
-
-    // The scheduler contributes error and stopped completions.
-    // This causes its set_value_t() completion to be ignored.
-    using __scheduler_completions = //
-      transform_completion_signatures<completion_signatures_of_t<schedule_result_t<_Sch>, __rcvr_t<_Rcvr, __result_t>*>,
-                                      __async::completion_signatures<>,
-                                      _CUDA_VSTD::__type_always<__async::completion_signatures<>>::__call>;
-
-    // The continue_on completions are the scheduler's error
-    // and stopped completions, plus the sender's completions
-    // with all the result data types decayed.
-    using completion_signatures = //
-      transform_completion_signatures<completion_signatures_of_t<_CvSndr, __opstate_t*>,
-                                      __scheduler_completions,
-                                      __set_value_completion,
-                                      __set_error_completion>;
-
-    __rcvr_t<_Rcvr, __result_t> __rcvr_;
-    connect_result_t<_CvSndr, __opstate_t*> __opstate1_;
-    connect_result_t<schedule_result_t<_Sch>, __rcvr_t<_Rcvr, __result_t>*> __opstate2_;
+      typename completion_signatures_of_t<_CvSndr, __env_t>::template __transform_q<__decayed_tuple, __variant>;
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}, nullptr}
-        , __opstate1_{__async::connect(static_cast<_CvSndr&&>(__sndr), this)}
-        , __opstate2_{__async::connect(schedule(__sch), &__rcvr_)}
+        , __opstate1_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
+        , __opstate2_{__async::connect(schedule(__sch), __rcvr_ref{__rcvr_})}
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);
@@ -194,15 +155,24 @@ private:
       __rcvr_.__set_result(set_stopped_t());
       __async::start(__opstate2_);
     }
+
+    _CUDAX_API auto get_env() const noexcept -> __env_t
+    {
+      return __async::get_env(__rcvr_.__rcvr);
+    }
+
+    __rcvr_t<_Rcvr, __result_t> __rcvr_;
+    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__rcvr_t<_Rcvr, __result_t>>> __opstate2_;
   };
 
+public:
   template <class _Sndr, class _Sch>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sch>
   struct __closure_t;
 
-public:
   template <class _Sndr, class _Sch>
   _CUDAX_API __sndr_t<_Sndr, _Sch> operator()(_Sndr __sndr, _Sch __sch) const noexcept;
 
@@ -222,6 +192,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__closure_t
   }
 };
 
+template <class _Tag>
+struct __decay_args
+{
+  template <class... _Ts>
+  _CUDAX_TRIVIAL_API constexpr auto operator()() const noexcept
+  {
+    if constexpr (!__decay_copyable<_Ts...>)
+    {
+      return invalid_completion_signature<_WHERE(_IN_ALGORITHM, continue_on_t),
+                                          _WHAT(_ARGUMENTS_ARE_NOT_DECAY_COPYABLE),
+                                          _WITH_ARGUMENTS(_Ts...)>();
+    }
+    else if constexpr (!__nothrow_decay_copyable<_Ts...>)
+    {
+      return completion_signatures<_Tag(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
+    }
+    else
+    {
+      return completion_signatures<_Tag(__decay_t<_Ts>...)>{};
+    }
+  }
+};
+
 template <class _Sndr, class _Sch>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
 {
@@ -230,23 +223,42 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
   _Sch __sch;
   _Sndr __sndr;
 
-  struct __attrs_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
-    __sndr_t* __sndr;
-
     template <class _SetTag>
     _CUDAX_API auto query(get_completion_scheduler_t<_SetTag>) const noexcept
     {
-      return __sndr->__sch;
+      return __sndr_->__sch;
     }
 
     template <class _Query>
     _CUDAX_API auto query(_Query) const //
       -> __query_result_t<_Query, env_of_t<_Sndr>>
     {
-      return __async::get_env(__sndr->__sndr).query(_Query{});
+      return __async::get_env(__sndr_->__sndr).query(_Query{});
     }
+
+    const __sndr_t* __sndr_;
   };
+
+  template <class _Self, class... _Env>
+  _CUDAX_API static constexpr auto get_completion_signatures()
+  {
+    _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
+    {
+      _CUDAX_LET_COMPLETIONS(
+        auto(__sch_completions) = __async::get_completion_signatures<schedule_result_t<_Sch>, _Env...>())
+      {
+        // The scheduler contributes error and stopped completions.
+        return concat_completion_signatures(
+          transform_completion_signatures(__sch_completions, __swallow_transform()),
+          transform_completion_signatures(
+            __child_completions, __decay_args<set_value_t>{}, __decay_args<set_error_t>{}));
+      }
+    }
+
+    _CCCL_UNREACHABLE();
+  }
 
   template <class _Rcvr>
   _CUDAX_API __opstate_t<_Rcvr, _Sndr, _Sch> connect(_Rcvr __rcvr) &&

@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 #if defined(_CCCL_BUILTIN_BITREVERSE32)
 
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_builtin(_Tp __value) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_builtin(_Tp __value) noexcept
 {
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -60,10 +60,10 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_builtin(_T
 
 #endif // defined(_CCCL_BUILTIN_BITREVERSE32)
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 template <typename _Tp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr _Tp __bit_reverse_device(_Tp __value) noexcept
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr _Tp __bit_reverse_device(_Tp __value) noexcept
 {
 #  if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -92,10 +92,10 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr _Tp __bit_reverse_dev
   _CCCL_UNREACHABLE();
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_generic(_Tp __value) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_generic(_Tp __value) noexcept
 {
 #if _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(__uint128_t))
@@ -148,9 +148,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_generic(_T
 }
 
 template <typename _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_reverse(_Tp __value) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_reverse(_Tp __value) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
+  static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))

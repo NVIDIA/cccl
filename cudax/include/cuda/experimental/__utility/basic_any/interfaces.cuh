@@ -52,19 +52,19 @@ template <class _Interface>
 extern _Interface __remove_ireference_v<__ireference<_Interface const>>;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_value_v = _CUDA_VSTD::is_class_v<_Interface>;
+inline constexpr bool __is_value_v = _CUDA_VSTD::is_class_v<_Interface>;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_value_v<__ireference<_Interface>> = false;
+inline constexpr bool __is_value_v<__ireference<_Interface>> = false;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v = false;
+inline constexpr bool __is_lvalue_reference_v = false;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v<__ireference<_Interface const>> = true;
+inline constexpr bool __is_lvalue_reference_v<__ireference<_Interface const>> = true;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v<_Interface&> = true;
+inline constexpr bool __is_lvalue_reference_v<_Interface&> = true;
 
 //!
 //! __bases_of: get the list of base interface for an interface, including itself
@@ -82,16 +82,16 @@ using __bases_of _CCCL_NODEBUG_ALIAS = //
 //! interface subsumption
 //!
 template <class _Interface1, class _Interface2>
-_CCCL_INLINE_VAR constexpr bool __subsumes = false;
+inline constexpr bool __subsumes = false;
 
 template <class _Interface>
-_CCCL_INLINE_VAR constexpr bool __subsumes<_Interface, _Interface> = true;
+inline constexpr bool __subsumes<_Interface, _Interface> = true;
 
 template <class... _Set>
-_CCCL_INLINE_VAR constexpr bool __subsumes<__iset<_Set...>, __iset<_Set...>> = true;
+inline constexpr bool __subsumes<__iset<_Set...>, __iset<_Set...>> = true;
 
 template <class... _Subset, class... _Superset>
-_CCCL_INLINE_VAR constexpr bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
+inline constexpr bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Superset...>, _Subset...>;
 
 //!
@@ -121,10 +121,10 @@ struct __has_base_fn<__iset<_Bases...>>
 };
 
 template <class _Derived, class _Base, class = void>
-_CCCL_INLINE_VAR constexpr bool __extension_of = false;
+inline constexpr bool __extension_of = false;
 
 template <class _Derived, class _Base>
-_CCCL_INLINE_VAR constexpr bool
+inline constexpr bool
   __extension_of<_Derived,
                  _Base,
                  _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_class_v<_Derived> && _CUDA_VSTD::is_class_v<_Base>>> =
@@ -175,13 +175,14 @@ _CCCL_CONCEPT __is_interface =
 //! bases, but with duplicates removed.
 //!
 template <class _Interface, class _Fn = __make_type_list>
-using __unique_interfaces _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_apply<_Fn, __bases_of<_Interface, _CUDA_VSTD::__type_quote<_CUDA_VSTD::__make_type_set>>>;
+using __unique_interfaces _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_apply<
+  _Fn,
+  _CUDA_VSTD::__as_type_list<__bases_of<_Interface, _CUDA_VSTD::__type_quote<_CUDA_VSTD::__make_type_set>>>>;
 
 //!
 //! __index_of_base: find the index of an interface in a list of unique interfaces
 //!
-_CCCL_NODISCARD _CUDAX_HOST_API constexpr auto __find_index(_CUDA_VSTD::initializer_list<bool> __il) -> size_t
+[[nodiscard]] _CUDAX_HOST_API constexpr auto __find_index(_CUDA_VSTD::initializer_list<bool> __il) -> size_t
 {
   auto __it = _CUDA_VSTD::find(__il.begin(), __il.end(), true);
   return static_cast<size_t>(__it - __il.begin());
@@ -318,21 +319,21 @@ template <template <class...> class _Interface>
 struct __interface_cast_fn<_Interface<>>
 {
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super>&& __self) const noexcept
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super>&& __self) const noexcept
     -> _Interface<_Super>&&
   {
     return _CUDA_VSTD::move(__self);
   }
 
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super>& __self) const noexcept
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super>& __self) const noexcept
     -> _Interface<_Super>&
   {
     return __self;
   }
 
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super> const& __self) noexcept
+  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto operator()(_Interface<_Super> const& __self) noexcept
     -> _Interface<_Super> const&
   {
     return __self;
@@ -342,14 +343,14 @@ struct __interface_cast_fn<_Interface<>>
 _CCCL_TEMPLATE(template <class...> class _Interface, class Object)
 _CCCL_REQUIRES(
   __is_interface<_Interface<>> _CCCL_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface<>>, Object>)
-_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto __interface_cast(Object&& __obj) noexcept -> decltype(auto)
+[[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto __interface_cast(Object&& __obj) noexcept -> decltype(auto)
 {
   return __interface_cast_fn<_Interface<>>{}(_CUDA_VSTD::forward<Object>(__obj));
 }
 
 _CCCL_TEMPLATE(class _Interface, class Object)
 _CCCL_REQUIRES(__is_interface<_Interface> _CCCL_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface>, Object>)
-_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto __interface_cast(Object&& __obj) noexcept -> decltype(auto)
+[[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto __interface_cast(Object&& __obj) noexcept -> decltype(auto)
 {
   return __interface_cast_fn<_Interface>{}(_CUDA_VSTD::forward<Object>(__obj));
 }

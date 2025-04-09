@@ -22,9 +22,8 @@ template <class A, class T, template <typename, typename> class Selector>
 __host__ __device__ __noinline__ void do_test()
 {
   Selector<A, constructor_initializer> sel;
-  A& obj  = *sel.construct(T(0));
-  bool b0 = obj.is_lock_free();
-  ((void) b0); // mark as unused
+  A& obj                   = *sel.construct(T(0));
+  [[maybe_unused]] bool b0 = obj.is_lock_free();
   obj.store(T(0));
   assert(obj == T(0));
   obj.store(T(1), cuda::std::memory_order_release);

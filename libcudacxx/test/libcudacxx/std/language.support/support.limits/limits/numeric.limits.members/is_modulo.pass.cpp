@@ -33,10 +33,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t, true>();
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t, true>();
   test<char32_t, true>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short, false>();
   test<unsigned short, true>();
   test<int, false>();

@@ -273,3 +273,34 @@ C2H_TEST("Block store works with caching iterators", "[store][block]", items_per
 
   REQUIRE(d_input == d_output);
 }
+
+#if IPT == 1
+C2H_TEST("Vectorized block store with different alignment cases", "[store][block]", c2h::enum_type_list<int, 1, 4, 7>)
+{
+  using type                     = int;
+  constexpr int items_per_thread = c2h::get<0, TestType>::value;
+  ;
+  constexpr int threads_in_block                            = 64;
+  constexpr int tile_size                                   = items_per_thread * threads_in_block;
+  static constexpr cub::BlockStoreAlgorithm store_algorithm = cub::BlockStoreAlgorithm::BLOCK_STORE_VECTORIZE;
+  const int offset_for_elements                             = GENERATE_COPY(0, 1, 2, 3, 4);
+
+  c2h::device_vector<type> d_input(tile_size);
+  c2h::gen(C2H_SEED(2), d_input);
+
+  CAPTURE(offset_for_elements, tile_size);
+  c2h::device_vector<type> d_input_ref(tile_size + offset_for_elements);
+  thrust::copy_n(d_input.begin(), tile_size, d_input_ref.begin() + offset_for_elements);
+  thrust::fill_n(d_input_ref.begin(), offset_for_elements, 0);
+
+  c2h::device_vector<type> d_output(d_input.size() + offset_for_elements);
+  thrust::fill_n(d_output.begin(), offset_for_elements, 0);
+
+  block_store<items_per_thread, threads_in_block, store_algorithm>(
+    thrust::raw_pointer_cast(d_input.data()),
+    thrust::raw_pointer_cast(d_output.data()) + offset_for_elements,
+    static_cast<int>(d_input.size()));
+
+  REQUIRE(d_input_ref == d_output);
+}
+#endif

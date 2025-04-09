@@ -29,7 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr remove_reference_t<_Tp>&& move(_Tp&& __t) noexcept
 {
   using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
   return static_cast<_Up&&>(__t);
@@ -40,7 +40,7 @@ using __move_if_noexcept_result_t =
   conditional_t<!is_nothrow_move_constructible<_Tp>::value && is_copy_constructible<_Tp>::value, const _Tp&, _Tp&&>;
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __move_if_noexcept_result_t<_Tp> move_if_noexcept(_Tp& __x) noexcept
 {
   return _CUDA_VSTD::move(__x);
 }

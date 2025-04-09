@@ -12,6 +12,7 @@
 #define __ALGORITHM_COMMON__
 
 #include <cuda/memory_resource>
+#include <cuda/std/mdspan>
 
 #include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
@@ -46,7 +47,7 @@ void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t p
 template <typename Layout = cuda::std::layout_right, typename Extents>
 auto make_buffer_for_mdspan(Extents extents, char value = 0)
 {
-  cudax::pinned_memory_resource host_resource;
+  cudax::legacy_pinned_memory_resource host_resource;
   auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
 
   cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
@@ -60,7 +61,11 @@ inline auto create_fake_strided_mdspan()
 {
   cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
   cuda::std::array<size_t, 3> strides{12, 4, 1};
+#if _CCCL_CUDACC_BELOW(12, 6)
+  auto map = cuda::std::layout_stride::mapping{dynamic_extents, strides};
+#else
   cuda::std::layout_stride::mapping map{dynamic_extents, strides};
+#endif
   return cuda::std::mdspan<int, decltype(dynamic_extents), cuda::std::layout_stride>(nullptr, map);
 };
 
@@ -71,11 +76,11 @@ namespace cuda::experimental
 template <typename AsKernelArg = cuda::std::span<int>>
 struct weird_buffer
 {
-  pinned_memory_resource& resource;
+  legacy_pinned_memory_resource& resource;
   int* data;
   std::size_t size;
 
-  weird_buffer(pinned_memory_resource& res, std::size_t s)
+  weird_buffer(legacy_pinned_memory_resource& res, std::size_t s)
       : resource(res)
       , data((int*) res.allocate(s * sizeof(int)))
       , size(s)

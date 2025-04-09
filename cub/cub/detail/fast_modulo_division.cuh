@@ -103,7 +103,7 @@ using supported_integral =
  **********************************************************************************************************************/
 
 template <typename DivisorType, typename T, typename R>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<DivisorType>
+[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<DivisorType>
 multiply_extract_higher_bits(T value, R multiplier)
 {
   static_assert(supported_integral<T>::value, "unsupported type");
@@ -157,7 +157,7 @@ public:
 
   fast_div_mod() = delete;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
       : _divisor{static_cast<unsigned_t>(divisor)}
   {
     using larger_t = larger_unsigned_type_t<T>;
@@ -189,7 +189,7 @@ public:
   fast_div_mod(fast_div_mod&&) noexcept = default;
 
   template <typename R>
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result<R> operator()(R dividend) const noexcept
+  [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result<R> operator()(R dividend) const noexcept
   {
     static_assert(supported_integral<R>::value, "unsupported type");
     using common_t  = decltype(R{} / T{});

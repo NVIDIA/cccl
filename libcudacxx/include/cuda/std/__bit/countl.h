@@ -59,7 +59,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_zero(_Tp __t) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_zero(_Tp __t) noexcept
 {
   auto __ret = _CUDA_VSTD::__countl_zero(static_cast<_Tp>(__t));
   _CCCL_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);
@@ -68,7 +68,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_zero(_Tp __t) noe
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_one(_Tp __t) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_one(_Tp __t) noexcept
 {
   return _CUDA_VSTD::countl_zero(static_cast<_Tp>(~__t));
 }

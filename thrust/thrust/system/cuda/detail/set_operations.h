@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>
@@ -54,8 +54,7 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 

@@ -121,12 +121,12 @@ public:
         , __extents_(__detail::__transpose_extents(__map.extents()))
     {}
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
     {
       return __extents_;
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
       noexcept(__required_span_size_noexcept)
     {
       return __nested_mapping_.required_span_size();
@@ -140,42 +140,42 @@ public:
       return __nested_mapping_(__j, __i);
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nested_mapping_type& nested_mapping() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nested_mapping_type& nested_mapping() const noexcept
     {
       return __nested_mapping_;
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
     {
       return __nested_mapping_type::is_always_unique();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
     {
       return __nested_mapping_type::is_always_exhaustive();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
     {
       return __nested_mapping_type::is_always_strided();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept(__is_nested_unique_noexcept)
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const noexcept(__is_nested_unique_noexcept)
     {
       return __nested_mapping_.is_unique();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept(__is_exhaustive_noexcept)
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const noexcept(__is_exhaustive_noexcept)
     {
       return __nested_mapping_.is_exhaustive();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept(__is_strided_noexcept)
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const noexcept(__is_strided_noexcept)
     {
       return __nested_mapping_.is_strided();
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(size_t __r) const
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(size_t __r) const
     {
       _CCCL_ASSERT(this->is_strided(), "layout must be strided");
       _CCCL_ASSERT(__r < extents_type::rank(), "rank must be less than extents rank");
@@ -306,8 +306,7 @@ struct __transposed_layout<layout_transpose<_NestedLayout>>
 } // namespace __detail
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
-transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __element_type  = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__element_type;
   using __layout_type   = typename __detail::__transposed_layout<_Layout>::__layout_type;

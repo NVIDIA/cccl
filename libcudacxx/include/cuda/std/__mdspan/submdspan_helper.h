@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [mdspan.sub.overview]-2.5
 template <class _IndexType, class... _SliceTypes>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr array<size_t, sizeof...(_SliceTypes)>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr array<size_t, sizeof...(_SliceTypes)>
 __map_rank(size_t __count = 0) noexcept
 {
   return {(convertible_to<_SliceTypes, _IndexType> ? dynamic_extent : __count++)...};
@@ -72,34 +72,34 @@ _CCCL_HOST_DEVICE strided_slice(_OffsetType, _ExtentType, _StrideType)
   -> strided_slice<_OffsetType, _ExtentType, _StrideType>;
 
 template <typename>
-_CCCL_INLINE_VAR constexpr bool __is_strided_slice = false;
+inline constexpr bool __is_strided_slice = false;
 
 template <class _OffsetType, class _ExtentType, class _StrideType>
-_CCCL_INLINE_VAR constexpr bool __is_strided_slice<strided_slice<_OffsetType, _ExtentType, _StrideType>> = true;
+inline constexpr bool __is_strided_slice<strided_slice<_OffsetType, _ExtentType, _StrideType>> = true;
 
 struct full_extent_t
 {
   _CCCL_HIDE_FROM_ABI explicit full_extent_t() = default;
 };
-_CCCL_INLINE_VAR constexpr full_extent_t full_extent{};
+inline constexpr full_extent_t full_extent{};
 
 // [mdspan.submdspan.helpers]
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES((!__integral_constant_like<_Tp>) )
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __de_ice(_Tp __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __de_ice(_Tp __val) noexcept
 {
   return __val;
 }
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(__integral_constant_like<_Tp>)
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __de_ice(_Tp) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __de_ice(_Tp) noexcept
 {
   return _Tp::value;
 }
 
 template <class _IndexType, class _From>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __index_cast(_From&& __from) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __index_cast(_From&& __from) noexcept
 {
   if constexpr (_CCCL_TRAIT(is_integral, _From) && !_CCCL_TRAIT(is_same, _From, bool))
   {
@@ -112,7 +112,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __index_cast(_From&& __
 }
 
 template <size_t _Index, class... _Slices>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get_slice_at(_Slices&&... __slices) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __get_slice_at(_Slices&&... __slices) noexcept
 {
   return _CUDA_VSTD::get<_Index>(_CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Slices>(__slices)...));
 }
@@ -121,12 +121,12 @@ template <size_t _Index, class... _Slices>
 using __get_slice_type = __tuple_element_t<_Index, __tuple_types<_Slices...>>;
 
 template <class _IndexType, size_t _Index, class... _Slices>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_from_slice(_Slices... __slices) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_from_slice(_Slices... __slices) noexcept
 {
   static_assert(_CCCL_TRAIT(is_signed, _IndexType) || _CCCL_TRAIT(is_unsigned, _IndexType),
                 "[mdspan.sub.helpers] mandates IndexType to be a signed or unsigned integral");
-  using _SliceType    = __get_slice_type<_Index, _Slices...>;
-  _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
+  using _SliceType                     = __get_slice_type<_Index, _Slices...>;
+  [[maybe_unused]] _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
   if constexpr (convertible_to<_SliceType, _IndexType>)
   {
     return _CUDA_VSTD::__index_cast<_IndexType>(__slice);
@@ -143,7 +143,6 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_fr
     }
     else
     {
-      (void) __slice;
       return 0;
     }
   }
@@ -151,14 +150,14 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_fr
 }
 
 template <size_t _Index, class _Extents, class... _Slices>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr typename _Extents::index_type
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename _Extents::index_type
 __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
 {
   static_assert(_CCCL_TRAIT(__mdspan_detail::__is_extents, _Extents),
                 "[mdspan.sub.helpers] mandates Extents to be a specialization of extents");
-  using _IndexType    = typename _Extents::index_type;
-  using _SliceType    = __get_slice_type<_Index, _Slices...>;
-  _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
+  using _IndexType                     = typename _Extents::index_type;
+  using _SliceType                     = __get_slice_type<_Index, _Slices...>;
+  [[maybe_unused]] _SliceType& __slice = _CUDA_VSTD::__get_slice_at<_Index>(__slices...);
   if constexpr (convertible_to<_SliceType, _IndexType>)
   {
     return _CUDA_VSTD::__index_cast<_IndexType>(_CUDA_VSTD::__de_ice(__slice) + 1);
@@ -176,7 +175,6 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
     }
     else
     {
-      (void) __slice;
       return _CUDA_VSTD::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }

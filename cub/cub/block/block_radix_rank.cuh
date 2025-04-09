@@ -232,7 +232,7 @@ private:
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS = CUB_LOG_WARP_THREADS(0),
+    LOG_WARP_THREADS = detail::log2_warp_threads,
     WARP_THREADS     = 1 << LOG_WARP_THREADS,
     WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
@@ -300,10 +300,8 @@ private:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE PackedCounter Upsweep()
   {
-    PackedCounter* smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
-    PackedCounter* raking_ptr;
-
-    if (MEMOIZE_OUTER_SCAN)
+    auto& smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
+    if constexpr (MEMOIZE_OUTER_SCAN)
     {
       // Copy data into registers
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -311,14 +309,12 @@ private:
       {
         cached_segment[i] = smem_raking_ptr[i];
       }
-      raking_ptr = cached_segment;
+      return cub::ThreadReduce(cached_segment, ::cuda::std::plus<>{});
     }
     else
     {
-      raking_ptr = smem_raking_ptr;
+      return cub::ThreadReduce(smem_raking_ptr, ::cuda::std::plus<>{});
     }
-
-    return cub::internal::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
   }
 
   /// Performs exclusive downsweep raking scan
@@ -572,7 +568,7 @@ private:
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS     = CUB_LOG_WARP_THREADS(0),
+    LOG_WARP_THREADS     = detail::log2_warp_threads,
     WARP_THREADS         = 1 << LOG_WARP_THREADS,
     PARTIAL_WARP_THREADS = BLOCK_THREADS % WARP_THREADS,
     WARPS                = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
@@ -903,7 +899,7 @@ struct BlockRadixRankMatchEarlyCounts
     BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
     BINS_TRACKED_PER_THREAD = BINS_PER_THREAD,
     FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
-    WARP_THREADS            = CUB_PTX_WARP_THREADS,
+    WARP_THREADS            = detail::warp_threads,
     PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS,
     BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS,
     PARTIAL_WARP_ID         = BLOCK_WARPS - 1,

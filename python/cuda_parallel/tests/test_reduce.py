@@ -24,15 +24,22 @@ def type_to_problem_sizes(dtype):
     elif dtype in [np.uint16, np.int16]:
         return [4, 8, 12, 14]
     elif dtype in [np.uint32, np.int32]:
-        return [16, 20, 24, 28]
+        return [16, 20, 24, 26]
     elif dtype in [np.uint64, np.int64]:
-        return [16, 20, 24, 28]
+        return [16, 20, 24, 25]
     else:
         raise ValueError("Unsupported dtype")
 
 
-@pytest.mark.parametrize("dtype", [np.uint8, np.uint16, np.uint32, np.uint64])
-def test_device_reduce(dtype):
+dtype_size_pairs = [
+    (dt, 2**log_size)
+    for dt in [np.uint8, np.uint16, np.uint32, np.uint64]
+    for log_size in type_to_problem_sizes(dt)
+]
+
+
+@pytest.mark.parametrize("dtype,num_items", dtype_size_pairs)
+def test_device_reduce(dtype, num_items):
     def op(a, b):
         return a + b
 
@@ -41,15 +48,13 @@ def test_device_reduce(dtype):
     d_output = numba.cuda.device_array(1, dtype=dtype)
     reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
 
-    for num_items_pow2 in type_to_problem_sizes(dtype):
-        num_items = 2**num_items_pow2
-        h_input = random_int(num_items, dtype)
-        d_input = numba.cuda.to_device(h_input)
-        temp_storage_size = reduce_into(None, d_input, d_output, d_input.size, h_init)
-        d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, d_input.size, h_init)
-        h_output = d_output.copy_to_host()
-        assert h_output[0] == sum(h_input) + init_value
+    h_input = random_int(num_items, dtype)
+    d_input = numba.cuda.to_device(h_input)
+    temp_storage_size = reduce_into(None, d_input, d_output, d_input.size, h_init)
+    d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=np.uint8)
+    reduce_into(d_temp_storage, d_input, d_output, d_input.size, h_init)
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == sum(h_input) + init_value
 
 
 def test_complex_device_reduce():
@@ -272,13 +277,13 @@ def test_reducer_caching():
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
@@ -287,13 +292,13 @@ def test_reducer_caching():
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         cp.zeros(3, dtype="int32"),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
@@ -302,13 +307,13 @@ def test_reducer_caching():
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int32"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
@@ -318,13 +323,13 @@ def test_reducer_caching():
         cp.zeros(3, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         cp.zeros(5, dtype="int64"),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
@@ -334,13 +339,13 @@ def test_reducer_caching():
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
@@ -349,13 +354,13 @@ def test_reducer_caching():
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.CountingIterator(np.int64(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
@@ -373,13 +378,13 @@ def test_reducer_caching():
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
@@ -389,13 +394,13 @@ def test_reducer_caching():
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op2),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 
@@ -405,13 +410,13 @@ def test_reducer_caching():
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op3),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
 
     # inputs are CountingIterators of same kind
@@ -420,13 +425,13 @@ def test_reducer_caching():
         iterators.CountingIterator(np.int32(0)),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.CountingIterator(np.int32(1)),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
 
     assert reducer_1 is reducer_2
@@ -439,13 +444,13 @@ def test_reducer_caching():
         iterators.TransformIterator(ary1, op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.TransformIterator(ary2, op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
@@ -455,13 +460,13 @@ def test_reducer_caching():
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.TransformIterator(iterators.CountingIterator(np.int32(1)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is reducer_2
 
@@ -470,13 +475,13 @@ def test_reducer_caching():
         iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     reducer_2 = algorithms.reduce_into(
         iterators.TransformIterator(iterators.CountingIterator(np.int64(0)), op1),
         cp.zeros(1, dtype="int64"),
         sum_op,
-        np.zeros([0], dtype="int64"),
+        np.zeros(1, dtype="int64"),
     )
     assert reducer_1 is not reducer_2
 

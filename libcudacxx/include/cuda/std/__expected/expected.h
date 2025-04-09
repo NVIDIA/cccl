@@ -70,31 +70,31 @@ class expected;
 namespace __expected
 {
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr bool __valid_expected =
+inline constexpr bool __valid_expected =
   !_CCCL_TRAIT(is_reference, _Tp) && !_CCCL_TRAIT(is_function, _Tp)
   && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, in_place_t) && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, unexpect_t)
   && !__unexpected::__is_unexpected<remove_cv_t<_Tp>> && __unexpected::__valid_unexpected<_Err>;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_expected = false;
+inline constexpr bool __is_expected = false;
 
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr bool __is_expected<expected<_Tp, _Err>> = true;
+inline constexpr bool __is_expected<expected<_Tp, _Err>> = true;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_expected_nonvoid = __is_expected<_Tp>;
+inline constexpr bool __is_expected_nonvoid = __is_expected<_Tp>;
 
 template <class _Err>
-_CCCL_INLINE_VAR constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
+inline constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
 
 template <class _Tp, class _Err>
-_CCCL_INLINE_VAR constexpr bool __can_swap =
+inline constexpr bool __can_swap =
   _CCCL_TRAIT(is_swappable, _Tp) && _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Tp)
   && _CCCL_TRAIT(is_move_constructible, _Err)
   && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err));
 
 template <class _Err>
-_CCCL_INLINE_VAR constexpr bool __can_swap<void, _Err> =
+inline constexpr bool __can_swap<void, _Err> =
   _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Err);
 } // namespace __expected
 
@@ -338,6 +338,7 @@ private:
 
 public:
   // [expected.object.assign], assignment
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES(
     (!_CCCL_TRAIT(is_same, expected, remove_cvref_t<_Up>)) _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
@@ -369,6 +370,7 @@ private:
                is_nothrow_move_constructible<_Err>>>::value;
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(__can_assign_from_unexpected<const _OtherErr&>)
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(const unexpected<_OtherErr>& __un)
@@ -385,6 +387,7 @@ public:
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(__can_assign_from_unexpected<_OtherErr>)
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un)
@@ -1343,6 +1346,7 @@ private:
 public:
   // [expected.void.dtor], destructor
   // [expected.void.assign], assignment
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                    _CCCL_AND _CCCL_TRAIT(is_assignable, _Err&, const _OtherErr&))
@@ -1362,6 +1366,7 @@ public:
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _OtherErr) _CCCL_AND _CCCL_TRAIT(is_assignable, _Err&, _OtherErr))
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un) noexcept(

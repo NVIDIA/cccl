@@ -27,8 +27,26 @@ version_max() {
 
 # Get the current CCCL info:
 readonly cccl_repo="${PWD}"
-readonly cccl_sha="$(git rev-parse HEAD)"
-readonly cccl_repo_version="$(git describe | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+
+# Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
+echo "CCCL_TAG (override): ${CCCL_TAG-}";
+if test -n "${CCCL_TAG-}"; then
+    # If CCCL_TAG is defined, fetch it to the local checkout
+    git -C "${cccl_repo}" fetch origin "${CCCL_TAG}";
+    cccl_sha="$(git -C "${cccl_repo}" rev-parse FETCH_HEAD)";
+else
+    cccl_sha="$(git -C "${cccl_repo}" rev-parse HEAD)";
+fi
+
+readonly cccl_repo_version="$(git -C "${cccl_repo}" describe ${cccl_sha}| grep -Eo '[0-9]+\.[0-9]+\.[0-9]+')"
+
+# Define CCCL_VERSION to override the version used by rapids-cmake to patch CCCL.
+echo "CCCL_VERSION (override): ${CCCL_VERSION-}";
+if test -n "${CCCL_VERSION-}"; then
+  readonly cccl_rapids_cmake_version="${CCCL_VERSION}"
+else
+  readonly cccl_rapids_cmake_version="${cccl_repo_version}"
+fi
 
 # If the current version is less than 2.8.0, use 2.8.0 for the rapids-cmake version.
 # This is to allow rapids-cmake to correctly patch the CCCL install rules on current `main`.
@@ -40,7 +58,7 @@ readonly version_override_file="${workdir}/versions-override.json"
 
 log_vars \
   matx_repo matx_branch \
-  cccl_repo cccl_sha cccl_repo_version cccl_version \
+  cccl_repo cccl_sha cccl_repo_version cccl_rapids_cmake_version \
   workdir \
   version_file version_override_file
 
