@@ -431,7 +431,7 @@ cpdef bint is_IteratorKind(IntEnumerationMember attr):
     return attr.parent_class is Enumeration_IteratorKind
 
 
-cdef object _validate_alignment(int alignment):
+cdef void _validate_alignment(int alignment) except *:
     cdef uint32_t val
     if alignment < 1:
         raise ValueError(
