@@ -453,17 +453,17 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
   }
 
   constexpr auto length = cub::detail::static_size_v<Input>;
-  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm90_simd_reduction_v<Input, ReductionOp, length>())
+  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm90_simd_reduction_v<Input, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm80_simd_reduction_v<Input, ReductionOp, length>())
+  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm80_simd_reduction_v<Input, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm70_simd_reduction_v<Input, ReductionOp, length>())
+  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm70_simd_reduction_v<Input, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_70, (return ThreadReduceSimd(input, reduction_op);))
   }
