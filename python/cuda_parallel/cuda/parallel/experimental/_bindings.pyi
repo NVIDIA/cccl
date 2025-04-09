@@ -54,13 +54,21 @@ class Enumeration_IteratorKind:
     @property
     def ITERATOR(self) -> IntEnumerationMember: ...
 
+class Enumeration_SortOrder:
+    @property
+    def ASCENDING(self) -> IntEnumerationMember: ...
+    @property
+    def DESCENDING(self) -> IntEnumerationMember: ...
+
 TypeEnum: Enumeration_CCCLType
 OpKind: Enumeration_OpKind
 IteratorKind: Enumeration_IteratorKind
+SortOrder: Enumeration_SortOrder
 
 def is_TypeEnum(obj) -> bool: ...
 def is_OpKind(obj) -> bool: ...
 def is_IteratorKind(obj) -> bool: ...
+def is_SortOrder(obj) -> bool: ...
 
 class Op:
     def __init__(
@@ -267,13 +275,13 @@ class DeviceMergeSortBuildResult:
         d_in_keys: Iterator,
         d_in_items: Iterator,
         d_out_keys: Iterator,
-        d_out_itemss: Iterator,
+        d_out_items: Iterator,
         binary_op: Op,
         info: CommonData,
     ) -> int: ...
     def compute(
         self,
-        temp_storage_ptr: int,
+        temp_storage_ptr: int | None,
         temp_storage_nbytes: int,
         d_in_keys: Iterator,
         d_in_items: Iterator,
@@ -302,7 +310,7 @@ class DeviceUniqueByKeyBuildResult:
     ) -> int: ...
     def compute(
         self,
-        temp_storage_ptr: int,
+        temp_storage_ptr: int | None,
         temp_storage_nbytes: int,
         d_keys_in: Iterator,
         d_values_in: Iterator,
@@ -313,3 +321,51 @@ class DeviceUniqueByKeyBuildResult:
         num_items: int,
         stream,
     ) -> tuple[int, int]: ...
+
+# -----------------
+# DeviceRadixSort
+# -----------------
+
+class DeviceRadixSortBuildResult:
+    def __init__(self): ...
+    def build(
+        self,
+        order: Enumeration_IteratorKind,
+        d_keys_in: Iterator,
+        d_values_in: Iterator,
+        decomposer_op: Op,
+        decomposer_return_type: str,
+        info: CommonData,
+    ) -> int: ...
+    def compute_ascending(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_keys_in: Iterator,
+        d_keys_out: Iterator,
+        d_values_in: Iterator,
+        d_values_out: Iterator,
+        decomposer_op: Op,
+        num_items: int,
+        begin_bit: int,
+        end_bit: int,
+        is_overwrite_okay: bool,
+        selector: int,
+        stream,
+    ) -> tuple[int, int, int]: ...
+    def compute_descending(
+        self,
+        temp_storage_ptr: int | None,
+        temp_storage_nbytes: int,
+        d_keys_in: Iterator,
+        d_keys_out: Iterator,
+        d_values_in: Iterator,
+        d_values_out: Iterator,
+        decomposer_op: Op,
+        num_items: int,
+        begin_bit: int,
+        end_bit: int,
+        is_overwrite_okay: bool,
+        selector: int,
+        stream,
+    ) -> tuple[int, int, int]: ...

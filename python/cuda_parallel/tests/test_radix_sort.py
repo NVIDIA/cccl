@@ -44,8 +44,8 @@ def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
 
 def radix_sort_device(
     d_in_keys,
-    d_in_values,
     d_out_keys,
+    d_in_values,
     d_out_values,
     order,
     num_items,
@@ -54,14 +54,14 @@ def radix_sort_device(
     stream=None,
 ):
     radix_sort = algorithms.radix_sort(
-        d_in_keys, d_in_values, d_out_keys, d_out_values, order
+        d_in_keys, d_out_keys, d_in_values, d_out_values, order
     )
 
     temp_storage_size = radix_sort(
         None,
         d_in_keys,
-        d_in_values,
         d_out_keys,
+        d_in_values,
         d_out_values,
         num_items,
         begin_bit,
@@ -74,8 +74,8 @@ def radix_sort_device(
     radix_sort(
         d_temp_storage,
         d_in_keys,
-        d_in_values,
         d_out_keys,
+        d_in_values,
         d_out_values,
         num_items,
         begin_bit,
@@ -156,7 +156,7 @@ def test_radix_sort_keys(dtype, num_items):
     d_in_keys = numba.cuda.to_device(h_in_keys)
     d_out_keys = numba.cuda.to_device(h_out_keys)
 
-    radix_sort_device(d_in_keys, None, d_out_keys, None, order, num_items)
+    radix_sort_device(d_in_keys, d_out_keys, None, None, order, num_items)
 
     h_out_keys = d_out_keys.copy_to_host()
 
@@ -182,7 +182,7 @@ def test_radix_sort_pairs(dtype, num_items):
     d_out_values = numba.cuda.to_device(h_out_values)
 
     radix_sort_device(
-        d_in_keys, d_in_values, d_out_keys, d_out_values, order, num_items
+        d_in_keys, d_out_keys, d_in_values, d_out_values, order, num_items
     )
 
     h_out_keys = d_out_keys.copy_to_host()
@@ -237,7 +237,7 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items):
     values_double_buffer = algorithms.DoubleBuffer(d_in_values, d_out_values)
 
     radix_sort_device(
-        keys_double_buffer, values_double_buffer, None, None, order, num_items
+        keys_double_buffer, None, values_double_buffer, None, order, num_items
     )
 
     h_out_keys = keys_double_buffer.current().copy_to_host()
@@ -283,8 +283,8 @@ def test_radix_sort_pairs_bit_window(dtype, num_items):
 
         radix_sort_device(
             d_in_keys,
-            d_in_values,
             d_out_keys,
+            d_in_values,
             d_out_values,
             order,
             num_items,
@@ -332,8 +332,8 @@ def test_radix_sort_pairs_double_buffer_bit_window(dtype, num_items):
 
         radix_sort_device(
             keys_double_buffer,
-            values_double_buffer,
             None,
+            values_double_buffer,
             None,
             order,
             num_items,
@@ -362,7 +362,7 @@ def test_radix_sort_with_stream(cuda_stream):
         d_out_keys = cp.empty_like(d_in_keys)
 
     radix_sort_device(
-        d_in_keys, None, d_out_keys, None, algorithms.SortOrder.ASCENDING, num_items
+        d_in_keys, d_out_keys, None, None, algorithms.SortOrder.ASCENDING, num_items
     )
 
     got = d_out_keys.get()

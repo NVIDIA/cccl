@@ -23,12 +23,12 @@ def test_radix_sort():
 
     # Instantiate merge_sort for the given keys, items, and operator
     radix_sort = algorithms.radix_sort(
-        d_in_keys, d_in_values, d_in_keys, d_in_values, algorithms.SortOrder.ASCENDING
+        d_in_keys, d_out_keys, d_in_values, d_out_values, algorithms.SortOrder.ASCENDING
     )
 
     # Determine temporary device storage requirements
     temp_storage_size = radix_sort(
-        None, d_in_keys, d_in_values, d_out_keys, d_out_values, d_in_keys.size
+        None, d_in_keys, d_out_keys, d_in_values, d_out_values, d_in_keys.size
     )
 
     # Allocate temporary storage
@@ -36,7 +36,7 @@ def test_radix_sort():
 
     # Run merge_sort
     radix_sort(
-        d_temp_storage, d_in_keys, d_in_values, d_out_keys, d_out_values, d_in_keys.size
+        d_temp_storage, d_in_keys, d_out_keys, d_in_values, d_out_values, d_in_keys.size
     )
 
     # Check the result is correct
@@ -76,15 +76,15 @@ def test_radix_sort_double_buffer():
     # Instantiate merge_sort for the given keys, items, and operator
     radix_sort = algorithms.radix_sort(
         keys_double_buffer,
-        values_double_buffer,
         None,
+        values_double_buffer,
         None,
         algorithms.SortOrder.ASCENDING,
     )
 
     # Determine temporary device storage requirements
     temp_storage_size = radix_sort(
-        None, keys_double_buffer, values_double_buffer, None, None, d_in_keys.size
+        None, keys_double_buffer, None, values_double_buffer, None, d_in_keys.size
     )
 
     # Allocate temporary storage
@@ -94,8 +94,8 @@ def test_radix_sort_double_buffer():
     radix_sort(
         d_temp_storage,
         keys_double_buffer,
-        values_double_buffer,
         None,
+        values_double_buffer,
         None,
         d_in_keys.size,
     )
