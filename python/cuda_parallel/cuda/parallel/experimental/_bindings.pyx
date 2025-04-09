@@ -417,17 +417,17 @@ IteratorKind = Enumeration_IteratorKind()
 
 
 cpdef bint is_TypeEnum(IntEnumerationMember attr):
-    "Return True is attribute represents a type enumerator"
+    "Return True if attribute is a member of TypeEnum enumeration"
     return attr.parent_class is Enumeration_CCCLType
 
 
 cpdef bint is_OpKind(IntEnumerationMember attr):
-    "Return True is attribute represents an enumerator of operator kinds"
+    "Return True if attribute is a member of OpKind enumeration"
     return attr.parent_class is Enumeration_OpKind
 
 
 cpdef bint is_IteratorKind(IntEnumerationMember attr):
-    "Return True is attribute represents an enumerator of iterator kinds"
+    "Return True if attribute is a member of IteratorKind enumeration"
     return attr.parent_class is Enumeration_IteratorKind
 
 
