@@ -298,31 +298,6 @@ inline constexpr bool enable_ternary_reduction_sm50_v =
   && (cub::detail::is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<T>>
       || is_cuda_std_bitwise_v<ReductionOp, T>);
 
-template <typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
-{
-  constexpr auto length = cub::detail::static_size_v<Input>;
-  if constexpr (length < 6)
-  {
-    return false;
-  }
-  else
-  {
-    // apply SM90 min/max ternary reduction only if the input is natively int32/uint32
-    using T = _CUDA_VSTD::iter_value_t<Input>;
-    // clang-format off
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-        (return enable_ternary_reduction_sm90_v<T, ReductionOp> || enable_ternary_reduction_sm50_v<T, ReductionOp>;),
-      NV_PROVIDES_SM_50,
-        (return enable_ternary_reduction_sm50_v<T, ReductionOp>;),
-      NV_ANY_TARGET,
-        (return false;)
-    );
-    // clang-format on
-  }
-}
-
 /***********************************************************************************************************************
  * Internal Reduction Algorithms: Sequential, Binary, Ternary
  **********************************************************************************************************************/
@@ -468,7 +443,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     NV_IF_TARGET(NV_PROVIDES_SM_70, (return ThreadReduceSimd(input, reduction_op);))
   }
 
-  if constexpr (enable_ternary_reduction<Input, ReductionOp>())
+  if constexpr (enable_ternary_reduction_sm90_v<Input, ReductionOp>)
   {
     // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
     if constexpr ((is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<PromT>>
@@ -478,12 +453,15 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     {
       NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSequential<PromT>(input, reduction_op);));
     }
-    return ThreadReduceTernaryTree<PromT>(input, reduction_op);
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceTernaryTree<PromT>(input, reduction_op);));
   }
-  else
+
+  if constexpr (enable_ternary_reduction_sm50_v<Input, ReductionOp>)
   {
-    return ThreadReduceBinaryTree<PromT>(input, reduction_op);
+    NV_IF_TARGET(NV_PROVIDES_SM_50, (return ThreadReduceSequential<PromT>(input, reduction_op);));
   }
+
+  return ThreadReduceBinaryTree<PromT>(input, reduction_op);
 }
 
 //! @brief Reduction over statically-sized array-like types, seeded with the specified @p prefix.
