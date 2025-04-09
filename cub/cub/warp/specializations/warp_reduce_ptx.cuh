@@ -146,14 +146,21 @@ _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<int>, int, add.s32)
 #if _CCCL_HAS_NVFP16() && __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
 _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, float2, add.f32x2)
 _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<float>, float2, add.f32x2)
-#endif // _CCCL_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16() && __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
+
+#if __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, short2, add.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<short2>, short2, add.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, ushort2, add.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<ushort2>, ushort2, add.u16x2)
+#endif // __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
 
 #if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 530
 _CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __half, add.f16)
 _CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<__half>, __half, add.f16)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, __half2, add.f16x2)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<__half2>, __half2, add.f16x2)
-#endif // _CCCL_HAS_NVFP16()
+#endif // _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 530
 
 #if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 900
 _CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __nv_bfloat16, add.bf16)
@@ -176,6 +183,18 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, int, min.s32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<int>, int, min.s32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, uint32_t, min.u32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<uint32_t>, uint32_t, min.u32)
+
+#if __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<>, short2, max.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<short2>, short2, max.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<>, ushort2, max.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<ushort2>, ushort2, max.u16x2)
+
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<>, short2, min.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<short2>, short2, min.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<>, ushort2, min.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<ushort2>, ushort2, min.u16x2)
+#endif // __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
 
 #if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 800
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __half, min.f16)

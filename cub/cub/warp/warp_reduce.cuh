@@ -756,6 +756,7 @@ public:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
 template <typename T>
 class WarpReduce<T, 1>
 {

@@ -65,7 +65,6 @@ template <typename Input, typename ReductionOp, int LogicalWarpSize, size_t Vali
   Input input,
   ReductionOp reduction_op,
   logial_warp_size_t<LogicalWarpSize> logical_size,
-
   valid_items_t<ValidItems> valid_items)
 {
   using namespace _CUDA_VSTD;
