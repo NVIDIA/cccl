@@ -22,8 +22,8 @@
 #include <thrust/complex.h>
 #include <thrust/detail/complex/c99math.h>
 
-#include <cfloat>
-#include <cmath>
+#include <cuda/std/cfloat>
+#include <cuda/std/cmath>
 
 THRUST_NAMESPACE_BEGIN
 

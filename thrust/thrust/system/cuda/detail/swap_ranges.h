@@ -45,8 +45,6 @@
 
 #  include <cuda/std/utility>
 
-#  include <iterator>
-
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub

@@ -84,28 +84,28 @@ def CountingIterator(offset):
     return _iterators.CountingIterator(offset)
 
 
-def ReverseIterator(sequence):
-    """Returns an Iterator over an array in reverse.
+def ReverseInputIterator(sequence):
+    """Returns an input Iterator over an array in reverse.
 
     Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
 
     Example:
-        The code snippet below demonstrates the usage of a ``ReverseIterator``:
+        The code snippet below demonstrates the usage of a ``ReverseInputIterator``:
 
         .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
             :language: python
             :dedent:
-            :start-after: example-begin reverse-iterator
-            :end-before: example-end reverse-iterator
+            :start-after: example-begin reverse-input-iterator
+            :end-before: example-end reverse-input-iterator
 
     Args:
         sequence: The iterator or CUDA device array to be reversed
 
     Returns:
-        A ``ReverseIterator`` object initialized with ``sequence``
+        A ``ReverseIterator`` object initialized with ``sequence`` to use as an input
 
     """
-    return _iterators.make_reverse_iterator(sequence)
+    return _iterators.make_reverse_iterator(sequence, _iterators.IteratorIO.INPUT)
 
 
 def ReverseOutputIterator(sequence):
@@ -119,17 +119,17 @@ def ReverseOutputIterator(sequence):
         .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
             :language: python
             :dedent:
-            :start-after: example-begin reverse-iterator
-            :end-before: example-end reverse-iterator
+            :start-after: example-begin reverse-output-iterator
+            :end-before: example-end reverse-output-iterator
 
     Args:
-        sequence: The iterator or CUDA device array to be reversed
+        sequence: The iterator or CUDA device array to be reversed to use as an output
 
     Returns:
-        A ``ReverseIterator`` object initialized with ``sequence``
+        A ``ReverseIterator`` object initialized with ``sequence`` to use as an output
 
     """
-    return _iterators.make_reverse_output_iterator(sequence)
+    return _iterators.make_reverse_iterator(sequence, _iterators.IteratorIO.OUTPUT)
 
 
 def TransformIterator(it, op):

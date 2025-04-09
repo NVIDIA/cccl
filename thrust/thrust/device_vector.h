@@ -33,8 +33,9 @@
 #include <thrust/detail/vector_base.h>
 #include <thrust/device_allocator.h>
 
-#include <initializer_list>
-#include <utility>
+#include <cuda/std/initializer_list>
+#include <cuda/std/utility>
+
 #include <vector>
 
 THRUST_NAMESPACE_BEGIN
@@ -143,7 +144,7 @@ public:
    *  \param v The device_vector to move.
    */
   device_vector(device_vector&& v)
-      : Parent(std::move(v))
+      : Parent(::cuda::std::move(v))
   {}
 
   /*! Move constructor moves from another \p device_vector.
@@ -151,7 +152,7 @@ public:
    *  \param alloc The allocator to use by this device_vector.
    */
   device_vector(device_vector&& v, const Alloc& alloc)
-      : Parent(std::move(v), alloc)
+      : Parent(::cuda::std::move(v), alloc)
   {}
 
   /*! Copy assign operator copies another \p device_vector with the same type.
@@ -168,7 +169,7 @@ public:
    */
   device_vector& operator=(device_vector&& v)
   {
-    Parent::operator=(std::move(v));
+    Parent::operator=(::cuda::std::move(v));
     return *this;
   }
 
@@ -231,7 +232,7 @@ public:
   /*! This constructor builds a \p device_vector from an intializer_list.
    *  \param il The intializer_list.
    */
-  device_vector(std::initializer_list<T> il)
+  device_vector(::cuda::std::initializer_list<T> il)
       : Parent(il)
   {}
 
@@ -239,14 +240,14 @@ public:
    *  \param il The intializer_list.
    *  \param alloc The allocator to use by this device_vector.
    */
-  device_vector(std::initializer_list<T> il, const Alloc& alloc)
+  device_vector(::cuda::std::initializer_list<T> il, const Alloc& alloc)
       : Parent(il, alloc)
   {}
 
   /*! Assign an \p intializer_list with a matching element type
    *  \param il The intializer_list.
    */
-  device_vector& operator=(std::initializer_list<T> il)
+  device_vector& operator=(::cuda::std::initializer_list<T> il)
   {
     Parent::operator=(il);
     return *this;

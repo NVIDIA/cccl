@@ -638,18 +638,16 @@ char_traits<char8_t>::find(const char_type* __s, size_t __n, const char_type& __
 
 #endif // _LIBCUDACXX_HAS_CHAR8_T()
 
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char16_t>
 {
   typedef char16_t char_type;
   typedef uint_least16_t int_type;
   typedef streamoff off_type;
-#  if _LIBCUDACXX_HAS_WCHAR_H()
+#if _LIBCUDACXX_HAS_WCHAR_H()
   typedef u16streampos pos_type;
   typedef mbstate_t state_type;
-#  endif // _LIBCUDACXX_HAS_WCHAR_H()
+#endif // _LIBCUDACXX_HAS_WCHAR_H()
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {
@@ -787,10 +785,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>
   typedef char32_t char_type;
   typedef uint_least32_t int_type;
   typedef streamoff off_type;
-#  if _LIBCUDACXX_HAS_WCHAR_H()
+#if _LIBCUDACXX_HAS_WCHAR_H()
   typedef u32streampos pos_type;
   typedef mbstate_t state_type;
-#  endif // _LIBCUDACXX_HAS_WCHAR_H()
+#endif // _LIBCUDACXX_HAS_WCHAR_H()
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void assign(char_type& __c1, const char_type& __c2) noexcept
   {
@@ -921,8 +919,6 @@ _LIBCUDACXX_HIDE_FROM_ABI char32_t* char_traits<char32_t>::assign(char_type* __s
   }
   return __r;
 }
-
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
 // helper fns for basic_string and string_view
 

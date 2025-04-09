@@ -30,14 +30,8 @@
 #define _CCCL_HAS_INT128()      0
 #define _CCCL_HAS_LONG_DOUBLE() 0
 #define _CCCL_HAS_NVFP4()       0
-#define _CCCL_HAS_NVFP4_E2M1()  _CCCL_HAS_NVFP4()
 #define _CCCL_HAS_NVFP6()       0
-#define _CCCL_HAS_NVFP6_E2M3()  _CCCL_HAS_NVFP6()
-#define _CCCL_HAS_NVFP6_E3M2()  _CCCL_HAS_NVFP6()
 #define _CCCL_HAS_NVFP8()       0
-#define _CCCL_HAS_NVFP8_E4M3()  _CCCL_HAS_NVFP8()
-#define _CCCL_HAS_NVFP8_E5M2()  _CCCL_HAS_NVFP8()
-#define _CCCL_HAS_NVFP8_E8M0()  (_CCCL_HAS_NVFP8() && _CCCL_CUDACC_AT_LEAST(12, 8))
 #define _CCCL_HAS_NVFP16()      0
 #define _CCCL_HAS_NVBF16()      0
 #define _CCCL_HAS_FLOAT128()    0
@@ -72,7 +66,8 @@
 #  define _CCCL_HAS_NVFP8() 1
 #endif
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !defined(CCCL_DISABLE_NVFP6_SUPPORT)
+#if _CCCL_HAS_INCLUDE(<cuda_fp6.h>) && _CCCL_HAS_NVFP8() && !_CCCL_CUDA_COMPILER(NVHPC) \
+                      && !defined(CCCL_DISABLE_NVFP6_SUPPORT)
 #  undef _CCCL_HAS_NVFP6
 #  define _CCCL_HAS_NVFP6() 1
 #endif
@@ -81,6 +76,17 @@
 #  undef _CCCL_HAS_NVFP4
 #  define _CCCL_HAS_NVFP4() 1
 #endif
+
+#define _CCCL_HAS_NVFP4_E2M1() _CCCL_HAS_NVFP4()
+#define _CCCL_HAS_NVFP6_E2M3() _CCCL_HAS_NVFP6()
+#define _CCCL_HAS_NVFP6_E3M2() _CCCL_HAS_NVFP6()
+#define _CCCL_HAS_NVFP8_E4M3() _CCCL_HAS_NVFP8()
+#define _CCCL_HAS_NVFP8_E5M2() _CCCL_HAS_NVFP8()
+#define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CUDACC_AT_LEAST(12, 8))
+
+/***********************************************************************************************************************
+ * FLOAT128
+ **********************************************************************************************************************/
 
 #if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
 #  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) /*HOST COMPILERS*/

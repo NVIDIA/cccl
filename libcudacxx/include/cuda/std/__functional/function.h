@@ -55,7 +55,7 @@
 #    include <function>
 #  endif // _CCCL_NO_EXCEPTIONS
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
+[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
 {
 #  ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
