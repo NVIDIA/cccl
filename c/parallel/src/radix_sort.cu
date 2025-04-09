@@ -440,7 +440,7 @@ CUresult cccl_device_radix_sort_build(
         ? "cub::NullType"
         : cccl_type_enum_to_name(input_values_it.value_type.type);
     const std::string op_src =
-      decomposer.name == nullptr
+      (decomposer.name == nullptr || (decomposer.name != nullptr && decomposer.name[0] == '\0'))
         ? "using op_wrapper = cub::detail::identity_decomposer_t;"
         : make_kernel_user_unary_operator(key_cpp, decomposer_return_type, decomposer);
     constexpr std::string_view chained_policy_t = "device_radix_sort_policy";
