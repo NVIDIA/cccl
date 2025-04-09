@@ -6,8 +6,6 @@
 from enum import Enum
 from typing import Tuple
 
-from numba.cuda.cudadrv import enums
-
 from .. import _bindings
 from .. import _cccl_interop as cccl
 from .._caching import cache_with_key
@@ -108,8 +106,6 @@ class _RadixSort:
         d_out_values: DeviceArrayLike | None,
         order: SortOrder,
     ):
-        self.build_result = _bindings.DeviceRadixSortBuildResult()
-
         d_in_keys_array, d_out_keys_array, d_in_values_array, d_out_values_array = (
             _get_arrays(d_in_keys, d_out_keys, d_in_values, d_out_values)
         )
@@ -119,12 +115,12 @@ class _RadixSort:
         self.d_in_values_cccl = cccl.to_cccl_iter(d_in_values_array)
         self.d_out_values_cccl = cccl.to_cccl_iter(d_out_values_array)
 
-        # decomposer op is not supported for now
+        # TODO: decomposer op is not supported for now
         self.decomposer_op = cccl.to_cccl_op(None, None)
         decomposer_return_type = "".encode("utf-8")
 
-        error = call_build(
-            self.build_result.build,
+        self.build_result = call_build(
+            _bindings.DeviceRadixSortBuildResult,
             _bindings.SortOrder.ASCENDING
             if order is SortOrder.ASCENDING
             else _bindings.SortOrder.DESCENDING,
@@ -139,8 +135,6 @@ class _RadixSort:
             if order is SortOrder.ASCENDING
             else self.build_result.compute_descending
         )
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building radix_sort")
 
     def __call__(
         self,
