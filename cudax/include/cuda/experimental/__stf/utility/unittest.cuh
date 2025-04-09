@@ -134,11 +134,11 @@ struct expecter
   [[noreturn]] static _LIBCUDACXX_HIDE_FROM_ABI void
   __throw_stf_failure([[maybe_unused]] _CUDA_VSTD::source_location loc, [[maybe_unused]] const Msgs&... msgs)
   {
-#  ifndef _CCCL_NO_EXCEPTIONS
+#  if _CCCL_HAS_EXCEPTIONS()
     NV_IF_ELSE_TARGET(NV_IS_HOST, (throw failure(loc, msgs...);), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
     _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _CCCL_NO_EXCEPTIONS
+#  endif // !_CCCL_HAS_EXCEPTIONS()
   }
 
   /*
@@ -548,7 +548,7 @@ UNITTEST("EXPECT")
 
   // This test is specifically about how we handle exceptions, so we disable it
   // when exceptions are not allowed
-#  ifndef _CCCL_NO_EXCEPTIONS
+#  if _CCCL_HAS_EXCEPTIONS()
   try
   {
     EXPECT(41 == 102); // fail, will throw exception
@@ -558,7 +558,7 @@ UNITTEST("EXPECT")
     // The exception message will contain the actual numbers 41 and 102.
     EXPECT(::std::string_view(e.what()).find("41 == 102 is false") != ::std::string_view::npos);
   }
-#  endif // _CCCL_NO_EXCEPTIONS
+#  endif // !_CCCL_HAS_EXCEPTIONS()
   //! [EXPECT]
 };
 
