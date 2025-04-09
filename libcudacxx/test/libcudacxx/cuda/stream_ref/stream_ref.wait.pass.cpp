@@ -10,8 +10,6 @@
 
 // UNSUPPORTED: nvrtc
 
-#define
-
 #include <cuda/std/cassert>
 #include <cuda/stream_ref>
 
