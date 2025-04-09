@@ -338,6 +338,7 @@ private:
 
 public:
   // [expected.object.assign], assignment
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Up = _Tp)
   _CCCL_REQUIRES(
     (!_CCCL_TRAIT(is_same, expected, remove_cvref_t<_Up>)) _CCCL_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
@@ -369,6 +370,7 @@ private:
                is_nothrow_move_constructible<_Err>>>::value;
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(__can_assign_from_unexpected<const _OtherErr&>)
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(const unexpected<_OtherErr>& __un)
@@ -385,6 +387,7 @@ public:
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(__can_assign_from_unexpected<_OtherErr>)
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un)
@@ -1343,6 +1346,7 @@ private:
 public:
   // [expected.void.dtor], destructor
   // [expected.void.assign], assignment
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, const _OtherErr&)
                    _CCCL_AND _CCCL_TRAIT(is_assignable, _Err&, const _OtherErr&))
@@ -1362,6 +1366,7 @@ public:
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _OtherErr)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _OtherErr) _CCCL_AND _CCCL_TRAIT(is_assignable, _Err&, _OtherErr))
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 expected& operator=(unexpected<_OtherErr>&& __un) noexcept(
