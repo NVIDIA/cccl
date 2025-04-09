@@ -54,7 +54,10 @@ class LibcxxTestFormat(object):
                 "ADDITIONAL_COMPILE_DEFINITIONS:", ParserKind.LIST, initial_value=[]
             ),
             IntegratedTestKeywordParser(
-                "ADDITIONAL_COMPILE_OPTIONS:", ParserKind.LIST, initial_value=[]
+                "ADDITIONAL_COMPILE_OPTIONS_HOST:", ParserKind.LIST, initial_value=[]
+            ),
+            IntegratedTestKeywordParser(
+                "ADDITIONAL_COMPILE_OPTIONS_CUDA:", ParserKind.LIST, initial_value=[]
             ),
         ]
 
@@ -134,14 +137,31 @@ class LibcxxTestFormat(object):
             test_cxx.useCCache(False)
             test_cxx.useWarnings(False)
 
-        extra_compile_definitions = self._get_parser("ADDITIONAL_COMPILE_DEFINITIONS:", parsers).getValue()
+        extra_compile_definitions = self._get_parser(
+            "ADDITIONAL_COMPILE_DEFINITIONS:", parsers
+        ).getValue()
         test_cxx.compile_flags += [
             ("-D%s" % mdef.strip()) for mdef in extra_compile_definitions
         ]
-        extra_compile_options = self._get_parser("ADDITIONAL_COMPILE_OPTIONS:", parsers).getValue()
-        test_cxx.compile_flags += [
-            ("%s" % mdef.strip()) for mdef in extra_compile_options
-        ]
+        extra_compile_options_host = self._get_parser(
+            "ADDITIONAL_COMPILE_OPTIONS_HOST:", parsers
+        ).getValue()
+        for mdef in extra_compile_options_host:
+            if hasattr(
+                test_cxx, "host_cxx"
+            ) and test_cxx.host_cxx.addCompileFlagIfSupported(mdef):
+                test_cxx.warning_flags += ["-Xcompiler", mdef]
+            elif test_cxx.addCompileFlagIfSupported(mdef):
+                test_cxx.warning_flags += mdef
+
+        extra_compile_options_cuda = self._get_parser(
+            "ADDITIONAL_COMPILE_OPTIONS_CUDA:", parsers
+        ).getValue()
+        for mdef in extra_compile_options_host:
+            if hasattr(test_cxx, "host_cxx") and test_cxx.addCompileFlagIfSupported(
+                mdef
+            ):
+                test_cxx.warning_flags += mdef
 
         extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
         if "-fmodules" in test.config.available_features:
