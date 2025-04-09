@@ -255,12 +255,12 @@ private:
   /// Get the bit representation of a const float
   _CCCL_HOST _CCCL_DEVICE static inline uint32_t get_bits(const float& x)
   {
-    return *reinterpret_cast<const uint32_t*>(&x);
+    return ::cuda::std::bit_cast<uint32_t>(x);
   }
   /// Get the bit representation of a const double
   _CCCL_HOST _CCCL_DEVICE static inline uint64_t get_bits(const double& x)
   {
-    return *reinterpret_cast<const uint64_t*>(&x);
+    return ::cuda::std::bit_cast<uint64_t>(x);
   }
 
   /// Return primary vector value const ref
@@ -404,7 +404,7 @@ private:
 
   /// Get index of float-point precision
   /// The index of a non-binned type is the smallest index a binned type would
-  /// need to have to sum it reproducibly. Higher indicies correspond to smaller
+  /// need to have to sum it reproducibly. Higher indices correspond to smaller
   /// bins.
   _CCCL_HOST _CCCL_DEVICE static inline int binned_dindex(const ftype x)
   {
@@ -426,7 +426,7 @@ private:
 
   /// Get index of manually specified binned double precision
   /// The index of a binned type is the bin that it corresponds to. Higher
-  /// indicies correspond to smaller bins.
+  /// indices correspond to smaller bins.
   _CCCL_HOST _CCCL_DEVICE inline int binned_index() const
   {
     return ((MAX_EXP + MANT_DIG - BIN_WIDTH + 1 + EXP_BIAS) - exp_val(primary(0))) / BIN_WIDTH;
@@ -456,7 +456,7 @@ private:
     int X_index = binned_dindex(max_abs_val);
     if (is_zero_v(primary(0)))
     {
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < FOLD; i++)
       {
         primary(i * incpriY) = binned_bins(i + X_index);
@@ -468,7 +468,7 @@ private:
       int shift = binned_index() - X_index;
       if (shift > 0)
       {
-        _LIBCUDACXX_PRAGMA_UNROLL()
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int i = FOLD - 1; i >= 1; i--)
         {
           if (i < shift)
@@ -478,7 +478,7 @@ private:
           primary(i * incpriY) = primary((i - shift) * incpriY);
           carry(i * inccarY)   = carry((i - shift) * inccarY);
         }
-        _LIBCUDACXX_PRAGMA_UNROLL()
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int j = 0; j < FOLD; j++)
         {
           if (j >= shift)
@@ -521,7 +521,7 @@ private:
       M *= EXPANSION * 0.5;
       x += M;
       x += M;
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 1; i < FOLD - 1; i++)
       {
         M  = primary(i * incpriY);
@@ -540,7 +540,7 @@ private:
     {
       ftype qd = x;
       auto& ql = get_bits(qd);
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < FOLD - 1; i++)
       {
         M  = primary(i * incpriY);
@@ -571,7 +571,7 @@ private:
       return;
     }
 
-    _LIBCUDACXX_PRAGMA_UNROLL()
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < FOLD; i++)
     {
       auto tmp_renormd  = primary(i * incpriX);
@@ -761,7 +761,7 @@ private:
     if (shift > 0)
     {
       // shift Y upwards and add X to Y
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = FOLD - 1; i >= 1; i--)
       {
         if (i < shift)
@@ -772,7 +772,7 @@ private:
           x.primary(i * incpriX) + (primary((i - shift) * incpriY) - binned_bins(i - shift + Y_index));
         carry(i * inccarY) = x.carry(i * inccarX) + carry((i - shift) * inccarY);
       }
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < FOLD; i++)
       {
         if (i == shift)
@@ -786,7 +786,7 @@ private:
     else if (shift < 0)
     {
       // shift X upwards and add X to Y
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < FOLD; i++)
       {
         if (i < -shift)
@@ -800,7 +800,7 @@ private:
     else if (shift == 0)
     {
       // add X to Y
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < FOLD; i++)
       {
         primary(i * incpriY) += x.primary(i * incpriX) - binned_bins(i + X_index);
@@ -914,7 +914,7 @@ public:
     {
       // constexpr auto const bins = binned_bins(binned_index());
 
-      _LIBCUDACXX_PRAGMA_UNROLL()
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < FOLD; i++)
       {
         temp.primary(i * incpriX) =

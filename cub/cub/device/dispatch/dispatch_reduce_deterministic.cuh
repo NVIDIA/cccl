@@ -57,9 +57,6 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <iterator>
-
-#include "thrust/iterator/transform_iterator.h"
 #include "thrust/iterator/transform_output_iterator.h"
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -77,10 +74,10 @@ namespace rfa_detail
 {
 
 template <typename ReductionOpT, typename InitT, typename InputIteratorT>
-using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, cub::detail::value_t<InputIteratorT>>;
+using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, cub::detail::it_value_t<InputIteratorT>>;
 
 template <typename OutputIteratorT, typename InputIteratorT>
-using InitT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
+using InitT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
 template <typename FloatType = float, typename std::enable_if<std::is_floating_point<FloatType>::value>::type* = nullptr>
 struct deterministic_sum_t
@@ -180,7 +177,6 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
   InputIteratorT d_in,
   AccumT* d_out,
   OffsetT num_items,
-
   ReductionOpT reduction_op,
   TransformOpT transform_op,
   const int reduce_grid_size)
@@ -208,7 +204,7 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
     shared_bins[index] = detail::rfa_detail::RFA_bins<FloatType>::initialize_bins(index);
   }
 
-  CTA_SYNC();
+  __syncthreads();
 
   AccumT thread_aggregate{};
   int count = 0;
@@ -348,7 +344,8 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   {
     shared_bins[index] = detail::rfa_detail::RFA_bins<FloatType>::initialize_bins(index);
   }
-  CTA_SYNC();
+
+  __syncthreads();
 
   constexpr auto BLOCK_THREADS = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS;
 
@@ -478,11 +475,11 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename SelectedPolicy = DeviceDeterministicReducePolicy<
-            rfa_detail::AccumT<cub::Sum, rfa_detail::InitT<OutputIteratorT, InputIteratorT>, InputIteratorT>,
+            rfa_detail::AccumT<::cuda::std::plus<>, rfa_detail::InitT<OutputIteratorT, InputIteratorT>, InputIteratorT>,
             OffsetT,
-            cub::Sum>,
+            ::cuda::std::plus<>>,
           typename InitT        = rfa_detail::InitT<OutputIteratorT, InputIteratorT>,
-          typename AccumT       = rfa_detail::AccumT<cub::Sum, InitT, InputIteratorT>,
+          typename AccumT       = rfa_detail::AccumT<::cuda::std::plus<>, InitT, InputIteratorT>,
           typename TransformOpT = ::cuda::std::__identity>
 struct DeterministicDispatchReduce : SelectedPolicy
 {
@@ -622,8 +619,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
 #endif
 
       // Invoke single_reduce_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
 
       // Check for failure to launch
@@ -740,7 +736,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
               reduce_config.sm_occupancy);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         reduce_grid_size, ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS, 0, stream)
         .doit(reduce_kernel,
               d_in,
@@ -774,8 +770,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke DeterministicDeviceReduceSingleTileKernel
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
         .doit(single_tile_kernel,
               d_block_reductions,
               d_out,

@@ -25,6 +25,7 @@
  *
  ******************************************************************************/
 
+#include "cub/util_type.cuh"
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
@@ -32,16 +33,12 @@
 
 #include <thrust/device_vector.h>
 
-#include <algorithm>
 #include <numeric>
 
-#include "c2h/vector.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
-#include "cub/block/block_load.cuh"
 #include "cub/device/dispatch/dispatch_reduce_deterministic.cuh"
 #include "cub/thread/thread_load.cuh"
-#include <catch2/catch.hpp>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -62,7 +59,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t DeterministicSum(
   using OffsetT = cub::detail::choose_offset_t<NumItemsT>;
 
   // The output value type
-  using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>;
+  using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
   using InitT = OutputT;
 
@@ -117,7 +114,7 @@ void deterministic_reduce_gpu(const int N)
   c2h::device_vector<type> input(num_items);
   const type min_val = static_cast<type>(0.0f);
   const type max_val = static_cast<type>(1000.0f);
-  c2h::gen(CUB_SEED(2), input, min_val, max_val);
+  c2h::gen(C2H_SEED(2), input, min_val, max_val);
   c2h::device_vector<type> output_p1(1);
   c2h::device_vector<type> output_p2(1);
 
@@ -159,7 +156,7 @@ void deterministic_reduce_heterogenous(const int N)
   c2h::device_vector<type> input_device(num_items, 1.0f);
   const type min_val = static_cast<type>(0.0f);
   const type max_val = static_cast<type>(1000.0f);
-  c2h::gen(CUB_SEED(2), input_device, min_val, max_val);
+  c2h::gen(C2H_SEED(2), input_device, min_val, max_val);
   c2h::host_vector<type> input_host = input_device;
 
   cub::detail::rfa_detail::deterministic_sum_t<type> op{};
@@ -177,7 +174,7 @@ void deterministic_reduce_heterogenous(const int N)
   REQUIRE(res.conv() == res_device);
 }
 
-CUB_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
+C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
 {
   using type          = typename c2h::get<0, TestType>;
   const int num_items = 1 << 28;
@@ -193,7 +190,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu", "[red
   REQUIRE(res == num_items);
 }
 
-CUB_TEST("Deterministic Device reduce works with float and double on gpu with known result",
+C2H_TEST("Deterministic Device reduce works with float and double on gpu with known result",
          "[reduce][deterministic]",
          float_type_list)
 {
@@ -211,7 +208,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on gpu with kn
   REQUIRE(res == 10.0f);
 }
 
-CUB_TEST("Deterministic Device reduce works with float and double on cpu", "[reduce][deterministic]", float_type_list)
+C2H_TEST("Deterministic Device reduce works with float and double on cpu", "[reduce][deterministic]", float_type_list)
 {
   using type          = typename c2h::get<0, TestType>;
   const int num_items = 42;
@@ -224,7 +221,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on cpu", "[red
   REQUIRE(res.conv() == num_items);
 }
 
-CUB_TEST("Deterministic Device reduce works with float and double on cpu with known result",
+C2H_TEST("Deterministic Device reduce works with float and double on cpu with known result",
          "[reduce][deterministic]",
          float_type_list)
 {
@@ -238,7 +235,7 @@ CUB_TEST("Deterministic Device reduce works with float and double on cpu with kn
   REQUIRE(res.conv() == 15.0f);
 }
 
-CUB_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
+C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
          "[reduce][deterministic]",
          float_type_list)
 {
@@ -256,7 +253,7 @@ CUB_TEST("Deterministic Device reduce works with float and double and is determi
   deterministic_reduce_gpu<type>(num_items);
 }
 
-CUB_TEST("Deterministic Device reduce works with float and double on cpu and gpu and compare result",
+C2H_TEST("Deterministic Device reduce works with float and double on cpu and gpu and compare result",
          "[reduce][deterministic]",
          float_type_list)
 {

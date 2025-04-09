@@ -65,12 +65,12 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <class T>
-void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
+template <class T, typename OffsetT>
+void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using input_it_t  = const T*;
   using output_it_t = T*;
-  using offset_t    = int;
+  using offset_t    = cub::detail::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
   using dispatch_t = cub::detail::DeterministicDispatchReduce<input_it_t, output_it_t, offset_t, policy_hub_t>;
@@ -104,8 +104,8 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T>)
 
 using types = nvbench::type_list<float, double>;
 
-NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types))
+NVBENCH_BENCH_TYPES(deterministic_sum, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("base")
-  .set_type_axes_names({"T{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_string_axis("Entropy", {"1.000", "0.544", "0.201"});
