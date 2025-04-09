@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
 struct A
@@ -43,41 +44,41 @@ __host__ __device__ constexpr bool test()
 {
 #if defined(_CCCL_BUILTIN_IS_CORRESPONDING_MEMBER)
   // 1. Test struct A members to be corresponding with itself
-  static_assert(cuda::std::is_corresponding_member(&A::m1, &A::m1));
-  static_assert(cuda::std::is_corresponding_member(&A::m2, &A::m2));
-  static_assert(cuda::std::is_corresponding_member(&A::m3, &A::m3));
-  static_assert(cuda::std::is_corresponding_member(&A::m4, &A::m4));
+  assert(cuda::std::is_corresponding_member(&A::m1, &A::m1));
+  assert(cuda::std::is_corresponding_member(&A::m2, &A::m2));
+  assert(cuda::std::is_corresponding_member(&A::m3, &A::m3));
+  assert(cuda::std::is_corresponding_member(&A::m4, &A::m4));
 
   // 2. Test struct A members to be corresponding with struct B members
-  static_assert(cuda::std::is_corresponding_member(&A::m1, &B::m1));
-  static_assert(cuda::std::is_corresponding_member(&A::m2, &B::m2));
-  static_assert(cuda::std::is_corresponding_member(&A::m3, &B::m3));
-  static_assert(cuda::std::is_corresponding_member(&A::m4, &B::m4));
+  assert(cuda::std::is_corresponding_member(&A::m1, &B::m1));
+  assert(cuda::std::is_corresponding_member(&A::m2, &B::m2));
+  assert(cuda::std::is_corresponding_member(&A::m3, &B::m3));
+  assert(cuda::std::is_corresponding_member(&A::m4, &B::m4));
 
   // 3. Test struct A members not to be corresponding with each other
-  static_assert(!cuda::std::is_corresponding_member(&A::m1, &A::m2));
-  static_assert(!cuda::std::is_corresponding_member(&A::m1, &A::m3));
-  static_assert(!cuda::std::is_corresponding_member(&A::m1, &A::m4));
-  static_assert(!cuda::std::is_corresponding_member(&A::m2, &A::m1));
-  static_assert(!cuda::std::is_corresponding_member(&A::m2, &A::m3));
-  static_assert(!cuda::std::is_corresponding_member(&A::m2, &A::m4));
-  static_assert(!cuda::std::is_corresponding_member(&A::m3, &A::m1));
-  static_assert(!cuda::std::is_corresponding_member(&A::m3, &A::m2));
-  static_assert(!cuda::std::is_corresponding_member(&A::m3, &A::m4));
-  static_assert(!cuda::std::is_corresponding_member(&A::m4, &A::m1));
-  static_assert(!cuda::std::is_corresponding_member(&A::m4, &A::m2));
-  static_assert(!cuda::std::is_corresponding_member(&A::m4, &A::m3));
+  assert(!cuda::std::is_corresponding_member(&A::m1, &A::m2));
+  assert(!cuda::std::is_corresponding_member(&A::m1, &A::m3));
+  assert(!cuda::std::is_corresponding_member(&A::m1, &A::m4));
+  assert(!cuda::std::is_corresponding_member(&A::m2, &A::m1));
+  assert(!cuda::std::is_corresponding_member(&A::m2, &A::m3));
+  assert(!cuda::std::is_corresponding_member(&A::m2, &A::m4));
+  assert(!cuda::std::is_corresponding_member(&A::m3, &A::m1));
+  assert(!cuda::std::is_corresponding_member(&A::m3, &A::m2));
+  assert(!cuda::std::is_corresponding_member(&A::m3, &A::m4));
+  assert(!cuda::std::is_corresponding_member(&A::m4, &A::m1));
+  assert(!cuda::std::is_corresponding_member(&A::m4, &A::m2));
+  assert(!cuda::std::is_corresponding_member(&A::m4, &A::m3));
 
   // 4. Member functions should not be corresponding
-  static_assert(!cuda::std::is_corresponding_member(&A::fn, &A::fn));
+  assert(!cuda::std::is_corresponding_member(&A::fn, &A::fn));
 
   // 5. If nullptr is passed, it should not be corresponding
-  static_assert(!cuda::std::is_corresponding_member(static_cast<int A::*>(nullptr), static_cast<int A::*>(nullptr)));
-  static_assert(!cuda::std::is_corresponding_member(&A::m1, static_cast<int A::*>(nullptr)));
-  static_assert(!cuda::std::is_corresponding_member(static_cast<int A::*>(nullptr), &A::m1));
+  assert(!cuda::std::is_corresponding_member(static_cast<int A::*>(nullptr), static_cast<int A::*>(nullptr)));
+  assert(!cuda::std::is_corresponding_member(&A::m1, static_cast<int A::*>(nullptr)));
+  assert(!cuda::std::is_corresponding_member(static_cast<int A::*>(nullptr), &A::m1));
 
   // 6. Non-standard layout types always return false
-  static_assert(!cuda::std::is_corresponding_member(&NonStandard::m, &NonStandard::m));
+  assert(!cuda::std::is_corresponding_member(&NonStandard::m, &NonStandard::m));
 #endif // _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER
 
   return true;
