@@ -103,7 +103,7 @@ class IteratorBase:
         self.value_type = value_type
         self.kind_ = self.__class__.iterator_kind_type(self.value_type, self.state_type)
         self.state_ = IteratorState(self.cvalue)
-        self._ltoirs: Dict[str, bytes] | None = None        
+        self._ltoirs: Dict[str, bytes] | None = None
 
     @property
     def kind(self):
@@ -158,7 +158,9 @@ class IteratorBase:
 
     def copy(self):
         out = object.__new__(self.__class__)
-        IteratorBase.__init__(out, self.cvalue, self.numba_type, self.state_type, self.value_type)
+        IteratorBase.__init__(
+            out, self.cvalue, self.numba_type, self.state_type, self.value_type
+        )
         out.ltoirs = self.ltoirs
         return out
 
@@ -257,7 +259,12 @@ class CacheModifiedPointer(IteratorBase):
         value_type = ntype
         state_type = types.CPointer(value_type)
         numba_type = types.CPointer(state_type)
-        super().__init__(cvalue=cvalue, numba_type=numba_type, state_type=state_type, value_type=value_type)
+        super().__init__(
+            cvalue=cvalue,
+            numba_type=numba_type,
+            state_type=state_type,
+            value_type=value_type,
+        )
 
     @staticmethod
     def advance(state, distance):
