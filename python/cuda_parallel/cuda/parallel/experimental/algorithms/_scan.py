@@ -103,7 +103,7 @@ class _Scan:
         )
 
         if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error reducing")
+            raise ValueError("Error scanning")
 
         return temp_storage_bytes
 
