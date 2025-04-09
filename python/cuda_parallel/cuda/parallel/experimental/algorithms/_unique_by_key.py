@@ -6,7 +6,6 @@
 from typing import Callable
 
 import numba
-from numba.cuda.cudadrv import enums
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -79,8 +78,6 @@ class _UniqueByKey:
         d_out_num_selected: DeviceArrayLike,
         op: Callable,
     ):
-        self.build_result = _bindings.DeviceUniqueByKeyBuildResult()
-
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
@@ -95,8 +92,8 @@ class _UniqueByKey:
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
-        error = call_build(
-            self.build_result.build,
+        self.build_result = call_build(
+            _bindings.DeviceUniqueByKeyBuildResult,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
             self.d_out_keys_cccl,
@@ -104,8 +101,6 @@ class _UniqueByKey:
             self.d_out_num_selected_cccl,
             self.op_wrapper,
         )
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building unique_by_key")
 
     def __call__(
         self,
@@ -134,7 +129,7 @@ class _UniqueByKey:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -146,10 +141,6 @@ class _UniqueByKey:
             num_items,
             stream_handle,
         )
-
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error in unique by key")
-
         return temp_storage_bytes
 
 

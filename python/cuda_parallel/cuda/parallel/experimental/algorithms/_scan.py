@@ -9,7 +9,6 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba.cuda.cudadrv import enums
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -40,8 +39,6 @@ class _Scan:
         h_init: np.ndarray | GpuStruct,
         force_inclusive: bool,
     ):
-        self.build_result = _bindings.DeviceScanBuildResult()
-
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.h_init_cccl = cccl.to_cccl_value(h_init)
@@ -51,8 +48,8 @@ class _Scan:
             value_type = numba.typeof(h_init)
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
-        error = call_build(
-            self.build_result.build,
+        self.build_result = call_build(
+            _bindings.DeviceScanBuildResult,
             self.d_in_cccl,
             self.d_out_cccl,
             self.op_wrapper,
@@ -65,8 +62,6 @@ class _Scan:
             if force_inclusive
             else self.build_result.compute_exclusive
         )
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building scan")
 
     def __call__(
         self,
@@ -91,7 +86,7 @@ class _Scan:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = self.device_scan_fn(
+        temp_storage_bytes = self.device_scan_fn(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -101,10 +96,6 @@ class _Scan:
             self.h_init_cccl,
             stream_handle,
         )
-
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error scanning")
-
         return temp_storage_bytes
 
 

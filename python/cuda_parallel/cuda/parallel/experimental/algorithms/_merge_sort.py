@@ -6,7 +6,6 @@
 from typing import Callable
 
 import numba
-from numba.cuda.cudadrv import enums
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -73,8 +72,6 @@ class _MergeSort:
         present_out_values = d_out_items is not None
         assert present_in_values == present_out_values
 
-        self.build_result = _bindings.DeviceMergeSortBuildResult()
-
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
@@ -88,16 +85,14 @@ class _MergeSort:
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
-        error = call_build(
-            self.build_result.build,
+        self.build_result = call_build(
+            _bindings.DeviceMergeSortBuildResult,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
             self.d_out_keys_cccl,
             self.d_out_items_cccl,
             self.op_wrapper,
         )
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building merge_sort")
 
     def __call__(
         self,
@@ -130,7 +125,7 @@ class _MergeSort:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,
@@ -141,9 +136,6 @@ class _MergeSort:
             self.op_wrapper,
             stream_handle,
         )
-
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error in merge sort")
 
         return temp_storage_bytes
 
