@@ -1129,11 +1129,6 @@ public:
       : it_(it)
   {}
 
-#if !TEST_COMPILER(MSVC2017) // MSVC2017 has issues determining common_reference
-  cpp20_output_iterator(cpp20_output_iterator&&)            = default;
-  cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
-#endif // !TEST_COMPILER(MSVC2017)
-
   __host__ __device__ constexpr decltype(auto) operator*() const
   {
     return *it_;
