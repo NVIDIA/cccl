@@ -125,18 +125,18 @@ struct TerminatesOnConstruction
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
 public:
-  __host__ __device__ explicit Z(int)
+  explicit Z(int)
   {
     TEST_THROW(6);
   }
 };
 
 template <class T, class U>
-__host__ __device__ void test_exception(optional<U>&& rhs)
+void test_exception(optional<U>&& rhs)
 {
   static_assert(!(cuda::std::is_convertible<optional<U>&&, optional<T>>::value), "");
   try
@@ -156,7 +156,7 @@ void test_exceptions()
   optional<int> rhs(3);
   test_exception<Z>(cuda::std::move(rhs));
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -173,9 +173,9 @@ int main(int, char**)
     assert(!lhs.has_value());
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

@@ -219,6 +219,8 @@ The following macros are required only if the target C++ version does not suppor
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX23``   | Enable ``constexpr`` for C++23 or newer                  |
 +-----------------------------+----------------------------------------------------------+
+| ``_CCCL_HAS_EXCEPTIONS()``  | Features can use exceptions, e.g ``bad_optional_access`` |
++-----------------------------+----------------------------------------------------------+
 
 **Concept-like Macros**:
 

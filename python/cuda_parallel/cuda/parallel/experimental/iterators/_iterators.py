@@ -12,7 +12,15 @@ from numba.core.extending import intrinsic, overload
 from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
 
+from .._bindings import IteratorState
 from .._caching import CachableFunction
+from .._utils.protocols import (
+    compute_c_contiguous_strides_in_bytes,
+    get_data_pointer,
+    get_dtype,
+    get_shape,
+)
+from ..typing import DeviceArrayLike
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
@@ -24,17 +32,24 @@ def cached_compile(func, sig, abi_name=None, **kwargs):
 
 
 class IteratorKind:
-    def __init__(self, value_type):
+    def __init__(self, value_type, state_type):
         self.value_type = value_type
+        self.state_type = state_type
 
     def __repr__(self):
-        return f"{self.__class__.__name__}[{str(self.value_type)}]"
+        return (
+            f"{self.__class__.__name__}[{str(self.value_type), str(self.state_type)}]"
+        )
 
     def __eq__(self, other):
-        return type(self) is type(other) and self.value_type == other.value_type
+        return (
+            type(self) is type(other)
+            and self.value_type == other.value_type
+            and self.state_type == other.state_type
+        )
 
     def __hash__(self):
-        return hash((type(self), self.value_type))
+        return hash((type(self), self.value_type, self.state_type))
 
 
 @lru_cache(maxsize=None)
@@ -64,8 +79,9 @@ class IteratorBase:
 
     def __init__(
         self,
-        cvalue: ctypes.c_void_p,
+        cvalue,
         numba_type: types.Type,
+        state_type: types.Type,
         value_type: types.Type,
         prefix: str = "",
     ):
@@ -77,6 +93,8 @@ class IteratorBase:
         numba_type
           A numba type representing the type of the input to the advance
           and dereference functions.
+        state_type
+          A numba type of the iterator state.
         value_type
           The numba type of the value returned by the dereference operation.
         prefix
@@ -84,20 +102,24 @@ class IteratorBase:
         """
         self.cvalue = cvalue
         self.numba_type = numba_type
+        self.state_type = state_type
         self.value_type = value_type
         self.prefix = prefix
+        self.kind_ = self.__class__.iterator_kind_type(self.value_type, self.state_type)
+        self.state_ = IteratorState(self.cvalue)
 
     @property
     def kind(self):
-        return self.__class__.iterator_kind_type(self.value_type)
+        return self.kind_
 
     # TODO: should we cache this? Current docs environment doesn't allow
     # using Python > 3.7. We could use a hand-rolled cached_property if
     # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
-        advance_abi_name = f"{self.prefix}advance_" + _get_abi_suffix(self.kind)
-        deref_abi_name = f"{self.prefix}dereference_" + _get_abi_suffix(self.kind)
+        abi_suffix = _get_abi_suffix(self.kind)
+        advance_abi_name = f"{self.prefix}advance_{abi_suffix}"
+        deref_abi_name = f"{self.prefix}dereference_{abi_suffix}"
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
@@ -117,8 +139,8 @@ class IteratorBase:
         return {advance_abi_name: advance_ltoir, deref_abi_name: deref_ltoir}
 
     @property
-    def state(self) -> ctypes.c_void_p:
-        return ctypes.cast(ctypes.pointer(self.cvalue), ctypes.c_void_p)
+    def state(self) -> IteratorState:
+        return self.state_
 
     @staticmethod
     def advance(state, distance):
@@ -171,10 +193,12 @@ class RawPointer(IteratorBase):
 
     def __init__(self, ptr: int, value_type: types.Type):
         cvalue = ctypes.c_void_p(ptr)
-        numba_type = types.CPointer(types.CPointer(value_type))
+        state_type = types.CPointer(value_type)
+        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
+            state_type=state_type,
             value_type=value_type,
         )
 
@@ -222,9 +246,14 @@ class CacheModifiedPointer(IteratorBase):
     def __init__(self, ptr: int, ntype: types.Type, prefix: str):
         cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
-        numba_type = types.CPointer(types.CPointer(value_type))
+        state_type = types.CPointer(value_type)
+        numba_type = types.CPointer(state_type)
         super().__init__(
-            cvalue=cvalue, numba_type=numba_type, value_type=value_type, prefix=prefix
+            cvalue=cvalue,
+            numba_type=numba_type,
+            state_type=state_type,
+            value_type=value_type,
+            prefix=prefix,
         )
 
     @staticmethod
@@ -246,10 +275,12 @@ class ConstantIterator(IteratorBase):
     def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
-        numba_type = types.CPointer(value_type)
+        state_type = value_type
+        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
+            state_type=state_type,
             value_type=value_type,
         )
 
@@ -272,10 +303,12 @@ class CountingIterator(IteratorBase):
     def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
-        numba_type = types.CPointer(value_type)
+        state_type = value_type
+        numba_type = types.CPointer(state_type)
         super().__init__(
             cvalue=cvalue,
             numba_type=numba_type,
+            state_type=state_type,
             value_type=value_type,
         )
 
@@ -286,6 +319,49 @@ class CountingIterator(IteratorBase):
     @staticmethod
     def dereference(state):
         return state[0]
+
+
+class ReverseIteratorKind(IteratorKind):
+    pass
+
+
+def make_reverse_iterator(it: DeviceArrayLike | IteratorBase):
+    if not hasattr(it, "__cuda_array_interface__") and not isinstance(it, IteratorBase):
+        raise NotImplementedError(
+            f"Reverse iterator is not implemented for type {type(it)}"
+        )
+
+    if hasattr(it, "__cuda_array_interface__"):
+        last_element_ptr = _get_last_element_ptr(it)
+        it = RawPointer(last_element_ptr, numba.from_dtype(get_dtype(it)))
+
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+
+    class ReverseIterator(IteratorBase):
+        iterator_kind_type = ReverseIteratorKind
+
+        def __init__(self, it):
+            self._it = it
+            super().__init__(
+                cvalue=it.cvalue,
+                numba_type=it.numba_type,
+                state_type=it.state_type,
+                value_type=it.value_type,
+            )
+            self.kind_ = self.__class__.iterator_kind_type(
+                (it.kind, it.value_type), it.state_type
+            )
+
+        @staticmethod
+        def advance(state, distance):
+            return it_advance(state, -distance)
+
+        @staticmethod
+        def dereference(state):
+            return it_dereference(state)
+
+    return ReverseIterator(it)
 
 
 class TransformIteratorKind(IteratorKind):
@@ -306,6 +382,7 @@ def make_transform_iterator(it, op: Callable):
         def __init__(self, it: IteratorBase, op: CUDADispatcher):
             self._it = it
             self._op = CachableFunction(op.py_func)
+            state_type = it.state_type
             numba_type = it.numba_type
             # TODO: it would be nice to not need to compile `op` to get
             # its return type, but there's nothing in the numba API
@@ -313,19 +390,19 @@ def make_transform_iterator(it, op: Callable):
             _, op_retty = cached_compile(
                 op,
                 (self._it.value_type,),
-                abi_name=f"{op.__name__}_{_get_abi_suffix(self.kind)}",
+                abi_name=f"{op.__name__}_{_get_abi_suffix(self._it.kind)}",
                 output="ltoir",
             )
             value_type = op_retty
             super().__init__(
                 cvalue=it.cvalue,
                 numba_type=numba_type,
+                state_type=state_type,
                 value_type=value_type,
             )
-
-        @property
-        def kind(self):
-            return self.__class__.iterator_kind_type((self._it.kind, self._op))
+            self.kind_ = self.__class__.iterator_kind_type(
+                (value_type, self._it.kind, self._op), state_type
+            )
 
         @staticmethod
         def advance(state, distance):
@@ -350,18 +427,16 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
 
         def __init__(self, it: IteratorBase, advance_steps: int):
             self._it = it
-            cvalue_advanced = to_ctypes(it.value_type)(
-                it.cvalue + it.value_type(advance_steps)
-            )
+            cvalue_advanced = type(it.cvalue)(it.cvalue.value + advance_steps)
             super().__init__(
                 cvalue=cvalue_advanced,
                 numba_type=it.numba_type,
+                state_type=it.state_type,
                 value_type=it.value_type,
             )
-
-        @property
-        def kind(self):
-            return self.__class__.iterator_kind_type(self._it.kind)
+            self.kind_ = self.__class__.iterator_kind_type(
+                (it.value_type, self._it.kind), it.state_type
+            )
 
         @staticmethod
         def advance(state, distance):
@@ -372,3 +447,19 @@ def make_advanced_iterator(it: IteratorBase, /, *, offset: int = 1):
             return it_dereference(state)
 
     return AdvancedIterator(it, offset)
+
+
+def _get_last_element_ptr(device_array) -> int:
+    shape = get_shape(device_array)
+    dtype = get_dtype(device_array)
+
+    strides_in_bytes = device_array.__cuda_array_interface__["strides"]
+    if strides_in_bytes is None:
+        strides_in_bytes = compute_c_contiguous_strides_in_bytes(shape, dtype.itemsize)
+
+    offset_to_last_element = sum(
+        (dim_size - 1) * stride for dim_size, stride in zip(shape, strides_in_bytes)
+    )
+
+    ptr = get_data_pointer(device_array)
+    return ptr + offset_to_last_element
