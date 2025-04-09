@@ -178,7 +178,7 @@ def to_cccl_op(op: Callable | None, sig) -> Op:
     if op is None:
         return Op(
             operator_type=OpKind.STATELESS,
-            name="",
+            name=None,
             ltoir=None,
             state_alignment=1,
             state=None,

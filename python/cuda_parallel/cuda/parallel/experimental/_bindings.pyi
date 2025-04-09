@@ -1,5 +1,5 @@
 import ctypes
-from typing import Any
+from typing import Any, Optional
 
 from typing_extensions import Buffer
 
@@ -73,7 +73,7 @@ def is_SortOrder(obj) -> bool: ...
 class Op:
     def __init__(
         self,
-        name: str = ...,
+        name: Optional[str] = ...,
         operator_type: IntEnumerationMember = ...,
         ltoir=None,
         state=None,
