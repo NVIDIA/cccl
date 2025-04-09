@@ -1660,22 +1660,7 @@ cdef class DeviceUniqueByKeyBuildResult:
 
 cdef extern from "cccl/c/radix_sort.h":
     cdef struct cccl_device_radix_sort_build_result_t 'cccl_device_radix_sort_build_result_t':
-        int cc
-        void *cubin
-        size_t cubin_size
-        CUlibrary library
-        cccl_type_info key_type # These might be removed since similar one in scan is just pass
-        cccl_type_info value_type
-        CUkernel single_tile_kernel
-        CUkernel upsweep_kernel
-        CUkernel alt_upsweep_kernel
-        CUkernel scan_bins_kernel
-        CUkernel downsweep_kernel
-        CUkernel alt_downsweep_kernel
-        CUkernel histogram_kernel
-        CUkernel exclusive_sum_kernel
-        CUkernel onesweep_kernel
-        cccl_sort_order_t order
+        pass
 
     cdef CUresult cccl_device_radix_sort_build(
         cccl_device_radix_sort_build_result_t *build_ptr,
