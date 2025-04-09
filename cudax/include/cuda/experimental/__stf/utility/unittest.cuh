@@ -130,6 +130,17 @@ struct expecter
     }
   };
 
+  template <typename... Msgs>
+  [[noreturn]] static _LIBCUDACXX_HIDE_FROM_ABI void
+  __throw_stf_failure([[maybe_unused]] _CUDA_VSTD::source_location loc, [[maybe_unused]] const Msgs&... msgs)
+  {
+#  if _CCCL_HAS_EXCEPTIONS()
+    NV_IF_ELSE_TARGET(NV_IS_HOST, (throw failure(loc, msgs...);), (_CUDA_VSTD_NOVERSION::terminate();))
+#  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
+    _CUDA_VSTD_NOVERSION::terminate();
+#  endif // !_CCCL_HAS_EXCEPTIONS()
+  }
+
   /*
    * @brief Wrapper for a comparison operation using one of `==`, `!=`, `<`, `>`, `<=`, `>=`. Includes the result and
    * the operands.
@@ -283,7 +294,7 @@ struct expecter
     if constexpr (sizeof...(msgs) == 0)
     {
       using U = ::std::remove_reference_t<T>;
-      throw failure(
+      __throw_stf_failure(
         loc,
         "Tested expression of type " + ::std::string(type_name<T>) + " is "
           + (std::is_same_v<const U, const bool> ? "false"
@@ -293,7 +304,7 @@ struct expecter
     }
     else
     {
-      throw failure(loc, msgs...);
+      __throw_stf_failure(loc, msgs...);
     }
   }
 
@@ -312,7 +323,7 @@ struct expecter
     {
       return ::std::forward<L>(e.lhs);
     }
-    throw failure(loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
+    __throw_stf_failure(loc, e.lhs, ' ', e.op, ' ', e.rhs, " is false.\n", msgs...);
   }
 };
 
@@ -534,6 +545,10 @@ UNITTEST("EXPECT")
   EXPECT(1 + 1 == 2, "All we know about mathematics has been upended!"); // pass
   auto p = EXPECT(malloc(100) != nullptr); // pass, put the pointer to allocated memory in p
   free(p);
+
+  // This test is specifically about how we handle exceptions, so we disable it
+  // when exceptions are not allowed
+#  if _CCCL_HAS_EXCEPTIONS()
   try
   {
     EXPECT(41 == 102); // fail, will throw exception
@@ -543,6 +558,7 @@ UNITTEST("EXPECT")
     // The exception message will contain the actual numbers 41 and 102.
     EXPECT(::std::string_view(e.what()).find("41 == 102 is false") != ::std::string_view::npos);
   }
+#  endif // !_CCCL_HAS_EXCEPTIONS()
   //! [EXPECT]
 };
 

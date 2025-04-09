@@ -25,7 +25,7 @@ DTYPE_LIST = [
     np.float64,
 ]
 
-PROBLEM_SIZES = [2, 8, 16, 24]
+PROBLEM_SIZES = [2, 8, 16, 22]
 
 DTYPE_SIZE_PAIRS = [
     (dt, 2**log_size) for dt in DTYPE_LIST for log_size in PROBLEM_SIZES

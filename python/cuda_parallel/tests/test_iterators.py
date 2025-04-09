@@ -20,7 +20,7 @@ def test_constant_iterator_equality():
     it1 = ConstantIterator(np.int32(0))
     it2 = ConstantIterator(np.int32(0))
     it3 = ConstantIterator(np.int32(1))
-    it4 = ConstantIterator(np.int64(9))
+    it4 = ConstantIterator(np.int64(0))
 
     assert it1.kind == it2.kind == it3.kind
     assert it1.kind != it4.kind
@@ -30,7 +30,7 @@ def test_counting_iterator_equality():
     it1 = CountingIterator(np.int32(0))
     it2 = CountingIterator(np.int32(0))
     it3 = CountingIterator(np.int32(1))
-    it4 = CountingIterator(np.int64(9))
+    it4 = CountingIterator(np.int64(0))
 
     assert it1.kind == it2.kind == it3.kind
     assert it1.kind != it4.kind

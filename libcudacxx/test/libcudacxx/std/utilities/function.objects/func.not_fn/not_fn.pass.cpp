@@ -488,36 +488,35 @@ __host__ __device__ void other_callable_types_test()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void throws_in_constructor_test()
 {
   struct ThrowsOnCopy
   {
-    ThrowsOnCopy(ThrowsOnCopy const&)
-    {
-      throw 42;
-    }
     ThrowsOnCopy() = default;
-    bool operator()() const
+    // NVCC claims this is a host device function so we need to hack around it
+    __host__ __device__ ThrowsOnCopy(ThrowsOnCopy const&)
+    {
+      NV_IF_TARGET(NV_IS_HOST, throw 42;)
+    }
+    [[noreturn]] bool operator()() const
     {
       assert(false);
-      _CCCL_UNREACHABLE();
+      cuda::std::unreachable();
     }
   };
+  try
   {
-    ThrowsOnCopy cp;
-    try
-    {
-      (void) cuda::std::not_fn(cp);
-      assert(false);
-    }
-    catch (int const& value)
-    {
-      assert(value == 42);
-    }
+    ThrowsOnCopy cp{};
+    (void) cuda::std::not_fn(cp);
+    assert(false);
+  }
+  catch (int const& value)
+  {
+    assert(value == 42);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void call_operator_sfinae_test()
 {
@@ -734,9 +733,9 @@ int main(int, char**)
   constructor_tests();
   return_type_tests();
   other_callable_types_test();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (throws_in_constructor_test();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   call_operator_sfinae_test(); // somewhat of an extension
   // call_operator_forwarding_test();
   call_operator_noexcept_test();
