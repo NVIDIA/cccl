@@ -24,6 +24,10 @@ def make_cache_key(
     d_out_items: DeviceArrayLike | None,
     op: Callable,
 ):
+    d_in_keys, d_in_items, d_out_keys, d_out_items = scrub_duplicate_ltoirs(
+        d_in_keys, d_in_items, d_out_keys, d_out_items
+    )
+
     d_in_keys_key = (
         d_in_keys.kind
         if isinstance(d_in_keys, IteratorBase)
