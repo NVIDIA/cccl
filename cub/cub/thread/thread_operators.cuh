@@ -804,10 +804,10 @@ inline constexpr bool is_bfloat16_X2_base_v = false;
 #  if _CCCL_HAS_NVBF16()
 
 template <>
-inline constexpr bool is_bfloat16_base_v<__half> = true;
+inline constexpr bool is_bfloat16_base_v<__nv_bfloat16> = true;
 
 template <>
-inline constexpr bool is_bfloat16_X2_base_v<__half2> = true;
+inline constexpr bool is_bfloat16_X2_base_v<__nv_bfloat162> = true;
 
 #  endif // _CCCL_HAS_NVBF16
 

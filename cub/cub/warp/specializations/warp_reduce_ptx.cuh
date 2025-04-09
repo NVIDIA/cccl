@@ -38,6 +38,7 @@
 #include <cub/detail/unsafe_bitcast.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_config.cuh>
+#include <cub/warp/specializations/warp_utils.cuh>
 
 #include <cuda/functional>
 #include <cuda/std/__mdspan/extents.h>
@@ -86,23 +87,23 @@ namespace detail
 //----------------------------------------------------------------------------------------------------------------------
 // 32-bit shfl_down_op
 
-#define _CUB_SHFL_DOWN_OP_32BIT(OPERATOR, TYPE, PTX_OP)                                                                \
-                                                                                                                       \
-  template <typename = void>                                                                                           \
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                      \
-    OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                      \
-  {                                                                                                                    \
-    auto tmp = cub::detail::unsafe_bitcast<uint32_t>(value);                                                           \
-    asm volatile(                                                                                                      \
-      "{                                                                                                       \n\t\t" \
-      ".reg .pred p;                                                                                          \n\t\t"  \
-      ".reg .b32  r0;                                                                                         \n\t\t"  \
-      "shfl.sync.down.b32 r0|p, %0, %1, %2, %3;                                                               \n\t\t"  \
-      "@p " #PTX_OP " %0, r0, %0;                                                                             \n\t\t"  \
-      "}"                                                                                                              \
-      : "+r"(tmp)                                                                                                      \
-      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
-    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                     \
+#define _CUB_SHFL_DOWN_OP_32BIT(OPERATOR, TYPE, PTX_OP)                                                               \
+                                                                                                                      \
+  template <typename = void>                                                                                          \
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                     \
+    OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
+  {                                                                                                                   \
+    auto tmp = cub::detail::unsafe_bitcast<uint32_t>(value);                                                          \
+    asm volatile(                                                                                                     \
+      "{                                                                                                      \n\t\t" \
+      ".reg .pred p;                                                                                          \n\t\t" \
+      ".reg .b32  r0;                                                                                         \n\t\t" \
+      "shfl.sync.down.b32 r0|p, %0, %1, %2, %3;                                                               \n\t\t" \
+      "@p " #PTX_OP " %0, r0, %0;                                                                             \n\t\t" \
+      "}"                                                                                                             \
+      : "+r"(tmp)                                                                                                     \
+      : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
+    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                    \
   }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -165,7 +166,7 @@ _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, double, add.f64)
 _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<double>, double, add.f64)
 
 //----------------------------------------------------------------------------------------------------------------------
-// cuda::std::maximum/minimum Instantiations
+// cuda::maximum/minimum Instantiations
 
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, int, max.s32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<int>, int, max.s32)
@@ -257,9 +258,9 @@ template <typename T, typename ReductionOp>
 //----------------------------------------------------------------------------------------------------------------------
 // reduce_shuffle_mask
 
-template <size_t ValidItems>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t
-reduce_shuffle_mask([[maybe_unused]] uint32_t step, _CUDA_VSTD::extents<int, ValidItems> valid_items)
+template <int LogicalWarpSize, size_t ValidItems>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_mask(
+  [[maybe_unused]] uint32_t step, logial_warp_size_t<LogicalWarpSize>, valid_items_t<ValidItems> valid_items)
 {
   if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
   {
@@ -269,7 +270,7 @@ reduce_shuffle_mask([[maybe_unused]] uint32_t step, _CUDA_VSTD::extents<int, Val
   }
   else
   {
-    return valid_items.extent(0);
+    return cub::detail::logical_warp_id(LogicalWarpSize) * LogicalWarpSize + valid_items.extent(0) - 1;
   }
 }
 

@@ -38,6 +38,7 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/warp/specializations/warp_reduce_config.cuh>
 #include <cub/warp/specializations/warp_reduce_ptx.cuh>
+#include <cub/warp/specializations/warp_utils.cuh>
 
 #include <cuda/cmath>
 #include <cuda/functional>
@@ -135,13 +136,16 @@ template <typename Input,
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
-    auto shuffle_mask = cub::detail::reduce_shuffle_mask(K, valid_items);
+    auto shuffle_mask = cub::detail::reduce_shuffle_mask(K, logical_size, valid_items);
     input1            = cub::detail::shfl_down_op(reduction_op, input1, 1u << K, shuffle_mask, mask);
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    input1 = _CUDA_VDEV::warp_shuffle_idx(input1, 0, mask, logical_size);
+    constexpr auto logical_width =
+      _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize}) ? LogicalWarpSize : warp_threads;
+    input1 = _CUDA_VDEV::warp_shuffle_idx<logical_width>(input1, 0, mask);
   }
+
   return input1;
 }
 
@@ -159,22 +163,22 @@ template <typename Input,
   logial_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
-  constexpr auto log2_size     = ::cuda::ilog2(LogicalWarpSize * 2 - 1);
-  constexpr auto logical_width = _CUDA_VSTD::integral_constant<int, LogicalWarpSize>{};
-  const auto mask              = cub::detail::reduce_member_mask(logical_mode, logical_size, valid_items);
+  constexpr auto logical_size_round = _CUDA_VSTD::bit_ceil(uint32_t{LogicalWarpSize});
+  constexpr auto log2_size          = ::cuda::ilog2(LogicalWarpSize * 2 - 1);
+  const auto mask                   = cub::detail::reduce_member_mask(logical_mode, logical_size, valid_items);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
     _CUDA_VDEV::WarpShuffleResult<Input> res;
     if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize}))
     {
-      res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_width);
+      res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
     }
     else
     {
-      auto lane_id = _CUDA_VPTX::get_sreg_laneid();
+      auto lane_id = logical_lane_id(LogicalWarpSize);
       auto dest    = ::min(lane_id + (1u << K), valid_items.extent(0) - 1);
-      res          = _CUDA_VDEV::warp_shuffle_idx(input, dest, mask, logical_width);
+      res          = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input, dest, mask);
       res.pred     = lane_id + (1u << K) < valid_items.extent(0);
     }
     if (res.pred)
@@ -184,7 +188,7 @@ template <typename Input,
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    input = _CUDA_VDEV::warp_shuffle_idx(input, 0, mask, logical_width);
+    input = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input, 0, mask);
   }
   return input;
 }
@@ -308,14 +312,6 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
   return merge_integers(result_high, low_reduction);
 }
 
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int logical_lane_id(uint32_t LogicalWarpSize)
-{
-  auto lane         = _CUDA_VPTX::get_sreg_laneid();
-  auto logical_lane = static_cast<int>(LogicalWarpSize == warp_threads ? lane : lane % LogicalWarpSize);
-  _CCCL_ASSUME(logical_lane >= 0 && logical_lane < LogicalWarpSize);
-  return logical_lane;
-}
-
 /***********************************************************************************************************************
  * WarpReduce Dispatch
  **********************************************************************************************************************/
@@ -334,7 +330,8 @@ template <typename Input,
   logial_warp_size_t<LogicalWarpSize> logical_size,
   valid_items_t<ValidItems> valid_items)
 {
-  using cub::detail::make_floating_point_int_comparible;
+  using cub::detail::comparable_int_to_floating_point;
+  using cub::detail::floating_point_to_comparable_int;
   using cub::detail::unsafe_bitcast;
   using cub::detail::warp_reduce_dispatch;
   using cub::detail::warp_reduce_generic;
@@ -343,6 +340,7 @@ template <typename Input,
   using cub::detail::warp_reduce_shuffle_op;
   using namespace cub::internal;
   using namespace _CUDA_VSTD;
+  // early exit for threads outside the range with dynamic number of valid items
   if (valid_items.rank_dynamic() == 1 && logical_lane_id(LogicalWarpSize) >= valid_items.extent(0))
   {
     return Input{};
@@ -354,11 +352,10 @@ template <typename Input,
     {
       NV_IF_TARGET(NV_PROVIDES_SM_100, (return warp_reduce_redux_op(input, reduction_op, logical_size, valid_items);));
     }
-    using signed_t = __make_nbit_int_t<__num_bits_v<Input>, true>;
-    auto input_int = cub::detail::unsafe_bitcast<signed_t>(input);
-    auto input_cmp = make_floating_point_int_comparible(input_int);
-    auto result = warp_reduce_dispatch(input_cmp, reduction_op, logical_mode, result_mode, logical_size, valid_items);
-    auto result_rev = make_floating_point_int_comparible(result); // reverse
+    auto input_int = floating_point_to_comparable_int(reduction_op, input);
+    auto result_int =
+      warp_reduce_dispatch(input_int, reduction_op, logical_mode, result_mode, logical_size, valid_items);
+    auto result_rev = comparable_int_to_floating_point(result_int); // reverse
     return unsafe_bitcast<Input>(result_rev);
   }
   // Min/Max: __half2, __nv_bfloat162

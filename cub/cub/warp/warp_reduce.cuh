@@ -31,6 +31,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/__functional/minimum.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -403,7 +405,7 @@ public:
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
-  template <detail::ReduceLogicalMode Mode    = detail::ReduceLogicalMode::SingleReduction,
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
             detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
   Sum(T input,
@@ -411,8 +413,6 @@ public:
       detail::reduce_logical_mode_t<Mode> logical_mode = {},
       detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
-    // Determine if we don't need bounds checking
-    // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
     return detail::warp_reduce_dispatch(
       input,
       _CUDA_VSTD::plus<>{},
@@ -422,16 +422,38 @@ public:
       cub::detail::valid_items_t<>{valid_items});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  Max(T input,
+      int valid_items,
+      detail::reduce_logical_mode_t<Mode> logical_mode = {},
+      detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
-    // Determine if we don't need bounds checking
-    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::maximum<>{});
+    return detail::warp_reduce_dispatch(
+      input,
+      ::cuda::maximum<>{},
+      logical_mode,
+      result_mode,
+      logical_warp_size,
+      cub::detail::valid_items_t<>{valid_items});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int valid_items)
+  template <detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  Min(T input,
+      int valid_items,
+      detail::reduce_logical_mode_t<Mode> logical_mode = {},
+      detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
-    // Determine if we don't need bounds checking
-    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::minimum<>{});
+    return detail::warp_reduce_dispatch(
+      input,
+      ::cuda::minimum<>{},
+      logical_mode,
+      result_mode,
+      logical_warp_size,
+      cub::detail::valid_items_t<>{valid_items});
   }
 
   //! @rst
@@ -490,19 +512,18 @@ public:
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
-  template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
+  template <typename ReductionOp,
+            detail::ReduceLogicalMode Mode    = reduce_logical_mode_default,
+            detail::WarpReduceResultMode Kind = warp_reduce_result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
+    T input,
+    ReductionOp reduction_op,
+    int valid_items,
+    detail::reduce_logical_mode_t<Mode> logical_mode = {},
+    detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
-    // return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, reduction_op);
-    if constexpr (_CUDA_VSTD::has_single_bit((unsigned) LogicalWarpThreads))
-    {
-      return detail::warp_reduce_dispatch<LogicalWarpThreads>(
-        input, reduction_op, multiple_reductions, first_lane_result);
-    }
-    else
-    {
-      return detail::warp_reduce_dispatch<LogicalWarpThreads>(input, reduction_op, single_reduction, first_lane_result);
-    }
+    return detail::warp_reduce_dispatch(
+      input, reduction_op, logical_mode, result_mode, logical_warp_size, cub::detail::valid_items_t<>{valid_items});
   }
 
   //! @rst

@@ -34,6 +34,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/unsafe_bitcast.cuh>
+#include <cub/thread/thread_operators.cuh>
+
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -74,11 +77,26 @@ template <typename Input>
 }
 
 template <typename T>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto make_floating_point_int_comparible(T value)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto comparable_int_to_floating_point(T value)
 {
   static_assert(_CUDA_VSTD::is_integral_v<T>);
   constexpr auto lowest = T{1} << (_CUDA_VSTD::__num_bits_v<T> - 1);
   return static_cast<T>(value < 0 ? lowest - value : value);
+}
+
+template <typename ReductionOp, typename T>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(ReductionOp, T value)
+{
+  using namespace _CUDA_VSTD;
+  static_assert(::cuda::is_floating_point_v<T>);
+  static_assert(internal::is_cuda_std_min_max_v<ReductionOp, T>);
+  using signed_t        = __make_nbit_int_t<__num_bits_v<T>, true>;
+  constexpr auto lowest = signed_t{1} << (__num_bits_v<T> - 1);
+  constexpr auto is_max = internal::is_cuda_maximum_v<ReductionOp, T>;
+  const auto nan        = is_max ? -numeric_limits<T>::quiet_NaN() : numeric_limits<T>::quiet_NaN();
+  auto value1           = _CUDA_VSTD::isnan(value) ? nan : value;
+  auto value_int        = cub::detail::unsafe_bitcast<signed_t>(value1);
+  return static_cast<signed_t>(value_int < 0 ? lowest - value_int : value_int);
 }
 
 } // namespace detail
