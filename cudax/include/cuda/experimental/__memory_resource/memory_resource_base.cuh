@@ -87,7 +87,7 @@ public:
       __bytes,
       __pool_,
       __cccl_allocation_stream().get());
-    __cccl_allocation_stream().wait();
+    __cccl_allocation_stream().sync();
     return __ptr;
   }
 
@@ -103,7 +103,7 @@ public:
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to __memory_resource_base::deallocate.");
     _CCCL_ASSERT_CUDA_API(
       ::cudaFreeAsync, "__memory_resource_base::deallocate failed", __ptr, __cccl_allocation_stream().get());
-    __cccl_allocation_stream().wait();
+    __cccl_allocation_stream().sync();
   }
 
   //! @brief Allocate device memory of size at least \p __bytes via `cudaMallocFromPoolAsync`.
