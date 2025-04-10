@@ -6,6 +6,7 @@
 from typing import Callable
 
 import numba
+from numba import types
 
 from .. import _bindings
 from .. import _cccl_interop as cccl

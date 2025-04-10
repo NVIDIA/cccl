@@ -92,8 +92,7 @@ class _UniqueByKey:
         else:
             value_type = numba.from_dtype(protocols.get_dtype(d_in_keys))
 
-        sig = (value_type, value_type)
-        self.op_wrapper = cccl.to_cccl_op(op, sig)
+        self.op_wrapper = cccl.to_cccl_op(op, numba.types.uint8(value_type, value_type))
 
         self.build_result = call_build(
             _bindings.DeviceUniqueByKeyBuildResult,
