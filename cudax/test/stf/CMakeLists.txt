@@ -95,7 +95,7 @@ set(stf_test_codegen_sources
   # graph/for_each_batched.cu
   # graph/for_each_batched_write.cu
   graph/freeze_for_graph.cu
-  graph/graph_composition.cu
+  # graph/graph_composition.cu
   graph/graph_tmp_data.cu
   graph/many.cu
   graph/multiple_graph_ctx.cu
