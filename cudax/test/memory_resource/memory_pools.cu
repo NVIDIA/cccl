@@ -347,7 +347,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // Allocate a buffer to prime
     auto* ptr = resource.allocate_async(256 * sizeof(int), stream);
-    stream.wait();
+    stream.sync();
 
     { // cudaMemPoolAttrReservedMemHigh
       // Get the attribute value
@@ -410,7 +410,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
     // Reallocate as the checks above have screwed with the allocation count
     resource.deallocate_async(ptr, 256 * sizeof(int), stream);
     ptr = resource.allocate_async(2048 * sizeof(int), stream);
-    stream.wait();
+    stream.sync();
 
     { // cudaMemPoolAttrReservedMemCurrent
       // Get the attribute value
@@ -458,7 +458,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // Free the last allocation
     resource.deallocate_async(ptr, 2048 * sizeof(int), stream);
-    stream.wait();
+    stream.sync();
   }
 
   SECTION("device_memory_pool::trim_to")
@@ -473,7 +473,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
     auto* ptr1 = resource.allocate_async(2048 * sizeof(int), stream);
     auto* ptr2 = resource.allocate_async(2048 * sizeof(int), stream);
     resource.deallocate_async(ptr1, 2048 * sizeof(int), stream);
-    stream.wait();
+    stream.sync();
 
     // Ensure that we still hold some memory, otherwise everything is freed
     auto backing_size = pool.get_attribute(::cudaMemPoolAttrReservedMemCurrent);
@@ -503,7 +503,7 @@ C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 
     // Free the last allocation
     resource.deallocate_async(ptr2, 2048 * sizeof(int), stream);
-    stream.wait();
+    stream.sync();
 
     // There is nothing allocated anymore, so all memory is released
     auto no_backing = pool.get_attribute(::cudaMemPoolAttrReservedMemCurrent);

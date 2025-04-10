@@ -67,7 +67,7 @@ C2H_TEST("cudax::async_buffer access",
 
     {
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.wait();
+      buf.sync();
       auto& res = buf.get_unsynchronized(2);
       CUDAX_CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
@@ -86,14 +86,14 @@ C2H_TEST("cudax::async_buffer access",
 
     { // Works without allocation
       Buffer buf{env};
-      buf.wait();
+      buf.sync();
       CUDAX_CHECK(buf.data() == nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == nullptr);
     }
 
     { // Works with allocation
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.wait();
+      buf.sync();
       CUDAX_CHECK(buf.data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());

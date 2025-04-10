@@ -19,9 +19,6 @@
 
 #include "test_macros.h"
 
-TEST_DIAG_SUPPRESS_CLANG("-Wdeprecated-declarations")
-TEST_DIAG_SUPPRESS_NVHPC(deprecated_entity_with_custom_message)
-
 void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
 {
   std::chrono::milliseconds sleep_duration{1000};
@@ -29,19 +26,19 @@ void CUDART_CB callback(cudaStream_t, cudaError_t, void* flag)
   assert(!reinterpret_cast<std::atomic_flag*>(flag)->test_and_set());
 }
 
-void test_wait(cuda::stream_ref& ref)
+void test_sync(cuda::stream_ref& ref)
 {
 #if TEST_HAS_EXCEPTIONS()
   try
   {
-    ref.wait();
+    ref.sync();
   }
   catch (...)
   {
     assert(false && "Should not have thrown");
   }
 #else
-  ref.wait();
+  ref.sync();
 #endif // TEST_HAS_EXCEPTIONS()
 }
 
@@ -53,7 +50,7 @@ int main(int argc, char** argv)
       cudaStream_t stream; cudaStreamCreate(&stream); std::atomic_flag flag = ATOMIC_FLAG_INIT;
       cudaStreamAddCallback(stream, callback, &flag, 0);
       cuda::stream_ref ref{stream};
-      test_wait(ref);
+      test_sync(ref);
       assert(flag.test_and_set());
       cudaStreamDestroy(stream);))
 
