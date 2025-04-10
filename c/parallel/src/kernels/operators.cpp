@@ -34,7 +34,7 @@ constexpr std::string_view binary_op_template = R"XXX(
 )XXX";
 
 constexpr std::string_view stateless_binary_op_template = R"XXX(
-extern "C" __device__ void OP_NAME(LHS_T* lhs, RHS_T* rhs, {0}* out);
+extern "C" __device__ void OP_NAME(void* lhs, void* rhs, void* out);
 struct op_wrapper {{
   __device__ {0} operator()(LHS_T lhs, RHS_T rhs) const {{
     {0} ret;
@@ -107,7 +107,7 @@ std::string make_kernel_user_unary_operator(std::string_view input_t, std::strin
 )XXX";
 
   constexpr std::string_view stateless_op = R"XXX(
-extern "C" __device__  void OP_NAME(INPUT_T* val, OUTPUT_T* result);
+extern "C" __device__  void OP_NAME(void* val, void* result);
 struct op_wrapper {
   __device__ OUTPUT_T operator()(INPUT_T val) const {
     OUTPUT_T out;
