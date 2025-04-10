@@ -31,7 +31,7 @@ template <class _Tp, class _Up>
 inline constexpr bool is_layout_compatible_v = _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(_Tp, _Up);
 
 template <class _Tp, class _Up>
-struct is_layout_compatible : bool_constant<is_layout_compatible_v<_Tp, _Up>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_layout_compatible : bool_constant<is_layout_compatible_v<_Tp, _Up>>
 {};
 
 #endif // _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE

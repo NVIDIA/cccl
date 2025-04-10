@@ -60,22 +60,36 @@ __host__ __device__ constexpr void test_is_layout_compatible(bool expected)
 #if defined(_CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE)
   assert((cuda::std::is_layout_compatible<T, U>::value == expected));
   assert((cuda::std::is_layout_compatible<T, const U>::value == expected));
+  assert((cuda::std::is_layout_compatible<T, volatile U>::value == expected));
   assert((cuda::std::is_layout_compatible<T, const volatile U>::value == expected));
   assert((cuda::std::is_layout_compatible<const T, U>::value == expected));
   assert((cuda::std::is_layout_compatible<const T, const U>::value == expected));
+  assert((cuda::std::is_layout_compatible<const T, volatile U>::value == expected));
   assert((cuda::std::is_layout_compatible<const T, const volatile U>::value == expected));
+  assert((cuda::std::is_layout_compatible<volatile T, U>::value == expected));
+  assert((cuda::std::is_layout_compatible<volatile T, const U>::value == expected));
+  assert((cuda::std::is_layout_compatible<volatile T, volatile U>::value == expected));
+  assert((cuda::std::is_layout_compatible<volatile T, const volatile U>::value == expected));
   assert((cuda::std::is_layout_compatible<const volatile T, U>::value == expected));
   assert((cuda::std::is_layout_compatible<const volatile T, const U>::value == expected));
+  assert((cuda::std::is_layout_compatible<const volatile T, volatile U>::value == expected));
   assert((cuda::std::is_layout_compatible<const volatile T, const volatile U>::value == expected));
 
   assert((cuda::std::is_layout_compatible_v<T, U> == expected));
   assert((cuda::std::is_layout_compatible_v<T, const U> == expected));
+  assert((cuda::std::is_layout_compatible_v<T, volatile U> == expected));
   assert((cuda::std::is_layout_compatible_v<T, const volatile U> == expected));
   assert((cuda::std::is_layout_compatible_v<const T, U> == expected));
   assert((cuda::std::is_layout_compatible_v<const T, const U> == expected));
+  assert((cuda::std::is_layout_compatible_v<const T, volatile U> == expected));
   assert((cuda::std::is_layout_compatible_v<const T, const volatile U> == expected));
+  assert((cuda::std::is_layout_compatible_v<volatile T, U> == expected));
+  assert((cuda::std::is_layout_compatible_v<volatile T, const U> == expected));
+  assert((cuda::std::is_layout_compatible_v<volatile T, volatile U> == expected));
+  assert((cuda::std::is_layout_compatible_v<volatile T, const volatile U> == expected));
   assert((cuda::std::is_layout_compatible_v<const volatile T, U> == expected));
   assert((cuda::std::is_layout_compatible_v<const volatile T, const U> == expected));
+  assert((cuda::std::is_layout_compatible_v<const volatile T, volatile U> == expected));
   assert((cuda::std::is_layout_compatible_v<const volatile T, const volatile U> == expected));
 #endif // _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE
 }

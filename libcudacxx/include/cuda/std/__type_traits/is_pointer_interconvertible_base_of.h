@@ -39,24 +39,41 @@ inline constexpr bool is_pointer_interconvertible_base_of_v<_Tp, _Tp> = _CCCL_TR
 template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<_Tp, const _Tp> = _CCCL_TRAIT(is_class, _Tp);
 template <class _Tp>
+inline constexpr bool is_pointer_interconvertible_base_of_v<_Tp, volatile _Tp> = _CCCL_TRAIT(is_class, _Tp);
+template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<_Tp, const volatile _Tp> = _CCCL_TRAIT(is_class, _Tp);
 template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<const _Tp, _Tp> = _CCCL_TRAIT(is_class, _Tp);
 template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<const _Tp, const _Tp> = _CCCL_TRAIT(is_class, _Tp);
 template <class _Tp>
+inline constexpr bool is_pointer_interconvertible_base_of_v<const _Tp, volatile _Tp> = _CCCL_TRAIT(is_class, _Tp);
+template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<const _Tp, const volatile _Tp> = _CCCL_TRAIT(is_class, _Tp);
+template <class _Tp>
+inline constexpr bool is_pointer_interconvertible_base_of_v<volatile _Tp, _Tp> = _CCCL_TRAIT(is_class, _Tp);
+template <class _Tp>
+inline constexpr bool is_pointer_interconvertible_base_of_v<volatile _Tp, const _Tp> = _CCCL_TRAIT(is_class, _Tp);
+template <class _Tp>
+inline constexpr bool is_pointer_interconvertible_base_of_v<volatile _Tp, volatile _Tp> = _CCCL_TRAIT(is_class, _Tp);
+template <class _Tp>
+inline constexpr bool is_pointer_interconvertible_base_of_v<volatile _Tp, const volatile _Tp> =
+  _CCCL_TRAIT(is_class, _Tp);
 template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<const volatile _Tp, _Tp> = _CCCL_TRAIT(is_class, _Tp);
 template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<const volatile _Tp, const _Tp> = _CCCL_TRAIT(is_class, _Tp);
+template <class _Tp>
+inline constexpr bool is_pointer_interconvertible_base_of_v<const volatile _Tp, volatile _Tp> =
+  _CCCL_TRAIT(is_class, _Tp);
 template <class _Tp>
 inline constexpr bool is_pointer_interconvertible_base_of_v<const volatile _Tp, const volatile _Tp> =
   _CCCL_TRAIT(is_class, _Tp);
 #  endif // _CCCL_COMPILER(CLANG)
 
 template <class _Tp, class _Up>
-struct is_pointer_interconvertible_base_of : bool_constant<is_pointer_interconvertible_base_of_v<_Tp, _Up>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer_interconvertible_base_of
+    : bool_constant<is_pointer_interconvertible_base_of_v<_Tp, _Up>>
 {};
 
 #endif // _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF

@@ -45,22 +45,36 @@ __host__ __device__ constexpr void test_is_pointer_interconvertible_base_of(bool
 #if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF)
   assert((cuda::std::is_pointer_interconvertible_base_of<T, U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<T, const U>::value == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of<T, volatile U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<T, const volatile U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<const T, U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<const T, const U>::value == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of<const T, volatile U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<const T, const volatile U>::value == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of<volatile T, U>::value == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of<volatile T, const U>::value == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of<volatile T, volatile U>::value == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of<volatile T, const volatile U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<const volatile T, U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<const volatile T, const U>::value == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of<const volatile T, volatile U>::value == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of<const volatile T, const volatile U>::value == expected));
 
   assert((cuda::std::is_pointer_interconvertible_base_of_v<T, U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<T, const U> == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of_v<T, volatile U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<T, const volatile U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<const T, U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<const T, const U> == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of_v<const T, volatile U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<const T, const volatile U> == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of_v<volatile T, U> == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of_v<volatile T, const U> == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of_v<volatile T, volatile U> == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of_v<volatile T, const volatile U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<const volatile T, U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<const volatile T, const U> == expected));
+  assert((cuda::std::is_pointer_interconvertible_base_of_v<const volatile T, volatile U> == expected));
   assert((cuda::std::is_pointer_interconvertible_base_of_v<const volatile T, const volatile U> == expected));
 #endif // _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF
 }
