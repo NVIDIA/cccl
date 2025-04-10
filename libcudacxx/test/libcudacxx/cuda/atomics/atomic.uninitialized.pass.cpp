@@ -9,6 +9,7 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 // UNSUPPORTED: nvrtc
+// ADDITIONAL_COMPILE_OPTIONS_CUDA: --maxreccount 24
 
 // <cuda/atomic>
 
@@ -24,7 +25,7 @@
 Test goals:
 Pre-load registers with values that will be used to trigger the wrong codepath in local device atomics.
 */
-__global__ __maxnreg__(24) void device_test(char* gmem)
+__global__ void device_test(char* gmem)
 {
   __shared__ int hidx;
   __shared__ int histogram[1024];
