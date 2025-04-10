@@ -138,10 +138,10 @@
 #define _CCCL_CUDACC_BELOW(...)    _CCCL_VERSION_COMPARE(_CCCL_CUDACC_, _CCCL_CUDACC, <, __VA_ARGS__)
 #define _CCCL_CUDACC_AT_LEAST(...) _CCCL_VERSION_COMPARE(_CCCL_CUDACC_, _CCCL_CUDACC, >=, __VA_ARGS__)
 
-#if _CCCL_CUDACC() != _CCCL_VERSION_INVALID()
-#  define _CCCL_HAS_CUDA_COMPILER() 1
-#else // ^^^ has cuda compiler ^^^ / vvv no cuda compiler vvv
+#if _CCCL_VERSION_IS_INVALID(_CCCL_CUDACC())
 #  define _CCCL_HAS_CUDA_COMPILER() 0
+#else // ^^^ has cuda compiler ^^^ / vvv no cuda compiler vvv
+#  define _CCCL_HAS_CUDA_COMPILER() 1
 #endif // ^^^ no cuda compiler ^^^
 
 #if _CCCL_HAS_CUDA_COMPILER() && _CCCL_CUDACC_BELOW(12) && !defined(CCCL_IGNORE_DEPRECATED_CUDA_BELOW_12)
