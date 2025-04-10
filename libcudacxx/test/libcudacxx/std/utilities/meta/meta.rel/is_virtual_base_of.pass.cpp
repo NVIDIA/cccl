@@ -10,6 +10,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+_CCCL_DIAG_SUPPRESS_MSVC(4594) // class C can never be instantiated - indirect virtual base class D is inaccessible
+_CCCL_DIAG_SUPPRESS_MSVC(4624) // class destructor was implicitly defined as deleted
+
 template <class Base, class Derived>
 __host__ __device__ constexpr void test_is_virtual_base_of(bool expected)
 {
