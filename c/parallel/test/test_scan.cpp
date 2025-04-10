@@ -66,44 +66,48 @@ void scan(cccl_iterator_t input,
   REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
 }
 
-using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("Scan works with integral types", "[scan]", integral_types)
+using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+C2H_TEST("Scan works with integral types", "[scan]", integral_types)
 {
+  using T = c2h::get<0, TestType>;
+
   const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
-  const std::vector<TestType> input = generate<TestType>(num_items);
-  const std::vector<TestType> output(num_items, 0);
-  pointer_t<TestType> input_ptr(input);
-  pointer_t<TestType> output_ptr(output);
-  value_t<TestType> init{TestType{42}};
+  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input        = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  value_t<T> init{T{42}};
 
   scan(input_ptr, output_ptr, num_items, op, init, false);
 
-  std::vector<TestType> expected(num_items, 0);
+  std::vector<T> expected(num_items, 0);
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
   if (num_items > 0)
   {
-    REQUIRE(expected == std::vector<TestType>(output_ptr));
+    REQUIRE(expected == std::vector<T>(output_ptr));
   }
 }
 
-TEMPLATE_LIST_TEST_CASE("Inclusive Scan works with integral types", "[scan]", integral_types)
+C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
 {
+  using T = c2h::get<0, TestType>;
+
   const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
-  const std::vector<TestType> input = generate<TestType>(num_items);
-  const std::vector<TestType> output(num_items, 0);
-  pointer_t<TestType> input_ptr(input);
-  pointer_t<TestType> output_ptr(output);
-  value_t<TestType> init{TestType{42}};
+  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input        = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  value_t<T> init{T{42}};
 
   scan(input_ptr, output_ptr, num_items, op, init, true);
 
-  std::vector<TestType> expected(num_items, 0);
+  std::vector<T> expected(num_items, 0);
   std::inclusive_scan(input.begin(), input.end(), expected.begin(), std::plus<>{}, init.value);
   if (num_items > 0)
   {
-    REQUIRE(expected == std::vector<TestType>(output_ptr));
+    REQUIRE(expected == std::vector<T>(output_ptr));
   }
 }
 
@@ -118,7 +122,7 @@ struct pair
   }
 };
 
-TEST_CASE("Scan works with custom types", "[scan]")
+C2H_TEST("Scan works with custom types", "[scan]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
@@ -152,7 +156,7 @@ TEST_CASE("Scan works with custom types", "[scan]")
   }
 }
 
-TEST_CASE("Scan works with input iterators", "[scan]")
+C2H_TEST("Scan works with input iterators", "[scan]")
 {
   const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -175,7 +179,7 @@ TEST_CASE("Scan works with input iterators", "[scan]")
   }
 }
 
-TEST_CASE("Scan works with output iterators", "[scan]")
+C2H_TEST("Scan works with output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -201,7 +205,7 @@ TEST_CASE("Scan works with output iterators", "[scan]")
   }
 }
 
-TEST_CASE("Scan works with input and output iterators", "[scan]")
+C2H_TEST("Scan works with input and output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
