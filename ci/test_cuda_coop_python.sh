@@ -25,7 +25,7 @@ run_command "⚙️  Pip install ${module}" pip install -c /tmp/cuda-cccl_constr
 begin_group "⚙️ ${module} site-packages"
 pip freeze
 end_group "⚙️ ${module} site-packages"
-run_command "🚀  Pytest ${module}" pytest -n auto -v ./tests
+run_command "🚀  Pytest ${module}" pytest -n ${PARALLEL_LEVEL} -v ./tests
 deactivate
 
 popd >/dev/null
