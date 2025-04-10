@@ -169,7 +169,7 @@ public:
 
   // [span.cons], span constructors, copy, assignment, and destructor
   _CCCL_TEMPLATE(size_t _Sz = _Extent)
-  _CCCL_REQUIRES(_Sz == 0)
+  _CCCL_REQUIRES((_Sz == 0))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span() noexcept
       : __data_{nullptr}
   {}
@@ -204,7 +204,7 @@ public:
   }
 
   _CCCL_TEMPLATE(size_t _Sz = _Extent)
-  _CCCL_REQUIRES(_Sz != 0)
+  _CCCL_REQUIRES((_Sz != 0))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
   {}
