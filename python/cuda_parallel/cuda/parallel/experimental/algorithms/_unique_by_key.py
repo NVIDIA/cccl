@@ -3,16 +3,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import ctypes
 from typing import Callable
 
 import numba
-from numba.cuda.cudadrv import enums
 
-from .. import _cccl as cccl
-from .._bindings import call_build, get_bindings
+from .. import _bindings
+from .. import _cccl_interop as cccl
 from .._caching import CachableFunction, cache_with_key
+from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
+from .._utils.protocols import get_data_pointer, validate_and_get_stream
 from ..iterators._iterators import IteratorBase
 from ..typing import DeviceArrayLike
 
@@ -59,6 +59,16 @@ def make_cache_key(
 
 
 class _UniqueByKey:
+    __slots__ = [
+        "build_result",
+        "d_in_keys_cccl",
+        "d_in_items_cccl",
+        "d_out_keys_cccl",
+        "d_out_items_cccl",
+        "d_out_num_selected_cccl",
+        "op_wrapper",
+    ]
+
     def __init__(
         self,
         d_in_keys: DeviceArrayLike | IteratorBase,
@@ -68,9 +78,6 @@ class _UniqueByKey:
         d_out_num_selected: DeviceArrayLike,
         op: Callable,
     ):
-        # Referenced from __del__:
-        self.build_result = None
-
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
@@ -85,11 +92,8 @@ class _UniqueByKey:
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
-        self.bindings = get_bindings()
-        self.build_result = cccl.DeviceUniqueByKeyBuildResult()
-        error = call_build(
-            self.bindings.cccl_device_unique_by_key_build,
-            ctypes.byref(self.build_result),
+        self.build_result = call_build(
+            _bindings.DeviceUniqueByKeyBuildResult,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
             self.d_out_keys_cccl,
@@ -97,8 +101,6 @@ class _UniqueByKey:
             self.d_out_num_selected_cccl,
             self.op_wrapper,
         )
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building unique_by_key")
 
     def __call__(
         self,
@@ -111,46 +113,35 @@ class _UniqueByKey:
         num_items: int,
         stream=None,
     ):
-        set_state_fn = cccl.set_cccl_iterator_state
-        set_state_fn(self.d_in_keys_cccl, d_in_keys)
-        set_state_fn(self.d_in_items_cccl, d_in_items)
-        set_state_fn(self.d_out_keys_cccl, d_out_keys)
-        set_state_fn(self.d_out_items_cccl, d_out_items)
-        set_state_fn(self.d_out_num_selected_cccl, d_out_num_selected)
+        set_cccl_iterator_state(self.d_in_keys_cccl, d_in_keys)
+        set_cccl_iterator_state(self.d_in_items_cccl, d_in_items)
+        set_cccl_iterator_state(self.d_out_keys_cccl, d_out_keys)
+        set_cccl_iterator_state(self.d_out_items_cccl, d_out_items)
+        set_cccl_iterator_state(self.d_out_num_selected_cccl, d_out_num_selected)
 
-        stream_handle = protocols.validate_and_get_stream(stream)
+        stream_handle = validate_and_get_stream(stream)
         if temp_storage is None:
-            temp_storage_bytes = ctypes.c_size_t()
-            d_temp_storage = None
+            temp_storage_bytes = 0
+            d_temp_storage = 0
         else:
-            temp_storage_bytes = ctypes.c_size_t(temp_storage.nbytes)
+            temp_storage_bytes = temp_storage.nbytes
             # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
             # TODO: switch to use gpumemoryview once it's ready
-            d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
+            d_temp_storage = get_data_pointer(temp_storage)
 
-        error = self.bindings.cccl_device_unique_by_key(
-            self.build_result,
-            ctypes.c_void_p(d_temp_storage),
-            ctypes.byref(temp_storage_bytes),
+        temp_storage_bytes = self.build_result.compute(
+            d_temp_storage,
+            temp_storage_bytes,
             self.d_in_keys_cccl,
             self.d_in_items_cccl,
             self.d_out_keys_cccl,
             self.d_out_items_cccl,
             self.d_out_num_selected_cccl,
             self.op_wrapper,
-            ctypes.c_ulonglong(num_items),
-            ctypes.c_void_p(stream_handle),
+            num_items,
+            stream_handle,
         )
-
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error in unique by key")
-
-        return temp_storage_bytes.value
-
-    def __del__(self):
-        if self.build_result is None:
-            return
-        self.bindings.cccl_device_unique_by_key_cleanup(ctypes.byref(self.build_result))
+        return temp_storage_bytes
 
 
 @cache_with_key(make_cache_key)

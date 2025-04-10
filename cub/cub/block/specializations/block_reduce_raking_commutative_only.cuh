@@ -49,6 +49,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/std/span>
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -172,7 +174,8 @@ struct BlockReduceRakingCommutativeOnly
       {
         // Raking reduction in grid
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
-        partial           = cub::internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, ::cuda::std::plus<>{}, partial);
+        auto span         = ::cuda::std::span<T, SEGMENT_LENGTH>(raking_segment, SEGMENT_LENGTH);
+        partial           = cub::ThreadReduce(span, ::cuda::std::plus<>{}, partial);
 
         // Warp reduction
         partial = WarpReduce(temp_storage.default_storage.warp_storage).Sum(partial);
@@ -219,7 +222,8 @@ struct BlockReduceRakingCommutativeOnly
       {
         // Raking reduction in grid
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
-        partial           = cub::internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, reduction_op, partial);
+        auto span         = ::cuda::std::span<T, SEGMENT_LENGTH>(raking_segment, SEGMENT_LENGTH);
+        partial           = cub::ThreadReduce(span, reduction_op, partial);
 
         // Warp reduction
         partial = WarpReduce(temp_storage.default_storage.warp_storage).Reduce(partial, reduction_op);

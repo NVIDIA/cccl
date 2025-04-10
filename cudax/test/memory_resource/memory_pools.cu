@@ -99,7 +99,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", TEST_TYPES)
+C2H_TEST_LIST("device_memory_pool construction", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -220,7 +220,7 @@ TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", TEST_
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool comparison", "[memory_resource]", TEST_TYPES)
+C2H_TEST_LIST("device_memory_pool comparison", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -256,7 +256,7 @@ TEMPLATE_TEST_CASE("device_memory_pool comparison", "[memory_resource]", TEST_TY
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
+C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -360,6 +360,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       size_t new_attr = pool.get_attribute(::cudaMemPoolAttrReservedMemHigh);
       CHECK(new_attr == attr);
 
+#if _CCCL_HAS_EXCEPTIONS()
       try
       {
         // Ensure we catch the contract violation
@@ -374,6 +375,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       {
         CHECK(false);
       }
+#endif // _CCCL_HAS_EXCEPTIONS()
     }
 
     { // cudaMemPoolAttrUsedMemHigh
@@ -387,6 +389,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       size_t new_attr = pool.get_attribute(::cudaMemPoolAttrUsedMemHigh);
       CHECK(new_attr == attr);
 
+#if _CCCL_HAS_EXCEPTIONS()
       try
       {
         // Ensure we catch the contract violation
@@ -401,6 +404,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       {
         CHECK(false);
       }
+#endif // _CCCL_HAS_EXCEPTIONS()
     }
 
     // Reallocate as the checks above have screwed with the allocation count
@@ -413,6 +417,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       size_t attr = pool.get_attribute(::cudaMemPoolAttrReservedMemCurrent);
       CHECK(attr >= 2048 * sizeof(int));
       // cudaMemPoolAttrReservedMemCurrent cannot be set
+#if _CCCL_HAS_EXCEPTIONS()
       try
       {
         pool.set_attribute(::cudaMemPoolAttrReservedMemCurrent, attr);
@@ -426,6 +431,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       {
         CHECK(false);
       }
+#endif // _CCCL_HAS_EXCEPTIONS()
     }
 
     { // cudaMemPoolAttrUsedMemCurrent
@@ -433,6 +439,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       size_t attr = pool.get_attribute(::cudaMemPoolAttrUsedMemCurrent);
       CHECK(attr == 2048 * sizeof(int));
       // cudaMemPoolAttrUsedMemCurrent cannot be set
+#if _CCCL_HAS_EXCEPTIONS()
       try
       {
         pool.set_attribute(::cudaMemPoolAttrUsedMemCurrent, attr);
@@ -446,6 +453,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
       {
         CHECK(false);
       }
+#endif // _CCCL_HAS_EXCEPTIONS()
     }
 
     // Free the last allocation
@@ -509,7 +517,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
   }
 }
 
-TEST_CASE("device_memory_pool::enable_access", "[memory_resource]")
+C2H_TEST("device_memory_pool::enable_access", "[memory_resource]")
 {
   if (cudax::devices.size() > 1)
   {
@@ -534,7 +542,7 @@ TEST_CASE("device_memory_pool::enable_access", "[memory_resource]")
 }
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-TEST_CASE("pinned_memory_pool::enable_access", "[memory_resource]")
+C2H_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 {
   cudax::pinned_memory_pool pool{};
   CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));

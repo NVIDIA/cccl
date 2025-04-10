@@ -18,9 +18,9 @@
 #include "test_macros.h"
 #include "types.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  include <stdexcept>
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 _CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
@@ -217,7 +217,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 { // insert throws std::bad_alloc
   using inplace_vector = cuda::std::inplace_vector<int, 2>;
@@ -395,7 +395,7 @@ void test_exceptions()
     assert(false);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -404,8 +404,8 @@ int main(int, char**)
   static_assert(test(), "");
 #endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }
