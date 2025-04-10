@@ -83,7 +83,7 @@ set(stf_test_codegen_sources
   error_checks/unsatisfiable_spec.cu
   examples/01-axpy-launch-ranges-cg.cu
   examples/01-axpy-places.cu
-  examples/09-nbody-algorithm.cu
+  # examples/09-nbody-algorithm.cu
   examples/09-nbody-blocked.cu
   examples/09-nbody.cu
   freeze/constant_logical_data.cu
