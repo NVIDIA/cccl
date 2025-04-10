@@ -21,7 +21,7 @@
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
-#include <cuda/experimental/__stf/internal/algorithm.cuh>
+// #include <cuda/experimental/__stf/internal/algorithm.cuh>
 #include <cuda/experimental/__stf/internal/context.cuh>
 #include <cuda/experimental/__stf/internal/for_each_batched.cuh>
 #include <cuda/experimental/__stf/internal/reducer.cuh>

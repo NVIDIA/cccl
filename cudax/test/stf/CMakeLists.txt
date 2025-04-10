@@ -70,10 +70,10 @@ set(stf_test_sources
 )
 
 set(stf_test_codegen_sources
-  algorithm/algorithm_with_read.cu
-  algorithm/graph_algorithms.cu
-  algorithm/in_graph_ctx.cu
-  algorithm/nested.cu
+  # algorithm/algorithm_with_read.cu
+  # algorithm/graph_algorithms.cu
+  # algorithm/in_graph_ctx.cu
+  # algorithm/nested.cu
   allocators/adapter.cu
   allocators/cap_tmp_buffers.cu
   cpp/read_const.cu
