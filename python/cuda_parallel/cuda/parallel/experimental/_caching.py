@@ -32,6 +32,10 @@ def cache_with_key(key):
                 cache[cache_key] = result
             return cache[cache_key]
 
+        def cache_clear():
+            cache.clear()
+
+        inner.cache_clear = cache_clear
         return inner
 
     return deco

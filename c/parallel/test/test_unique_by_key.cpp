@@ -324,3 +324,67 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
 
   REQUIRE(input_pairs == output_pairs);
 }
+
+struct large_key_pair
+{
+  int a;
+  char c[100];
+
+  bool operator==(const large_key_pair& other) const
+  {
+    return a == other.a;
+  }
+};
+
+TEST_CASE("DeviceSelect::UniqueByKey fails to build for large types due to no vsmem", "[device][select_unique_by_key]")
+{
+  const int num_items = 1;
+
+  operation_t op = make_operation(
+    "op",
+    "struct large_key_pair { int a; char c[100]; };\n"
+    "extern \"C\" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {\n"
+    "  return lhs.a == rhs.a;\n"
+    "}");
+  const std::vector<int> a = generate<int>(num_items);
+  std::vector<large_key_pair> input_keys(num_items);
+  for (int i = 0; i < num_items; ++i)
+  {
+    input_keys[i] = large_key_pair{a[i], {}};
+  }
+
+  pointer_t<large_key_pair> input_keys_it(input_keys);
+  pointer_t<item_t> input_values_it;
+  pointer_t<large_key_pair> output_keys_it(num_items);
+  pointer_t<item_t> output_values_it;
+  pointer_t<int> output_num_selected_it(1);
+
+  cudaDeviceProp deviceProp;
+  cudaGetDeviceProperties(&deviceProp, 0);
+
+  const int cc_major = deviceProp.major;
+  const int cc_minor = deviceProp.minor;
+
+  const char* cub_path        = TEST_CUB_PATH;
+  const char* thrust_path     = TEST_THRUST_PATH;
+  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
+  const char* ctk_path        = TEST_CTK_PATH;
+
+  cccl_device_unique_by_key_build_result_t build;
+  REQUIRE(
+    CUDA_ERROR_UNKNOWN
+    == cccl_device_unique_by_key_build(
+      &build,
+      input_keys_it,
+      input_values_it,
+      output_keys_it,
+      output_values_it,
+      output_num_selected_it,
+      op,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path));
+}

@@ -172,6 +172,12 @@ extern "C++" {
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20
 #  endif // ^^^ _CCCL_STD_VER < 2020 ^^^
 
+#  if _CCCL_STD_VER >= 2023
+#    define _LIBCUDACXX_DEPRECATED_IN_CXX23 _LIBCUDACXX_DEPRECATED
+#  else // ^^^ _CCCL_STD_VER >= 2023 ^^^ / vvv _CCCL_STD_VER < 2023 vvv
+#    define _LIBCUDACXX_DEPRECATED_IN_CXX23
+#  endif // ^^^ _CCCL_STD_VER < 2023 ^^^
+
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 #    if _CCCL_COMPILER(NVRTC) || defined(__EMSCRIPTEN__)

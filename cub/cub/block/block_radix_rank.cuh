@@ -300,10 +300,8 @@ private:
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE PackedCounter Upsweep()
   {
-    PackedCounter* smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
-    PackedCounter* raking_ptr;
-
-    if (MEMOIZE_OUTER_SCAN)
+    auto& smem_raking_ptr = temp_storage.aliasable.raking_grid[linear_tid];
+    if constexpr (MEMOIZE_OUTER_SCAN)
     {
       // Copy data into registers
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -311,14 +309,12 @@ private:
       {
         cached_segment[i] = smem_raking_ptr[i];
       }
-      raking_ptr = cached_segment;
+      return cub::ThreadReduce(cached_segment, ::cuda::std::plus<>{});
     }
     else
     {
-      raking_ptr = smem_raking_ptr;
+      return cub::ThreadReduce(smem_raking_ptr, ::cuda::std::plus<>{});
     }
-
-    return cub::internal::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
   }
 
   /// Performs exclusive downsweep raking scan

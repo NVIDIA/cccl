@@ -42,8 +42,6 @@
 #  include <thrust/distance.h>
 #  include <thrust/system/cuda/detail/for_each.h>
 
-#  include <iterator>
-
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {

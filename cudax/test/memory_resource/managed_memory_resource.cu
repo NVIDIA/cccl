@@ -41,7 +41,7 @@ static void ensure_managed_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeManaged);
 }
 
-TEST_CASE("managed_memory_resource construction", "[memory_resource]")
+C2H_TEST("managed_memory_resource construction", "[memory_resource]")
 {
   SECTION("Default construction")
   {
@@ -56,7 +56,7 @@ TEST_CASE("managed_memory_resource construction", "[memory_resource]")
   }
 }
 
-TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
+C2H_TEST("managed_memory_resource allocation", "[memory_resource]")
 {
   managed_resource res{};
   cudax::stream stream{};
@@ -97,7 +97,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     res.deallocate_async(ptr, 42, 4, stream);
   }
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   { // allocate with too small alignment
     while (true)
     {
@@ -156,7 +156,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 }
 
 enum class AccessibilityType
@@ -205,7 +205,7 @@ struct derived_managed_resource : cudax::managed_memory_resource
 };
 static_assert(cuda::mr::resource<derived_managed_resource>, "");
 
-TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
+C2H_TEST("managed_memory_resource comparison", "[memory_resource]")
 {
   managed_resource first{};
   { // comparison against a plain managed_memory_resource

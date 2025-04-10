@@ -1,8 +1,35 @@
 name: Build MatX
 
 on:
+  workflow_dispatch:
+    inputs:
+      override_cccl_tag:
+        description: "If set, override the tag used when pulling the CCCL repository into MatX."
+        required: false
+        default: ""
+        type: string
+      override_cccl_version:
+        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        required: false
+        default: ""
+        type: string
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
   workflow_call:
     inputs:
+      override_cccl_tag:
+        description: "If set, override the tag used when pulling the CCCL repository into MatX."
+        required: false
+        default: ""
+        type: string
+      override_cccl_version:
+        description: "If set, override the version used by rapids-cmake to patch CCCL."
+        required: false
+        default: ""
+        type: string
       enable_slack_alerts:
         description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
         required: false
@@ -30,6 +57,9 @@ jobs:
           aws-region: us-east-2
           role-duration-seconds: 43200 # 12h
       - name: Run command
+        env:
+          CCCL_TAG: ${{ inputs.override_cccl_tag }}
+          CCCL_VERSION: ${{ inputs.override_cccl_version }}
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
           #! /usr/bin/env bash
@@ -64,6 +94,8 @@ jobs:
             --cuda 12.8 \
             --host gcc13 \
             --cuda-ext \
+            --env "CCCL_TAG=${CCCL_TAG}" \
+            --env "CCCL_VERSION=${CCCL_VERSION}" \
             --env VAULT_HOST= \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \

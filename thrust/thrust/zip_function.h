@@ -50,7 +50,7 @@ _CCCL_HOST_DEVICE decltype(auto) apply_impl(Function&& func, Tuple&& args, index
 template <typename Function, typename Tuple>
 _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
 {
-  constexpr auto tuple_size = thrust::tuple_size<typename std::decay<Tuple>::type>::value;
+  constexpr auto tuple_size = thrust::tuple_size<::cuda::std::decay_t<Tuple>>::value;
   return apply_impl(THRUST_FWD(func), THRUST_FWD(args), make_index_sequence<tuple_size>{});
 }
 
@@ -126,7 +126,7 @@ public:
   zip_function() = default;
 
   _CCCL_HOST_DEVICE zip_function(Function func)
-      : func(std::move(func))
+      : func(::cuda::std::move(func))
   {}
 
   // Add workaround for decltype(auto) on C++11-only compilers:
@@ -155,9 +155,9 @@ private:
  *  \see zip_function
  */
 template <typename Function>
-_CCCL_HOST_DEVICE zip_function<typename std::decay<Function>::type> make_zip_function(Function&& fun)
+_CCCL_HOST_DEVICE zip_function<::cuda::std::decay_t<Function>> make_zip_function(Function&& fun)
 {
-  using func_t = typename std::decay<Function>::type;
+  using func_t = ::cuda::std::decay_t<Function>;
   return zip_function<func_t>(THRUST_FWD(fun));
 }
 

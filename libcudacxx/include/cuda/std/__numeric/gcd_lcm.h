@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/uabs.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -32,38 +33,6 @@
 _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <typename _Result, typename _Source, bool _IsSigned = _CCCL_TRAIT(is_signed, _Source)>
-struct __ct_abs;
-
-template <typename _Result, typename _Source>
-struct __ct_abs<_Result, _Source, true>
-{
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Source __t) const noexcept
-  {
-    if (__t >= 0)
-    {
-      return __t;
-    }
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
-    if (__t == (numeric_limits<_Source>::min)())
-    {
-      return -static_cast<_Result>(__t);
-    }
-    _CCCL_DIAG_POP
-    return -__t;
-  }
-};
-
-template <typename _Result, typename _Source>
-struct __ct_abs<_Result, _Source, false>
-{
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Source __t) const noexcept
-  {
-    return __t;
-  }
-};
 
 template <class _Tp>
 constexpr _LIBCUDACXX_HIDE_FROM_ABI _Tp __gcd(_Tp __m, _Tp __n)
@@ -81,8 +50,7 @@ constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n
   static_assert((!_CCCL_TRAIT(is_same, remove_cv_t<_Up>, bool)), "Second argument to gcd cannot be bool");
   using _Rp = common_type_t<_Tp, _Up>;
   using _Wp = make_unsigned_t<_Rp>;
-  return static_cast<_Rp>(
-    _CUDA_VSTD::__gcd(static_cast<_Wp>(__ct_abs<_Rp, _Tp>()(__m)), static_cast<_Wp>(__ct_abs<_Rp, _Up>()(__n))));
+  return static_cast<_Rp>(_CUDA_VSTD::__gcd(static_cast<_Wp>(::cuda::uabs(__m)), static_cast<_Wp>(::cuda::uabs(__n))));
 }
 
 template <class _Tp, class _Up>
@@ -97,11 +65,12 @@ constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n
     return 0;
   }
 
-  using _Rp  = common_type_t<_Tp, _Up>;
-  _Rp __val1 = __ct_abs<_Rp, _Tp>()(__m) / _CUDA_VSTD::gcd(__m, __n);
-  _Rp __val2 = __ct_abs<_Rp, _Up>()(__n);
-  _CCCL_ASSERT((numeric_limits<_Rp>::max() / __val1 > __val2), "Overflow in lcm");
-  return __val1 * __val2;
+  using _Rp         = common_type_t<_Tp, _Up>;
+  using _Wp         = make_unsigned_t<_Rp>;
+  const auto __val1 = ::cuda::uabs(__m) / _CUDA_VSTD::gcd(__m, __n);
+  const auto __val2 = ::cuda::uabs(__n);
+  _CCCL_ASSERT((static_cast<_Wp>(numeric_limits<_Rp>::max()) / __val1 > __val2), "Overflow in lcm");
+  return static_cast<_Rp>(__val1 * __val2);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -75,8 +75,8 @@ _CCCL_DEVICE static inline bool clusterlaunchcontrol_query_cancel_is_canceled(_B
       "}\n\t"
       "}"
       : "=r"(__pred_is_canceled)
-      : "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).x),
-        "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).y)
+      : "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).x),
+        "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).y)
       :);
   return static_cast<bool>(__pred_is_canceled);
 #  else
@@ -112,8 +112,8 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
       "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, B128_try_cancel_response;\n\t"
       "}"
       : "=r"(__ret_dim)
-      : "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).x),
-        "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).y)
+      : "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).x),
+        "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).y)
       :);
   return *reinterpret_cast<_B32*>(&__ret_dim);
 #  else
@@ -150,8 +150,8 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
       "clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, B128_try_cancel_response;\n\t"
       "}"
       : "=r"(__ret_dim)
-      : "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).x),
-        "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).y)
+      : "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).x),
+        "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).y)
       :);
   return *reinterpret_cast<_B32*>(&__ret_dim);
 #  else
@@ -188,8 +188,8 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
       "clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, B128_try_cancel_response;\n\t"
       "}"
       : "=r"(__ret_dim)
-      : "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).x),
-        "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).y)
+      : "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).x),
+        "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).y)
       :);
   return *reinterpret_cast<_B32*>(&__ret_dim);
 #  else
@@ -227,8 +227,8 @@ clusterlaunchcontrol_query_cancel_get_first_ctaid(_B32 (&__block_dim)[4], _B128 
       "clusterlaunchcontrol.query_cancel.get_first_ctaid.v4.b32.b128 {%0, %1, %2, %3}, B128_try_cancel_response;\n\t"
       "}"
       : "=r"(__block_dim[0]), "=r"(__block_dim[1]), "=r"(__block_dim[2]), "=r"(__block_dim[3])
-      : "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).x),
-        "l"((*reinterpret_cast<long2*>(&__try_cancel_response)).y)
+      : "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).x),
+        "l"((*reinterpret_cast<longlong2*>(&__try_cancel_response)).y)
       :);
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message

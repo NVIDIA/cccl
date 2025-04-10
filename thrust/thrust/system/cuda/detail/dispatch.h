@@ -29,11 +29,11 @@
 #include <thrust/detail/integer_math.h>
 #include <thrust/detail/preprocessor.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <cstdint>
 #include <string>
 
 #if defined(THRUST_FORCE_32_BIT_OFFSET_TYPE) && defined(THRUST_FORCE_64_BIT_OFFSET_TYPE)
