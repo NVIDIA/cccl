@@ -265,7 +265,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
     {
     }
 #endif
-#if defined(_CCCL_BUILTIN_STRLEN)
+#if defined(_CCCL_BUILTIN_STRLEN) && _CCCL_CUDA_COMPILER(NVCC)
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (size_t __len = 0; for (; !eq(*__s, char(0)); ++__s)++ __len; return __len;),
+                      (return _CCCL_BUILTIN_STRLEN(__s);))
+#elif defined(_CCCL_BUILTIN_STRLEN)
     return _CCCL_BUILTIN_STRLEN(__s);
 #else
     size_t __len = 0;
