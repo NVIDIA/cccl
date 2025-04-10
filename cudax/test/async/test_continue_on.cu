@@ -21,7 +21,7 @@
 
 namespace
 {
-TEST_CASE("continue_on simple example", "[adaptors][continue_on]")
+C2H_TEST("continue_on simple example", "[adaptors][continue_on]")
 {
   auto snd = cudax_async::continue_on(cudax_async::just(13), inline_scheduler{});
   auto op  = cudax_async::connect(std::move(snd), checked_value_receiver{13});
@@ -31,7 +31,7 @@ TEST_CASE("continue_on simple example", "[adaptors][continue_on]")
 
 #if !defined(__CUDA_ARCH__)
 
-TEST_CASE("continue_on can be piped", "[adaptors][continue_on]")
+C2H_TEST("continue_on can be piped", "[adaptors][continue_on]")
 {
   // Just continue_on a value to the impulse scheduler
   bool called{false};
@@ -52,7 +52,7 @@ TEST_CASE("continue_on can be piped", "[adaptors][continue_on]")
   CUDAX_REQUIRE(called);
 }
 
-TEST_CASE("continue_on calls the receiver when the scheduler dictates", "[adaptors][continue_on]")
+C2H_TEST("continue_on calls the receiver when the scheduler dictates", "[adaptors][continue_on]")
 {
   bool called{false};
   impulse_scheduler sched;
@@ -70,7 +70,7 @@ TEST_CASE("continue_on calls the receiver when the scheduler dictates", "[adapto
   CUDAX_CHECK(called);
 }
 
-TEST_CASE("continue_on calls the given sender when the scheduler dictates", "[adaptors][continue_on]")
+C2H_TEST("continue_on calls the given sender when the scheduler dictates", "[adaptors][continue_on]")
 {
   int counter{0};
   auto snd_base = cudax_async::just() //
@@ -97,7 +97,7 @@ TEST_CASE("continue_on calls the given sender when the scheduler dictates", "[ad
   CUDAX_CHECK(counter == 2);
 }
 
-TEST_CASE("continue_on works when changing threads", "[adaptors][continue_on]")
+C2H_TEST("continue_on works when changing threads", "[adaptors][continue_on]")
 {
   cudax_async::thread_context thread;
   bool called{false};
@@ -119,7 +119,7 @@ TEST_CASE("continue_on works when changing threads", "[adaptors][continue_on]")
 
 #endif
 
-TEST_CASE("continue_on can be called with rvalue ref scheduler", "[adaptors][continue_on]")
+C2H_TEST("continue_on can be called with rvalue ref scheduler", "[adaptors][continue_on]")
 {
   auto snd = cudax_async::continue_on(cudax_async::just(13), inline_scheduler{});
   auto op  = cudax_async::connect(std::move(snd), checked_value_receiver{13});
@@ -127,7 +127,7 @@ TEST_CASE("continue_on can be called with rvalue ref scheduler", "[adaptors][con
   // The receiver checks if we receive the right value
 }
 
-TEST_CASE("continue_on can be called with const ref scheduler", "[adaptors][continue_on]")
+C2H_TEST("continue_on can be called with const ref scheduler", "[adaptors][continue_on]")
 {
   const inline_scheduler sched;
   auto snd = cudax_async::continue_on(cudax_async::just(13), sched);
@@ -136,7 +136,7 @@ TEST_CASE("continue_on can be called with const ref scheduler", "[adaptors][cont
   // The receiver checks if we receive the right value
 }
 
-TEST_CASE("continue_on can be called with ref scheduler", "[adaptors][continue_on]")
+C2H_TEST("continue_on can be called with ref scheduler", "[adaptors][continue_on]")
 {
   inline_scheduler sched;
   auto snd = cudax_async::continue_on(cudax_async::just(13), sched);
@@ -145,7 +145,7 @@ TEST_CASE("continue_on can be called with ref scheduler", "[adaptors][continue_o
   // The receiver checks if we receive the right value
 }
 
-TEST_CASE("continue_on forwards set_error calls", "[adaptors][continue_on]")
+C2H_TEST("continue_on forwards set_error calls", "[adaptors][continue_on]")
 {
   auto ec = error_code{std::errc::invalid_argument};
   error_scheduler<error_code> sched{ec};
@@ -155,7 +155,7 @@ TEST_CASE("continue_on forwards set_error calls", "[adaptors][continue_on]")
   // The receiver checks if we receive an error
 }
 
-TEST_CASE("continue_on forwards set_error calls of other types", "[adaptors][continue_on]")
+C2H_TEST("continue_on forwards set_error calls of other types", "[adaptors][continue_on]")
 {
   error_scheduler<string> sched{string{"error"}};
   auto snd = cudax_async::continue_on(cudax_async::just(13), sched);
@@ -164,7 +164,7 @@ TEST_CASE("continue_on forwards set_error calls of other types", "[adaptors][con
   // The receiver checks if we receive an error
 }
 
-TEST_CASE("continue_on forwards set_stopped calls", "[adaptors][continue_on]")
+C2H_TEST("continue_on forwards set_stopped calls", "[adaptors][continue_on]")
 {
   stopped_scheduler sched{};
   auto snd = cudax_async::continue_on(cudax_async::just(13), sched);
@@ -173,7 +173,7 @@ TEST_CASE("continue_on forwards set_stopped calls", "[adaptors][continue_on]")
   // The receiver checks if we receive the stopped signal
 }
 
-TEST_CASE("continue_on has the values_type corresponding to the given values", "[adaptors][continue_on]")
+C2H_TEST("continue_on has the values_type corresponding to the given values", "[adaptors][continue_on]")
 {
   inline_scheduler sched{};
 
@@ -183,7 +183,7 @@ TEST_CASE("continue_on has the values_type corresponding to the given values", "
     cudax_async::continue_on(cudax_async::just(3, 0.14, string{"pi"}), sched));
 }
 
-TEST_CASE("continue_on keeps error_types from scheduler's sender", "[adaptors][continue_on]")
+C2H_TEST("continue_on keeps error_types from scheduler's sender", "[adaptors][continue_on]")
 {
   inline_scheduler sched1{};
   error_scheduler<std::error_code> sched2{std::make_error_code(std::errc::invalid_argument)};
@@ -194,8 +194,8 @@ TEST_CASE("continue_on keeps error_types from scheduler's sender", "[adaptors][c
   check_error_types<int>(cudax_async::continue_on(cudax_async::just(3), sched3));
 }
 
-TEST_CASE("continue_on sends an exception_ptr if value types are potentially throwing when copied",
-          "[adaptors][continue_on]")
+C2H_TEST("continue_on sends an exception_ptr if value types are potentially throwing when copied",
+         "[adaptors][continue_on]")
 {
   inline_scheduler sched{};
 
@@ -207,7 +207,7 @@ TEST_CASE("continue_on sends an exception_ptr if value types are potentially thr
 #endif
 }
 
-TEST_CASE("continue_on keeps sends_stopped from scheduler's sender", "[adaptors][continue_on]")
+C2H_TEST("continue_on keeps sends_stopped from scheduler's sender", "[adaptors][continue_on]")
 {
   inline_scheduler sched1{};
   error_scheduler<error_code> sched2{error_code{std::errc::invalid_argument}};

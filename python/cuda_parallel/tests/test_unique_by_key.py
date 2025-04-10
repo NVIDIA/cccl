@@ -167,12 +167,8 @@ def test_unique_by_key_iterators(dtype, num_items):
     d_out_items = numba.cuda.to_device(h_out_items)
     d_out_num_selected = numba.cuda.to_device(h_out_num_selected)
 
-    i_in_keys = iterators.CacheModifiedInputIterator(
-        d_in_keys, modifier="stream", prefix="keys"
-    )
-    i_in_items = iterators.CacheModifiedInputIterator(
-        d_in_items, modifier="stream", prefix="items"
-    )
+    i_in_keys = iterators.CacheModifiedInputIterator(d_in_keys, modifier="stream")
+    i_in_items = iterators.CacheModifiedInputIterator(d_in_items, modifier="stream")
 
     unique_by_key_device(
         i_in_keys,
@@ -239,7 +235,7 @@ def test_unique_by_key_complex():
     np.testing.assert_array_equal(h_out_items, expected_items)
 
 
-@pytest.mark.xfail(
+@pytest.mark.skip(
     reason="Creating an array of gpu_struct keys does not work currently (see https://github.com/NVIDIA/cccl/issues/3789)"
 )
 def test_unique_by_key_struct_types():

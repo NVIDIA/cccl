@@ -97,7 +97,7 @@ void constexpr compare_static_and_dynamic()
   static_assert(casted.compute_capability == dynamic_traits.compute_capability);
 }
 
-TEST_CASE("Traits", "[device]")
+C2H_TEST("Traits", "[device]")
 {
   compare_static_and_dynamic<700>();
   compare_static_and_dynamic<750>();

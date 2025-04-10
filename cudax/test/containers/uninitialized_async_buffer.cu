@@ -46,7 +46,7 @@ constexpr int get_property(const cuda::experimental::device_memory_resource&, my
   return 42;
 }
 
-TEMPLATE_TEST_CASE(
+C2H_TEST_LIST(
   "uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
   using uninitialized_async_buffer =
@@ -235,7 +235,7 @@ struct test_async_device_memory_resource : cudax::device_memory_resource
 
 int test_async_device_memory_resource::count = 0;
 
-TEST_CASE("uninitialized_async_buffer's memory resource does not dangle", "[container]")
+C2H_TEST("uninitialized_async_buffer's memory resource does not dangle", "[container]")
 {
   cuda::experimental::stream stream{};
   cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{
