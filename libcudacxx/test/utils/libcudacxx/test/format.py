@@ -149,19 +149,20 @@ class LibcxxTestFormat(object):
         ).getValue()
         if test_cxx.type == "nvcc":
             for flag in extra_compile_options_host:
-                if test_cxx.host_cxx.addCompileFlagIfSupported(flag.strip()):
-                    test_cxx.warning_flags += ["-Xcompiler", flag.strip()]
+                if test_cxx.host_cxx.addCompileFlagIfSupported(flag.strip().split(' ')):
+                    test_cxx.warning_flags += ["-Xcompiler"]
+                    test_cxx.warning_flags += flag.strip().split(' ')
 
             extra_compile_options_cuda = self._get_parser(
                 "ADDITIONAL_COMPILE_OPTIONS_CUDA:", parsers
             ).getValue()
             for flag in extra_compile_options_cuda:
-                if test_cxx.addCompileFlagIfSupported(flag.strip()):
-                    test_cxx.warning_flags += [flag.strip()]
+                if test_cxx.addCompileFlagIfSupported(flag.strip().split(' ')):
+                    test_cxx.warning_flags += flag.strip().split(' ')
         else:
             for flag in extra_compile_options_host:
-                if test_cxx.addCompileFlagIfSupported(flag.strip()):
-                    test_cxx.warning_flags += [flag.strip()]
+                if test_cxx.addCompileFlagIfSupported(flag.strip().split(' ')):
+                    test_cxx.warning_flags += flag.strip().split(' ')
 
         extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
         if "-fmodules" in test.config.available_features:

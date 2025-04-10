@@ -9,7 +9,7 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 // UNSUPPORTED: nvrtc
-// ADDITIONAL_COMPILE_OPTIONS_CUDA: --maxreccount 24
+// ADDITIONAL_COMPILE_OPTIONS_CUDA: -maxrregcount 24
 
 // <cuda/atomic>
 
