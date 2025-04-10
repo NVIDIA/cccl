@@ -123,8 +123,8 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
   std::transform(input_keys.begin(), input_keys.end(), input_items.begin(), [](key_t key) {
     return static_cast<item_t>(key);
   });
-  std::vector<key_t> expected_keys    = input_keys;
-  std::vector<item_t> expected_items  = input_items;
+  std::vector<key_t> expected_keys   = input_keys;
+  std::vector<item_t> expected_items = input_items;
 
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<item_t> input_items_it(input_items);
@@ -151,8 +151,8 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
   });
   std::vector<key_t> output_keys(num_items);
   std::vector<item_t> output_items(num_items);
-  std::vector<key_t> expected_keys    = input_keys;
-  std::vector<item_t> expected_items  = input_items;
+  std::vector<key_t> expected_keys   = input_keys;
+  std::vector<item_t> expected_items = input_items;
 
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<item_t> input_items_it(input_items);
@@ -268,8 +268,8 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]"
     return static_cast<item_t>(key);
   });
 
-  std::vector<key_t> expected_keys    = input_keys;
-  std::vector<item_t> expected_items  = input_items;
+  std::vector<key_t> expected_keys   = input_keys;
+  std::vector<item_t> expected_items = input_items;
 
   pointer_t<key_t> input_keys_ptr(input_keys);
   input_keys_it.state.data = input_keys_ptr.ptr;

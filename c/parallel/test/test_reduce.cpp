@@ -52,9 +52,9 @@ C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
 {
   using T = c2h::get<0, TestType>;
 
-  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<T>().type));
-  const std::vector<T> input        = generate<T>(num_items);
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(1);
   value_t<T> init{T{42}};

@@ -71,9 +71,9 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
 {
   using T = c2h::get<0, TestType>;
 
-  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<T>().type));
-  const std::vector<T> input        = generate<T>(num_items);
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(output);
@@ -93,9 +93,9 @@ C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
 {
   using T = c2h::get<0, TestType>;
 
-  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<T>().type));
-  const std::vector<T> input        = generate<T>(num_items);
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
   const std::vector<T> output(num_items, 0);
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(output);
