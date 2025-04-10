@@ -120,7 +120,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<nvbench::uint8_t> tmp(tmp_size);
   nvbench::uint8_t* d_tmp = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       thrust::raw_pointer_cast(tmp.data()),
       tmp_size,
