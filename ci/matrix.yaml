@@ -217,9 +217,9 @@ jobs:
   test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
   # Python:
-  test_cuda_cccl: { name: "cuda_cccl", gpu: true }
-  test_cuda_coop: { name: "cuda_coop", gpu: true }
-  test_cuda_par:  { name: "cuda_par",  gpu: true }
+  test_cuda_cccl:        { name: "cuda.cccl",        gpu: true }
+  test_cuda_cooperative: { name: "cuda.cooperative", gpu: true }
+  test_cuda_parallel:    { name: "cuda.parallel",    gpu: true }
 
 # Project have the following properties:
 #
@@ -252,8 +252,8 @@ projects:
     name: 'NVHPC stdpar'
     stds: [17, 20]
   python:
-    name: "cuda (python)"
-    job_map: { build: [], test: ['test_cuda_cccl', 'test_cuda_coop', 'test_cuda_par'] }
+    name: "Python"
+    job_map: { build: [], test: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'] }
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
