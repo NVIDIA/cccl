@@ -1331,16 +1331,13 @@ UNITTEST("mdspan static extents")
 
   auto lm = ctx.logical_data(m);
 
-  ctx.task(lm.rw())->*[](cudaStream_t stream, auto dm)
-  {
-     static_assert(decltype(dm)::extents_type::static_extent(0) == 16);
-     static_assert(decltype(dm)::extents_type::static_extent(1) == 32);
+  ctx.task(lm.rw())->*[](cudaStream_t stream, auto dm) {
+    static_assert(decltype(dm)::extents_type::static_extent(0) == 16);
+    static_assert(decltype(dm)::extents_type::static_extent(1) == 32);
   };
 
   ctx.finalize();
 };
-
-
 
 inline void unit_test_partitioner_product()
 {
