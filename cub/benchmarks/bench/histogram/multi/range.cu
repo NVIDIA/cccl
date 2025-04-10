@@ -127,7 +127,7 @@ static void range(nvbench::state& state, nvbench::type_list<SampleT, CounterT, O
   thrust::device_vector<nvbench::uint8_t> tmp(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(tmp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::DispatchRange(
       d_temp_storage,
       temp_storage_bytes,

@@ -75,15 +75,16 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::partition_copy(
-      policy(alloc, launch),
-      input.cbegin(),
-      input.cend(),
-      output.begin(),
-      thrust::make_reverse_iterator(output.begin() + elements),
-      select_op);
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::partition_copy(
+                 policy(alloc, launch),
+                 input.cbegin(),
+                 input.cend(),
+                 output.begin(),
+                 thrust::make_reverse_iterator(output.begin() + elements),
+                 select_op);
+             });
 }
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(fundamental_types))
