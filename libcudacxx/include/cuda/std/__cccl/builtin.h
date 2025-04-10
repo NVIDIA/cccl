@@ -456,6 +456,10 @@
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
+#if _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+#  define _CCCL_BUILTIN_IS_VIRTUAL_BASE_OF(...) __builtin_is_virtual_base_of(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_is_virtual_base_of)
+
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(isfinite)
