@@ -143,25 +143,25 @@ class LibcxxTestFormat(object):
         test_cxx.compile_flags += [
             ("-D%s" % mdef.strip()) for mdef in extra_compile_definitions
         ]
+
         extra_compile_options_host = self._get_parser(
             "ADDITIONAL_COMPILE_OPTIONS_HOST:", parsers
         ).getValue()
-        for mdef in extra_compile_options_host:
-            if hasattr(
-                test_cxx, "host_cxx"
-            ) and test_cxx.host_cxx.addCompileFlagIfSupported(mdef):
-                test_cxx.warning_flags += ["-Xcompiler", mdef]
-            elif test_cxx.addCompileFlagIfSupported(mdef):
-                test_cxx.warning_flags += mdef
+        if test_cxx.type == "nvcc":
+            for flag in extra_compile_options_host:
+                if test_cxx.host_cxx.addCompileFlagIfSupported(flag.strip()):
+                    test_cxx.warning_flags += ["-Xcompiler", flag.strip()]
 
-        extra_compile_options_cuda = self._get_parser(
-            "ADDITIONAL_COMPILE_OPTIONS_CUDA:", parsers
-        ).getValue()
-        for mdef in extra_compile_options_host:
-            if hasattr(test_cxx, "host_cxx") and test_cxx.addCompileFlagIfSupported(
-                mdef
-            ):
-                test_cxx.warning_flags += mdef
+            extra_compile_options_cuda = self._get_parser(
+                "ADDITIONAL_COMPILE_OPTIONS_CUDA:", parsers
+            ).getValue()
+            for flag in extra_compile_options_cuda:
+                if test_cxx.addCompileFlagIfSupported(flag.strip()):
+                    test_cxx.warning_flags += [flag.strip()]
+        else:
+            for flag in extra_compile_options_host:
+                if test_cxx.addCompileFlagIfSupported(flag.strip()):
+                    test_cxx.warning_flags += [flag.strip()]
 
         extra_modules_defines = self._get_parser("MODULES_DEFINES:", parsers).getValue()
         if "-fmodules" in test.config.available_features:
