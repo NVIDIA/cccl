@@ -462,8 +462,8 @@
 #elif _CCCL_COMPILER(MSVC, >=, 19, 29)
 // using __is_corresponding_member with msvc outside of constexpr context causes linker errors, see
 // https://developercommunity.visualstudio.com/t/Using-compiler-builtins-causes-linking-n/10888080
-// #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) \
-    __is_corresponding_member(_C1, _C2, _MPtr1, _MPtr2)
+// #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) __is_corresponding_member(_C1, _C2, _MPtr1,
+// _MPtr2)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_pointer_interconvertible_with_class)
@@ -472,8 +472,8 @@
 #elif _CCCL_COMPILER(MSVC, >=, 19, 29)
 // using __is_pointer_interconvertible_with_class with msvc outside of constexpr context causes linker errors, see
 // https://developercommunity.visualstudio.com/t/Using-compiler-builtins-causes-linking-n/10888080
-// #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr) \
-    __is_pointer_interconvertible_with_class(_S, _MPtr)
+// #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr)
+// __is_pointer_interconvertible_with_class(_S, _MPtr)
 #endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
