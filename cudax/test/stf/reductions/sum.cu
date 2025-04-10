@@ -56,7 +56,7 @@ public:
     const exec_place& /*unused*/,
     cudaStream_t s) override
   {
-    auto& in_instance    = d.instance<slice<const int>>(in_instance_id);
+    auto& in_instance    = d.instance<slice<int>>(in_instance_id);
     auto& inout_instance = d.instance<slice<int>>(inout_instance_id);
     // fprintf(stderr, "REDUX OP d %p inout (node %d id %d addr %p) in (node %d id %d addr %p)\n", d,
     //        inout_memory_node, inout_instance_id, *inout_instance, in_memory_node, in_instance_id, *in_instance);

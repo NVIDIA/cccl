@@ -45,7 +45,7 @@ public:
     const exec_place& /*unused*/,
     cudaStream_t s) override
   {
-    auto& in_instance    = d.instance<slice<const int>>(in_instance_id);
+    auto& in_instance    = d.instance<slice<int>>(in_instance_id);
     auto& inout_instance = d.instance<slice<int>>(inout_instance_id);
     add<<<1, 1, 0, s>>>(in_instance.data_handle(), inout_instance.data_handle());
   }
