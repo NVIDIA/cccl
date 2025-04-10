@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// ADDITIONAL_COMPILE_FLAGS: -Wno-ctad-maybe-unsupported
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-ctad-maybe-unsupported
 
 // <mdspan>
 
