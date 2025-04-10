@@ -66,7 +66,7 @@ struct custom_level_test
   }
 };
 
-TEST_CASE("Custom level", "[hierarchy]")
+C2H_TEST("Custom level", "[hierarchy]")
 {
   custom_level_test().run();
 }

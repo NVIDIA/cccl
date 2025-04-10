@@ -167,15 +167,14 @@ class CommonData:
 # ------------
 
 class DeviceReduceBuildResult:
-    def __init__(self): ...
-    def build(
+    def __init__(
         self,
         d_in: Iterator,
         d_out: Iterator,
         binary_op: Op,
         h_init: Value,
         info: CommonData,
-    ) -> int: ...
+    ): ...
     def compute(
         self,
         temp_storage_ptr: int | None,
@@ -186,15 +185,14 @@ class DeviceReduceBuildResult:
         binary_op: Op,
         h_init: Value,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> int: ...
 
 # ----------
 # DeviceScan
 # ----------
 
 class DeviceScanBuildResult:
-    def __init__(self): ...
-    def build(
+    def __init__(
         self,
         d_in: Iterator,
         d_out: Iterator,
@@ -202,7 +200,7 @@ class DeviceScanBuildResult:
         h_init: Value,
         force_inclusive: bool,
         info: CommonData,
-    ) -> int: ...
+    ): ...
     def compute_inclusive(
         self,
         temp_storage_ptr: int | None,
@@ -213,7 +211,7 @@ class DeviceScanBuildResult:
         binary_op: Op,
         h_init: Value,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> int: ...
     def compute_exclusive(
         self,
         temp_storage_ptr: int | None,
@@ -224,15 +222,14 @@ class DeviceScanBuildResult:
         binary_op: Op,
         h_init: Value,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> int: ...
 
 # ---------------------
 # DeviceSegmentedReduce
 # ---------------------
 
 class DeviceSegmentedReduceBuildResult:
-    def __init__(self): ...
-    def build(
+    def __init__(
         self,
         d_in: Iterator,
         d_out: Iterator,
@@ -241,7 +238,7 @@ class DeviceSegmentedReduceBuildResult:
         binary_op: Op,
         h_init: Value,
         info: CommonData,
-    ) -> int: ...
+    ): ...
     def compute(
         self,
         temp_storage_ptr: int | None,
@@ -254,7 +251,7 @@ class DeviceSegmentedReduceBuildResult:
         binary_op: Op,
         h_init: Value,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> int: ...
 
 # ---------------
 # DeviceMergeSort
@@ -313,3 +310,45 @@ class DeviceUniqueByKeyBuildResult:
         num_items: int,
         stream,
     ) -> tuple[int, int]: ...
+
+# --------------------
+# DeviceUnaryTransform
+# --------------------
+
+class DeviceUnaryTransform:
+    def __init__(
+        self,
+        d_in: Iterator,
+        d_out: Iterator,
+        op: Op,
+        info: CommonData,
+    ): ...
+    def compute(
+        self,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        stream,
+    ) -> None: ...
+
+# ---------------------
+# DeviceBinaryTransform
+# ---------------------
+
+class DeviceBinaryTransform:
+    def __init__(
+        self,
+        d_in1: Iterator,
+        d_in2: Iterator,
+        d_out: Iterator,
+        op: Op,
+        info: CommonData,
+    ): ...
+    def compute(
+        self,
+        d_in1: Iterator,
+        d_in2: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        stream,
+    ) -> None: ...

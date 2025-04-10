@@ -12,7 +12,7 @@
 
 #include <testing.cuh>
 
-TEST_CASE("Call each driver api", "[utility]")
+C2H_TEST("Call each driver api", "[utility]")
 {
   namespace driver = cuda::experimental::detail::driver;
   cudaStream_t stream;

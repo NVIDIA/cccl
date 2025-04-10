@@ -29,7 +29,7 @@ static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::event_ref>);
 static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::event>);
 static_assert(!_CUDA_VSTD::is_default_constructible_v<cudax::timed_event>);
 
-TEST_CASE("can construct an event_ref from a cudaEvent_t", "[event]")
+C2H_TEST("can construct an event_ref from a cudaEvent_t", "[event]")
 {
   ::cudaEvent_t ev;
   CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
@@ -46,7 +46,7 @@ TEST_CASE("can construct an event_ref from a cudaEvent_t", "[event]")
   CUDAX_REQUIRE(!ref3);
 }
 
-TEST_CASE("can copy construct an event_ref and compare for equality", "[event]")
+C2H_TEST("can copy construct an event_ref and compare for equality", "[event]")
 {
   ::cudaEvent_t ev;
   CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
@@ -66,7 +66,7 @@ TEST_CASE("can copy construct an event_ref and compare for equality", "[event]")
   CUDAX_REQUIRE(!ref4);
 }
 
-TEST_CASE("can use event_ref to record and wait on an event", "[event]")
+C2H_TEST("can use event_ref to record and wait on an event", "[event]")
 {
   ::cudaEvent_t ev;
   CUDAX_REQUIRE(::cudaEventCreate(&ev) == ::cudaSuccess);
@@ -84,14 +84,14 @@ TEST_CASE("can use event_ref to record and wait on an event", "[event]")
   CUDAX_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
 }
 
-TEST_CASE("can construct an event with a stream_ref", "[event]")
+C2H_TEST("can construct an event with a stream_ref", "[event]")
 {
   cudax::stream stream;
   cudax::event ev(static_cast<cuda::stream_ref>(stream));
   CUDAX_REQUIRE(ev.get() != ::cudaEvent_t{});
 }
 
-TEST_CASE("can wait on an event", "[event]")
+C2H_TEST("can wait on an event", "[event]")
 {
   cudax::stream stream;
   ::test::managed<int> i(0);
@@ -103,7 +103,7 @@ TEST_CASE("can wait on an event", "[event]")
   stream.wait();
 }
 
-TEST_CASE("can take the difference of two timed_event objects", "[event]")
+C2H_TEST("can take the difference of two timed_event objects", "[event]")
 {
   cudax::stream stream;
   ::test::managed<int> i(0);
@@ -119,7 +119,7 @@ TEST_CASE("can take the difference of two timed_event objects", "[event]")
   stream.wait();
 }
 
-TEST_CASE("can observe the event in not ready state", "[event]")
+C2H_TEST("can observe the event in not ready state", "[event]")
 {
   ::test::managed<int> i(0);
   ::cuda::atomic_ref atomic_i(*i);

@@ -13,14 +13,14 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-TEST_CASE("Can call get_stream on a cudaStream_t", "[stream]")
+C2H_TEST("Can call get_stream on a cudaStream_t", "[stream]")
 {
   ::cudaStream_t str = nullptr;
   auto ref           = ::cuda::experimental::get_stream(str);
   CUDAX_CHECK(str == ref);
 }
 
-TEST_CASE("Can call get_stream on a cudax::stream", "[stream]")
+C2H_TEST("Can call get_stream on a cudax::stream", "[stream]")
 {
   cudax::stream str;
   auto ref = ::cuda::experimental::get_stream(str);
@@ -37,7 +37,7 @@ struct something_stream_ordered
   }
 };
 
-TEST_CASE("Can call get_stream on a type with a get_stream method", "[stream]")
+C2H_TEST("Can call get_stream on a type with a get_stream method", "[stream]")
 {
   something_stream_ordered str{};
   auto ref = ::cuda::experimental::get_stream(str);
@@ -54,7 +54,7 @@ struct non_const_get_stream
   }
 };
 
-TEST_CASE("The get_stream method must be const qualified", "[stream]")
+C2H_TEST("The get_stream method must be const qualified", "[stream]")
 {
   STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const non_const_get_stream&>);
 }
@@ -68,7 +68,7 @@ struct get_stream_convertible
     return stream_;
   }
 };
-TEST_CASE("The get_stream method can return something convertible to cuda::stream_ref", "[stream]")
+C2H_TEST("The get_stream method can return something convertible to cuda::stream_ref", "[stream]")
 {
   get_stream_convertible str{};
   auto ref = ::cuda::experimental::get_stream(str);
@@ -82,7 +82,7 @@ struct get_stream_not_convertible
     return 42;
   }
 };
-TEST_CASE("The get_stream method must return something convertible to cuda::stream_ref", "[stream]")
+C2H_TEST("The get_stream method must return something convertible to cuda::stream_ref", "[stream]")
 {
   STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const get_stream_not_convertible&>);
 }
@@ -96,7 +96,7 @@ struct env_with_query
     return ::cuda::stream_ref{stream_.get()};
   }
 };
-TEST_CASE("Works with queries", "[stream]")
+C2H_TEST("Works with queries", "[stream]")
 {
   env_with_query env;
   ::cuda::stream_ref ref = ::cuda::experimental::get_stream(env);
@@ -112,7 +112,7 @@ struct env_with_query_that_returns_cudastream
     return stream_.get();
   }
 };
-TEST_CASE("Works with queries that return cudastream", "[stream]")
+C2H_TEST("Works with queries that return cudastream", "[stream]")
 {
   env_with_query_that_returns_cudastream env;
   ::cuda::stream_ref ref = ::cuda::experimental::get_stream(env);
@@ -128,7 +128,7 @@ struct env_with_query_that_returns_stream
     return stream_;
   }
 };
-TEST_CASE("Works with queries that return stream", "[stream]")
+C2H_TEST("Works with queries that return stream", "[stream]")
 {
   env_with_query_that_returns_stream env;
   ::cuda::stream_ref ref = ::cuda::experimental::get_stream(env);
@@ -142,7 +142,7 @@ struct env_with_query_that_returns_wrong_type
     return 42;
   }
 };
-TEST_CASE("Queries require a proper return type", "[stream]")
+C2H_TEST("Queries require a proper return type", "[stream]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const env_with_query_that_returns_wrong_type&>);

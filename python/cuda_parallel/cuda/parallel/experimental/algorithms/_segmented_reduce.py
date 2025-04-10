@@ -2,7 +2,6 @@ from typing import Callable
 
 import numba
 import numpy as np
-from numba.cuda.cudadrv import enums
 
 from .. import _bindings
 from .. import _cccl_interop as cccl
@@ -34,8 +33,6 @@ class _SegmentedReduce:
         op: Callable,
         h_init: np.ndarray | GpuStruct,
     ):
-        self.build_result = _bindings.DeviceSegmentedReduceBuildResult()
-
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
@@ -47,8 +44,8 @@ class _SegmentedReduce:
             value_type = numba.typeof(h_init)
         sig = (value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
-        error = call_build(
-            self.build_result.build,
+        self.build_result = call_build(
+            _bindings.DeviceSegmentedReduceBuildResult,
             self.d_in_cccl,
             self.d_out_cccl,
             self.start_offsets_in_cccl,
@@ -56,8 +53,6 @@ class _SegmentedReduce:
             self.op_wrapper,
             self.h_init_cccl,
         )
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error building reduce")
 
     def __call__(
         self,
@@ -85,7 +80,7 @@ class _SegmentedReduce:
             temp_storage_bytes = temp_storage.nbytes
             d_temp_storage = get_data_pointer(temp_storage)
 
-        error, temp_storage_bytes = self.build_result.compute(
+        temp_storage_bytes = self.build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_cccl,
@@ -97,10 +92,6 @@ class _SegmentedReduce:
             self.h_init_cccl,
             stream_handle,
         )
-
-        if error != enums.CUDA_SUCCESS:
-            raise ValueError("Error reducing")
-
         return temp_storage_bytes
 
 

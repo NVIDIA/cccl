@@ -99,7 +99,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", TEST_TYPES)
+C2H_TEST_LIST("device_memory_pool construction", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -220,7 +220,7 @@ TEMPLATE_TEST_CASE("device_memory_pool construction", "[memory_resource]", TEST_
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool comparison", "[memory_resource]", TEST_TYPES)
+C2H_TEST_LIST("device_memory_pool comparison", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -256,7 +256,7 @@ TEMPLATE_TEST_CASE("device_memory_pool comparison", "[memory_resource]", TEST_TY
   }
 }
 
-TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
+C2H_TEST_LIST("device_memory_pool accessors", "[memory_resource]", TEST_TYPES)
 {
   int current_device{};
   {
@@ -517,7 +517,7 @@ TEMPLATE_TEST_CASE("device_memory_pool accessors", "[memory_resource]", TEST_TYP
   }
 }
 
-TEST_CASE("device_memory_pool::enable_access", "[memory_resource]")
+C2H_TEST("device_memory_pool::enable_access", "[memory_resource]")
 {
   if (cudax::devices.size() > 1)
   {
@@ -542,7 +542,7 @@ TEST_CASE("device_memory_pool::enable_access", "[memory_resource]")
 }
 
 #if _CCCL_CUDACC_AT_LEAST(12, 6)
-TEST_CASE("pinned_memory_pool::enable_access", "[memory_resource]")
+C2H_TEST("pinned_memory_pool::enable_access", "[memory_resource]")
 {
   cudax::pinned_memory_pool pool{};
   CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
