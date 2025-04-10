@@ -119,7 +119,7 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   REQUIRE(
     cudaMemcpyAsync(result_h.data(), result.data(), num_items * sizeof(type), cudaMemcpyDeviceToHost, stream.get())
     == cudaSuccess);
-  stream.wait();
+  stream.sync();
 
   // compute reference and verify
   thrust::host_vector<type> reference_h(num_items);
