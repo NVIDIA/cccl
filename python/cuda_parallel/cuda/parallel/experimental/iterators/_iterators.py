@@ -2,7 +2,7 @@ import ctypes
 import operator
 import uuid
 from functools import lru_cache
-from typing import Callable, Dict
+from typing import Any, Callable, Dict
 
 import numba
 import numpy as np
@@ -83,7 +83,6 @@ class IteratorBase:
         numba_type: types.Type,
         state_type: types.Type,
         value_type: types.Type,
-        prefix: str = "",
     ):
         """
         Parameters
@@ -97,46 +96,51 @@ class IteratorBase:
           A numba type of the iterator state.
         value_type
           The numba type of the value returned by the dereference operation.
-        prefix
-          An optional prefix added to the iterator's methods to prevent name collisions.
         """
         self.cvalue = cvalue
         self.numba_type = numba_type
         self.state_type = state_type
         self.value_type = value_type
-        self.prefix = prefix
         self.kind_ = self.__class__.iterator_kind_type(self.value_type, self.state_type)
         self.state_ = IteratorState(self.cvalue)
+        self._ltoirs: Dict[str, bytes] | None = None
 
     @property
     def kind(self):
         return self.kind_
 
-    # TODO: should we cache this? Current docs environment doesn't allow
-    # using Python > 3.7. We could use a hand-rolled cached_property if
-    # needed.
     @property
     def ltoirs(self) -> Dict[str, bytes]:
-        abi_suffix = _get_abi_suffix(self.kind)
-        advance_abi_name = f"{self.prefix}advance_{abi_suffix}"
-        deref_abi_name = f"{self.prefix}dereference_{abi_suffix}"
-        advance_ltoir, _ = cached_compile(
-            self.__class__.advance,
-            (
-                self.numba_type,
-                types.uint64,  # distance type
-            ),
-            output="ltoir",
-            abi_name=advance_abi_name,
-        )
+        if self._ltoirs is None:
+            abi_suffix = _get_abi_suffix(self.kind)
+            advance_abi_name = f"advance_{abi_suffix}"
+            deref_abi_name = f"dereference_{abi_suffix}"
+            advance_ltoir, _ = cached_compile(
+                self.__class__.advance,
+                (
+                    self.numba_type,
+                    types.uint64,  # distance type
+                ),
+                output="ltoir",
+                abi_name=advance_abi_name,
+            )
 
-        deref_ltoir, _ = cached_compile(
-            self.__class__.dereference,
-            (self.numba_type,),
-            output="ltoir",
-            abi_name=deref_abi_name,
-        )
-        return {advance_abi_name: advance_ltoir, deref_abi_name: deref_ltoir}
+            deref_ltoir, _ = cached_compile(
+                self.__class__.dereference,
+                (self.numba_type,),
+                output="ltoir",
+                abi_name=deref_abi_name,
+            )
+            self._ltoirs = {
+                advance_abi_name: advance_ltoir,
+                deref_abi_name: deref_ltoir,
+            }
+        assert self._ltoirs is not None
+        return self._ltoirs
+
+    @ltoirs.setter
+    def ltoirs(self, value):
+        self._ltoirs = value
 
     @property
     def state(self) -> IteratorState:
@@ -152,6 +156,14 @@ class IteratorBase:
 
     def __add__(self, offset: int):
         return make_advanced_iterator(self, offset=offset)
+
+    def copy(self):
+        out = object.__new__(self.__class__)
+        IteratorBase.__init__(
+            out, self.cvalue, self.numba_type, self.state_type, self.value_type
+        )
+        out.ltoirs = self.ltoirs
+        return out
 
 
 def sizeof_pointee(context, ptr):
@@ -243,7 +255,7 @@ class CacheModifiedPointerKind(IteratorKind):
 class CacheModifiedPointer(IteratorBase):
     iterator_kind_type = CacheModifiedPointerKind
 
-    def __init__(self, ptr: int, ntype: types.Type, prefix: str):
+    def __init__(self, ptr: int, ntype: types.Type):
         cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
         state_type = types.CPointer(value_type)
@@ -253,7 +265,6 @@ class CacheModifiedPointer(IteratorBase):
             numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
-            prefix=prefix,
         )
 
     @staticmethod
@@ -463,3 +474,39 @@ def _get_last_element_ptr(device_array) -> int:
 
     ptr = get_data_pointer(device_array)
     return ptr + offset_to_last_element
+
+
+def _replace_duplicate_values(*ds, replacement_value):
+    # given a sequence of dictionaries, return a sequence of dictionaries
+    # such that for any found duplicate keys, the value is set to `replacement_value`.
+    if len(ds) <= 1:
+        return ds
+    seen = set(ds[0].keys())
+    for d in ds[1:]:
+        for key in d:
+            if key in seen:
+                d[key] = replacement_value
+        seen.update(d.keys())
+    return ds
+
+
+def scrub_duplicate_ltoirs(*maybe_iterators: Any) -> tuple[Any, ...]:
+    """
+    Scrub duplicate `ltoirs` from iterators in the provided sequence.
+
+    If the sequence contains iterators with duplicate advance/dereference
+    ltoirs, those are set to the empty byte string b"". This pre-processing
+    step ensures that NVRTC doesn't see the same symbol defined more than
+    once.
+    """
+    # extract just the iterators:
+    iterators = [it.copy() for it in maybe_iterators if isinstance(it, IteratorBase)]
+
+    # replace duplicate ltoirs with empty byte strings:
+    ltoirs = _replace_duplicate_values(
+        *(it.ltoirs for it in iterators), replacement_value=b""
+    )
+    for it, ltoir in zip(iterators, ltoirs):
+        it.ltoirs = ltoir
+
+    return maybe_iterators
