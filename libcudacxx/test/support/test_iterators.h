@@ -1129,6 +1129,9 @@ public:
       : it_(it)
   {}
 
+  cpp20_output_iterator(cpp20_output_iterator&&)            = default;
+  cpp20_output_iterator& operator=(cpp20_output_iterator&&) = default;
+
   __host__ __device__ constexpr decltype(auto) operator*() const
   {
     return *it_;
