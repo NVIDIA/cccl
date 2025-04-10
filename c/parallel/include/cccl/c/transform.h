@@ -47,7 +47,7 @@ CCCL_C_API CUresult cccl_device_unary_transform(
   cccl_device_transform_build_result_t build,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   CUstream stream);
 
@@ -69,7 +69,7 @@ CCCL_C_API CUresult cccl_device_binary_transform(
   cccl_iterator_t d_in1,
   cccl_iterator_t d_in2,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   CUstream stream);
 
