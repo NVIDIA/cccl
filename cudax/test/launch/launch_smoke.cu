@@ -243,7 +243,7 @@ void launch_smoke_test()
   CUDART(cudaStreamDestroy(stream));
 }
 
-TEST_CASE("Smoke", "[launch]")
+C2H_TEST("Smoke", "[launch]")
 {
   launch_smoke_test();
 }
@@ -304,7 +304,7 @@ void test_default_config()
   }
 }
 
-TEST_CASE("Launch with default config")
+C2H_TEST("Launch with default config", "")
 {
   test_default_config();
 }
@@ -366,7 +366,7 @@ struct lambda_wrapper
   }
 };
 
-TEST_CASE("Host launch")
+C2H_TEST("Host launch", "")
 {
   cuda::atomic<int> atomic = 0;
   cudax::stream stream;

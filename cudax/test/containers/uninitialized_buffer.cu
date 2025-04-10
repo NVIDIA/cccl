@@ -73,8 +73,7 @@ __global__ void const_kernel(_CUDA_VSTD::span<const int> data)
   CUDAX_CHECK(data.size() == 1024);
 }
 
-TEMPLATE_TEST_CASE(
-  "uninitialized_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
+C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
   using uninitialized_buffer = cuda::experimental::uninitialized_buffer<TestType, cuda::mr::device_accessible>;
   static_assert(!cuda::std::is_default_constructible<uninitialized_buffer>::value, "");
@@ -222,7 +221,7 @@ TEMPLATE_TEST_CASE(
   }
 }
 
-TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
+C2H_TEST("uninitialized_buffer is usable with cudax::launch", "[container]")
 {
   SECTION("non-const")
   {
@@ -272,7 +271,7 @@ struct test_device_memory_resource : cudax::device_memory_resource
 
 int test_device_memory_resource::count = 0;
 
-TEST_CASE("uninitialized_buffer's memory resource does not dangle", "[container]")
+C2H_TEST("uninitialized_buffer's memory resource does not dangle", "[container]")
 {
   cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 0};
 

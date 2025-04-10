@@ -162,7 +162,7 @@ struct basic_test_mixed
   }
 };
 
-TEST_CASE("Basic", "[hierarchy]")
+C2H_TEST("Basic", "[hierarchy]")
 {
   basic_test_single_dim().run();
   basic_test_multi_dim().run();
@@ -215,12 +215,12 @@ struct basic_test_cluster
   }
 };
 
-TEST_CASE("Cluster dims", "[hierarchy]")
+C2H_TEST("Cluster dims", "[hierarchy]")
 {
   basic_test_cluster().run();
 }
 
-TEST_CASE("Different constructions", "[hierarchy]")
+C2H_TEST("Different constructions", "[hierarchy]")
 {
   const auto block_size  = 512;
   const auto cluster_cnt = 8;
@@ -262,7 +262,7 @@ TEST_CASE("Different constructions", "[hierarchy]")
   static_assert(!cudax::has_level<cudax::thread_level, decltype(config.dims)>);
 }
 
-TEST_CASE("Replace level", "[hierarchy]")
+C2H_TEST("Replace level", "[hierarchy]")
 {
   const auto dimensions =
     cudax::make_hierarchy(cudax::block_dims<512>(), cudax::cluster_dims<8>(), cudax::grid_dims(256));
@@ -330,7 +330,7 @@ __global__ void kernel(Config config)
   CUDAX_REQUIRE(config.dims.rank() == grid.thread_rank());
 }
 
-TEST_CASE("Dims queries indexing and ambient hierarchy", "[hierarchy]")
+C2H_TEST("Dims queries indexing and ambient hierarchy", "[hierarchy]")
 {
   const auto configs = cuda::std::make_tuple(
     cudax::block_dims(dim3(64, 4, 2)) & cudax::grid_dims(dim3(12, 6, 3)),
@@ -375,7 +375,7 @@ __global__ void rank_kernel_cg(Config config, unsigned int* out)
 }
 
 // Testcase mostly for generated code comparison
-TEST_CASE("On device rank calculation", "[hierarchy]")
+C2H_TEST("On device rank calculation", "[hierarchy]")
 {
   unsigned int* ptr;
   CUDART(cudaMalloc((void**) &ptr, 2 * 1024 * sizeof(unsigned int)));
@@ -444,7 +444,7 @@ __global__ void examples_kernel(Config config)
 }
 
 // Test examples from the inline rst documentation
-TEST_CASE("Examples", "[hierarchy]")
+C2H_TEST("Examples", "[hierarchy]")
 {
   using namespace cuda::experimental;
 
@@ -507,7 +507,7 @@ TEST_CASE("Examples", "[hierarchy]")
   }
 }
 
-TEST_CASE("Trivially constructable", "[hierarchy]")
+C2H_TEST("Trivially constructable", "[hierarchy]")
 {
   // static_assert(std::is_trivial_v<decltype(cudax::block_dims(256))>);
   // static_assert(std::is_trivial_v<decltype(cudax::block_dims<256>())>);
@@ -519,7 +519,7 @@ TEST_CASE("Trivially constructable", "[hierarchy]")
   // cudax::grid_dims<256>()))>);
 }
 
-TEST_CASE("cudax::distribute", "[hierarchy]")
+C2H_TEST("cudax::distribute", "[hierarchy]")
 {
   int numElements               = 50000;
   constexpr int threadsPerBlock = 256;
@@ -529,7 +529,7 @@ TEST_CASE("cudax::distribute", "[hierarchy]")
   CUDAX_REQUIRE(config.dims.count(cudax::block, cudax::grid) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
 }
 
-TEST_CASE("hierarchy merge", "[hierarchy]")
+C2H_TEST("hierarchy merge", "[hierarchy]")
 {
   SECTION("Non overlapping")
   {
