@@ -146,9 +146,7 @@ int main(int, char**)
 {
   test<bool>();
   test<char>();
-#ifndef TEST_HAS_NO_WIDE_CHARACTERS
   test<wchar_t>();
-#endif
   test<float>();
   test<double>();
   test<long double>();
