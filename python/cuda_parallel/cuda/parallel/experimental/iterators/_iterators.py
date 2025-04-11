@@ -27,7 +27,7 @@ _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
 
 
-class IteratorIO(Enum):
+class IteratorIOKind(Enum):
     INPUT = 0
     OUTPUT = 1
 
@@ -91,7 +91,7 @@ class IteratorBase:
         numba_type: types.Type,
         state_type: types.Type,
         value_type: types.Type,
-        iterator_io: IteratorIO,
+        iterator_io: IteratorIOKind,
     ):
         """
         Parameters
@@ -178,7 +178,7 @@ class IteratorBase:
         )
 
     def _get_dereference_signature(self) -> Tuple:
-        if self.iterator_io is IteratorIO.INPUT:
+        if self.iterator_io is IteratorIOKind.INPUT:
             return (self.numba_type,)
         else:
             return (self.numba_type, self.value_type)
@@ -234,7 +234,7 @@ class RawPointerKind(IteratorKind):
 class RawPointer(IteratorBase):
     iterator_kind_type = RawPointerKind
 
-    def __init__(self, ptr: int, value_type: types.Type, iterator_io: IteratorIO):
+    def __init__(self, ptr: int, value_type: types.Type, iterator_io: IteratorIOKind):
         cvalue = ctypes.c_void_p(ptr)
         state_type = types.CPointer(value_type)
         numba_type = types.CPointer(state_type)
@@ -250,7 +250,7 @@ class RawPointer(IteratorBase):
     def advance(self):
         return (
             RawPointer.input_advance
-            if self.iterator_io is IteratorIO.INPUT
+            if self.iterator_io is IteratorIOKind.INPUT
             else RawPointer.output_advance
         )
 
@@ -258,7 +258,7 @@ class RawPointer(IteratorBase):
     def dereference(self):
         return (
             RawPointer.input_dereference
-            if self.iterator_io is IteratorIO.INPUT
+            if self.iterator_io is IteratorIOKind.INPUT
             else RawPointer.output_dereference
         )
 
@@ -281,7 +281,7 @@ class RawPointer(IteratorBase):
 
 def pointer(container, value_type: types.Type) -> RawPointer:
     return RawPointer(
-        container.__cuda_array_interface__["data"][0], value_type, IteratorIO.INPUT
+        container.__cuda_array_interface__["data"][0], value_type, IteratorIOKind.INPUT
     )
 
 
@@ -323,7 +323,7 @@ class CacheModifiedPointer(IteratorBase):
             numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
-            iterator_io=IteratorIO.INPUT,
+            iterator_io=IteratorIOKind.INPUT,
         )
 
     @property
@@ -360,7 +360,7 @@ class ConstantIterator(IteratorBase):
             numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
-            iterator_io=IteratorIO.INPUT,
+            iterator_io=IteratorIOKind.INPUT,
         )
 
     @property
@@ -397,7 +397,7 @@ class CountingIterator(IteratorBase):
             numba_type=numba_type,
             state_type=state_type,
             value_type=value_type,
-            iterator_io=IteratorIO.INPUT,
+            iterator_io=IteratorIOKind.INPUT,
         )
 
     @property
@@ -425,7 +425,9 @@ class ReverseOutputIteratorKind(IteratorKind):
     pass
 
 
-def make_reverse_iterator(it: DeviceArrayLike | IteratorBase, iterator_io: IteratorIO):
+def make_reverse_iterator(
+    it: DeviceArrayLike | IteratorBase, iterator_io: IteratorIOKind
+):
     if not hasattr(it, "__cuda_array_interface__") and not isinstance(it, IteratorBase):
         raise NotImplementedError(
             f"Reverse iterator is not implemented for type {type(it)}"
@@ -441,7 +443,7 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase, iterator_io: Itera
     class ReverseIterator(IteratorBase):
         iterator_kind_type = (
             ReverseInputIteratorKind
-            if iterator_io is IteratorIO.INPUT
+            if iterator_io is IteratorIOKind.INPUT
             else ReverseOutputIteratorKind
         )
 
@@ -466,7 +468,7 @@ def make_reverse_iterator(it: DeviceArrayLike | IteratorBase, iterator_io: Itera
         def dereference(self):
             return (
                 ReverseIterator.input_dereference
-                if self.iterator_io is IteratorIO.INPUT
+                if self.iterator_io is IteratorIOKind.INPUT
                 else ReverseIterator.output_dereference
             )
 

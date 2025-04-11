@@ -104,7 +104,7 @@ def ReverseInputIterator(sequence):
         A ``ReverseIterator`` object initialized with ``sequence`` to use as an input
 
     """
-    return _iterators.make_reverse_iterator(sequence, _iterators.IteratorIO.INPUT)
+    return _iterators.make_reverse_iterator(sequence, _iterators.IteratorIOKind.INPUT)
 
 
 def ReverseOutputIterator(sequence):
@@ -128,7 +128,7 @@ def ReverseOutputIterator(sequence):
         A ``ReverseIterator`` object initialized with ``sequence`` to use as an output
 
     """
-    return _iterators.make_reverse_iterator(sequence, _iterators.IteratorIO.OUTPUT)
+    return _iterators.make_reverse_iterator(sequence, _iterators.IteratorIOKind.OUTPUT)
 
 
 def TransformIterator(it, op):
