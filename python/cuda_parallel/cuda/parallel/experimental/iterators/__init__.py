@@ -108,7 +108,7 @@ def ReverseInputIterator(sequence):
 
 
 def ReverseOutputIterator(sequence):
-    """Returns an Iterator over an array in reverse.
+    """Returns an output Iterator over an array in reverse.
 
     Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
 
