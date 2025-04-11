@@ -57,8 +57,8 @@ def bench_compile_merge_sort_pointer(compile_benchmark):
 
 def bench_compile_merge_sort_iterator(compile_benchmark):
     size = 100
-    output_keys = cp.zeros(size, dtype="int32")
-    output_vals = cp.zeros(size, dtype="int64")
+    output_keys = cp.empty(size, dtype="int32")
+    output_vals = cp.empty(size, dtype="int64")
 
     def run():
         merge_sort_iterator(size, output_keys, output_vals, build_only=True)
@@ -79,8 +79,8 @@ def bench_merge_sort_pointer(benchmark, size):
 
 
 def bench_merge_sort_iterator(benchmark, size):
-    output_keys = cp.zeros(size, dtype="int32")
-    output_vals = cp.zeros(size, dtype="int64")
+    output_keys = cp.empty(size, dtype="int32")
+    output_vals = cp.empty(size, dtype="int64")
 
     def run():
         merge_sort_iterator(size, output_keys, output_vals, build_only=False)
