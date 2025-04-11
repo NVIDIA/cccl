@@ -75,11 +75,10 @@
 #endif
 
 // Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
-// This happens up to clang18
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG, <, 19)
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
 #  undef _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
-#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG, <, 19)
+#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
 
 // It always fails with clang
 #if _CCCL_COMPILER(CLANG)
