@@ -67,6 +67,92 @@ CUB_NAMESPACE_BEGIN
 namespace detail::reduce
 {
 
+template <typename AccumT>
+struct dummy_streaming_context
+{
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
+  {
+    return true;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
+  {
+    return true;
+  }
+
+  template <typename KeyT>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE KeyT predecessor_key(KeyT key)
+  {
+    return key;
+  }
+
+  // template<typename ReductionOpT>
+  // _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT add_prefix(ReductionOpT, AccumT value) const
+  // {
+  //   return value;
+  // }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT prefix() const
+  {
+    return AccumT{};
+  }
+
+  template <typename T>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(T) const
+  {}
+};
+
+template <typename PrecedingKeyItT, typename AccumT>
+struct streaming_context
+{
+  bool first_partition;
+  bool last_partition;
+  PrecedingKeyItT preceding_key_it;
+  AccumT* preceding_prefix;
+  AccumT* prefix_out;
+
+  // _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void prepare_for_next_partition(bool is_last_partition)
+  // {
+  //   first_partition = false;
+  //   last_partition = is_last_partition;
+
+  //   // Swap the two double-buffered pointers
+  //   using ::cuda::std::swap;
+  //   swap(preceding_prefix, prefix_out);
+  // }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
+  {
+    return first_partition;
+  }
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
+  {
+    return last_partition;
+  }
+
+  template <typename KeyT>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE KeyT predecessor_key(KeyT)
+  {
+    return *preceding_key_it;
+  }
+
+  // template<typename ReductionOpT>
+  // _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT add_prefix(ReductionOpT reduction_op, AccumT value) const
+  // {
+  //   return reduction_op(*preceding_prefix, value);
+  // }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT prefix() const
+  {
+    return *preceding_prefix;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(AccumT prefix) const
+  {
+    *prefix_out = prefix;
+  }
+};
+
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
  *
@@ -141,7 +227,8 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          typename StreamingContextT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     KeysInputIteratorT d_keys_in,
@@ -153,29 +240,39 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     int start_tile,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    OffsetT num_items)
+    OffsetT num_items,
+    StreamingContextT streaming_context)
 {
   using AgentReduceByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT;
 
   // Thread block type for reducing tiles of value segments
-  using AgentReduceByKeyT =
-    AgentReduceByKey<AgentReduceByKeyPolicyT,
-                     KeysInputIteratorT,
-                     UniqueOutputIteratorT,
-                     ValuesInputIteratorT,
-                     AggregatesOutputIteratorT,
-                     NumRunsOutputIteratorT,
-                     EqualityOpT,
-                     ReductionOpT,
-                     OffsetT,
-                     AccumT>;
+  using AgentReduceByKeyT = AgentReduceByKey<
+    AgentReduceByKeyPolicyT,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>;
 
   // Shared memory for AgentReduceByKey
   __shared__ typename AgentReduceByKeyT::TempStorage temp_storage;
 
   // Process tiles
   AgentReduceByKeyT(
-    temp_storage, d_keys_in, d_unique_out, d_values_in, d_aggregates_out, d_num_runs_out, equality_op, reduction_op)
+    temp_storage,
+    d_keys_in,
+    d_unique_out,
+    d_values_in,
+    d_aggregates_out,
+    d_num_runs_out,
+    equality_op,
+    reduction_op,
+    streaming_context)
     .ConsumeRange(num_items, tile_state, start_tile);
 }
 
@@ -419,7 +516,8 @@ struct DispatchReduceByKey
                 start_tile,
                 equality_op,
                 reduction_op,
-                num_items);
+                num_items,
+                detail::reduce::dummy_streaming_context<AccumT>{});
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -456,7 +554,8 @@ struct DispatchReduceByKey
         EqualityOpT,
         ReductionOpT,
         OffsetT,
-        AccumT>);
+        AccumT,
+        detail::reduce::dummy_streaming_context<AccumT>>);
   }
 
   /**

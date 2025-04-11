@@ -161,7 +161,8 @@ template <typename AgentReduceByKeyPolicyT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          typename StreamingContextT>
 struct AgentReduceByKey
 {
   //---------------------------------------------------------------------
@@ -341,6 +342,9 @@ struct AgentReduceByKey
   /// Reduce-by-segment scan operator
   ReduceBySegmentOpT scan_op;
 
+  /// Streaming context providing context about this partition for streaming invocations
+  StreamingContextT streaming_context;
+
   //---------------------------------------------------------------------
   // Constructor
   //---------------------------------------------------------------------
@@ -369,6 +373,9 @@ struct AgentReduceByKey
    *
    * @param reduction_op
    *   ValueT reduction operator
+   *
+   * @param streaming_context
+   *   Streaming context providing context about this partition for streaming invocations
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
     TempStorage& temp_storage,
@@ -378,7 +385,8 @@ struct AgentReduceByKey
     AggregatesOutputIteratorT d_aggregates_out,
     NumRunsOutputIteratorT d_num_runs_out,
     EqualityOpT equality_op,
-    ReductionOpT reduction_op)
+    ReductionOpT reduction_op,
+    StreamingContextT streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_keys_in(d_keys_in)
       , d_unique_out(d_unique_out)
@@ -388,6 +396,7 @@ struct AgentReduceByKey
       , equality_op(equality_op)
       , reduction_op(reduction_op)
       , scan_op(reduction_op)
+      , streaming_context(streaming_context)
   {}
 
   //---------------------------------------------------------------------
@@ -538,7 +547,7 @@ struct AgentReduceByKey
       //   be flagged as a head)
       // else
       //   Subsequent tiles get last key from previous tile
-      tile_predecessor = (tile_idx == 0) ? keys[0] : d_keys_in[tile_offset - 1];
+      tile_predecessor = (tile_idx == 0) ? streaming_context.predecessor_key(d_keys_in[0]) : d_keys_in[tile_offset - 1];
     }
 
     __syncthreads();
@@ -558,8 +567,7 @@ struct AgentReduceByKey
     // Initialize head-flags and shuffle up the previous keys
     if (IS_LAST_TILE)
     {
-      // Use custom flag operator to additionally flag the first out-of-bounds
-      // item
+      // Use custom flag operator to additionally flag the first out-of-bounds item
       GuardedInequalityWrapper<EqualityOpT> flag_op(equality_op, num_remaining);
       BlockDiscontinuityKeys(temp_storage.scan_storage.discontinuity)
         .FlagHeads(head_flags, keys, prev_keys, flag_op, tile_predecessor);
@@ -573,7 +581,7 @@ struct AgentReduceByKey
 
     // Reset head-flag on the very first item to make sure we don't start a new run for data where
     // (key[0] == key[0]) is false (e.g., when key[0] is NaN)
-    if (threadIdx.x == 0 && tile_idx == 0)
+    if (streaming_context.is_first_partition() && threadIdx.x == 0 && tile_idx == 0)
     {
       head_flags[0] = 0;
     }
@@ -599,9 +607,22 @@ struct AgentReduceByKey
     if (tile_idx == 0)
     {
       // Scan first tile
-      BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
-      num_segments_prefix = 0;
-      total_aggregate     = block_aggregate;
+      // First partition does not need to account for preceding partitions
+      if (streaming_context.is_first_partition())
+      {
+        BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
+        num_segments_prefix = 0;
+        total_aggregate     = block_aggregate;
+      }
+      // Subsequent partitions need to account for preceding partitions
+      else
+      {
+        BlockScanT(temp_storage.scan_storage.scan)
+          .ExclusiveScan(
+            scan_items, scan_items, OffsetValuePairT{0, streaming_context.prefix()}, scan_op, block_aggregate);
+        num_segments_prefix = 0;
+        total_aggregate     = block_aggregate;
+      }
 
       // Update tile status if there are successor tiles
       if ((!IS_LAST_TILE) && (threadIdx.x == 0))
@@ -638,18 +659,26 @@ struct AgentReduceByKey
     OffsetT num_tile_segments = block_aggregate.key;
     Scatter(scatter_items, head_flags, segment_indices, num_tile_segments, num_segments_prefix);
 
-    // Last thread in last tile will output final count (and last pair, if
-    // necessary)
+    // Last thread in last tile will output final count (and last pair, if necessary)
     if ((IS_LAST_TILE) && (threadIdx.x == BLOCK_THREADS - 1))
     {
       OffsetT num_segments = num_segments_prefix + num_tile_segments;
 
-      // If the last tile is a whole tile, output the final_value
+      // If the last tile is a full tile, we need to write out the run ending with the last item
+      // If this was not a full tile, we already have flagged the head of one-past-the-last-item
       if (num_remaining == TILE_ITEMS)
       {
-        d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
-        d_aggregates_out[num_segments] = total_aggregate.value;
-        num_segments++;
+        if (streaming_context.is_last_partition())
+        {
+          d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+          d_aggregates_out[num_segments] = total_aggregate.value;
+          num_segments++;
+        }
+        else
+        {
+          // Write the prefix aggregate of this partition as context for the subsequent partition
+          streaming_context.write_prefix(total_aggregate.value);
+        }
       }
 
       // Output the total number of items selected
