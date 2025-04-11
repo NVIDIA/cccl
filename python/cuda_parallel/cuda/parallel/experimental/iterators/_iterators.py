@@ -165,7 +165,7 @@ class IteratorBase:
         raise NotImplementedError("Subclasses must override advance property")
 
     @property
-    def dereference(state, *args):
+    def dereference(state):
         raise NotImplementedError("Subclasses must override dereference property")
 
     def __add__(self, offset: int):
