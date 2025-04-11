@@ -216,6 +216,11 @@ jobs:
   test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }
   test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
+  # Python:
+  test_cuda_cccl:        { name: "cuda.cccl",        gpu: true }
+  test_cuda_cooperative: { name: "cuda.cooperative", gpu: true }
+  test_cuda_parallel:    { name: "cuda.parallel",    gpu: true }
+
 # Project have the following properties:
 #
 # Keys are project subdirectories names. These will also be used in script names.
@@ -247,8 +252,8 @@ projects:
     name: 'NVHPC stdpar'
     stds: [17, 20]
   python:
-    name: "cuda (python)"
-    job_map: { build: [], test: ['test_nobuild'] }
+    name: "Python"
+    job_map: { build: [], test: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'] }
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
