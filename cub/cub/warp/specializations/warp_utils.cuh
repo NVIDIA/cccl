@@ -26,8 +26,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/__bit/has_single_bit.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -37,6 +35,7 @@
 #endif // no system header
 
 #include <cuda/ptx>
+#include <cuda/std/bit>
 
 CUB_NAMESPACE_BEGIN
 namespace detail

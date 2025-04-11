@@ -36,6 +36,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__type_traits/integral_constant.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -91,13 +93,14 @@ struct BlockReduceWarpReductions
   };
 
   ///  WarpReduce utility type
-  using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
+  // using WarpReduceInternal = typename WarpReduce<T, LOGICAL_WARP_SIZE>::InternalWarpReduce;
+  using WarpReduce = WarpReduce<T, LOGICAL_WARP_SIZE>;
 
   /// Shared memory storage layout type
   struct _TempStorage
   {
     /// Buffer for warp-synchronous reduction
-    typename WarpReduceInternal::TempStorage warp_reduce[WARPS];
+    // typename WarpReduceInternal::TempStorage warp_reduce[WARPS];
 
     /// Shared totals from each warp-synchronous reduction
     T warp_aggregates[WARPS];
@@ -216,9 +219,12 @@ struct BlockReduceWarpReductions
                          : num_valid - warp_offset;
 
     // Warp reduction in every warp
-    T warp_aggregate =
-      WarpReduceInternal(temp_storage.warp_reduce[warp_id])
-        .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, ::cuda::std::plus<>{});
+    // T warp_aggregate =
+    //  WarpReduceInternal(temp_storage.warp_reduce[warp_id])
+    //    .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, ::cuda::std::plus<>{});
+    constexpr auto logical_mode =
+      (EVEN_WARP_MULTIPLE && FULL_TILE) ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
+    auto warp_aggregate = WarpReduce{}.Sum(input, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
@@ -247,13 +253,17 @@ struct BlockReduceWarpReductions
                          : num_valid - warp_offset;
 
     // Warp reduction in every warp
-    T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
-                         .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
+    // T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
+    //                     .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);
+    constexpr auto logical_mode =
+      (EVEN_WARP_MULTIPLE && FULL_TILE) ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
+    auto warp_aggregate =
+      WarpReduce{}.Reduce(input, reduction_op, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
   }
 };
-} // namespace detail
 
+} // namespace detail
 CUB_NAMESPACE_END

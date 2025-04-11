@@ -26,8 +26,6 @@
 
 #include <cub/config.cuh>
 
-#include "cub/util_arch.cuh"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -38,6 +36,7 @@
 
 #include <cub/detail/integer_utils.cuh>
 #include <cub/thread/thread_operators.cuh>
+#include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_config.cuh>
 #include <cub/warp/specializations/warp_reduce_ptx.cuh>
 #include <cub/warp/specializations/warp_utils.cuh>
@@ -54,7 +53,6 @@
 #include <cuda/warp>
 
 CUB_NAMESPACE_BEGIN
-
 namespace detail
 {
 
@@ -127,11 +125,7 @@ warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, WarpConfigT config
   for (int K = 0; K < log2_size; K++)
   {
     auto shuffle_mask = cub::detail::reduce_shuffle_mask(K, logical_size, last_pos, is_segmented);
-    // if (threadIdx.x < 32)
-    //{
-    //   printf("(%d) %2d:   %d  max:%d  %X\n", K, threadIdx.x, input1, shuffle_mask, mask);
-    // }
-    input1 = cub::detail::shfl_down_op(reduction_op, input1, 1u << K, shuffle_mask, mask);
+    input1            = cub::detail::shfl_down_op(reduction_op, input1, 1u << K, shuffle_mask, mask);
   }
   if constexpr (result_mode == all_lanes_result)
   {
@@ -284,10 +278,10 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   {
     return Input{};
   }
-  // Min/Max: float, double
+  // [Min/Max]: float, double
   if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && _CUDA_VSTD::is_floating_point_v<Input>)
   {
-    if constexpr (is_same_v<Input, float> && enable_redux)
+    if constexpr (is_same_v<Input, float> && enable_redux && __cccl_ptx_isa >= 860)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_100, (return warp_reduce_redux_op(input, reduction_op, config);));
     }
@@ -296,18 +290,26 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
     auto result_rev = comparable_int_to_floating_point(result_int); // reverse
     return unsafe_bitcast<Input>(result_rev);
   }
-  // Min/Max: __half2, __nv_bfloat162
+  // [Min/Max]: __half, __half2
   else if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && is_any_half_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);))
     _CCCL_ASSERT(false, "__half is not supported before SM53");
   }
+  // [Min/Max]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_shuffle_op(input, reduction_op, config);))
     _CCCL_ASSERT(false, "bfloat16 is not supported before SM80");
   }
-  // Plus: any complex
+  // [Min/Max]: short2, ushort2
+  else if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && is_any_short2_v<Input> && __cccl_ptx_isa >= 800)
+  {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (return warp_reduce_shuffle_op(input, reduction_op, config);),
+                      (return warp_reduce_generic(input, reduction_op, config);))
+  }
+  // [Plus]: any complex
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && __is_complex_v<Input>)
   {
     if constexpr (is_half_v<typename Input::value_type>)
@@ -324,36 +326,46 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
     }
     if constexpr (is_same_v<typename Input::value_type, float>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_100,
-                   (auto float2_value = _CUDA_VSTD::bit_cast<float2>(input); //
-                    return warp_reduce_shuffle_op(float2_value, reduction_op, config);))
+      auto float2_value = unsafe_bitcast<float2>(input);
+      auto ret          = warp_reduce_dispatch(float2_value, reduction_op, config);
+      return unsafe_bitcast<Input>(ret);
     }
     auto real = warp_reduce_dispatch(input.real(), reduction_op, config);
     auto img  = warp_reduce_dispatch(input.imag(), reduction_op, config);
     return Input{real, img};
   }
-  // Plus: half, half X2
+  // [Plus]: __half, __half2
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && is_any_half_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);));
     _CCCL_ASSERT(false, "half is not supported before SM53");
   }
-  // Plus: bfloat16, bfloat16 X2
+  // [Plus]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
                       (return warp_reduce_shuffle_op(input, reduction_op, config);),
                       (return warp_reduce_generic(input, reduction_op, config);));
   }
-  // Plus: float2
-  else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && is_same_v<Input, float2>)
+  // [Plus]: float2
+  else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && is_same_v<Input, float2> && __cccl_ptx_isa >= 860)
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_100,
+      (return warp_reduce_shuffle_op(input, reduction_op, config);),
+      (auto x = warp_reduce_shuffle_op(input.x, reduction_op, config);
+       auto y = warp_reduce_shuffle_op(input.y, reduction_op, config);
+       return float2{x, y};))
+  }
+  // [Plus]: short2, ushort2
+  else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && is_any_short2_v<Input> && __cccl_ptx_isa >= 800)
+  {
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
                       (return warp_reduce_shuffle_op(input, reduction_op, config);),
                       (return warp_reduce_generic(input, reduction_op, config);));
   }
-  // Any std operator: small integrals
-  // Plus:             float, double
+  // Any std operator: small integrals (int8, uint8, int16, uint16, int32, uint32)
+  //    [Plus]:        float, double
   else if constexpr (is_cuda_std_operator_v<ReductionOp, Input>
                      && (is_small_integer || _CUDA_VSTD::is_floating_point_v<Input>) )
   {
@@ -391,30 +403,18 @@ template <bool IsHeadSegment,
 {
   auto logical_warp_id = cub::detail::logical_warp_id(LogicalWarpSize);
   auto member_mask     = cub::detail::reduce_member_mask(logical_mode, logical_size, last_pos_t<0>{});
-  uint32_t warp_flags  = ::__ballot_sync(member_mask, flag);
-  // if (threadIdx.x < 32)
-  //{
-  //   printf("%2d, %2d:   %X   %X\n", threadIdx.x, logical_warp_id, member_mask, warp_flags);
-  // }
+  auto warp_flags      = ::__ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
   // Mask out the bits below the current thread
   warp_flags &= _CUDA_VPTX::get_sreg_lanemask_ge();
-  // Mask of physical lanes outside the logical warp and convert to logical lanemask
-  // warp_flags >>= logical_warp_id * LogicalWarpSize;
   // Mask in the last lane of each logical warp
   warp_flags |= 1u << ((logical_warp_id + 1) * LogicalWarpSize - 1);
   // Find the next set flag
   auto last_lane = _CUDA_VSTD::countr_zero(warp_flags);
-  // if (threadIdx.x < 32)
-  //{
-  //   printf("%2d: %d   %X -> %d\n", threadIdx.x, flag, warp_flags, last_lane);
-  // }
-  auto last_pos = cub::detail::last_pos_t<>{last_lane};
-  auto config =
-    detail::WarpReduceConfig{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}};
+  auto last_pos  = cub::detail::last_pos_t<>{last_lane};
+  detail::WarpReduceConfig config{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}};
   return cub::detail::warp_reduce_dispatch(input, reduction_op, config);
 }
 
 } // namespace detail
-
 CUB_NAMESPACE_END

@@ -34,9 +34,12 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cstdint>
+
 #include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
+#include <sys/types.h>
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
@@ -45,16 +48,13 @@ __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
   using storage_t     = typename warp_reduce_t::TempStorage;
   __shared__ storage_t storage[TOTAL_WARPS];
 
-  int warp_id   = threadIdx.x / LOGICAL_WARP_THREADS;
-  T thread_data = in[threadIdx.x];
+  auto warp_id     = threadIdx.x / LOGICAL_WARP_THREADS;
+  auto thread_data = in[threadIdx.x];
   // Instantiate and run warp reduction
   warp_reduce_t warp_reduce(storage[warp_id]);
   out[threadIdx.x] = action(threadIdx.x, warp_reduce, thread_data);
 }
 
-/**
- * @brief Delegate wrapper for WarpReduce::TailSegmentedSum
- */
 template <typename T>
 struct warp_seg_sum_tail_t
 {
@@ -68,9 +68,6 @@ struct warp_seg_sum_tail_t
   }
 };
 
-/**
- * @brief Delegate wrapper for WarpReduce::HeadSegmentedSum
- */
 template <typename T>
 struct warp_seg_sum_head_t
 {
@@ -84,9 +81,6 @@ struct warp_seg_sum_head_t
   }
 };
 
-/**
- * @brief Delegate wrapper for WarpReduce::TailSegmentedReduce
- */
 template <typename T, typename ReductionOpT>
 struct warp_seg_reduce_tail_t
 {
@@ -101,9 +95,6 @@ struct warp_seg_reduce_tail_t
   }
 };
 
-/**
- * @brief Delegate wrapper for WarpReduce::HeadSegmentedReduce
- */
 template <typename T, typename ReductionOpT>
 struct warp_seg_reduce_head_t
 {
@@ -126,32 +117,14 @@ void warp_reduce(c2h::device_vector<T>& in, c2h::device_vector<T>& out, ActionT 
 {
   warp_reduce_kernel<LOGICAL_WARP_THREADS, TOTAL_WARPS, T, ActionT><<<1, LOGICAL_WARP_THREADS * TOTAL_WARPS>>>(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), action);
-
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
 }
 
-/**
- * @brief Compares the results returned from system under test against the expected results.
- */
-// template <typename T, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<T>, int> = 0>
-// void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
-//{
-//   REQUIRE_APPROX_EQ(expected_data, test_results);
-// }
-//
-///**
-// * @brief Compares the results returned from system under test against the expected results.
-// */
-// template <typename T, ::cuda::std::enable_if_t<!::cuda::std::is_floating_point_v<T>, int> = 0>
-// void verify_results(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
-//{
-//  REQUIRE(expected_data == test_results);
-//}
-
 /***********************************************************************************************************************
  * Types
  **********************************************************************************************************************/
+
 enum class reduce_mode
 {
   all,
@@ -165,9 +138,15 @@ using custom_t =
 
 using full_type_list = c2h::type_list<uint8_t, uint16_t, int32_t, int64_t, float, custom_t, ulonglong4>;
 
+using builtin_type_list = c2h::type_list<int8_t, uint16_t, int32_t, int64_t, float, double>;
+
 using logical_warp_threads = c2h::enum_type_list<int, 32, 16, 7, 1>;
 
 using segmented_modes = c2h::enum_type_list<reduce_mode, reduce_mode::head_flags, reduce_mode::tail_flags>;
+
+using op_list = c2h::type_list<cuda::std::plus<>, cuda::minimum<>>;
+
+using flag_t = uint8_t;
 
 template <int logical_warp_threads>
 struct total_warps_t
@@ -215,17 +194,14 @@ void compute_host_reference(
   {
     int warp_offset = warp * logical_warp_threads;
     int item_offset = warp_offset + valid_warp_threads - 1;
-
     // Last item in warp
     auto head_aggregate = h_in[item_offset];
     auto tail_aggregate = h_in[item_offset];
-
     if (mode != reduce_mode::tail_flags && h_flags[item_offset])
     {
       h_data_out[item_offset] = head_aggregate;
     }
     item_offset--;
-
     // Work backwards
     while (item_offset >= warp_offset)
     {
@@ -257,7 +233,6 @@ void compute_host_reference(
 
       item_offset--;
     }
-
     // Record last segment aggregate
     if (mode == reduce_mode::tail_flags)
     {
@@ -274,7 +249,8 @@ void compute_host_reference(
  * Test cases
  **********************************************************************************************************************/
 
-C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_warp_threads, segmented_modes)
+C2H_TEST(
+  "WarpReduce::Segmented::Sum", "[reduce][warp][segmented]", full_type_list, logical_warp_threads, segmented_modes)
 {
   using params                 = params_t<TestType>;
   using T                      = typename params::type;
@@ -283,13 +259,9 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   using warp_seg_sum_t =
     cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<T>, warp_seg_sum_head_t<T>>;
 
-  // Prepare test data
   c2h::device_vector<T> d_in(params::tile_size);
-  c2h::device_vector<uint8_t> d_flags(params::tile_size);
+  c2h::device_vector<flag_t> d_flags(params::tile_size);
   c2h::device_vector<T> d_out(params::tile_size);
-  constexpr auto valid_items = params::logical_warp_threads;
-  constexpr uint8_t min      = 0;
-  constexpr uint8_t max      = 2;
   if constexpr (cuda::std::__is_any_floating_point_v<T>)
   {
     c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
@@ -298,16 +270,16 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   {
     c2h::gen(C2H_SEED(1), d_in);
   }
-  c2h::gen(C2H_SEED(1), d_flags, min, max);
+  c2h::gen(C2H_SEED(1), d_flags, flag_t{0}, flag_t{2});
 
-  // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(
     d_in, d_out, warp_seg_sum_t{thrust::raw_pointer_cast(d_flags.data())});
 
   // Prepare verification data
-  c2h::host_vector<T> h_in          = d_in;
-  c2h::host_vector<uint8_t> h_flags = d_flags;
-  c2h::host_vector<T> h_out         = h_in;
+  c2h::host_vector<T> h_in         = d_in;
+  c2h::host_vector<flag_t> h_flags = d_flags;
+  c2h::host_vector<T> h_out        = h_in;
+  constexpr auto valid_items       = params::logical_warp_threads;
   compute_host_reference(
     segmented_mod,
     h_in,
@@ -320,40 +292,35 @@ C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   verify_results(h_out, d_out);
 }
 
-#if 0
-
-C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, logical_warp_threads, segmented_modes)
+C2H_TEST("WarpReduce::Segmented::Generic",
+         "[reduce][warp][segmented]",
+         builtin_type_list,
+         logical_warp_threads,
+         segmented_modes)
 {
-  using params   = params_t<TestType>;
-  using type     = typename params::type;
-  using red_op_t = ::cuda::minimum<>;
-
+  using params                 = params_t<TestType>;
+  using type                   = typename params::type;
+  using red_op_t               = ::cuda::minimum<>;
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
-  static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,
-                "Segmented tests must either be head or tail flags");
   using warp_seg_reduction_t =
-    ::cuda::std::_If<(segmented_mod == reduce_mode::tail_flags),
-                     warp_seg_reduce_tail_t<type, red_op_t>,
-                     warp_seg_reduce_head_t<type, red_op_t>>;
+    cuda::std::_If<(segmented_mod == reduce_mode::tail_flags),
+                   warp_seg_reduce_tail_t<type, red_op_t>,
+                   warp_seg_reduce_head_t<type, red_op_t>>;
 
-  // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
-  c2h::device_vector<uint8_t> d_flags(params::tile_size);
+  c2h::device_vector<flag_t> d_flags(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
-  constexpr auto valid_items = params::logical_warp_threads;
-  constexpr uint8_t min      = 0;
-  constexpr uint8_t max      = 2;
   c2h::gen(C2H_SEED(5), d_in);
-  c2h::gen(C2H_SEED(5), d_flags, min, max);
+  c2h::gen(C2H_SEED(5), d_flags, flag_t{0}, flag_t{2});
 
-  // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(
     d_in, d_out, warp_seg_reduction_t{thrust::raw_pointer_cast(d_flags.data()), red_op_t{}});
 
   // Prepare verification data
-  c2h::host_vector<type> h_in       = d_in;
-  c2h::host_vector<uint8_t> h_flags = d_flags;
-  c2h::host_vector<type> h_out      = h_in;
+  c2h::host_vector<type> h_in      = d_in;
+  c2h::host_vector<flag_t> h_flags = d_flags;
+  c2h::host_vector<type> h_out     = h_in;
+  constexpr auto valid_items       = params::logical_warp_threads;
   compute_host_reference(
     segmented_mod,
     h_in,
@@ -363,9 +330,5 @@ C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, 
     valid_items,
     red_op_t{},
     h_out.begin());
-
-  // Verify results
   verify_results(h_out, d_out);
 }
-
-#endif

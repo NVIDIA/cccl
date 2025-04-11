@@ -268,14 +268,14 @@ template <typename T, typename ReductionOp>
   static_assert(is_same_v<T, float> && cub::internal::is_cuda_std_min_max_v<ReductionOp, T>);
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (return cub::detail::redux_sm100a_op(reduction_op, value, mask);),
-               (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a(); _CCCL_UNREACHABLE();))
+               (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a();))
 #else
   static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
 #endif // __cccl_ptx_isa >= 860
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// reduce_shuffle_mask
+// Generation of Shuffle Mask
 
 template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_mask(
@@ -301,7 +301,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// reduce_member_mask
+// Generation of Shuffle/Reduce Member Mask
 
 template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented = false>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_member_mask(
