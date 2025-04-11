@@ -9,7 +9,6 @@
 // UNSUPPORTED: libcpp-has-no-threads, pre-sm-60
 // UNSUPPORTED: windows && pre-sm-70
 // UNSUPPORTED: nvrtc
-// ADDITIONAL_COMPILE_OPTIONS_CUDA: -maxrregcount 24
 
 // <cuda/atomic>
 
@@ -25,7 +24,7 @@
 Test goals:
 Pre-load registers with values that will be used to trigger the wrong codepath in local device atomics.
 */
-__global__ void device_test(char* gmem)
+__global__ void __launch_bounds__(2048) device_test(char* gmem)
 {
   __shared__ int hidx;
   __shared__ int histogram[1024];
@@ -40,7 +39,8 @@ __global__ void device_test(char* gmem)
 
   __syncthreads();
 
-  for (xatom = 0; xatom.load() < 8; xatom++)
+#pragma unroll
+  for (xatom = 0; xatom.load() < 16; xatom++)
   {
     using A = cuda::atomic_ref<int, cuda::std::thread_scope_block>;
     A(histogram[A(hidx).fetch_add(1) % 1024]).fetch_add(gmem[(xatom.load() * 8) + 0]);
@@ -55,7 +55,7 @@ __global__ void device_test(char* gmem)
 
   __syncthreads();
   printf("[%i] = %i\r\n", threadIdx.x, histogram[threadIdx.x]);
-  assert(histogram[threadIdx.x] == 64);
+  assert(histogram[threadIdx.x] == 128);
 }
 
 void launch_kernel()
