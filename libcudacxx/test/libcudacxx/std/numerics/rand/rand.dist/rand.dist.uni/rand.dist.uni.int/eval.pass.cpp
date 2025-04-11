@@ -101,10 +101,34 @@ __host__ __device__ void test_statistics()
   test_statistics<ResultType, EngineType>(0, cuda::std::numeric_limits<ResultType>::max());
 }
 
+template <class EngineType>
+__host__ __device__ void test_statistics()
+{
+  test_statistics<int, EngineType>();
+  test_statistics<short, EngineType>();
+  test_statistics<long, EngineType>();
+  test_statistics<long long, EngineType>();
+
+  test_statistics<unsigned short, EngineType>();
+  test_statistics<unsigned int, EngineType>();
+  test_statistics<unsigned long, EngineType>();
+  test_statistics<unsigned long long, EngineType>();
+
+  test_statistics<cuda::std::int8_t, EngineType>();
+  test_statistics<cuda::std::uint8_t, EngineType>();
+
+  // clang-cuda segfaults with 128 bit
+  // fatal error: error in backend: Undefined external symbol ""
+#if _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
+  test_statistics<__int128_t, EngineType>();
+  test_statistics<__uint128_t, EngineType>();
+#endif // _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
+}
+
 int main(int, char**)
 {
-  test_statistics<int, cuda::std::minstd_rand0>();
-  test_statistics<int, cuda::std::minstd_rand0>(-6, 106);
+  test_statistics<cuda::std::minstd_rand0>();
+
 #if 0 // not implemented
   test_statistics<int, cuda::std::minstd_rand>();
   test_statistics<int, cuda::std::mt19937>();
@@ -116,32 +140,16 @@ int main(int, char**)
   test_statistics<int, cuda::std::knuth_b>();
   test_statistics<int, cuda::std::minstd_rand>(5, 100);
 #endif // not implemented
-
-  test_statistics<short, cuda::std::minstd_rand0>();
-  test_statistics<int, cuda::std::minstd_rand0>();
-  test_statistics<long, cuda::std::minstd_rand0>();
-  test_statistics<long long, cuda::std::minstd_rand0>();
-
-  test_statistics<unsigned short, cuda::std::minstd_rand0>();
-  test_statistics<unsigned int, cuda::std::minstd_rand0>();
-  test_statistics<unsigned long, cuda::std::minstd_rand0>();
-  test_statistics<unsigned long long, cuda::std::minstd_rand0>();
-
+  test_statistics<int, cuda::std::minstd_rand0>(-6, 106);
   test_statistics<short, cuda::std::minstd_rand0>(SHRT_MIN, SHRT_MAX);
 
-  test_statistics<cuda::std::int8_t, cuda::std::minstd_rand0>();
-  test_statistics<cuda::std::uint8_t, cuda::std::minstd_rand0>();
-
-#if _CCCL_HAS_INT128()
-  test_statistics<__int128_t, cuda::std::minstd_rand0>();
-  test_statistics<__uint128_t, cuda::std::minstd_rand0>();
-
+#if _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
   test_statistics<__int128_t, cuda::std::minstd_rand0>(-100, 900);
   test_statistics<__int128_t, cuda::std::minstd_rand0>(0, UINT64_MAX);
   test_statistics<__int128_t, cuda::std::minstd_rand0>(
     cuda::std::numeric_limits<__int128_t>::min(), cuda::std::numeric_limits<__int128_t>::max());
   test_statistics<__uint128_t, cuda::std::minstd_rand0>(0, UINT64_MAX);
-#endif // _CCCL_HAS_INT128()
+#endif // _CCCL_HAS_INT128() && !TEST_CUDA_COMPILER(CLANG)
 
   return 0;
 }
