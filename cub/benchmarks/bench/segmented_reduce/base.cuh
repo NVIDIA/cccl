@@ -123,7 +123,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,

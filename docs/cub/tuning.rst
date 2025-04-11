@@ -211,7 +211,8 @@ which contains the second call to a CUB algorithm and performs the actual work w
 
 .. code:: c++
 
-    state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
+    state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch,
+               [&](nvbench::launch &launch) {
       dispatch_t::Dispatch(temp_storage,
                            temp_size,
                            d_in,
