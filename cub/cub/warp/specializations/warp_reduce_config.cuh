@@ -65,11 +65,40 @@ using reduce_logical_mode_t = _CUDA_VSTD::integral_constant<ReduceLogicalMode, L
 template <WarpReduceResultMode Kind>
 using reduce_result_mode_t = _CUDA_VSTD::integral_constant<WarpReduceResultMode, Kind>;
 
-template <size_t ValidItems = _CUDA_VSTD::dynamic_extent>
-using valid_items_t = _CUDA_VSTD::extents<int, ValidItems>;
+template <size_t LastPos = _CUDA_VSTD::dynamic_extent>
+using last_pos_t = _CUDA_VSTD::extents<int, LastPos>;
 
 template <size_t LogicalSize>
 using logical_warp_size_t = _CUDA_VSTD::integral_constant<int, LogicalSize>;
+
+template <bool IsSegmented = true>
+using is_segmented_t = _CUDA_VSTD::bool_constant<IsSegmented>;
+
+template <ReduceLogicalMode LogicalMode,
+          WarpReduceResultMode ResultMode,
+          int LogicalWarpSize,
+          size_t LastPos   = LogicalWarpSize - 1,
+          bool IsSegmement = false>
+struct WarpReduceConfig
+{
+  reduce_logical_mode_t<LogicalMode> logical_mode;
+  reduce_result_mode_t<ResultMode> result_mode;
+  logical_warp_size_t<LogicalWarpSize> logical_size;
+  last_pos_t<LastPos> last_pos;
+  is_segmented_t<IsSegmement> is_segmented;
+};
+
+template <ReduceLogicalMode LogicalMode,
+          WarpReduceResultMode ResultMode,
+          int LogicalWarpSize,
+          size_t LastPos   = LogicalWarpSize - 1,
+          bool IsSegmement = false>
+WarpReduceConfig(detail::reduce_logical_mode_t<LogicalMode>,
+                 detail::reduce_result_mode_t<ResultMode>,
+                 logical_warp_size_t<LogicalWarpSize>,
+                 last_pos_t<LastPos>         = {},
+                 is_segmented_t<IsSegmement> = {})
+  -> WarpReduceConfig<LogicalMode, ResultMode, LogicalWarpSize, LastPos, IsSegmement>;
 
 } // namespace detail
 

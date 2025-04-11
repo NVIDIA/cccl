@@ -825,7 +825,7 @@ inline constexpr bool is_any_bfloat16_v = is_bfloat16_v<T> || is_bfloat16_X2_v<T
 
 template <typename T>
 inline constexpr bool is_arithmetic_cuda_floating_point_v =
-  is_half_v<T> || is_bfloat16_v<T> || _CUDA_VSTD::is_floating_point_v<T>;
+  is_any_half_v<T> || is_any_bfloat16_v<T> || _CUDA_VSTD::is_floating_point_v<T>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // Identity

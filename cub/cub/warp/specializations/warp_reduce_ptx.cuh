@@ -277,34 +277,42 @@ template <typename T, typename ReductionOp>
 //----------------------------------------------------------------------------------------------------------------------
 // reduce_shuffle_mask
 
-template <int LogicalWarpSize, size_t ValidItems>
+template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_mask(
-  [[maybe_unused]] uint32_t step, logical_warp_size_t<LogicalWarpSize>, valid_items_t<ValidItems> valid_items)
+  [[maybe_unused]] uint32_t step,
+  logical_warp_size_t<LogicalWarpSize>,
+  last_pos_t<ValidItems> last_pos,
+  is_segmented_t<IsSegmented> is_segmented = {})
 {
-  if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
+  if constexpr (is_segmented)
+  {
+    return last_pos.extent(0);
+  }
+  else if constexpr (last_pos.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
   {
     const auto clamp   = 1u << step;
     const auto segmask = 0b11110u << (step + 8);
     return clamp | segmask;
   }
-  else
+  else // last_pos is dynamic
   {
-    return cub::detail::logical_warp_id(LogicalWarpSize) * LogicalWarpSize + valid_items.extent(0) - 1;
+    return cub::detail::logical_warp_id(LogicalWarpSize) * LogicalWarpSize + last_pos.extent(0);
   }
 }
 
 //----------------------------------------------------------------------------------------------------------------------
 // reduce_member_mask
 
-template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems>
+template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented = false>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_member_mask(
   reduce_logical_mode_t<LogicalMode> logical_mode,
   logical_warp_size_t<LogicalWarpSize>,
-  valid_items_t<ValidItems> valid_items)
+  last_pos_t<ValidItems> last_pos,
+  is_segmented_t<IsSegmented> is_segmented = {})
 {
-  if constexpr (valid_items.rank_dynamic() == 1)
+  if constexpr (!is_segmented && last_pos.rank_dynamic() == 1)
   {
-    return ::__activemask(); // equivalent to (0xFFFFFFFF >> (warp_threads - valid_items))
+    return ::__activemask(); // equivalent to (0xFFFFFFFF >> (warp_threads - last_pos))
   }
   else
   {

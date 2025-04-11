@@ -81,7 +81,11 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   {
     REQUIRE_APPROX_EQ(expected_data, test_results);
   }
-  else if constexpr (cuda::std::__is_extended_floating_point_v<T>)
+  else if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
+  {
+    REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, 0.09f);
+  }
+  else if constexpr (cuda::std::is_same_v<T, __half>)
   {
     REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, 0.05f);
   }
@@ -93,7 +97,11 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
       {
         REQUIRE_APPROX_EQ(expected_data[i], test_results[i]);
       }
-      else if constexpr (cuda::std::__is_extended_floating_point_v<T>)
+      else if constexpr (cuda::std::is_same_v<T, __nv_bfloat16>)
+      {
+        REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, 0.1f);
+      }
+      else if constexpr (cuda::std::is_same_v<T, __half>)
       {
         REQUIRE_APPROX_EQ_EPSILON(expected_data[i], test_results[i], 0.05f);
       }

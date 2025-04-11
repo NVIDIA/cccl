@@ -33,8 +33,10 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <cstdio>
 #include <numeric>
 
+#include "cuda/__functional/maximum.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
@@ -253,7 +255,7 @@ using min_max_type_list = c2h::type_list<
 #  endif // TEST_BF_T()
   >;
 
-using min_max_op_list = c2h::type_list<cuda::maximum<>, cuda::minimum<>>;
+using min_max_op_list = c2h::type_list<cuda::minimum<>, cuda::maximum<>>;
 
 using builtin_type_list = c2h::type_list<int8_t, uint16_t, int32_t, int64_t, float, double>;
 
@@ -329,13 +331,6 @@ C2H_TEST("WarpReduce::Sum", "[reduce][warp][predefined_op][full]", arithmetic_ty
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
-  // c2h::host_vector<T> h_tmp = d_out;
-  //  for (size_t i = 0; i < output_size; ++i)
-  //{
-  //    auto [high1, low1] = cub::detail::split_integers(h_out[i]);
-  //    auto [high2, low2] = cub::detail::split_integers(h_tmp[i]);
-  //    printf("%lu/%lu    %lu/%lu\n", high1, low1, high2, low2);
-  //  }
   verify_results(h_out, d_out);
 }
 
@@ -498,7 +493,7 @@ C2H_TEST("WarpReduce::CustomSum Partial", "[reduce][warp][predefined_op][partial
 //----------------------------------------------------------------------------------------------------------------------
 // multiple items per thread
 
-C2H_TEST("WarpReduce::Sum/Max/Min Multiple Items Per Thread",
+C2H_TEST("WarpReduce::Sum Multiple Items Per Thread",
          "[reduce][warp][predefined_op][full]",
          builtin_type_list,
          logical_warp_threads)
