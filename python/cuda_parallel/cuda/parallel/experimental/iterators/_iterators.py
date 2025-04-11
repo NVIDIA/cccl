@@ -186,7 +186,12 @@ class IteratorBase:
     def copy(self):
         out = object.__new__(self.__class__)
         IteratorBase.__init__(
-            out, self.cvalue, self.numba_type, self.state_type, self.value_type
+            out,
+            self.cvalue,
+            self.numba_type,
+            self.state_type,
+            self.value_type,
+            self.iterator_io,
         )
         out.ltoirs = self.ltoirs
         return out
