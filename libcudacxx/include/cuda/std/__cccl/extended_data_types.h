@@ -120,7 +120,7 @@
 #  define _CCCL_HAS_CHAR8_T() 1
 #endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
 
-// We currently do not suppport any of the STL wchar facilities
+// We currently do not support any of the STL wchar facilities
 #define _CCCL_HAS_WCHAR_T() 0
 
 #endif // __CCCL_EXTENDED_DATA_TYPES_H
