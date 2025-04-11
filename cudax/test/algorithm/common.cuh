@@ -36,7 +36,7 @@ void check_result_and_erase(cudax::stream_ref stream, Result&& result, uint8_t p
 {
   int expected = get_expected_value(pattern_byte);
 
-  stream.wait();
+  stream.sync();
   for (int& i : result)
   {
     CUDAX_REQUIRE(i == expected);

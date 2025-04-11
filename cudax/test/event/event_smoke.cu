@@ -76,11 +76,11 @@ C2H_TEST("can use event_ref to record and wait on an event", "[event]")
   cudax::stream stream;
   cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   ref.record(stream);
-  ref.wait();
+  ref.sync();
   CUDAX_REQUIRE(ref.is_done());
   CUDAX_REQUIRE(*i == 42);
 
-  stream.wait();
+  stream.sync();
   CUDAX_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);
 }
 
@@ -97,10 +97,10 @@ C2H_TEST("can wait on an event", "[event]")
   ::test::managed<int> i(0);
   cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   cudax::event ev(stream);
-  ev.wait();
+  ev.sync();
   CUDAX_REQUIRE(ev.is_done());
   CUDAX_REQUIRE(*i == 42);
-  stream.wait();
+  stream.sync();
 }
 
 C2H_TEST("can take the difference of two timed_event objects", "[event]")
@@ -110,13 +110,13 @@ C2H_TEST("can take the difference of two timed_event objects", "[event]")
   cudax::timed_event start(stream);
   cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
   cudax::timed_event end(stream);
-  end.wait();
+  end.sync();
   CUDAX_REQUIRE(end.is_done());
   CUDAX_REQUIRE(*i == 42);
   auto elapsed = end - start;
   CUDAX_REQUIRE(elapsed.count() >= 0);
   STATIC_REQUIRE(_CUDA_VSTD::is_same_v<decltype(elapsed), _CUDA_VSTD::chrono::nanoseconds>);
-  stream.wait();
+  stream.sync();
 }
 
 C2H_TEST("can observe the event in not ready state", "[event]")
@@ -130,6 +130,6 @@ C2H_TEST("can observe the event in not ready state", "[event]")
   cudax::event ev(stream);
   CUDAX_REQUIRE(!ev.is_done());
   atomic_i.store(80);
-  ev.wait();
+  ev.sync();
   CUDAX_REQUIRE(ev.is_done());
 }

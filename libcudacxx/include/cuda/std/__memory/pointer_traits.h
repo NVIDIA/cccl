@@ -143,7 +143,7 @@ public:
   }
 };
 
-template <class _Ptr>
+template <class _Ptr, class = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits : __pointer_traits_impl<_Ptr>
 {};
 

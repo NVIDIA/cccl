@@ -10,6 +10,7 @@ from typing import Callable, List
 import numba
 import numpy as np
 from numba import cuda, types
+from numba.core.extending import as_numba_type
 
 from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
 
@@ -183,6 +184,21 @@ def to_cccl_op(op: Callable, sig) -> Op:
         state_alignment=1,
         state=None,
     )
+
+
+def get_value_type(d_in: IteratorBase | DeviceArrayLike):
+    from .struct import gpu_struct_from_numpy_dtype
+
+    if isinstance(d_in, IteratorBase):
+        return d_in.value_type
+    dtype = get_dtype(d_in)
+    if dtype.type == np.void:
+        # we can't use the numba type corresponding to numpy struct
+        # types directly, as those are passed by pointer to device
+        # functions. Instead, we create an anonymous struct type
+        # which has the appropriate pass-by-value semantics.
+        return as_numba_type(gpu_struct_from_numpy_dtype("anonymous", dtype))
+    return numba.from_dtype(dtype)
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
