@@ -3,6 +3,7 @@ import numpy as np
 
 import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
+from cuda.parallel.experimental.struct import gpu_struct
 
 
 def merge_sort_pointer(keys, vals, output_keys, output_vals, build_only):
@@ -37,6 +38,28 @@ def merge_sort_iterator(size, output_keys, output_vals, build_only):
     scratch = cp.empty(temp_bytes, dtype=cp.uint8)
 
     if not build_only:
+        alg(scratch, keys, vals, output_keys, output_vals, size)
+
+    cp.cuda.runtime.deviceSynchronize()
+
+
+@gpu_struct
+class MyStruct:
+    x: np.int32
+    y: np.int32
+
+
+def merge_sort_struct(size, keys, vals, output_keys, output_vals, build_only):
+    size = len(keys)
+
+    def my_cmp(a: MyStruct, b: MyStruct) -> np.int8:
+        return np.int8(a.x < b.x)
+
+    alg = algorithms.merge_sort(keys, vals, output_keys, output_vals, my_cmp)
+
+    if not build_only:
+        temp_bytes = alg(None, keys, vals, output_keys, output_vals, size)
+        scratch = cp.empty(temp_bytes, dtype=cp.uint8)
         alg(scratch, keys, vals, output_keys, output_vals, size)
 
     cp.cuda.runtime.deviceSynchronize()
@@ -84,5 +107,17 @@ def bench_merge_sort_iterator(benchmark, size):
 
     def run():
         merge_sort_iterator(size, output_keys, output_vals, build_only=False)
+
+    benchmark(run)
+
+
+def bench_merge_sort_struct(benchmark, size):
+    keys = cp.random.randint(0, 10, (size, 2)).view(MyStruct.dtype)
+    vals = cp.random.randint(0, 10, (size, 2)).view(MyStruct.dtype)
+    output_keys = cp.empty_like(keys)
+    output_vals = cp.empty_like(vals)
+
+    def run():
+        merge_sort_struct(size, keys, vals, output_keys, output_vals, build_only=False)
 
     benchmark(run)
