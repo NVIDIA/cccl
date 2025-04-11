@@ -181,9 +181,9 @@ template <class _State>
 class _CCCL_TYPE_VISIBILITY_DEFAULT fpos;
 typedef fpos<mbstate_t> streampos;
 typedef fpos<mbstate_t> wstreampos;
-#  if _LIBCUDACXX_HAS_CHAR8_T()
+#  if _CCCL_HAS_CHAR8_T()
 typedef fpos<mbstate_t> u8streampos;
-#  endif // _LIBCUDACXX_HAS_CHAR8_T()
+#  endif // _CCCL_HAS_CHAR8_T()
 typedef fpos<mbstate_t> u16streampos;
 typedef fpos<mbstate_t> u32streampos;
 #endif // _LIBCUDACXX_HAS_WCHAR_H()

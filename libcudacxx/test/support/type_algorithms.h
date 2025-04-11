@@ -96,10 +96,10 @@ struct partial_instantiation
 using character_types =
   type_list<char,
             wchar_t
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
             ,
             char8_t
-#endif // !_LIBCUDACXX_HAS_CHAR8_T()
+#endif // !_CCCL_HAS_CHAR8_T()
             ,
             char16_t,
             char32_t>;
