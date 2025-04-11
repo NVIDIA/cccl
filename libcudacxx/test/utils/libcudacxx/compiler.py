@@ -263,12 +263,6 @@ class CXXCompiler(object):
         elif mode == self.CM_Compile or mode == self.CM_CheckCompileFlag:
             cmd += ["-c"]
         cmd += self.flags
-
-        # If we only want to check whether the compiler supports a flag stop here
-        if mode == self.CM_CheckCompileFlag:
-            cmd += flags
-            return cmd
-
         if self.use_verify:
             cmd += self.verify_flags
             assert mode in [self.CM_Default, self.CM_Compile]
