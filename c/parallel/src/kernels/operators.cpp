@@ -109,8 +109,8 @@ extern "C" __device__ OUTPUT_T OP_NAME(INPUT_T val);
 struct op_wrapper {
   __device__ OUTPUT_T operator()(INPUT_T val) const {
     return OP_NAME(val);
-  }}
-}};
+  }
+};
 )XXX";
 
   constexpr std::string_view stateful_op = R"XXX(

@@ -357,3 +357,45 @@ class DeviceRadixSortBuildResult:
         selector: int,
         stream,
     ) -> tuple[int, int]: ...
+
+# --------------------
+# DeviceUnaryTransform
+# --------------------
+
+class DeviceUnaryTransform:
+    def __init__(
+        self,
+        d_in: Iterator,
+        d_out: Iterator,
+        op: Op,
+        info: CommonData,
+    ): ...
+    def compute(
+        self,
+        d_in: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        stream,
+    ) -> None: ...
+
+# ---------------------
+# DeviceBinaryTransform
+# ---------------------
+
+class DeviceBinaryTransform:
+    def __init__(
+        self,
+        d_in1: Iterator,
+        d_in2: Iterator,
+        d_out: Iterator,
+        op: Op,
+        info: CommonData,
+    ): ...
+    def compute(
+        self,
+        d_in1: Iterator,
+        d_in2: Iterator,
+        d_out: Iterator,
+        num_items: int,
+        stream,
+    ) -> None: ...
