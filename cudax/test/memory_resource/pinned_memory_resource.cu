@@ -87,7 +87,7 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
       auto* ptr = res.allocate_async(42, stream);
       static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-      stream.wait();
+      stream.sync();
       ensure_pinned_ptr(ptr);
 
       res.deallocate_async(ptr, 42, stream);
@@ -97,7 +97,7 @@ C2H_TEST_LIST("pinned_memory_resource allocation", "[memory_resource]", TEST_TYP
       auto* ptr = res.allocate_async(42, 4, stream);
       static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-      stream.wait();
+      stream.sync();
       ensure_pinned_ptr(ptr);
 
       res.deallocate_async(ptr, 42, 4, stream);
