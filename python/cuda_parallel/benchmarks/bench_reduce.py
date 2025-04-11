@@ -5,20 +5,20 @@ import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
 
 
-def reduce_pointer(size, build_only):
-    d = cp.ones(size, dtype="i4")
-    res = cp.empty(tuple(), dtype=d.dtype)
-    h_init = np.zeros(tuple(), dtype=d.dtype)
+def reduce_pointer(input_array, build_only):
+    size = len(input_array)
+    res = cp.empty(tuple(), dtype=input_array.dtype)
+    h_init = np.zeros(tuple(), dtype=input_array.dtype)
 
     def my_add(a, b):
         return a + b
 
-    alg = algorithms.reduce_into(d, res, my_add, h_init)
-    temp_bytes = alg(None, d, res, size, h_init)
+    alg = algorithms.reduce_into(input_array, res, my_add, h_init)
+    temp_bytes = alg(None, input_array, res, size, h_init)
     scratch = cp.empty(temp_bytes, dtype=cp.uint8)
 
     if not build_only:
-        alg(scratch, d, res, size, h_init)
+        alg(scratch, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -43,16 +43,32 @@ def reduce_iterator(size, build_only):
 
 
 def bench_compile_reduce_pointer(compile_benchmark):
-    compile_benchmark(algorithms.reduce_into, reduce_pointer)
+    input_array = cp.random.randint(0, 10, 10)
+
+    def run():
+        reduce_pointer(input_array, build_only=True)
+
+    compile_benchmark(algorithms.reduce_into, run)
 
 
-def bench_compile_merge_sort_iterator(compile_benchmark):
-    compile_benchmark(algorithms.reduce_into, reduce_iterator)
+def bench_compile_reduce_iterator(compile_benchmark):
+    def run():
+        reduce_iterator(10, build_only=True)
+
+    compile_benchmark(algorithms.reduce_into, run)
 
 
 def bench_reduce_pointer(benchmark, size):
-    benchmark(reduce_pointer, size, build_only=False)
+    input_array = cp.random.randint(0, 10, size)
+
+    def run():
+        reduce_pointer(input_array, build_only=False)
+
+    benchmark(run)
 
 
 def bench_reduce_iterator(benchmark, size):
-    benchmark(reduce_iterator, size, build_only=False)
+    def run():
+        reduce_iterator(size, build_only=False)
+
+    benchmark(run)
