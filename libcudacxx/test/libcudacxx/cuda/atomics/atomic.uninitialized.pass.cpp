@@ -39,7 +39,6 @@ __global__ void __launch_bounds__(2048) device_test(char* gmem)
 
   __syncthreads();
 
-#pragma unroll
   for (xatom = 0; xatom.load() < 16; xatom++)
   {
     using A = cuda::atomic_ref<int, cuda::std::thread_scope_block>;
