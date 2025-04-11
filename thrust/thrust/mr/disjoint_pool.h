@@ -36,11 +36,14 @@
 #include <thrust/binary_search.h>
 #include <thrust/detail/algorithm_wrapper.h>
 #include <thrust/detail/seq.h>
+#include <thrust/find.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
@@ -361,8 +364,8 @@ public:
     // the request is NOT for oversized and/or overaligned memory
     // allocate a block from an appropriate bucket
     std::size_t bytes_log2 = thrust::detail::log2_ri(bytes);
-    std::size_t bucket_idx = bytes_log2 - m_smallest_block_log2;
-    pool& bucket           = m_pools[bucket_idx];
+    std::size_t pool_idx   = bytes_log2 - m_smallest_block_log2;
+    pool& bucket           = m_pools[pool_idx];
 
     // if the free list of the bucket has no elements, allocate a new chunk
     // and split it into blocks pushed to the free list
@@ -373,23 +376,14 @@ public:
       std::size_t n = bucket.previous_allocated_count;
       if (n == 0)
       {
-        n = m_options.min_blocks_per_chunk;
-        if (n < (m_options.min_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.min_bytes_per_chunk >> bytes_log2;
-        }
+        n = ::cuda::std::max(m_options.min_blocks_per_chunk, //
+                             m_options.min_bytes_per_chunk >> bytes_log2);
       }
       else
       {
-        n = n * 3 / 2;
-        if (n > (m_options.max_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.max_bytes_per_chunk >> bytes_log2;
-        }
-        if (n > m_options.max_blocks_per_chunk)
-        {
-          n = m_options.max_blocks_per_chunk;
-        }
+        n = ::cuda::std::min({n * 3 / 2, //
+                              m_options.max_bytes_per_chunk >> bytes_log2,
+                              m_options.max_blocks_per_chunk});
       }
 
       bytes = n << bytes_log2;
@@ -450,8 +444,8 @@ public:
 
     // push the block to the front of the appropriate bucket's free list
     std::size_t n_log2     = thrust::detail::log2_ri(n);
-    std::size_t bucket_idx = n_log2 - m_smallest_block_log2;
-    pool& bucket           = m_pools[bucket_idx];
+    std::size_t pool_idx   = n_log2 - m_smallest_block_log2;
+    pool& bucket           = m_pools[pool_idx];
 
     bucket.free_blocks.push_back(p);
   }
