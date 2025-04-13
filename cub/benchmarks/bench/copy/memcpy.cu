@@ -240,16 +240,17 @@ void copy(nvbench::state& state,
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_input_buffers,
-      d_output_buffers,
-      d_buffer_sizes,
-      buffers,
-      launch.get_stream());
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               dispatch_t::Dispatch(
+                 d_temp_storage,
+                 temp_storage_bytes,
+                 d_input_buffers,
+                 d_output_buffers,
+                 d_buffer_sizes,
+                 buffers,
+                 launch.get_stream());
+             });
 }
 
 template <class T, class OffsetT>

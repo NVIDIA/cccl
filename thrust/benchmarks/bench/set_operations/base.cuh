@@ -64,14 +64,15 @@ static void basic(nvbench::state& state, nvbench::type_list<T>, OpT op)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(elements_in_AB);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    op(policy(alloc, launch),
-       input.cbegin(),
-       input.cbegin() + elements_in_A,
-       input.cbegin() + elements_in_A,
-       input.cend(),
-       output.begin());
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               op(policy(alloc, launch),
+                  input.cbegin(),
+                  input.cbegin() + elements_in_A,
+                  input.cbegin() + elements_in_A,
+                  input.cend(),
+                  output.begin());
+             });
 }
 
 using types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
