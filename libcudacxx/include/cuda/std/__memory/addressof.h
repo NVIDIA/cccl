@@ -29,6 +29,9 @@
 #  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
 #endif
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_BUILTIN_STD_ADDRESSOF()
@@ -55,11 +58,13 @@ template <class _Tp>
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
 
+#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
+
 template <class _Tp>
 _Tp* addressof(const _Tp&&) noexcept = delete;
 
-#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
-
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_DIAG_POP
 
 #endif // _LIBCUDACXX___MEMORY_ADDRESSOF_H
