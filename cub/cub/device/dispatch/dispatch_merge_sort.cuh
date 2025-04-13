@@ -94,6 +94,16 @@ struct DeviceMergeSortKernelSource
                                CompareOpT,
                                KeyT,
                                ValueT>);
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t KeySize()
+  {
+    return sizeof(KeyT);
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr size_t ValueSize()
+  {
+    return sizeof(ValueT);
+  }
 };
 } // namespace detail::merge_sort
 
@@ -220,9 +230,10 @@ struct DispatchMergeSort
         ValueT>(wrapped_policy.MergeSort());
       const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
-      const auto merge_partitions_size         = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
-      const auto temporary_keys_storage_size   = static_cast<size_t>(num_items * sizeof(KeyT));
-      const auto temporary_values_storage_size = static_cast<size_t>(num_items * sizeof(ValueT)) * !KEYS_ONLY;
+      const auto merge_partitions_size       = static_cast<size_t>(1 + num_tiles) * sizeof(OffsetT);
+      const auto temporary_keys_storage_size = static_cast<size_t>(num_items * kernel_source.KeySize());
+      const auto temporary_values_storage_size =
+        static_cast<size_t>(num_items * kernel_source.ValueSize()) * !KEYS_ONLY;
 
       /**
        * Merge sort supports large types, which can lead to excessive shared memory size requirements. In these cases,

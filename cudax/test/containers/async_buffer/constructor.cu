@@ -23,15 +23,16 @@
 #include "helper.h"
 #include "types.h"
 
-TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
-                   "[container][async_buffer]",
-                   cuda::std::tuple<cuda::mr::host_accessible>,
-                   cuda::std::tuple<cuda::mr::device_accessible>,
-                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
+C2H_TEST("cudax::async_buffer constructors",
+         "[container][async_buffer]",
+         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                        cuda::std::tuple<cuda::mr::device_accessible>,
+                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
 {
-  using Env      = typename extract_properties<TestType>::env;
-  using Resource = typename extract_properties<TestType>::resource;
-  using Buffer   = typename extract_properties<TestType>::async_buffer;
+  using TestT    = c2h::get<0, TestType>;
+  using Env      = typename extract_properties<TestT>::env;
+  using Resource = typename extract_properties<TestT>::resource;
+  using Buffer   = typename extract_properties<TestT>::async_buffer;
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{};
@@ -193,7 +194,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
   }
 
 #if 0 // Implement exception handling
-#  ifndef TEST_HAS_NO_EXCEPTIONS
+#  if _CCCL_HAS_EXCEPTIONS()
   SECTION("Exception handling throwing bad_alloc")
   {
     using async_buffer = cudax::async_buffer<int>;
@@ -280,6 +281,6 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
       CUDAX_CHECK(false);
     }
   }
-#  endif // !TEST_HAS_NO_EXCEPTIONS
+#  endif // _CCCL_HAS_EXCEPTIONS()
 #endif // 0
 }

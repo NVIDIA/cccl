@@ -22,9 +22,11 @@ macro(cccl_get_fmt)
   CPMAddPackage("gh:fmtlib/fmt#11.0.1")
 endmacro()
 
+set(CCCL_NVBENCH_SHA "beca2c0038b64916dc92bf9131d77eeb15016979" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
+mark_as_advanced(CCCL_NVBENCH_SHA)
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:NVIDIA/nvbench#main")
+  CPMAddPackage("gh:NVIDIA/nvbench#${CCCL_NVBENCH_SHA}")
 endmacro()
 
 macro(cccl_get_nvtx)

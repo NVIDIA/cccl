@@ -26,7 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
+                      && !defined(CCCL_DISABLE_NVTX)                                             \
+                      && !defined(NVTX_DISABLE)
 #  include <nvtx3/nvToolsExt.h>
 #endif
 
@@ -44,7 +46,9 @@ class nvtx_range
 public:
   explicit nvtx_range(const char* message)
   {
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
+                      && !defined(CCCL_DISABLE_NVTX)                                             \
+                      && !defined(NVTX_DISABLE)
     nvtxRangePushA(message);
 #endif
     static_assert(::std::is_move_constructible_v<nvtx_range>, "nvtx_range must be move constructible");
@@ -80,7 +84,9 @@ public:
     }
     active = false;
 
-#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017) \
+                      && !defined(CCCL_DISABLE_NVTX)                                             \
+                      && !defined(NVTX_DISABLE)
     nvtxRangePop();
 #endif
   }

@@ -221,6 +221,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   }
 };
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
+
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 {
@@ -332,8 +335,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
     return true;
   }
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4702) // Unreachable code
   // element access:
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type) noexcept
   {
@@ -388,8 +389,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
     _CCCL_UNREACHABLE();
     return *data();
   }
-  _CCCL_DIAG_POP
 };
+
+_CCCL_DIAG_POP
 
 _CCCL_TEMPLATE(class _Tp, class... _Args)
 _CCCL_REQUIRES((_CCCL_TRAIT(is_same, _Tp, _Args) && ...))

@@ -19,7 +19,7 @@ namespace cudax = cuda::experimental;
 template <class T, class U>
 using is_same = cuda::std::is_same<cuda::std::remove_cvref_t<T>, U>;
 
-TEST_CASE("Execution policies", "[execution, policies]")
+C2H_TEST("Execution policies", "[execution, policies]")
 {
   using cuda::experimental::execution::execution_policy;
   SECTION("Individual options")

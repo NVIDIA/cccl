@@ -341,6 +341,7 @@ autodoc.mock_imports = [
     "llvmlite",
     "numpy",
     "cupy",
+    "cuda.parallel.experimental._bindings"
 ]
 
 enhanced_search_enabled = true
