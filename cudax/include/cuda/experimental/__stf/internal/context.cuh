@@ -362,12 +362,12 @@ public:
     }
   }
 
-  auto logical_token()
+  auto token()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
-        return self.logical_token();
+        return self.token();
       },
       payload);
   }
@@ -1464,8 +1464,8 @@ UNITTEST("logical token elision")
 
   int buf[1024];
 
-  auto lA = ctx.logical_token();
-  auto lB = ctx.logical_token();
+  auto lA = ctx.token();
+  auto lB = ctx.token();
   auto lC = ctx.logical_data(buf);
 
   // with all arguments

@@ -22,9 +22,9 @@ int main()
 // TODO (miscco): Make it work for windows
 #if !_CCCL_COMPILER(MSVC)
   context ctx;
-  auto lA = ctx.logical_token().set_symbol("A");
-  auto lB = ctx.logical_token().set_symbol("B");
-  auto lC = ctx.logical_token().set_symbol("C");
+  auto lA = ctx.token().set_symbol("A");
+  auto lB = ctx.token().set_symbol("B");
+  auto lC = ctx.token().set_symbol("C");
 
   // Begin a top-level section named "foo"
   auto s_foo = ctx.dot_section("foo");
