@@ -113,9 +113,7 @@ struct AgentReduceByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
-{
-namespace reduce
+namespace detail::reduce
 {
 
 /**
@@ -165,6 +163,9 @@ template <typename AgentReduceByKeyPolicyT,
           typename StreamingContextT>
 struct AgentReduceByKey
 {
+  // Whether or not this is a streaming invocation (i.e., multiple kernel invocations over partitions of the input)
+  static constexpr bool is_streaming_invocation = !_CUDA_VSTD::is_same_v<StreamingContextT, NullType>;
+
   //---------------------------------------------------------------------
   // Types and constants
   //---------------------------------------------------------------------
@@ -547,7 +548,14 @@ struct AgentReduceByKey
       //   be flagged as a head)
       // else
       //   Subsequent tiles get last key from previous tile
-      tile_predecessor = (tile_idx == 0) ? streaming_context.predecessor_key(d_keys_in[0]) : d_keys_in[tile_offset - 1];
+      if constexpr (is_streaming_invocation)
+      {
+        tile_predecessor = (tile_idx == 0) ? streaming_context.predecessor_key() : d_keys_in[tile_offset - 1];
+      }
+      else
+      {
+        tile_predecessor = (tile_idx == 0) ? keys[0] : d_keys_in[tile_offset - 1];
+      }
     }
 
     __syncthreads();
@@ -581,9 +589,19 @@ struct AgentReduceByKey
 
     // Reset head-flag on the very first item to make sure we don't start a new run for data where
     // (key[0] == key[0]) is false (e.g., when key[0] is NaN)
-    if (streaming_context.is_first_partition() && threadIdx.x == 0 && tile_idx == 0)
+    if constexpr (is_streaming_invocation)
     {
-      head_flags[0] = 0;
+      if (streaming_context.is_first_partition() && threadIdx.x == 0 && tile_idx == 0)
+      {
+        head_flags[0] = 0;
+      }
+    }
+    else
+    {
+      if (threadIdx.x == 0 && tile_idx == 0)
+      {
+        head_flags[0] = 0;
+      }
     }
 
     // Zip values and head flags
@@ -608,18 +626,30 @@ struct AgentReduceByKey
     {
       // Scan first tile
       // First partition does not need to account for preceding partitions
-      if (streaming_context.is_first_partition())
+      if constexpr (is_streaming_invocation)
       {
-        BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
-        num_segments_prefix = 0;
-        total_aggregate     = block_aggregate;
+        if (streaming_context.is_first_partition())
+        {
+          BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
+          num_segments_prefix = 0;
+          total_aggregate     = block_aggregate;
+        }
+        // Subsequent partitions need to account for preceding partitions
+        else
+        {
+          auto init_value = OffsetValuePairT{0, streaming_context.prefix()};
+          BlockScanT(temp_storage.scan_storage.scan)
+            .ExclusiveScan(
+              scan_items, scan_items, init_value, scan_op, block_aggregate);
+          num_segments_prefix = 0;
+          // note, block_aggregate does not include the prefix 
+          block_aggregate     = scan_op(init_value, block_aggregate);
+          total_aggregate     = block_aggregate;
+        }
       }
-      // Subsequent partitions need to account for preceding partitions
       else
       {
-        BlockScanT(temp_storage.scan_storage.scan)
-          .ExclusiveScan(
-            scan_items, scan_items, OffsetValuePairT{0, streaming_context.prefix()}, scan_op, block_aggregate);
+        BlockScanT(temp_storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, scan_op, block_aggregate);
         num_segments_prefix = 0;
         total_aggregate     = block_aggregate;
       }
@@ -668,16 +698,25 @@ struct AgentReduceByKey
       // If this was not a full tile, we already have flagged the head of one-past-the-last-item
       if (num_remaining == TILE_ITEMS)
       {
-        if (streaming_context.is_last_partition())
+        if constexpr (is_streaming_invocation)
+        {
+          if (streaming_context.is_last_partition())
+          {
+            d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
+            d_aggregates_out[num_segments] = total_aggregate.value;
+            num_segments++;
+          }
+          else
+          {
+            // Write the prefix aggregate of this partition as context for the subsequent partition
+            streaming_context.write_prefix(total_aggregate.value);
+          }
+        }
+        else
         {
           d_unique_out[num_segments]     = keys[ITEMS_PER_THREAD - 1];
           d_aggregates_out[num_segments] = total_aggregate.value;
           num_segments++;
-        }
-        else
-        {
-          // Write the prefix aggregate of this partition as context for the subsequent partition
-          streaming_context.write_prefix(total_aggregate.value);
         }
       }
 
@@ -725,7 +764,6 @@ struct AgentReduceByKey
   }
 };
 
-} // namespace reduce
-} // namespace detail
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END
