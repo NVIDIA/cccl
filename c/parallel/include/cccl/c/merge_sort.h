@@ -28,6 +28,8 @@ typedef struct cccl_device_merge_sort_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  cccl_type_info key_type;
+  cccl_type_info item_type;
   CUkernel block_sort_kernel;
   CUkernel partition_kernel;
   CUkernel merge_kernel;

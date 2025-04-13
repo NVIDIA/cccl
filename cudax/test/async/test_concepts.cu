@@ -27,7 +27,7 @@ struct a_receiver
   void set_stopped() && noexcept {}
 };
 
-TEST_CASE("tests for the receiver concepts", "[concepts]")
+C2H_TEST("tests for the receiver concepts", "[concepts]")
 {
   static_assert(!async::receiver<not_a_receiver>);
   static_assert(async::receiver<a_receiver>);
@@ -65,7 +65,7 @@ struct non_constexpr_complsigs
   }
 };
 
-TEST_CASE("tests for the sender concepts", "[concepts]")
+C2H_TEST("tests for the sender concepts", "[concepts]")
 {
   static_assert(!async::sender<not_a_sender>);
   static_assert(async::sender<a_sender>);

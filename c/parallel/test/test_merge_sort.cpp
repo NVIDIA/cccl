@@ -173,7 +173,7 @@ struct item_pair
 
 TEST_CASE("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]")
 {
-  const size_t num_items = GENERATE_COPY(take(2, random(1, 10)), values({5, 100, 200}));
+  const size_t num_items = GENERATE_COPY(take(2, random(1, 100000)), values({5, 10000, 100000}));
   operation_t op         = make_operation(
     "op",
     "struct key_pair { short a; size_t b; };\n"
@@ -349,3 +349,57 @@ TEST_CASE("DeviceMergeSort::SortPairs works with output iterators for items", "[
 }
 
 #endif
+
+struct large_key_pair
+{
+  int a;
+  char c[100];
+};
+
+TEST_CASE("DeviceMergeSort:SortPairsCopy fails to build for large types due to no vsmem", "[merge_sort]")
+{
+  const size_t num_items = 1;
+  operation_t op         = make_operation(
+    "op",
+    "struct large_key_pair { int a; char c[100]; };\n"
+            "extern \"C\" __device__ bool op(large_key_pair lhs, large_key_pair rhs) {\n"
+            "  return lhs.a < rhs.a;\n"
+            "}");
+  const std::vector<int> a = generate<int>(num_items);
+  std::vector<large_key_pair> input_keys(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input_keys[i] = large_key_pair{a[i], {}};
+  }
+
+  pointer_t<large_key_pair> input_keys_it(input_keys);
+  pointer_t<int> input_items_it;
+
+  cudaDeviceProp deviceProp;
+  cudaGetDeviceProperties(&deviceProp, 0);
+
+  const int cc_major = deviceProp.major;
+  const int cc_minor = deviceProp.minor;
+
+  const char* cub_path        = TEST_CUB_PATH;
+  const char* thrust_path     = TEST_THRUST_PATH;
+  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
+  const char* ctk_path        = TEST_CTK_PATH;
+
+  cccl_device_merge_sort_build_result_t build;
+  REQUIRE(
+    CUDA_ERROR_UNKNOWN
+    == cccl_device_merge_sort_build(
+      &build,
+      input_keys_it,
+      input_items_it,
+      input_keys_it,
+      input_items_it,
+      op,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path));
+}

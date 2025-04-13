@@ -208,22 +208,23 @@ void seg_sort(nvbench::state& state,
   thrust::device_vector<nvbench::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    cub::DoubleBuffer<key_t> keys     = d_keys;
-    cub::DoubleBuffer<value_t> values = d_values;
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               cub::DoubleBuffer<key_t> keys     = d_keys;
+               cub::DoubleBuffer<value_t> values = d_values;
 
-    dispatch_t::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      keys,
-      values,
-      elements,
-      segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite_ok,
-      launch.get_stream());
-  });
+               dispatch_t::Dispatch(
+                 d_temp_storage,
+                 temp_storage_bytes,
+                 keys,
+                 values,
+                 elements,
+                 segments,
+                 d_begin_offsets,
+                 d_end_offsets,
+                 is_overwrite_ok,
+                 launch.get_stream());
+             });
 }
 
 using some_offset_types = nvbench::type_list<int32_t>;

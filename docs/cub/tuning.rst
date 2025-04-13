@@ -1,45 +1,71 @@
 .. _cub-tuning:
 
-CUB Tuning Infrastructure
+CUB Tunings
 ================================================================================
 
-Device-scope algorithms in CUB have many knobs that do not affect the algorithms' correctness but can significantly impact performance. For instance, the number of threads per block and items per thread can be tuned to maximize performance for a given device and data type.
+The following is an analytical guide on how to tune CUB Device primitives for performance.
+
+Device-scope algorithms in CUB have many knobs that significantly impact performance (without affecting correctness). For instance, the number of threads per block and items per thread can be tuned to maximize performance for a given device and data type.
 This document describes CUB's tuning Infrastructure, a set of tools facilitating the process of
 selecting optimal tuning parameters for a given device and data type.
 
-Definitions
+Terminology
 --------------------------------------------------------------------------------
 
-We omit the word "tuning" but assume it in the definitions for all terms below,
-so those terms may mean something else in a more generic context.
+*We omit the word "tuning" but assume it in the definitions for all terms below,
+so those terms may mean something else in a more generic context.*
 
-Algorithms are tuned for different workloads, which are sub spaces of all benchmark versions defined by NVBench via a benchmark's axes.
-For instance, radix sort can be tuned for different key types, different number of keys, and different distributions of keys.
-We partition the space spanned by a benchmark's axes into two categories:
+The following three terms are fundamental to understanding the essence of CUB tuning:
 
-* **Compile-time (ct) Workload** - a workload that can be recognized at compile time. For instance, the combination of key type and offset type is a compile-time workload for radix sort. A compile-time workload is a point in the space spanned by the Cartesian product of compile-time type axes of NVBench.
+* **compile-time (ct) workload**: a workload that can be recognized only at compile time.
 
-* **Runtime (rt) Workload** - a workload that can be recognized only at runtime. For instance, the number of keys along with their distribution is a runtime workload for radix sort. A runtime workload is a point in the space spanned by the Cartesian product of non-compile-time type axes of NVBench.
+*e.g. the combination of key type and offset type,* :code:`int16_t` *and* :code:`int32_t`
 
-The tuning infrastructure can optimize algorithms only for specific compile-time workloads,
-aggregating results across all runtime workloads:
-It searches through a space of parameters to find the combination for a given compile-time workload with the highest score:
+* **runtime (rt) workload**: a workload that can be recognized only at runtime.
 
-* **Parameter** - a parameter that can be tuned to maximize performance for a given device and data type. For instance, the number of threads per block and items per thread are tuning parameters.
+*e.g. the number of input elements*
 
-* **Parameter Space** - the set of all possible values for a given tuning parameter. Parameter Space is specific to algorithm. For instance, the parameter space for the number of threads per block is :math:`\{32, 64, 96, 128, \dots, 1024\}` for radix sort, but :math:`\{32, 64, 128, 256, 512\}` for merge sort.
+* **tuning parameter (or parameter)**: a parameter that can be tuned to maximize performance for a given device and data type.
 
-* **Parameter Point** - a concrete value of a tuning parameter. For instance, the parameter point for the number of threads per block is :math:`threads\_per\_block=128`.
+*e.g. number of threads per block, items per thread*
 
-* **Search Space** - Cartesian product of parameter spaces. For instance, search space for an algorithm with tunable items per thread and threads per block might look like :math:`\{(ipt \times tpb) | ipt \in \{1, \dots, 25\} \text{and} tpb \in \{32, 64, 96, 128, \dots, 1024\}\}`.
+Algorithms are tuned for different workloads. These workloads are defined as subspaces by NVBench via the benchmarks' axis.
+For instance, radix sort can be tuned for different key types, different number of keys, and different distributions of keys. The tuning process is summarized in
+the following statement:
 
-* **Variant** - a point in the corresponding search space.
+.. raw:: html
+
+   <div style="display: flex; justify-content: center; align-items: center; height: 10; text-align: center; font-size: 1.5em; color: #76B900;">
+       "For each Compile-time Workload, we search for the best tuning parameters"
+   </div>
+
+
+More specifically, the tuning infrastructure optimizes algorithms for specific compile-time workloads,
+aggregating results across all runtime workloads.
+It searches through a space of parameters to find the combination for a given compile-time workload with the highest score.
+
+--------
+
+Following is supplemental terminology that will be used throughout the rest of this tuning guide:
+
+.. e.g. :math:`threads\_per\_block=128`
+
+* **Parameter Space**: the set of all possible values for a given Tuning Parameter.
+
+*It is specific to the algorithm*. For example the parameter space for the number of threads per block can be :math:`\{32, 64, 96, 128, \dots, 1024\}` for radix sort, but :math:`\{32, 64, 128, 256, 512\}` for merge sort.
+
+* **Search Space**: Cartesian product of all the Parameter Spaces of a single algorithm.
+
+For instance, the Search Space for an algorithm with tunable items per thread and threads per block might look like :math:`\{(ipt \times tpb) | ipt \in \{1, \dots, 25\} \text{and} tpb \in \{32, 64, 96, 128, \dots, 1024\}\}`.
+
+* **Variant** - a point in the corresponding Search Space.
 
 * **Base** - the variant that CUB uses by default.
 
 * **Score** - a single number representing the performance for a given compile-time workload across all runtime workloads. For instance, a weighted-sum of speedups of a given variant compared to its base for all runtime workloads is a score.
 
-* **Search** - a process consisting of covering all variants for all compile-time workloads to find a variant with maximal score.
+.. * **Search** - a process consisting of covering all variants for all compile-time workloads to find a variant with maximal score.
+..  ^^^ @giannis: again we do not want to scare a first time user with too many terms. "search" is both evident and can also be explained with an introductory sentence in the "Search Process" chapter ^^^
 
 .. _cub-tuning-authoring-benchmarks:
 
@@ -48,15 +74,19 @@ Authoring Benchmarks
 
 CUB benchmarks are split into multiple files based on the algorithm they are testing
 and potentially further into compile-time flavors that are tuned for individually
-(e.g.: sorting only keys vs. key-value pairs, or reducing using sum vs. using min).
+(e.g. sorting only keys vs. key-value pairs, or reducing using sum vs. using min).
 The name of the directory represents the name of the algorithm.
 The filename corresponds on the flavor.
-For instance, the benchmark :code:`benchmarks/bench/radix_sort/keys.cu` tests the radix sort implementation sorting only keys.0
-The file name is going to be transformed into :code:`cub.bench.radix_sort.keys...`,
+For instance, the benchmark :code:`benchmarks/bench/radix_sort/keys.cu` tests the radix sort implementation sorting only keys.
+The executable file name is going to be transformed into :code:`cub.bench.radix_sort.keys.*`,
 which is the benchmark name reported by the infrastructure.
 
-Benchmarks are based on NVBench.
-You start writing a benchmark by including :code:`nvbench_helper.cuh`. It contains all
++++++++++++++++
+Headers
++++++++++++++++
+
+**Benchmarks are based on NVBench.**
+You start writing a benchmark by including :code:`nvbench_helper.cuh`. This contains all
 necessary includes and definitions.
 
 .. code:: c++
@@ -64,7 +94,7 @@ necessary includes and definitions.
   #include <nvbench_helper.cuh>
 
 The next step is to define a search space. The search space is represented by a number of C++ comments.
-The format consists of the :code:`%RANGE%` keyword, a parameter macro, a short parameter name, and a range.
+The format consists of the :code:`%RANGE%` keyword, the parameter macro, the parameter abbreviation, and its range of values.
 The range is represented by three numbers: :code:`start:end:step`.
 Start and end are included.
 For instance, the following code defines a search space for two parameters, the number of threads per block and items per thread.
@@ -82,15 +112,29 @@ a :code:`nvbench::type_list`. For more details on the benchmark signature, take 
 
   template <typename T, typename OffsetT>
   void algname(nvbench::state &state, nvbench::type_list<T, OffsetT>)
-  {
+  {...}
 
-Tuning relies on CUB's device algorithms to expose a dispatch layer which can be parameterized by a policy hub.
+.. @giannis: not sure if Policy Hub should be part of "Authoring Benchmarks" since it's attached to the Dispatch Layer. Policy Hub
+.. is not supposed to be used only when we run benchmarks, but in general when a primitive is invoked with specific compile time params.
+
+Before proceeding further with the benchmark authoring it is imperative to understand the Policy Hub mechanism.
+
+++++++++++
+Policy Hub
+++++++++++
+
+Tuning relies on CUB's device algorithms to expose a dispatch layer which can be parameterized by a Policy Hub. The Policy Hub is an intermediate
+class that enables tuning. In other words it translates the SM architecture, the input types etc. which accepts at instantiation as input,
+into the parameter values that are optimal for when executing the specific compile time workload.
+
 CUB usually provides a default policy hub, but when tuning we want to overwrite it, so we have to specialize the dispatch layer.
-The tuning infrastructure will use the :code:`TUNE_BASE` macro to distinguish between compiling the base version (i.e. baseline) of a benchmark
-and compiling a variant for a given set of tuning parameters.
-When base is used, no policy is specified, so that the default one CUB provides is used.
+**The tuning infrastructure will use the** :code:`TUNE_BASE` **macro to distinguish between compiling the base version (i.e. baseline) of a benchmark
+and compiling a variant for a given set of tuning parameters.**
+When base is used, no policy is specified, so that the default policy CUB provides is used.
 If :code:`TUNE_BASE` is not defined, we specify a custom policy
-using the parameter macros defined in the :code:`%RANGE%` comments which specify the search space.
+using the parameter macros defined in the :code:`%RANGE%` comments which define the search space.
+
+The following code is included in the benchmark for the policy hub to be enabled and the parameters to have effect in execution:
 
 ..
     The following code is repeated further down as well. Please keep in sync!
@@ -112,14 +156,18 @@ using the parameter macros defined in the :code:`%RANGE%` comments which specify
     using dispatch_t = cub::DispatchReduce<T, OffsetT, policy_hub_t<accum_t, offset_t>>;
   #endif
 
-The custom policy hub used for tuning should only expose a single :code:`MaxPolicy` so CUB will use it.
-It must contain all parameters from the search space.
+The custom policy hub used for tuning should only expose a single :code:`MaxPolicy` for CUB to use.
+It must contain all parameters required for the full definition of the search space.
+
++++++++++
+Main Body
++++++++++
 
 The :code:`state` passed into the benchmark function allows access to runtime workload axes,
 for example the number of elements to process.
-When creating containers for the input avoid to initialize data yourself.
-Instead, use the :code:`gen` function,
-which will fill the input vector with random data on GPU with no compile-time overhead.
+*When creating containers for the input avoid to initialize data yourself.
+Instead, use the* :code:`gen` *function,
+which will fill the input vector with random data on GPU with no compile-time overhead.*
 
 .. code:: c++
 
@@ -129,7 +177,7 @@ which will fill the input vector with random data on GPU with no compile-time ov
 
     gen(seed_t{}, in);
 
-In addition to benchmark runtime, NVBench can also report information on the achieved memory bandwidth.
+In addition to the benchmark runtime, NVBench can also report information on the achieved memory bandwidth.
 For this, you can optionally provide information on the memory reads and writes of the algorithm to the :code:`state`:
 
 .. code:: c++
@@ -163,7 +211,8 @@ which contains the second call to a CUB algorithm and performs the actual work w
 
 .. code:: c++
 
-    state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
+    state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch,
+               [&](nvbench::launch &launch) {
       dispatch_t::Dispatch(temp_storage,
                            temp_size,
                            d_in,
@@ -174,7 +223,11 @@ which contains the second call to a CUB algorithm and performs the actual work w
   }
 
 This concludes defining the benchmark function.
-Now we need to tell NVBench about it:
+Now we need to tell NVBench about it.
+
+++++++++++++++++++
+NVBench Attributes
+++++++++++++++++++
 
 .. code:: c++
 
@@ -189,9 +242,9 @@ which are defined by the Cartesian product of the type lists in :code:`NVBENCH_T
 Only alphabetical characters, numbers and underscores are allowed in the benchmark name.
 
 Furthermore, compile-time axes should be suffixed with :code:`{ct}`. The runtime axes might be optionally annotated
-as :code:`{io}` which stands for importance-ordered. This will tell the tuning infrastructure that
+as :code:`{io}` which stands for importance-ordered. *This will tell the tuning infrastructure that
 the later values on the axis are more important. If the axis is not annotated, each value will be
-treated as equally important.
+treated as equally important.*
 
 When you define a type axis annotated with :code:`{ct}`, you should consider optimizing
 the build time. Many variants are going to be build, but the search is considering one compile-time
@@ -238,17 +291,17 @@ This logic is already implemented if you use any of the following predefined typ
      - :code:`int32_t, int64_t`
 
 
-But you are free to define your own axis names and use the logic above for them (see the sort pairs example).
+You are free to define your own axis names and use the logic above for them (see the sort pairs example).
 
 A single benchmark file can define multiple benchmarks (multiple benchmark functions registered with :code:`NVBENCH_BENCH_TYPES`).
 All benchmarks in a single file must share the same compile-time axes.
-The tuning infrastructure will run all benchmarks in a single file together for the same compile-time workload
+**The tuning infrastructure will run all benchmarks in a single file together for the same compile-time workload
 and compute a common score across all benchmarks and runtime workloads.
-Unless a benchmark axis is importance-ordered, each sample contributes equally to the score.
+Unless a benchmark axis is importance-ordered, each sample contributes equally to the score.**
 This is useful to tune an algorithm for multiple runtime use cases at once,
 that we don't intend to provide separate tuning policies for.
 Also, a large space of runtime workloads can be segmented this way,
-e.g., by splitting the benchmark entry point and supplying a few low and a few high values for a runtime axis:
+e.g. by splitting the benchmark entry point and supplying a few low and a few high values for a runtime axis:
 
 .. code:: c++
 
@@ -266,6 +319,8 @@ e.g., by splitting the benchmark entry point and supplying a few low and a few h
 Search Process
 --------------------------------------------------------------------------------
 
+During the Search Process we are covering all variants for all compile-time workloads to find a variant with a maximum (at least locally) score.
+
 To get started with tuning, you need to configure CMake.
 You can use the following command:
 
@@ -275,7 +330,7 @@ You can use the following command:
   $ cd build
   $ cmake .. --preset=cub-tune -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
 
-You can then run the tuning search for a specific algorithm and compile-time workload:
+You can then run the tuning search for a specific algorithm and compile-time workload. We use a CCCL internal script for that:
 
 .. code:: bash
 
@@ -285,20 +340,21 @@ You can then run the tuning search for a specific algorithm and compile-time wor
   ...
 
 This will search the space of merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
-The :code:`-R` and :code:`-a` options are optional. If not specified, all benchmarks are going to be tuned.
+The :code:`-R` and :code:`-a` options are optional. **If not specified, all benchmarks are going to be tuned.**
 The :code:`-R` option can select multiple benchmarks using a regular expression.
 For the axis option :code:`-a`, you can also specify a range of values like :code:`-a 'KeyT{ct}=[I32,I64]'`.
 Any axis values not supported by a selected benchmark will be ignored.
 The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than the baseline,
 whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
 
-Notice there is currently a limitation in :code:`search.py`
-which will only execute runs for the first axis value for each axis
-(independently of whether the axis is specified on the command line or not).
-Tuning for multiple axis values requires multiple runs of :code:`search.py`.
-Please see `this issue <https://github.com/NVIDIA/cccl/issues/2267>`_ for more information.
+.. warning::
+  Notice there is currently a limitation in :code:`search.py`
+  which will only execute runs for the first axis value for each axis
+  (independently of whether the axis is specified on the command line or not).
+  Tuning for multiple axis values requires multiple runs of :code:`search.py`.
+  Please see `this issue <https://github.com/NVIDIA/cccl/issues/2267>`_ for more information.
 
-The tuning framework will handle building the benchmarks (base and variants) and running them by itself.
+**Benchmarks do not need to be built a priori.** The tuning framework will handle building the benchmarks (base and variants) and running them by itself.
 It will keep track of the build time for base and variants.
 Sometimes, a tuning variant may lead the compiler to hang or take exceptionally long to compile.
 To keep the tuning process going, if the build time of a variant exceeds a threshold, the build is cancelled.
@@ -322,7 +378,7 @@ you can add the :code:`-l` option:
 It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
 as a result of the Cartesian product of all its tuning parameter spaces.
 
-The tuning infrastructure stores results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
+The tuning infrastructure stores the results in an SQLite database called :code:`cccl_meta_bench.db` in the build directory.
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
 
@@ -396,7 +452,10 @@ For each variant, a score is reported. The base has a score of 1.0, so each scor
 However, because a single variant contains multiple runtime workloads, also the minimum, mean, maximum score is reported.
 If all those three values are larger than 1.0, the variant is strictly better than the base.
 If only the mean or max are larger than 1.0, the variant may perform better in most runtime workloads, but regress in others.
-This information can be used to change the existing tuning policies in CUB.
+This information can be used to change the existing tuning policies in CUB. A detailed explanation of the output is presented
+in the following image:
+
+.. image:: ../images/top_results_expl.png
 
 By default, :code:`analyze.py` will look for a file named :code:`cccl_meta_bench.db` in the current directory.
 If the tuning results are available in multiple databases, e.g., after tuning on multiple GPUs,
@@ -469,7 +528,7 @@ whether a tuning provides a consistent speedup for all runtime workloads.
 Creating tuning policies
 --------------------------------------------------------------------------------
 
-Once a suitable tuning result has been selected, we have to translate it into C++ code that is picked up by CUB.
+Once a suitable tuning result has been selected, we have to translate it into C++ code that will be picked up by CUB.
 The tuning variant name shown by :code:`analyze.py` gives us all the information on the selected tuning values.
 Here is an example:
 
@@ -510,10 +569,12 @@ and repeated here:
       };
   #endif
 
-The tunings defined in CUB’s source are similar.
+.. @giannis: sentences below are loaded simplify/expand them
+
+The tunings defined in CUB's source are similar.
 However, they take predefined tuning values based on the template arguments of a CUB algorithm
 to build an agent policy for the policy hub.
-How the tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
+The way tuning values are selected is different for each CUB algorithm and requires studying the corresponding code.
 The general principles of the policy hub and tunings are documented in the :ref:`CUB device layer documentation <cub-developer-policies>`.
 There is typically a tuning class template specialization per variant or group of variants and per PTX version.
 For example, signed and unsigned integers of the same size are often represented by the same tuning.
