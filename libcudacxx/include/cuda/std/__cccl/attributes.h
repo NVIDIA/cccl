@@ -73,6 +73,14 @@
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #endif
 
+// MSVC provides a way to mark functions as intrinsic provided the function's body consists of a single
+// return statement of a cast expression (e.g., move(x) or forward<T>(u)).
+#if _CCCL_COMPILER(MSVC) && _CCCL_HAS_CPP_ATTRIBUTE(msvc::intrinsic)
+#  define _CCCL_INTRINSIC [[msvc::intrinsic]]
+#else
+#  define _CCCL_INTRINSIC
+#endif
+
 // Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
 // This happens up to clang18
 #if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && _CCCL_COMPILER(CLANG)
