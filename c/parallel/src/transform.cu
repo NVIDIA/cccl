@@ -272,7 +272,15 @@ struct device_transform_policy {{
     // `__device__` seems not to be supported by NVRTC.
     constexpr size_t num_args  = 9;
     const char* args[num_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-default-device", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-default-device",
+      "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
