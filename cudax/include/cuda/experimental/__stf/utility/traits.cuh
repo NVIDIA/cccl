@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/exception_guard.h>
 #include <cuda/std/mdspan>
 
 #include <cuda/experimental/__stf/utility/core.cuh>
@@ -365,27 +366,25 @@ auto all_convertible(P&&... p)
   unsigned char buffer[size * sizeof(T)];
   auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
   size_t i     = 0; // marks the already-constructed portion of the array
-  try
-  {
-    each_in_pack(
-      [&](auto&& e) {
-        if constexpr (::std::is_convertible_v<decltype(e), T>)
-        {
-          new (result.data() + i) T(::std::forward<decltype(e)>(e));
-          ++i;
-        }
-      },
-      ::std::forward<P>(p)...);
-    return mv(result);
-  }
-  catch (...)
-  {
+
+  auto rollback = [&result, &i]() {
     for (size_t j = 0; j < i; ++j)
     {
       result[j].~T();
     }
-    throw;
-  }
+  };
+
+  auto __guard = _CUDA_VSTD::__make_exception_guard(rollback);
+  each_in_pack(
+    [&](auto&& e) {
+      if constexpr (::std::is_convertible_v<decltype(e), T>)
+      {
+        new (result.data() + i) T(::std::forward<decltype(e)>(e));
+        ++i;
+      }
+    },
+    ::std::forward<P>(p)...);
+  return mv(result);
 }
 
 /*

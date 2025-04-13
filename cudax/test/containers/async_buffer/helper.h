@@ -34,7 +34,7 @@ constexpr bool equal_range(const Buffer& buf)
 {
   if constexpr (Buffer::__is_host_only)
   {
-    buf.wait();
+    buf.sync();
     return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
   }
   else
@@ -104,7 +104,7 @@ constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int 
 {
   if constexpr (Buffer::__is_host_only)
   {
-    buf.wait();
+    buf.sync();
     return buf.size() == size
         && cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), equal_to_value{value});
   }
@@ -125,7 +125,7 @@ constexpr bool equal_range(const Range1& range1, const Range2& range2)
 {
   if constexpr (Range1::__is_host_only)
   {
-    range1.wait();
+    range1.sync();
     return cuda::std::equal(range1.begin(), range1.end(), range2.begin(), range2.end());
   }
   else

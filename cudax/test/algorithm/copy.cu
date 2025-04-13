@@ -10,7 +10,7 @@
 
 #include "common.cuh"
 
-TEST_CASE("1d Copy", "[data_manipulation]")
+C2H_TEST("1d Copy", "[data_manipulation]")
 {
   cudax::stream _stream;
 
@@ -97,7 +97,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
     ::std::vector<int> vec(buffer_size, 0xbeef);
 
     cudax::copy_bytes(_stream, host_buffer, vec);
-    _stream.wait();
+    _stream.sync();
 
     CUDAX_REQUIRE(vec[0] == get_expected_value(fill_byte));
     CUDAX_REQUIRE(vec[1] == 0xbeef);
@@ -123,7 +123,7 @@ void test_mdspan_copy_bytes(
   }
 
   cudax::copy_bytes(stream, std::move(src), dst);
-  stream.wait();
+  stream.sync();
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
   {
@@ -131,7 +131,7 @@ void test_mdspan_copy_bytes(
   }
 }
 
-TEST_CASE("Mdspan copy", "[data_manipulation]")
+C2H_TEST("Mdspan copy", "[data_manipulation]")
 {
   cudax::stream stream;
 
@@ -164,12 +164,12 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
       host_resource, mdspan.mapping().required_span_size()};
 
     cudax::copy_bytes(stream, mdspan, buffer);
-    stream.wait();
+    stream.sync();
     CUDAX_REQUIRE(!memcmp(mdspan_buffer.data(), buffer.data, mdspan_buffer.size()));
   }
 }
 
-TEST_CASE("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
+C2H_TEST("Non exhaustive mdspan copy_bytes", "[data_manipulation]")
 {
   cudax::stream stream;
   {

@@ -211,7 +211,8 @@ which contains the second call to a CUB algorithm and performs the actual work w
 
 .. code:: c++
 
-    state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch &launch) {
+    state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch,
+               [&](nvbench::launch &launch) {
       dispatch_t::Dispatch(temp_storage,
                            temp_size,
                            d_in,
@@ -451,7 +452,10 @@ For each variant, a score is reported. The base has a score of 1.0, so each scor
 However, because a single variant contains multiple runtime workloads, also the minimum, mean, maximum score is reported.
 If all those three values are larger than 1.0, the variant is strictly better than the base.
 If only the mean or max are larger than 1.0, the variant may perform better in most runtime workloads, but regress in others.
-This information can be used to change the existing tuning policies in CUB.
+This information can be used to change the existing tuning policies in CUB. A detailed explanation of the output is presented
+in the following image:
+
+.. image:: ../images/top_results_expl.png
 
 By default, :code:`analyze.py` will look for a file named :code:`cccl_meta_bench.db` in the current directory.
 If the tuning results are available in multiple databases, e.g., after tuning on multiple GPUs,

@@ -793,7 +793,7 @@ public:
     }
     else
     {
-      throw ::std::runtime_error("Payload does not hold graph_ctx");
+      ::cuda::std::__throw_runtime_error("Payload does not hold graph_ctx");
     }
   }
 

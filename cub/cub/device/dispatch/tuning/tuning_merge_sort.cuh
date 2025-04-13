@@ -54,7 +54,7 @@ struct MergeSortPolicyWrapper : PolicyT
 };
 
 template <typename StaticPolicyT>
-struct MergeSortPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<typename StaticPolicyT::MergeSortPolicy>>
+struct MergeSortPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolicyT::MergeSortPolicy::LOAD_MODIFIER)>>
     : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION MergeSortPolicyWrapper(StaticPolicyT base)

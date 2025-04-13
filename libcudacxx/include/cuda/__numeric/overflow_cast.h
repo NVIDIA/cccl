@@ -35,7 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! occurred
 _CCCL_TEMPLATE(class _To, class _From)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _To)
-                 _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _From))
+                 _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _From))
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr overflow_result<_To> overflow_cast(const _From& __from) noexcept
 {
   bool __overflow = false;

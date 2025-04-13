@@ -80,24 +80,23 @@ public:
     detail::driver::eventRecord(__event_, __stream.get());
   }
 
-  //! @brief Waits until all the work in the stream prior to the record of the
-  //!        event has completed.
+  //! @brief Synchronizes the event
   //!
   //! @throws cuda_error if waiting for the event fails
-  void wait() const
+  void sync() const
   {
-    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::wait no event set");
+    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
     _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
   }
 
   //! @brief Checks if all the work in the stream prior to the record of the event has completed.
   //!
-  //! If is_done returns true, calling wait() on this event will return immediately
+  //! If is_done returns true, calling sync() on this event will return immediately
   //!
   //! @throws cuda_error if the event query fails
   [[nodiscard]] bool is_done() const
   {
-    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::wait no event set");
+    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::sync no event set");
     cudaError_t __status = ::cudaEventQuery(__event_);
     if (__status == cudaSuccess)
     {

@@ -140,9 +140,20 @@ public:
    * \throws cuda::cuda_error if synchronization fails.
    *
    */
-  void wait() const
+  void sync() const
   {
     _CCCL_TRY_CUDA_API(::cudaStreamSynchronize, "Failed to synchronize stream.", get());
+  }
+
+  /**
+   * \brief Deprecated. Use sync() instead.
+   *
+   * \deprecated Use sync() instead.
+   */
+  [[deprecated("Use sync() instead.")]]
+  void wait() const
+  {
+    sync();
   }
 
   /**

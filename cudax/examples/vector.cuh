@@ -83,7 +83,7 @@ private:
     if (__p != detail::__param_kind::_in)
     {
       // TODO: use a memcpy async here
-      __str.wait(); // wait for the kernel to finish executing
+      __str.sync(); // wait for the kernel to finish executing
       __h_ = __d_;
     }
   }

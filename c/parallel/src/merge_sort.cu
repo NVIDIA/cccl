@@ -45,6 +45,8 @@ struct merge_sort_runtime_tuning_policy
   {
     return *this;
   }
+
+  using MergeSortPolicy = merge_sort_runtime_tuning_policy;
 };
 
 struct merge_sort_tuning_t
@@ -160,7 +162,7 @@ std::string get_merge_sort_kernel_name(
       : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
   return std::format(
-    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
+    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, device_merge_sort_vsmem_helper>",
     kernel_name,
     chained_policy_t,
     input_keys_iterator_t,
@@ -225,29 +227,39 @@ struct merge_sort_kernel_source
   {
     return build.merge_kernel;
   }
+
+  std::size_t KeySize() const
+  {
+    return build.key_type.size;
+  }
+
+  std::size_t ValueSize() const
+  {
+    return build.item_type.size;
+  }
 };
 
 struct dynamic_vsmem_helper_t
 {
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static ::cuda::std::size_t BlockSortVSMemPerBlock(PolicyT /*policy*/)
   {
     return 0;
   }
 
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static ::cuda::std::size_t MergeVSMemPerBlock(PolicyT /*policy*/)
   {
     return 0;
   }
 
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static int BlockThreads(PolicyT policy)
   {
     return policy.block_size;
   }
 
-  template <typename PolicyT>
+  template <typename PolicyT, typename... Ts>
   static int ItemsPerTile(PolicyT policy)
   {
     return policy.items_per_tile;
@@ -313,33 +325,59 @@ CUresult cccl_device_merge_sort_build(
 
     const std::string op_src = make_kernel_user_comparison_operator(input_keys_it_value_t, op);
 
+    constexpr std::string_view src_template = R"XXX(
+#include <cub/device/dispatch/kernels/merge_sort.cuh>
+#include <cub/util_type.cuh> // needed for cub::NullType
+struct __align__({1}) storage_t {{
+  char data[{0}];
+}};
+struct __align__({3}) items_storage_t {{
+  char data[{2}];
+}};
+{7}
+{8}
+{9}
+{10}
+struct agent_policy_t {{
+  static constexpr int ITEMS_PER_TILE = {6};
+  static constexpr int ITEMS_PER_THREAD = {5};
+  static constexpr int BLOCK_THREADS = {4};
+  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
+  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
+}};
+struct device_merge_sort_policy {{
+  struct ActivePolicy {{
+    using MergeSortPolicy = agent_policy_t;
+  }};
+}};
+struct device_merge_sort_vsmem_helper {{
+  template<typename ActivePolicyT, typename KeyInputIteratorT, typename ValueInputIteratorT, typename... Ts>
+  struct MergeSortVSMemHelperT {{
+    using policy_t = agent_policy_t;
+    using block_sort_agent_t = cub::detail::merge_sort::AgentBlockSort<agent_policy_t, KeyInputIteratorT, ValueInputIteratorT, Ts...>;
+    using merge_agent_t = cub::detail::merge_sort::AgentMerge<agent_policy_t, Ts...>;
+  }};
+  template <typename AgentT>
+  struct VSmemHelperT {{
+    using static_temp_storage_t = typename AgentT::TempStorage;
+    static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
+      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem)
+    {{
+        return static_temp_storage;
+    }}
+    template <bool needs_vsmem_ = false, ::cuda::std::enable_if_t<!needs_vsmem_, int> = 0>
+    static _CCCL_DEVICE _CCCL_FORCEINLINE bool discard_temp_storage(static_temp_storage_t& temp_storage)
+    {{
+      return false;
+    }}
+  }};
+}};
+{11};
+)XXX";
+
     const std::string src = std::format(
-      "#include <cub/device/dispatch/kernels/merge_sort.cuh>\n"
-      "#include <cub/util_type.cuh>\n" // needed for cub::NullType
-      "struct __align__({1}) storage_t {{\n"
-      "  char data[{0}];\n"
-      "}};\n"
-      "struct __align__({3}) items_storage_t {{\n"
-      "  char data[{2}];\n"
-      "}};\n"
-      "{7}\n"
-      "{8}\n"
-      "{9}\n"
-      "{10}\n"
-      "struct agent_policy_t {{\n"
-      "  static constexpr int ITEMS_PER_TILE = {6};\n"
-      "  static constexpr int ITEMS_PER_THREAD = {5};\n"
-      "  static constexpr int BLOCK_THREADS = {4};\n"
-      "  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;\n"
-      "  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;\n"
-      "  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;\n"
-      "}};\n"
-      "struct device_merge_sort_policy {{\n"
-      "  struct ActivePolicy {{\n"
-      "    using MergeSortPolicy = agent_policy_t;\n"
-      "  }};\n"
-      "}};\n"
-      "{11};\n",
+      src_template,
       input_keys_it.value_type.size, // 0
       input_keys_it.value_type.alignment, // 1
       input_items_it.value_type.size, // 2
@@ -410,6 +448,8 @@ CUresult cccl_device_merge_sort_build(
     build_ptr->cc         = cc;
     build_ptr->cubin      = (void*) result.data.release();
     build_ptr->cubin_size = result.size;
+    build_ptr->key_type   = input_keys_it.value_type;
+    build_ptr->item_type  = input_items_it.value_type;
   }
   catch (const std::exception& exc)
   {

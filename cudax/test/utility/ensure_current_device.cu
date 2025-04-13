@@ -37,7 +37,7 @@ void recursive_check_device_setter(int id)
   }
 }
 
-TEST_CASE("ensure current device", "[device]")
+C2H_TEST("ensure current device", "[device]")
 {
   test::empty_driver_stack();
   // If possible use something different than CUDART default 0

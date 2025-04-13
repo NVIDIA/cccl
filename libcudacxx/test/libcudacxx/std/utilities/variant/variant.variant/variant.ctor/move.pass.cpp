@@ -99,33 +99,33 @@ struct TMoveNTCopy
 
 static_assert(cuda::std::is_trivially_move_constructible<TMoveNTCopy>::value, "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct MakeEmptyT
 {
   static int alive;
-  __host__ __device__ MakeEmptyT()
+  MakeEmptyT()
   {
     ++alive;
   }
-  __host__ __device__ MakeEmptyT(const MakeEmptyT&)
+  MakeEmptyT(const MakeEmptyT&)
   {
     ++alive;
     // Don't throw from the copy constructor since variant's assignment
     // operator performs a copy before committing to the assignment.
   }
-  __host__ __device__ MakeEmptyT(MakeEmptyT&&)
+  MakeEmptyT(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(const MakeEmptyT&)
+  MakeEmptyT& operator=(const MakeEmptyT&)
   {
     throw 42;
   }
-  __host__ __device__ MakeEmptyT& operator=(MakeEmptyT&&)
+  MakeEmptyT& operator=(MakeEmptyT&&)
   {
     throw 42;
   }
-  __host__ __device__ ~MakeEmptyT()
+  ~MakeEmptyT()
   {
     --alive;
   }
@@ -134,7 +134,7 @@ struct MakeEmptyT
 int MakeEmptyT::alive = 0;
 
 template <class Variant>
-__host__ __device__ void makeEmpty(Variant& v)
+void makeEmpty(Variant& v)
 {
   Variant v2(cuda::std::in_place_type<MakeEmptyT>);
   try
@@ -147,7 +147,7 @@ __host__ __device__ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ void test_move_noexcept()
 {
@@ -347,7 +347,7 @@ __host__ __device__ void test_move_ctor_basic()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_move_ctor_valueless_by_exception()
 {
   using V = cuda::std::variant<int, MakeEmptyT>;
@@ -356,7 +356,7 @@ void test_move_ctor_valueless_by_exception()
   V v(cuda::std::move(v1));
   assert(v.valueless_by_exception());
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <size_t Idx>
 __host__ __device__ constexpr bool test_constexpr_ctor_imp(cuda::std::variant<long, void*, const int> const& v)
@@ -388,9 +388,9 @@ __host__ __device__ void test_constexpr_move_ctor()
 int main(int, char**)
 {
   test_move_ctor_basic();
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_move_ctor_valueless_by_exception();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   test_move_noexcept();
   test_move_ctor_sfinae();
   test_constexpr_move_ctor();

@@ -144,44 +144,44 @@ struct TrackedMove
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct Except
 {};
 
 struct ThrowOnCopyConstruct
 {
   ThrowOnCopyConstruct() = default;
-  __host__ __device__ ThrowOnCopyConstruct(const ThrowOnCopyConstruct&)
+  ThrowOnCopyConstruct(const ThrowOnCopyConstruct&)
   {
     throw Except{};
   }
-  __host__ __device__ ThrowOnCopyConstruct& operator=(const ThrowOnCopyConstruct&) = default;
+  ThrowOnCopyConstruct& operator=(const ThrowOnCopyConstruct&) = default;
 };
 
 struct ThrowOnMoveConstruct
 {
   ThrowOnMoveConstruct() = default;
-  __host__ __device__ ThrowOnMoveConstruct(ThrowOnMoveConstruct&&)
+  ThrowOnMoveConstruct(ThrowOnMoveConstruct&&)
   {
     throw Except{};
   }
-  __host__ __device__ ThrowOnMoveConstruct& operator=(ThrowOnMoveConstruct&&) = default;
+  ThrowOnMoveConstruct& operator=(ThrowOnMoveConstruct&&) = default;
 };
 
 struct ThrowOnConvert
 {
   ThrowOnConvert() = default;
-  __host__ __device__ ThrowOnConvert(const int&)
+  ThrowOnConvert(const int&)
   {
     throw Except{};
   }
-  __host__ __device__ ThrowOnConvert(int&&)
+  ThrowOnConvert(int&&)
   {
     throw Except{};
   }
-  __host__ __device__ ThrowOnConvert(const ThrowOnConvert&) noexcept(false) {}
+  ThrowOnConvert(const ThrowOnConvert&) noexcept(false) {}
   ThrowOnConvert& operator=(const ThrowOnConvert&) = default;
-  __host__ __device__ ThrowOnConvert(ThrowOnConvert&&) noexcept(false) {}
+  ThrowOnConvert(ThrowOnConvert&&) noexcept(false) {}
   ThrowOnConvert& operator=(ThrowOnConvert&&) = default;
 };
 
@@ -189,15 +189,15 @@ struct ThrowOnMove
 {
   bool* destroyed = nullptr;
   ThrowOnMove()   = default;
-  __host__ __device__ ThrowOnMove(bool& d)
+  ThrowOnMove(bool& d)
       : destroyed(&d)
   {}
-  __host__ __device__ ThrowOnMove(ThrowOnMove&&)
+  ThrowOnMove(ThrowOnMove&&)
   {
     throw Except{};
   };
-  __host__ __device__ ThrowOnMove& operator=(ThrowOnMove&&) = default;
-  __host__ __device__ ~ThrowOnMove()
+  ThrowOnMove& operator=(ThrowOnMove&&) = default;
+  ~ThrowOnMove()
   {
     if (destroyed)
     {
@@ -206,7 +206,7 @@ struct ThrowOnMove
   }
 };
 
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 struct TestError
 {
