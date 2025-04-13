@@ -1490,6 +1490,11 @@ UNITTEST("token vector")
 
   ::std::vector<token> tokens(4);
 
+  for (size_t i = 0; i < 4; i++)
+  {
+    tokens[i] = ctx.token();
+  }
+
   ctx.task(tokens[0].write())->*[](cudaStream_t) {};
   ctx.task(tokens[0].read(), tokens[1].write())->*[](cudaStream_t) {};
   ctx.task(tokens[0].read(), tokens[2].write())->*[](cudaStream_t) {};
