@@ -1457,8 +1457,8 @@ UNITTEST("cuda stream place multi-gpu")
   ctx.finalize();
 };
 
-// Ensure we can skip logical tokens
-UNITTEST("logical token elision")
+// Ensure we can skip tokens
+UNITTEST("token elision")
 {
   context ctx;
 
@@ -1479,6 +1479,21 @@ UNITTEST("logical token elision")
 
   // with argument elision
   ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
+
+  ctx.finalize();
+};
+
+// Use the token type shorthand
+UNITTEST("token vector")
+{
+  context ctx;
+
+  ::std::vector<token> tokens(4);
+
+  ctx.task(tokens[0].write())->*[](cudaStream_t) {};
+  ctx.task(tokens[0].read(), tokens[1].write())->*[](cudaStream_t) {};
+  ctx.task(tokens[0].read(), tokens[2].write())->*[](cudaStream_t) {};
+  ctx.task(tokens[1].read(), tokens[2].read(), tokens[3].write())->*[](cudaStream_t) {};
 
   ctx.finalize();
 };
