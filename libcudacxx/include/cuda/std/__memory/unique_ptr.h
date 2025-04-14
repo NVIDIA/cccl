@@ -744,8 +744,8 @@ template <class _Tp, class _Dp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<unique_ptr<_Tp, _Dp>>
 {
 #  if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef unique_ptr<_Tp, _Dp> argument_type;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef size_t result_type;
+  _LIBCUDACXX_DEPRECATED typedef unique_ptr<_Tp, _Dp> argument_type;
+  _LIBCUDACXX_DEPRECATED typedef size_t result_type;
 #  endif
 
   _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(const unique_ptr<_Tp, _Dp>& __ptr) const

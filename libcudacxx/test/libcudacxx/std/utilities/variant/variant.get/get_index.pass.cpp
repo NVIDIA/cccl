@@ -244,7 +244,7 @@ __host__ __device__ void test_const_rvalue_get()
 template <cuda::std::size_t I>
 using Idx = cuda::std::integral_constant<size_t, I>;
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_throws_for_all_value_categories()
 {
   using V = cuda::std::variant<int, long>;
@@ -288,7 +288,7 @@ void test_throws_for_all_value_categories()
     assert(test(zero, cuda::std::move(cv1)));
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -297,9 +297,9 @@ int main(int, char**)
   test_rvalue_get();
   test_const_rvalue_get();
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_throws_for_all_value_categories();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

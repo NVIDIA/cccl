@@ -32,7 +32,7 @@
 #include <thrust/detail/reference.h>
 #include <thrust/system/cpp/detail/execution_policy.h>
 
-#include <type_traits>
+#include <cuda/std/type_traits>
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -88,7 +88,7 @@ using pointer = thrust::pointer<T, thrust::system::cpp::tag, thrust::tagged_refe
  *  \see raw_pointer_cast
  */
 template <typename T>
-using universal_pointer = thrust::pointer<T, thrust::system::cpp::tag, typename std::add_lvalue_reference<T>::type>;
+using universal_pointer = thrust::pointer<T, thrust::system::cpp::tag, ::cuda::std::add_lvalue_reference_t<T>>;
 
 /*! \p reference is a wrapped reference to an object stored in memory available
  *  to the \p cpp system. \p reference is the type of the result of

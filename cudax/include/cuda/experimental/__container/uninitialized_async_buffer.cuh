@@ -330,7 +330,7 @@ public:
   {
     if (__new_stream != __stream_)
     {
-      __stream_.wait();
+      __stream_.sync();
     }
     __stream_ = __new_stream;
   }

@@ -43,9 +43,7 @@ public:
 
   all_devices() = default;
 
-  [[nodiscard]] const device& operator[](size_type __i) const noexcept;
-
-  [[nodiscard]] const device& at(size_type __i) const;
+  [[nodiscard]] const device& operator[](size_type __i) const;
 
   [[nodiscard]] size_type size() const;
 
@@ -111,17 +109,19 @@ struct all_devices::__initializer_iterator
   }
 };
 
-[[nodiscard]] inline const device& all_devices::operator[](size_type __id_) const noexcept
-{
-  _CCCL_ASSERT(__id_ < size(), "cuda::experimental::all_devices::subscript device index out of range");
-  return __devices()[__id_];
-}
-
-[[nodiscard]] inline const device& all_devices::at(size_type __id_) const
+[[nodiscard]] inline const device& all_devices::operator[](size_type __id_) const
 {
   if (__id_ >= size())
   {
-    _CUDA_VSTD::__throw_out_of_range("device index out of range");
+    if (size() == 0)
+    {
+      _CUDA_VSTD::__throw_out_of_range("device was requested but no CUDA devices found");
+    }
+    else
+    {
+      _CUDA_VSTD::__throw_out_of_range(
+        (::std::string("device index out of range: ") + ::std::to_string(__id_)).c_str());
+    }
   }
   return __devices()[__id_];
 }

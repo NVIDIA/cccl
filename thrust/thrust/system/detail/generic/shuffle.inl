@@ -24,7 +24,7 @@
 #include <thrust/scan.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace system

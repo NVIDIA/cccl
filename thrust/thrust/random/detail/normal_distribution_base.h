@@ -35,8 +35,8 @@
 #include <thrust/pair.h>
 #include <thrust/random/uniform_real_distribution.h>
 
-#include <cmath>
-#include <limits>
+#include <cuda/std/cmath>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace random
@@ -114,10 +114,10 @@ protected:
   {
     // implementation from Boost
     // allow for Koenig lookup
-    using std::cos;
-    using std::log;
-    using std::sin;
-    using std::sqrt;
+    using ::cuda::std::cos;
+    using ::cuda::std::log;
+    using ::cuda::std::sin;
+    using ::cuda::std::sqrt;
 
     if (!m_valid)
     {

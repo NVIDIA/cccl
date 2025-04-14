@@ -19,7 +19,7 @@
 
 namespace
 {
-TEST_CASE("when_all simple example", "[when_all]")
+C2H_TEST("when_all simple example", "[when_all]")
 {
   auto snd  = cudax_async::when_all(cudax_async::just(3), cudax_async::just(0.1415));
   auto snd1 = std::move(snd) | cudax_async::then([](int x, double y) {
@@ -29,38 +29,38 @@ TEST_CASE("when_all simple example", "[when_all]")
   cudax_async::start(op);
 }
 
-TEST_CASE("when_all returning two values can be waited on", "[when_all]")
+C2H_TEST("when_all returning two values can be waited on", "[when_all]")
 {
   auto snd = cudax_async::when_all(cudax_async::just(2), cudax_async::just(3));
   check_values(std::move(snd), 2, 3);
 }
 
-TEST_CASE("when_all with 5 senders", "[when_all]")
+C2H_TEST("when_all with 5 senders", "[when_all]")
 {
   auto snd = cudax_async::when_all(
     cudax_async::just(2), cudax_async::just(3), cudax_async::just(5), cudax_async::just(7), cudax_async::just(11));
   check_values(std::move(snd), 2, 3, 5, 7, 11);
 }
 
-TEST_CASE("when_all with just one sender", "[when_all]")
+C2H_TEST("when_all with just one sender", "[when_all]")
 {
   auto snd = cudax_async::when_all(cudax_async::just(2));
   check_values(std::move(snd), 2);
 }
 
-TEST_CASE("when_all with move-only types", "[when_all]")
+C2H_TEST("when_all with move-only types", "[when_all]")
 {
   auto snd = cudax_async::when_all(cudax_async::just(movable(2)));
   check_values(std::move(snd), movable(2));
 }
 
-TEST_CASE("when_all with no senders", "[when_all]")
+C2H_TEST("when_all with no senders", "[when_all]")
 {
   auto snd = cudax_async::when_all();
   check_values(std::move(snd));
 }
 
-TEST_CASE("when_all when one sender sends void", "[when_all]")
+C2H_TEST("when_all when one sender sends void", "[when_all]")
 {
   auto snd = cudax_async::when_all(cudax_async::just(2), cudax_async::just());
   check_values(std::move(snd), 2);
@@ -68,7 +68,7 @@ TEST_CASE("when_all when one sender sends void", "[when_all]")
 
 #if !defined(__CUDA_ARCH__)
 
-TEST_CASE("when_all completes when children complete", "[when_all]")
+C2H_TEST("when_all completes when children complete", "[when_all]")
 {
   impulse_scheduler sched;
   bool called{false};
@@ -93,14 +93,14 @@ TEST_CASE("when_all completes when children complete", "[when_all]")
 
 #endif
 
-TEST_CASE("when_all can be used with just_*", "[when_all]")
+C2H_TEST("when_all can be used with just_*", "[when_all]")
 {
   auto snd = cudax_async::when_all(cudax_async::just(2), cudax_async::just_error(42), cudax_async::just_stopped());
   auto op  = cudax_async::connect(std::move(snd), checked_error_receiver{42});
   cudax_async::start(op);
 }
 
-TEST_CASE("when_all terminates with error if one child terminates with error", "[when_all]")
+C2H_TEST("when_all terminates with error if one child terminates with error", "[when_all]")
 {
   error_scheduler sched{42};
   auto snd = cudax_async::when_all(
@@ -109,7 +109,7 @@ TEST_CASE("when_all terminates with error if one child terminates with error", "
   cudax_async::start(op);
 }
 
-TEST_CASE("when_all terminates with stopped if one child is cancelled", "[when_all]")
+C2H_TEST("when_all terminates with stopped if one child is cancelled", "[when_all]")
 {
   stopped_scheduler sched;
   auto snd = cudax_async::when_all(
@@ -120,7 +120,7 @@ TEST_CASE("when_all terminates with stopped if one child is cancelled", "[when_a
 
 #if !defined(__CUDA_ARCH__)
 
-TEST_CASE("when_all cancels remaining children if error is detected", "[when_all]")
+C2H_TEST("when_all cancels remaining children if error is detected", "[when_all]")
 {
   impulse_scheduler sched;
   error_scheduler err_sched{42};
@@ -152,7 +152,7 @@ TEST_CASE("when_all cancels remaining children if error is detected", "[when_all
   CUDAX_CHECK(cancelled);
 }
 
-TEST_CASE("when_all cancels remaining children if cancel is detected", "[when_all]")
+C2H_TEST("when_all cancels remaining children if cancel is detected", "[when_all]")
 {
   stopped_scheduler stopped_sched;
   impulse_scheduler sched;
@@ -203,9 +203,9 @@ struct just_ref
   }
 };
 
-TEST_CASE("when_all has the values_type based on the children, decayed and as rvalue "
-          "references",
-          "[when_all]")
+C2H_TEST("when_all has the values_type based on the children, decayed and as rvalue "
+         "references",
+         "[when_all]")
 {
   check_value_types<types<int>>(cudax_async::when_all(cudax_async::just(13)));
   check_value_types<types<double>>(cudax_async::when_all(cudax_async::just(3.14)));
@@ -230,7 +230,7 @@ TEST_CASE("when_all has the values_type based on the children, decayed and as rv
   check_value_types<types<int, double>>(cudax_async::when_all(just_ref<int>(), just_ref<double>()));
 }
 
-TEST_CASE("when_all has the error_types based on the children", "[when_all]")
+C2H_TEST("when_all has the error_types based on the children", "[when_all]")
 {
   check_error_types<int>(cudax_async::when_all(cudax_async::just_error(13)));
 
@@ -258,7 +258,7 @@ TEST_CASE("when_all has the error_types based on the children", "[when_all]")
 #endif
 }
 
-TEST_CASE("when_all has the sends_stopped == true", "[when_all]")
+C2H_TEST("when_all has the sends_stopped == true", "[when_all]")
 {
   check_sends_stopped<true>(cudax_async::when_all(cudax_async::just(13)));
   check_sends_stopped<true>(cudax_async::when_all(cudax_async::just_error(-1)));

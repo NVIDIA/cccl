@@ -14,16 +14,16 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-TEST_CASE("Can create a stream and launch work into it", "[stream]")
+C2H_TEST("Can create a stream and launch work into it", "[stream]")
 {
   cudax::stream str;
   ::test::managed<int> i(0);
   cudax::launch(str, ::test::one_thread_dims, ::test::assign_42{}, i.get());
-  str.wait();
+  str.sync();
   CUDAX_REQUIRE(*i == 42);
 }
 
-TEST_CASE("From native handle", "[stream]")
+C2H_TEST("From native handle", "[stream]")
 {
   cudaStream_t handle;
   CUDART(cudaStreamCreate(&handle));
@@ -32,7 +32,7 @@ TEST_CASE("From native handle", "[stream]")
 
     ::test::managed<int> i(0);
     cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
-    stream.wait();
+    stream.sync();
     CUDAX_REQUIRE(*i == 42);
     (void) stream.release();
   }
@@ -55,8 +55,8 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
     CUDAX_REQUIRE(atomic_i.load() != 42);
     CUDAX_REQUIRE(!waiter.ready());
     atomic_i.store(80);
-    waiter.wait();
-    waitee.wait();
+    waiter.sync();
+    waitee.sync();
   };
 
   SECTION("Stream wait declared event")
@@ -91,7 +91,7 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
   }
 }
 
-TEST_CASE("Can add dependency into a stream", "[stream]")
+C2H_TEST("Can add dependency into a stream", "[stream]")
 {
   cudax::stream waiter, waitee;
 
@@ -99,7 +99,7 @@ TEST_CASE("Can add dependency into a stream", "[stream]")
   add_dependency_test<cudax::stream_ref>(waiter, waitee);
 }
 
-TEST_CASE("Stream priority", "[stream]")
+C2H_TEST("Stream priority", "[stream]")
 {
   cudax::stream stream_default_prio;
   CUDAX_REQUIRE(stream_default_prio.priority() == cudax::stream::default_priority);
@@ -109,7 +109,7 @@ TEST_CASE("Stream priority", "[stream]")
   CUDAX_REQUIRE(stream.priority() == priority);
 }
 
-TEST_CASE("Stream get device", "[stream]")
+C2H_TEST("Stream get device", "[stream]")
 {
   cudax::stream dev0_stream(cudax::device_ref{0});
   CUDAX_REQUIRE(dev0_stream.get_device() == 0);

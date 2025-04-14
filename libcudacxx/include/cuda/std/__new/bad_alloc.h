@@ -24,28 +24,28 @@
 
 #include <cuda/std/__exception/terminate.h>
 
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
 #  include <new>
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_alloc()
 {
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_alloc();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_array_new_length()
 {
-#ifndef _CCCL_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_array_new_length();), (_CUDA_VSTD_NOVERSION::terminate();))
-#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#endif // _CCCL_NO_EXCEPTIONS
+#endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
