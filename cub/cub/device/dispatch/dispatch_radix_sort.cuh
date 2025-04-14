@@ -1264,6 +1264,9 @@ struct DispatchSegmentedRadixSort
       return cudaErrorInvalidValue;
     }
 
+    BeginOffsetIteratorT begin_offsets_current_it = d_begin_offsets;
+    EndOffsetIteratorT end_offsets_current_it     = d_end_offsets;
+
     // Iterate over chunks of segments
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
@@ -1293,8 +1296,8 @@ struct DispatchSegmentedRadixSort
               d_keys_out,
               d_values_in,
               d_values_out,
-              d_begin_offsets,
-              d_end_offsets,
+              begin_offsets_current_it,
+              end_offsets_current_it,
               current_bit,
               pass_bits,
               decomposer);
@@ -1308,8 +1311,8 @@ struct DispatchSegmentedRadixSort
 
       if (invocation_index + 1 < num_invocations)
       {
-        detail::advance_iterators_inplace_if_supported(d_begin_offsets, num_current_segments);
-        detail::advance_iterators_inplace_if_supported(d_end_offsets, num_current_segments);
+        detail::advance_iterators_inplace_if_supported(begin_offsets_current_it, num_current_segments);
+        detail::advance_iterators_inplace_if_supported(end_offsets_current_it, num_current_segments);
       }
 
       // Sync the stream if specified to flush runtime errors
