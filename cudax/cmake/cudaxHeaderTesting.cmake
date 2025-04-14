@@ -16,7 +16,6 @@ function(cudax_add_header_test label definitions)
     # Non-STF headers #
     set(headertest_target ${config_prefix}.headers.${label}.no_stf)
     cccl_generate_header_tests(${headertest_target} cudax/include
-      DIALECT ${config_dialect}
       # The cudax header template removes the check for the `small` macro.
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
       GLOBS "cuda/experimental/*.cuh"
@@ -45,7 +44,6 @@ function(cudax_add_header_test label definitions)
       # STF headers #
       set(headertest_target ${config_prefix}.headers.${label}.stf)
       cccl_generate_header_tests(${headertest_target} cudax/include
-        DIALECT ${config_dialect}
         GLOBS
           "cuda/experimental/stf.cuh"
           "cuda/experimental/__stf/*.cuh"
