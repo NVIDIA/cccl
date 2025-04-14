@@ -205,6 +205,15 @@
 #  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
 
+#if _CCCL_CHECK_BUILTIN(builtin_popcountg)
+#  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
+
+// NVCC cannot handle __builtin_popcountg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_POPCOUNTG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
