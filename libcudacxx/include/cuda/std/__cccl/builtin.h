@@ -147,6 +147,8 @@
 #elif _CCCL_COMPILER(GCC, >=, 13)
 #  define _CCCL_BUILTIN_ASSUME(...) \
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__attribute__((__assume__(__VA_ARGS__)));))
+#elif _CCCL_COMPILER(GCC) && _CCCL_CUDA_COMPILER(NVCC)
+#  define _CCCL_BUILTIN_ASSUME(...) NV_IF_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);))
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_ASSUME(...) \
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
