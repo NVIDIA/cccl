@@ -36,19 +36,6 @@ CUB_NAMESPACE_BEGIN
  * Dispatch
  ******************************************************************************/
 
-template <typename GlobalOffsetT>
-struct num_previously_selected_op
-{
-  bool is_first_partition               = true;
-  GlobalOffsetT* d_num_previous_uniques = nullptr;
-
-  template <typename T>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT operator()(T) const
-  {
-    return is_first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques;
-  };
-};
-
 /**
  * @brief Utility class for dispatching the appropriately-tuned kernels for
  *        DeviceReduceByKey
@@ -102,17 +89,6 @@ struct DispatchStreamingReduceByKey
 
   // Offsets to index any item within the entire input (large enough to cover num_items)
   using global_offset_t = _CUDA_VSTD::int64_t;
-
-  // Function object to be used with a transform iterator to provide the number of unique items from previous partitions
-  using num_previously_selected_op_t = num_previously_selected_op<global_offset_t>;
-  using num_previously_selected_it_t =
-    THRUST_NS_QUALIFIER::transform_iterator<num_previously_selected_op_t,
-                                            THRUST_NS_QUALIFIER::counting_iterator<_CUDA_VSTD::int32_t>>;
-
-  using aggregates_out_it_wrapper_t =
-    THRUST_NS_QUALIFIER::offset_iterator<AggregatesOutputIteratorT, num_previously_selected_it_t>;
-  using uniques_out_it_wrapper_t =
-    THRUST_NS_QUALIFIER::offset_iterator<UniqueOutputIteratorT, num_previously_selected_it_t>;
 
   // The input values type
   using ValueInputT = cub::detail::it_value_t<ValuesInputIteratorT>;
@@ -213,8 +189,8 @@ struct DispatchStreamingReduceByKey
       return error;
     }
 
-    auto tmp_num_uniques           = static_cast<global_offset_t*>(allocations[1]);
-    auto tmp_prefix                = static_cast<AccumT*>(allocations[2]);
+    auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
+    auto tmp_prefix      = static_cast<AccumT*>(allocations[2]);
 
     // Iterate over the partitions until all input is processed
     for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
@@ -235,7 +211,7 @@ struct DispatchStreamingReduceByKey
         is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,
         &tmp_prefix[buffer_selector],
         &tmp_prefix[buffer_selector ^ 0x01],
-        &tmp_num_uniques[buffer_selector], 
+        &tmp_num_uniques[buffer_selector],
         &tmp_num_uniques[buffer_selector ^ 0x01]};
 
       // Construct the tile status interface
@@ -290,19 +266,13 @@ struct DispatchStreamingReduceByKey
               items_per_thread);
 #endif // CUB_DEBUG_LOG
 
-      // Prepare a single-element iterator to the number of previously selected items
-      auto previously_selected_op = num_previously_selected_op<global_offset_t>{
-        is_first_partition, streaming_context.previous_uniques_ptr()};
-      auto num_previously_selected_it = THRUST_NS_QUALIFIER::make_transform_iterator(
-        THRUST_NS_QUALIFIER::make_counting_iterator(0), previously_selected_op);
-
       // Invoke reduce_by_key_kernel
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_current_tiles, block_threads, 0, stream)
         .doit(reduce_by_key_kernel,
               d_keys_in + current_partition_offset,
-              uniques_out_it_wrapper_t{d_unique_out, num_previously_selected_it},
+              d_unique_out,
               d_values_in + current_partition_offset,
-              aggregates_out_it_wrapper_t{d_aggregates_out, num_previously_selected_it},
+              d_aggregates_out,
               d_num_runs_out,
               tile_state,
               0,
@@ -337,9 +307,9 @@ struct DispatchStreamingReduceByKey
       detail::reduce::DeviceReduceByKeyKernel<
         typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
-        uniques_out_it_wrapper_t,
+        UniqueOutputIteratorT,
         ValuesInputIteratorT,
-        aggregates_out_it_wrapper_t,
+        AggregatesOutputIteratorT,
         NumRunsOutputIteratorT,
         ScanTileStateT,
         EqualityOpT,

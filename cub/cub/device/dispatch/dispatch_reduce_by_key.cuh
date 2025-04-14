@@ -116,11 +116,16 @@ struct streaming_context
     return d_num_previous_uniques_in;
   }
 
-  template < typename NumUniquesT>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  {
+    return num_accumulated_uniques_out();
+  }
+
+  template <typename NumUniquesT>
   _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
   {
     GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
-    
+
     // Otherwise, just write out the number of unique items in this partition
     *d_num_accumulated_uniques_out = total_uniques;
 

@@ -378,6 +378,7 @@ struct AgentReduceByKey
    * @param streaming_context
    *   Streaming context providing context about this partition for streaming invocations
    */
+   template<typename StreamingContext>
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
     TempStorage& temp_storage,
     KeysInputIteratorT d_keys_in,
@@ -387,7 +388,29 @@ struct AgentReduceByKey
     NumRunsOutputIteratorT d_num_runs_out,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    StreamingContextT streaming_context)
+    StreamingContext streaming_context)
+      : temp_storage(temp_storage.Alias())
+      , d_keys_in(d_keys_in)
+      , d_unique_out(d_unique_out + streaming_context.num_uniques())
+      , d_values_in(d_values_in)
+      , d_aggregates_out(d_aggregates_out + streaming_context.num_uniques())
+      , d_num_runs_out(d_num_runs_out)
+      , equality_op(equality_op)
+      , reduction_op(reduction_op)
+      , scan_op(reduction_op)
+      , streaming_context(streaming_context)
+  {}
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
+    TempStorage& temp_storage,
+    KeysInputIteratorT d_keys_in,
+    UniqueOutputIteratorT d_unique_out,
+    ValuesInputIteratorT d_values_in,
+    AggregatesOutputIteratorT d_aggregates_out,
+    NumRunsOutputIteratorT d_num_runs_out,
+    EqualityOpT equality_op,
+    ReductionOpT reduction_op,
+    NullType streaming_context)
       : temp_storage(temp_storage.Alias())
       , d_keys_in(d_keys_in)
       , d_unique_out(d_unique_out)
