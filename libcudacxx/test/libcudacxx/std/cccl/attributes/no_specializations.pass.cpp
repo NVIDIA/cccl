@@ -10,7 +10,7 @@
 
 #include <cuda/std/__cccl/attributes.h>
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations) || _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
+#if _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS()
 
 // 1. Attribute applied to a template class
 
@@ -33,7 +33,7 @@ _CCCL_NO_SPECIALIZATIONS __host__ __device__ T function()
   return T{0};
 }
 
-#endif // _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations) || _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
+#endif // _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS()
 
 int main(int, char**)
 {
