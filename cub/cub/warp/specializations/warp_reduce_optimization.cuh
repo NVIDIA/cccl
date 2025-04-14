@@ -155,7 +155,7 @@ warp_reduce_generic(Input input, ReductionOp reduction_op, WarpConfigT config)
     }
     else
     {
-      auto lane_dest = cub::detail::logical_lane_id(logical_size1) + (1u << K);
+      auto lane_dest = cub::detail::logical_lane_id<logical_size1>() + (1u << K);
       auto dest      = ::min(lane_dest, last_pos.extent(0));
       res            = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
       res.pred       = lane_dest <= last_pos.extent(0);
@@ -269,8 +269,9 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   using cub::detail::warp_reduce_shuffle_op;
   using namespace cub::internal;
   using namespace _CUDA_VSTD;
+  check_warp_reduce_config(config);
   constexpr bool is_small_integer  = is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
-  constexpr auto logical_warp_size = config.logical_size();
+  constexpr auto logical_warp_size = config.logical_size;
   constexpr bool enable_redux      = config.logical_mode == single_reduction && !config.is_segmented;
   auto last_pos                    = config.last_pos;
   // early exit for threads outside the range with dynamic number of valid items
@@ -401,7 +402,7 @@ template <bool IsHeadSegment,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   logical_warp_size_t<LogicalWarpSize> logical_size)
 {
-  auto logical_warp_id = cub::detail::logical_warp_id(LogicalWarpSize);
+  auto logical_warp_id = cub::detail::logical_warp_id(logical_size);
   auto member_mask     = cub::detail::reduce_member_mask(logical_mode, logical_size, last_pos_t<0>{});
   auto warp_flags      = ::__ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
@@ -411,8 +412,8 @@ template <bool IsHeadSegment,
   warp_flags |= 1u << ((logical_warp_id + 1) * LogicalWarpSize - 1);
   // Find the next set flag
   auto last_lane = _CUDA_VSTD::countr_zero(warp_flags);
-  auto last_pos  = cub::detail::last_pos_t<>{last_lane};
-  detail::WarpReduceConfig config{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}};
+  auto last_pos  = last_pos_t<>{last_lane};
+  WarpReduceConfig config{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}};
   return cub::detail::warp_reduce_dispatch(input, reduction_op, config);
 }
 

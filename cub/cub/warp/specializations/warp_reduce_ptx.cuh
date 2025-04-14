@@ -280,7 +280,7 @@ template <typename T, typename ReductionOp>
 template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_mask(
   [[maybe_unused]] uint32_t step,
-  logical_warp_size_t<LogicalWarpSize>,
+  [[maybe_unused]] logical_warp_size_t<LogicalWarpSize> logical_size,
   last_pos_t<ValidItems> last_pos,
   is_segmented_t<IsSegmented> is_segmented = {})
 {
@@ -296,7 +296,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
   }
   else // last_pos is dynamic
   {
-    return cub::detail::logical_warp_id(LogicalWarpSize) * LogicalWarpSize + last_pos.extent(0);
+    return cub::detail::logical_warp_id(logical_size) * LogicalWarpSize + last_pos.extent(0);
   }
 }
 

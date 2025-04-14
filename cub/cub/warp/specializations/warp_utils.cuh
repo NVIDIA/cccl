@@ -36,27 +36,37 @@
 
 #include <cuda/ptx>
 #include <cuda/std/bit>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int logical_lane_id(uint32_t LogicalWarpSize)
+template <int LogicalWarpSize>
+inline constexpr bool is_valid_logical_warp_size_v = LogicalWarpSize >= 1 && LogicalWarpSize <= warp_threads;
+
+template <int LogicalWarpSize>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
+logical_lane_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> = {})
 {
-  _CCCL_ASSERT(LogicalWarpSize <= warp_threads, "invalid logical warp size");
-  auto lane                   = _CUDA_VPTX::get_sreg_laneid();
-  auto is_single_logical_warp = LogicalWarpSize == warp_threads || !_CUDA_VSTD::has_single_bit(LogicalWarpSize);
-  auto logical_lane           = static_cast<int>(is_single_logical_warp ? lane : lane % LogicalWarpSize);
+  static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
+  auto lane                             = _CUDA_VPTX::get_sreg_laneid();
+  constexpr bool is_full_warp           = LogicalWarpSize == warp_threads;
+  constexpr auto is_single_logical_warp = is_full_warp || !_CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize});
+  auto logical_lane                     = static_cast<int>(is_single_logical_warp ? lane : lane % LogicalWarpSize);
   _CCCL_ASSUME(logical_lane >= 0 && logical_lane < LogicalWarpSize);
   return logical_lane;
 }
 
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int logical_warp_id(uint32_t LogicalWarpSize)
+template <int LogicalWarpSize>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
+logical_warp_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> = {})
 {
-  _CCCL_ASSERT(LogicalWarpSize <= warp_threads, "invalid logical warp size");
-  auto lane                   = _CUDA_VPTX::get_sreg_laneid();
-  auto is_single_logical_warp = LogicalWarpSize == warp_threads || !_CUDA_VSTD::has_single_bit(LogicalWarpSize);
-  auto logical_warp_id        = static_cast<int>(is_single_logical_warp ? 0 : lane / LogicalWarpSize);
+  static_assert(is_valid_logical_warp_size_v<LogicalWarpSize>, "invalid logical warp size");
+  auto lane                             = _CUDA_VPTX::get_sreg_laneid();
+  constexpr bool is_full_warp           = LogicalWarpSize == warp_threads;
+  constexpr auto is_single_logical_warp = is_full_warp || !_CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize});
+  auto logical_warp_id                  = static_cast<int>(is_single_logical_warp ? 0 : lane / LogicalWarpSize);
   _CCCL_ASSUME(logical_warp_id >= 0 && logical_warp_id < warp_threads / LogicalWarpSize);
   return logical_warp_id;
 }
