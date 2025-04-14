@@ -94,9 +94,19 @@
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
-#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#endif
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_CUDA_COMPILER(CLANG)
+#  define _CCCL_PURE [[gnu::pure]]
+#elif _CCCL_CUDA_COMPILER(NVCC)
+#  define _CCCL_PURE __nv_pure__
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_PURE __declspec(noalias)
+#else
+#  define _CCCL_PURE
+#endif
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::no_specializations(_MSG)]]
