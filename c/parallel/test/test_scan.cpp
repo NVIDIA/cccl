@@ -205,6 +205,73 @@ C2H_TEST("Scan works with output iterators", "[scan]")
   }
 }
 
+C2H_TEST("Scan works with reverse input iterators", "[scan]")
+{
+  const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  iterator_t<int, random_access_iterator_state_t<int>> input_it =
+    make_reverse_iterator<int>(iterator_kind::INPUT, "int");
+  std::vector<int> input = generate<int>(num_items);
+  pointer_t<int> input_ptr(input);
+  input_it.state.data = input_ptr.ptr + num_items - 1;
+  pointer_t<int> output_it(num_items);
+  value_t<int> init{42};
+
+  scan(input_it, output_it, num_items, op, init, false);
+
+  std::vector<int> expected(num_items);
+  std::exclusive_scan(input.rbegin(), input.rend(), expected.begin(), init.value);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<int>(output_it));
+  }
+}
+
+C2H_TEST("Scan works with reverse input iterators", "[scan]")
+{
+  const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  iterator_t<int, random_access_iterator_state_t<int>> input_it =
+    make_reverse_iterator<int>(iterator_kind::INPUT, "int");
+  std::vector<int> input = generate<int>(num_items);
+  pointer_t<int> input_ptr(input);
+  input_it.state.data = input_ptr.ptr + num_items - 1;
+  pointer_t<int> output_it(num_items);
+  value_t<int> init{42};
+
+  scan(input_it, output_it, num_items, op, init, false);
+
+  std::vector<int> expected(num_items);
+  std::exclusive_scan(input.rbegin(), input.rend(), expected.begin(), init.value);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<int>(output_it));
+  }
+}
+
+C2H_TEST("Scan works with reverse output iterators", "[scan]")
+{
+  const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  iterator_t<int, random_access_iterator_state_t<int>> output_it =
+    make_reverse_iterator<int>(iterator_kind::OUTPUT, "int", "out");
+  const std::vector<int> input = generate<int>(num_items);
+  pointer_t<int> input_it(input);
+  pointer_t<int> inner_output_it(num_items);
+  output_it.state.data = inner_output_it.ptr + num_items - 1;
+  value_t<int> init{42};
+
+  scan(input_it, output_it, num_items, op, init, false);
+
+  std::vector<int> expected(num_items);
+  std::exclusive_scan(input.begin(), input.end(), expected.rbegin(), init.value);
+
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<int>(inner_output_it));
+  }
+}
+
 C2H_TEST("Scan works with input and output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));

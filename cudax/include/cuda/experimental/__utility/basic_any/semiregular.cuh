@@ -46,7 +46,7 @@
 _CCCL_PUSH_MACROS
 #undef interface
 
-#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
 // WAR for NVBUG #4924416
 #  define _CUDAX_FNPTR_CONSTANT_WAR(...) ::cuda::experimental::__constant_war(__VA_ARGS__)
 namespace cuda::experimental
@@ -57,10 +57,10 @@ template <class _Tp>
   return __val;
 }
 } // namespace cuda::experimental
-#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC) ^^^ /
-      // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC) vvv
 #  define _CUDAX_FNPTR_CONSTANT_WAR(...) __VA_ARGS__
-#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVHPC)
+#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC)
 
 namespace cuda::experimental
 {

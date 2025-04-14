@@ -288,19 +288,19 @@ void test_default_config()
     static_assert(cudax::__kernel_has_default_config<decltype(kernel)>);
 
     cudax::launch(stream, cudax::make_config(), kernel, verify_lambda);
-    stream.wait();
+    stream.sync();
   }
   SECTION("Combine with no overlap")
   {
     kernel_with_default_config kernel{cudax::make_config(block)};
     cudax::launch(stream, cudax::make_config(grid, cudax::cooperative_launch()), kernel, verify_lambda);
-    stream.wait();
+    stream.sync();
   }
   SECTION("Combine with overlap")
   {
     kernel_with_default_config kernel{cudax::make_config(cudax::block_dims<1>, cudax::cooperative_launch())};
     cudax::launch(stream, cudax::make_config(block, grid, cudax::cooperative_launch()), kernel, verify_lambda);
-    stream.wait();
+    stream.sync();
   }
 }
 
@@ -322,7 +322,7 @@ void unblock_and_wait_stream(cudax::stream_ref stream, cuda::atomic<int>& atomic
 {
   CUDAX_REQUIRE(!stream.ready());
   atomic = 1;
-  stream.wait();
+  stream.sync();
   atomic = 0;
 }
 
@@ -411,7 +411,7 @@ C2H_TEST("Host launch", "")
         CUDAX_REQUIRE(s == str_arg);
       },
       s);
-    stream.wait();
+    stream.sync();
   }
 
   SECTION("Confirm no const added to the callable")
@@ -421,7 +421,7 @@ C2H_TEST("Host launch", "")
     });
 
     cudax::host_launch(stream, wrapped_lambda);
-    stream.wait();
+    stream.sync();
     CUDAX_REQUIRE(i == 21)
   }
 

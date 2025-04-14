@@ -584,6 +584,46 @@ make_constant_iterator(std::string value_type, std::string prefix = "")
   return make_iterator<ValueT, constant_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
+template <class ValueT>
+iterator_t<ValueT, random_access_iterator_state_t<ValueT>>
+make_reverse_iterator(iterator_kind kind, std::string value_type, std::string prefix = "", std::string transform = "")
+{
+  std::string iterator_state = std::format("struct state_t {{ {0}* data; }};\n", value_type);
+
+  operation_t advance = {
+    std::format("{0}_advance", prefix),
+    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{\n"
+                "  state->data -= offset;\n"
+                "}}",
+                prefix)};
+
+  std::string dereference_method;
+  if (kind == iterator_kind::INPUT)
+  {
+    dereference_method = std::format(
+      "extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{\n"
+      "  return (*state->data){2};\n"
+      "}}",
+      prefix,
+      value_type,
+      transform);
+  }
+  else
+  {
+    dereference_method = std::format(
+      "extern \"C\" __device__ void {0}_dereference(state_t* state, {1} x) {{\n"
+      "  *state->data = x{2};\n"
+      "}}",
+      prefix,
+      value_type,
+      transform);
+  }
+
+  operation_t dereference = {std::format("{0}_dereference", prefix), dereference_method};
+
+  return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
+}
+
 template <class T>
 struct value_t
 {

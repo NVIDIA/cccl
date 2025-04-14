@@ -165,7 +165,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   state.add_global_memory_writes<OffsetT>(num_runs);
   state.add_global_memory_writes<OffsetT>(1);
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       d_temp_storage,
       temp_storage_bytes,

@@ -126,6 +126,13 @@
 #ifndef _LIBCUDACXX_HAS_NO_IS_AGGREGATE
 #  define __cccl_lib_is_aggregate 201703L
 #endif // _LIBCUDACXX_HAS_NO_IS_AGGREGATE
+#if defined(_CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE) && defined(_CCCL_BUILTIN_IS_CORRESPONDING_MEMBER)
+#  define __cccl_lib_is_layout_compatible 201907L
+#endif // _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE && _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER
+#if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF) \
+  && defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS)
+#  define __cccl_lib_is_pointer_interconvertible 201907L
+#endif // _BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF && _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS
 #define __cccl_lib_make_from_tuple 201606L
 // # define __cccl_lib_map_try_emplace                      201411L
 // # define __cccl_lib_math_special_functions               201603L
@@ -196,8 +203,6 @@
 #  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #    define __cccl_lib_is_constant_evaluated 201811L
 #  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-// # define __cccl_lib_is_layout_compatible                 201907L
-// # define __cccl_lib_is_pointer_interconvertible          201907L
 #  if !defined(_LIBCUDACXX_HAS_NO_THREADS)
 // #   define __cccl_lib_jthread                            201911L
 #  endif
