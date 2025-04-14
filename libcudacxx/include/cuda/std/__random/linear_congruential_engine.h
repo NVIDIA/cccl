@@ -31,10 +31,10 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <unsigned long long __a,
-          unsigned long long __c,
-          unsigned long long __m,
-          unsigned long long _Mp,
+template <uint64_t __a,
+          uint64_t __c,
+          uint64_t __m,
+          uint64_t _Mp,
           bool _MightOverflow = (__a != 0 && __m != 0 && __m - 1 > (_Mp - __c) / __a),
           bool _OverflowOK    = ((__m | (__m - 1)) > __m), // m = 2^n
           bool _SchrageOK     = (__a != 0 && __m != 0 && __m % __a <= __m / __a)> // r <= q
@@ -47,62 +47,62 @@ struct __lce_alg_picker
   static constexpr const bool __use_schrage = _MightOverflow && !_OverflowOK && _SchrageOK;
 };
 
-template <unsigned long long __a,
-          unsigned long long __c,
-          unsigned long long __m,
-          unsigned long long _Mp,
+template <uint64_t __a,
+          uint64_t __c,
+          uint64_t __m,
+          uint64_t _Mp,
           bool _UseSchrage = __lce_alg_picker<__a, __c, __m, _Mp>::__use_schrage>
 struct __lce_ta;
 
 // 64
 
-template <unsigned long long __a, unsigned long long __c, unsigned long long __m>
-struct __lce_ta<__a, __c, __m, (unsigned long long) (~0), true>
+template <uint64_t __a, uint64_t __c, uint64_t __m>
+struct __lce_ta<__a, __c, __m, ~uint64_t{0}, true>
 {
-  using result_type = unsigned long long;
+  using result_type = uint64_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
     // Schrage's algorithm
-    const result_type __q  = __m / __a;
-    const result_type __r  = __m % __a;
-    const result_type __t0 = __a * (__x % __q);
-    const result_type __t1 = __r * (__x / __q);
-    __x                    = __t0 + (__t0 < __t1) * __m - __t1;
+    constexpr result_type __q = __m / __a;
+    constexpr result_type __r = __m % __a;
+    const result_type __t0    = __a * (__x % __q);
+    const result_type __t1    = __r * (__x / __q);
+    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
     __x += __c - (__x >= __m - __c) * __m;
     return __x;
   }
 };
 
-template <unsigned long long __a, unsigned long long __m>
-struct __lce_ta<__a, 0, __m, (unsigned long long) (~0), true>
+template <uint64_t __a, uint64_t __m>
+struct __lce_ta<__a, 0, __m, ~uint64_t{0}, true>
 {
-  using result_type = unsigned long long;
+  using result_type = uint64_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
     // Schrage's algorithm
-    const result_type __q  = __m / __a;
-    const result_type __r  = __m % __a;
-    const result_type __t0 = __a * (__x % __q);
-    const result_type __t1 = __r * (__x / __q);
-    __x                    = __t0 + (__t0 < __t1) * __m - __t1;
+    constexpr result_type __q = __m / __a;
+    constexpr result_type __r = __m % __a;
+    const result_type __t0    = __a * (__x % __q);
+    const result_type __t1    = __r * (__x / __q);
+    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
     return __x;
   }
 };
 
-template <unsigned long long __a, unsigned long long __c, unsigned long long __m>
-struct __lce_ta<__a, __c, __m, (unsigned long long) (~0), false>
+template <uint64_t __a, uint64_t __c, uint64_t __m>
+struct __lce_ta<__a, __c, __m, ~uint64_t{0}, false>
 {
-  using result_type = unsigned long long;
+  using result_type = uint64_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
     return (__a * __x + __c) % __m;
   }
 };
 
-template <unsigned long long __a, unsigned long long __c>
-struct __lce_ta<__a, __c, 0, (unsigned long long) (~0), false>
+template <uint64_t __a, uint64_t __c>
+struct __lce_ta<__a, __c, 0, ~uint64_t{0}, false>
 {
-  using result_type = unsigned long long;
+  using result_type = uint64_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
     return __a * __x + __c;
@@ -111,78 +111,78 @@ struct __lce_ta<__a, __c, 0, (unsigned long long) (~0), false>
 
 // 32
 
-template <unsigned long long _Ap, unsigned long long _Cp, unsigned long long _Mp>
-struct __lce_ta<_Ap, _Cp, _Mp, unsigned(~0), true>
+template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
+struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, true>
 {
-  using result_type = unsigned;
+  using result_type = uint32_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
-    const result_type __a = static_cast<result_type>(_Ap);
-    const result_type __c = static_cast<result_type>(_Cp);
-    const result_type __m = static_cast<result_type>(_Mp);
+    constexpr auto __a = static_cast<result_type>(_Ap);
+    constexpr auto __c = static_cast<result_type>(_Cp);
+    constexpr auto __m = static_cast<result_type>(_Mp);
     // Schrage's algorithm
-    const result_type __q  = __m / __a;
-    const result_type __r  = __m % __a;
-    const result_type __t0 = __a * (__x % __q);
-    const result_type __t1 = __r * (__x / __q);
-    __x                    = __t0 + (__t0 < __t1) * __m - __t1;
+    constexpr result_type __q = __m / __a;
+    constexpr result_type __r = __m % __a;
+    const result_type __t0    = __a * (__x % __q);
+    const result_type __t1    = __r * (__x / __q);
+    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
     __x += __c - (__x >= __m - __c) * __m;
     return __x;
   }
 };
 
-template <unsigned long long _Ap, unsigned long long _Mp>
-struct __lce_ta<_Ap, 0, _Mp, unsigned(~0), true>
+template <uint64_t _Ap, uint64_t _Mp>
+struct __lce_ta<_Ap, 0, _Mp, ~uint32_t{0}, true>
 {
-  using result_type = unsigned;
+  using result_type = uint32_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
-    const result_type __a = static_cast<result_type>(_Ap);
-    const result_type __m = static_cast<result_type>(_Mp);
+    constexpr result_type __a = static_cast<result_type>(_Ap);
+    constexpr result_type __m = static_cast<result_type>(_Mp);
     // Schrage's algorithm
-    const result_type __q  = __m / __a;
-    const result_type __r  = __m % __a;
-    const result_type __t0 = __a * (__x % __q);
-    const result_type __t1 = __r * (__x / __q);
-    __x                    = __t0 + (__t0 < __t1) * __m - __t1;
+    constexpr result_type __q = __m / __a;
+    constexpr result_type __r = __m % __a;
+    const result_type __t0    = __a * (__x % __q);
+    const result_type __t1    = __r * (__x / __q);
+    __x                       = __t0 + (__t0 < __t1) * __m - __t1;
     return __x;
   }
 };
 
-template <unsigned long long _Ap, unsigned long long _Cp, unsigned long long _Mp>
-struct __lce_ta<_Ap, _Cp, _Mp, unsigned(~0), false>
+template <uint64_t _Ap, uint64_t _Cp, uint64_t _Mp>
+struct __lce_ta<_Ap, _Cp, _Mp, ~uint32_t{0}, false>
 {
-  using result_type = unsigned;
+  using result_type = uint32_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
-    const result_type __a = static_cast<result_type>(_Ap);
-    const result_type __c = static_cast<result_type>(_Cp);
-    const result_type __m = static_cast<result_type>(_Mp);
+    constexpr result_type __a = static_cast<result_type>(_Ap);
+    constexpr result_type __c = static_cast<result_type>(_Cp);
+    constexpr result_type __m = static_cast<result_type>(_Mp);
     return (__a * __x + __c) % __m;
   }
 };
 
-template <unsigned long long _Ap, unsigned long long _Cp>
-struct __lce_ta<_Ap, _Cp, 0, unsigned(~0), false>
+template <uint64_t _Ap, uint64_t _Cp>
+struct __lce_ta<_Ap, _Cp, 0, ~uint32_t{0}, false>
 {
-  using result_type = unsigned;
+  using result_type = uint32_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
-    const result_type __a = static_cast<result_type>(_Ap);
-    const result_type __c = static_cast<result_type>(_Cp);
+    constexpr result_type __a = static_cast<result_type>(_Ap);
+    constexpr result_type __c = static_cast<result_type>(_Cp);
     return __a * __x + __c;
   }
 };
 
 // 16
 
-template <unsigned long long __a, unsigned long long __c, unsigned long long __m, bool __b>
-struct __lce_ta<__a, __c, __m, (unsigned short) (~0), __b>
+template <uint64_t __a, uint64_t __c, uint64_t __m, bool __b>
+struct __lce_ta<__a, __c, __m, uint16_t{~0}, __b>
 {
-  using result_type = unsigned short;
+  using result_type = uint16_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
   {
-    return static_cast<result_type>(__lce_ta<__a, __c, __m, unsigned(~0)>::next(__x));
+    return static_cast<result_type>(__lce_ta<__a, __c, __m, ~uint32_t{0}>::next(__x));
   }
 };
 
@@ -213,7 +213,7 @@ private:
 
   static_assert(__m == 0 || __a < __m, "linear_congruential_engine invalid parameters");
   static_assert(__m == 0 || __c < __m, "linear_congruential_engine invalid parameters");
-  static_assert(is_unsigned<_UIntType>::value, "_UIntType must be unsigned type");
+  static_assert(is_unsigned_v<_UIntType>, "_UIntType must be uint32_t type");
 
 public:
   static constexpr const result_type _Min = __c == 0u ? 1u : 0u;
@@ -256,7 +256,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI void seed(_Sseq& __q) noexcept
   {
     __seed(__q,
-           integral_constant<unsigned,
+           integral_constant<uint32_t,
                              1 + (__m == 0 ? (sizeof(result_type) * CHAR_BIT - 1) / 32 : (__m > 0x100000000ull))>());
   }
 
@@ -265,7 +265,7 @@ public:
   {
     return __x_ = static_cast<result_type>(__lce_ta<__a, __c, __m, _Mp>::next(__x_));
   }
-  _LIBCUDACXX_HIDE_FROM_ABI void discard(unsigned long long __z) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI void discard(uint64_t __z) noexcept
   {
     for (; __z; --__z)
     {
@@ -303,9 +303,9 @@ private:
   }
 
   template <class _Sseq>
-  _LIBCUDACXX_HIDE_FROM_ABI void __seed(_Sseq& __q, integral_constant<unsigned, 1>) noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI void __seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept;
   template <class _Sseq>
-  _LIBCUDACXX_HIDE_FROM_ABI void __seed(_Sseq& __q, integral_constant<unsigned, 2>) noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI void __seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept;
 
 #if 0 // Not Implemented
   template <class _CharT, class _Traits, class _Up, _Up _Ap, _Up _Cp, _Up _Np>
@@ -337,9 +337,9 @@ constexpr const typename linear_congruential_engine<_UIntType, __a, __c, __m>::r
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 template <class _Sseq>
 _LIBCUDACXX_HIDE_FROM_ABI void
-linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<unsigned, 1>) noexcept
+linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<uint32_t, 1>) noexcept
 {
-  const unsigned __k = 1;
+  const uint32_t __k = 1;
   uint32_t __ar[__k + 3];
   __q.generate(__ar, __ar + __k + 3);
   result_type __s = static_cast<result_type>(__ar[3] % __m);
@@ -349,9 +349,9 @@ linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integra
 template <class _UIntType, _UIntType __a, _UIntType __c, _UIntType __m>
 template <class _Sseq>
 _LIBCUDACXX_HIDE_FROM_ABI void
-linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<unsigned, 2>) noexcept
+linear_congruential_engine<_UIntType, __a, __c, __m>::__seed(_Sseq& __q, integral_constant<uint32_t, 2>) noexcept
 {
-  const unsigned __k = 2;
+  const uint32_t __k = 2;
   uint32_t __ar[__k + 3];
   __q.generate(__ar, __ar + __k + 3);
   result_type __s = static_cast<result_type>((__ar[3] + ((uint64_t) __ar[4] << 32)) % __m);

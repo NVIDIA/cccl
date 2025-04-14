@@ -12,7 +12,7 @@
 // template<class _IntType = int>
 // class uniform_int_distribution
 
-// template<class _URNG> result_type operator()(_URNG& g, const param_type& parm);
+// template<class _URng> result_type operator()(_URng& g, const param_type& parm);
 
 #include <cuda/std/__random_>
 #include <cuda/std/array>
