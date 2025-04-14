@@ -170,7 +170,7 @@ struct DispatchCopyIf
     status = cuda_cub::synchronize(policy);
     _CUDA_CUB_RET_IF_FAIL(status);
     OffsetT num_selected = get_value(policy, d_num_selected_out);
-    thrust::advance(output, num_selected);
+    ::cuda::std::advance(output, num_selected);
     return status;
   }
 };

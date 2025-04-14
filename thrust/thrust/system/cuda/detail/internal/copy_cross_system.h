@@ -114,7 +114,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
 
   // copy input data into host temp storage
   InputIt last = first;
-  thrust::advance(last, num_items);
+  ::cuda::std::advance(last, num_items);
   thrust::detail::temporary_array<InputTy, H> temp(host_s, num_items);
 
   for (Size idx = 0; idx != num_items; idx++)

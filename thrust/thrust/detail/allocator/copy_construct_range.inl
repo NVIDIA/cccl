@@ -101,7 +101,7 @@ _CCCL_HOST_DEVICE enable_if_convertible_t<FromSystem, ToSystem, Pointer> uniniti
 
   // get a zip_iterator pointing to the end
   const thrust::detail::it_difference_t<InputIterator> n = thrust::distance(first, last);
-  thrust::advance(end, n);
+  ::cuda::std::advance(end, n);
 
   // create a functor
   using InputType  = it_value_t<InputIterator>;

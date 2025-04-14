@@ -301,7 +301,7 @@ void vector_base<T, Alloc>::resize(size_type new_size)
   if (new_size < size())
   {
     iterator new_end = begin();
-    thrust::advance(new_end, new_size);
+    ::cuda::std::advance(new_end, new_size);
     erase(new_end, end());
   } // end if
   else
@@ -316,7 +316,7 @@ void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
   if (new_size < size())
   {
     iterator new_end = begin();
-    thrust::advance(new_end, new_size);
+    ::cuda::std::advance(new_end, new_size);
     erase(new_end, end());
   } // end if
   else
@@ -443,7 +443,7 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::end()
 {
   iterator result = begin();
-  thrust::advance(result, size());
+  ::cuda::std::advance(result, size());
   return result;
 } // end vector_base::end()
 
@@ -451,7 +451,7 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::end() const
 {
   const_iterator result = begin();
-  thrust::advance(result, size());
+  ::cuda::std::advance(result, size());
   return result;
 } // end vector_base::end()
 
@@ -617,7 +617,7 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator 
 
   // return an iterator pointing back to position
   iterator result = begin();
-  thrust::advance(result, index);
+  ::cuda::std::advance(result, index);
   return result;
 } // end vector_base::insert()
 
@@ -701,7 +701,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
       else
       {
         ForwardIterator mid = first;
-        thrust::advance(mid, num_displaced_elements);
+        ::cuda::std::advance(mid, num_displaced_elements);
 
         // construct copy new elements at the end of the vector
         m_storage.uninitialized_copy(mid, last, end());
@@ -984,7 +984,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
 
       // copy to elements which already exist
       InputIterator mid = first;
-      thrust::advance(mid, size());
+      ::cuda::std::advance(mid, size());
       thrust::copy(first, mid, begin());
 
       // uninitialize_copy to elements which must be constructed
@@ -1084,7 +1084,7 @@ void vector_base<T, Alloc>::allocate_and_copy(
     // something went wrong, so destroy & deallocate the new storage
     // XXX seems like this destroys too many elements -- should just be last - first instead of requested_size
     iterator new_storage_end = new_storage.begin();
-    thrust::advance(new_storage_end, requested_size);
+    ::cuda::std::advance(new_storage_end, requested_size);
     m_storage.destroy(new_storage.begin(), new_storage_end);
     new_storage.deallocate();
 

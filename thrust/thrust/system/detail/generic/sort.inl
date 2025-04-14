@@ -142,7 +142,7 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
   using ZipIterator   = thrust::zip_iterator<IteratorTuple>;
 
   ForwardIterator first_plus_one = first;
-  thrust::advance(first_plus_one, 1);
+  ::cuda::std::advance(first_plus_one, 1);
 
   ZipIterator zipped_first = thrust::make_zip_iterator(first_plus_one, first);
   ZipIterator zipped_last  = thrust::make_zip_iterator(last, first);

@@ -64,7 +64,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
     difference_type half   = len >> 1;
     ForwardIterator middle = first;
 
-    thrust::advance(middle, half);
+    ::cuda::std::advance(middle, half);
 
     if (wrapped_comp(*middle, val))
     {
@@ -102,7 +102,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
     difference_type half   = len >> 1;
     ForwardIterator middle = first;
 
-    thrust::advance(middle, half);
+    ::cuda::std::advance(middle, half);
 
     if (wrapped_comp(val, *middle))
     {

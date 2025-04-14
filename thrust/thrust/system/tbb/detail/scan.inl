@@ -252,7 +252,7 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }
 
-  thrust::advance(result, n);
+  ::cuda::std::advance(result, n);
 
   return result;
 }
@@ -277,7 +277,7 @@ OutputIterator inclusive_scan(
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }
 
-  thrust::advance(result, n);
+  ::cuda::std::advance(result, n);
 
   return result;
 }
@@ -301,7 +301,7 @@ OutputIterator exclusive_scan(
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), scan_body);
   }
 
-  thrust::advance(result, n);
+  ::cuda::std::advance(result, n);
 
   return result;
 }

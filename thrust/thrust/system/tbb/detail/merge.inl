@@ -270,7 +270,7 @@ merge(execution_policy<DerivedPolicy>&,
 
   ::tbb::parallel_for(range, body);
 
-  thrust::advance(result, thrust::distance(first1, last1) + thrust::distance(first2, last2));
+  ::cuda::std::advance(result, thrust::distance(first1, last1) + thrust::distance(first2, last2));
 
   return result;
 } // end merge()
@@ -311,8 +311,10 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
 
   ::tbb::parallel_for(range, body);
 
-  thrust::advance(keys_result, thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2));
-  thrust::advance(values_result, thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2));
+  ::cuda::std::advance(keys_result,
+                       thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2));
+  ::cuda::std::advance(values_result,
+                       thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2));
 
   return thrust::make_pair(keys_result, values_result);
 }

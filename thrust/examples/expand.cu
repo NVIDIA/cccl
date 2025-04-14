@@ -46,7 +46,7 @@ OutputIterator expand(InputIterator1 first1, InputIterator1 last1, InputIterator
   thrust::gather(output_indices.begin(), output_indices.end(), first2, output);
 
   // return output + output_size
-  thrust::advance(output, output_size);
+  ::cuda::std::advance(output, output_size);
   return output;
 }
 

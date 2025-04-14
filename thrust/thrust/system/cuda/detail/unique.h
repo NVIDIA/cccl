@@ -634,8 +634,9 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
     return 0;
   }
   auto size = thrust::distance(first, last);
-  auto it   = thrust::make_zip_iterator(first, thrust::next(first));
-  return 1 + thrust::count_if(policy, it, thrust::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
+  auto it   = thrust::make_zip_iterator(first, ::cuda::std::next(first));
+  return 1
+       + thrust::count_if(policy, it, ::cuda::std::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
 }
 
 } // namespace cuda_cub

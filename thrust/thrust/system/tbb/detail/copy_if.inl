@@ -124,7 +124,7 @@ copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, 
   {
     Body body(first, stencil, result, pred);
     ::tbb::parallel_scan(::tbb::blocked_range<Size>(0, n), body);
-    thrust::advance(result, body.sum);
+    ::cuda::std::advance(result, body.sum);
   }
 
   return result;

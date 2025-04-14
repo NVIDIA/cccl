@@ -50,7 +50,7 @@ reverse(thrust::execution_policy<ExecutionPolicy>& exec, BidirectionalIterator f
   // find the midpoint of [first,last)
   difference_type N = thrust::distance(first, last);
   BidirectionalIterator mid(first);
-  thrust::advance(mid, N / 2);
+  ::cuda::std::advance(mid, N / 2);
 
   // swap elements of [first,mid) with [last - 1, mid)
   thrust::swap_ranges(exec, first, mid, thrust::make_reverse_iterator(last));
