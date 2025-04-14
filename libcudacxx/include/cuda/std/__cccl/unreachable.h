@@ -26,17 +26,21 @@
 #include <cuda/std/__cccl/visibility.h>
 
 #if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
+
 #  define _CCCL_UNREACHABLE()             \
     {                                     \
       __assume(0);                        \
       _CCCL_ASSERT(false, "unreachable"); \
     }
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+
+#else
+
 #  define _CCCL_UNREACHABLE()             \
     {                                     \
       __builtin_unreachable();            \
       _CCCL_ASSERT(false, "unreachable"); \
     }
-#endif // !_CCCL_COMPILER(MSVC)
+
+#endif // _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
 
 #endif // __CCCL_UNREACHABLE_H
