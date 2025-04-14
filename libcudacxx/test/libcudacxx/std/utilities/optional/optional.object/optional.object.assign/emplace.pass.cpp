@@ -238,7 +238,7 @@ __host__ __device__ void test_on_test_type()
 #if TEST_HAS_EXCEPTIONS()
 struct Y
 {
-  STATIC_MEMBER_VAR(dtor_called, bool);
+  STATIC_MEMBER_VAR(dtor_called, bool)
   Y() = default;
   Y(int)
   {

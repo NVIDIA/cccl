@@ -54,11 +54,11 @@ struct MoveOnlyNT
 
 struct CopyAssign
 {
-  STATIC_MEMBER_VAR(alive, int);
-  STATIC_MEMBER_VAR(copy_construct, int);
-  STATIC_MEMBER_VAR(copy_assign, int);
-  STATIC_MEMBER_VAR(move_construct, int);
-  STATIC_MEMBER_VAR(move_assign, int);
+  STATIC_MEMBER_VAR(alive, int)
+  STATIC_MEMBER_VAR(copy_construct, int)
+  STATIC_MEMBER_VAR(copy_assign, int)
+  STATIC_MEMBER_VAR(move_construct, int)
+  STATIC_MEMBER_VAR(move_assign, int)
   __host__ __device__ static void reset()
   {
     copy_construct() = copy_assign() = move_construct() = move_assign() = alive() = 0;

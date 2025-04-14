@@ -39,7 +39,7 @@ struct __ignore_t
 
 namespace
 {
-_CCCL_GLOBAL_CONSTANT __ignore_t ignore{};
+_CCCL_GLOBAL_CONSTANT __ignore_t ignore = __ignore_t{};
 } // namespace
 
 _LIBCUDACXX_END_NAMESPACE_STD
