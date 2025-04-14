@@ -7,7 +7,6 @@
 set(target_name cccl.c.parallel.headers)
 
 cccl_generate_header_tests(${target_name} c/parallel/include
-  DIALECT 20
   LANGUAGE C
   GLOBS "cccl/c/*.h"
 )
