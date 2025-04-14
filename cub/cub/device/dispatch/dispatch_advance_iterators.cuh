@@ -5,8 +5,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/std/type_traits>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -14,6 +12,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
