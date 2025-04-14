@@ -142,7 +142,7 @@
 #  undef _CCCL_BUILTIN_ASINHL
 #endif // _CCCL_CUDA_COMPILER(CLANG)
 
-#if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
+#if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #elif _CCCL_COMPILER(GCC, >=, 13)
 #  define _CCCL_BUILTIN_ASSUME(...) \
