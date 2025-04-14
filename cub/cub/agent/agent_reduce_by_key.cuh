@@ -639,12 +639,11 @@ struct AgentReduceByKey
         {
           auto init_value = OffsetValuePairT{0, streaming_context.prefix()};
           BlockScanT(temp_storage.scan_storage.scan)
-            .ExclusiveScan(
-              scan_items, scan_items, init_value, scan_op, block_aggregate);
+            .ExclusiveScan(scan_items, scan_items, init_value, scan_op, block_aggregate);
           num_segments_prefix = 0;
-          // note, block_aggregate does not include the prefix 
-          block_aggregate     = scan_op(init_value, block_aggregate);
-          total_aggregate     = block_aggregate;
+          // note, block_aggregate does not include the prefix
+          block_aggregate = scan_op(init_value, block_aggregate);
+          total_aggregate = block_aggregate;
         }
       }
       else
@@ -720,8 +719,21 @@ struct AgentReduceByKey
         }
       }
 
-      // Output the total number of items selected
-      *d_num_runs_out = num_segments;
+      if constexpr (is_streaming_invocation)
+      {
+        // Add the number of unique items in this partition to the global aggregate
+        auto total_uniques = streaming_context.add_num_uniques(num_segments);
+
+        // If this is the last partition, write out the number of unique items
+        if (streaming_context.is_last_partition())
+        {
+          *d_num_runs_out = total_uniques;
+        }
+      }
+      else
+      {
+        *d_num_runs_out = num_segments;
+      }
     }
   }
 
