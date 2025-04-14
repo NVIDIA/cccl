@@ -85,8 +85,9 @@ template <typename _Tp>
 
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return _CUDA_VSTD::__cccl_popcount_impl_host(__v);))
-    NV_IF_TARGET(NV_IS_DEVICE, (return _CUDA_VSTD::__cccl_popcount_impl_device(__v);))
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
+                      (return _CUDA_VSTD::__cccl_popcount_impl_host(__v);),
+                      (return _CUDA_VSTD::__cccl_popcount_impl_device(__v);))
   }
   return _CUDA_VSTD::__cccl_popcount_impl_constexpr(__v);
 }
