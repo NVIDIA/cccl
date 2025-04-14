@@ -378,7 +378,7 @@ struct AgentReduceByKey
    * @param streaming_context
    *   Streaming context providing context about this partition for streaming invocations
    */
-   template<typename StreamingContext>
+  template <typename StreamingContext>
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentReduceByKey(
     TempStorage& temp_storage,
     KeysInputIteratorT d_keys_in,

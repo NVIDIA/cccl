@@ -44,6 +44,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
@@ -199,7 +200,7 @@ struct DeviceRunLengthEncode
     using reduction_op = ::cuda::std::plus<>; // Value reduction operator
 
     // Offset type used for global offsets
-    using offset_t = NumItemsT;
+    using offset_t = detail::choose_signed_offset_t<NumItemsT>;
 
     // The lengths output value type
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
@@ -221,6 +222,7 @@ struct DeviceRunLengthEncode
       NumRunsOutputIteratorT,
       equality_op,
       reduction_op,
+      offset_t,
       accum_t,
       policy_t>::Dispatch(d_temp_storage,
                           temp_storage_bytes,

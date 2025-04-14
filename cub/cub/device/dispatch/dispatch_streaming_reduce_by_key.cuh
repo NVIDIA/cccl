@@ -72,6 +72,7 @@ template <typename KeysInputIteratorT,
           typename NumRunsOutputIteratorT,
           typename EqualityOpT,
           typename ReductionOpT,
+          typename OffsetT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
                                                             cub::detail::it_value_t<ValuesInputIteratorT>,
                                                             cub::detail::it_value_t<ValuesInputIteratorT>>,
@@ -84,11 +85,22 @@ struct DispatchStreamingReduceByKey
   //-------------------------------------------------------------------------
   // Types and constants
   //-------------------------------------------------------------------------
-  // Offsets to index items within one partition
+  // Offsets to index items within one partition (i.e., a single kernel invocation)
   using local_offset_t = _CUDA_VSTD::int32_t;
 
+  // If the number of items provided by the user may exceed the maximum number of items processed by a single kernel
+  // invocation, we may require multiple kernel invocations
+  static constexpr bool use_streaming_invocation = _CUDA_VSTD::numeric_limits<OffsetT>::max()
+                                                 > _CUDA_VSTD::numeric_limits<local_offset_t>::max();
+
   // Offsets to index any item within the entire input (large enough to cover num_items)
-  using global_offset_t = _CUDA_VSTD::int64_t;
+  using global_offset_t = OffsetT;
+
+  // Type used to provide context about the current partition during a streaming invocation
+  using streaming_context_t =
+    ::cuda::std::conditional_t<use_streaming_invocation,
+                               detail::reduce::streaming_context<KeysInputIteratorT, AccumT, global_offset_t>,
+                               NullType>;
 
   // The input values type
   using ValueInputT = cub::detail::it_value_t<ValuesInputIteratorT>;
@@ -148,15 +160,25 @@ struct DispatchStreamingReduceByKey
     constexpr int items_per_thread = AgentReduceByKeyPolicyT::ITEMS_PER_THREAD;
 
     // The upper bound of for the number of items that a single kernel invocation will ever process
-    auto capped_num_items_per_invocation = _CUDA_VSTD::int64_t{512 * 1024 * 1024};
-    capped_num_items_per_invocation -= (capped_num_items_per_invocation % (block_threads * items_per_thread));
+    auto capped_num_items_per_invocation = num_items;
+    if (use_streaming_invocation)
+    {
+      capped_num_items_per_invocation = static_cast<global_offset_t>(_CUDA_VSTD::numeric_limits<local_offset_t>::max());
+      // Make sure that the number of items is a multiple of tile size
+      capped_num_items_per_invocation -= (capped_num_items_per_invocation % (block_threads * items_per_thread));
+    }
 
     // Across invocations, the maximum number of items that a single kernel invocation will ever process
-    const auto max_num_items_per_invocation = _CUDA_VSTD::min(capped_num_items_per_invocation, num_items);
+    const auto max_num_items_per_invocation =
+      use_streaming_invocation ? _CUDA_VSTD::min(capped_num_items_per_invocation, num_items) : num_items;
 
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
       (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
+
+    // Make sure that non-streaming invocations do not end up being split into multiple partitions
+    _CCCL_ASSERT(use_streaming_invocation || num_partitions == 1,
+                 "Non-streaming invocations do not support multiple partitions");
 
     cudaError error = cudaSuccess;
 
@@ -189,30 +211,34 @@ struct DispatchStreamingReduceByKey
       return error;
     }
 
-    auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
-    auto tmp_prefix      = static_cast<AccumT*>(allocations[2]);
-
     // Iterate over the partitions until all input is processed
     for (global_offset_t partition_idx = 0; partition_idx < num_partitions; partition_idx++)
     {
-      const bool is_first_partition = (partition_idx == 0);
-      const bool is_last_partition  = (partition_idx + 1 == num_partitions);
-      const int buffer_selector     = partition_idx % 2;
-
       global_offset_t current_partition_offset = partition_idx * capped_num_items_per_invocation;
       global_offset_t current_num_items =
         (partition_idx + 1 == num_partitions)
           ? (num_items - current_partition_offset)
           : capped_num_items_per_invocation;
 
-      auto streaming_context = detail::reduce::streaming_context<KeysInputIteratorT, AccumT, global_offset_t>{
-        is_first_partition,
-        is_last_partition,
-        is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,
-        &tmp_prefix[buffer_selector],
-        &tmp_prefix[buffer_selector ^ 0x01],
-        &tmp_num_uniques[buffer_selector],
-        &tmp_num_uniques[buffer_selector ^ 0x01]};
+      streaming_context_t streaming_context{};
+      if constexpr (use_streaming_invocation)
+      {
+        auto tmp_num_uniques = static_cast<global_offset_t*>(allocations[1]);
+        auto tmp_prefix      = static_cast<AccumT*>(allocations[2]);
+
+        const bool is_first_partition = (partition_idx == 0);
+        const bool is_last_partition  = (partition_idx + 1 == num_partitions);
+        const int buffer_selector     = partition_idx % 2;
+
+        streaming_context = streaming_context_t{
+          is_first_partition,
+          is_last_partition,
+          is_first_partition ? d_keys_in : d_keys_in + current_partition_offset - 1,
+          &tmp_prefix[buffer_selector],
+          &tmp_prefix[buffer_selector ^ 0x01],
+          &tmp_num_uniques[buffer_selector],
+          &tmp_num_uniques[buffer_selector ^ 0x01]};
+      }
 
       // Construct the tile status interface
       const auto num_current_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
@@ -316,7 +342,7 @@ struct DispatchStreamingReduceByKey
         ReductionOpT,
         local_offset_t,
         AccumT,
-        detail::reduce::streaming_context<KeysInputIteratorT, AccumT, global_offset_t>>);
+        streaming_context_t>);
   }
 
   /**
