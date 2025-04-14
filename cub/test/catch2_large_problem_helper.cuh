@@ -106,15 +106,6 @@ struct large_problem_test_helper
   void check_all_results_correct()
   {
     // Check that all bits are set in the correctness flags
-    using thrust::placeholders::_1;
-    auto mismatch_it = thrust::find_if_not(
-      correctness_flags.cbegin(), correctness_flags.cbegin() + (num_elements / bits_per_element), _1 == 0xFFFFFFFFU);
-    if (mismatch_it != correctness_flags.cbegin() + (num_elements / bits_per_element))
-    {
-      std::cout << "index: " << mismatch_it - correctness_flags.cbegin() << std::endl;
-      std::cout << "mismatch: " << *mismatch_it << std::endl;
-      std::cout << "mismatch2: " << *(mismatch_it + 1) << std::endl;
-    }
     REQUIRE(thrust::equal(correctness_flags.cbegin(),
                           correctness_flags.cbegin() + (num_elements / bits_per_element),
                           thrust::make_constant_iterator(0xFFFFFFFFU)));

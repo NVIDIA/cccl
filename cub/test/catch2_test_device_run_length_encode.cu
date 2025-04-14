@@ -25,24 +25,22 @@
  *
  ******************************************************************************/
 
-#include "cuda/std/__cccl/execution_space.h"
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
 #include <cub/device/device_run_length_encode.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/sequence.h>
 
 #include <algorithm>
-#include <iostream>
 #include <limits>
 #include <numeric>
 
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_test_launch_helper.h"
-#include "thrust/iterator/constant_iterator.h"
 #include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
