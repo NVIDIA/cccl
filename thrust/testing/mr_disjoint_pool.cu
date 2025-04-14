@@ -55,7 +55,7 @@ THRUST_NAMESPACE_END
 class dummy_resource final : public thrust::mr::memory_resource<alloc_id>
 {
 public:
-  dummy_resource() {}
+  dummy_resource() = default;
 
   ~dummy_resource()
   {
