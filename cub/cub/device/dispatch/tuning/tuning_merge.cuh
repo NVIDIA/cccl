@@ -42,7 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace merge
 {
@@ -86,6 +86,6 @@ struct policy_hub
   using max_policy = policy600;
 };
 } // namespace merge
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

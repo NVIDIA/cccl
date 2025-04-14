@@ -21,7 +21,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::merge_sort
+namespace internal::merge_sort
 {
 
 /**
@@ -58,7 +58,7 @@ class merge_sort_vsmem_helper_t
 {
 private:
   // Default fallback policy with a smaller tile size
-  using fallback_policy_t = cub::detail::policy_wrapper_t<DefaultPolicyT, 64, 1>;
+  using fallback_policy_t = cub::internal::policy_wrapper_t<DefaultPolicyT, 64, 1>;
 
   // Helper for the `AgentBlockSort` template with one member type alias for the agent template instantiated with the
   // default policy and one instantiated with the fallback policy
@@ -132,14 +132,14 @@ struct VSMemHelper
   template <typename ActivePolicyT, typename... Ts>
   _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t BlockSortVSMemPerBlock(ActivePolicyT /*policy*/)
   {
-    return detail::vsmem_helper_impl<
+    return internal::vsmem_helper_impl<
       typename MergeSortVSMemHelperT<ActivePolicyT, Ts...>::block_sort_agent_t>::vsmem_per_block;
   }
 
   template <typename ActivePolicyT, typename... Ts>
   _CCCL_HOST_DEVICE static constexpr ::cuda::std::size_t MergeVSMemPerBlock(ActivePolicyT /*policy*/)
   {
-    return detail::vsmem_helper_impl<
+    return internal::vsmem_helper_impl<
       typename MergeSortVSMemHelperT<ActivePolicyT, Ts...>::merge_agent_t>::vsmem_per_block;
   }
 
@@ -333,6 +333,6 @@ __launch_bounds__(
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
 
-} // namespace detail::merge_sort
+} // namespace internal::merge_sort
 
 CUB_NAMESPACE_END

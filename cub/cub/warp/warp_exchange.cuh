@@ -58,14 +58,14 @@ enum WarpExchangeAlgorithm
   WARP_EXCHANGE_SHUFFLE,
 };
 
-namespace detail
+namespace internal
 {
 template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS, WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM>
 using InternalWarpExchangeImpl =
   ::cuda::std::_If<WARP_EXCHANGE_ALGORITHM == WARP_EXCHANGE_SMEM,
                    WarpExchangeSmem<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>,
                    WarpExchangeShfl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS>>;
-} // namespace detail
+} // namespace internal
 
 /**
  * @brief The WarpExchange class provides [<em>collective</em>](../index.html#sec0)
@@ -135,13 +135,13 @@ using InternalWarpExchangeImpl =
  */
 template <typename InputT,
           int ITEMS_PER_THREAD,
-          int LOGICAL_WARP_THREADS                      = detail::warp_threads,
+          int LOGICAL_WARP_THREADS                      = internal::warp_threads,
           WarpExchangeAlgorithm WARP_EXCHANGE_ALGORITHM = WARP_EXCHANGE_SMEM>
 class WarpExchange
-    : private detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
+    : private internal::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>
 {
   using InternalWarpExchange =
-    detail::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
+    internal::InternalWarpExchangeImpl<InputT, ITEMS_PER_THREAD, LOGICAL_WARP_THREADS, WARP_EXCHANGE_ALGORITHM>;
 
 public:
   /// \smemstorage{WarpExchange}

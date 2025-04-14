@@ -51,7 +51,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace scan
 {
@@ -430,7 +430,7 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
 
   CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::ScanPolicyT> Scan()
   {
-    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
+    return cub::internal::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }
 
   CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
@@ -496,7 +496,7 @@ struct policy_hub
                        LOAD_DEFAULT,
                        Tuning::store_algorithm,
                        BLOCK_SCAN_WARP_SCANS,
-                       cub::detail::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                       cub::internal::MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
                        typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
@@ -550,6 +550,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace scan
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

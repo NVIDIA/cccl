@@ -125,7 +125,7 @@ private:
     DifferenceOpT difference_op,
     cudaStream_t stream)
   {
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     using DispatchT =
       DispatchAdjacentDifference<InputIteratorT, OutputIteratorT, DifferenceOpT, OffsetT, AliasOpt, ReadOpt>;

@@ -134,7 +134,7 @@ int main()
   std::cout << "`i` is the least significant field. The decomposer is then used by CUB to convert\n";
   std::cout << "the `custom_t` into the bit-lexicographical order:\n\n";
 
-  using conversion_policy = cub::detail::radix::traits_t<custom_t>::bit_ordered_conversion_policy;
+  using conversion_policy = cub::internal::radix::traits_t<custom_t>::bit_ordered_conversion_policy;
   l                       = conversion_policy::to_bit_ordered(decomposer_t{}, l);
   g                       = conversion_policy::to_bit_ordered(decomposer_t{}, g);
 
@@ -163,7 +163,7 @@ int main()
   std::cout << "l:\t" << to_binary_representation(l) << '\n';
   std::cout << "g:\t" << to_binary_representation(g) << "\n\n";
 
-  using inversion_policy = cub::detail::radix::traits_t<custom_t>::bit_ordered_inversion_policy;
+  using inversion_policy = cub::internal::radix::traits_t<custom_t>::bit_ordered_inversion_policy;
   std::cout << '\n';
   std::cout << "We are also able to inverse differentiating bits:\n";
 
@@ -182,8 +182,8 @@ int main()
   std::cout << '\n';
   std::cout << "We as well can compute the minimal and minimal / maximal keys:\n";
 
-  l = cub::detail::radix::traits_t<custom_t>::min_raw_binary_key(decomposer_t{});
-  g = cub::detail::radix::traits_t<custom_t>::max_raw_binary_key(decomposer_t{});
+  l = cub::internal::radix::traits_t<custom_t>::min_raw_binary_key(decomposer_t{});
+  g = cub::internal::radix::traits_t<custom_t>::max_raw_binary_key(decomposer_t{});
 
   std::cout << "\n\t";
   print_segment(" `.f` ", 32);
@@ -197,7 +197,7 @@ int main()
   std::cout << "We can even compute the number of differentiating bits:\n\n";
 
   std::cout << "end:\t";
-  std::cout << cub::detail::radix::traits_t<custom_t>::default_end_bit(decomposer_t{});
+  std::cout << cub::internal::radix::traits_t<custom_t>::default_end_bit(decomposer_t{});
   std::cout << '\n';
   std::cout << "size:\t";
   std::cout << sizeof(custom_t) * CHAR_BIT;

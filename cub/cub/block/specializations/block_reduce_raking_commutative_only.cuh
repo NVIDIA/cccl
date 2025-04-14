@@ -52,7 +52,7 @@
 #include <cuda/std/span>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 /**
  * @brief BlockReduceRakingCommutativeOnly provides raking-based methods of parallel reduction
@@ -83,7 +83,7 @@ struct BlockReduceRakingCommutativeOnly
 
   // The fall-back implementation to use when BLOCK_THREADS is not a multiple of the warp size or not all threads have
   // valid values
-  using FallBack = detail::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using FallBack = internal::BlockReduceRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   /// Constants
   enum
@@ -233,6 +233,6 @@ struct BlockReduceRakingCommutativeOnly
     return partial;
   }
 };
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

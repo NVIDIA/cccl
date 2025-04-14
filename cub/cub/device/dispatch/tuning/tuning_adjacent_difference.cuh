@@ -43,7 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace adjacent_difference
 {
@@ -65,6 +65,6 @@ struct policy_hub
   using MaxPolicy = Policy500;
 };
 } // namespace adjacent_difference
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

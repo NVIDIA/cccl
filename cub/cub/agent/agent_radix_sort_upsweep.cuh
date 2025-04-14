@@ -85,7 +85,7 @@ template <
   typename ComputeT,
   CacheLoadModifier _LOAD_MODIFIER,
   int _RADIX_BITS,
-  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+  typename ScalingType = internal::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortUpsweepPolicy : ScalingType
 {
   enum
@@ -102,7 +102,7 @@ struct AgentRadixSortUpsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace internal
 {
 namespace radix_sort
 {
@@ -552,6 +552,6 @@ struct AgentRadixSortUpsweep
 };
 
 } // namespace radix_sort
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

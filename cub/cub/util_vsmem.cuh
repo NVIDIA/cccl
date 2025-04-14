@@ -54,7 +54,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace detail
+namespace internal
 {
 
 /**
@@ -244,7 +244,7 @@ template <typename DefaultPolicyT, template <typename...> class AgentT, typename
 using vsmem_helper_default_fallback_policy_t =
   vsmem_helper_fallback_policy_t<DefaultPolicyT, policy_wrapper_t<DefaultPolicyT, 64, 1>, AgentT, AgentParamsT...>;
 
-} // namespace detail
+} // namespace internal
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

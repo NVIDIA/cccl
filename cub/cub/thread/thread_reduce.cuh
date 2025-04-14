@@ -225,7 +225,7 @@ namespace internal
 
 template <typename T, typename ReductionOp, int Length>
 inline constexpr bool enable_sm90_simd_reduction_v =
-  cub::detail::is_one_of_v<T, int16_t, uint16_t> && is_cuda_std_min_max_v<ReductionOp, T> && Length >= 10;
+  cub::internal::is_one_of_v<T, int16_t, uint16_t> && is_cuda_std_min_max_v<ReductionOp, T> && Length >= 10;
 
 //----------------------------------------------------------------------------------------------------------------------
 // SM80 SIMD
@@ -272,14 +272,14 @@ inline constexpr bool enable_sm70_simd_reduction_v = false;
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v =
-  cub::detail::is_one_of_v<T, int32_t, uint32_t> && is_cuda_std_min_max_v<ReductionOp, T>;
+  cub::internal::is_one_of_v<T, int32_t, uint32_t> && is_cuda_std_min_max_v<ReductionOp, T>;
 
 #  if _CCCL_HAS_NVFP16()
 
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
   is_cuda_std_min_max_v<ReductionOp, __half2>
-  || cub::detail::is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
+  || cub::internal::is_one_of_v<ReductionOp, SimdMin<__half>, SimdMax<__half>>;
 
 #  endif // _CCCL_HAS_NVFP16()
 
@@ -288,14 +288,14 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__half2, ReductionOp> =
 template <typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionOp> =
   is_cuda_std_min_max_v<ReductionOp, __nv_bfloat162>
-  || cub::detail::is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
+  || cub::internal::is_one_of_v<ReductionOp, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>;
 
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
   _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 4
-  && (cub::detail::is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<T>>
+  && (cub::internal::is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<T>>
       || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 /***********************************************************************************************************************
@@ -307,7 +307,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
 {
   auto retval = static_cast<AccumT>(input[0]);
   _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 1; i < cub::detail::static_size_v<Input>; ++i)
+  for (int i = 1; i < cub::internal::static_size_v<Input>; ++i)
   {
     retval = reduction_op(retval, input[i]);
   }
@@ -317,8 +317,8 @@ template <typename AccumT, typename Input, typename ReductionOp>
 template <typename AccumT, typename Input, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
-  constexpr auto length = cub::detail::static_size_v<Input>;
-  auto array            = cub::detail::to_array<AccumT>(input);
+  constexpr auto length = cub::internal::static_size_v<Input>;
+  auto array            = cub::internal::to_array<AccumT>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 2)
   {
@@ -334,8 +334,8 @@ template <typename AccumT, typename Input, typename ReductionOp>
 template <typename AccumT, typename Input, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
-  constexpr auto length = cub::detail::static_size_v<Input>;
-  auto array            = cub::detail::to_array<AccumT>(input);
+  constexpr auto length = cub::internal::static_size_v<Input>;
+  auto array            = cub::internal::to_array<AccumT>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 3)
   {
@@ -370,7 +370,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, Reducti
   using T                       = _CUDA_VSTD::iter_value_t<Input>;
   using SimdReduceOp            = cub_operator_to_simd_operator_t<ReductionOp, T>;
   using SimdType                = simd_type_t<T>;
-  constexpr auto length         = cub::detail::static_size_v<Input>;
+  constexpr auto length         = cub::internal::static_size_v<Input>;
   constexpr auto simd_ratio     = sizeof(SimdType) / sizeof(T);
   constexpr auto length_rounded = ::cuda::round_down(length, simd_ratio);
   using UnpackedType            = _CUDA_VSTD::array<T, simd_ratio>;
@@ -409,15 +409,15 @@ inline constexpr bool enable_min_max_promotion_v =
 template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
-  static_assert(detail::is_fixed_size_random_access_range_v<Input>,
+  static_assert(internal::is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(cub::detail::has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(cub::internal::has_binary_call_operator<ReductionOp, ValueT>::value,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
-  if constexpr (cub::detail::static_size_v<Input> == 1)
+  if constexpr (cub::internal::static_size_v<Input> == 1)
   {
     return static_cast<AccumT>(input[0]);
   }
-  using cub::detail::is_one_of_v;
+  using cub::internal::is_one_of_v;
   using namespace cub::internal;
   using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
@@ -427,7 +427,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     return ThreadReduceSequential<AccumT>(input, reduction_op);
   }
 
-  constexpr auto length = cub::detail::static_size_v<Input>;
+  constexpr auto length = cub::internal::static_size_v<Input>;
   if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm90_simd_reduction_v<Input, ReductionOp, length>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSimd(input, reduction_op);))
@@ -496,11 +496,11 @@ template <typename Input,
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
-  static_assert(detail::is_fixed_size_random_access_range_v<Input>,
+  static_assert(internal::is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
-  static_assert(detail::has_binary_call_operator<ReductionOp, ValueT>::value,
+  static_assert(internal::has_binary_call_operator<ReductionOp, ValueT>::value,
                 "ReductionOp must have the binary call operator: operator(ValueT, ValueT)");
-  constexpr int length = cub::detail::static_size_v<Input>;
+  constexpr int length = cub::internal::static_size_v<Input>;
   // copy to a temporary array of type AccumT
   AccumT array[length + 1];
   array[0] = prefix;

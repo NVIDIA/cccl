@@ -51,7 +51,7 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 /**
  * @brief BlockReduceWarpReductions provides variants of warp-reduction-based parallel reduction
@@ -181,7 +181,7 @@ struct BlockReduceWarpReductions
     // Share lane aggregates
     if (lane_id == 0)
     {
-      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      internal::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     __syncthreads();
@@ -254,6 +254,6 @@ struct BlockReduceWarpReductions
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
   }
 };
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

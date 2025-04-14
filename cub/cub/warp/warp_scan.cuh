@@ -156,7 +156,7 @@ CUB_NAMESPACE_BEGIN
 //!   hardware warp threads). Default is the warp size associated with the CUDA Compute Capability
 //!   targeted by the compiler (e.g., 32 threads for SM20).
 //!
-template <typename T, int LOGICAL_WARP_THREADS = detail::warp_threads>
+template <typename T, int LOGICAL_WARP_THREADS = internal::warp_threads>
 class WarpScan
 {
 private:
@@ -167,7 +167,7 @@ private:
   enum
   {
     /// Whether the logical warp size and the PTX warp size coincide
-    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == detail::warp_threads),
+    IS_ARCH_WARP = (LOGICAL_WARP_THREADS == internal::warp_threads),
 
     /// Whether the logical warp size is a power-of-two
     IS_POW_OF_TWO = ((LOGICAL_WARP_THREADS & (LOGICAL_WARP_THREADS - 1)) == 0),
@@ -179,7 +179,7 @@ private:
   /// Internal specialization.
   /// Use SHFL-based scan if LOGICAL_WARP_THREADS is a power-of-two
   using InternalWarpScan = ::cuda::std::
-    _If<IS_POW_OF_TWO, detail::WarpScanShfl<T, LOGICAL_WARP_THREADS>, detail::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
+    _If<IS_POW_OF_TWO, internal::WarpScanShfl<T, LOGICAL_WARP_THREADS>, internal::WarpScanSmem<T, LOGICAL_WARP_THREADS>>;
 
   /// Shared memory storage layout type for WarpScan
   using _TempStorage = typename InternalWarpScan::TempStorage;
@@ -533,7 +533,7 @@ public:
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
     internal.Update(
-      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
+      input, inclusive_output, exclusive_output, scan_op, initial_value, internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -662,7 +662,7 @@ public:
       warp_aggregate,
       scan_op,
       initial_value,
-      detail::bool_constant_v<IS_INTEGER>);
+      internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -728,7 +728,7 @@ public:
     T inclusive_output;
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -795,7 +795,7 @@ public:
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
     internal.Update(
-      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
+      input, inclusive_output, exclusive_output, scan_op, initial_value, internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -867,7 +867,7 @@ public:
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
     internal.Update(
-      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, detail::bool_constant_v<IS_INTEGER>);
+      input, inclusive_output, exclusive_output, warp_aggregate, scan_op, internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -949,7 +949,7 @@ public:
       warp_aggregate,
       scan_op,
       initial_value,
-      detail::bool_constant_v<IS_INTEGER>);
+      internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group
@@ -1022,7 +1022,7 @@ public:
 
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
-    internal.Update(input, inclusive_output, exclusive_output, scan_op, detail::bool_constant_v<IS_INTEGER>);
+    internal.Update(input, inclusive_output, exclusive_output, scan_op, internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @rst
@@ -1096,7 +1096,7 @@ public:
     internal.InclusiveScan(input, inclusive_output, scan_op);
 
     internal.Update(
-      input, inclusive_output, exclusive_output, scan_op, initial_value, detail::bool_constant_v<IS_INTEGER>);
+      input, inclusive_output, exclusive_output, scan_op, initial_value, internal::bool_constant_v<IS_INTEGER>);
   }
 
   //! @}  end member group

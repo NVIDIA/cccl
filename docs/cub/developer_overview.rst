@@ -735,11 +735,11 @@ Temporary storage management
 
 Often times temporary storage for device-scope algorithms has a complex structure.
 To simplify temporary storage management and make it safer,
-we introduced ``cub::detail::temporary_storage::layout``:
+we introduced ``cub::internal::temporary_storage::layout``:
 
 .. code-block:: c++
 
-    cub::detail::temporary_storage::layout<2> storage_layout;
+    cub::internal::temporary_storage::layout<2> storage_layout;
 
     auto slot_1 = storage_layout.get_slot(0);
     auto slot_2 = storage_layout.get_slot(1);

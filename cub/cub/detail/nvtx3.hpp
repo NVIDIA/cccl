@@ -620,7 +620,7 @@ namespace nvtx3
 
 NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 {
-  namespace detail
+  namespace internal
   {
 
   template <typename Unused>
@@ -660,7 +660,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
   template <typename T>
   using is_uint32 = std::is_same<typename std::decay<T>::type, uint32_t>;
 
-  } // namespace detail
+  } // namespace internal
 
   /**
    * @brief `domain`s allow for grouping NVTX events into a single scope to
@@ -782,7 +782,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * name the `domain` object.
      * @return Reference to the `domain` corresponding to the type `D`.
      */
-    template <typename D = global, std::enable_if_t<detail::is_c_string<decltype(D::name)>::value, int> = 0>
+    template <typename D = global, std::enable_if_t<internal::is_c_string<decltype(D::name)>::value, int> = 0>
     static domain const& get() noexcept
     {
       static domain const d(D::name);
@@ -794,10 +794,10 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * `D` has a `name` member that is not directly convertible to either
      * `char const*` or `wchar_t const*`.
      */
-    template <typename D = global, std::enable_if_t<!detail::is_c_string<decltype(D::name)>::value, int> = 0>
+    template <typename D = global, std::enable_if_t<!internal::is_c_string<decltype(D::name)>::value, int> = 0>
     static domain const& get() noexcept
     {
-      NVTX3_STATIC_ASSERT(detail::always_false<D>::value,
+      NVTX3_STATIC_ASSERT(internal::always_false<D>::value,
                           "Type used to identify an NVTX domain must contain a static constexpr member "
                           "called 'name' of type const char* or const wchar_t* -- 'name' member is not "
                           "convertible to either of those types");
@@ -809,10 +809,10 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `domain::get` to provide a clear compile error when
      * `D` does not have a `name` member.
      */
-    template <typename D = global, std::enable_if_t<!detail::has_name<D>::value, int> = 0>
+    template <typename D = global, std::enable_if_t<!internal::has_name<D>::value, int> = 0>
     static domain const& get() noexcept
     {
-      NVTX3_STATIC_ASSERT(detail::always_false<D>::value,
+      NVTX3_STATIC_ASSERT(internal::always_false<D>::value,
                           "Type used to identify an NVTX domain must contain a static constexpr member "
                           "called 'name' of type const char* or const wchar_t* -- 'name' member is missing");
       static domain const unused;
@@ -1244,8 +1244,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      */
     template <
       typename C,
-      std::enable_if_t<detail::is_c_string<decltype(C::name)>::value && detail::is_uint32<decltype(C::id)>::value, int> =
-        0>
+      std::enable_if_t<internal::is_c_string<decltype(C::name)>::value && internal::is_uint32<decltype(C::id)>::value,
+                       int> = 0>
     static named_category_in const& get() noexcept
     {
       static named_category_in const cat(C::id, C::name);
@@ -1260,15 +1260,15 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      */
     template <
       typename C,
-      std::enable_if_t<!detail::is_c_string<decltype(C::name)>::value || !detail::is_uint32<decltype(C::id)>::value,
+      std::enable_if_t<!internal::is_c_string<decltype(C::name)>::value || !internal::is_uint32<decltype(C::id)>::value,
                        int> = 0>
     static named_category_in const& get() noexcept
     {
-      NVTX3_STATIC_ASSERT(detail::is_c_string<decltype(C::name)>::value,
+      NVTX3_STATIC_ASSERT(internal::is_c_string<decltype(C::name)>::value,
                           "Type used to name an NVTX category must contain a static constexpr member "
                           "called 'name' of type const char* or const wchar_t* -- 'name' member is not "
                           "convertible to either of those types");
-      NVTX3_STATIC_ASSERT(detail::is_uint32<decltype(C::id)>::value,
+      NVTX3_STATIC_ASSERT(internal::is_uint32<decltype(C::id)>::value,
                           "Type used to name an NVTX category must contain a static constexpr member "
                           "called 'id' of type uint32_t -- 'id' member is the wrong type");
       static named_category_in const unused;
@@ -1279,13 +1279,13 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `named_category_in::get` to provide a clear compile error
      * when `C` does not have the required `name` and `id` members.
      */
-    template <typename C, std::enable_if_t<!detail::has_name<C>::value || !detail::has_id<C>::value, int> = 0>
+    template <typename C, std::enable_if_t<!internal::has_name<C>::value || !internal::has_id<C>::value, int> = 0>
     static named_category_in const& get() noexcept
     {
-      NVTX3_STATIC_ASSERT(detail::has_name<C>::value,
+      NVTX3_STATIC_ASSERT(internal::has_name<C>::value,
                           "Type used to name an NVTX category must contain a static constexpr member "
                           "called 'name' of type const char* or const wchar_t* -- 'name' member is missing");
-      NVTX3_STATIC_ASSERT(detail::has_id<C>::value,
+      NVTX3_STATIC_ASSERT(internal::has_id<C>::value,
                           "Type used to name an NVTX category must contain a static constexpr member "
                           "called 'id' of type uint32_t -- 'id' member is missing");
       static named_category_in const unused;
@@ -1440,7 +1440,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * registered string's contents.
      * @return Reference to a `registered_string_in` associated with the type `M`.
      */
-    template <typename M, std::enable_if_t<detail::is_c_string<decltype(M::message)>::value, int> = 0>
+    template <typename M, std::enable_if_t<internal::is_c_string<decltype(M::message)>::value, int> = 0>
     static registered_string_in const& get() noexcept
     {
       static registered_string_in const regstr(M::message);
@@ -1452,10 +1452,10 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * when `M` has a `message` member that is not directly convertible to either
      * `char const*` or `wchar_t const*`.
      */
-    template <typename M, std::enable_if_t<!detail::is_c_string<decltype(M::message)>::value, int> = 0>
+    template <typename M, std::enable_if_t<!internal::is_c_string<decltype(M::message)>::value, int> = 0>
     static registered_string_in const& get() noexcept
     {
-      NVTX3_STATIC_ASSERT(detail::always_false<M>::value,
+      NVTX3_STATIC_ASSERT(internal::always_false<M>::value,
                           "Type used to register an NVTX string must contain a static constexpr member "
                           "called 'message' of type const char* or const wchar_t* -- 'message' member is "
                           "not convertible to either of those types");
@@ -1467,10 +1467,10 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `registered_string_in::get` to provide a clear compile error when
      * `M` does not have a `message` member.
      */
-    template <typename M, std::enable_if_t<!detail::has_message<M>::value, int> = 0>
+    template <typename M, std::enable_if_t<!internal::has_message<M>::value, int> = 0>
     static registered_string_in const& get() noexcept
     {
-      NVTX3_STATIC_ASSERT(detail::always_false<M>::value,
+      NVTX3_STATIC_ASSERT(internal::always_false<M>::value,
                           "Type used to register an NVTX string must contain a static constexpr member "
                           "called 'message' of type const char* or const wchar_t* -- 'message' member "
                           "is missing");
@@ -2166,7 +2166,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    */
   using scoped_range = scoped_range_in<domain::global>;
 
-  namespace detail
+  namespace internal
   {
 
   /// @cond internal
@@ -2216,7 +2216,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
   };
   /// @endcond
 
-  } // namespace detail
+  } // namespace internal
 
   /**
    * @brief Handle used for correlating explicit range start and end events.

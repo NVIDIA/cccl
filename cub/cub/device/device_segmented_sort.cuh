@@ -152,7 +152,7 @@ private:
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -327,7 +327,7 @@ private:
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -495,7 +495,7 @@ private:
   {
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Ascending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -665,7 +665,7 @@ private:
   {
     constexpr bool is_overwrite_okay = true;
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Descending, KeyT, cub::NullType, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -1387,7 +1387,7 @@ private:
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -1589,7 +1589,7 @@ private:
     constexpr bool is_overwrite_okay = false;
 
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -1785,7 +1785,7 @@ private:
     constexpr bool is_overwrite_okay = true;
 
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Ascending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 
@@ -1983,7 +1983,7 @@ private:
     constexpr bool is_overwrite_okay = true;
 
     using OffsetT =
-      detail::choose_signed_offset_t<detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
+      internal::choose_signed_offset_t<internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>>;
     using DispatchT =
       DispatchSegmentedSort<SortOrder::Descending, KeyT, ValueT, OffsetT, BeginOffsetIteratorT, EndOffsetIteratorT>;
 

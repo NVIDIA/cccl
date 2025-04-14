@@ -102,14 +102,14 @@ struct offset_to_size_t
 template <unsigned int MagicNs, unsigned int L2W, unsigned int DCID>
 using delay_constructor_t =
   nvbench::tl::get<DCID,
-                   nvbench::type_list<cub::detail::no_delay_constructor_t<L2W>,
-                                      cub::detail::fixed_delay_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backoff_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backoff_jitter_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backoff_jitter_window_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backon_jitter_window_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backon_jitter_constructor_t<MagicNs, L2W>,
-                                      cub::detail::exponential_backon_constructor_t<MagicNs, L2W>>>;
+                   nvbench::type_list<cub::internal::no_delay_constructor_t<L2W>,
+                                      cub::internal::fixed_delay_constructor_t<MagicNs, L2W>,
+                                      cub::internal::exponential_backoff_constructor_t<MagicNs, L2W>,
+                                      cub::internal::exponential_backoff_jitter_constructor_t<MagicNs, L2W>,
+                                      cub::internal::exponential_backoff_jitter_window_constructor_t<MagicNs, L2W>,
+                                      cub::internal::exponential_backon_jitter_window_constructor_t<MagicNs, L2W>,
+                                      cub::internal::exponential_backon_jitter_constructor_t<MagicNs, L2W>,
+                                      cub::internal::exponential_backon_constructor_t<MagicNs, L2W>>>;
 
 using buff_delay_constructor_t =
   delay_constructor_t<TUNE_BUFF_MAGIC_NS, TUNE_BUFF_L2_WRITE_LATENCY_NS, TUNE_BUFF_DELAY_CONSTRUCTOR_ID>;
@@ -120,7 +120,7 @@ struct policy_hub_t
 {
   struct policy_t : cub::ChainedPolicy<500, policy_t, policy_t>
   {
-    using AgentSmallBufferPolicyT = cub::detail::AgentBatchMemcpyPolicy<
+    using AgentSmallBufferPolicyT = cub::internal::AgentBatchMemcpyPolicy<
       TUNE_THREADS,
       TUNE_BUFFERS_PER_THREAD,
       TUNE_TLEV_BYTES_PER_THREAD,
@@ -132,7 +132,7 @@ struct policy_hub_t
       block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
-      cub::detail::batch_memcpy::agent_large_buffer_policy<TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
+      cub::internal::batch_memcpy::agent_large_buffer_policy<TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
   };
 
   using MaxPolicy = policy_t;
@@ -184,7 +184,7 @@ void copy(nvbench::state& state,
   using buffer_offset_t    = std::uint32_t;
   using block_offset_t     = std::uint32_t;
 
-  using dispatch_t = cub::detail::DispatchBatchMemcpy<
+  using dispatch_t = cub::internal::DispatchBatchMemcpy<
     input_buffer_it_t,
     output_buffer_it_t,
     buffer_size_it_t,

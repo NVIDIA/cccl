@@ -42,7 +42,7 @@ struct scan_tile_state
   cudaError_t Init(int num_tiles, void* d_temp_storage, size_t temp_storage_bytes)
   {
     void* allocations[3] = {};
-    auto status          = cub::detail::tile_state_init(
+    auto status          = cub::internal::tile_state_init(
       description_bytes_per_tile, payload_bytes_per_tile, num_tiles, d_temp_storage, temp_storage_bytes, allocations);
     if (status != cudaSuccess)
     {
@@ -57,7 +57,7 @@ struct scan_tile_state
   cudaError_t AllocationSize(int num_tiles, size_t& temp_storage_bytes) const
   {
     temp_storage_bytes =
-      cub::detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
+      cub::internal::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
     return cudaSuccess;
   }
 };

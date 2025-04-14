@@ -96,7 +96,7 @@ struct BlockRadixRankEmptyCallback
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-namespace detail
+namespace internal
 {
 
 template <int Bits, int PartialWarpThreads, int PartialWarpId>
@@ -122,7 +122,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
   }
 };
 
-} // namespace detail
+} // namespace internal
 #endif // _CCCL_DOXYGEN_INVOKED
 
 //! @rst
@@ -232,7 +232,7 @@ private:
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS = detail::log2_warp_threads,
+    LOG_WARP_THREADS = internal::log2_warp_threads,
     WARP_THREADS     = 1 << LOG_WARP_THREADS,
     WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
 
@@ -568,7 +568,7 @@ private:
 
     RADIX_DIGITS = 1 << RADIX_BITS,
 
-    LOG_WARP_THREADS     = detail::log2_warp_threads,
+    LOG_WARP_THREADS     = internal::log2_warp_threads,
     WARP_THREADS         = 1 << LOG_WARP_THREADS,
     PARTIAL_WARP_THREADS = BLOCK_THREADS % WARP_THREADS,
     WARPS                = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
@@ -726,7 +726,7 @@ public:
 
       // Mask of peers who have same digit as me
       uint32_t peer_mask =
-        detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
+        internal::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, WARPS - 1>::match_any(digit, warp_id);
 
       // Pointer to smem digit counter for this key
       digit_counters[ITEM] = &temp_storage.aliasable.warp_digit_counters[digit][warp_id];
@@ -899,7 +899,7 @@ struct BlockRadixRankMatchEarlyCounts
     BINS_PER_THREAD         = (RADIX_DIGITS + BLOCK_THREADS - 1) / BLOCK_THREADS,
     BINS_TRACKED_PER_THREAD = BINS_PER_THREAD,
     FULL_BINS               = BINS_PER_THREAD * BLOCK_THREADS == RADIX_DIGITS,
-    WARP_THREADS            = detail::warp_threads,
+    WARP_THREADS            = internal::warp_threads,
     PARTIAL_WARP_THREADS    = BLOCK_THREADS % WARP_THREADS,
     BLOCK_WARPS             = BLOCK_THREADS / WARP_THREADS,
     PARTIAL_WARP_ID         = BLOCK_WARPS - 1,
@@ -1054,7 +1054,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeRanksItem(
-      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ATOMIC_OR>)
+      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], internal::constant_t<WARP_MATCH_ATOMIC_OR>)
     {
       // compute key ranks
       int lane_mask     = 1 << lane;
@@ -1088,7 +1088,7 @@ struct BlockRadixRankMatchEarlyCounts
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeRanksItem(
-      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], detail::constant_t<WARP_MATCH_ANY>)
+      UnsignedBits (&keys)[KEYS_PER_THREAD], int (&ranks)[KEYS_PER_THREAD], internal::constant_t<WARP_MATCH_ANY>)
     {
       // compute key ranks
       int* warp_offsets = &s.warp_offsets[warp][0];
@@ -1098,7 +1098,7 @@ struct BlockRadixRankMatchEarlyCounts
       {
         ::cuda::std::uint32_t bin = Digit(keys[u]);
         int bin_mask =
-          detail::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
+          internal::warp_in_block_matcher_t<RADIX_BITS, PARTIAL_WARP_THREADS, BLOCK_WARPS - 1>::match_any(bin, warp);
         int leader      = (WARP_THREADS - 1) - __clz(bin_mask);
         int warp_offset = 0;
         int popc        = __popc(bin_mask & ::cuda::ptx::get_sreg_lanemask_le());
@@ -1128,7 +1128,7 @@ struct BlockRadixRankMatchEarlyCounts
 
       ComputeOffsetsWarpDownsweep(exclusive_digit_prefix);
       __syncthreads();
-      ComputeRanksItem(keys, ranks, detail::constant_v<MATCH_ALGORITHM>);
+      ComputeRanksItem(keys, ranks, internal::constant_v<MATCH_ALGORITHM>);
     }
 
     _CCCL_DEVICE _CCCL_FORCEINLINE
@@ -1185,7 +1185,7 @@ struct BlockRadixRankMatchEarlyCounts
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-namespace detail
+namespace internal
 {
 
 // `BlockRadixRank` doesn't conform to the typical pattern, not exposing the algorithm
@@ -1211,7 +1211,7 @@ using block_radix_rank_t = ::cuda::std::_If<
         BlockRadixRankMatchEarlyCounts<BlockDimX, RadixBits, IsDescending, ScanAlgorithm, WARP_MATCH_ANY>,
         BlockRadixRankMatchEarlyCounts<BlockDimX, RadixBits, IsDescending, ScanAlgorithm, WARP_MATCH_ATOMIC_OR>>>>>;
 
-} // namespace detail
+} // namespace internal
 #endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

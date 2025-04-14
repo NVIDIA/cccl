@@ -64,7 +64,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace detail::scan_by_key
+namespace internal::scan_by_key
 {
 
 /**
@@ -137,7 +137,7 @@ template <typename ChainedPolicyT,
           typename InitValueT,
           typename OffsetT,
           typename AccumT,
-          typename KeyT = cub::detail::it_value_t<KeysInputIteratorT>>
+          typename KeyT = cub::internal::it_value_t<KeysInputIteratorT>>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyKernel(
     KeysInputIteratorT d_keys_in,
@@ -154,7 +154,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
   using ScanByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanByKeyT = detail::scan_by_key::AgentScanByKey<
+  using AgentScanByKeyT = internal::scan_by_key::AgentScanByKey<
     ScanByKeyPolicyT,
     KeysInputIteratorT,
     ValuesInputIteratorT,
@@ -177,7 +177,7 @@ template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
   KeysInputIteratorT d_keys_in,
-  cub::detail::it_value_t<KeysInputIteratorT>* d_keys_prev_in,
+  cub::internal::it_value_t<KeysInputIteratorT>* d_keys_prev_in,
   OffsetT items_per_tile,
   int num_tiles)
 {
@@ -192,7 +192,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
     d_keys_prev_in[tid] = d_keys_in[tile_base - 1];
   }
 }
-} // namespace detail::scan_by_key
+} // namespace internal::scan_by_key
 
 /******************************************************************************
  * Dispatch
@@ -234,11 +234,11 @@ template <
   typename OffsetT,
   typename AccumT = ::cuda::std::__accumulator_t<
     ScanOpT,
-    cub::detail::it_value_t<ValuesInputIteratorT>,
+    cub::internal::it_value_t<ValuesInputIteratorT>,
     ::cuda::std::
-      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::detail::it_value_t<ValuesInputIteratorT>, InitValueT>>,
-  typename PolicyHub =
-    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::it_value_t<ValuesInputIteratorT>, ScanOpT>>
+      _If<::cuda::std::is_same_v<InitValueT, NullType>, cub::internal::it_value_t<ValuesInputIteratorT>, InitValueT>>,
+  typename PolicyHub = internal::scan_by_key::
+    policy_hub<KeysInputIteratorT, AccumT, cub::internal::it_value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
@@ -251,10 +251,10 @@ struct DispatchScanByKey
   static constexpr int INIT_KERNEL_THREADS = 128;
 
   // The input key type
-  using KeyT = cub::detail::it_value_t<KeysInputIteratorT>;
+  using KeyT = cub::internal::it_value_t<KeysInputIteratorT>;
 
   // The input value type
-  using InputT = cub::detail::it_value_t<ValuesInputIteratorT>;
+  using InputT = cub::internal::it_value_t<ValuesInputIteratorT>;
 
   // Tile state used for the decoupled look-back
   using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, int>;
@@ -384,7 +384,7 @@ struct DispatchScanByKey
       // the necessary size of the blob)
       void* allocations[2] = {};
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -431,7 +431,7 @@ struct DispatchScanByKey
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -482,7 +482,7 @@ struct DispatchScanByKey
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(internal::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           break;
@@ -498,8 +498,8 @@ struct DispatchScanByKey
   {
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      detail::scan_by_key::DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
-      detail::scan_by_key::DeviceScanByKeyKernel<
+      internal::scan_by_key::DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
+      internal::scan_by_key::DeviceScanByKeyKernel<
         typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
         ValuesInputIteratorT,

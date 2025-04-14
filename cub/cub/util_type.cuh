@@ -78,7 +78,7 @@ CUB_NAMESPACE_BEGIN
  ******************************************************************************/
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-namespace detail
+namespace internal
 {
 // the following iterator helpers are not named iter_value_t etc, like the C++20 facilities, because they are defined in
 // terms of C++17 iterator_traits and not the new C++20 indirectly_readable trait etc. This allows them to detect nested
@@ -129,7 +129,7 @@ struct non_void_value_impl<It, FallbackT, false>
  */
 template <typename It, typename FallbackT>
 using non_void_value_t = typename non_void_value_impl<It, FallbackT>::type;
-} // namespace detail
+} // namespace internal
 
 /******************************************************************************
  * Static math
@@ -217,7 +217,7 @@ struct NullType
   }
 };
 
-namespace detail
+namespace internal
 {
 
 template <bool Value>
@@ -229,7 +229,7 @@ using constant_t = ::cuda::std::integral_constant<decltype(Value), Value>;
 template <auto Value>
 inline constexpr auto constant_v = constant_t<Value>{};
 
-} // namespace detail
+} // namespace internal
 
 /**
  * \brief Allows algorithms that take a value as input to take a future value that is not computed yet at launch time.
@@ -276,9 +276,9 @@ private:
 };
 
 template <typename IterT>
-FutureValue(IterT) -> FutureValue<detail::it_value_t<IterT>, IterT>;
+FutureValue(IterT) -> FutureValue<internal::it_value_t<IterT>, IterT>;
 
-namespace detail
+namespace internal
 {
 
 /**
@@ -314,7 +314,7 @@ struct InputValue
     }
     else
     {
-      detail::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
+      internal::uninitialized_copy_single(&m_immediate_value, other.m_immediate_value);
     }
   }
 
@@ -327,7 +327,7 @@ private:
   };
 };
 
-} // namespace detail
+} // namespace internal
 
 /******************************************************************************
  * Size and alignment
@@ -788,7 +788,7 @@ enum Category
   FLOATING_POINT
 };
 
-namespace detail
+namespace internal
 {
 struct is_primitive_impl;
 
@@ -936,12 +936,12 @@ private:
 
   static constexpr bool is_primitive = true;
 };
-} // namespace detail
+} // namespace internal
 
 //! Use this class as base when specializing \ref NumericTraits for primitive signed/unsigned integers or floating-point
 //! types.
 template <Category _CATEGORY, bool _PRIMITIVE, typename _UnsignedBits, typename T>
-using BaseTraits = detail::BaseTraits<_CATEGORY, _PRIMITIVE, _UnsignedBits, T>;
+using BaseTraits = internal::BaseTraits<_CATEGORY, _PRIMITIVE, _UnsignedBits, T>;
 
 //! Numeric type traits for radix sort key operations, decoupled lookback and tuning. You can specialize this template
 //! for your own types if:
@@ -1003,7 +1003,7 @@ struct NumericTraits<__uint128_t>
   }
 
 private:
-  friend struct detail::is_primitive_impl;
+  friend struct internal::is_primitive_impl;
 
   static constexpr bool is_primitive = false;
 };
@@ -1045,7 +1045,7 @@ struct NumericTraits<__int128_t>
   }
 
 private:
-  friend struct detail::is_primitive_impl;
+  friend struct internal::is_primitive_impl;
 
   static constexpr bool is_primitive = false;
 };
@@ -1069,19 +1069,19 @@ template <> struct NumericTraits<double> :              BaseTraits<FLOATING_POIN
 template <> struct NumericTraits<bool> :                BaseTraits<UNSIGNED_INTEGER, true, typename UnitWord<bool>::VolatileWord, bool> {};
 // clang-format on
 
-namespace detail
+namespace internal
 {
 template <typename T>
 struct Traits : NumericTraits<::cuda::std::remove_cv_t<T>>
 {};
-} // namespace detail
+} // namespace internal
 
 //! \brief Query type traits for radix sort key operations, decoupled lookback and tunings. To add support for your own
 //! primitive types please specialize \ref NumericTraits.
 template <typename T>
-using Traits = detail::Traits<T>;
+using Traits = internal::Traits<T>;
 
-namespace detail
+namespace internal
 {
 // we cannot befriend is_primitive on GCC < 11, since it's a template (bug)
 struct is_primitive_impl
@@ -1104,7 +1104,7 @@ struct is_primitive : is_primitive_impl::is_primitive<T>
 
 template <typename T>
 inline constexpr bool is_primitive_v = is_primitive<T>::value;
-} // namespace detail
+} // namespace internal
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

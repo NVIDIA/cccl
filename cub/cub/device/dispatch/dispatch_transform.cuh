@@ -47,7 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::transform
+namespace internal::transform
 {
 
 template <typename Offset,
@@ -85,7 +85,7 @@ struct TransformKernelSource<Offset,
   template <typename It>
   CUB_RUNTIME_FUNCTION constexpr kernel_arg<It> MakeIteratorKernelArg(It it)
   {
-    return detail::transform::make_iterator_kernel_arg(it);
+    return internal::transform::make_iterator_kernel_arg(it);
   }
 };
 
@@ -139,9 +139,9 @@ template <requires_stable_address StableAddress,
           typename RandomAccessIteratorOut,
           typename TransformOp,
           typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes, RandomAccessIteratorTupleIn>,
-          typename KernelSource = detail::transform::
+          typename KernelSource = internal::transform::
             TransformKernelSource<Offset, RandomAccessIteratorTupleIn, RandomAccessIteratorOut, TransformOp, PolicyHub>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = internal::TripleChevronFactory>
 struct dispatch_t;
 
 template <requires_stable_address StableAddress,
@@ -344,7 +344,7 @@ struct dispatch_t<StableAddress,
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
+    auto wrapped_policy = internal::transform::MakeTransformPolicyWrapper(active_policy);
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
     if constexpr (Algorithm::ublkcp == wrapped_policy.GetAlgorithm())
     {
@@ -391,5 +391,5 @@ struct dispatch_t<StableAddress,
     return CubDebug(max_policy.Invoke(ptx_version, dispatch));
   }
 };
-} // namespace detail::transform
+} // namespace internal::transform
 CUB_NAMESPACE_END

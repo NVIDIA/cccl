@@ -83,7 +83,7 @@ static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT
   using val_input_it_t  = const ValueT*;
   using val_output_it_t = ValueT*;
   using equality_op_t   = ::cuda::std::equal_to<>;
-  using offset_t        = cub::detail::choose_offset_t<OffsetT>;
+  using offset_t        = cub::internal::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t;

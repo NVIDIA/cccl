@@ -37,14 +37,14 @@
 #  endif
 
 using delay_constructors = nvbench::type_list<
-  cub::detail::no_delay_constructor_t<TUNE_L2_WRITE_LATENCY_NS>,
-  cub::detail::fixed_delay_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
-  cub::detail::exponential_backoff_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
-  cub::detail::exponential_backoff_jitter_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
-  cub::detail::exponential_backoff_jitter_window_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
-  cub::detail::exponential_backon_jitter_window_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
-  cub::detail::exponential_backon_jitter_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
-  cub::detail::exponential_backon_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>>;
+  cub::internal::no_delay_constructor_t<TUNE_L2_WRITE_LATENCY_NS>,
+  cub::internal::fixed_delay_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
+  cub::internal::exponential_backoff_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
+  cub::internal::exponential_backoff_jitter_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
+  cub::internal::exponential_backoff_jitter_window_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
+  cub::internal::exponential_backon_jitter_window_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
+  cub::internal::exponential_backon_jitter_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>,
+  cub::internal::exponential_backon_constructor_t<TUNE_MAGIC_NS, TUNE_L2_WRITE_LATENCY_NS>>;
 
 using delay_constructor_t = nvbench::tl::get<TUNE_DELAY_CONSTRUCTOR_ID, delay_constructors>;
 #endif // !TUNE_BASE

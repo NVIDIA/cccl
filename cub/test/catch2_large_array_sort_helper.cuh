@@ -60,7 +60,7 @@
 #  define TIME(expr) /* no op */ []() {}()
 #endif
 
-namespace detail
+namespace internal
 {
 
 template <typename KeyType>
@@ -158,7 +158,7 @@ struct index_to_value
   }
 };
 
-} // namespace detail
+} // namespace internal
 
 template <typename KeyType, typename ValueType = cub::NullType>
 struct large_array_sort_helper
@@ -212,7 +212,7 @@ struct large_array_sort_helper
     { // Place the sorted keys into keys_out
       auto key_iter = thrust::make_transform_iterator(
         thrust::make_counting_iterator(std::size_t{0}),
-        detail::key_sort_ref_key_transform<KeyType>(num_items, is_descending));
+        internal::key_sort_ref_key_transform<KeyType>(num_items, is_descending));
       thrust::copy(c2h::device_policy, key_iter, key_iter + num_items, keys_out.begin());
     }
 
@@ -240,7 +240,7 @@ struct large_array_sort_helper
     TIME(c2h::cpu_timer timer);
     auto key_iter = thrust::make_transform_iterator(
       thrust::make_counting_iterator(std::size_t{0}),
-      detail::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
+      internal::key_sort_ref_key_transform<KeyType>{num_items, is_descending});
     REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), key_iter));
     TIME(timer.print_elapsed_seconds_and_reset("Validate keys"));
   }
@@ -254,7 +254,7 @@ struct large_array_sort_helper
   void initialize_for_stable_pair_sort(c2h::seed_t seed, std::size_t num_items, bool is_descending)
   {
     static_assert(!::cuda::std::is_same_v<ValueType, cub::NullType>, "ValueType must be valid.");
-    using summary_t = detail::summary<KeyType>;
+    using summary_t = internal::summary<KeyType>;
 
     const std::size_t max_summaries = this->compute_max_summaries(num_items);
     const std::size_t num_summaries = this->compute_num_summaries(num_items, max_summaries);
@@ -273,7 +273,7 @@ struct large_array_sort_helper
     thrust::tabulate(c2h::device_policy,
                      d_summaries.begin(),
                      d_summaries.end(),
-                     detail::index_to_summary<KeyType>{num_items, num_summaries, is_descending});
+                     internal::index_to_summary<KeyType>{num_items, num_summaries, is_descending});
 
     TIME(timer.print_elapsed_seconds_and_reset("idx -> summary"));
 
@@ -343,7 +343,7 @@ struct large_array_sort_helper
 
     // Unsorted values are just a sequence
     values_in.resize(num_items);
-    thrust::tabulate(c2h::device_policy, values_in.begin(), values_in.end(), detail::index_to_value<ValueType>{});
+    thrust::tabulate(c2h::device_policy, values_in.begin(), values_in.end(), internal::index_to_value<ValueType>{});
 
     TIME(timer.print_elapsed_seconds_and_reset("Unsorted value gen"));
 
@@ -380,7 +380,7 @@ struct large_array_sort_helper
 
     auto ref_key_begin = thrust::make_transform_iterator(
       thrust::make_counting_iterator(std::size_t{0}),
-      detail::pair_sort_ref_key_transform<KeyType>(num_items, num_summaries, is_descending));
+      internal::pair_sort_ref_key_transform<KeyType>(num_items, num_summaries, is_descending));
 
     REQUIRE(thrust::equal(c2h::device_policy, keys.cbegin(), keys.cend(), ref_key_begin));
 
@@ -395,7 +395,7 @@ private:
   // The maximum number of summaries that will fill the target memory footprint of one full set of key/value pairs.
   static std::size_t compute_max_summaries(std::size_t num_items)
   {
-    using summary_t = detail::summary<KeyType>;
+    using summary_t = internal::summary<KeyType>;
 
     const std::size_t max_summary_mem = num_items * (sizeof(KeyType) + sizeof(ValueType));
     const std::size_t max_summaries   = ::cuda::ceil_div(max_summary_mem, sizeof(summary_t));

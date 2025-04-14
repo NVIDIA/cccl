@@ -69,7 +69,7 @@ enum class ForceInclusive
   No
 };
 
-namespace detail::scan
+namespace internal::scan
 {
 
 template <typename MaxPolicyT,
@@ -109,7 +109,7 @@ struct DeviceScanKernelSource
   }
 };
 
-} // namespace detail::scan
+} // namespace internal::scan
 
 /******************************************************************************
  * Dispatch
@@ -146,14 +146,14 @@ template <
   typename InitValueT,
   typename OffsetT,
   typename AccumT                 = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                 cub::detail::it_value_t<InputIteratorT>,
+                                                                 cub::internal::it_value_t<InputIteratorT>,
                                                                  ::cuda::std::_If<::cuda::std::is_same_v<InitValueT, NullType>,
-                                                                                  cub::detail::it_value_t<InputIteratorT>,
+                                                                                  cub::internal::it_value_t<InputIteratorT>,
                                                                                   typename InitValueT::value_type>>,
   ForceInclusive EnforceInclusive = ForceInclusive::No,
-  typename PolicyHub              = detail::scan::
-    policy_hub<detail::it_value_t<InputIteratorT>, detail::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
-  typename KernelSource = detail::scan::DeviceScanKernelSource<
+  typename PolicyHub              = internal::scan::
+    policy_hub<internal::it_value_t<InputIteratorT>, internal::it_value_t<OutputIteratorT>, AccumT, OffsetT, ScanOpT>,
+  typename KernelSource = internal::scan::DeviceScanKernelSource<
     typename PolicyHub::MaxPolicy,
     InputIteratorT,
     OutputIteratorT,
@@ -162,7 +162,7 @@ template <
     OffsetT,
     AccumT,
     EnforceInclusive>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory>
+  typename KernelLauncherFactory = internal::TripleChevronFactory>
 struct DispatchScan
 {
   static_assert(::cuda::std::is_unsigned_v<OffsetT> && sizeof(OffsetT) >= 4,
@@ -298,7 +298,7 @@ struct DispatchScan
       // the necessary size of the blob)
       void* allocations[1] = {};
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -342,7 +342,7 @@ struct DispatchScan
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -395,7 +395,7 @@ struct DispatchScan
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(internal::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           break;
@@ -408,7 +408,7 @@ struct DispatchScan
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::scan::MakeScanPolicyWrapper(active_policy);
+    auto wrapped_policy = internal::scan::MakeScanPolicyWrapper(active_policy);
     // Ensure kernels are instantiated.
     return Invoke(kernel_source.InitKernel(), kernel_source.ScanKernel(), wrapped_policy);
   }

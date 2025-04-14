@@ -67,7 +67,7 @@ struct AgentMergeSortPolicy
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-namespace detail
+namespace internal
 {
 namespace merge_sort
 {
@@ -346,9 +346,9 @@ struct AgentPartition
     const OffsetT local_tile_idx = mask & partition_idx;
 
     const OffsetT keys1_beg = (::cuda::std::min)(keys_count, start);
-    const OffsetT keys1_end = (::cuda::std::min)(keys_count, detail::safe_add_bound_to_max(start, size));
+    const OffsetT keys1_end = (::cuda::std::min)(keys_count, internal::safe_add_bound_to_max(start, size));
     const OffsetT keys2_beg = keys1_end;
-    const OffsetT keys2_end = (::cuda::std::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+    const OffsetT keys2_end = (::cuda::std::min)(keys_count, internal::safe_add_bound_to_max(keys2_beg, size));
 
     _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
@@ -536,7 +536,7 @@ struct AgentMerge
     // and keys1_end is key1's component of that path
     const OffsetT keys2_beg = (::cuda::std::min)(max_keys2, diag - keys1_beg);
     OffsetT keys2_end       = (::cuda::std::min)(
-      max_keys2, detail::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
+      max_keys2, internal::safe_add_bound_to_max(diag, static_cast<OffsetT>(ITEMS_PER_TILE)) - keys1_end);
 
     // Check if it's the last tile in the tile group being merged
     if (mask == (mask & tile_idx))
@@ -747,6 +747,6 @@ struct AgentMerge
 };
 
 } // namespace merge_sort
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

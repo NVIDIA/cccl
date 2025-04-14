@@ -81,7 +81,7 @@ private:
   {
     BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z,
 
-    LOG_WARP_THREADS = detail::log2_warp_threads,
+    LOG_WARP_THREADS = internal::log2_warp_threads,
     WARP_THREADS     = 1 << LOG_WARP_THREADS,
     WARPS            = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS,
   };

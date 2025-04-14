@@ -118,7 +118,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val);
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace detail
+namespace internal
 {
 /// Helper structure for templated store iteration (inductive case)
 template <int COUNT, int MAX>
@@ -151,7 +151,7 @@ struct iterate_thread_store<MAX, MAX>
   static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(OutputIteratorT /*ptr*/, T* /*vals*/)
   {}
 };
-} // namespace detail
+} // namespace internal
 
 /**
  * Define a uint4 (16B) ThreadStore specialization for the given Cache load modifier
@@ -265,7 +265,7 @@ _CUB_STORE_ALL(STORE_WT, wt)
  */
 template <typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(
-  OutputIteratorT itr, T val, detail::constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
+  OutputIteratorT itr, T val, internal::constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
 {
   *itr = val;
 }
@@ -275,7 +275,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, detail::constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadStore(T* ptr, T val, internal::constant_t<STORE_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   *ptr = val;
 }
@@ -310,7 +310,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, ::cuda
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  detail::iterate_thread_store<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
+  internal::iterate_thread_store<0, VOLATILE_MULTIPLE>::Dereference(
+    reinterpret_cast<volatile VolatileWord*>(ptr), words);
 }
 
 /**
@@ -318,9 +319,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, ::cuda
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, detail::constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadStore(T* ptr, T val, internal::constant_t<STORE_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  ThreadStoreVolatilePtr(ptr, val, detail::bool_constant_v<detail::is_primitive<T>::value>);
+  ThreadStoreVolatilePtr(ptr, val, internal::bool_constant_v<internal::is_primitive<T>::value>);
 }
 
 /**
@@ -328,7 +329,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<STORE_VOLATILE> /*modifier*/, ::cu
  */
 template <typename T, CacheStoreModifier MODIFIER>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
-ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadStore(T* ptr, T val, internal::constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   // Create a temporary using shuffle-words, then store using device-words
   using DeviceWord  = typename UnitWord<T>::DeviceWord;
@@ -345,7 +346,7 @@ ThreadStore(T* ptr, T val, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::st
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  detail::iterate_thread_store<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
+  internal::iterate_thread_store<0, DEVICE_MULTIPLE>::template Store<CacheStoreModifier(MODIFIER)>(
     reinterpret_cast<DeviceWord*>(ptr), words);
 }
 
@@ -356,7 +357,7 @@ template <CacheStoreModifier MODIFIER, typename OutputIteratorT, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
 {
   ThreadStore(
-    itr, val, detail::constant_v<MODIFIER>, detail::bool_constant_v<::cuda::std::is_pointer_v<OutputIteratorT>>);
+    itr, val, internal::constant_v<MODIFIER>, internal::bool_constant_v<::cuda::std::is_pointer_v<OutputIteratorT>>);
 }
 
 #endif // _CCCL_DOXYGEN_INVOKED

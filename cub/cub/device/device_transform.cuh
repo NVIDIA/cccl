@@ -64,7 +64,7 @@ struct DeviceTransform
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
 
-    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using choose_offset_t = internal::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
@@ -74,8 +74,8 @@ struct DeviceTransform
       return error;
     }
 
-    return detail::transform::dispatch_t<
-      detail::transform::requires_stable_address::no,
+    return internal::transform::dispatch_t<
+      internal::transform::requires_stable_address::no,
       offset_t,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,
@@ -208,7 +208,7 @@ struct DeviceTransform
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
 
-    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using choose_offset_t = internal::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
@@ -218,8 +218,8 @@ struct DeviceTransform
       return error;
     }
 
-    return detail::transform::dispatch_t<
-      detail::transform::requires_stable_address::yes,
+    return internal::transform::dispatch_t<
+      internal::transform::requires_stable_address::yes,
       offset_t,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,

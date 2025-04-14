@@ -53,7 +53,7 @@ _CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zer
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 
 /***********************************************************************************************************************
@@ -237,7 +237,7 @@ private:
 };
 _CCCL_DIAG_POP
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END
 

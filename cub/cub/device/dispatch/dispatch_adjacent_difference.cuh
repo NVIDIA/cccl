@@ -50,7 +50,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::adjacent_difference
+namespace internal::adjacent_difference
 {
 
 template <typename AgentDifferenceInitT, typename InputIteratorT, typename InputT, typename OffsetT>
@@ -103,7 +103,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   agent.Process(tile_idx, tile_base);
 }
 
-} // namespace detail::adjacent_difference
+} // namespace internal::adjacent_difference
 
 enum class ReadOption
 {
@@ -117,10 +117,10 @@ template <typename InputIteratorT,
           typename OffsetT,
           MayAlias AliasOpt,
           ReadOption ReadOpt,
-          typename PolicyHub = detail::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == MayAlias::Yes>>
+          typename PolicyHub = internal::adjacent_difference::policy_hub<InputIteratorT, AliasOpt == MayAlias::Yes>>
 struct DispatchAdjacentDifference
 {
-  using InputT = detail::it_value_t<InputIteratorT>;
+  using InputT = internal::it_value_t<InputIteratorT>;
 
   void* d_temp_storage;
   size_t& temp_storage_bytes;
@@ -165,7 +165,7 @@ struct DispatchAdjacentDifference
       void* allocations[1]       = {nullptr};
       size_t allocation_sizes[1] = {(AliasOpt == MayAlias::Yes) * first_tile_previous_size};
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
 
       if (cudaSuccess != error)
       {
@@ -194,8 +194,8 @@ struct DispatchAdjacentDifference
 
       if constexpr (AliasOpt == MayAlias::Yes)
       {
-        using AgentDifferenceInitT =
-          detail::adjacent_difference::AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::Left>;
+        using AgentDifferenceInitT = internal::adjacent_difference::
+          AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadOpt == ReadOption::Left>;
 
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
         const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
@@ -209,14 +209,14 @@ struct DispatchAdjacentDifference
 #endif // CUB_DEBUG_LOG
 
         THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(init_grid_size, init_block_size, 0, stream)
-          .doit(detail::adjacent_difference::
+          .doit(internal::adjacent_difference::
                   DeviceAdjacentDifferenceInitKernel<AgentDifferenceInitT, InputIteratorT, InputT, OffsetT>,
                 d_input,
                 first_tile_previous,
                 num_tiles,
                 tile_size);
 
-        error = CubDebug(detail::DebugSyncStream(stream));
+        error = CubDebug(internal::DebugSyncStream(stream));
 
         if (cudaSuccess != error)
         {
@@ -241,7 +241,7 @@ struct DispatchAdjacentDifference
 
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
         num_tiles, AdjacentDifferencePolicyT::BLOCK_THREADS, 0, stream)
-        .doit(detail::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
+        .doit(internal::adjacent_difference::DeviceAdjacentDifferenceDifferenceKernel < typename PolicyHub::MaxPolicy,
               InputIteratorT,
               OutputIteratorT,
               DifferenceOpT,
@@ -255,7 +255,7 @@ struct DispatchAdjacentDifference
               difference_op,
               num_items);
 
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
 
       if (cudaSuccess != error)
       {

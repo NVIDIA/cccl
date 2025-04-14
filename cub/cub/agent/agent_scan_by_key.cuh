@@ -71,7 +71,7 @@ template <int _BLOCK_THREADS,
           CacheLoadModifier _LOAD_MODIFIER     = LOAD_DEFAULT,
           BlockScanAlgorithm _SCAN_ALGORITHM   = BLOCK_SCAN_WARP_SCANS,
           BlockStoreAlgorithm _STORE_ALGORITHM = BLOCK_STORE_DIRECT,
-          typename DelayConstructorT           = detail::fixed_delay_constructor_t<350, 450>>
+          typename DelayConstructorT           = internal::fixed_delay_constructor_t<350, 450>>
 struct AgentScanByKeyPolicy
 {
   static constexpr int BLOCK_THREADS    = _BLOCK_THREADS;
@@ -92,7 +92,7 @@ struct AgentScanByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace internal
 {
 namespace scan_by_key
 {
@@ -468,6 +468,6 @@ struct AgentScanByKey
 };
 
 } // namespace scan_by_key
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

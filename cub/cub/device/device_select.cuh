@@ -1066,7 +1066,7 @@ struct DeviceSelect
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::UniqueByKey");
 
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     return DispatchUniqueByKey<
       KeyInputIteratorT,

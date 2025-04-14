@@ -46,7 +46,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace radix
 {
@@ -1000,6 +1000,6 @@ struct policy_hub
 };
 
 } // namespace radix
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

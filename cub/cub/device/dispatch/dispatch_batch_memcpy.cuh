@@ -71,7 +71,7 @@ enum class CopyAlg
   Copy
 };
 
-namespace detail
+namespace internal
 {
 namespace batch_memcpy
 {
@@ -303,13 +303,13 @@ template <
   typename BufferSizeIteratorT,
   typename BlockOffsetT,
   CopyAlg MemcpyOpt  = CopyAlg::Memcpy,
-  typename PolicyHub = batch_memcpy::policy_hub<detail::batch_memcpy::per_invocation_buffer_offset_t, BlockOffsetT>>
+  typename PolicyHub = batch_memcpy::policy_hub<internal::batch_memcpy::per_invocation_buffer_offset_t, BlockOffsetT>>
 struct DispatchBatchMemcpy
 {
   //------------------------------------------------------------------------------
   // TYPE ALIASES
   //------------------------------------------------------------------------------
-  using per_invocation_buffer_offset_t = detail::batch_memcpy::per_invocation_buffer_offset_t;
+  using per_invocation_buffer_offset_t = internal::batch_memcpy::per_invocation_buffer_offset_t;
 
   // Tile state for the single-pass prefix scan to "stream compact" (aka "select") the buffers
   // requiring block-level collaboration
@@ -320,7 +320,7 @@ struct DispatchBatchMemcpy
   using BufferTileOffsetScanStateT = typename cub::ScanTileState<BlockOffsetT>;
 
   // Internal type used to keep track of a buffer's size
-  using BufferSizeT = cub::detail::it_value_t<BufferSizeIteratorT>;
+  using BufferSizeT = cub::internal::it_value_t<BufferSizeIteratorT>;
 
   //------------------------------------------------------------------------------
   // Member Variables
@@ -411,9 +411,9 @@ struct DispatchBatchMemcpy
     auto max_num_tiles = static_cast<BlockOffsetT>(::cuda::ceil_div(max_num_buffers, TILE_SIZE));
 
     using BlevBufferSrcsOutT =
-      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::detail::it_value_t<InputBufferIt>>;
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, const void*, cub::internal::it_value_t<InputBufferIt>>;
     using BlevBufferDstOutT =
-      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::detail::it_value_t<OutputBufferIt>>;
+      ::cuda::std::_If<MemcpyOpt == CopyAlg::Memcpy, void*, cub::internal::it_value_t<OutputBufferIt>>;
     using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;
     using BlevBufferDstsOutItT        = BlevBufferDstOutT*;
     using BlevBufferSizesOutItT       = BufferSizeT*;
@@ -486,8 +486,8 @@ struct DispatchBatchMemcpy
 
     // Kernels
     auto init_scan_states_kernel =
-      detail::batch_memcpy::InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
-    auto batch_memcpy_non_blev_kernel = detail::batch_memcpy::BatchMemcpyKernel<
+      internal::batch_memcpy::InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
+    auto batch_memcpy_non_blev_kernel = internal::batch_memcpy::BatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
       InputBufferIt,
       OutputBufferIt,
@@ -502,7 +502,7 @@ struct DispatchBatchMemcpy
       BLevBlockOffsetTileState,
       MemcpyOpt>;
 
-    auto multi_block_memcpy_kernel = detail::batch_memcpy::MultiBlockBatchMemcpyKernel<
+    auto multi_block_memcpy_kernel = internal::batch_memcpy::MultiBlockBatchMemcpyKernel<
       typename PolicyHub::MaxPolicy,
       per_invocation_buffer_offset_t,
       BlevBufferSrcsOutItT,
@@ -593,7 +593,7 @@ struct DispatchBatchMemcpy
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
 
       // Check for failure to launch
       if (cudaSuccess != error)
@@ -634,7 +634,7 @@ struct DispatchBatchMemcpy
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -666,7 +666,7 @@ struct DispatchBatchMemcpy
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -714,6 +714,6 @@ struct DispatchBatchMemcpy
   }
 };
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

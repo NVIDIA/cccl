@@ -152,7 +152,7 @@ struct for_each_wrapper
   }}
 }};
 
-using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
+using policy_dim_t = cub::internal::for_each::policy_t<256, 2>;
 
 struct device_for_policy
 {{

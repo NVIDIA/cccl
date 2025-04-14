@@ -27,7 +27,7 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-using cub::detail::transform::Algorithm;
+using cub::internal::transform::Algorithm;
 
 template <Algorithm Alg>
 struct policy_hub_for_alg
@@ -38,8 +38,8 @@ struct policy_hub_for_alg
     static constexpr Algorithm algorithm = Alg;
     using algo_policy =
       ::cuda::std::_If<Alg == Algorithm::prefetch,
-                       cub::detail::transform::prefetch_policy_t<256>,
-                       cub::detail::transform::async_copy_policy_t<256>>;
+                       cub::internal::transform::prefetch_policy_t<256>,
+                       cub::internal::transform::async_copy_policy_t<256>>;
   };
 };
 
@@ -63,12 +63,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg_entry_point(
     return cudaSuccess;
   }
 
-  return cub::detail::transform::dispatch_t<cub::detail::transform::requires_stable_address::no,
-                                            Offset,
-                                            ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                            RandomAccessIteratorOut,
-                                            TransformOp,
-                                            policy_hub_for_alg<Alg>>{}
+  return cub::internal::transform::dispatch_t<cub::internal::transform::requires_stable_address::no,
+                                              Offset,
+                                              ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                              RandomAccessIteratorOut,
+                                              TransformOp,
+                                              policy_hub_for_alg<Alg>>{}
     .dispatch(inputs, output, num_items, transform_op, stream);
 }
 
@@ -204,7 +204,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items", "[device]
   auto expected_result_it = in_it;
 
   // Prepare helper to check results
-  auto check_result_helper = detail::large_problem_test_helper(num_items);
+  auto check_result_helper = internal::large_problem_test_helper(num_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
   transform_many(in_it, check_result_it, num_items, ::cuda::std::__identity{});
@@ -231,7 +231,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
   auto expected_result_it = thrust::make_counting_iterator(offset_t{42});
 
   // Prepare helper to check results
-  auto check_result_helper = detail::large_problem_test_helper(num_items);
+  auto check_result_helper = internal::large_problem_test_helper(num_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
   transform_many(::cuda::std::make_tuple(a_it, b_it), check_result_it, num_items, ::cuda::std::plus<offset_t>{});
@@ -583,9 +583,9 @@ C2H_TEST("DeviceTransform::Transform buffer start alignment",
 namespace Catch
 {
 template <typename T>
-struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
+struct StringMaker<cub::internal::transform::aligned_base_ptr<T>>
 {
-  static auto convert(cub::detail::transform::aligned_base_ptr<T> abp) -> std::string
+  static auto convert(cub::internal::transform::aligned_base_ptr<T> abp) -> std::string
   {
     std::stringstream ss;
     ss << "{ptr: " << abp.ptr << ", head_padding: " << abp.head_padding << "}";
@@ -598,7 +598,7 @@ struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
 C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
 {
   alignas(128) int arr[256];
-  using namespace cub::detail::transform;
+  using namespace cub::internal::transform;
   CHECK(make_aligned_base_ptr(&arr[0], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[0]), 0});
   CHECK(make_aligned_base_ptr(&arr[1], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[0]), 4});
   CHECK(make_aligned_base_ptr(&arr[5], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[0]), 20});
@@ -613,7 +613,7 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
 C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
 {
   using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
-  using kernel_arg = cub::detail::transform::kernel_arg<It>;
+  using kernel_arg = cub::internal::transform::kernel_arg<It>;
 
   STATIC_REQUIRE(::cuda::std::is_constructible_v<kernel_arg>);
   STATIC_REQUIRE(::cuda::std::is_copy_constructible_v<kernel_arg>);

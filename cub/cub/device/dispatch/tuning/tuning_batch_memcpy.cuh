@@ -43,7 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace batch_memcpy
 {
@@ -72,8 +72,8 @@ struct policy_hub
   static constexpr uint32_t WARP_LEVEL_THRESHOLD  = 128;
   static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = 8 * 1024;
 
-  using buff_delay_constructor_t  = detail::default_delay_constructor_t<BufferOffsetT>;
-  using block_delay_constructor_t = detail::default_delay_constructor_t<BlockOffsetT>;
+  using buff_delay_constructor_t  = internal::default_delay_constructor_t<BufferOffsetT>;
+  using block_delay_constructor_t = internal::default_delay_constructor_t<BlockOffsetT>;
 
   /// SM50
   struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
@@ -116,6 +116,6 @@ struct policy_hub
   using MaxPolicy = Policy700;
 };
 } // namespace batch_memcpy
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

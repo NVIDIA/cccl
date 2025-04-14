@@ -87,7 +87,7 @@ struct DeviceMerge
 
     using offset_t = ::cuda::std::int64_t;
 
-    return detail::merge::
+    return internal::merge::
       dispatch_t<KeyIteratorIn1, NullType*, KeyIteratorIn2, NullType*, KeyIteratorOut, NullType*, offset_t, CompareOp>::
         dispatch(
           d_temp_storage,
@@ -177,7 +177,7 @@ struct DeviceMerge
 
     using offset_t = ::cuda::std::int64_t;
 
-    return detail::merge::dispatch_t<
+    return internal::merge::dispatch_t<
       KeyIteratorIn1,
       ValueIteratorIn1,
       KeyIteratorIn2,

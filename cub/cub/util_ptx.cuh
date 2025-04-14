@@ -60,7 +60,7 @@ CUB_NAMESPACE_BEGIN
 template <typename UnsignedBits, int BYTE_LEN>
 //! deprecated [Since 3.0]
 CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
-  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<BYTE_LEN> /*byte_len*/)
+  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, internal::constant_t<BYTE_LEN> /*byte_len*/)
 {
   unsigned int bits;
   asm("bfe.u32 %0, %1, %2, %3;" : "=r"(bits) : "r"((unsigned int) source), "r"(bit_start), "r"(num_bits));
@@ -73,7 +73,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCE
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
 CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
-  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<8> /*byte_len*/)
+  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, internal::constant_t<8> /*byte_len*/)
 {
   const unsigned long long MASK = (1ull << num_bits) - 1;
   return (source >> bit_start) & MASK;
@@ -86,7 +86,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCE
 template <typename UnsignedBits>
 //! deprecated [Since 3.0]
 CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int BFE(
-  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, detail::constant_t<16> /*byte_len*/)
+  UnsignedBits source, unsigned int bit_start, unsigned int num_bits, internal::constant_t<16> /*byte_len*/)
 {
   const __uint128_t MASK = (__uint128_t{1} << num_bits) - 1;
   return (source >> bit_start) & MASK;
@@ -104,7 +104,7 @@ template <typename UnsignedBits>
 CCCL_DEPRECATED_BECAUSE("Use cuda::bitfield_extract()") _CCCL_DEVICE
 _CCCL_FORCEINLINE unsigned int BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits)
 {
-  return BFE(source, bit_start, num_bits, detail::constant_v<int{sizeof(UnsignedBits)}>);
+  return BFE(source, bit_start, num_bits, internal::constant_v<int{sizeof(UnsignedBits)}>);
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -168,9 +168,9 @@ template <int LOGICAL_WARP_THREADS>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned int WarpMask([[maybe_unused]] unsigned int warp_id)
 {
   constexpr bool is_pow_of_two = PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE;
-  constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == detail::warp_threads;
+  constexpr bool is_arch_warp  = LOGICAL_WARP_THREADS == internal::warp_threads;
 
-  unsigned int member_mask = 0xFFFFFFFFu >> (detail::warp_threads - LOGICAL_WARP_THREADS);
+  unsigned int member_mask = 0xFFFFFFFFu >> (internal::warp_threads - LOGICAL_WARP_THREADS);
 
   if constexpr (is_pow_of_two && !is_arch_warp)
   {
@@ -415,7 +415,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
 }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-namespace detail
+namespace internal
 {
 
 /**
@@ -497,17 +497,17 @@ _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t LogicShiftRight(uint32_t val, uint32_t n
   return ret;
 }
 
-} // namespace detail
+} // namespace internal
 #endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * Compute a 32b mask of threads having the same least-significant
  * LABEL_BITS of \p label as the calling thread.
  */
-template <int LABEL_BITS, int WARP_ACTIVE_THREADS = detail::warp_threads>
+template <int LABEL_BITS, int WARP_ACTIVE_THREADS = internal::warp_threads>
 inline _CCCL_DEVICE unsigned int MatchAny(unsigned int label)
 {
-  return detail::warp_matcher_t<LABEL_BITS, WARP_ACTIVE_THREADS>::match_any(label);
+  return internal::warp_matcher_t<LABEL_BITS, WARP_ACTIVE_THREADS>::match_any(label);
 }
 
 CUB_NAMESPACE_END

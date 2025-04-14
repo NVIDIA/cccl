@@ -243,13 +243,13 @@ private:
    * architectural warp size.
    */
   static constexpr BlockScanAlgorithm SAFE_ALGORITHM =
-    ((ALGORITHM == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % detail::warp_threads != 0))
+    ((ALGORITHM == BLOCK_SCAN_WARP_SCANS) && (BLOCK_THREADS % internal::warp_threads != 0))
       ? BLOCK_SCAN_RAKING
       : ALGORITHM;
 
-  using WarpScans = detail::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
+  using WarpScans = internal::BlockScanWarpScans<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using Raking =
-    detail::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
+    internal::BlockScanRaking<T, BLOCK_DIM_X, BLOCK_DIM_Y, BLOCK_DIM_Z, (SAFE_ALGORITHM == BLOCK_SCAN_RAKING_MEMOIZE)>;
 
   /// Define the delegate type for the desired algorithm
   using InternalBlockScan = ::cuda::std::_If<SAFE_ALGORITHM == BLOCK_SCAN_WARP_SCANS, WarpScans, Raking>;

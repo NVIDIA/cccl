@@ -27,7 +27,7 @@ struct op_wrapper;
 struct device_reduce_policy;
 
 using OffsetT = unsigned long long;
-static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
+static_assert(std::is_same_v<cub::internal::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
 static cudaError_t
 Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunction static_kernel, CUstream stream)
@@ -62,7 +62,7 @@ static std::string get_device_for_kernel_name()
   check(nvrtcGetTypeName<for_each_wrapper>(&function_op_t));
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
-  return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
+  return std::format("cub::internal::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
 }
 
 CUresult cccl_device_for_build(

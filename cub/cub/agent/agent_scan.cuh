@@ -94,8 +94,8 @@ template <
   CacheLoadModifier _LOAD_MODIFIER,
   BlockStoreAlgorithm _STORE_ALGORITHM,
   BlockScanAlgorithm _SCAN_ALGORITHM,
-  typename ScalingType       = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
-  typename DelayConstructorT = detail::default_delay_constructor_t<ComputeT>>
+  typename ScalingType = internal::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
+  typename DelayConstructorT = internal::default_delay_constructor_t<ComputeT>>
 struct AgentScanPolicy : ScalingType
 {
   static constexpr BlockLoadAlgorithm LOAD_ALGORITHM   = _LOAD_ALGORITHM;
@@ -113,7 +113,7 @@ struct AgentScanPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace internal
 {
 namespace scan
 {
@@ -157,7 +157,7 @@ struct AgentScan
   //---------------------------------------------------------------------
 
   // The input value type
-  using InputT = cub::detail::it_value_t<InputIteratorT>;
+  using InputT = cub::internal::it_value_t<InputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<AccumT>;
@@ -595,6 +595,6 @@ struct AgentScan
 };
 
 } // namespace scan
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

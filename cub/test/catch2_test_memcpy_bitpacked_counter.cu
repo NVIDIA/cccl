@@ -9,12 +9,12 @@
 
 template <std::uint32_t NumItems,
           std::uint32_t MaxItemValue,
-          cub::detail::batch_memcpy::prefer_power_of_two_bits_option PreferPowerOfTwoBits>
+          cub::internal::batch_memcpy::prefer_power_of_two_bits_option PreferPowerOfTwoBits>
 __global__ void test_bit_packed_counter_kernel(
   std::uint32_t* bins, std::uint32_t* increments, std::uint32_t* counts_out, std::int32_t num_items)
 {
   using bit_packed_counter_t =
-    cub::detail::batch_memcpy::bit_packed_counter<NumItems, MaxItemValue, PreferPowerOfTwoBits>;
+    cub::internal::batch_memcpy::bit_packed_counter<NumItems, MaxItemValue, PreferPowerOfTwoBits>;
   bit_packed_counter_t counter{};
   for (std::int32_t i = 0; i < num_items; i++)
   {
@@ -35,9 +35,9 @@ struct test_spec
 };
 
 using use_power_of_two_bits =
-  c2h::enum_type_list<cub::detail::batch_memcpy::prefer_power_of_two_bits_option,
-                      cub::detail::batch_memcpy::prefer_power_of_two_bits_option::yes,
-                      cub::detail::batch_memcpy::prefer_power_of_two_bits_option::no>;
+  c2h::enum_type_list<cub::internal::batch_memcpy::prefer_power_of_two_bits_option,
+                      cub::internal::batch_memcpy::prefer_power_of_two_bits_option::yes,
+                      cub::internal::batch_memcpy::prefer_power_of_two_bits_option::no>;
 
 using test_combinations =
   c2h::type_list<test_spec<1, 1>,

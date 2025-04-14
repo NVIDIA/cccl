@@ -49,7 +49,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace scan_by_key
 {
@@ -1008,6 +1008,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace scan_by_key
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

@@ -530,7 +530,7 @@ void gen(executor exec, seed_t seed, cuda::std::span<T> span, bit_entropy entrop
 
 } // namespace
 
-namespace detail
+namespace internal
 {
 
 template <typename T>
@@ -657,9 +657,9 @@ std::size_t gen_uniform_offsets(
   return tail(thrust::host);
 }
 
-} // namespace detail
+} // namespace internal
 
-namespace detail
+namespace internal
 {
 
 /**
@@ -738,14 +738,14 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
 
 void do_not_optimize([[maybe_unused]] const void* ptr) {}
 
-} // namespace detail
+} // namespace internal
 
-#define INSTANTIATE(TYPE)                                                                                       \
-  template void detail::gen_power_law_segment_offsets_host<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t);   \
-  template void detail::gen_power_law_segment_offsets_device<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t); \
-  template std::size_t detail::gen_uniform_segment_offsets_host<TYPE>(                                          \
-    seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t);                                                   \
-  template std::size_t detail::gen_uniform_segment_offsets_device<TYPE>(                                        \
+#define INSTANTIATE(TYPE)                                                                                         \
+  template void internal::gen_power_law_segment_offsets_host<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t);   \
+  template void internal::gen_power_law_segment_offsets_device<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t); \
+  template std::size_t internal::gen_uniform_segment_offsets_host<TYPE>(                                          \
+    seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t);                                                     \
+  template std::size_t internal::gen_uniform_segment_offsets_device<TYPE>(                                        \
     seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t)
 
 INSTANTIATE(int32_t);
@@ -756,10 +756,11 @@ INSTANTIATE(uint64_t);
 #undef INSTANTIATE
 
 #define INSTANTIATE(TYPE)                                                                                               \
-  template void detail::gen_uniform_key_segments_host<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t);   \
-  template void detail::gen_uniform_key_segments_device<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t); \
-  template void detail::gen_device<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max);               \
-  template void detail::gen_host<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max)
+  template void internal::gen_uniform_key_segments_host<TYPE>(seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t); \
+  template void internal::gen_uniform_key_segments_device<TYPE>(                                                        \
+    seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t);                                                           \
+  template void internal::gen_device<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max);             \
+  template void internal::gen_host<TYPE>(seed_t, cuda::std::span<TYPE>, bit_entropy, TYPE min, TYPE max)
 
 INSTANTIATE(bool);
 

@@ -77,7 +77,7 @@ struct AgentSmallAndMediumSegmentedSortPolicy
   static constexpr int SEGMENTS_PER_SMALL_BLOCK = BLOCK_THREADS / SmallPolicyT::WARP_THREADS;
 };
 
-namespace detail
+namespace internal
 {
 namespace sub_warp_merge_sort
 {
@@ -109,7 +109,7 @@ namespace sub_warp_merge_sort
 template <bool IS_DESCENDING, typename PolicyT, typename KeyT, typename ValueT, typename OffsetT>
 class AgentSubWarpSort
 {
-  using traits           = detail::radix::traits_t<KeyT>;
+  using traits           = internal::radix::traits_t<KeyT>;
   using bit_ordered_type = typename traits::bit_ordered_type;
 
   struct BinaryOpT
@@ -337,6 +337,6 @@ private:
 };
 
 } // namespace sub_warp_merge_sort
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

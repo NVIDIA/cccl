@@ -56,7 +56,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace transform
 {
@@ -245,6 +245,6 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 };
 
 } // namespace transform
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END
