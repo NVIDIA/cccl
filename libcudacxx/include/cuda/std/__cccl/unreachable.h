@@ -11,6 +11,7 @@
 #ifndef __CCCL_UNREACHABLE_H
 #define __CCCL_UNREACHABLE_H
 
+#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
@@ -24,16 +25,18 @@
 
 #include <cuda/std/__cccl/visibility.h>
 
-#if _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_UNREACHABLE() __builtin_unreachable()
-#elif defined(__CUDA_ARCH__)
-#  define _CCCL_UNREACHABLE() __builtin_unreachable()
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  if _CCCL_COMPILER(MSVC)
-#    define _CCCL_UNREACHABLE() __assume(0)
-#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-#    define _CCCL_UNREACHABLE() __builtin_unreachable()
-#  endif // !_CCCL_COMPILER(MSVC)
-#endif // !__CUDA_ARCH__
+#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
+#  define _CCCL_UNREACHABLE()             \
+    {                                     \
+      __assume(0);                        \
+      _CCCL_ASSERT(false, "unreachable"); \
+    }
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_UNREACHABLE()             \
+    {                                     \
+      __builtin_unreachable();            \
+      _CCCL_ASSERT(false, "unreachable"); \
+    }
+#endif // !_CCCL_COMPILER(MSVC)
 
 #endif // __CCCL_UNREACHABLE_H
