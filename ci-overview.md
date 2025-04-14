@@ -32,7 +32,7 @@ These commands can be combined with the [override matrix](#temporarily-overridin
 - `[skip-<component>]`: Skips a subset of the CI jobs. These commands will block the PR from being merged while present in the last commit message of the branch. Recognized components are:
   - `[skip-matrix]`: Skip all build and test jobs specified in `ci/matrix.yaml`.
   - `[skip-vdc]`: Skip all "Validate Devcontainer" jobs.
-  - `[skip=docs]`: Skip the documentation verification build.
+  - `[skip-docs]`: Skip the documentation verification build.
   - `[skip-rapids]`: Skip all RAPIDS canary builds.
   - `[skip-matx]`: Skip all MatX canary builds.
   - **Example:** `git commit -m "Fix RAPIDS failures [skip-matrix][skip-vdc][skip-docs][skip-matx]"`
