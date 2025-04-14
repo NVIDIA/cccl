@@ -177,7 +177,7 @@ struct __lce_ta<_Ap, _Cp, 0, ~uint32_t{0}, false>
 // 16
 
 template <uint64_t __a, uint64_t __c, uint64_t __m, bool __b>
-struct __lce_ta<__a, __c, __m, uint16_t{~0}, __b>
+struct __lce_ta<__a, __c, __m, static_cast<uint16_t>(~0), __b>
 {
   using result_type = uint16_t;
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static result_type next(result_type __x) noexcept
