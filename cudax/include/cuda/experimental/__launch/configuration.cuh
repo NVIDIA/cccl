@@ -156,7 +156,7 @@ private:
  *
  * When launch configuration contains this option, that configuration can be then
  * passed to dynamic_smem_span or dynamic_smem_ref function to get a span/reference
- * to that shared memory allocation that is approprietly typed.
+ * to that shared memory allocation that is appropriately typed.
  * It is also possible to obtain that memory through the original
  * extern __shared__ variable[] declaration.
  *

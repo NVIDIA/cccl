@@ -158,10 +158,9 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
       __VA_ARGS__                                            \
     } noexcept
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
-    {                                               \
-      _CCCL_PP_CAT4(_CCCL_PP_EAT_SAME_AS_, _REQ)    \
-    } -> _CCCL_CONCEPT_VSTD::same_as<_CCCL_PP_EVAL( \
-      _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, _CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))>
+    {_CCCL_PP_CAT4(_CCCL_PP_EAT_SAME_AS_, _REQ)}    \
+      ->_CCCL_CONCEPT_VSTD::same_as<_CCCL_PP_EVAL(  \
+        _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, _CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))>
 #  define _CCCL_PP_EAT_SAME_AS__Same_as(...)
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX(_TYPE, ...) _CCCL_PP_EXPAND _TYPE
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...)   (__VA_ARGS__),
@@ -177,7 +176,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
     template <class... _As>                                                                                          \
     _LIBCUDACXX_HIDE_FROM_ABI char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
       ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                                \
-    _LIBCUDACXX_HIDE_FROM_ABI char(&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
+    _LIBCUDACXX_HIDE_FROM_ABI char (&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
 #  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_CONCEPT_FRAGMENT_TRUE(...) \
       ::__cccl_is_true<decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void())>()

@@ -51,8 +51,8 @@ struct __cccl_is_member_pointer<_Tp _Up::*>
 #if defined(_CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_FUNCTION_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_function_pointer
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_function_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(_Tp)>
 {};
 
 template <class _Tp>
@@ -61,8 +61,8 @@ inline constexpr bool is_member_function_pointer_v = _CCCL_BUILTIN_IS_MEMBER_FUN
 #else // ^^^ _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_function_pointer
-    : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_func>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_member_function_pointer : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_func>
 {};
 
 template <class _Tp>

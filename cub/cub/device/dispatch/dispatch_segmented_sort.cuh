@@ -199,7 +199,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   {
     // Sort by a CTA with multiple reads from global memory
     int current_bit = begin_bit;
-    int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+    int pass_bits   = (::cuda::std::min) (int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
     d_keys_double_buffer = device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
@@ -222,7 +222,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     _CCCL_PRAGMA_NOUNROLL()
     while (current_bit < end_bit)
     {
-      pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+      pass_bits = (::cuda::std::min) (int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
       __syncthreads();
       agent.ProcessIterative(
@@ -479,7 +479,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
   {
     // Sort reading global memory multiple times
     int current_bit = begin_bit;
-    int pass_bits   = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+    int pass_bits   = (::cuda::std::min) (int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
     d_keys_double_buffer = device_double_buffer<KeyT>(
       d_keys_double_buffer.current() + segment_begin, d_keys_double_buffer.alternate() + segment_begin);
@@ -502,7 +502,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::LargeSegmentPolicy::BLOCK_THREAD
     _CCCL_PRAGMA_NOUNROLL()
     while (current_bit < end_bit)
     {
-      pass_bits = (::cuda::std::min)(int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
+      pass_bits = (::cuda::std::min) (int{LargeSegmentPolicyT::RADIX_BITS}, (end_bit - current_bit));
 
       __syncthreads();
       agent.ProcessIterative(
@@ -922,7 +922,7 @@ struct DispatchSegmentedSort
         constexpr auto num_segments_per_invocation_limit =
           static_cast<global_segment_offset_t>(::cuda::std::numeric_limits<int>::max());
         auto const max_num_segments_per_invocation = static_cast<global_segment_offset_t>(
-          (::cuda::std::min)(static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
+          (::cuda::std::min) (static_cast<global_segment_offset_t>(num_segments), num_segments_per_invocation_limit));
 
         large_and_medium_segments_indices.grow(max_num_segments_per_invocation);
         small_segments_indices.grow(max_num_segments_per_invocation);

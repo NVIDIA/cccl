@@ -29,13 +29,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
   && defined(_CCCL_BUILTIN_IS_REFERENCE) && !defined(_LIBCUDACXX_USE_IS_REFERENCE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_lvalue_reference
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_lvalue_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_LVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_rvalue_reference
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_rvalue_reference : public integral_constant<bool, _CCCL_BUILTIN_IS_RVALUE_REFERENCE(_Tp)>
 {};
 
 template <class _Tp>

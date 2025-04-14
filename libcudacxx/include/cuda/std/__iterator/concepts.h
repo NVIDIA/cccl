@@ -79,9 +79,9 @@ template <class _Out, class _Tp>
 concept indirectly_writable = requires(_Out&& __o, _Tp&& __t) {
   *__o                            = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
   *_CUDA_VSTD::forward<_Out>(__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be
-                                                                                    // equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*_CUDA_VSTD::forward<_Out>(__o)) =
+  const_cast<const iter_reference_t<_Out> &&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be
+                                                                                     // equality-preserving
+  const_cast<const iter_reference_t<_Out> &&>(*_CUDA_VSTD::forward<_Out>(__o)) =
     _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
 };
 

@@ -30,8 +30,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class __Operation>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED binder2nd
-    : public __unary_function<typename __Operation::first_argument_type, typename __Operation::result_type>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+binder2nd : public __unary_function<typename __Operation::first_argument_type, typename __Operation::result_type>
 {
 protected:
   __Operation op;

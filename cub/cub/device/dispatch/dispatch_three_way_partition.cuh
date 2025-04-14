@@ -316,8 +316,8 @@ struct DispatchThreeWayPartitionIf
     constexpr int tile_size        = block_threads * items_per_thread;
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
-    auto const max_partition_size =
-      static_cast<OffsetT>((::cuda::std::min)(static_cast<uint64_t>(num_items), static_cast<uint64_t>(partition_size)));
+    auto const max_partition_size = static_cast<OffsetT>(
+      (::cuda::std::min) (static_cast<uint64_t>(num_items), static_cast<uint64_t>(partition_size)));
 
     // The number of partitions required to "iterate" over the total input
     auto const num_partitions =

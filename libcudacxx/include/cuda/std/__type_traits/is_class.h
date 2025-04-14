@@ -50,8 +50,8 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_class_imp
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_class
-    : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_class : public integral_constant<bool, sizeof(__is_class_imp::__test<_Tp>(0)) == 1 && !is_union<_Tp>::value>
 {};
 
 template <class _Tp>

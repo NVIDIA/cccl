@@ -42,19 +42,19 @@ constexpr bool _fits_in(T, true_type /* non-narrowing*/, ...)
 template <typename X, typename T, typename xl = std::numeric_limits<X>>
 constexpr bool _fits_in(T v, false_type, true_type /* T signed*/, true_type /* X signed */)
 {
-  return xl::lowest() <= v && v <= (xl::max)();
+  return xl::lowest() <= v && v <= (xl::max) ();
 }
 
 template <typename X, typename T, typename xl = std::numeric_limits<X>>
 constexpr bool _fits_in(T v, false_type, true_type /* T signed */, false_type /* X unsigned*/)
 {
-  return 0 <= v && typename std::make_unsigned<T>::type(v) <= (xl::max)();
+  return 0 <= v && typename std::make_unsigned<T>::type(v) <= (xl::max) ();
 }
 
 template <typename X, typename T, typename xl = std::numeric_limits<X>>
 constexpr bool _fits_in(T v, false_type, false_type /* T unsigned */, ...)
 {
-  return v <= typename std::make_unsigned<X>::type((xl::max)());
+  return v <= typename std::make_unsigned<X>::type((xl::max) ());
 }
 
 template <typename X, typename T>

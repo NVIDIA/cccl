@@ -42,8 +42,8 @@ inline constexpr bool is_nothrow_move_assignable_v =
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_move_assignable
-    : public is_nothrow_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_move_assignable : public is_nothrow_assignable<add_lvalue_reference_t<_Tp>, add_rvalue_reference_t<_Tp>>
 {};
 
 template <class _Tp>

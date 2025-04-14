@@ -952,7 +952,7 @@ struct BlockRadixRankMatchEarlyCounts
     _CCCL_DEVICE _CCCL_FORCEINLINE void ComputeHistogramsWarp(UnsignedBits (&keys)[KEYS_PER_THREAD])
     {
       // int* warp_offsets = &s.warp_offsets[warp][0];
-      int(&warp_histograms)[RADIX_DIGITS][NUM_PARTS] = s.warp_histograms[warp];
+      int (&warp_histograms)[RADIX_DIGITS][NUM_PARTS] = s.warp_histograms[warp];
 
       // compute warp-private histograms
       _CCCL_PRAGMA_UNROLL_FULL()

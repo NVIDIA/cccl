@@ -207,8 +207,8 @@ public:
 };
 
 template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const _Tp>
-    : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<const _Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT
+allocator<const _Tp> : private __non_trivial_if<!_CCCL_TRAIT(is_void, _Tp), allocator<const _Tp>>
 {
   static_assert(!_CCCL_TRAIT(is_volatile, _Tp), "std::allocator does not support volatile types");
 

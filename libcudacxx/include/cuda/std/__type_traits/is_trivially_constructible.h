@@ -28,8 +28,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 template <class _Tp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 template <class _Tp, class... _Args>
@@ -53,18 +53,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp, _Tp&&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible<_Tp, _Tp&&> : integral_constant<bool, is_scalar<_Tp>::value>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp, const _Tp&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible<_Tp, const _Tp&> : integral_constant<bool, is_scalar<_Tp>::value>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp, _Tp&>
-    : integral_constant<bool, is_scalar<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_constructible<_Tp, _Tp&> : integral_constant<bool, is_scalar<_Tp>::value>
 {};
 
 template <class _Tp, class... _Args>

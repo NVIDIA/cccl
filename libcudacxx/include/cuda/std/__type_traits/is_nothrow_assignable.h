@@ -30,8 +30,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_ASSIGNABLE_FALLBACK)
 
 template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_assignable : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
 {};
 
 template <class _Tp, class _Arg>
@@ -52,8 +52,8 @@ struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
 {};
 
 template <class _Tp, class _Arg>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
-    : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_nothrow_assignable : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
 {};
 
 template <class _Tp, class _Arg>

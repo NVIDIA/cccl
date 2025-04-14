@@ -508,7 +508,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator*(const T0
  *  type of the returned \p complex is the promoted type of the two arguments.
  *
  *  \param x The numerator (dividend).
- *  \param y The denomimator (divisor).
+ *  \param y The denominator (divisor).
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const complex<T1>& y);
@@ -519,7 +519,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
  *  the type of the returned \p complex is the promoted type of the two arguments.
  *
  *  \param x The complex numerator (dividend).
- *  \param y The scalar denomimator (divisor).
+ *  \param y The scalar denominator (divisor).
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const complex<T0>& x, const T1& y);
@@ -530,7 +530,7 @@ _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const co
  *  the type of the returned \p complex is the promoted type of the two arguments.
  *
  *  \param x The scalar numerator (dividend).
- *  \param y The complex denomimator (divisor).
+ *  \param y The complex denominator (divisor).
  */
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> operator/(const T0& x, const complex<T1>& y);

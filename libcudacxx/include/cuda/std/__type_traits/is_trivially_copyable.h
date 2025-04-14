@@ -29,8 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_COPYABLE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copyable
-    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_copyable : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(_Tp)>
 {};
 
 template <class _Tp>
@@ -39,8 +39,8 @@ inline constexpr bool is_trivially_copyable_v = _CCCL_BUILTIN_IS_TRIVIALLY_COPYA
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copyable
-    : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_trivially_copyable : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
 {};
 
 template <class _Tp>

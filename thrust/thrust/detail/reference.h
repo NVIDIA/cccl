@@ -128,17 +128,17 @@ public:
   _CCCL_HOST_DEVICE
   /*! \cond
    */
-  typename std::enable_if<
-    std::is_convertible<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>::value,
+  typename std::
+    enable_if<std::is_convertible<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>::value,
+              /*! \endcond
+               */
+              derived_type&
+              /*! \cond
+               */
+              >::type
     /*! \endcond
      */
-    derived_type&
-    /*! \cond
-     */
-    >::type
-  /*! \endcond
-   */
-  operator=(reference<OtherElement, OtherPointer, OtherDerived> const& other)
+    operator=(reference<OtherElement, OtherPointer, OtherDerived> const& other)
   {
     assign_from(&other);
     return derived();

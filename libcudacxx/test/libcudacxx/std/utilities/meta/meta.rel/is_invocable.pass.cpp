@@ -136,7 +136,7 @@ int main(int, char**)
   }
   {
     using Fn  = int (Tag::*)(int);
-    using RFn = int (Tag::*)(int)&&;
+    using RFn = int (Tag::*)(int) &&;
     // INVOKE bullet 1, 2 and 3
     {
       // Bullet 1

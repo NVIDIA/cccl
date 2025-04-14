@@ -50,8 +50,8 @@ template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], 0> : public integral_constant<size_t, _Np>
 {};
 template <class _Tp, size_t _Np, unsigned _Ip>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], _Ip>
-    : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+extent<_Tp[_Np], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
 {};
 
 template <class _Tp, unsigned _Ip = 0>

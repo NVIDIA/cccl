@@ -1086,7 +1086,7 @@ struct __strip_signature<_Rp (_Gp::*)(_Ap...) const volatile>
 };
 
 template <class _Rp, class _Gp, class... _Ap>
-struct __strip_signature<_Rp (_Gp::*)(_Ap...)&>
+struct __strip_signature<_Rp (_Gp::*)(_Ap...) &>
 {
   using type = _Rp(_Ap...);
 };

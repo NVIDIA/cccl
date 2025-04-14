@@ -41,8 +41,8 @@ inline constexpr bool is_function_v = _CCCL_BUILTIN_IS_FUNCTION(_Tp);
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_function
-    : public integral_constant<bool, !(is_reference<_Tp>::value || is_const<const _Tp>::value)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_function : public integral_constant<bool, !(is_reference<_Tp>::value || is_const<const _Tp>::value)>
 {};
 
 template <class _Tp>

@@ -79,7 +79,7 @@ inline cudaError_t get_device_memory(memory_info& info)
 
   if (device_memory_limit > 0)
   {
-    info.free  = (std::max)(std::size_t{0}, static_cast<std::size_t>(info.free - (info.total - device_memory_limit)));
+    info.free  = (std::max) (std::size_t{0}, static_cast<std::size_t>(info.free - (info.total - device_memory_limit)));
     info.total = device_memory_limit;
     info.override = true;
   }

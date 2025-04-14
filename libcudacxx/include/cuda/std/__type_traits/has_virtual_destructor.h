@@ -27,8 +27,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT has_virtual_destructor
-    : public integral_constant<bool, _CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+has_virtual_destructor : public integral_constant<bool, _CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR(_Tp)>
 {};
 
 #else

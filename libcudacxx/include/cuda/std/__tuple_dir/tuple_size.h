@@ -63,8 +63,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<tuple<_Tp...>> : public integral
 {};
 
 template <class... _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_size<__tuple_types<_Tp...>>
-    : public integral_constant<size_t, sizeof...(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+tuple_size<__tuple_types<_Tp...>> : public integral_constant<size_t, sizeof...(_Tp)>
 {};
 
 template <class _Tp>

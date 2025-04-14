@@ -235,8 +235,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __compile_time_error // : ::std::exception
 };
 
 template <class _Data, class... _What>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __sender_type_check_failure
-    : __compile_time_error<__sender_type_check_failure<_Data, _What...>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+__sender_type_check_failure : __compile_time_error<__sender_type_check_failure<_Data, _What...>>
 {
   _CUDAX_DEFAULTED_API __sender_type_check_failure() = default;
 

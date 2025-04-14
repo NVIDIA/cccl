@@ -30,8 +30,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg1, class _Arg2, class _Result>
-class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED pointer_to_binary_function : public __binary_function<_Arg1, _Arg2, _Result>
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED
+pointer_to_binary_function : public __binary_function<_Arg1, _Arg2, _Result>
 {
   _Result (*__f_)(_Arg1, _Arg2);
 

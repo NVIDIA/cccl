@@ -27,8 +27,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_constructible
-    : public is_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_copy_constructible : public is_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 
 template <class _Tp>

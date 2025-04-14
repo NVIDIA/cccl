@@ -419,8 +419,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
 //! arguments, or if the meta-callable is not callable with the arguments, a
 //! class type without a nested \c ::type type alias.
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
-    : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+__type_defer : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
 
 //! \brief Defer the instantiation of a template with a list of arguments.

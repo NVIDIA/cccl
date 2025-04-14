@@ -99,8 +99,8 @@ struct __cccl_is_integral<__uint128_t> : public true_type
 #  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral
-    : public integral_constant<bool, __cccl_is_integral<remove_cv_t<_Tp>>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+is_integral : public integral_constant<bool, __cccl_is_integral<remove_cv_t<_Tp>>::value>
 {};
 
 template <class _Tp>

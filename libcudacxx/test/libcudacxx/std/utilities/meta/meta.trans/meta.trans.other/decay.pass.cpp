@@ -32,8 +32,8 @@ int main(int, char**)
   test_decay<void(), void (*)()>();
   test_decay<int(int) const, int(int) const>();
   test_decay<int(int) volatile, int(int) volatile>();
-  test_decay<int(int)&, int(int)&>();
-  test_decay<int(int)&&, int(int) &&>();
+  test_decay<int(int) &, int(int) &>();
+  test_decay<int(int) &&, int(int) &&>();
 
   return 0;
 }

@@ -39,8 +39,8 @@ template <class _Tp, class _Alloc>
 inline constexpr bool __uses_allocator_v<_Tp, _Alloc, true> = is_convertible_v<_Alloc, typename _Tp::allocator_type>;
 
 template <class _Tp, class _Alloc>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator
-    : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+uses_allocator : public integral_constant<bool, _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc)>
 {};
 
 template <class _Tp, class _Alloc>

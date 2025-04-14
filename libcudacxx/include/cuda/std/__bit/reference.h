@@ -201,7 +201,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __fill_n_impl(__bit_iterator<_Cp, false
   if (__first.__ctz_ != 0)
   {
     __storage_type __clz_f = static_cast<__storage_type>(__bits_per_word - __first.__ctz_);
-    __storage_type __dn    = (_CUDA_VSTD::min)(__clz_f, static_cast<__storage_type>(__n));
+    __storage_type __dn    = (_CUDA_VSTD::min) (__clz_f, static_cast<__storage_type>(__n));
     __storage_type __m     = (~__storage_type(0) << __first.__ctz_) & (~__storage_type(0) >> (__clz_f - __dn));
     if (_FillVal)
     {
