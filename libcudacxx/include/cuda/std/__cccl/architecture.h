@@ -45,19 +45,11 @@
 #define _CCCL_ENDIAN_BIG()    0xFACE
 #define _CCCL_ENDIAN_PDP()    0xBEEF
 
-#if _CCCL_COMPILER(NVRTC) || (_CCCL_COMPILER(MSVC) && (_CCCL_ARCH(X86_64) || _CCCL_ARCH(ARM64)))
+#if _CCCL_COMPILER(NVRTC) || (_CCCL_COMPILER(MSVC) && (_CCCL_ARCH(X86_64) || _CCCL_ARCH(ARM64))) || __LITTLE_ENDIAN__
 #  define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()
-#endif // _CCCL_COMPILER(NVRTC)
-
-#if !defined(_CCCL_ENDIAN_NATIVE) && __LITTLE_ENDIAN__
-#  define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()
-#endif // !_CCCL_ENDIAN_NATIVE && __LITTLE_ENDIAN__
-
-#if !defined(_CCCL_ENDIAN_NATIVE) && __BIG_ENDIAN__
+#elif __BIG_ENDIAN__
 #  define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_BIG()
-#endif // !_CCCL_ENDIAN_NATIVE && __BIG_ENDIAN__
-
-#if !defined(_CCCL_ENDIAN_NATIVE) && defined(__BYTE_ORDER__)
+#elif defined(__BYTE_ORDER__)
 #  if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #    define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()
 #  elif __BYTE_ORDER__ == __ORDER_PDP_ENDIAN__
@@ -65,9 +57,7 @@
 #  elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
 #    define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_BIG()
 #  endif // __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#endif // !_CCCL_ENDIAN_NATIVE && defined(__BYTE_ORDER__)
-
-#if !defined(_CCCL_ENDIAN_NATIVE) && _CCCL_HAS_INCLUDE(<endian.h>)
+#elif _CCCL_HAS_INCLUDE(<endian.h>)
 #  include <endian.h>
 #  if __BYTE_ORDER == __LITTLE_ENDIAN
 #    define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()
@@ -76,10 +66,11 @@
 #  elif __BYTE_ORDER == __BIG_ENDIAN
 #    define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_BIG()
 #  endif // __BYTE_ORDER == __BIG_ENDIAN
-#endif // !_CCCL_ENDIAN_NATIVE
+#endif // ^^^ has endian.h ^^^
 
 #if !defined(_CCCL_ENDIAN_NATIVE)
-#  error "failed to determine the endianness of the host architecture"
+_CCCL_WARNING("failed to determine the endianness of the host architecture, defaulting to little-endian")
+#  define _CCCL_ENDIAN_NATIVE() _CCCL_ENDIAN_LITTLE()
 #endif // !_CCCL_ENDIAN_NATIVE
 
 #define _CCCL_ENDIAN(_NAME) (_CCCL_ENDIAN_NATIVE() == _CCCL_ENDIAN_##_NAME())
