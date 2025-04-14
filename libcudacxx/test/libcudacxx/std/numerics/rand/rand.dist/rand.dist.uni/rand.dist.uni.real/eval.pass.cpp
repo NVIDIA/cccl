@@ -14,7 +14,7 @@
 // template<class RealType = double>
 // class uniform_real_distribution
 
-// template<class _URNG> result_type operator()(_URNG& g);
+// template<class _URng> result_type operator()(_URng& g);
 
 #include <cuda/std/__random_>
 #include <cuda/std/array>

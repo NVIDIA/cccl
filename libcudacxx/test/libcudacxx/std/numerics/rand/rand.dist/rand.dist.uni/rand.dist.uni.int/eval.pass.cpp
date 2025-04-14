@@ -14,7 +14,7 @@
 // template<class _IntType = int>
 // class uniform_int_distribution
 
-// template<class _URNG> result_type operator()(_URNG& g);
+// template<class _URng> result_type operator()(_URng& g);
 
 #include <cuda/std/__random_>
 #include <cuda/std/array>
@@ -132,7 +132,7 @@ int main(int, char**)
   test_statistics<cuda::std::int8_t, cuda::std::minstd_rand0>();
   test_statistics<cuda::std::uint8_t, cuda::std::minstd_rand0>();
 
-#if TEST_HAS_INT128()
+#if _CCCL_HAS_INT128()
   test_statistics<__int128_t, cuda::std::minstd_rand0>();
   test_statistics<__uint128_t, cuda::std::minstd_rand0>();
 
@@ -141,7 +141,7 @@ int main(int, char**)
   test_statistics<__int128_t, cuda::std::minstd_rand0>(
     cuda::std::numeric_limits<__int128_t>::min(), cuda::std::numeric_limits<__int128_t>::max());
   test_statistics<__uint128_t, cuda::std::minstd_rand0>(0, UINT64_MAX);
-#endif // TEST_HAS_INT128()
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }

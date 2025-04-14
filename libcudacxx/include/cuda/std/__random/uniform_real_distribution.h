@@ -89,17 +89,17 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI void reset() noexcept {}
 
   // generating functions
-  template <class _URNG>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(_URNG& __g) noexcept
+  template <class _URng>
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(_URng& __g) noexcept
   {
     return (*this)(__g, __p_);
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _URNG>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(_URNG& __g, const param_type& __p) noexcept
+  template <class _URng>
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(_URng& __g, const param_type& __p) noexcept
   {
-    static_assert(__libcpp_random_is_valid_urng<_URNG>, "");
+    static_assert(__libcpp_random_is_valid_urng<_URng>, "");
     return (__p.b() - __p.a()) * _CUDA_VSTD::generate_canonical<_RealType, numeric_limits<_RealType>::digits>(__g)
          + __p.a();
   }

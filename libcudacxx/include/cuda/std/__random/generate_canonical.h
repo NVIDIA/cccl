@@ -30,19 +30,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // generate_canonical
 _CCCL_EXEC_CHECK_DISABLE
-template <class _RealType, size_t __bits, class _URNG>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _RealType generate_canonical(_URNG& __g) noexcept
+template <class _RealType, size_t __bits, class _URng>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _RealType generate_canonical(_URng& __g) noexcept
 {
   const size_t __dt    = numeric_limits<_RealType>::digits;
   const size_t __b     = __dt < __bits ? __dt : __bits;
-  const size_t __log_r = _CUDA_VSTD::__bit_log2<uint64_t>((_URNG::max)() - (_URNG::min)() + uint64_t(1));
+  const size_t __log_r = _CUDA_VSTD::__bit_log2<uint64_t>((_URng::max)() - (_URng::min)() + uint64_t(1));
   const size_t __k     = __b / __log_r + (__b % __log_r != 0) + (__b == 0);
-  const _RealType __rp = static_cast<_RealType>((_URNG::max)() - (_URNG::min)()) + _RealType(1);
+  const _RealType __rp = static_cast<_RealType>((_URng::max)() - (_URng::min)()) + _RealType(1);
   _RealType __base     = __rp;
-  _RealType __sp       = __g() - (_URNG::min)();
+  _RealType __sp       = __g() - (_URng::min)();
   for (size_t __i = 1; __i < __k; ++__i, __base *= __rp)
   {
-    __sp += (__g() - (_URNG::min)()) * __base;
+    __sp += (__g() - (_URng::min)()) * __base;
   }
   return __sp / __base;
 }

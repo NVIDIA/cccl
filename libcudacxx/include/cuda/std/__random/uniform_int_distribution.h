@@ -55,7 +55,7 @@ private:
   _Engine_result_type __mask0_;
   _Engine_result_type __mask1_;
 
-  static constexpr const _Working_result_type _Rp = (_Engine::max)() - (_Engine::min)() + _Working_result_type(1);
+  static constexpr const _Working_result_type _Rp = _Engine::max() - _Engine::min() + _Working_result_type(1);
   static constexpr const size_t __m               = _CUDA_VSTD::__bit_log2<_Working_result_type>(_Rp);
   static constexpr const size_t _WDt              = numeric_limits<_Working_result_type>::digits;
   static constexpr const size_t _EDt              = numeric_limits<_Engine_result_type>::digits;
@@ -68,7 +68,7 @@ public:
   {
     __n_  = __w_ / __m + (__w_ % __m != 0);
     __w0_ = __w_ / __n_;
-    if (_Rp == 0)
+    if constexpr (_Rp == 0)
     {
       __y0_ = _Rp;
     }
@@ -121,7 +121,7 @@ public:
       _Engine_result_type __u;
       do
       {
-        __u = __e_() - (_Engine::min)();
+        __u = __e_() - _Engine::min();
       } while (__u >= __y0_);
       if (__w0_ < __w_rt)
       {
@@ -138,7 +138,7 @@ public:
       _Engine_result_type __u;
       do
       {
-        __u = __e_() - (_Engine::min)();
+        __u = __e_() - _Engine::min();
       } while (__u >= __y1_);
       if (__w0_ < __w_rt - 1)
       {
@@ -216,17 +216,17 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI void reset() {}
 
   // generating functions
-  template <class _URNG>
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(_URNG& __g) noexcept
+  template <class _URng>
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI result_type operator()(_URng& __g) noexcept
   {
     return (*this)(__g, __p_);
   }
   _CCCL_EXEC_CHECK_DISABLE
-  template <class _URNG>
+  template <class _URng>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI result_type
-  operator()(_URNG& __g, const param_type& __p) noexcept _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  operator()(_URng& __g, const param_type& __p) noexcept _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
   {
-    static_assert(__libcpp_random_is_valid_urng<_URNG>, "");
+    static_assert(__libcpp_random_is_valid_urng<_URng>, "");
     using _UIntType = conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, make_unsigned_t<result_type>>;
     const _UIntType __rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
     if (__rp == 1)
@@ -234,7 +234,7 @@ public:
       return __p.a();
     }
     const size_t __dt = numeric_limits<_UIntType>::digits;
-    using _Eng        = __independent_bits_engine<_URNG, _UIntType>;
+    using _Eng        = __independent_bits_engine<_URng, _UIntType>;
     if (__rp == 0)
     {
       return static_cast<result_type>(_Eng(__g, __dt)());

@@ -12,7 +12,7 @@
 // template<class _IntType = int>
 // class uniform_int_distribution
 
-// template<class _URNG> result_type operator()(_URNG& g);
+// template<class _URng> result_type operator()(_URng& g);
 
 #include <cuda/std/__random_>
 #include <cuda/std/cassert>
@@ -23,7 +23,7 @@
 
 int main(int, char**)
 {
-#if TEST_HAS_INT128()
+#if _CCCL_HAS_INT128()
 
   // Test that values outside of the 64-bit range can be produced.
   {
@@ -85,7 +85,7 @@ int main(int, char**)
     }
   }
 
-#endif // TEST_HAS_INT128()
+#endif // _CCCL_HAS_INT128()
 
   return 0;
 }
