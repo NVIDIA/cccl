@@ -144,6 +144,7 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Wpointer-arith" cxx_compile_options)
     append_option_if_available("-Wunused-local-typedef" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
+    append_option_if_available("-Wextra-semi" cxx_compile_options)
 
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)
