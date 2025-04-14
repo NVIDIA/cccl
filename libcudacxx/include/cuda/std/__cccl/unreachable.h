@@ -29,16 +29,16 @@
 
 #  define _CCCL_UNREACHABLE()             \
     {                                     \
-      __assume(0);                        \
       _CCCL_ASSERT(false, "unreachable"); \
+      __assume(0);                        \
     }
 
 #else
 
 #  define _CCCL_UNREACHABLE()             \
     {                                     \
-      __builtin_unreachable();            \
       _CCCL_ASSERT(false, "unreachable"); \
+      __builtin_unreachable();            \
     }
 
 #endif // _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
