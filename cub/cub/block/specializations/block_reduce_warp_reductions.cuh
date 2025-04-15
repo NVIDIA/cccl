@@ -212,6 +212,7 @@ struct BlockReduceWarpReductions
   template <bool FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
+    using namespace cub::internal;
     ::cuda::std::plus<> reduction_op;
     int warp_offset    = (warp_id * LOGICAL_WARP_SIZE);
     int warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
@@ -232,7 +233,6 @@ struct BlockReduceWarpReductions
 
   /**
    * @brief Computes a thread block-wide reduction using the specified reduction operator.
-   *        The first num_valid threads each contribute one reduction partial.
    *        The return value is only valid for thread<sub>0</sub>.
    *
    * @param[in] input
@@ -251,7 +251,7 @@ struct BlockReduceWarpReductions
     int warp_num_valid = ((FULL_TILE && EVEN_WARP_MULTIPLE) || (warp_offset + LOGICAL_WARP_SIZE <= num_valid))
                          ? LOGICAL_WARP_SIZE
                          : num_valid - warp_offset;
-
+    using namespace cub::internal;
     // Warp reduction in every warp
     // T warp_aggregate = WarpReduceInternal(temp_storage.warp_reduce[warp_id])
     //                     .template Reduce<(FULL_TILE && EVEN_WARP_MULTIPLE)>(input, warp_num_valid, reduction_op);

@@ -35,11 +35,12 @@
 #endif // no system header
 
 #include <cub/detail/integer_utils.cuh>
+#include <cub/detail/unsafe_bitcast.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_config.cuh>
 #include <cub/warp/specializations/warp_reduce_ptx.cuh>
-#include <cub/warp/specializations/warp_utils.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/cmath>
 #include <cuda/functional>
@@ -53,7 +54,7 @@
 #include <cuda/warp>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 
 /***********************************************************************************************************************
@@ -68,7 +69,7 @@ warp_reduce_redux_op(Input input, ReductionOp reduction_op, WarpConfigT config)
   using namespace internal;
   static_assert(sizeof(Input) <= sizeof(uint32_t));
   auto [logical_mode, result_mode, logical_size, last_pos, _] = config;
-  const auto mask = cub::detail::reduce_member_mask(single_reduction, logical_size, last_pos);
+  const auto mask = cub::internal::reduce_member_mask(single_reduction, logical_size, last_pos);
   if constexpr (is_integral_v<Input>)
   {
     using cast_t = _If<is_signed_v<Input>, int, uint32_t>;
@@ -99,7 +100,7 @@ warp_reduce_redux_op(Input input, ReductionOp reduction_op, WarpConfigT config)
   }
   else if constexpr (is_same_v<Input, float> && is_cuda_std_min_max_v<ReductionOp, Input>)
   {
-    return cub::detail::reduce_sm100a_sync(reduction_op, input, mask);
+    return cub::internal::reduce_sm100a_sync(reduction_op, input, mask);
   }
   else
   {
@@ -118,14 +119,14 @@ warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, WarpConfigT config
                 "invalid input type/reduction operator combination");
   auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
   constexpr auto log2_size                                               = ::cuda::ilog2(logical_size * 2 - 1);
-  const auto mask = cub::detail::reduce_member_mask(logical_mode, logical_size, last_pos, is_segmented);
+  const auto mask = cub::internal::reduce_member_mask(logical_mode, logical_size, last_pos, is_segmented);
   using cast_t    = _If<is_integral_v<Input> && sizeof(Input) < sizeof(int), int, Input>;
   auto input1     = static_cast<cast_t>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
-    auto shuffle_mask = cub::detail::reduce_shuffle_mask(K, logical_size, last_pos, is_segmented);
-    input1            = cub::detail::shfl_down_op(reduction_op, input1, 1u << K, shuffle_mask, mask);
+    auto shuffle_mask = cub::internal::reduce_shuffle_mask(K, logical_size, last_pos, is_segmented);
+    input1            = cub::internal::shfl_down_op(reduction_op, input1, 1u << K, shuffle_mask, mask);
   }
   if constexpr (result_mode == all_lanes_result)
   {
@@ -142,20 +143,20 @@ warp_reduce_generic(Input input, ReductionOp reduction_op, WarpConfigT config)
   auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
   constexpr auto is_power_of_two     = _CUDA_VSTD::has_single_bit(uint32_t{logical_size});
   constexpr auto log2_size           = ::cuda::ilog2(logical_size * 2 - 1);
-  constexpr uint32_t logical_size1   = is_segmented ? warp_threads : logical_size;
+  constexpr uint32_t logical_size1   = is_segmented ? detail::warp_threads : logical_size;
   constexpr auto logical_size1_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size1});
-  const auto mask = cub::detail::reduce_member_mask(logical_mode, logical_size, last_pos, is_segmented);
+  const auto mask = cub::internal::reduce_member_mask(logical_mode, logical_size, last_pos, is_segmented);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
-    _CUDA_VDEV::WarpShuffleResult<Input> res;
+    _CUDA_VDEV::warp_shuffle_result<Input> res;
     if constexpr (is_power_of_two && last_pos.rank_dynamic() == 0 && !is_segmented)
     {
       res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
     }
     else
     {
-      auto lane_dest = cub::detail::logical_lane_id<logical_size1>() + (1u << K);
+      auto lane_dest = cub::internal::logical_lane_id<logical_size1>() + (1u << K);
       auto dest      = ::min(lane_dest, last_pos.extent(0));
       res            = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
       res.pred       = lane_dest <= last_pos.extent(0);
@@ -187,9 +188,9 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AN
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input
 warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_config)
 {
-  using detail::merge_integers;
-  using detail::split_integers;
-  using detail::warp_reduce_dispatch;
+  using internal::merge_integers;
+  using internal::split_integers;
+  using internal::warp_reduce_dispatch;
   auto [high, low]    = split_integers(input);
   auto high_reduction = warp_reduce_dispatch(high, reduction_op, warp_config);
   auto low_reduction  = warp_reduce_dispatch(low, reduction_op, warp_config);
@@ -202,10 +203,10 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input> _CCCL_AN
 warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_config)
 {
   using namespace _CUDA_VSTD;
-  using detail::merge_integers;
-  using detail::split_integers;
-  using detail::warp_reduce_dispatch;
   using internal::identity_v;
+  using internal::merge_integers;
+  using internal::split_integers;
+  using internal::warp_reduce_dispatch;
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   auto [high, low]         = split_integers(input);
   auto high_result         = warp_reduce_dispatch(high, reduction_op, warp_config);
@@ -236,9 +237,9 @@ _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
 warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_config)
 {
   using namespace _CUDA_VSTD;
-  using detail::merge_integers;
-  using detail::split_integers;
-  using detail::warp_reduce_dispatch;
+  using internal::merge_integers;
+  using internal::split_integers;
+  using internal::warp_reduce_dispatch;
   using unsigned_t         = make_unsigned_t<Input>;
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
@@ -258,15 +259,15 @@ template <typename Input, typename ReductionOp, typename WarpConfigT>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
 warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
 {
-  using cub::detail::comparable_int_to_floating_point;
-  using cub::detail::floating_point_to_comparable_int;
-  using cub::detail::logical_lane_id;
   using cub::detail::unsafe_bitcast;
-  using cub::detail::warp_reduce_dispatch;
-  using cub::detail::warp_reduce_generic;
-  using cub::detail::warp_reduce_recursive;
-  using cub::detail::warp_reduce_redux_op;
-  using cub::detail::warp_reduce_shuffle_op;
+  using cub::internal::comparable_int_to_floating_point;
+  using cub::internal::floating_point_to_comparable_int;
+  using cub::internal::logical_lane_id;
+  using cub::internal::warp_reduce_dispatch;
+  using cub::internal::warp_reduce_generic;
+  using cub::internal::warp_reduce_recursive;
+  using cub::internal::warp_reduce_redux_op;
+  using cub::internal::warp_reduce_shuffle_op;
   using namespace cub::internal;
   using namespace _CUDA_VSTD;
   check_warp_reduce_config(config);
@@ -402,8 +403,8 @@ template <bool IsHeadSegment,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   logical_warp_size_t<LogicalWarpSize> logical_size)
 {
-  auto logical_warp_id = cub::detail::logical_warp_id(logical_size);
-  auto member_mask     = cub::detail::reduce_member_mask(logical_mode, logical_size, last_pos_t<0>{});
+  auto logical_warp_id = cub::internal::logical_warp_id(logical_size);
+  auto member_mask     = cub::internal::reduce_member_mask(logical_mode, logical_size, last_pos_t<0>{});
   auto warp_flags      = ::__ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
   // Mask out the bits below the current thread
@@ -414,8 +415,8 @@ template <bool IsHeadSegment,
   auto last_lane = _CUDA_VSTD::countr_zero(warp_flags);
   auto last_pos  = last_pos_t<>{last_lane};
   WarpReduceConfig config{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}};
-  return cub::detail::warp_reduce_dispatch(input, reduction_op, config);
+  return cub::internal::warp_reduce_dispatch(input, reduction_op, config);
 }
 
-} // namespace detail
+} // namespace internal
 CUB_NAMESPACE_END

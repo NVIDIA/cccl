@@ -35,11 +35,13 @@
 #endif // no system header
 
 #include <cub/detail/unsafe_bitcast.cuh>
-#include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_operators.cuh> // is_cuda_std_min_max_v
 
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/cstdint>
-#include <cuda/std/type_traits>
+#include <cuda/std/cmath> // isnan
+#include <cuda/std/limits> // numeric_limits
+#include <cuda/std/type_traits> // __make_nbit_int_t
+#include <cuda/type_traits> // is_floating_point_v
 
 CUB_NAMESPACE_BEGIN
 
@@ -47,7 +49,7 @@ CUB_NAMESPACE_BEGIN
  * Integer Utils
  **********************************************************************************************************************/
 
-namespace detail
+namespace internal
 {
 
 template <typename Input>
@@ -89,16 +91,15 @@ template <typename ReductionOp, typename T>
 {
   using namespace _CUDA_VSTD;
   static_assert(::cuda::is_floating_point_v<T>);
-  static_assert(internal::is_cuda_std_min_max_v<ReductionOp, T>);
+  static_assert(is_cuda_std_min_max_v<ReductionOp, T>);
   using signed_t        = __make_nbit_int_t<__num_bits_v<T>, true>;
   constexpr auto lowest = signed_t{1} << (__num_bits_v<T> - 1);
-  constexpr auto is_max = internal::is_cuda_maximum_v<ReductionOp, T>;
+  constexpr auto is_max = is_cuda_maximum_v<ReductionOp, T>;
   const auto nan        = is_max ? -numeric_limits<T>::quiet_NaN() : numeric_limits<T>::quiet_NaN();
   auto value1           = _CUDA_VSTD::isnan(value) ? nan : value;
   auto value_int        = cub::detail::unsafe_bitcast<signed_t>(value1);
   return static_cast<signed_t>(value_int < 0 ? lowest - value_int : value_int);
 }
 
-} // namespace detail
-
+} // namespace internal
 CUB_NAMESPACE_END

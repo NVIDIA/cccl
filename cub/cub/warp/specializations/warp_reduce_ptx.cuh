@@ -38,7 +38,7 @@
 #include <cub/detail/unsafe_bitcast.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/warp/specializations/warp_reduce_config.cuh>
-#include <cub/warp/specializations/warp_utils.cuh>
+#include <cub/warp/warp_utils.cuh>
 
 #include <cuda/functional>
 #include <cuda/std/__mdspan/extents.h>
@@ -55,7 +55,7 @@
 #endif // _CCCL_HAS_NVBF16()
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -267,8 +267,8 @@ template <typename T, typename ReductionOp>
 #if __cccl_ptx_isa >= 860
   static_assert(is_same_v<T, float> && cub::internal::is_cuda_std_min_max_v<ReductionOp, T>);
   NV_IF_TARGET(NV_PROVIDES_SM_100,
-               (return cub::detail::redux_sm100a_op(reduction_op, value, mask);),
-               (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a();))
+               (return cub::internal::redux_sm100a_op(reduction_op, value, mask);),
+               (return cub::internal::redux_min_max_sync_is_not_supported_before_sm100a();))
 #else
   static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
 #endif // __cccl_ptx_isa >= 860
@@ -296,7 +296,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
   }
   else // last_pos is dynamic
   {
-    return cub::detail::logical_warp_id(logical_size) * LogicalWarpSize + last_pos.extent(0);
+    return cub::internal::logical_warp_id(logical_size) * LogicalWarpSize + last_pos.extent(0);
   }
 }
 
@@ -316,9 +316,9 @@ template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems,
   }
   else
   {
-    return (logical_mode == single_reduction) ? (0xFFFFFFFF >> (warp_threads - LogicalWarpSize)) : 0xFFFFFFFF;
+    return (logical_mode == single_reduction) ? (0xFFFFFFFF >> (detail::warp_threads - LogicalWarpSize)) : 0xFFFFFFFF;
   }
 }
 
-} // namespace detail
+} // namespace internal
 CUB_NAMESPACE_END

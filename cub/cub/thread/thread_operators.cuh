@@ -370,38 +370,6 @@ struct ReduceByKeyOp
 namespace internal
 {
 
-template <typename ReductionOp, typename T>
-inline constexpr bool is_cuda_std_min_max_v =
-  cub::detail::is_one_of_v<ReductionOp, //
-                           ::cuda::minimum<>,
-                           ::cuda::minimum<T>,
-                           ::cuda::maximum<>,
-                           ::cuda::maximum<T>>;
-
-template <typename ReductionOp, typename T>
-inline constexpr bool is_cuda_std_plus_mul_v =
-  cub::detail::is_one_of_v<ReductionOp, //
-                           _CUDA_VSTD::plus<>,
-                           _CUDA_VSTD::plus<T>,
-                           _CUDA_VSTD::multiplies<>,
-                           _CUDA_VSTD::multiplies<T>>;
-
-template <typename ReductionOp, typename T>
-inline constexpr bool is_cuda_std_bitwise_v =
-  cub::detail::is_one_of_v<ReductionOp,
-                           _CUDA_VSTD::bit_and<>,
-                           _CUDA_VSTD::bit_and<T>,
-                           _CUDA_VSTD::bit_or<>,
-                           _CUDA_VSTD::bit_or<T>,
-                           _CUDA_VSTD::bit_xor<>,
-                           _CUDA_VSTD::bit_xor<T>>;
-
-template <typename ReductionOp, typename T>
-inline constexpr bool is_cuda_std_operator_v =
-  is_cuda_std_min_max_v<ReductionOp, T> || //
-  is_cuda_std_plus_mul_v<ReductionOp, T> || //
-  is_cuda_std_bitwise_v<ReductionOp, T>;
-
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
