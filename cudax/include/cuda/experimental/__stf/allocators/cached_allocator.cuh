@@ -143,17 +143,6 @@ public:
     return "cached_block_allocator";
   }
 
-  /**
-   * @brief Prints additional information about the allocator.
-   *
-   * This function currently prints no additional information.
-   */
-  void print_info() const override
-  {
-    const auto s = to_string();
-    fprintf(stderr, "No additional info for allocator of kind \"%.*s\".\n", static_cast<int>(s.size()), s.data());
-  }
-
 protected:
   /**
    * @brief Underlying root allocator for base buffers
@@ -180,6 +169,31 @@ protected:
   ::std::mutex allocator_mutex;
 };
 
+/**
+ * @brief A block allocator with FIFO caching strategy.
+ *
+ * This allocator wraps a root allocator and implements a caching mechanism
+ * to efficiently reuse previously allocated memory blocks.
+ *
+ * When a memory block is requested, it first attempts to find a suitable block
+ * in the internal cache (`free_cache`). If no suitable block is found, a larger
+ * buffer is allocated from the root allocator, split into smaller blocks, and
+ * stored in the cache for future reuse.
+ *
+ * The caching policy is FIFO (First-In-First-Out): freed blocks are appended
+ * to a queue and reused in the order they were deallocated.
+ *
+ * At deinitialization (`deinit()`), all cached blocks and their associated large
+ * allocations are properly released by delegating to the root allocator.
+ *
+ * @note The allocator is thread-safe and uses a mutex to protect access
+ * to its internal cache.
+ *
+ * @note Deallocation does not immediately release memory back to the root allocator.
+ * Instead, deallocated blocks are stored in the cache for future reuse.
+ *
+ * @see block_allocator_interface
+ */
 class cached_block_allocator_fifo : public block_allocator_interface
 {
 public:
