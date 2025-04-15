@@ -107,6 +107,8 @@ struct BlockReduceRaking
   /// Whether or not accesses into smem are unguarded
   static constexpr bool RAKING_UNGUARDED = BlockRakingLayout::UNGUARDED;
 
+  static constexpr bool IsPowerOfTwo = _CUDA_VSTD::has_single_bit(uint32_t{RAKING_THREADS});
+
   /// Shared memory storage layout type
   union _TempStorage
   {
@@ -197,7 +199,7 @@ struct BlockReduceRaking
     {
       // Short-circuit directly to warp synchronous reduction (unguarded if active threads is a power-of-two)
       constexpr auto logical_mode =
-        IS_FULL_TILE ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
+        IS_FULL_TILE && IsPowerOfTwo ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
       partial = WarpReduce::Reduce(partial, reduction_op, num_valid, reduce_logical_mode_t<logical_mode>{});
     }
     else
@@ -223,7 +225,7 @@ struct BlockReduceRaking
         unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
         __syncwarp(mask);
         constexpr auto logical_mode =
-          (IS_FULL_TILE && RAKING_UNGUARDED)
+          (IS_FULL_TILE && RAKING_UNGUARDED && IsPowerOfTwo)
             ? ReduceLogicalMode::MultipleReductions
             : ReduceLogicalMode::SingleReduction;
         partial =

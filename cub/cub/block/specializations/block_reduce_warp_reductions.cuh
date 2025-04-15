@@ -82,6 +82,8 @@ struct BlockReduceWarpReductions
   static constexpr int LogicalWarpSize = (BlockThreads < warp_threads ? BlockThreads : warp_threads); // MSVC bug with
                                                                                                       // cuda::std::min
 
+  static constexpr bool IsPowerOfTwo = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize});
+
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool EvenWarpSize = (BlockThreads % LogicalWarpSize == 0);
 
@@ -210,7 +212,9 @@ struct BlockReduceWarpReductions
 
     // Warp reduction in every warp
     constexpr auto logical_mode =
-      (EvenWarpSize && FULL_TILE) ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
+      (EvenWarpSize && FULL_TILE && IsPowerOfTwo)
+        ? ReduceLogicalMode::MultipleReductions
+        : ReduceLogicalMode::SingleReduction;
     auto warp_aggregate = WarpReduce::Sum(input, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
@@ -240,7 +244,9 @@ struct BlockReduceWarpReductions
     using namespace cub::internal;
     // Warp reduction in every warp
     constexpr auto logical_mode =
-      (EvenWarpSize && FULL_TILE) ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
+      (EvenWarpSize && FULL_TILE && IsPowerOfTwo)
+        ? ReduceLogicalMode::MultipleReductions
+        : ReduceLogicalMode::SingleReduction;
     auto warp_aggregate =
       WarpReduce::Reduce(input, reduction_op, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
 

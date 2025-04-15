@@ -26,7 +26,7 @@
  ******************************************************************************/
 #pragma once
 
-#include <cub/thread/thread_operators.cuh>
+#include <cub/detail/type_traits.cuh>
 
 #include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/type_traits>

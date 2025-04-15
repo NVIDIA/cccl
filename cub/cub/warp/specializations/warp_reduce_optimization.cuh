@@ -35,6 +35,7 @@
 #endif // no system header
 
 #include <cub/detail/integer_utils.cuh>
+#include <cub/detail/type_traits.cuh>
 #include <cub/detail/unsafe_bitcast.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_arch.cuh>

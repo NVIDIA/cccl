@@ -163,8 +163,6 @@ public:
 
   //! @name Collective constructors
   //! @{
-  WarpReduce() = default;
-
   //! @rst
   //! Collective constructor using the specified memory allocation as temporary storage.
   //! Logical warp and lane identifiers are constructed from ``threadIdx.x``.
@@ -223,7 +221,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  internal::ReduceLogicalMode Mode = logical_mode_default,
                  internal::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
   Sum(const InputType& input,
       internal::reduce_logical_mode_t<Mode> logical_mode = {},
@@ -246,7 +244,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  internal::ReduceLogicalMode Mode = logical_mode_default,
                  internal::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
   Max(const InputType& input,
       internal::reduce_logical_mode_t<Mode> logical_mode = {},
@@ -269,7 +267,7 @@ public:
   _CCCL_TEMPLATE(typename InputType,
                  internal::ReduceLogicalMode Mode = logical_mode_default,
                  internal::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
   Min(const InputType& input,
       internal::reduce_logical_mode_t<Mode> logical_mode = {},
@@ -349,7 +347,7 @@ public:
                  typename ReductionOp,
                  internal::ReduceLogicalMode Mode = logical_mode_default,
                  internal::ReduceResultMode Kind  = result_mode_default)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
   Reduce(const InputType& input,
          ReductionOp reduction_op,
@@ -761,6 +759,9 @@ public:
 template <typename T>
 class WarpReduce<T, 1>
 {
+  static constexpr auto logical_mode_default = internal::ReduceLogicalMode::SingleReduction;
+  static constexpr auto result_mode_default  = internal::ReduceResultMode::SingleLane;
+
 public:
   struct TempStorage : Uninitialized<NullType>
   {};
@@ -769,55 +770,128 @@ public:
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage&) {}
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Sum(T input)
+  template <internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Sum(T input, internal::reduce_logical_mode_t<Mode> = {}, internal::reduce_result_mode_t<Kind> = {})
   {
     return input;
   }
 
-  _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Sum(const InputType& input)
+  _CCCL_TEMPLATE(typename InputType,
+                 internal::ReduceLogicalMode Mode = logical_mode_default,
+                 internal::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Sum(const InputType& input, internal::reduce_logical_mode_t<Mode> = {}, internal::reduce_result_mode_t<Kind> = {})
   {
     return cub::ThreadReduce(input, _CUDA_VSTD::plus<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Sum(T input, [[maybe_unused]] int valid_items)
+  template <internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Sum(T input,
+      [[maybe_unused]] int valid_items,
+      internal::reduce_logical_mode_t<Mode> = {},
+      internal::reduce_result_mode_t<Kind>  = {})
   {
     _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
     return input;
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Max(T input)
+  template <internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Max(T input, internal::reduce_logical_mode_t<Mode> = {}, internal::reduce_result_mode_t<Kind> = {})
   {
     return input;
   }
 
-  _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Max(const InputType& input)
+  _CCCL_TEMPLATE(typename InputType,
+                 internal::ReduceLogicalMode Mode = logical_mode_default,
+                 internal::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Max(const InputType& input, internal::reduce_logical_mode_t<Mode> = {}, internal::reduce_result_mode_t<Kind> = {})
   {
     return cub::ThreadReduce(input, ::cuda::maximum<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Max(T input, [[maybe_unused]] int valid_items)
+  template <internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Max(T input,
+      [[maybe_unused]] int valid_items,
+      internal::reduce_logical_mode_t<Mode> = {},
+      internal::reduce_result_mode_t<Kind>  = {})
   {
     _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
     return input;
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Min(T input)
+  template <internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Min(T input, internal::reduce_logical_mode_t<Mode> = {}, internal::reduce_result_mode_t<Kind> = {})
   {
     return input;
   }
 
-  _CCCL_TEMPLATE(typename InputType)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Min(const InputType& input)
+  _CCCL_TEMPLATE(typename InputType,
+                 internal::ReduceLogicalMode Mode = logical_mode_default,
+                 internal::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Min(const InputType& input, internal::reduce_logical_mode_t<Mode> = {}, internal::reduce_result_mode_t<Kind> = {})
   {
     return cub::ThreadReduce(input, ::cuda::minimum<>{});
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Min(T input, [[maybe_unused]] int valid_items)
+  template <internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Min(T input,
+      [[maybe_unused]] int valid_items,
+      internal::reduce_logical_mode_t<Mode> = {},
+      internal::reduce_result_mode_t<Kind>  = {})
+  {
+    _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
+    return input;
+  }
+
+  template <typename ReductionOp,
+            internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Reduce(T input, ReductionOp, internal::reduce_logical_mode_t<Mode> = {}, internal::reduce_result_mode_t<Kind> = {})
+  {
+    return input;
+  }
+
+  _CCCL_TEMPLATE(typename InputType,
+                 typename ReductionOp,
+                 internal::ReduceLogicalMode Mode = logical_mode_default,
+                 internal::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_REQUIRES(_CCCL_TRAIT(internal::is_fixed_size_random_access_range, InputType))
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Reduce(const InputType& input,
+         ReductionOp reduction_op,
+         internal::reduce_logical_mode_t<Mode> = {},
+         internal::reduce_result_mode_t<Kind>  = {})
+  {
+    return cub::ThreadReduce(input, reduction_op);
+  }
+
+  template <typename ReductionOp,
+            internal::ReduceLogicalMode Mode = logical_mode_default,
+            internal::ReduceResultMode Kind  = result_mode_default>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
+  Reduce(T input,
+         ReductionOp,
+         [[maybe_unused]] int valid_items,
+         internal::reduce_logical_mode_t<Mode> = {},
+         internal::reduce_result_mode_t<Kind>  = {})
   {
     _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
     return input;
@@ -832,26 +906,6 @@ public:
   template <typename FlagT>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T TailSegmentedSum(T input, FlagT)
   {
-    return input;
-  }
-
-  template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Reduce(T input, ReductionOp)
-  {
-    return input;
-  }
-
-  _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
-  _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Reduce(const InputType& input, ReductionOp reduction_op)
-  {
-    return cub::ThreadReduce(input, reduction_op);
-  }
-
-  template <typename ReductionOp>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T Reduce(T input, ReductionOp, [[maybe_unused]] int valid_items)
-  {
-    _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
     return input;
   }
 

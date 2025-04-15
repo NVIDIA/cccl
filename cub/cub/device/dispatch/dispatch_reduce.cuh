@@ -45,7 +45,6 @@
 #endif // no system header
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
-#include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
 #include <cub/device/dispatch/dispatch_common.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
@@ -59,6 +58,7 @@
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
 #include <cuda/std/functional>
+#include <cuda/std/type_traits>
 
 #include <stdio.h>
 
@@ -574,7 +574,7 @@ template <
   typename InitT,
   typename AccumT =
     ::cuda::std::__accumulator_t<ReductionOpT,
-                                 cub::detail::invoke_result_t<TransformOpT, cub::detail::it_value_t<InputIteratorT>>,
+                                 _CUDA_VSTD::invoke_result_t<TransformOpT, cub::detail::it_value_t<InputIteratorT>>,
                                  InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource = detail::reduce::DeviceReduceKernelSource<

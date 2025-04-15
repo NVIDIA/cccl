@@ -51,14 +51,11 @@
 #include <cuda/std/functional>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
-#include <cuda/std/type_traits>
+#include <cuda/std/type_traits> // is_same_v
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
-
-template <typename Invokable, typename... Args>
-using invoke_result_t = _CUDA_VSTD::invoke_result_t<Invokable, Args...>;
 
 template <typename T, typename... TArgs>
 inline constexpr bool is_one_of_v = (_CCCL_TRAIT(_CUDA_VSTD::is_same, T, TArgs) || ...);
@@ -119,6 +116,74 @@ inline constexpr int static_size_v<_CUDA_VSTD::mdspan<T, E, L, A>> =
 template <typename T>
 using implicit_prom_t = decltype(+T{});
 
-} // namespace detail
+/***********************************************************************************************************************
+ * Extended floating point traits
+ **********************************************************************************************************************/
+// half
+
+template <typename>
+inline constexpr bool is_half_base_v = false;
+
+template <typename>
+inline constexpr bool is_half_X2_base_v = false;
+
+#if _CCCL_HAS_NVFP16()
+
+template <>
+inline constexpr bool is_half_base_v<__half> = true;
+
+template <>
+inline constexpr bool is_half_X2_base_v<__half2> = true;
+
+#endif // _CCCL_HAS_NVFP16
+
+template <typename T>
+inline constexpr bool is_half_v = is_half_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_half_X2_v = is_half_X2_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_half_v = is_half_base_v<T> || is_half_X2_base_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// bfloat16
+
+template <typename>
+inline constexpr bool is_bfloat16_base_v = false;
+
+template <typename>
+inline constexpr bool is_bfloat16_X2_base_v = false;
+
+#if _CCCL_HAS_NVBF16()
+
+template <>
+inline constexpr bool is_bfloat16_base_v<__nv_bfloat16> = true;
+
+template <>
+inline constexpr bool is_bfloat16_X2_base_v<__nv_bfloat162> = true;
+
+#endif // _CCCL_HAS_NVBF16
+
+template <typename T>
+inline constexpr bool is_bfloat16_v = is_bfloat16_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_bfloat16_X2_v = is_bfloat16_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+
+template <typename T>
+inline constexpr bool is_any_bfloat16_v = is_bfloat16_v<T> || is_bfloat16_X2_v<T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// half/bfloat16
+
+template <typename T>
+inline constexpr bool is_arithmetic_cuda_floating_point_v =
+  is_any_half_v<T> || is_any_bfloat16_v<T> || _CUDA_VSTD::is_floating_point_v<T>;
+
+template <typename T>
+inline constexpr bool is_any_short2_v = _CUDA_VSTD::is_same_v<T, short2> || _CUDA_VSTD::is_same_v<T, ushort2>;
+
+} // namespace internal
 
 CUB_NAMESPACE_END

@@ -47,9 +47,7 @@
 #include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
-
-/// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace detail
+namespace internal
 {
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -59,7 +57,7 @@ namespace detail
  **********************************************************************************************************************/
 
 template <typename CastType, typename Input, ::cuda::std::size_t... i>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::detail::static_size_v<Input>>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::internal::static_size_v<Input>>
 to_array_impl(const Input& input, ::cuda::std::index_sequence<i...>)
 {
   using ArrayType = ::cuda::std::array<CastType, static_size_v<Input>>;
@@ -67,7 +65,7 @@ to_array_impl(const Input& input, ::cuda::std::index_sequence<i...>)
 }
 
 template <typename CastType = void, typename Input>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::detail::static_size_v<Input>>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::internal::static_size_v<Input>>
 to_array(const Input& input)
 {
   using InputType = cuda::std::iter_value_t<Input>;
@@ -77,6 +75,5 @@ to_array(const Input& input)
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 
-} // namespace detail
-
+} // namespace internal
 CUB_NAMESPACE_END
