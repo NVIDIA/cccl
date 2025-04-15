@@ -1304,17 +1304,17 @@ const _Ty* addressof(const _Ty&&);
 
 #  if defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
 // std::move builtin
-#    if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
 #      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
 #    endif
 
 // std::forward builtin
-#    if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
 #    endif
 
 // std::addressof builtin
-#    if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15))
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
 #      define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
 #    endif
 
