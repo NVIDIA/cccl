@@ -65,8 +65,8 @@ public:
   buddy_allocator_metadata(size_t size, event_list init_prereqs)
       : free_lists_(int_log2(next_power_of_two(size)) + 1)
   {
-    assert(size && (size & (size - 1)) == 0
-           && "Allocation requests for this allocator must pass a size that is a power of two.");
+    _CCCL_ASSERT(size && (size & (size - 1)) == 0,
+                 "Allocation requests for this allocator must pass a size that is a power of two.");
     // Initially, the whole memory is free, but depends on init_prereqs
     free_lists_.back().emplace_back(0, mv(init_prereqs));
   }
