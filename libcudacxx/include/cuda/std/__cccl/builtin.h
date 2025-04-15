@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/extended_data_types.h>
 
 //! This file consolidates all compiler builtin detection for CCCL.
@@ -1273,13 +1274,16 @@ template <class _Ty>
 using remove_reference_t = typename remove_reference<_Ty>::type;
 
 template <class _Ty>
-[[nodiscard]] [[msvc::intrinsic]] constexpr remove_reference_t<_Ty>&& move(_Ty&& _Arg) noexcept;
+[[nodiscard]] _CCCL_INTRINSIC constexpr _Ty&& forward(remove_reference_t<_Ty>& _Arg) noexcept;
+
+template <class _Ty>
+[[nodiscard]] _CCCL_INTRINSIC constexpr _Ty&& forward(remove_reference_t<_Ty>&& _Arg) noexcept;
+
+template <class _Ty>
+[[nodiscard]] _CCCL_INTRINSIC constexpr remove_reference_t<_Ty>&& move(_Ty&& _Arg) noexcept;
 
 template <class _Ty>
 [[nodiscard]] constexpr _Ty* addressof(_Ty& _Val) noexcept;
-
-template <class _Ty>
-const _Ty* addressof(const _Ty&&);
 } // namespace std
 #  endif
 
@@ -1305,7 +1309,8 @@ const _Ty* addressof(const _Ty&&);
 #    endif
 
 // std::forward_like builtin
-#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)) \
+// Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
+#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15) /*|| _CCCL_COMPILER(MSVC, >=, 19, 36)*/) \
       && defined(__cpp_lib_forward_like) && (__cpp_lib_forward_like >= 202217L)
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #    endif
