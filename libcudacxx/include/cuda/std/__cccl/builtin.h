@@ -147,8 +147,6 @@
 #elif _CCCL_COMPILER(GCC, >=, 13)
 #  define _CCCL_BUILTIN_ASSUME(...) \
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__attribute__((__assume__(__VA_ARGS__)));))
-#elif _CCCL_COMPILER(GCC) && _CCCL_CUDA_COMPILER(NVCC)
-#  define _CCCL_BUILTIN_ASSUME(...) NV_IF_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);))
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_ASSUME(...) \
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
@@ -158,8 +156,6 @@
 
 #if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || _CCCL_COMPILER(MSVC, >=, 19, 23) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
-#elif _CCCL_CUDA_COMPILER(NVCC)
-#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) NV_IF_TARGET(NV_IS_DEVICE, (__builtin_assume_aligned(__VA_ARGS__);))
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
 #if _CCCL_CHECK_BUILTIN(builtin_atan) || _CCCL_COMPILER(GCC)
