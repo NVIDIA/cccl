@@ -63,9 +63,23 @@ template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int __cccl_popcount_impl_host(_Tp __v) noexcept
 {
 #  if _CCCL_COMPILER(MSVC) && _CCCL_ARCH(X86_64)
-  return static_cast<int>(sizeof(_Tp) == sizeof(uint32_t) ? ::__popcnt(__v) : ::__popcnt64(__v));
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return static_cast<int>(::__popcnt(__v));
+  }
+  else
+  {
+    return static_cast<int>(::__popcnt64(__v));
+  }
 #  elif _CCCL_COMPILER(MSVC) && _CCCL_ARCH(ARM64)
-  return static_cast<int>(sizeof(_Tp) == sizeof(uint32_t) ? ::_CountOneBits(__v) : ::_CountOneBits64(__v));
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return static_cast<int>(::_CountOneBits(__v));
+  }
+  else
+  {
+    return static_cast<int>(::_CountOneBits64(__v));
+  }
 #  else // ^^^ msvc intrinsics ^^^ / vvv other vvv
   return _CUDA_VSTD::__cccl_popcount_impl_constexpr(__v);
 #  endif // ^^^ other ^^^
@@ -76,7 +90,14 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_popcount_impl_device(_Tp __v) noexcept
 {
-  return (sizeof(_Tp) == sizeof(uint32_t)) ? ::__popc(__v) : ::__popcll(__v);
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return static_cast<int>(::__popc(__v));
+  }
+  else
+  {
+    return static_cast<int>(::__popcll(__v));
+  }
 }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
