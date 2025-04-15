@@ -73,7 +73,7 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
 
     // That didn't work. We could be somewhere where async allocation isn't
     // supported like Windows, so try again with cudaMalloc.
-    status = cudaFree(ptr);
+    status = cudaFree(void_ptr);
 
     if (status != cudaSuccess)
     {
