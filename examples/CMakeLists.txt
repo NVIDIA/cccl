@@ -14,6 +14,13 @@
 # limitations under the License.
 
 string(REPLACE ";" "\\\;" arches_escaped "${CMAKE_CUDA_ARCHITECTURES}")
+# Set the THRUST_BACKEND variable for selecting the Thrust device backend
+if(NOT DEFINED THRUST_BACKEND)
+    set(THRUST_BACKEND CPP CACHE STRING "Select the Thrust backend (CPP, OMP, CUDA)")
+endif()
+
+message(STATUS "Using Thrust Backend: ${THRUST_BACKEND}")
+
 
 set(cmake_opts
   -D "CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
@@ -37,10 +44,9 @@ cccl_add_compile_test(test_name
   basic
   "default"
   ${cmake_opts}
+  -D "THRUST_BACKEND=${THRUST_BACKEND}"
   ${cmake_cpm_opts}
 )
-
-find_package(CUDAToolkit REQUIRED)
 
 if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
   cccl_add_compile_test(test_name
@@ -48,6 +54,8 @@ if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
     cudax
     "default"
     ${cmake_opts}
+    -D "THRUST_BACKEND=${THRUST_BACKEND}"
     ${cmake_cpm_opts}
   )
 endif()
+
