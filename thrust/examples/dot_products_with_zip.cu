@@ -91,9 +91,9 @@ int main()
   // Alternatively, we can avoid creating variables for X_first, X_last,
   // and Y_first and invoke transform() directly.
   thrust::transform(
-    thrust::make_zip_iterator(thrust::make_tuple(A0.begin(), A1.begin(), A2.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(A0.end(), A1.end(), A2.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(B0.begin(), B1.begin(), B2.begin())),
+    thrust::make_zip_iterator(A0.begin(), A1.begin(), A2.begin()),
+    thrust::make_zip_iterator(A0.end(), A1.end(), A2.end()),
+    thrust::make_zip_iterator(B0.begin(), B1.begin(), B2.begin()),
     result.begin(),
     DotProduct());
 

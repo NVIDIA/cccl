@@ -472,15 +472,15 @@ void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
   using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
   ZipIterator1 h_result = thrust::remove_copy(
-    thrust::make_zip_iterator(thrust::make_tuple(h_data.begin(), h_data.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(h_data.end(), h_data.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(h_output.begin(), thrust::make_discard_iterator())),
+    thrust::make_zip_iterator(h_data.begin(), h_data.begin()),
+    thrust::make_zip_iterator(h_data.end(), h_data.end()),
+    thrust::make_zip_iterator(h_output.begin(), thrust::make_discard_iterator()),
     thrust::make_tuple(T(0), T(0)));
 
   ZipIterator2 d_result = thrust::remove_copy(
-    thrust::make_zip_iterator(thrust::make_tuple(d_data.begin(), d_data.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(d_data.end(), d_data.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(d_output.begin(), thrust::make_discard_iterator())),
+    thrust::make_zip_iterator(d_data.begin(), d_data.begin()),
+    thrust::make_zip_iterator(d_data.end(), d_data.end()),
+    thrust::make_zip_iterator(d_output.begin(), thrust::make_discard_iterator()),
     thrust::make_tuple(T(0), T(0)));
 
   thrust::discard_iterator<> reference(num_nonzeros);

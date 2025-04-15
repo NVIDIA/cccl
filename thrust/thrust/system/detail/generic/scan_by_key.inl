@@ -128,9 +128,9 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
     //    http://mgarland.org/files/papers/nvr-2008-003.pdf
     thrust::inclusive_scan(
       exec,
-      thrust::make_zip_iterator(thrust::make_tuple(first2, flags.begin())),
-      thrust::make_zip_iterator(thrust::make_tuple(first2, flags.begin())) + n,
-      thrust::make_zip_iterator(thrust::make_tuple(result, flags.begin())),
+      thrust::make_zip_iterator(first2, flags.begin()),
+      thrust::make_zip_iterator(first2, flags.begin()) + n,
+      thrust::make_zip_iterator(result, flags.begin()),
       detail::segmented_scan_functor<OutputType, HeadFlagType, AssociativeOperator>(binary_op));
   }
 
@@ -223,9 +223,9 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
     //    http://mgarland.org/files/papers/nvr-2008-003.pdf
     thrust::inclusive_scan(
       exec,
-      thrust::make_zip_iterator(thrust::make_tuple(temp.begin(), flags.begin())),
-      thrust::make_zip_iterator(thrust::make_tuple(temp.begin(), flags.begin())) + n,
-      thrust::make_zip_iterator(thrust::make_tuple(result, flags.begin())),
+      thrust::make_zip_iterator(temp.begin(), flags.begin()),
+      thrust::make_zip_iterator(temp.begin(), flags.begin()) + n,
+      thrust::make_zip_iterator(result, flags.begin()),
       detail::segmented_scan_functor<OutputType, HeadFlagType, AssociativeOperator>(binary_op));
   }
 
