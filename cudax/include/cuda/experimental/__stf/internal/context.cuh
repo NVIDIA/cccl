@@ -374,12 +374,12 @@ public:
     }
   }
 
-  auto logical_token()
+  auto token()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
-        return self.logical_token();
+        return self.token();
       },
       payload);
   }
@@ -1471,15 +1471,15 @@ UNITTEST("cuda stream place multi-gpu")
   ctx.finalize();
 };
 
-// Ensure we can skip logical tokens
-UNITTEST("logical token elision")
+// Ensure we can skip tokens
+UNITTEST("token elision")
 {
   context ctx;
 
   int buf[1024];
 
-  auto lA = ctx.logical_token();
-  auto lB = ctx.logical_token();
+  auto lA = ctx.token();
+  auto lB = ctx.token();
   auto lC = ctx.logical_data(buf);
 
   // with all arguments
@@ -1493,6 +1493,26 @@ UNITTEST("logical token elision")
 
   // with argument elision
   ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
+
+  ctx.finalize();
+};
+
+// Use the token type shorthand
+UNITTEST("token vector")
+{
+  context ctx;
+
+  ::std::vector<token> tokens(4);
+
+  for (size_t i = 0; i < 4; i++)
+  {
+    tokens[i] = ctx.token();
+  }
+
+  ctx.task(tokens[0].write())->*[](cudaStream_t) {};
+  ctx.task(tokens[0].read(), tokens[1].write())->*[](cudaStream_t) {};
+  ctx.task(tokens[0].read(), tokens[2].write())->*[](cudaStream_t) {};
+  ctx.task(tokens[1].read(), tokens[2].read(), tokens[3].write())->*[](cudaStream_t) {};
 
   ctx.finalize();
 };

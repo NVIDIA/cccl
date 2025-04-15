@@ -257,7 +257,7 @@ C2H_TEST("Smoke", "[device]")
         | device::attrs::memory_pool_supported_handle_types.win32_kmt
         | device::attrs::memory_pool_supported_handle_types.fabric;
       auto handle_types = device_ref(0).attr(device::attrs::memory_pool_supported_handle_types);
-      CUDAX_REQUIRE(handle_types <= all_handle_types);
+      CUDAX_REQUIRE(static_cast<int>(handle_types) <= static_cast<int>(all_handle_types));
     }
 
 #if CUDART_VERSION >= 12020

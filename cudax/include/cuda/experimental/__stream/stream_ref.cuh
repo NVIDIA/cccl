@@ -98,14 +98,7 @@ struct stream_ref : ::cuda::stream_ref
     return timed_event(*this, __flags);
   }
 
-  //! \brief Synchronizes the wrapped stream.
-  //!
-  //! \throws cuda::cuda_error if synchronization fails.
-  //!
-  _CUDAX_TRIVIAL_HOST_API void wait() const
-  {
-    this->::cuda::stream_ref::wait();
-  }
+  using ::cuda::stream_ref::sync;
 
   //! @brief Make all future work submitted into this stream depend on completion of the specified event
   //!

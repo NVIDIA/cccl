@@ -78,7 +78,7 @@ void bench_transform(
   TransformOp transform_op,
   ExecTag exec_tag = nvbench::exec_tag::no_batch)
 {
-  state.exec(exec_tag, [&](const nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | exec_tag, [&](const nvbench::launch& launch) {
     cub::detail::transform::dispatch_t<
       cub::detail::transform::requires_stable_address::no,
       OffsetT,

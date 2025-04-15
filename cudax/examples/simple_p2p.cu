@@ -100,7 +100,7 @@ void benchmark_cross_device_ping_pong_copy(
   }
 
   auto end_event = dev1_stream.record_timed_event();
-  dev1_stream.wait();
+  dev1_stream.sync();
   cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("Peer copy between GPU%d and GPU%d: %.2fGB/s\n",
          dev0_stream.get_device().get(),
@@ -152,7 +152,7 @@ void test_cross_device_access_from_kernel(
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", dev0.get());
   cudax::copy_bytes(dev0_stream, dev0_buffer, host_buffer);
-  dev0_stream.wait();
+  dev0_stream.sync();
 
   int error_count = 0;
   for (size_t i = 0; i < host_buffer.size(); i++)

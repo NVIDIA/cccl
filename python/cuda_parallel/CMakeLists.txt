@@ -28,14 +28,8 @@ install(
 find_package(Python3 COMPONENTS Interpreter Development.Module REQUIRED)
 
 get_filename_component(_python_path "${Python3_EXECUTABLE}" PATH)
-find_program(
-    CYTHON_EXECUTABLE
-    NAMES cython cython.bat cython3
-    HINTS "${_python_path}"
-    DOC "path to the cython executable"
-)
 
-set(CYTHON_version_command "${CYTHON_EXECUTABLE}" --version)
+set(CYTHON_version_command "${Python3_EXECUTABLE}" -m cython --version)
 execute_process(COMMAND ${CYTHON_version_command}
     OUTPUT_VARIABLE CYTHON_version_output
     ERROR_VARIABLE CYTHON_version_error
@@ -71,7 +65,7 @@ set(_generated_extension_src "${cuda_parallel_BINARY_DIR}/_bindings.c")
 set(_depfile "${cuda_parallel_BINARY_DIR}/_bindings.c.dep")
 add_custom_command(
     OUTPUT "${_generated_extension_src}"
-    COMMAND ${CYTHON_EXECUTABLE}
+    COMMAND "${Python3_EXECUTABLE}" -m cython
     ARGS ${CYTHON_FLAGS_LIST} "${pyx_source_file}" --output-file ${_generated_extension_src}
     DEPENDS "${pyx_source_file}"
     DEPFILE "${_depfile}"
