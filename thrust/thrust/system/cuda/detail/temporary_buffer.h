@@ -65,7 +65,7 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
 {
   void* void_ptr = raw_pointer_cast(ptr);
 
-  cudaError_t status = cudaFreeAsync(void_ptr , nullptr);
+  cudaError_t status = cudaFreeAsync(void_ptr, nullptr);
 
   if (status != cudaSuccess)
   {
