@@ -251,13 +251,11 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
   using segment_index_t = ::cuda::std::int64_t;
   using segment_size_t  = int; // fixed size segmented reduce supports only `int` as segment size
 
-  CAPTURE(c2h::type_name<offset_t>());
-
   const auto num_segments = static_cast<segment_index_t>(::cuda::std::numeric_limits<std::int32_t>::max()) + 1;
   constexpr segment_size_t segment_size = 257; // smallest large segment size which will use block reduction
   const ::cuda::std::int64_t num_items  = num_segments * segment_size;
 
-  // // Input data
+  // Input data
   const auto segment_index_it = thrust::make_counting_iterator(segment_index_t{});
 
   // Segment offsets
