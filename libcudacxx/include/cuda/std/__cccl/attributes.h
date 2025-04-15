@@ -113,8 +113,12 @@
 #  define _CCCL_PURE
 #endif
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(const) || _CCCL_COMPILER(CLANG)
-#  define _CCCL_CONST [[gnu::const]]
+#if !_CCCL_COMPILER(MSVC) // _CCCL_HAS_CPP_ATTRIBUTE(const) doesn't work with MSVC
+#  if _CCCL_HAS_CPP_ATTRIBUTE(const) || _CCCL_COMPILER(CLANG)
+#    define _CCCL_CONST [[gnu::const]]
+#  else
+#    define _CCCL_CONST _CCCL_PURE
+#  endif
 #else
 #  define _CCCL_CONST _CCCL_PURE
 #endif
