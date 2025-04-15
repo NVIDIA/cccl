@@ -6,6 +6,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// UNSUPPORTED: msvc-19.29, msvc-19.42
 
 #include <cuda/std/utility>
 
