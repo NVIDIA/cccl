@@ -22,6 +22,9 @@ The function computes the integer square root of the input value rounded down.
 **Constraints**
 
 - ``T`` is an integer type.
+
+**Preconditions**
+
 - ``value`` is non-negative.
 
 Example
