@@ -300,7 +300,7 @@ struct DispatchStreamingReduceByKey
               0,
               equality_op,
               reduction_op,
-              current_num_items,
+              static_cast<local_offset_t>(current_num_items),
               streaming_context);
 
       // Check for failure to launch
