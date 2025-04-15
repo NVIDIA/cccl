@@ -99,7 +99,8 @@
 #endif
 
 #if _CCCL_CUDA_COMPILER(NVCC)
-#  if _CCCL_CUDA_COMPILER(NVCC, ==, 12) && (_CCCL_COMPILER(CLANG, <=, 14) || _CCCL_COMPILER(MSVC, <=, 19, 29))
+#  if _CCCL_CUDA_COMPILER(NVCC, ==, 12) \
+    && (_CCCL_COMPILER(CLANG, <=, 14) || _CCCL_COMPILER(MSVC, <=, 19, 29) || _CCCL_COMPILER(GCC, <=, 9))
 #    define _CCCL_PURE
 #  else
 #    define _CCCL_PURE __nv_pure__
