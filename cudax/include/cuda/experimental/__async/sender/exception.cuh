@@ -23,16 +23,17 @@
 
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <exception> // IWYU pragma: keep export
+#include <exception> // IWYU pragma: export
 
 #if defined(__CUDACC__)
 #  include <nv/target>
 #  define _CUDAX_CATCH(...)
 #  define _CUDAX_TRY(_TRY, _CATCH) \
-    NV_IF_TARGET(NV_IS_HOST, (try { _NV_EVAL _TRY } catch (...){_NV_EVAL _CATCH}), ({_NV_EVAL _TRY}))
+    NV_IF_TARGET(                  \
+      NV_IS_HOST, (try { _CCCL_PP_EXPAND _TRY } catch (...){_CCCL_PP_EXPAND _CATCH}), ({_CCCL_PP_EXPAND _TRY}))
 #else
 #  define _CUDAX_CATCH(...)
-#  define _CUDAX_TRY(_TRY, _CATCH) _NV_EVAL(try { _NV_EVAL _TRY } catch (...){_NV_EVAL _CATCH})
+#  define _CUDAX_TRY(_TRY, _CATCH) _NV_EVAL(try { _CCCL_PP_EXPAND _TRY } catch (...){_CCCL_PP_EXPAND _CATCH})
 #endif
 
 #if defined(__CUDA_ARCH__)

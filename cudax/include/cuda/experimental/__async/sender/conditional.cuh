@@ -33,9 +33,8 @@
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 #include <cuda/experimental/__detail/config.cuh>
-
-#include <exception>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -60,9 +59,9 @@ struct __cond_t
   template <class _Pred, class _Then, class _Else>
   struct __data
   {
-    _Pred __pred_;
-    _Then __then_;
-    _Else __else_;
+    _Pred pred;
+    _Then on_true;
+    _Else on_false;
   };
 
   template <class... _As>
@@ -138,16 +137,16 @@ struct __cond_t
       auto __just = just_from(__cond_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
       _CUDAX_TRY( //
         ({        //
-          if (static_cast<_Pred&&>(__data_.__pred_)(__as...))
+          if (static_cast<_Pred&&>(__data_.pred)(__as...))
           {
             auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Then&&>(__data_.__then_)(__just), __rcvr_ref{__rcvr_});
+              __ops_.__emplace_from(connect, static_cast<_Then&&>(__data_.on_true)(__just), __rcvr_ref{__rcvr_});
             __async::start(__op);
           }
           else
           {
             auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Else&&>(__data_.__else_)(__just), __rcvr_ref{__rcvr_});
+              __ops_.__emplace_from(connect, static_cast<_Else&&>(__data_.on_false)(__just), __rcvr_ref{__rcvr_});
             __async::start(__op);
           }
         }),
@@ -223,7 +222,7 @@ template <class _Sndr, class _Pred, class _Then, class _Else>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t
 {
   using __data_t = __cond_t::__data<_Pred, _Then, _Else>;
-  __cond_t __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __cond_t __tag_;
   __data_t __data_;
   _Sndr __sndr_;
 
@@ -289,7 +288,11 @@ _CUDAX_TRIVIAL_API auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_S
     {}, static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_), static_cast<_Sndr&&>(__sndr)};
 }
 
-_CCCL_GLOBAL_CONSTANT __cond_t conditional{};
+template <class _Sndr, class _Pred, class _Then, class _Else>
+inline constexpr int structured_binding_size<__cond_t::__sndr_t<_Sndr, _Pred, _Then, _Else>> = 3;
+
+using conditional_t = __cond_t;
+_CCCL_GLOBAL_CONSTANT conditional_t conditional{};
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>
