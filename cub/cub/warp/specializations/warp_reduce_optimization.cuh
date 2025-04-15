@@ -98,7 +98,7 @@ warp_reduce_redux_op(Input input, ReductionOp reduction_op, WarpConfigT config)
       return ::__reduce_max_sync(mask, static_cast<cast_t>(input));
     }
   }
-  else if constexpr (is_same_v<Input, float> && is_cuda_std_min_max_v<ReductionOp, Input>)
+  else if constexpr (is_same_v<Input, float> && is_cuda_minimum_maximum_v<ReductionOp, Input>)
   {
     return cub::internal::reduce_sm100a_sync(reduction_op, input, mask);
   }
@@ -198,7 +198,7 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_co
 }
 
 _CCCL_TEMPLATE(typename Input, typename ReductionOp, typename WarpConfigT)
-_CCCL_REQUIRES(cub::internal::is_cuda_std_min_max_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
+_CCCL_REQUIRES(cub::internal::is_cuda_minimum_maximum_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input
 warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_config)
 {
@@ -259,10 +259,10 @@ template <typename Input, typename ReductionOp, typename WarpConfigT>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
 warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
 {
-  using cub::detail::unsafe_bitcast;
   using cub::internal::comparable_int_to_floating_point;
   using cub::internal::floating_point_to_comparable_int;
   using cub::internal::logical_lane_id;
+  using cub::internal::unsafe_bitcast;
   using cub::internal::warp_reduce_dispatch;
   using cub::internal::warp_reduce_generic;
   using cub::internal::warp_reduce_recursive;
@@ -281,7 +281,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
     return Input{};
   }
   // [Min/Max]: float, double
-  if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && _CUDA_VSTD::is_floating_point_v<Input>)
+  if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && _CUDA_VSTD::is_floating_point_v<Input>)
   {
     if constexpr (is_same_v<Input, float> && enable_redux && __cccl_ptx_isa >= 860)
     {
@@ -293,19 +293,19 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
     return unsafe_bitcast<Input>(result_rev);
   }
   // [Min/Max]: __half, __half2
-  else if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && is_any_half_v<Input>)
+  else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_half_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);))
     _CCCL_ASSERT(false, "__half is not supported before SM53");
   }
   // [Min/Max]: __nv_bfloat16, __nv_bfloat162
-  else if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
+  else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_shuffle_op(input, reduction_op, config);))
     _CCCL_ASSERT(false, "bfloat16 is not supported before SM80");
   }
   // [Min/Max]: short2, ushort2
-  else if constexpr (is_cuda_std_min_max_v<ReductionOp, Input> && is_any_short2_v<Input> && __cccl_ptx_isa >= 800)
+  else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_short2_v<Input> && __cccl_ptx_isa >= 800)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
                       (return warp_reduce_shuffle_op(input, reduction_op, config);),
@@ -368,7 +368,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   }
   // Any std operator: small integrals (int8, uint8, int16, uint16, int32, uint32)
   //    [Plus]:        float, double
-  else if constexpr (is_cuda_std_operator_v<ReductionOp, Input>
+  else if constexpr (is_cuda_operator_v<ReductionOp, Input>
                      && (is_small_integer || _CUDA_VSTD::is_floating_point_v<Input>) )
   {
     static_assert(!is_cuda_std_bitwise_v<ReductionOp, Input> || is_unsigned_v<Input>,
@@ -382,7 +382,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   else
   {
     // Any std operator: large integrals
-    if constexpr (is_cuda_std_operator_v<ReductionOp, Input> && is_integral_v<Input> && enable_redux)
+    if constexpr (is_cuda_operator_v<ReductionOp, Input> && is_integral_v<Input> && enable_redux)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op, config);));
     }

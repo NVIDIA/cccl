@@ -36,11 +36,10 @@
 #endif // no system header
 
 CUB_NAMESPACE_BEGIN
+namespace internal
+{
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
-namespace detail
-{
 
 // NOTE: bit_cast cannot be always used because __half, __nv_bfloat16, etc. are not trivially copyable
 template <typename Output, typename Input>
@@ -52,8 +51,7 @@ template <typename Output, typename Input>
   return output;
 }
 
-} // namespace detail
-
 #endif // !_CCCL_DOXYGEN_INVOKED
 
+} // namespace internal
 CUB_NAMESPACE_END

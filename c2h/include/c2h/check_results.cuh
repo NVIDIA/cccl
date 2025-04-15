@@ -26,34 +26,12 @@
  ******************************************************************************/
 #pragma once
 
+#include <cub/thread/thread_operators.cuh>
+
 #include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/type_traits>
 
 #include "c2h/catch2_test_helper.h"
-
-template <typename T>
-inline constexpr bool is_any_bfloat16_v = false;
-
-template <>
-inline constexpr bool is_any_bfloat16_v<__nv_bfloat16> = true;
-
-template <>
-inline constexpr bool is_any_bfloat16_v<__nv_bfloat162> = true;
-
-template <>
-inline constexpr bool is_any_bfloat16_v<cuda::std::complex<__nv_bfloat16>> = true;
-
-template <typename T>
-inline constexpr bool is_any_half_v = false;
-
-template <>
-inline constexpr bool is_any_half_v<__half> = true;
-
-template <>
-inline constexpr bool is_any_half_v<__half2> = true;
-
-template <>
-inline constexpr bool is_any_half_v<cuda::std::complex<__half>> = true;
 
 /**
  * @brief Compares the results returned from system under test against the expected results.
@@ -62,6 +40,7 @@ inline constexpr bool is_any_half_v<cuda::std::complex<__half>> = true;
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
 {
+  using namespace cub::internal;
   int device_id                = 0;
   int compute_capability_major = 0;
   int compute_capability_minor = 0;

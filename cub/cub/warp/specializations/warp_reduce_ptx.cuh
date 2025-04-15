@@ -36,12 +36,11 @@
 #endif // no system header
 
 #include <cub/detail/unsafe_bitcast.cuh>
-#include <cub/util_arch.cuh>
+#include <cub/util_arch.cuh> // CUB_PTX_ARCH
 #include <cub/warp/specializations/warp_reduce_config.cuh>
-#include <cub/warp/warp_utils.cuh>
+#include <cub/warp/warp_utils.cuh> // logical_warp_id
 
 #include <cuda/functional>
-#include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -67,7 +66,7 @@ namespace internal
   [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                       \
     OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
   {                                                                                                                   \
-    auto tmp = cub::detail::unsafe_bitcast<uint16_t>(value);                                                          \
+    auto tmp = cub::internal::unsafe_bitcast<uint16_t>(value);                                                        \
     asm volatile(                                                                                                     \
       "{                                                                                                      \n\t\t" \
       ".reg .pred p;                                                                                          \n\t\t" \
@@ -81,7 +80,7 @@ namespace internal
       "}"                                                                                                             \
       : "+h"(tmp)                                                                                                     \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
-    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                    \
+    return cub::internal::unsafe_bitcast<TYPE>(tmp);                                                                  \
   }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -93,7 +92,7 @@ namespace internal
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                     \
     OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
   {                                                                                                                   \
-    auto tmp = cub::detail::unsafe_bitcast<uint32_t>(value);                                                          \
+    auto tmp = cub::internal::unsafe_bitcast<uint32_t>(value);                                                        \
     asm volatile(                                                                                                     \
       "{                                                                                                      \n\t\t" \
       ".reg .pred p;                                                                                          \n\t\t" \
@@ -103,7 +102,7 @@ namespace internal
       "}"                                                                                                             \
       : "+r"(tmp)                                                                                                     \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
-    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                    \
+    return cub::internal::unsafe_bitcast<TYPE>(tmp);                                                                  \
   }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -115,7 +114,7 @@ namespace internal
   [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                       \
     OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
   {                                                                                                                   \
-    auto tmp = cub::detail::unsafe_bitcast<uint64_t>(value);                                                          \
+    auto tmp = cub::internal::unsafe_bitcast<uint64_t>(value);                                                        \
     asm volatile(                                                                                                     \
       "{                                                                                                      \n\t\t" \
       ".reg .pred p;                                                                                          \n\t\t" \
@@ -130,7 +129,7 @@ namespace internal
       "}"                                                                                                             \
       : "+l"(tmp)                                                                                                     \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
-    return cub::detail::unsafe_bitcast<TYPE>(tmp);                                                                    \
+    return cub::internal::unsafe_bitcast<TYPE>(tmp);                                                                  \
   }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -265,7 +264,7 @@ template <typename T, typename ReductionOp>
 {
   using namespace _CUDA_VSTD;
 #if __cccl_ptx_isa >= 860
-  static_assert(is_same_v<T, float> && cub::internal::is_cuda_std_min_max_v<ReductionOp, T>);
+  static_assert(is_same_v<T, float> && cub::internal::is_cuda_minimum_maximum_v<ReductionOp, T>);
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (return cub::internal::redux_sm100a_op(reduction_op, value, mask);),
                (return cub::internal::redux_min_max_sync_is_not_supported_before_sm100a();))

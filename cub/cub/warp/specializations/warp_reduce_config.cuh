@@ -38,6 +38,7 @@
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
 /***********************************************************************************************************************
@@ -143,16 +144,26 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
     static_assert(last_pos.rank_dynamic() == 1, "last_pos must be dynamic with segmented reductions");
     static_assert(result_mode == first_lane_result, "result_mode must be first_lane_result with segmented reductions");
   }
+#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
   // Check last position
-  _CCCL_ASSERT(last_pos.extent(0) >= 0 && last_pos.extent(0) <= logical_size, "invalid last valid position");
+  constexpr auto limit = is_segmented ? detail::warp_threads : logical_size;
+  _CCCL_ASSERT(last_pos.extent(0) >= 0 && last_pos.extent(0) < limit, "invalid last position");
   // Check lane mask
-  constexpr int num_logical_warps = (logical_mode == single_reduction) ? 1 : detail::warp_threads / logical_size;
-  uint32_t logical_mask           = 0;
-  for (int i = 0; i < num_logical_warps; i++)
+  uint32_t logical_mask = 0;
+  if constexpr (!is_segmented)
   {
-    logical_mask |= ::cuda::bitmask<uint32_t>(i * logical_size, last_pos.extent(0));
+    constexpr int num_logical_warps = (logical_mode == single_reduction) ? 1 : detail::warp_threads / logical_size;
+    for (int i = 0; i < num_logical_warps; i++)
+    {
+      logical_mask |= ::cuda::bitmask<uint32_t>(i * logical_size, last_pos.extent(0));
+    }
+  }
+  else
+  {
+    auto logical_mask = (logical_mode == single_reduction) ? ::cuda::bitmask<uint32_t>(0, logical_size) : 0xFFFFFFFF;
   }
   _CCCL_ASSERT((::__activemask() & logical_mask) == logical_mask, "Invalid lane mask");
+#endif
 }
 
 } // namespace internal

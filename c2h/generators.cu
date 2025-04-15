@@ -40,9 +40,8 @@
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/std/cstdint>
 #include <cuda/type_traits>
-
-#include <cstdint>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
@@ -624,8 +623,6 @@ VEC_SPECIALIZATION(short, 3);
 VEC_SPECIALIZATION(short, 4);
 
 VEC_SPECIALIZATION(ushort, 2);
-VEC_SPECIALIZATION(ushort, 3);
-VEC_SPECIALIZATION(ushort, 4);
 
 VEC_SPECIALIZATION(int, 2);
 VEC_SPECIALIZATION(int, 3);
