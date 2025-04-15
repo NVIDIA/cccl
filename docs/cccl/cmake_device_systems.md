@@ -2,6 +2,7 @@
 
 This guide shows how to compile a Thrust-based project using different device backends (`CPP`, `OMP`, `CUDA`) using CMake.
 
+
 ## Example Project
 
 See: [`examples/device_system_selector`](../examples/device_system_selector)
