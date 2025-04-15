@@ -224,6 +224,9 @@ void DGEMM(
     dev, A.get_handle(A_row, A_col).read(), B.get_handle(B_row, B_col).read(), C.get_handle(C_row, C_col).rw());
   t.set_symbol("DGEMM");
 
+  // To ensure this is done lazily, but outside a stream capture
+  auto ignored = get_cublas_handle();
+
   t->*[&](cudaStream_t stream, auto tA, auto tB, auto tC) {
     cuda_safe_call(cublasSetStream(get_cublas_handle(), stream));
     int k = tA.extent(transa == CUBLAS_OP_N ? 1 : 0);
