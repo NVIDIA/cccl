@@ -61,7 +61,7 @@ int main()
     thrust::remove_if(thrust::make_zip_iterator(thrust::make_tuple(x.begin(), y.begin())),
                       thrust::make_zip_iterator(thrust::make_tuple(x.end(), y.end())),
                       is_outside_circle<float>())
-    - thrust::make_zip_iterator(thrust::make_tuple(x.begin(), y.begin()));
+    - thrust::make_zip_iterator(x.begin(), y.begin());
 
   // resize the vectors (note: this does not free any memory)
   x.resize(new_size);

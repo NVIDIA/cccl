@@ -79,9 +79,9 @@ int main()
   using Float3Iterator     = thrust::zip_iterator<FloatIteratorTuple>;
 
   // Now we'll create some zip_iterators for A and B
-  Float3Iterator A_first = thrust::make_zip_iterator(thrust::make_tuple(A0.begin(), A1.begin(), A2.begin()));
-  Float3Iterator A_last  = thrust::make_zip_iterator(thrust::make_tuple(A0.end(), A1.end(), A2.end()));
-  Float3Iterator B_first = thrust::make_zip_iterator(thrust::make_tuple(B0.begin(), B1.begin(), B2.begin()));
+  Float3Iterator A_first = thrust::make_zip_iterator(A0.begin(), A1.begin(), A2.begin());
+  Float3Iterator A_last  = thrust::make_zip_iterator(A0.end(), A1.end(), A2.end());
+  Float3Iterator B_first = thrust::make_zip_iterator(B0.begin(), B1.begin(), B2.begin());
 
   // Finally, we pass the zip_iterators into transform() as if they
   // were 'normal' iterators for a device_vector<Float3>.
