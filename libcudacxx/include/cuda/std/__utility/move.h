@@ -50,7 +50,7 @@ using ::std::move_if_noexcept;
 
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE() vvv
 
-#  define _CCCL_MOVE(...) ::cuda::std::move(__VA_ARGS__)
+#  define _CCCL_MOVE(...) _CUDA_VSTD::move(__VA_ARGS__)
 
 template <class _Tp>
 using __move_if_noexcept_result_t =
