@@ -169,6 +169,7 @@ class NdArrayIterator(_iterators.IteratorBase):
             numba_type=numba_type,
             state_type=state_numba_type,
             value_type=value_type,
+            iterator_io=_iterators.IteratorIOKind.INPUT,
         )
 
     @staticmethod
