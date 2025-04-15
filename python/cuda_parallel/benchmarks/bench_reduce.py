@@ -42,21 +42,20 @@ def reduce_struct(input_array, build_only):
     cp.cuda.runtime.deviceSynchronize()
 
 
-def reduce_iterator(size, build_only):
+def reduce_iterator(inp, size, build_only):
     dt = cp.int32
-    d = iterators.CountingIterator(np.int32(0))
     res = cp.empty(tuple(), dtype=dt)
     h_init = np.zeros(tuple(), dtype=dt)
 
     def my_add(a, b):
         return a + b
 
-    alg = algorithms.reduce_into(d, res, my_add, h_init)
+    alg = algorithms.reduce_into(inp, res, my_add, h_init)
 
     if not build_only:
-        temp_bytes = alg(None, d, res, size, h_init)
+        temp_bytes = alg(None, inp, res, size, h_init)
         scratch = cp.empty(temp_bytes, dtype=cp.uint8)
-        alg(scratch, d, res, size, h_init)
+        alg(scratch, inp, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
 
@@ -77,8 +76,11 @@ def bench_compile_reduce_pointer(compile_benchmark):
 
 
 def bench_compile_reduce_iterator(compile_benchmark):
+
+    inp = iterators.CountingIterator(np.int32(0))
+    
     def run():
-        reduce_iterator(10, build_only=True)
+        reduce_iterator(inp, 10, build_only=True)
 
     compile_benchmark(algorithms.reduce_into, run)
 
@@ -93,8 +95,10 @@ def bench_reduce_pointer(benchmark, size):
 
 
 def bench_reduce_iterator(benchmark, size):
+    inp = iterators.CountingIterator(np.int32(0))
+
     def run():
-        reduce_iterator(size, build_only=False)
+        reduce_iterator(inp, size, build_only=False)
 
     benchmark(run)
 
