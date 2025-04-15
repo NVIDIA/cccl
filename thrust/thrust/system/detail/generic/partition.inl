@@ -102,7 +102,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   OutputIterator2 out_false,
   Predicate pred)
 {
-  auto not_pred = thrust::not_fn(pred);
+  auto not_pred = ::cuda::std::not_fn(pred);
 
   // remove_copy_if the true partition to out_true
   OutputIterator1 end_of_true_partition = thrust::remove_copy_if(exec, first, last, out_true, not_pred);
@@ -128,7 +128,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   OutputIterator2 out_false,
   Predicate pred)
 {
-  auto not_pred = thrust::not_fn(pred);
+  auto not_pred = ::cuda::std::not_fn(pred);
 
   // remove_copy_if the true partition to out_true
   OutputIterator1 end_of_true_partition = thrust::remove_copy_if(exec, first, last, stencil, out_true, not_pred);
@@ -203,8 +203,8 @@ _CCCL_HOST_DEVICE bool
 is_partitioned(thrust::execution_policy<DerivedPolicy>& exec, InputIterator first, InputIterator last, Predicate pred)
 {
   return thrust::is_sorted(exec,
-                           thrust::make_transform_iterator(first, thrust::not_fn(pred)),
-                           thrust::make_transform_iterator(last, thrust::not_fn(pred)));
+                           thrust::make_transform_iterator(first, ::cuda::std::not_fn(pred)),
+                           thrust::make_transform_iterator(last, ::cuda::std::not_fn(pred)));
 } // end is_partitioned()
 
 } // end namespace generic

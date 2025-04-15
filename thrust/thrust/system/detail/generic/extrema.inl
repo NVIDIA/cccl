@@ -161,7 +161,7 @@ min_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
-  return thrust::min_element(exec, first, last, thrust::less<value_type>());
+  return thrust::min_element(exec, first, last, ::cuda::std::less<value_type>());
 } // end min_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -192,7 +192,7 @@ max_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
-  return thrust::max_element(exec, first, last, thrust::less<value_type>());
+  return thrust::max_element(exec, first, last, ::cuda::std::less<value_type>());
 } // end max_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>
@@ -223,7 +223,7 @@ minmax_element(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator fi
 {
   using value_type = thrust::detail::it_value_t<ForwardIterator>;
 
-  return thrust::minmax_element(exec, first, last, thrust::less<value_type>());
+  return thrust::minmax_element(exec, first, last, ::cuda::std::less<value_type>());
 } // end minmax_element()
 
 template <typename DerivedPolicy, typename ForwardIterator, typename BinaryPredicate>

@@ -76,7 +76,7 @@ void _CCCL_HOST_DEVICE reverse(execution_policy<Derived>& policy, ItemsIt first,
   using difference_type = thrust::detail::it_difference_t<ItemsIt>;
 
   // find the midpoint of [first,last)
-  difference_type N = thrust::distance(first, last);
+  difference_type N = ::cuda::std::distance(first, last);
   ItemsIt mid(first);
   ::cuda::std::advance(mid, N / 2);
 

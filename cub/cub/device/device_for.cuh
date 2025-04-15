@@ -705,7 +705,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
 
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
@@ -832,7 +832,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 

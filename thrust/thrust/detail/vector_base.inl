@@ -253,7 +253,7 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    size_type new_size = thrust::distance(first, last);
+    size_type new_size = ::cuda::std::distance(first, last);
 
     allocate_and_copy(new_size, first, last, m_storage);
     m_size = new_size;
@@ -610,7 +610,7 @@ template <typename T, typename Alloc>
 typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator position, const T& x)
 {
   // find the index of the insertion
-  size_type index = thrust::distance(begin(), position);
+  size_type index = ::cuda::std::distance(begin(), position);
 
   // make the insertion
   insert(position, 1, x);
@@ -673,7 +673,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
   if (first != last)
   {
     // how many new elements will we create?
-    const size_type num_new_elements = thrust::distance(first, last);
+    const size_type num_new_elements = ::cuda::std::distance(first, last);
     if (capacity() - size() >= num_new_elements)
     {
       // we've got room for all of them
@@ -950,7 +950,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    const size_type n = thrust::distance(first, last);
+    const size_type n = ::cuda::std::distance(first, last);
     if (n > capacity())
     {
       storage_type new_storage(copy_allocator_t(), m_storage);
@@ -1104,7 +1104,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::false_type)
 {
-  it_difference_t<InputIterator1> n = thrust::distance(first1, last1);
+  it_difference_t<InputIterator1> n = ::cuda::std::distance(first1, last1);
 
   using FromSystem1 = typename thrust::iterator_system<InputIterator1>::type;
   using FromSystem2 = typename thrust::iterator_system<InputIterator2>::type;

@@ -46,12 +46,18 @@ THRUST_NAMESPACE_BEGIN
  *  \{
  */
 
-using ::cuda::std::divides;
-using ::cuda::std::minus;
-using ::cuda::std::modulus;
-using ::cuda::std::multiplies;
-using ::cuda::std::negate;
-using ::cuda::std::plus;
+template <class T = void>
+using divides CCCL_DEPRECATED_BECAUSE("Use cuda::std::divides instead") = ::cuda::std::divides<T>;
+template <class T = void>
+using minus CCCL_DEPRECATED_BECAUSE("Use cuda::std::minus instead") = ::cuda::std::minus<T>;
+template <class T = void>
+using modulus CCCL_DEPRECATED_BECAUSE("Use cuda::std::modulus instead") = ::cuda::std::modulus<T>;
+template <class T = void>
+using multiplies CCCL_DEPRECATED_BECAUSE("Use cuda::std::multiplies instead") = ::cuda::std::multiplies<T>;
+template <class T = void>
+using negate CCCL_DEPRECATED_BECAUSE("Use cuda::std::negate instead") = ::cuda::std::negate<T>;
+template <class T = void>
+using plus CCCL_DEPRECATED_BECAUSE("Use cuda::std::plus instead") = ::cuda::std::plus<T>;
 
 /*! \p square is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>square<T></tt>, and \c x is an object
@@ -112,20 +118,24 @@ struct square<void>
  *  \{
  */
 
-inline namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead") deprecated
-{
 //! deprecated [since 3.1]
-using ::cuda::std::equal_to;
+template <class T = void>
+using equal_to CCCL_DEPRECATED_BECAUSE("Use cuda::std::equal_to instead") = ::cuda::std::equal_to<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::greater;
+template <class T = void>
+using greater CCCL_DEPRECATED_BECAUSE("Use cuda::std::greater instead") = ::cuda::std::greater<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::greater_equal;
+template <class T = void>
+using greater_equal CCCL_DEPRECATED_BECAUSE("Use cuda::std::greater_equal instead") = ::cuda::std::greater_equal<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::less;
+template <class T = void>
+using less CCCL_DEPRECATED_BECAUSE("Use cuda::std::less instead") = ::cuda::std::less<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::less_equal;
+template <class T = void>
+using less_equal CCCL_DEPRECATED_BECAUSE("Use cuda::std::less_equal instead") = ::cuda::std::less_equal<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::not_equal_to;
+template <class T = void>
+using not_equal_to CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<T>;
 
 /*! \}
  */
@@ -136,11 +146,14 @@ using ::cuda::std::not_equal_to;
  */
 
 //! deprecated [since 3.1]
-using ::cuda::std::logical_and;
+template <class T = void>
+using logical_and CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_and instead") = ::cuda::std::logical_and<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::logical_not;
+template <class T = void>
+using logical_not CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_not instead") = ::cuda::std::logical_not<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::logical_or;
+template <class T = void>
+using logical_or CCCL_DEPRECATED_BECAUSE("Use cuda::std::logical_or instead") = ::cuda::std::logical_or<T>;
 
 /*! \}
  */
@@ -151,11 +164,14 @@ using ::cuda::std::logical_or;
  */
 
 //! deprecated [since 3.1]
-using ::cuda::std::bit_and;
+template <class T = void>
+using bit_and CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_and instead") = ::cuda::std::bit_and<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::bit_or;
+template <class T = void>
+using bit_or CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_or instead") = ::cuda::std::bit_or<T>;
 //! deprecated [since 3.1]
-using ::cuda::std::bit_xor;
+template <class T = void>
+using bit_xor CCCL_DEPRECATED_BECAUSE("Use cuda::std::bit_xor instead") = ::cuda::std::bit_xor<T>;
 
 /*! \}
  */
@@ -166,10 +182,11 @@ using ::cuda::std::bit_xor;
  */
 
 //! deprecated [since 3.1]
-using ::cuda::maximum;
+template <class T = void>
+using maximum CCCL_DEPRECATED_BECAUSE("Use cuda::maximum instead") = ::cuda::maximum<T>;
 //! deprecated [since 3.1]
-using ::cuda::minimum;
-} // namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead")deprecated
+template <class T = void>
+using minimum CCCL_DEPRECATED_BECAUSE("Use cuda::minimum instead") = ::cuda::minimum<T>;
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
@@ -262,11 +279,15 @@ struct project2nd<void, void>
  *  \{
  */
 
-inline namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead") deprecated
-{
 //! deprecated [since 3.1]
-using ::cuda::std::not_fn;
-} // namespace CCCL_DEPRECATED_BECAUSE("Use cuda::std:: instead")deprecated
+_CCCL_TEMPLATE(class _Fn)
+_CCCL_REQUIRES(::cuda::std::is_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>
+                 _CCCL_AND ::cuda::std::is_move_constructible_v<::cuda::std::decay_t<_Fn>>)
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_fn instead")
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto not_fn(_Fn&& __f)
+{
+  return ::cuda::std::not_fn(::cuda::std::forward<_Fn>(__f));
+}
 
 /*! \}
  */

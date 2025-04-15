@@ -520,7 +520,7 @@ void TestRemoveCopyIfToDiscardIterator(const size_t n)
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  size_t num_false = thrust::count_if(h_data.begin(), h_data.end(), thrust::not_fn(is_true<T>()));
+  size_t num_false = thrust::count_if(h_data.begin(), h_data.end(), ::cuda::std::not_fn(is_true<T>()));
 
   thrust::discard_iterator<> h_result =
     thrust::remove_copy_if(h_data.begin(), h_data.end(), thrust::make_discard_iterator(), is_true<T>());
@@ -572,7 +572,7 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
   thrust::host_vector<bool> h_stencil   = unittest::random_integers<bool>(n);
   thrust::device_vector<bool> d_stencil = h_stencil;
 
-  size_t num_false = thrust::count_if(h_stencil.begin(), h_stencil.end(), thrust::not_fn(is_true<T>()));
+  size_t num_false = thrust::count_if(h_stencil.begin(), h_stencil.end(), ::cuda::std::not_fn(is_true<T>()));
 
   thrust::discard_iterator<> h_result = thrust::remove_copy_if(
     h_data.begin(), h_data.end(), h_stencil.begin(), thrust::make_discard_iterator(), is_true<T>());

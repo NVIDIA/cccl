@@ -118,7 +118,7 @@ copy_if(tag, InputIterator1 first, InputIterator1 last, InputIterator2 stencil, 
   using Size = thrust::detail::it_difference_t<InputIterator1>;
   using Body = typename copy_if_detail::body<InputIterator1, InputIterator2, OutputIterator, Predicate, Size>;
 
-  Size n = thrust::distance(first, last);
+  Size n = ::cuda::std::distance(first, last);
 
   if (n != 0)
   {

@@ -243,7 +243,7 @@ inclusive_scan(tag, InputIterator first, InputIterator last, OutputIterator resu
   using ValueType = thrust::detail::it_value_t<InputIterator>;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
-  Size n     = thrust::distance(first, last);
+  Size n     = ::cuda::std::distance(first, last);
 
   if (n != 0)
   {
@@ -268,7 +268,7 @@ OutputIterator inclusive_scan(
     typename ::cuda::std::__accumulator_t<BinaryFunction, thrust::detail::it_value_t<InputIterator>, InitialValueType>;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
-  Size n     = thrust::distance(first, last);
+  Size n     = ::cuda::std::distance(first, last);
 
   if (n != 0)
   {
@@ -292,7 +292,7 @@ OutputIterator exclusive_scan(
   using ValueType = InitialValueType;
 
   using Size = thrust::detail::it_difference_t<InputIterator>;
-  Size n     = thrust::distance(first, last);
+  Size n     = ::cuda::std::distance(first, last);
 
   if (n != 0)
   {
