@@ -93,9 +93,6 @@ public:
   template <class _Values>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-  template <class _Values>
-  __sndr_t(_JustTag, _Values) -> __sndr_t<_Values>;
-
   template <class... _Ts>
   _CUDAX_TRIVIAL_API auto operator()(_Ts... __ts) const;
 };
@@ -137,17 +134,23 @@ _CUDAX_TRIVIAL_API auto __just_t<_Disposition>::operator()(_Ts... __ts) const
 {
 #if _CCCL_STD_VER >= 2020
   // In C++20 we can directly move-capture a variadic pack of arguments:
-  return __sndr_t{_JustTag{}, [... __ts = static_cast<_Ts&&>(__ts)](auto fn) mutable noexcept {
-                    static_assert(__nothrow_callable<decltype(fn), _Ts...>);
-                    return static_cast<decltype(fn)&&>(fn)(static_cast<_Ts&&>(__ts)...);
-                  }};
+  auto __mk_values = [&] {
+    return [... __ts = static_cast<_Ts&&>(__ts)](auto fn) mutable noexcept {
+      static_assert(__nothrow_callable<decltype(fn), _Ts...>);
+      return static_cast<decltype(fn)&&>(fn)(static_cast<_Ts&&>(__ts)...);
+    };
+  };
 #else
   // In C++17 we need to use a tuple to move-capture a variadic pack of arguments:
-  return __sndr_t{_JustTag{}, [__ts = __tupl{static_cast<_Ts&&>(__ts)...}](auto fn) mutable noexcept {
-                    static_assert(__nothrow_callable<decltype(fn), _Ts...>);
-                    return __ts.__apply(static_cast<decltype(fn)&&>(fn), static_cast<__tuple<_Ts...>&&>(__ts));
-                  }};
+  auto __mk_values = [&] {
+    return [__ts = __tupl{static_cast<_Ts&&>(__ts)...}](auto fn) mutable noexcept {
+      static_assert(__nothrow_callable<decltype(fn), _Ts...>);
+      return __ts.__apply(static_cast<decltype(fn)&&>(fn), static_cast<__tuple<_Ts...>&&>(__ts));
+    };
+  };
 #endif
+  using _Values = decltype(__mk_values());
+  return __sndr_t<_Values>{{}, __mk_values()};
 }
 
 template <class _Fn>
