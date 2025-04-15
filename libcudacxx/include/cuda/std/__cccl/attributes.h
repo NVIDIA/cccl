@@ -104,7 +104,7 @@
 #  else
 #    define _CCCL_PURE __nv_pure__
 #  endif
-#elif _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_CUDA_COMPILER(CLANG)
+#elif _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_COMPILER(CLANG)
 #  define _CCCL_PURE [[gnu::pure]]
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_PURE __declspec(noalias)
