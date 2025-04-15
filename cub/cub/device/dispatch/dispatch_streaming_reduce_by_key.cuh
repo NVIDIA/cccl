@@ -161,7 +161,7 @@ struct DispatchStreamingReduceByKey
 
     // The upper bound of for the number of items that a single kernel invocation will ever process
     auto capped_num_items_per_invocation = num_items;
-    if (use_streaming_invocation)
+    if constexpr (use_streaming_invocation)
     {
       capped_num_items_per_invocation = static_cast<global_offset_t>(_CUDA_VSTD::numeric_limits<local_offset_t>::max());
       // Make sure that the number of items is a multiple of tile size
@@ -175,10 +175,6 @@ struct DispatchStreamingReduceByKey
     // Number of invocations required to "iterate" over the total input (at least one iteration to process zero items)
     auto const num_partitions =
       (num_items == 0) ? global_offset_t{1} : ::cuda::ceil_div(num_items, capped_num_items_per_invocation);
-
-    // Make sure that non-streaming invocations do not end up being split into multiple partitions
-    _CCCL_ASSERT(use_streaming_invocation || num_partitions == 1,
-                 "Non-streaming invocations do not support multiple partitions");
 
     cudaError error = cudaSuccess;
 
