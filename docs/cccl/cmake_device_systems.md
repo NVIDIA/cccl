@@ -15,10 +15,14 @@ cmake -B build-cpp -DTHRUST_BACKEND=CPP
 cmake --build build-cpp
 
 **OMP Backend**
+
 cmake -B build-omp -DTHRUST_BACKEND=OMP
+
 cmake --build build-omp
 
 **CUDA Backend**
+
 cmake -B build-cuda -DTHRUST_BACKEND=CUDA
+
 cmake --build build-cuda
 
