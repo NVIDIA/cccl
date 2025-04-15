@@ -36,16 +36,25 @@ int main()
     return dist(rng);
   });
 
-  // Create a range to the row index of each element.
-  auto row_idx_begin = thrust::make_transform_iterator(flat_idx_begin, [=] __host__ __device__(int flat) {
-    return flat / cols;
+  // Create a range to the column index of each element.
+  auto col_idx_begin = thrust::make_transform_iterator(flat_idx_begin, [=] __host__ __device__(int flat) {
+    return flat / rows;
   });
-  auto row_idx_end   = row_idx_begin + M.size();
+  auto col_idx_end   = col_idx_begin + M.size();
 
-  // Sum each row, storing the result in a new vector.
-  thrust::universal_vector<int> sums(rows);
+  // Create a transposed view of the multidimensional array.
+  auto M_transposed = thrust::permutation_iterator(
+    M.data_handle(),
+    thrust::make_transform_iterator(thrust::make_counting_iterator(0), [=] __host__ __device__(int flat) {
+      int i = flat / cols;
+      int j = flat % cols;
+      return i + j * rows;
+    }));
+
+  // Sum each column, storing the result in a new vector.
+  thrust::universal_vector<int> sums(cols);
   thrust::reduce_by_key(
-    thrust::device, row_idx_begin, row_idx_end, M.data_handle(), thrust::discard_iterator(), sums.begin());
+    thrust::device, col_idx_begin, col_idx_end, M_transposed, thrust::discard_iterator(), sums.begin());
 
   // Output the result.
   thrust::for_each_n(thrust::seq, flat_idx_begin, rows, [&](int i) {
@@ -53,6 +62,18 @@ int main()
     std::for_each_n(flat_idx_begin, cols, [&](int j) {
       std::cout << std::setw(2) << M(i, j) << " ";
     });
-    std::cout << "] = " << sums[i] << "\n";
+    std::cout << "]\n";
   });
+
+  std::cout << "  ";
+  thrust::for_each_n(thrust::seq, flat_idx_begin, cols, [&](int) {
+    std::cout << " = ";
+  });
+  std::cout << "\n";
+
+  std::cout << "  ";
+  thrust::for_each_n(thrust::seq, flat_idx_begin, cols, [&](int j) {
+    std::cout << std::setw(2) << sums[j] << " ";
+  });
+  std::cout << "\n";
 }
