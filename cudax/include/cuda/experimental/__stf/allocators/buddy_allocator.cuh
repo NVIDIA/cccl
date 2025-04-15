@@ -249,8 +249,10 @@ private:
         , metadata(buffer_size, mv(prereqs))
     {}
 
-    per_place(const per_place&) = delete;
-    per_place(per_place&&)      = default;
+    per_place& operator=(const per_place&) = delete;
+    per_place& operator=(per_place&&)      = default;
+    per_place(const per_place&)            = delete;
+    per_place(per_place&&)                 = default;
 
     void* base         = nullptr;
     size_t buffer_size = 0;
