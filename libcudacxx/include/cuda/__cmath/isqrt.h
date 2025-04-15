@@ -37,30 +37,38 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @warning If \p __v is negative, the behavior is undefined
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp isqrt(const _Tp __v) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp isqrt(_Tp __v) noexcept
 {
   if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
   {
     _CCCL_ASSERT(__v >= _Tp{0}, "cuda::isqrt requires non-negative input");
   }
 
-  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
-
-  if (__v <= _Tp{1})
+  if (__v <= 1)
   {
     return __v;
   }
 
-  _Up __current{0};
-  _Up __next{_Up(_Up{1} << ((_CUDA_VSTD::bit_width(_Up(__v - 1)) + 1) / 2))};
+  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
 
-  do
+  const _Up __uv = static_cast<_Up>(__v);
+  _Up __ret{};
+  _Up __bit = static_cast<_Up>(_Up{1} << ((_CUDA_VSTD::bit_width(__uv) - 1) & (~1)));
+
+  while (__bit != 0)
   {
-    __current = __next;
-    __next    = _Up((__current + _Up(__v) / __current) / 2);
-  } while (__next < __current);
-
-  return static_cast<_Tp>(__current);
+    if (__uv >= __ret + __bit)
+    {
+      __uv -= __ret + __bit;
+      __ret = (__ret >> 1) + __bit;
+    }
+    else
+    {
+      __ret >>= 1;
+    }
+    __bit >>= 2;
+  }
+  return static_cast<_Tp>(__ret);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
