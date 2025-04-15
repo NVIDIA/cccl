@@ -64,13 +64,10 @@ void radix_sort(
   REQUIRE(sass.find("LDL") == std::string::npos);
   REQUIRE(sass.find("STL") == std::string::npos);
 
-  auto radix_sort_function =
-    sort_order == CCCL_ASCENDING ? cccl_device_ascending_radix_sort : cccl_device_descending_radix_sort;
-
   size_t temp_storage_bytes = 0;
   REQUIRE(
     CUDA_SUCCESS
-    == radix_sort_function(
+    == cccl_device_radix_sort(
       build,
       nullptr,
       &temp_storage_bytes,
@@ -90,7 +87,7 @@ void radix_sort(
 
   REQUIRE(
     CUDA_SUCCESS
-    == radix_sort_function(
+    == cccl_device_radix_sort(
       build,
       temp_storage.ptr,
       &temp_storage_bytes,
