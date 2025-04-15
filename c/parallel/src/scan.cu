@@ -253,6 +253,8 @@ struct __align__({1}) storage_t {{
     using cub::detail::RuntimeScanAgentPolicy;
     auto [scan_policy, scan_policy_str] = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT");
 
+    std::cout << "ScanPolicyT: " << scan_policy_str << std::endl;
+
     std::string final_src = std::format(
       R"XXX(
 {0}

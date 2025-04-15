@@ -553,12 +553,16 @@ namespace detail
 #  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD(field) \
     key<_CCCL_TO_STRING(_CCCL_PP_FIRST field)>() = value<(int) StaticPolicyT::_CCCL_PP_FIRST field>(),
 
-#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)                                     \
-    _CCCL_DEVICE static constexpr auto EncodedPolicy()                                      \
-    {                                                                                       \
-      using namespace ptx_json;                                                             \
-      return object<_CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD, __VA_ARGS__) \
-                      key<"__dummy">() = value<0>()>();                                     \
+#  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(delay_constructor, ...)                                           \
+    _CCCL_DEVICE static constexpr auto EncodedPolicy()                                                               \
+    {                                                                                                                \
+      using namespace ptx_json;                                                                                      \
+      return object<                                                                                                 \
+        _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD, __VA_ARGS__)                                      \
+          key<"inner_struct">          = string<_CCCL_TO_STRING(_CCCL_PP_FIRST delay_constructor)>(),                \
+        key<"delay_constructor_name">  = string<_CCCL_TO_STRING(_CCCL_PP_SECOND delay_constructor)>(),               \
+        key<"delay_constructor_value"> = string<_CCCL_TO_STRING(StaticPolicyT::_CCCL_PP_THIRD delay_constructor)>(), \
+        key<"__dummy">()               = value<0>()>();                                                                            \
     }
 #else
 #  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)
@@ -605,7 +609,7 @@ namespace detail
 template <typename T>
 _CCCL_CONCEPT always_true = true;
 
-#define CUB_DETAIL_POLICY_WRAPPER_DEFINE(concept_name, refines, ...)                                                   \
+#define CUB_DETAIL_POLICY_WRAPPER_DEFINE(concept_name, refines, delay_constructor, ...)                                \
   template <typename StaticPolicyT>                                                                                    \
   _CCCL_CONCEPT concept_name = _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_REFINE_CONCEPT, _CCCL_PP_EXPAND refines)    \
     _CCCL_REQUIRES_EXPR((StaticPolicyT))(true _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST, __VA_ARGS__)); \
@@ -616,7 +620,7 @@ _CCCL_CONCEPT always_true = true;
         : StaticPolicyT(base)                                                                                          \
     {}                                                                                                                 \
     _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ACCESSOR, __VA_ARGS__)                                                 \
-    CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(__VA_ARGS__)                                                              \
+    CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(delay_constructor, __VA_ARGS__)                                           \
   };                                                                                                                   \
   _CCCL_TEMPLATE(typename StaticPolicyT)                                                                               \
   _CCCL_REQUIRES(concept_name<StaticPolicyT>)                                                                          \
@@ -628,7 +632,11 @@ _CCCL_CONCEPT always_true = true;
 
 // Generic agent policy
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
-  GenericAgentPolicy, (always_true), (BLOCK_THREADS, BlockThreads, int), (ITEMS_PER_THREAD, ItemsPerThread, int) )
+  GenericAgentPolicy,
+  (always_true),
+  (0, 0, 0),
+  (BLOCK_THREADS, BlockThreads, int),
+  (ITEMS_PER_THREAD, ItemsPerThread, int) )
 
 _CCCL_TEMPLATE(typename PolicyT)
 _CCCL_REQUIRES((!GenericAgentPolicy<PolicyT>) )
