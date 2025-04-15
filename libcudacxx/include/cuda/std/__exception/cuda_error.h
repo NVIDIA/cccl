@@ -55,6 +55,10 @@ public:
   cuda_error(const int __status, const char* __msg, __msg_storage __msg_buffer = {0}) noexcept
       : ::std::runtime_error(__format_cuda_error(__status, __msg, __msg_buffer.__buffer))
   {}
+
+  cuda_error(const char* __msg)
+      : ::std::runtime_error(__msg)
+  {}
 };
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void
