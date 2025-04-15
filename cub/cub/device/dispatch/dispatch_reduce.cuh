@@ -1141,24 +1141,21 @@ struct DispatchFixedSizeSegmentedReduce
     }
 
     // assume large segment size problem
-    ::cuda::std::int64_t num_blocks = num_segments;
-    int num_segments_per_block      = 1;
+    int segments_per_block = 1;
 
     if (segment_size <= small_items_per_tile) // small segment size problem
     {
-      num_segments_per_block = ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
-      num_blocks             = ::cuda::ceil_div(num_segments, num_segments_per_block);
+      segments_per_block = ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
     }
     else if (segment_size <= medium_items_per_tile) // medium segment size problem
     {
-      num_segments_per_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
-      num_blocks             = ::cuda::ceil_div(num_segments, num_segments_per_block);
+      segments_per_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
     }
 
-    const auto num_blocks_per_invocation =
+    const auto num_segments_per_invocation =
       static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
 
-    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_blocks, num_blocks_per_invocation);
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
     // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
     // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
@@ -1169,8 +1166,6 @@ struct DispatchFixedSizeSegmentedReduce
       return cudaErrorInvalidValue;
     }
 
-    const auto num_segments_per_invocation = num_blocks_per_invocation * num_segments_per_block;
-
     cudaError error = cudaSuccess;
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
     {
@@ -1179,7 +1174,7 @@ struct DispatchFixedSizeSegmentedReduce
       const auto num_current_segments =
         ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
 
-      const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, num_segments_per_block);
+      const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
 
       launcher_factory(
         static_cast<::cuda::std::int32_t>(num_current_blocks), ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
