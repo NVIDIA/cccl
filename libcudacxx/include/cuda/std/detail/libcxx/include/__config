@@ -38,59 +38,6 @@ extern "C++" {
 #    define __has_extension(__x) 0
 #  endif
 
-#  ifdef __LITTLE_ENDIAN__
-#    if __LITTLE_ENDIAN__
-#      define _LIBCUDACXX_LITTLE_ENDIAN
-#    endif // __LITTLE_ENDIAN__
-#  endif // __LITTLE_ENDIAN__
-
-#  ifdef __BIG_ENDIAN__
-#    if __BIG_ENDIAN__
-#      define _LIBCUDACXX_BIG_ENDIAN
-#    endif // __BIG_ENDIAN__
-#  endif // __BIG_ENDIAN__
-
-#  ifdef __BYTE_ORDER__
-#    if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#      define _LIBCUDACXX_LITTLE_ENDIAN
-#    elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#      define _LIBCUDACXX_BIG_ENDIAN
-#    endif // __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-#  endif // __BYTE_ORDER__
-
-#  if defined(_WIN32)
-#    define _LIBCUDACXX_LITTLE_ENDIAN
-#    if (defined(_M_AMD64) || defined(__x86_64__)) || (defined(_M_ARM) || defined(__arm__))
-#      define _LIBCUDACXX_HAS_BITSCAN64
-#    endif
-
-// Some CRT APIs are unavailable to store apps
-#    if defined(WINAPI_FAMILY)
-#      include <winapifamily.h>
-#      if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP) \
-        && (!defined(WINAPI_PARTITION_SYSTEM) || !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_SYSTEM))
-#        define _LIBCUDACXX_WINDOWS_STORE_APP
-#      endif
-#    endif
-#  endif // defined(_WIN32)
-
-#  ifndef _LIBCUDACXX_LITTLE_ENDIAN
-#    if _CCCL_COMPILER(NVRTC)
-#      define _LIBCUDACXX_LITTLE_ENDIAN
-#    endif
-#  endif // _LIBCUDACXX_LITTLE_ENDIAN
-
-#  if !defined(_LIBCUDACXX_LITTLE_ENDIAN) && !defined(_LIBCUDACXX_BIG_ENDIAN)
-#    include <endian.h>
-#    if __BYTE_ORDER == __LITTLE_ENDIAN
-#      define _LIBCUDACXX_LITTLE_ENDIAN
-#    elif __BYTE_ORDER == __BIG_ENDIAN
-#      define _LIBCUDACXX_BIG_ENDIAN
-#    else // __BYTE_ORDER == __BIG_ENDIAN
-#      error unable to determine endian
-#    endif
-#  endif // !defined(_LIBCUDACXX_LITTLE_ENDIAN) && !defined(_LIBCUDACXX_BIG_ENDIAN)
-
 #  if _CCCL_HAS_ATTRIBUTE(__no_sanitize__) && !_CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_NO_CFI __attribute__((__no_sanitize__("cfi")))
 #  else

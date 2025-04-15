@@ -2439,6 +2439,9 @@ public:
   ///@}
 };
 
+// Shortcut type for the logical data produced by ctx.token()
+using token = logical_data<void_interface>;
+
 /**
  * @brief Reclaims memory from allocated data instances.
  *

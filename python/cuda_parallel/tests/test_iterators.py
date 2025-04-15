@@ -10,7 +10,8 @@ from cuda.parallel.experimental.iterators import (
     CacheModifiedInputIterator,
     ConstantIterator,
     CountingIterator,
-    ReverseIterator,
+    ReverseInputIterator,
+    ReverseOutputIterator,
     TransformIterator,
 )
 
@@ -115,7 +116,7 @@ def reverse_iterator_array(request):
 
 
 def test_reverse_iterator(reverse_iterator_array):
-    it = ReverseIterator(reverse_iterator_array)
+    it = ReverseInputIterator(reverse_iterator_array)
 
     # Create array of size 1 from memory pointer of last element
     arr = cp.ndarray(
@@ -129,15 +130,29 @@ def test_reverse_iterator(reverse_iterator_array):
     assert -999 == arr[0]
 
 
-def test_reverse_iterator_equality():
+def test_reverse_input_iterator_equality():
     ary1 = cp.asarray([0, 1, 2], dtype="int32")
     ary2 = cp.asarray([3, 4, 5], dtype="int32")
     ary3 = cp.asarray([0, 1, 2], dtype="int64")
 
-    it1 = ReverseIterator(ary1)
-    it2 = ReverseIterator(ary1)
-    it3 = ReverseIterator(ary2)
-    it4 = ReverseIterator(ary3)
+    it1 = ReverseInputIterator(ary1)
+    it2 = ReverseInputIterator(ary1)
+    it3 = ReverseInputIterator(ary2)
+    it4 = ReverseInputIterator(ary3)
+
+    assert it1.kind == it2.kind == it3.kind
+    assert it1.kind != it4.kind
+
+
+def test_reverse_output_iterator_equality():
+    ary1 = cp.asarray([0, 1, 2], dtype="int32")
+    ary2 = cp.asarray([3, 4, 5], dtype="int32")
+    ary3 = cp.asarray([0, 1, 2], dtype="int64")
+
+    it1 = ReverseOutputIterator(ary1)
+    it2 = ReverseOutputIterator(ary1)
+    it3 = ReverseOutputIterator(ary2)
+    it4 = ReverseOutputIterator(ary3)
 
     assert it1.kind == it2.kind == it3.kind
     assert it1.kind != it4.kind

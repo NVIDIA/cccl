@@ -100,7 +100,7 @@ try
   cudax::launch(stream, config, vectorAdd, in(A), in(B), out(C));
 
   printf("waiting for the stream to finish\n");
-  stream.wait();
+  stream.sync();
 
   printf("verifying the results\n");
   // Verify that the result vector is correct

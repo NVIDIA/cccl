@@ -442,7 +442,7 @@ struct always_true
   _CCCL_HOST_DEVICE bool operator()(const object_with_non_trivial_ctor&)
   {
     return true;
-  };
+  }
 };
 
 } // namespace

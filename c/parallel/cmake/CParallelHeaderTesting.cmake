@@ -4,8 +4,11 @@
 # .inl files are not globbed for, because they are not supposed to be used as public
 # entrypoints.
 
-cccl_generate_header_tests(cccl.c.parallel.headers c/parallel/include
-  DIALECT 20
+set(target_name cccl.c.parallel.headers)
+
+cccl_generate_header_tests(${target_name} c/parallel/include
+  LANGUAGE C
   GLOBS "cccl/c/*.h"
 )
-target_link_libraries(cccl.c.parallel.headers PUBLIC cccl.c.parallel)
+target_link_libraries(${target_name} PUBLIC cccl.c.parallel)
+target_include_directories(${target_name} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})

@@ -1,20 +1,17 @@
-cccl_get_catch2()
+cccl_get_c2h()
 
 function(cccl_c_parallel_add_test target_name_var source)
   string(REGEX REPLACE "test_([^.]*)" "cccl.c.parallel.test.\\1" target_name "${source}")
   set(target_name_var ${target_name} PARENT_SCOPE)
 
-  add_executable(${target_name}
-    "${source}"
-    test_main.cpp
-  )
+  add_executable(${target_name} "${source}")
   cccl_configure_target(${target_name} DIALECT 20)
 
   target_link_libraries(${target_name} PRIVATE
     cccl.c.parallel
     CUDA::cudart
     CUDA::nvrtc
-    Catch2::Catch2
+    cccl.c2h.main
     cccl.compiler_interface_cpp20
   )
 
@@ -33,28 +30,7 @@ file(GLOB test_srcs
   CONFIGURE_DEPENDS
   *.cu *.cpp
 )
-list(REMOVE_ITEM test_srcs test_main.cpp)
 
 foreach(test_src IN LISTS test_srcs)
   cccl_c_parallel_add_test(test_target "${test_src}")
 endforeach()
-
-
-function(cccl_c_parallel_add_c_test target_name_var)
-  # check that C compiler can compile CCCL.C headers
-  set(target_name "cccl.c.parallel.test.header")
-  set(target_name_var ${target_name} PARENT_SCOPE)
-  set(source test_header.c)
-
-  set_source_files_properties(${source} PROPERTIES LANGUAGE C)
-
-  add_library(${target_name} OBJECT
-    "${source}"
-  )
-  target_include_directories(${target_name} PRIVATE ${CUDAToolkit_INCLUDE_DIRS})
-  target_link_libraries(${target_name} PRIVATE
-    cccl.c.parallel
-  )
-endfunction()
-
-cccl_c_parallel_add_c_test(test_target)

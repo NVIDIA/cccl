@@ -14,11 +14,9 @@
 #include <vector>
 
 #include "test_util.h"
-#include <catch2/catch_template_test_macros.hpp>
-#include <catch2/catch_test_macros.hpp>
 #include <cccl/c/unique_by_key.h>
 
-using key_types = std::tuple<uint8_t, int16_t, uint32_t, int64_t>;
+using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
 using item_t    = int32_t;
 
 void unique_by_key(
@@ -98,14 +96,16 @@ void unique_by_key(
   REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));
 }
 
-TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey can run with empty input", "[unique_by_key]", key_types)
+C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[unique_by_key]", key_types)
 {
+  using key_t = c2h::get<0, TestType>;
+
   constexpr int num_items = 0;
 
-  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys(num_items);
+  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  std::vector<key_t> input_keys(num_items);
 
-  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<int> output_num_selected_it(1);
 
   unique_by_key(input_keys_it, input_keys_it, input_keys_it, input_keys_it, output_num_selected_it, op, num_items);
@@ -113,23 +113,25 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey can run with empty input", "[
   REQUIRE(0 == std::vector<int>(output_num_selected_it)[0]);
 }
 
-TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
+C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
 {
+  using key_t = c2h::get<0, TestType>;
+
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys = generate<TestType>(num_items);
+  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  std::vector<key_t> input_keys    = generate<key_t>(num_items);
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
-  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<item_t> input_values_it(input_values);
-  pointer_t<TestType> output_keys_it(num_items);
+  pointer_t<key_t> output_keys_it(num_items);
   pointer_t<item_t> output_values_it(num_items);
   pointer_t<int> output_num_selected_it(1);
 
   unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
 
-  std::vector<std::pair<TestType, item_t>> input_pairs;
+  std::vector<std::pair<key_t, item_t>> input_pairs;
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     input_pairs.emplace_back(input_keys[i], input_values[i]);
@@ -144,9 +146,9 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
 
   input_pairs.resize(num_selected);
 
-  std::vector<TestType> host_output_keys(output_keys_it);
+  std::vector<key_t> host_output_keys(output_keys_it);
   std::vector<item_t> host_output_values(output_values_it);
-  std::vector<std::pair<TestType, item_t>> output_pairs;
+  std::vector<std::pair<key_t, item_t>> output_pairs;
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -155,45 +157,49 @@ TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey works", "[unique_by_key]", ke
   REQUIRE(input_pairs == output_pairs);
 }
 
-TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", key_types)
+C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", key_types)
 {
+  using key_t = c2h::get<0, TestType>;
+
   const int num_items = 250; // to ensure that we get none equal for smaller data types
 
-  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys = make_shuffled_sequence<TestType>(num_items);
+  operation_t op                   = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  std::vector<key_t> input_keys    = make_shuffled_sequence<key_t>(num_items);
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
-  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<item_t> input_values_it(input_values);
-  pointer_t<TestType> output_keys_it(num_items);
+  pointer_t<key_t> output_keys_it(num_items);
   pointer_t<item_t> output_values_it(num_items);
   pointer_t<int> output_num_selected_it(1);
 
   unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
 
   REQUIRE(num_items == std::vector<int>(output_num_selected_it)[0]);
-  REQUIRE(input_keys == std::vector<TestType>(output_keys_it));
+  REQUIRE(input_keys == std::vector<key_t>(output_keys_it));
   REQUIRE(input_values == std::vector<item_t>(output_values_it));
 }
 
-TEMPLATE_LIST_TEST_CASE("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_by_key]", key_types)
+C2H_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_by_key]", key_types)
 {
+  using key_t = c2h::get<0, TestType>;
+
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
-  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<TestType>().type));
-  std::vector<TestType> input_keys(num_items, static_cast<TestType>(1));
+  operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<key_t>().type));
+  std::vector<key_t> input_keys(num_items, static_cast<key_t>(1));
   std::vector<item_t> input_values = generate<item_t>(num_items);
 
-  pointer_t<TestType> input_keys_it(input_keys);
+  pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<item_t> input_values_it(input_values);
-  pointer_t<TestType> output_keys_it(1);
+  pointer_t<key_t> output_keys_it(1);
   pointer_t<item_t> output_values_it(1);
   pointer_t<int> output_num_selected_it(1);
 
   unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
 
   REQUIRE(1 == std::vector<int>(output_num_selected_it)[0]);
-  REQUIRE(input_keys[0] == std::vector<TestType>(output_keys_it)[0]);
+  REQUIRE(input_keys[0] == std::vector<key_t>(output_keys_it)[0]);
   REQUIRE(input_values[0] == std::vector<item_t>(output_values_it)[0]);
 }
 
@@ -208,7 +214,7 @@ struct key_pair
   }
 };
 
-TEST_CASE("DeviceSelect::UniqueByKey works with custom types", "[device][select_unique_by_key]")
+C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_unique_by_key]")
 {
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
@@ -262,33 +268,33 @@ TEST_CASE("DeviceSelect::UniqueByKey works with custom types", "[device][select_
   REQUIRE(input_pairs == output_pairs);
 }
 
-TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[merge_sort]")
+C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[merge_sort]")
 {
-  using TestType = int;
+  using T = int;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
 
   operation_t op = make_operation("op", get_unique_by_key_op(get_type_info<int>().type));
-  iterator_t<TestType, random_access_iterator_state_t<TestType>> input_keys_it =
-    make_random_access_iterator<TestType>(iterator_kind::INPUT, "int", "key");
-  iterator_t<TestType, random_access_iterator_state_t<TestType>> input_values_it =
-    make_random_access_iterator<TestType>(iterator_kind::INPUT, "int", "value", " * 2");
-  iterator_t<TestType, random_access_iterator_state_t<TestType>> output_keys_it =
-    make_random_access_iterator<TestType>(iterator_kind::OUTPUT, "int", "key_out");
-  iterator_t<TestType, random_access_iterator_state_t<TestType>> output_values_it =
-    make_random_access_iterator<TestType>(iterator_kind::OUTPUT, "int", "value_out", " * 3");
-  iterator_t<TestType, random_access_iterator_state_t<TestType>> output_num_selected_it =
-    make_random_access_iterator<TestType>(iterator_kind::OUTPUT, "int", "num_selected");
+  iterator_t<T, random_access_iterator_state_t<T>> input_keys_it =
+    make_random_access_iterator<T>(iterator_kind::INPUT, "int", "key");
+  iterator_t<T, random_access_iterator_state_t<T>> input_values_it =
+    make_random_access_iterator<T>(iterator_kind::INPUT, "int", "value", " * 2");
+  iterator_t<T, random_access_iterator_state_t<T>> output_keys_it =
+    make_random_access_iterator<T>(iterator_kind::OUTPUT, "int", "key_out");
+  iterator_t<T, random_access_iterator_state_t<T>> output_values_it =
+    make_random_access_iterator<T>(iterator_kind::OUTPUT, "int", "value_out", " * 3");
+  iterator_t<T, random_access_iterator_state_t<T>> output_num_selected_it =
+    make_random_access_iterator<T>(iterator_kind::OUTPUT, "int", "num_selected");
 
-  std::vector<TestType> input_keys = generate<TestType>(num_items);
+  std::vector<T> input_keys        = generate<T>(num_items);
   std::vector<item_t> input_values = generate<int>(num_items);
 
-  pointer_t<TestType> input_keys_ptr(input_keys);
+  pointer_t<T> input_keys_ptr(input_keys);
   input_keys_it.state.data = input_keys_ptr.ptr;
   pointer_t<item_t> input_values_ptr(input_values);
   input_values_it.state.data = input_values_ptr.ptr;
 
-  pointer_t<TestType> output_keys_ptr(num_items);
+  pointer_t<T> output_keys_ptr(num_items);
   output_keys_it.state.data = output_keys_ptr.ptr;
   pointer_t<item_t> output_values_ptr(num_items);
   output_values_it.state.data = output_values_ptr.ptr;
@@ -298,7 +304,7 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
 
   unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
 
-  std::vector<std::pair<TestType, item_t>> input_pairs;
+  std::vector<std::pair<T, item_t>> input_pairs;
   for (size_t i = 0; i < input_keys.size(); ++i)
   {
     // Multiplying by 6 since we multiply by 2 and 3 in the input and output value iterators
@@ -314,9 +320,9 @@ TEST_CASE("DeviceMergeSort::SortPairs works with input and output iterators", "[
 
   input_pairs.resize(num_selected);
 
-  std::vector<TestType> host_output_keys(output_keys_ptr);
+  std::vector<T> host_output_keys(output_keys_ptr);
   std::vector<item_t> host_output_values(output_values_ptr);
-  std::vector<std::pair<TestType, item_t>> output_pairs;
+  std::vector<std::pair<T, item_t>> output_pairs;
   for (int i = 0; i < num_selected; ++i)
   {
     output_pairs.emplace_back(host_output_keys[i], host_output_values[i]);
@@ -336,7 +342,7 @@ struct large_key_pair
   }
 };
 
-TEST_CASE("DeviceSelect::UniqueByKey fails to build for large types due to no vsmem", "[device][select_unique_by_key]")
+C2H_TEST("DeviceSelect::UniqueByKey fails to build for large types due to no vsmem", "[device][select_unique_by_key]")
 {
   const int num_items = 1;
 

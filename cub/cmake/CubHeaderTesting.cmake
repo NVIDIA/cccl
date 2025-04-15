@@ -15,7 +15,6 @@ function(cub_add_header_test label definitions)
     set(headertest_target ${config_prefix}.headers.${label})
 
     cccl_generate_header_tests(${headertest_target} cub
-      DIALECT ${config_dialect}
       GLOBS "cub/*.cuh"
     )
     target_link_libraries(${headertest_target} PUBLIC ${cub_target})

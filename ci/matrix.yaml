@@ -44,11 +44,11 @@ workflows:
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,    cxx: ['msvc14.39']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,    cxx: ['msvc14.39', 'gcc10', 'clang14']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.8'], std: 'all', cxx: ['nvhpc']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['msvc2022']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['msvc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 17,    cxx: ['gcc'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc'], sm: "90a"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
@@ -93,8 +93,8 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18']}
     - {jobs: ['build'], project: 'cudax', ctk: [        '12.8'], std: 'all', cxx: ['nvhpc']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0',       ], std: '20',  cxx: ['msvc14.39']}
-    - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: '20',  cxx: ['msvc2022']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: '20',  cxx: ['msvc14.39']}
+    - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: '20',  cxx: ['msvc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['gcc12'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc'], sm: "90a"}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
@@ -102,6 +102,13 @@ workflows:
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc']  ,   gpu: 'rtx2080'}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14'], gpu: 'rtx2080'}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang'],   gpu: 'rtx2080'}
+    # Python and c/parallel jobs:
+    - {jobs: ['test'], project: ['cccl_c_parallel', 'python'], gpu: 'rtx2080'}
+    # cccl-infra:
+    - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
+    - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
+    # NVHPC stdpar smoke tests
+    - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.8', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
@@ -161,7 +168,7 @@ host_compilers:
     exe: cl
     versions:
       14.29: { stds: [ 17,   ], aka: '2019' }
-      14.39: { stds: [ 17, 20]              }
+      14.39: { stds: [ 17, 20]} # CTK 12.0 doesn't recognize >14.39 as MSVC 2022.
       14.42: { stds: [ 17, 20], aka: '2022' }
   nvhpc:
     name: 'NVHPC'
@@ -216,6 +223,11 @@ jobs:
   test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }
   test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
+  # Python:
+  test_cuda_cccl:        { name: "cuda.cccl",        gpu: true }
+  test_cuda_cooperative: { name: "cuda.cooperative", gpu: true }
+  test_cuda_parallel:    { name: "cuda.parallel",    gpu: true }
+
 # Project have the following properties:
 #
 # Keys are project subdirectories names. These will also be used in script names.
@@ -247,8 +259,8 @@ projects:
     name: 'NVHPC stdpar'
     stds: [17, 20]
   python:
-    name: "cuda (python)"
-    job_map: { build: [], test: ['test_nobuild'] }
+    name: "Python"
+    job_map: { build: [], test: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'] }
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]

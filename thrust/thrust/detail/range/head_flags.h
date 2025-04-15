@@ -92,7 +92,7 @@ public:
     return *(begin() + i);
   }
 
-  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(head_flags, iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(head_flags, iterator)
 
 private:
   iterator m_begin;

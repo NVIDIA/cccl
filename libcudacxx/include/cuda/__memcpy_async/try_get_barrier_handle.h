@@ -47,6 +47,7 @@ __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_complet
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (return ::cuda::device::barrier_native_handle(__barrier);), NV_ANY_TARGET, (return nullptr;));
+  _CCCL_UNREACHABLE();
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

@@ -36,11 +36,14 @@
 #include <thrust/binary_search.h>
 #include <thrust/detail/algorithm_wrapper.h>
 #include <thrust/detail/seq.h>
+#include <thrust/find.h>
 #include <thrust/host_vector.h>
 #include <thrust/mr/allocator.h>
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
@@ -171,6 +174,7 @@ private:
   {
     std::size_t size;
     void_ptr pointer;
+    std::size_t pool_idx;
   };
 
   using chunk_vector = thrust::host_vector<chunk_descriptor, allocator<chunk_descriptor, Bookkeeper>>;
@@ -296,8 +300,74 @@ public:
     m_cached_oversized.clear();
   }
 
+  void squeeze()
+  {
+    // Find all unused chunks and deallocate them
+    for (auto it = m_allocated.begin(); it != m_allocated.end();)
+    {
+      const auto pool_idx = (*it).pool_idx;
+      auto& pool          = m_pools[pool_idx];
+
+      const std::size_t bytes_log2  = pool_idx + m_smallest_block_log2;
+      const std::size_t bucket_size = static_cast<std::size_t>(1) << bytes_log2;
+      const std::size_t n           = (*it).size / bucket_size;
+      assert((*it).size % bucket_size == 0);
+
+      bool in_use = false;
+      for (std::size_t i = 0; i < n; ++i)
+      {
+        const auto ptr = static_cast<void_ptr>(static_cast<char_ptr>((*it).pointer) + i * bucket_size);
+        if (find(pool.free_blocks.begin(), pool.free_blocks.end(), ptr) == pool.free_blocks.end())
+        {
+          in_use = true;
+          break;
+        }
+      }
+
+      if (!in_use)
+      {
+        // Remove all free blocks cut from this chunk:
+        for (std::size_t i = 0; i < n; ++i)
+        {
+          const auto ptr = static_cast<void_ptr>(static_cast<char_ptr>((*it).pointer) + i * bucket_size);
+          pool.free_blocks.erase(find(pool.free_blocks.begin(), pool.free_blocks.end(), ptr));
+        }
+
+        // Deallocate and remove this chunk from the list of allocated chunks
+        m_upstream->do_deallocate((*it).pointer, (*it).size, m_options.alignment);
+        it = m_allocated.erase(it);
+      }
+      else
+      {
+        ++it;
+      }
+    }
+
+    // Remove all cached oversized allocations
+    for (auto it = m_cached_oversized.begin(); it != m_cached_oversized.end();)
+    {
+      m_upstream->do_deallocate((*it).pointer, (*it).size, (*it).alignment);
+      m_oversized.erase(find(m_oversized.begin(), m_oversized.end(), *it));
+      it = m_cached_oversized.erase(it);
+    }
+  }
+
   [[nodiscard]] virtual void_ptr
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
+  {
+    try
+    {
+      return do_allocate_impl(bytes, alignment);
+    }
+    catch (std::bad_alloc&)
+    {
+      this->squeeze();
+    }
+
+    return do_allocate_impl(bytes, alignment);
+  }
+
+  [[nodiscard]] void_ptr do_allocate_impl(std::size_t bytes, std::size_t alignment)
   {
     bytes = (std::max)(bytes, m_options.smallest_block_size);
     assert(detail::is_power_of_2(alignment));
@@ -361,8 +431,8 @@ public:
     // the request is NOT for oversized and/or overaligned memory
     // allocate a block from an appropriate bucket
     std::size_t bytes_log2 = thrust::detail::log2_ri(bytes);
-    std::size_t bucket_idx = bytes_log2 - m_smallest_block_log2;
-    pool& bucket           = m_pools[bucket_idx];
+    std::size_t pool_idx   = bytes_log2 - m_smallest_block_log2;
+    pool& bucket           = m_pools[pool_idx];
 
     // if the free list of the bucket has no elements, allocate a new chunk
     // and split it into blocks pushed to the free list
@@ -373,23 +443,14 @@ public:
       std::size_t n = bucket.previous_allocated_count;
       if (n == 0)
       {
-        n = m_options.min_blocks_per_chunk;
-        if (n < (m_options.min_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.min_bytes_per_chunk >> bytes_log2;
-        }
+        n = ::cuda::std::max(m_options.min_blocks_per_chunk, //
+                             m_options.min_bytes_per_chunk >> bytes_log2);
       }
       else
       {
-        n = n * 3 / 2;
-        if (n > (m_options.max_bytes_per_chunk >> bytes_log2))
-        {
-          n = m_options.max_bytes_per_chunk >> bytes_log2;
-        }
-        if (n > m_options.max_blocks_per_chunk)
-        {
-          n = m_options.max_blocks_per_chunk;
-        }
+        n = ::cuda::std::min({n * 3 / 2, //
+                              m_options.max_bytes_per_chunk >> bytes_log2,
+                              m_options.max_blocks_per_chunk});
       }
 
       bytes = n << bytes_log2;
@@ -400,8 +461,9 @@ public:
       assert(bytes <= m_options.max_bytes_per_chunk);
 
       chunk_descriptor allocated;
-      allocated.size    = bytes;
-      allocated.pointer = m_upstream->do_allocate(bytes, m_options.alignment);
+      allocated.size     = bytes;
+      allocated.pointer  = m_upstream->do_allocate(bytes, m_options.alignment);
+      allocated.pool_idx = pool_idx;
       m_allocated.push_back(allocated);
       bucket.previous_allocated_count = n;
 
@@ -449,9 +511,9 @@ public:
     }
 
     // push the block to the front of the appropriate bucket's free list
-    std::size_t n_log2     = thrust::detail::log2_ri(n);
-    std::size_t bucket_idx = n_log2 - m_smallest_block_log2;
-    pool& bucket           = m_pools[bucket_idx];
+    std::size_t n_log2   = thrust::detail::log2_ri(n);
+    std::size_t pool_idx = n_log2 - m_smallest_block_log2;
+    pool& bucket         = m_pools[pool_idx];
 
     bucket.free_blocks.push_back(p);
   }

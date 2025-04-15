@@ -108,7 +108,6 @@ function(thrust_add_header_test thrust_target label definitions)
 
   set(headertest_target ${config_prefix}.headers.${label})
   cccl_generate_header_tests(${headertest_target} thrust
-    DIALECT ${config_dialect}
     LANGUAGE ${lang}
     HEADERS ${headers}
   )

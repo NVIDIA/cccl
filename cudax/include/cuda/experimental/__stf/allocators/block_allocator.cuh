@@ -174,7 +174,7 @@ class block_allocator : public block_allocator_untyped
 {
 public:
   template <typename ctx_t, typename... Args>
-  block_allocator(ctx_t& ctx, Args... args)
+  block_allocator(ctx_t& ctx, Args&&... args)
       : block_allocator_untyped(ctx, ::std::make_shared<T>(::std::forward<Args>(args)...))
   {}
 
