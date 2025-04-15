@@ -276,6 +276,8 @@ Usage example:
 **Portable Builtin Macros**:
 
 +---------------------------------------+--------------------------------------------+
+| ``_CCCL_UNREACHABLE()``               | Portable ``__builtin_unreachable()``       |
++---------------------------------------+--------------------------------------------+
 | ``_CCCL_BUILTIN_ASSUME(X)``           | Portable ``__builtin_assume(X)``           |
 +---------------------------------------+--------------------------------------------+
 | ``_CCCL_BUILTIN_EXPECT(X)``           | Portable ``__builtin_expected(X)``         |
