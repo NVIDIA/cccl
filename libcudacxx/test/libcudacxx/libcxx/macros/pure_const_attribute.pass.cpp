@@ -16,6 +16,11 @@ _CCCL_PURE __host__ __device__ int f()
   return 0;
 }
 
+_CCCL_CONST __host__ __device__ int g()
+{
+  return 0;
+}
+
 int main(int, char**)
 {
   unused(f());

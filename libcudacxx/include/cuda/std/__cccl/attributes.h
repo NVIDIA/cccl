@@ -113,6 +113,12 @@
 #  define _CCCL_PURE
 #endif
 
+#if _CCCL_HAS_CPP_ATTRIBUTE(const) || _CCCL_COMPILER(CLANG)
+#  define _CCCL_CONST [[gnu::const]]
+#else
+#  define _CCCL_CONST _CCCL_PURE
+#endif
+
 #if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::no_specializations(_MSG)]]
 #  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
