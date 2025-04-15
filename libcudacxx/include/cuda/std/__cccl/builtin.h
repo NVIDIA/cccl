@@ -1266,12 +1266,6 @@
 #  elif defined(_MSVC_STL_VERSION)
 namespace std
 {
-template <bool _Test, class _Ty1, class _Ty2>
-struct conditional;
-
-template <bool _Test, class _Ty1, class _Ty2>
-using conditional_t = typename conditional<_Test, _Ty1, _Ty2>::type;
-
 template <class _Ty>
 struct remove_reference;
 
@@ -1279,20 +1273,7 @@ template <class _Ty>
 using remove_reference_t = typename remove_reference<_Ty>::type;
 
 template <class _Ty>
-extern const bool is_nothrow_move_constructible_v;
-
-template <class _Ty>
-extern const bool is_copy_constructible_v;
-
-template <class _Ty>
 [[nodiscard]] [[msvc::intrinsic]] constexpr remove_reference_t<_Ty>&& move(_Ty&& _Arg) noexcept;
-
-template <class _Ty>
-[[nodiscard]] [[msvc::intrinsic]] constexpr conditional_t<
-  !is_nothrow_move_constructible_v<_Ty> && is_copy_constructible_v<_Ty>,
-  const _Ty&,
-  _Ty&&>
-move_if_noexcept(_Ty& _Arg) noexcept;
 
 template <class _Ty>
 [[nodiscard]] constexpr _Ty* addressof(_Ty& _Val) noexcept;

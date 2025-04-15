@@ -26,6 +26,26 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
+// When _CCCL_HAS_BUILTIN_STD_MOVE() is 1, the compiler treats ::std::move as a builtin
+// function so it never needs to be instantiated and will be compiled away even at -O0. We
+// would prefer to bring the ::std:: function into the ::cuda::std:: namespace with a using
+// declaration, like this:
+//
+//   _LIBCUDACXX_BEGIN_NAMESPACE_STD
+//   using ::std::move;
+//   _LIBCUDACXX_END_NAMESPACE_STD
+//
+// But "using ::std::move;" would also drag in the algorithm ::std::move(In, In, Out),
+// which would conflict with ::cuda::std::move algorithm in <cuda/std/algorithm.h>.
+//
+// So instead, we define a _CCCL_MOVE macro that can be used in place of _CUDA_VSTD::move
+
+#if _CCCL_HAS_BUILTIN_STD_MOVE()
+#  define _CCCL_MOVE(...) ::std::move(__VA_ARGS__)
+#else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE() vvv
+#  define _CCCL_MOVE(...) _CUDA_VSTD::move(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN_STD_MOVE()
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -34,23 +54,6 @@ template <class _Tp>
   using _Up _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tp>;
   return static_cast<_Up&&>(__t);
 }
-
-#if _CCCL_HAS_BUILTIN_STD_MOVE()
-
-// The compiler treats ::std::move[_if_noexcept] as a builtin function so it does not need
-// to be instantiated and will be compiled away even at -O0.
-
-// "using ::std::move" is commented out because this would also drag in the algorithm
-// ::std::move(Iterator, Iterator, Iterator) which will conflict with cuda::std::move in
-// <cuda/std/algorithm.h>.
-
-/*using ::std::move;*/
-#  define _CCCL_MOVE(...) ::std::move(__VA_ARGS__)
-using ::std::move_if_noexcept;
-
-#else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE() vvv
-
-#  define _CCCL_MOVE(...) _CUDA_VSTD::move(__VA_ARGS__)
 
 template <class _Tp>
 using __move_if_noexcept_result_t =
@@ -62,8 +65,6 @@ move_if_noexcept(_Tp& __x) noexcept
 {
   return _CUDA_VSTD::move(__x);
 }
-
-#endif // _CCCL_HAS_BUILTIN_STD_MOVE()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
