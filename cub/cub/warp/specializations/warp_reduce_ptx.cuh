@@ -46,6 +46,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
+#include <vector_types.h>
+
 #if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
 #endif // _CCCL_HAS_NVFP16()
@@ -64,7 +66,7 @@ namespace internal
 #define _CUB_SHFL_DOWN_OP_16BIT(OPERATOR, TYPE, PTX_OP)                                                               \
                                                                                                                       \
   template <typename = void>                                                                                          \
-  [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                       \
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                     \
     OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
   {                                                                                                                   \
     auto tmp = cub::internal::unsafe_bitcast<uint16_t>(value);                                                        \
@@ -112,7 +114,7 @@ namespace internal
 #define _CUB_SHFL_DOWN_OP_64BIT(OPERATOR, TYPE, PTX_OP)                                                               \
                                                                                                                       \
   template <typename = void>                                                                                          \
-  [[nodiscard]] _CCCL_DEVICE TYPE shfl_down_op(                                                                       \
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE TYPE shfl_down_op(                                                     \
     OPERATOR, TYPE value, uint32_t source_offset, uint32_t shfl_c, uint32_t mask)                                     \
   {                                                                                                                   \
     auto tmp = cub::internal::unsafe_bitcast<uint64_t>(value);                                                        \
@@ -185,15 +187,15 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, uint32_t, min.u32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<uint32_t>, uint32_t, min.u32)
 
 #if __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<>, short2, max.s16x2)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<short2>, short2, max.s16x2)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<>, ushort2, max.u16x2)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::maximum<ushort2>, ushort2, max.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, short2, max.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<short2>, short2, max.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, ushort2, max.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<ushort2>, ushort2, max.u16x2)
 
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<>, short2, min.s16x2)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<short2>, short2, min.s16x2)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<>, ushort2, min.u16x2)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::minimum<ushort2>, ushort2, min.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, short2, min.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<short2>, short2, min.s16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, ushort2, min.u16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<ushort2>, ushort2, min.u16x2)
 #endif // __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
 
 #if _CCCL_HAS_NVFP16() && CUB_PTX_ARCH >= 800
@@ -218,7 +220,7 @@ _CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __nv_bfloat16, max.bf16)
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<__nv_bfloat16>, __nv_bfloat16, max.bf16)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __nv_bfloat162, max.bf16x2)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<__nv_bfloat162>, __nv_bfloat162, max.bf16x2)
-#endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
+#endif // _CCCL_HAS_NVBF16() //&& CUB_PTX_ARCH >= 800
 
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::std::bit_and/bit_or/bit_xor Instantiations
@@ -255,7 +257,9 @@ extern "C" _CCCL_DEVICE float redux_min_max_sync_is_not_supported_before_sm100a(
       return result;                                                                                         \
     }
 
+_CUB_REDUX_FLOAT_OP(::cuda::minimum<>, min)
 _CUB_REDUX_FLOAT_OP(::cuda::minimum<float>, min)
+_CUB_REDUX_FLOAT_OP(::cuda::maximum<>, max)
 _CUB_REDUX_FLOAT_OP(::cuda::maximum<float>, max)
 
 #endif // __cccl_ptx_isa >= 860

@@ -116,7 +116,7 @@ warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, WarpConfigT config
 {
   using namespace _CUDA_VSTD;
   using namespace internal;
-  static_assert(is_integral_v<Input> || is_arithmetic_cuda_floating_point_v<Input>,
+  static_assert(is_integral_v<Input> || is_any_short2_v<Input> || is_arithmetic_cuda_floating_point_v<Input>,
                 "invalid input type/reduction operator combination");
   auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
   constexpr auto log2_size                                               = ::cuda::ilog2(logical_size * 2 - 1);
@@ -297,13 +297,15 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_half_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);))
-    _CCCL_ASSERT(false, "__half is not supported before SM53");
+    // TODO: _CCCL_ASSERT(false, "__half is not supported before SM53");
+    _CCCL_UNREACHABLE();
   }
   // [Min/Max]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_shuffle_op(input, reduction_op, config);))
-    _CCCL_ASSERT(false, "bfloat16 is not supported before SM80");
+    // TODO: _CCCL_ASSERT(false, "bfloat16 is not supported before SM80");
+    _CCCL_UNREACHABLE();
   }
   // [Min/Max]: short2, ushort2
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_short2_v<Input> && __cccl_ptx_isa >= 800)
@@ -345,7 +347,8 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && is_any_half_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);));
-    _CCCL_ASSERT(false, "half is not supported before SM53");
+    // TODO: _CCCL_ASSERT(false, "half is not supported before SM53");
+    _CCCL_UNREACHABLE();
   }
   // [Plus]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
