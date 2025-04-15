@@ -380,8 +380,8 @@ struct DeviceRleDispatch
         break;
       }
 
-      // Return if empty problem
-      if (num_items == 0)
+      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in d_num_runs_out
+      if (num_items <= 1)
       {
         break;
       }
