@@ -36,8 +36,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/__cmath/ceil_div.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -50,6 +48,7 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/cmath>
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN

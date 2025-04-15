@@ -36,6 +36,7 @@
 #endif // no system header
 
 #include <cub/detail/unsafe_bitcast.cuh>
+#include <cub/thread/thread_operators.cuh> // is_cuda_minimum_maximum_v
 #include <cub/util_arch.cuh> // CUB_PTX_ARCH
 #include <cub/warp/specializations/warp_reduce_config.cuh>
 #include <cub/warp/warp_utils.cuh> // logical_warp_id

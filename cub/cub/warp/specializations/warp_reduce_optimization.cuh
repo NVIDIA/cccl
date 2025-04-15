@@ -314,18 +314,22 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   // [Plus]: any complex
   else if constexpr (is_cuda_std_plus_v<ReductionOp, Input> && __is_complex_v<Input>)
   {
+#if _CCCL_HAS_NVFP16()
     if constexpr (is_half_v<typename Input::value_type>)
     {
       auto half2_value = unsafe_bitcast<__half2>(input);
       auto ret         = warp_reduce_dispatch(half2_value, reduction_op, config);
       return unsafe_bitcast<Input>(ret);
     }
+#endif // _CCCL_HAS_NVFP16()
+#if _CCCL_HAS_NVBF16()
     if constexpr (is_bfloat16_v<typename Input::value_type>)
     {
       auto bfloat2_value = unsafe_bitcast<__nv_bfloat162>(input);
       auto ret           = warp_reduce_dispatch(bfloat2_value, reduction_op, config);
       return unsafe_bitcast<Input>(ret);
     }
+#endif // _CCCL_HAS_NVBF16()
     if constexpr (is_same_v<typename Input::value_type, float>)
     {
       auto float2_value = unsafe_bitcast<float2>(input);

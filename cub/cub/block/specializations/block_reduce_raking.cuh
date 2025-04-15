@@ -88,7 +88,7 @@ struct BlockReduceRaking
   using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
 
   ///  WarpReduce utility type
-  using WarpReduce = typename WarpReduce<T, BlockRakingLayout::RAKING_THREADS>::InternalWarpReduce;
+  using WarpReduce = WarpReduce<T, BlockRakingLayout::RAKING_THREADS>;
 
   /// Constants
   /// Number of raking threads
@@ -192,10 +192,13 @@ struct BlockReduceRaking
   template <bool IS_FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
   {
+    using namespace cub::internal;
     if (WARP_SYNCHRONOUS)
     {
       // Short-circuit directly to warp synchronous reduction (unguarded if active threads is a power-of-two)
-      partial = WarpReduce(temp_storage.warp_storage).template Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
+      constexpr auto logical_mode =
+        IS_FULL_TILE ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
+      partial = WarpReduce::Reduce(partial, reduction_op, num_valid, reduce_logical_mode_t<logical_mode>{});
     }
     else
     {
@@ -219,9 +222,12 @@ struct BlockReduceRaking
         static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");
         unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
         __syncwarp(mask);
-
-        partial = WarpReduce(temp_storage.warp_storage)
-                    .template Reduce<(IS_FULL_TILE && RAKING_UNGUARDED)>(partial, valid_raking_threads, reduction_op);
+        constexpr auto logical_mode =
+          (IS_FULL_TILE && RAKING_UNGUARDED)
+            ? ReduceLogicalMode::MultipleReductions
+            : ReduceLogicalMode::SingleReduction;
+        partial =
+          WarpReduce::Reduce(partial, reduction_op, valid_raking_threads, reduce_logical_mode_t<logical_mode>{});
       }
     }
 
@@ -242,9 +248,7 @@ struct BlockReduceRaking
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
   {
-    ::cuda::std::plus<> reduction_op;
-
-    return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
+    return Reduce<IS_FULL_TILE>(partial, num_valid, ::cuda::std::plus<>{});
   }
 };
 } // namespace detail
