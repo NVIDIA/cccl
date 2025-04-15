@@ -380,7 +380,7 @@ struct DeviceRleDispatch
         break;
       }
 
-      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in d_num_runs_out
+      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in device_scan_init_kernel above
       if (num_items <= 1)
       {
         break;
