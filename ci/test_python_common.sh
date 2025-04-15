@@ -2,17 +2,14 @@
 
 set -euo pipefail
 
-source "$(dirname "$0")/build_common.sh"
+function list_environment {
+  begin_group "⚙️ Existing site-packages"
+  pip freeze
+  end_group "⚙️ Existing site-packages"
+}
 
-print_environment_details
-
-fail_if_no_gpu
-
-begin_group "⚙️ Existing site-packages"
-pip freeze
-end_group "⚙️ Existing site-packages"
-
-for module in cuda_cccl cuda_parallel cuda_cooperative; do
+function run_tests {
+  module=$1
 
   pushd "../python/${module}" >/dev/null
 
@@ -25,11 +22,10 @@ for module in cuda_cccl cuda_parallel cuda_cooperative; do
   begin_group "⚙️ ${module} site-packages"
   pip freeze
   end_group "⚙️ ${module} site-packages"
-  run_command "🚀  Pytest ${module}" pytest -v ./tests
+  run_command "🚀  Pytest ${module}" pytest -n ${PARALLEL_LEVEL} -v ./tests
   deactivate
 
   popd >/dev/null
 
-done
-
-print_time_summary
+  print_time_summary
+}

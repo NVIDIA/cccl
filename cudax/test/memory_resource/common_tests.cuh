@@ -30,5 +30,5 @@ void test_deallocate_async(ResourceType& resource)
   resource.deallocate_async(allocation, sizeof(int), stream);
 
   atomic_i.store(80);
-  stream.wait();
+  stream.sync();
 }

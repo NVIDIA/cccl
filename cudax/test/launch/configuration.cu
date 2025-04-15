@@ -169,7 +169,7 @@ auto configuration_test(
     }
     cudax::launch(stream, config, empty_kernel, 0);
   }
-  stream.wait();
+  stream.sync();
 }
 
 C2H_TEST("Launch configuration", "[launch]")
