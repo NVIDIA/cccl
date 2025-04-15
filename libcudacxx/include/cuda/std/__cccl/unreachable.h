@@ -4,16 +4,17 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef __CCCL_UNREACHABLE_H
 #define __CCCL_UNREACHABLE_H
 
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
+
+#include <nv/target>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -23,24 +24,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/visibility.h>
-
-#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
-
-#  define _CCCL_UNREACHABLE()             \
-    {                                     \
-      _CCCL_ASSERT(false, "unreachable"); \
-      __assume(0);                        \
-    }
-
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_UNREACHABLE() NV_IF_ELSE_TARGET(NV_IS_HOST, (__assume(0);), (__builtin_unreachable();))
 #else
-
-#  define _CCCL_UNREACHABLE()             \
-    {                                     \
-      _CCCL_ASSERT(false, "unreachable"); \
-      __builtin_unreachable();            \
-    }
-
-#endif // _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
+#  define _CCCL_UNREACHABLE() __builtin_unreachable()
+#endif
 
 #endif // __CCCL_UNREACHABLE_H
