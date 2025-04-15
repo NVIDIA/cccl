@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <memory> // IWYU pragma: keep
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -22,12 +20,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-#if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)) && !defined(__CUDA_ARCH__)
-#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
-#else
-#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
-#endif
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
@@ -43,9 +35,8 @@ using ::std::addressof;
 #elif defined(_CCCL_BUILTIN_ADDRESSOF) // ^^^ _CCCL_HAS_BUILTIN_STD_ADDRESSOF() ^^^ /
                                        // vvv _CCCL_BUILTIN_ADDRESSOF vvv
 
-// NVCXX has the builtin defined but did not mark it as supported
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
@@ -53,7 +44,7 @@ template <class _Tp>
 #else
 
 template <class _Tp>
-[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }

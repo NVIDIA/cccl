@@ -22,14 +22,6 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 
-#include <utility> // IWYU pragma: keep
-
-#if _CCCL_COMPILER(CLANG, >=, 15) && !defined(__CUDA_ARCH__)
-#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
-#else
-#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_BUILTIN_STD_AS_CONST()

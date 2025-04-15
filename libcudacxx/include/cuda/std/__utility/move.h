@@ -26,15 +26,6 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#include <utility> // IWYU pragma: keep
-
-#if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)) \
-  && !defined(__CUDA_ARCH__)
-#  define _CCCL_HAS_BUILTIN_STD_MOVE() 1
-#else
-#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -54,9 +45,12 @@ template <class _Tp>
 // <cuda/std/algorithm.h>.
 
 /*using ::std::move;*/
+#  define _CCCL_MOVE(...) ::std::move(__VA_ARGS__)
 using ::std::move_if_noexcept;
 
 #else // ^^^ _CCCL_HAS_BUILTIN_STD_MOVE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_MOVE() vvv
+
+#  define _CCCL_MOVE(...) ::cuda::std::move(__VA_ARGS__)
 
 template <class _Tp>
 using __move_if_noexcept_result_t =

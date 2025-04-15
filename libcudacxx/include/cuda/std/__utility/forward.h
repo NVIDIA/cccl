@@ -25,15 +25,6 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/cstddef>
 
-#include <utility> // IWYU pragma: keep
-
-#if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)) \
-  && !defined(__CUDA_ARCH__)
-#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
-#else
-#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_BUILTIN_STD_FORWARD()

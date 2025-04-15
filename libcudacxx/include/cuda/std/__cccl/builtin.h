@@ -1245,4 +1245,106 @@
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
+// Some compilers provide std::move/std::forward/etc as builtins
+#if defined(__cplusplus) && !defined(__CUDA_ARCH__)
+// Bring in the feature test macros (needed for std::forward_like)
+#  if __has_include(<version>)
+#    include <version>
+#  else
+#    include <ciso646>
+#  endif
+
+// Bring in the bits of the STL we need
+#  if defined(_GLIBCXX_VERSION)
+#    include <bits/move.h> // for move, forward, forward_like, and addressof
+#  elif defined(_LIBCXX_VERSION)
+#    include <__memory/addressof.h>
+#    include <__utility/as_const.h>
+#    include <__utility/forward.h>
+#    include <__utility/forward_like.h>
+#    include <__utility/move.h>
+#  elif defined(_MSVC_STL_VERSION)
+namespace std
+{
+template <bool _Test, class _Ty1, class _Ty2>
+struct conditional;
+
+template <bool _Test, class _Ty1, class _Ty2>
+using conditional_t = typename conditional<_Test, _Ty1, _Ty2>::type;
+
+template <class _Ty>
+struct remove_reference;
+
+template <class _Ty>
+using remove_reference_t = typename remove_reference<_Ty>::type;
+
+template <class _Ty>
+extern const bool is_nothrow_move_constructible_v;
+
+template <class _Ty>
+extern const bool is_copy_constructible_v;
+
+template <class _Ty>
+[[nodiscard]] [[msvc::intrinsic]] constexpr remove_reference_t<_Ty>&& move(_Ty&& _Arg) noexcept;
+
+template <class _Ty>
+[[nodiscard]] [[msvc::intrinsic]] constexpr conditional_t<
+  !is_nothrow_move_constructible_v<_Ty> && is_copy_constructible_v<_Ty>,
+  const _Ty&,
+  _Ty&&>
+move_if_noexcept(_Ty& _Arg) noexcept;
+
+template <class _Ty>
+[[nodiscard]] constexpr _Ty* addressof(_Ty& _Val) noexcept;
+
+template <class _Ty>
+const _Ty* addressof(const _Ty&&);
+} // namespace std
+#  endif
+
+#  if defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
+// std::move builtin
+#    if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
+#      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
+#    endif
+
+// std::forward builtin
+#    if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
+#      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
+#    endif
+
+// std::addressof builtin
+#    if (_CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15))
+#      define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 1
+#    endif
+
+// std::as_const builtin
+#    if _CCCL_COMPILER(CLANG, >=, 15)
+#      define _CCCL_HAS_BUILTIN_STD_AS_CONST() 1
+#    endif
+
+// std::forward_like builtin
+#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)) \
+      && defined(__cpp_lib_forward_like) && (__cpp_lib_forward_like >= 202217L)
+#      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
+#    endif
+#  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
+#endif // defined(__cplusplus) && !defined(__CUDA_ARCH__)
+
+#ifndef _CCCL_HAS_BUILTIN_STD_MOVE
+#  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_ADDRESSOF
+#  define _CCCL_HAS_BUILTIN_STD_ADDRESSOF() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_AS_CONST
+#  define _CCCL_HAS_BUILTIN_STD_AS_CONST() 0
+#endif
+#ifndef _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE
+#  define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 0
+#endif
+
 #endif // __CCCL_BUILTIN_H
