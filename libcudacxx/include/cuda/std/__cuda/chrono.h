@@ -21,8 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <nv/target>
+#include <cuda/std/__utility/unreachable.h>
 
+#include <nv/target>
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace chrono
@@ -38,7 +39,7 @@ _LIBCUDACXX_HIDE_FROM_ABI system_clock::time_point system_clock::now() noexcept
     (return time_point(duration_cast<duration>(nanoseconds(
       ::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch())
         .count())));));
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI time_t system_clock::to_time_t(const system_clock::time_point& __t) noexcept

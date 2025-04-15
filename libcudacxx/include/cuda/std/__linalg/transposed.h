@@ -32,6 +32,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 
@@ -84,7 +85,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __transpose_extents_t<_Extents> __transpose_
       return __transpose_extents_t<_Extents>{}; // all extents are static
     }
   }
-  _CCCL_UNREACHABLE(); // GCC9 workaround
+  _CUDA_VSTD::unreachable(); // GCC9 workaround
 }
 
 } // namespace __detail

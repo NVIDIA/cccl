@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -57,7 +58,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_nbit_int_impl() noexcept
     else
     {
       static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported signed integer size");
-      _CCCL_UNREACHABLE();
+      _CUDA_VSTD::unreachable();
     }
   }
   else
@@ -87,7 +88,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_nbit_int_impl() noexcept
     else
     {
       static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported unsigned integer size");
-      _CCCL_UNREACHABLE();
+      _CUDA_VSTD::unreachable();
     }
   }
 }

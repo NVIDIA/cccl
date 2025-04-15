@@ -31,6 +31,7 @@
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/complex>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -56,7 +57,7 @@ struct __conj_if_needed
     {
       return _CUDA_VSTD::conj(__t);
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 };
 

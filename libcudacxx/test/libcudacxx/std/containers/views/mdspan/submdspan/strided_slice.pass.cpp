@@ -13,6 +13,7 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -54,7 +55,7 @@ __host__ __device__ constexpr T construct_from_int([[maybe_unused]] int val) noe
   {
     return static_cast<T>(val);
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 template <class OffsetType, class ExtentType, class StrideType>

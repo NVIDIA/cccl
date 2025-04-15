@@ -23,6 +23,7 @@
 
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -89,7 +90,7 @@ template <typename _Tp>
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return __brev(static_cast<uint32_t>(__value) << 24);))
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 #endif // _CCCL_HAS_CUDA_COMPILER()

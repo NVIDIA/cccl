@@ -35,6 +35,7 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
 
@@ -63,7 +64,7 @@ template <class _IndexType, class... _Slices, size_t... _SliceIndices, size_t _C
     return _CUDA_VSTD::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
       index_sequence<_SliceIndices..., _CurrentIndex>{}, index_sequence<_Remaining...>{});
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 // [mdspan.sub.extents]
@@ -121,7 +122,7 @@ struct __get_subextent
       // [mdspan.sub.extents-4.2.5]
       return dynamic_extent;
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   template <size_t _SliceIndex, class _Extents, class... _Slices>
@@ -143,7 +144,7 @@ struct __get_subextent
       return _CUDA_VSTD::__last_extent_from_slice<_SliceIndex>(__src, __slices...)
            - _CUDA_VSTD::__first_extent_from_slice<typename _Extents::index_type, _SliceIndex>(__slices...);
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   template <class _Extents, class... _Slices, size_t... _SliceIndices>

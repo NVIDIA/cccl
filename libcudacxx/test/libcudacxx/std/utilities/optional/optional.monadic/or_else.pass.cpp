@@ -14,6 +14,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
+#include <cuda/std/utility>
 
 #include "MoveOnly.h"
 
@@ -75,7 +76,7 @@ __host__ __device__ constexpr bool test()
     opt = 1;
     opt.or_else([] {
 #if TEST_COMPILER(GCC, <, 9)
-      _CCCL_UNREACHABLE();
+      _CUDA_VSTD::unreachable();
 #else
       assert(false);
 #endif
@@ -92,7 +93,7 @@ __host__ __device__ constexpr bool test()
     opt = val;
     opt.or_else([] {
 #if TEST_COMPILER(GCC, <, 9)
-      _CCCL_UNREACHABLE();
+      _CUDA_VSTD::unreachable();
 #else
       assert(false);
 #endif

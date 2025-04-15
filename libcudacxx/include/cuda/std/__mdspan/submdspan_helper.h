@@ -31,6 +31,7 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/tuple>
 
@@ -146,7 +147,7 @@ template <class _IndexType, size_t _Index, class... _Slices>
       return 0;
     }
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 template <size_t _Index, class _Extents, class... _Slices>
@@ -178,7 +179,7 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
       return _CUDA_VSTD::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

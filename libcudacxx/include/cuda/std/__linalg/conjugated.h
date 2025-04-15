@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/mdspan>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -115,7 +116,7 @@ template <class _ElementType, class _Extents, class _Layout, class _Accessor>
     return mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>{
       __a.data_handle(), __a.mapping(), __return_accessor_type(__a.accessor())};
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 // Conjugation is self-annihilating

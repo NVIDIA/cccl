@@ -50,6 +50,7 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/unreachable.h>
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -431,7 +432,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -455,7 +456,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __s
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>

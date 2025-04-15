@@ -27,6 +27,7 @@
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
 
 #include <nv/target>
@@ -47,7 +48,7 @@ __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_complet
 {
   NV_DISPATCH_TARGET(
     NV_IS_DEVICE, (return ::cuda::device::barrier_native_handle(__barrier);), NV_ANY_TARGET, (return nullptr;));
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

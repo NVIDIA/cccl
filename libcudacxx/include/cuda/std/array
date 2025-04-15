@@ -45,7 +45,6 @@ _CCCL_PUSH_MACROS
 #include <cuda/std/cstdint>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
-
 // standard-mandated includes
 #include <cuda/std/version>
 
@@ -339,54 +338,54 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type) noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
     return *data();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](size_type) const noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
     return *data();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(size_type)
   {
     _CUDA_VSTD::__throw_out_of_range("array<T, 0>::at");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference at(size_type) const
   {
     _CUDA_VSTD::__throw_out_of_range("array<T, 0>::at");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
     return *data();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
     return *data();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
     return *data();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
   {
     _CCCL_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
     return *data();
   }
 };

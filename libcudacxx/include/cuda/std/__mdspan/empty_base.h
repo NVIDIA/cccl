@@ -28,6 +28,7 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/unreachable.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -199,7 +200,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
     {
       return static_cast<__base2*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -214,7 +215,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2>
     {
       return static_cast<const __base2*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -323,7 +324,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     {
       return static_cast<__base3*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   _CCCL_TEMPLATE(size_t _Index)
@@ -342,7 +343,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __mdspan_ebco<_Elem1, _Elem2, _Elem3>
     {
       return static_cast<const __base3*>(this)->__get();
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   _CCCL_EXEC_CHECK_DISABLE

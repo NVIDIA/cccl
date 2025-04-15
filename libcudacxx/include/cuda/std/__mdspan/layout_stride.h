@@ -40,6 +40,7 @@
 #include <cuda/std/__utility/as_const.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/swap.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
@@ -140,7 +141,7 @@ private:
     {
       return false;
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   template <class _OtherIndexType>
@@ -202,7 +203,7 @@ private:
     {
       return static_cast<index_type>(__mapping());
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   static_assert((extents_type::rank_dynamic() > 0) || __required_span_size_is_representable(extents_type()),
@@ -248,7 +249,7 @@ public:
     {
       return ((static_cast<index_type>(__strides[_Pos]) > index_type{0}) && ... && true);
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   // compute the permutation for sorting the stride array
@@ -523,7 +524,7 @@ public:
         return __span_size == __total_size;
       }
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_strided() noexcept
@@ -565,7 +566,7 @@ public:
     {
       return (!__offset(__rhs));
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   template <class _OtherMapping, class _OtherExtents = typename _OtherMapping::extents_type>

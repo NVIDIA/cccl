@@ -645,7 +645,7 @@ struct __variant
         _CUDA_VSTD::forward<_Visitor>(__visitor),
         _CUDA_VSTD::forward<_Vs>(__vs)...);
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
   _CCCL_NV_DIAG_DEFAULT(940) // End suppression of no return at end of function
 
@@ -966,7 +966,7 @@ private:
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 };
 
@@ -1015,7 +1015,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
 public:
@@ -1143,7 +1143,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Tr
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
 public:
@@ -1321,7 +1321,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
 public:
@@ -1893,7 +1893,7 @@ private:
 #if _CCCL_COMPILER(MSVC) // MSVC needs this to be wrapped in a function or it will error
     _CUDA_VSTD::unreachable();
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
 #endif // !_CCCL_COMPILER(MSVC)
   }
 };
@@ -2112,7 +2112,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
       return hash<__value_type>{}(__access::__base::__get_alt<0>(this->__as_base()).__value);
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN result_type operator()(const argument_type& __v) const

@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/array>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -166,7 +167,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_unit_stride_slice()
   {
     return false;
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 // [mdspan.sub.map.left]
@@ -192,7 +193,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __can_layout_left()
   {
     return false;
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
@@ -227,7 +228,7 @@ __submdspan_mapping_impl(const typename layout_left::mapping<_Extents>& __mappin
       return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext, __sub_strides}, __offset};
     }
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 template <class _LayoutMapping, class _SubExtents, class _Slice, class... _OtherSlices>
@@ -252,7 +253,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __can_layout_right()
   {
     return false;
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)
@@ -287,7 +288,7 @@ __submdspan_mapping_impl(const typename layout_right::mapping<_Extents>& __mappi
       return submdspan_mapping_result<__sub_mapping_t>{__sub_mapping_t{__sub_ext, __sub_strides}, __offset};
     }
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 _CCCL_TEMPLATE(class _Extents, class... _Slices)

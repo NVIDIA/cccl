@@ -124,11 +124,11 @@ struct __possibly_empty_array<_Tp, 0>
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator[](size_t)
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator[](size_t) const
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 #endif // !_CCCL_COMPILER(MSVC)
 };
@@ -374,7 +374,7 @@ _CCCL_REQUIRES(integral<_To>)
       return true;
     }
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 _CCCL_TEMPLATE(class _To, class... _From)
@@ -551,7 +551,7 @@ private:
           integral_constant<size_t, _DynCount>(), integral_constant<size_t, _Idx + 1>(), __exts, __dynamic_values...);
       }
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
   template <class _OtherIndexType, size_t... _OtherExtents>
@@ -635,7 +635,7 @@ public:
     {
       return true;
     }
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -738,7 +738,7 @@ _CCCL_REQUIRES(integral<_IndexType>)
       return static_cast<_IndexType>(__value) < __extent;
     }
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 template <size_t... _Idxs, class _Extents, class... _From>
