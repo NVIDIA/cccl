@@ -98,10 +98,14 @@
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
 #endif
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  if _CCCL_CUDA_COMPILER(NVCC, ==, 12) && (_CCCL_COMPILER(CLANG, <=, 14) || _CCCL_COMPILER(MSVC, <=, 19, 29))
+#    define _CCCL_PURE
+#  else
+#    define _CCCL_PURE __nv_pure__
+#  endif
+#elif _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_PURE [[gnu::pure]]
-#elif _CCCL_CUDA_COMPILER(NVCC)
-#  define _CCCL_PURE __nv_pure__
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_PURE __declspec(noalias)
 #else
