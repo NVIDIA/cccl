@@ -92,7 +92,7 @@ struct __fn
     {
       return __last - decay_t<_Ip>(__first);
     }
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -108,7 +108,7 @@ struct __fn
     {
       return operator()(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r));
     }
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO

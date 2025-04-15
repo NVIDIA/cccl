@@ -432,7 +432,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>
   {
     return __subrange.end();
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -456,7 +456,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __s
   {
     return __subrange.end();
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>

@@ -360,7 +360,7 @@ void test_even_and_range(LevelT max_level, int max_level_count, OffsetT width, O
       {
         return static_cast<int>((sample - min) * fp_scales[channel]);
       }
-      _CUDA_VSTD::unreachable();
+      _CCCL_UNREACHABLE_WITH_CHECK();
     };
     auto h_histogram = compute_reference_result<Channels, CounterT>(
       h_samples, sample_to_bin_index, num_levels, width, height, row_pitch);

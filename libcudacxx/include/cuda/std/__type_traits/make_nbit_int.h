@@ -58,7 +58,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_nbit_int_impl() noexcept
     else
     {
       static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported signed integer size");
-      _CUDA_VSTD::unreachable();
+      _CCCL_UNREACHABLE_WITH_CHECK();
     }
   }
   else
@@ -88,7 +88,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_nbit_int_impl() noexcept
     else
     {
       static_assert(_CCCL_TRAIT(__always_false, decltype(_NBits)), "Unsupported unsigned integer size");
-      _CUDA_VSTD::unreachable();
+      _CCCL_UNREACHABLE_WITH_CHECK();
     }
   }
 }

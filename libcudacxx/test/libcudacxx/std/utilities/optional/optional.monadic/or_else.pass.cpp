@@ -76,7 +76,7 @@ __host__ __device__ constexpr bool test()
     opt = 1;
     opt.or_else([] {
 #if TEST_COMPILER(GCC, <, 9)
-      _CUDA_VSTD::unreachable();
+      _CCCL_UNREACHABLE_WITH_CHECK();
 #else
       assert(false);
 #endif
@@ -93,7 +93,7 @@ __host__ __device__ constexpr bool test()
     opt = val;
     opt.or_else([] {
 #if TEST_COMPILER(GCC, <, 9)
-      _CUDA_VSTD::unreachable();
+      _CCCL_UNREACHABLE_WITH_CHECK();
 #else
       assert(false);
 #endif

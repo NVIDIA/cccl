@@ -52,7 +52,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -78,7 +78,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)

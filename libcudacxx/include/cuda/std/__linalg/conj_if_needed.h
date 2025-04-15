@@ -57,7 +57,7 @@ struct __conj_if_needed
     {
       return _CUDA_VSTD::conj(__t);
     }
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 };
 

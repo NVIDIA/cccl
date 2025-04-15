@@ -90,7 +90,7 @@ template <typename _Tp>
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return __brev(static_cast<uint32_t>(__value) << 24);))
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 #endif // _CCCL_HAS_CUDA_COMPILER()

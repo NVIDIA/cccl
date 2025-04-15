@@ -64,7 +64,7 @@ template <class _IndexType, class... _Slices, size_t... _SliceIndices, size_t _C
     return _CUDA_VSTD::__filter_slices_convertible_to_index<_IndexType, _Slices...>(
       index_sequence<_SliceIndices..., _CurrentIndex>{}, index_sequence<_Remaining...>{});
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 // [mdspan.sub.extents]
@@ -122,7 +122,7 @@ struct __get_subextent
       // [mdspan.sub.extents-4.2.5]
       return dynamic_extent;
     }
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 
   template <size_t _SliceIndex, class _Extents, class... _Slices>
@@ -144,7 +144,7 @@ struct __get_subextent
       return _CUDA_VSTD::__last_extent_from_slice<_SliceIndex>(__src, __slices...)
            - _CUDA_VSTD::__first_extent_from_slice<typename _Extents::index_type, _SliceIndex>(__slices...);
     }
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 
   template <class _Extents, class... _Slices, size_t... _SliceIndices>

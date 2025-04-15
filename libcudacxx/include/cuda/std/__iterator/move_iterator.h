@@ -120,7 +120,7 @@ private:
     {
       return input_iterator_tag{};
     }
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 
 public:

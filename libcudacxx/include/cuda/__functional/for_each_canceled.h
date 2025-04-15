@@ -63,7 +63,7 @@ template <int _Index>
   }
   else
   {
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
   return __r;
 }

@@ -127,7 +127,7 @@ class AgentSubWarpSort
       {
         return lhs < rhs;
       }
-      _CUDA_VSTD::unreachable();
+      _CCCL_UNREACHABLE_WITH_CHECK();
     }
 
 #if _CCCL_HAS_NVFP16()
@@ -142,7 +142,7 @@ class AgentSubWarpSort
       {
         NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
       }
-      _CUDA_VSTD::unreachable();
+      _CCCL_UNREACHABLE_WITH_CHECK();
     }
 #endif // _CCCL_HAS_NVFP16()
   };

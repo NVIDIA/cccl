@@ -116,7 +116,7 @@ template <class _ElementType, class _Extents, class _Layout, class _Accessor>
     return mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>{
       __a.data_handle(), __a.mapping(), __return_accessor_type(__a.accessor())};
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 // Conjugation is self-annihilating

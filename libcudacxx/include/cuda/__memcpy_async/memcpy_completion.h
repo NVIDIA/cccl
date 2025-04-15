@@ -84,7 +84,7 @@ struct __memcpy_completion_impl
         // This completion mechanism should not be used with a shared
         // memory barrier. Or at least, we do not currently envision
         // bulk group to be used with shared memory barriers.
-        _CUDA_VSTD::unreachable();
+        _CCCL_UNREACHABLE_WITH_CHECK();
       case __completion_mechanism::__mbarrier_complete_tx:
 #if __cccl_ptx_isa >= 800
         // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
@@ -100,7 +100,7 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _CUDA_VSTD::unreachable();
+        _CCCL_UNREACHABLE_WITH_CHECK();
     }
   }
 
@@ -128,16 +128,16 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::async;
       case __completion_mechanism::__mbarrier_complete_tx:
         // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
-        _CUDA_VSTD::unreachable();
+        _CCCL_UNREACHABLE_WITH_CHECK();
       case __completion_mechanism::__async_bulk_group:
         // This completion mechanism is currently not expected to be used with barriers.
-        _CUDA_VSTD::unreachable();
+        _CCCL_UNREACHABLE_WITH_CHECK();
       case __completion_mechanism::__sync:
         // sync: In this case, we do not need to do anything.
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _CUDA_VSTD::unreachable();
+        _CCCL_UNREACHABLE_WITH_CHECK();
     }
   }
 
@@ -157,7 +157,7 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _CUDA_VSTD::unreachable();
+        _CCCL_UNREACHABLE_WITH_CHECK();
     }
   }
 };

@@ -42,7 +42,7 @@ _CCCL_REQUIRES(forward_range<_Range>)
     _CUDA_VRANGES::advance(__ret, _CUDA_VRANGES::end(__range));
     return __ret;
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 _LIBCUDACXX_END_NAMESPACE_RANGES

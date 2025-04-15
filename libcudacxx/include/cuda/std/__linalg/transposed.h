@@ -85,7 +85,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __transpose_extents_t<_Extents> __transpose_
       return __transpose_extents_t<_Extents>{}; // all extents are static
     }
   }
-  _CUDA_VSTD::unreachable(); // GCC9 workaround
+  _CCCL_UNREACHABLE_WITH_CHECK(); // GCC9 workaround
 }
 
 } // namespace __detail

@@ -20,7 +20,7 @@ auto call_merge(Args&&... args) -> decltype(thrust::merge(std::forward<Args>(arg
     using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, thrust::less<T>, CompareOp>;
     return thrust::merge(std::forward<Args>(args)..., C{});
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 template <typename U, typename CompareOp = void>

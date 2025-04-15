@@ -147,7 +147,7 @@ template <class _IndexType, size_t _Index, class... _Slices>
       return 0;
     }
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 template <size_t _Index, class _Extents, class... _Slices>
@@ -179,7 +179,7 @@ __last_extent_from_slice(const _Extents& __src, _Slices... __slices) noexcept
       return _CUDA_VSTD::__index_cast<_IndexType>(__src.extent(_Index));
     }
   }
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

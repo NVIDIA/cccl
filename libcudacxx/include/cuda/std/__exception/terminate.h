@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning n
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __cccl_terminate() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (__trap();))
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 #if 0 // Expose once atomic is universally available
@@ -59,7 +59,7 @@ _LIBCUDACXX_HIDE_FROM_ABI  terminate_handler get_terminate() noexcept
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void terminate() noexcept
 {
   __cccl_terminate();
-  _CUDA_VSTD::unreachable();
+  _CCCL_UNREACHABLE_WITH_CHECK();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
