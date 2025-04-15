@@ -706,10 +706,15 @@ CUresult cccl_device_radix_sort_impl(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
+    indirect_arg_t key_arg_in{d_keys_in};
+    indirect_arg_t key_arg_out{d_keys_out};
     cub::DoubleBuffer<indirect_arg_t> d_keys_buffer(
-      static_cast<indirect_arg_t*>(d_keys_in.state), static_cast<indirect_arg_t*>(d_keys_out.state));
+      *static_cast<indirect_arg_t**>(&key_arg_in), *static_cast<indirect_arg_t**>(&key_arg_out));
+
+    indirect_arg_t val_arg_in{d_values_in};
+    indirect_arg_t val_arg_out{d_values_out};
     cub::DoubleBuffer<indirect_arg_t> d_values_buffer(
-      static_cast<indirect_arg_t*>(d_values_in.state), static_cast<indirect_arg_t*>(d_values_out.state));
+      *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
     cub::DispatchRadixSort<Order,
                            indirect_arg_t,
