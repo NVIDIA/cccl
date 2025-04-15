@@ -28,6 +28,7 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/runtime_policy.h"
 #include "util/scan_tile_state.h"
 #include "util/types.h"
 #include <cccl/c/scan.h>
@@ -48,61 +49,30 @@ namespace scan
 
 struct scan_runtime_tuning_policy
 {
-  int block_size;
-  int items_per_thread;
-  cub::CacheLoadModifier load_modifier;
+  cub::detail::RuntimeScanAgentPolicy scan;
 
-  scan_runtime_tuning_policy Scan() const
+  auto Scan() const
   {
-    return *this;
-  }
-
-  int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
-
-  int BlockThreads() const
-  {
-    return block_size;
-  }
-
-  cub::CacheLoadModifier LoadModifier() const
-  {
-    return load_modifier;
+    return scan;
   }
 
   void CheckLoadModifier() const
   {
-    if (LoadModifier() == cub::CacheLoadModifier::LOAD_LDG)
+    if (Scan().LoadModifier() == cub::CacheLoadModifier::LOAD_LDG)
     {
       throw std::runtime_error("The memory consistency model does not apply to texture "
                                "accesses");
     }
   }
-};
 
-template <typename Tuning, int N>
-Tuning find_tuning(int cc, const Tuning (&tunings)[N])
-{
-  for (const Tuning& tuning : tunings)
+  using MaxPolicy = scan_runtime_tuning_policy;
+
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
   {
-    if (cc >= tuning.cc)
-    {
-      return tuning;
-    }
+    return op.template Invoke<scan_runtime_tuning_policy>(*this);
   }
-
-  return tunings[N - 1];
-}
-
-scan_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info /*accumulator_type*/)
-{
-  // TODO: we should update this once we figure out a way to reuse
-  // tuning logic from C++. Alternately, we should implement
-  // something better than a hardcoded default:
-  return {128, 4, cub::LOAD_DEFAULT};
-}
+};
 
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
@@ -231,7 +201,6 @@ CUresult cccl_device_scan_build(
 
     const int cc                 = cc_major * 10 + cc_minor;
     const cccl_type_info accum_t = scan::get_accumulator_type(op, input_it, init);
-    const auto policy            = scan::get_policy(cc, accum_t);
     const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
     const auto input_it_value_t  = cccl_type_enum_to_name(input_it.value_type.type);
     const auto offset_t          = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
@@ -250,37 +219,51 @@ CUresult cccl_device_scan_build(
 struct __align__({1}) storage_t {{
   char data[{0}];
 }};
+{2}
+{3}
 {4}
-{5}
-struct agent_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {2};
-  static constexpr int BLOCK_THREADS = {3};
-  static constexpr cub::BlockLoadAlgorithm LOAD_ALGORITHM = cub::BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
-  static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
-  static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
-  struct detail {{
-    using delay_constructor_t = cub::detail::default_delay_constructor_t<{7}>;
-  }};
-}};
-struct device_scan_policy {{
-  struct ActivePolicy {{
-    using ScanPolicyT = agent_policy_t;
-  }};
-}};
-{6}
 )XXX";
 
     const std::string& src = std::format(
       src_template,
       input_it.value_type.size, // 0
       input_it.value_type.alignment, // 1
-      policy.items_per_thread, // 2
-      policy.block_size, // 3
-      input_iterator_src, // 4
-      output_iterator_src, // 5
-      op_src, // 6
-      accum_cpp); // 7
+      input_iterator_src, // 2
+      output_iterator_src, // 3
+      op_src); // 4
+
+    const auto output_it_value_t = cccl_type_enum_to_name(output_it.value_type.type);
+
+    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+
+    constexpr size_t ptx_num_args      = 5;
+    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+
+    nlohmann::json runtime_policy = get_policy(
+      std::format("cub::detail::scan::MakeScanPolicyWrapper(cub::detail::scan::policy_hub<{}, {}, "
+                  "{}, {}, {}>::MaxPolicy::ActivePolicy{{}})",
+                  input_it_value_t,
+                  output_it_value_t,
+                  accum_cpp,
+                  offset_t,
+                  "op_wrapper"),
+      "#include <cub/device/dispatch/tuning/tuning_scan.cuh>\n" + src,
+      ptx_args);
+
+    using cub::detail::RuntimeScanAgentPolicy;
+    auto [scan_policy, scan_policy_str] = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT");
+
+    std::string final_src = std::format(
+      R"XXX(
+{0}
+struct device_scan_policy {{
+  struct ActivePolicy {{
+    {1}
+  }};
+}};
+)XXX",
+      src,
+      scan_policy_str);
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
@@ -311,7 +294,7 @@ struct device_scan_policy {{
 
     nvrtc_link_result result =
       make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_program(nvrtc_translation_unit{final_src.c_str(), name})
         .add_expression({init_kernel_name})
         .add_expression({scan_kernel_name})
         .compile_program({args, num_args})
@@ -335,6 +318,7 @@ struct device_scan_policy {{
     build_ptr->force_inclusive            = force_inclusive;
     build_ptr->description_bytes_per_tile = description_bytes_per_tile;
     build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
+    build_ptr->runtime_policy             = new scan::scan_runtime_tuning_policy{scan_policy};
   }
   catch (const std::exception& exc)
   {
@@ -375,7 +359,7 @@ CUresult cccl_device_scan(
       ::cuda::std::size_t,
       void,
       EnforceInclusive,
-      scan::dynamic_scan_policy_t<&scan::get_policy>,
+      scan::scan_runtime_tuning_policy,
       scan::scan_kernel_source,
       cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
@@ -389,7 +373,7 @@ CUresult cccl_device_scan(
         stream,
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        {scan::get_accumulator_type(op, d_in, init)});
+        *reinterpret_cast<scan::scan_runtime_tuning_policy*>(build.runtime_policy));
     if (cuda_error != cudaSuccess)
     {
       const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
@@ -452,6 +436,7 @@ CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)
       return CUDA_ERROR_INVALID_VALUE;
     }
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)

@@ -433,17 +433,20 @@ struct ScanPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(StaticPolic
     return cub::detail::MakePolicyWrapper(typename StaticPolicyT::ScanPolicyT());
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr CacheLoadModifier LoadModifier()
-  {
-    return StaticPolicyT::ScanPolicyT::LOAD_MODIFIER;
-  }
-
   CUB_RUNTIME_FUNCTION constexpr void CheckLoadModifier()
   {
-    static_assert(LoadModifier() != CacheLoadModifier::LOAD_LDG,
+    static_assert(Scan().LoadModifier() != CacheLoadModifier::LOAD_LDG,
                   "The memory consistency model does not apply to texture "
                   "accesses");
   }
+
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
+  _CCCL_DEVICE static constexpr auto EncodedPolicy()
+  {
+    using namespace ptx_json;
+    return object<key<"ScanPolicyT">() = Scan().EncodedPolicy()>();
+  }
+#endif
 };
 
 template <typename PolicyT>

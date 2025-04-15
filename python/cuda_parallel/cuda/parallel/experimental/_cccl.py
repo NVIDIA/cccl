@@ -120,6 +120,7 @@ class DeviceScanBuildResult(ctypes.Structure):
         ("force_inclusive", ctypes.c_bool),
         ("description_bytes_per_tile", ctypes.c_size_t),
         ("payload_bytes_per_tile", ctypes.c_size_t),
+        ("runtime_policy", ctypes.c_void_p),
     ]
 
 
