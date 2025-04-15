@@ -67,7 +67,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-TEST_CASE("device_memory_resource construction", "[memory_resource]")
+C2H_TEST("device_memory_resource construction", "[memory_resource]")
 {
   int current_device{};
   {
@@ -218,7 +218,7 @@ static void ensure_device_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeDevice);
 }
 
-TEST_CASE("device_memory_resource allocation", "[memory_resource]")
+C2H_TEST("device_memory_resource allocation", "[memory_resource]")
 {
   cudax::device_memory_resource res{};
 
@@ -268,7 +268,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
     cudaStreamDestroy(raw_stream);
   }
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#if _CCCL_HAS_EXCEPTIONS()
   { // allocate with too small alignment
     while (true)
     {
@@ -333,7 +333,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
 }
 
 enum class AccessibilityType
@@ -384,7 +384,7 @@ static_assert(!cuda::mr::async_resource_with<async_resource<AccessibilityType::H
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 static_assert(cuda::mr::async_resource_with<async_resource<AccessibilityType::Device>, cudax::device_accessible>, "");
 
-TEST_CASE("device_memory_resource comparison", "[memory_resource]")
+C2H_TEST("device_memory_resource comparison", "[memory_resource]")
 {
   int current_device{};
   {
@@ -461,7 +461,7 @@ TEST_CASE("device_memory_resource comparison", "[memory_resource]")
   }
 }
 
-TEST_CASE("Async memory resource access")
+C2H_TEST("Async memory resource access", "")
 {
   if (cudax::devices.size() > 1)
   {

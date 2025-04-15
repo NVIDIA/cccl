@@ -3,7 +3,7 @@ import numba
 from . import _iterators
 
 
-def CacheModifiedInputIterator(device_array, modifier, prefix=""):
+def CacheModifiedInputIterator(device_array, modifier):
     """Random Access Cache Modified Iterator that wraps a native device pointer.
 
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
@@ -32,7 +32,6 @@ def CacheModifiedInputIterator(device_array, modifier, prefix=""):
     return _iterators.CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
         numba.from_dtype(device_array.dtype),
-        prefix,
     )
 
 
@@ -82,6 +81,30 @@ def CountingIterator(offset):
         A ``CountingIterator`` object initialized to ``offset``
     """
     return _iterators.CountingIterator(offset)
+
+
+def ReverseIterator(sequence):
+    """Returns an Iterator over an array in reverse.
+
+    Similar to [std::reverse_iterator](https://en.cppreference.com/w/cpp/iterator/reverse_iterator)
+
+    Example:
+        The code snippet below demonstrates the usage of a ``ReverseIterator``:
+
+        .. literalinclude:: ../../python/cuda_parallel/tests/test_scan_api.py
+            :language: python
+            :dedent:
+            :start-after: example-begin reverse-iterator
+            :end-before: example-end reverse-iterator
+
+    Args:
+        sequence: The iterator or CUDA device array to be reversed
+
+    Returns:
+        A ``ReverseIterator`` object initialized with ``sequence``
+
+    """
+    return _iterators.make_reverse_iterator(sequence)
 
 
 def TransformIterator(it, op):

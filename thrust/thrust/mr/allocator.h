@@ -37,7 +37,7 @@
 #include <thrust/mr/polymorphic_adaptor.h>
 #include <thrust/mr/validator.h>
 
-#include <limits>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -105,7 +105,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE size_type max_size() const
   {
-    return (std::numeric_limits<size_type>::max)() / sizeof(T);
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   }
 
   /*! Constructor.

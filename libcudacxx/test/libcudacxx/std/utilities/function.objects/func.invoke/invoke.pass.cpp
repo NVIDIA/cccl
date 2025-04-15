@@ -36,7 +36,7 @@
 ///   (1.5) - f(t1, t2, ..., tN) in all other cases.
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>

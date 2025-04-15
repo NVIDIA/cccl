@@ -55,8 +55,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
-#  include <iterator>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub

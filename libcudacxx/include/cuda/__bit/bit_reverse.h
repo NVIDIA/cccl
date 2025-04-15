@@ -150,7 +150,7 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_reverse(_Tp __value) noexcept
 {
-  static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
+  static_assert(_CUDA_VSTD::__cccl_is_cv_unsigned_integer_v<_Tp>, "bit_reverse() requires unsigned integer types");
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__bit_reverse_device(__value);))

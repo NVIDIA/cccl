@@ -4,8 +4,8 @@
 #define _CUDA_PTX_GENERATED_TCGEN05_MMA_H_
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
-// PTX ISA 86, SM_100a
+// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; //
+PTX ISA 86, SM_100a
 // .kind      = { .kind::f16, .kind::tf32 }
 // .cta_group = { .cta_group::1 }
 template <int N32, cuda::ptx::dot_kind Kind>
@@ -85,8 +85,8 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
-// PTX ISA 86, SM_100a
+// tcgen05.mma.cta_group.kind [d_tmem], a_desc, b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; //
+PTX ISA 86, SM_100a
 // .kind      = { .kind::f16, .kind::tf32 }
 // .cta_group = { .cta_group::2 }
 template <int N32, cuda::ptx::dot_kind Kind>
@@ -683,8 +683,8 @@ _CCCL_DEVICE static inline void tcgen05_mma(
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
-// PTX ISA 86, SM_100a
+// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; //
+PTX ISA 86, SM_100a
 // .kind      = { .kind::f16, .kind::tf32 }
 // .cta_group = { .cta_group::1 }
 template <int N32, cuda::ptx::dot_kind Kind>
@@ -764,8 +764,8 @@ _CCCL_DEVICE static inline void tcgen05_mma_tmem_a(
 #endif // __cccl_ptx_isa >= 860
 
 /*
-// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d;
-// PTX ISA 86, SM_100a
+// tcgen05.mma.cta_group.kind [d_tmem], [a_tmem], b_desc, idesc, disable_output_lane, enable_input_d, scale_input_d; //
+PTX ISA 86, SM_100a
 // .kind      = { .kind::f16, .kind::tf32 }
 // .cta_group = { .cta_group::2 }
 template <int N32, cuda::ptx::dot_kind Kind>
