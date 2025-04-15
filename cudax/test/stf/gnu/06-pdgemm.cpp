@@ -225,7 +225,7 @@ void DGEMM(
   t.set_symbol("DGEMM");
 
   // To ensure this is done lazily, but outside a stream capture
-  auto ignored = get_cublas_handle();
+  [[maybe_unused]] auto ignored = get_cublas_handle();
 
   t->*[&](cudaStream_t stream, auto tA, auto tB, auto tC) {
     cuda_safe_call(cublasSetStream(get_cublas_handle(), stream));
