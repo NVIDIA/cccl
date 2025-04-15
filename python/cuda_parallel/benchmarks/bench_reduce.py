@@ -15,10 +15,10 @@ def reduce_pointer(input_array, build_only):
         return a + b
 
     alg = algorithms.reduce_into(input_array, res, my_add, h_init)
-    temp_bytes = alg(None, input_array, res, size, h_init)
-    scratch = cp.empty(temp_bytes, dtype=cp.uint8)
 
     if not build_only:
+        temp_bytes = alg(None, input_array, res, size, h_init)
+        scratch = cp.empty(temp_bytes, dtype=cp.uint8)
         alg(scratch, input_array, res, size, h_init)
 
     cp.cuda.runtime.deviceSynchronize()
