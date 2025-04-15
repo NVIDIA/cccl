@@ -133,6 +133,11 @@ void TestMakeConstantIterator()
 
   ASSERT_EQUAL(13, *iter1);
   ASSERT_EQUAL(7, iter1 - iter0);
+
+  // ensure CTAD words
+  constant_iterator deduced_iter{42};
+  static_assert(::cuda::std::is_same_v<decltype(deduced_iter), constant_iterator<int>>);
+  ASSERT_EQUAL(42, *deduced_iter);
 }
 DECLARE_UNITTEST(TestMakeConstantIterator);
 
