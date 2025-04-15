@@ -76,9 +76,8 @@ def bench_compile_reduce_pointer(compile_benchmark):
 
 
 def bench_compile_reduce_iterator(compile_benchmark):
-
     inp = iterators.CountingIterator(np.int32(0))
-    
+
     def run():
         reduce_iterator(inp, 10, build_only=True)
 

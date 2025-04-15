@@ -103,7 +103,9 @@ def bench_merge_sort_iterator(benchmark, size):
     output_vals = cp.empty(size, dtype="int64")
 
     def run():
-        merge_sort_iterator(size, keys, vals, output_keys, output_vals, build_only=False)
+        merge_sort_iterator(
+            size, keys, vals, output_keys, output_vals, build_only=False
+        )
 
     benchmark(run)
 
