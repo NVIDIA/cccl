@@ -106,4 +106,18 @@
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::no_specializations(_MSG)]]
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[msvc::no_specializations(_MSG)]]
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
+#else // ^^^ has attribute no_specializations ^^^ / vvv hasn't attribute no_specializations vvv
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 0
+#endif // ^^^ hasn't attribute no_specializations ^^^
+
+#define _CCCL_NO_SPECIALIZATIONS \
+  _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")
+
 #endif // __CCCL_ATTRIBUTES_H
