@@ -43,9 +43,9 @@ template <class _Tp>
 {
   const auto __ubase = static_cast<_Tp>(__base);
 
-  const auto __ubase_2 = __ubase * __ubase;
-  const auto __ubase_3 = __ubase_2 * __ubase;
-  const auto __ubase_4 = __ubase_2 * __ubase_2;
+  const auto __ubase_2 = static_cast<_Tp>(__ubase * __ubase);
+  const auto __ubase_3 = static_cast<_Tp>(__ubase_2 * __ubase);
+  const auto __ubase_4 = static_cast<_Tp>(__ubase_2 * __ubase_2);
 
   int __r = 0;
   while (true)
@@ -81,7 +81,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __to_chars_int_generic(char* __last, _T
   {
     const int __c = __value % __base;
     *--__last     = _CUDA_VSTD::__to_chars_value_to_char(__c, __base);
-    __value /= __base;
+    __value /= static_cast<_Tp>(__base);
   } while (__value != 0);
 }
 
