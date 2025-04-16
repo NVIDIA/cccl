@@ -1381,13 +1381,12 @@ struct __overload
     __cccl_internal::__cccl_is_non_narrowing_v<_Tp, _Up>;
 #endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
 
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES((!is_arithmetic_v<_Tp>) )
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> type_identity<_Tp>;
+  template <class _Up>
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> enable_if_t<!is_arithmetic_v<_Tp>, type_identity<_Tp>>;
 
-  _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(is_arithmetic_v<_Tp> _CCCL_AND __check_narrowing<_Up>)
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> type_identity<_Tp>;
+  template <class _Up>
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const
+    -> enable_if_t<is_arithmetic_v<_Tp> && __check_narrowing<_Up>, type_identity<_Tp>>;
 };
 
 template <class _Tp, size_t>
