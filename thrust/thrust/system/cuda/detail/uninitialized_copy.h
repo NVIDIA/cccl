@@ -42,8 +42,6 @@
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <iterator>
-
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
@@ -99,7 +97,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt _CCCL_HOST_DEVICE
 uninitialized_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
-  return cuda_cub::uninitialized_copy_n(policy, first, thrust::distance(first, last), result);
+  return cuda_cub::uninitialized_copy_n(policy, first, ::cuda::std::distance(first, last), result);
 }
 
 } // namespace cuda_cub

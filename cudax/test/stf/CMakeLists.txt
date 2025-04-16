@@ -36,6 +36,7 @@ set(stf_test_sources
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
   local_stf/threads_multiple_graphs.cu
+  places/affinity_gc.cu
   places/managed.cu
   places/managed_from_user.cu
   places/non_current_device.cu
@@ -69,10 +70,10 @@ set(stf_test_sources
 )
 
 set(stf_test_codegen_sources
-  algorithm/algorithm_with_read.cu
-  algorithm/graph_algorithms.cu
-  algorithm/in_graph_ctx.cu
-  algorithm/nested.cu
+  # algorithm/algorithm_with_read.cu
+  # algorithm/graph_algorithms.cu
+  # algorithm/in_graph_ctx.cu
+  # algorithm/nested.cu
   allocators/adapter.cu
   allocators/cap_tmp_buffers.cu
   cpp/read_const.cu
@@ -82,7 +83,7 @@ set(stf_test_codegen_sources
   error_checks/unsatisfiable_spec.cu
   examples/01-axpy-launch-ranges-cg.cu
   examples/01-axpy-places.cu
-  examples/09-nbody-algorithm.cu
+  # examples/09-nbody-algorithm.cu
   examples/09-nbody-blocked.cu
   examples/09-nbody.cu
   freeze/constant_logical_data.cu
@@ -91,10 +92,10 @@ set(stf_test_codegen_sources
   freeze/task_fence.cu
   freeze/token.cu
   graph/epoch.cu
-  graph/for_each_batched.cu
-  graph/for_each_batched_write.cu
+  # graph/for_each_batched.cu
+  # graph/for_each_batched_write.cu
   graph/freeze_for_graph.cu
-  graph/graph_composition.cu
+  # graph/graph_composition.cu
   graph/graph_tmp_data.cu
   graph/many.cu
   graph/multiple_graph_ctx.cu

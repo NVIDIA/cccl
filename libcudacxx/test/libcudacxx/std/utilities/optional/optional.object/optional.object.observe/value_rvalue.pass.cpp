@@ -18,7 +18,7 @@
 #include "test_macros.h"
 
 using cuda::std::optional;
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 using cuda::std::bad_optional_access;
 #endif
 
@@ -58,7 +58,7 @@ struct Y
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_exceptions()
 {
   optional<X> opt{};
@@ -70,7 +70,7 @@ void test_exceptions()
   catch (const bad_optional_access&)
   {}
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 __host__ __device__ constexpr bool test()
 {
@@ -118,9 +118,9 @@ int main(int, char**)
   test();
   static_assert(test(), "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

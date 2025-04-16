@@ -49,8 +49,7 @@
 #  include <thrust/zip_function.h>
 
 #  include <cuda/__functional/address_stability.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -320,7 +319,7 @@ OutputIt THRUST_FUNCTION transform_if(
   Predicate predicate)
 {
   using size_type     = thrust::detail::it_difference_t<InputIt>;
-  size_type num_items = static_cast<size_type>(thrust::distance(first, last));
+  size_type num_items = static_cast<size_type>(::cuda::std::distance(first, last));
   return __transform::unary(policy, first, result, num_items, stencil, transform_op, predicate);
 } // func transform_if
 
@@ -342,7 +341,7 @@ transform(execution_policy<Derived>& policy, InputIt first, InputIt last, Output
 {
   THRUST_CDP_DISPATCH(
     (using size_type      = thrust::detail::it_difference_t<InputIt>;
-     const auto num_items = static_cast<size_type>(thrust::distance(first, last));
+     const auto num_items = static_cast<size_type>(::cuda::std::distance(first, last));
      return __transform::cub_transform_many(policy, ::cuda::std::make_tuple(first), result, num_items, transform_op);),
     (while (first != last) {
       *result = transform_op(raw_reference_cast(*first));
@@ -373,7 +372,7 @@ OutputIt THRUST_FUNCTION transform_if(
   Predicate predicate)
 {
   using size_type     = thrust::detail::it_difference_t<InputIt1>;
-  size_type num_items = static_cast<size_type>(thrust::distance(first1, last1));
+  size_type num_items = static_cast<size_type>(::cuda::std::distance(first1, last1));
   return __transform::binary(policy, first1, first2, result, num_items, stencil, transform_op, predicate);
 } // func transform_if
 
@@ -388,7 +387,7 @@ OutputIt THRUST_FUNCTION transform(
 {
   THRUST_CDP_DISPATCH(
     (using size_type      = thrust::detail::it_difference_t<InputIt1>;
-     const auto num_items = static_cast<size_type>(thrust::distance(first1, last1));
+     const auto num_items = static_cast<size_type>(::cuda::std::distance(first1, last1));
      return __transform::cub_transform_many(
        policy, ::cuda::std::make_tuple(first1, first2), result, num_items, transform_op);),
     (while (first1 != last1) {

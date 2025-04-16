@@ -49,8 +49,9 @@ _CCCL_HOST_DEVICE complex<T>::complex(const complex<U>& z)
     : data{T(z.real()), T(z.imag())}
 {}
 
+#if !_CCCL_COMPILER(NVRTC)
 template <typename T>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const std::complex<T>& z)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const ::std::complex<T>& z)
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     : data{THRUST_STD_COMPLEX_REAL(z), THRUST_STD_COMPLEX_IMAG(z)}
@@ -58,12 +59,13 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const std::complex<T>& 
 
 template <typename T>
 template <typename U>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const std::complex<U>& z)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>::complex(const ::std::complex<U>& z)
     // Initialize the storage in the member initializer list using C++ unicorn
     // initialization. This allows `complex<T const>` to work.
     // We do a functional-style cast here to suppress conversion warnings.
     : data{T(THRUST_STD_COMPLEX_REAL(z)), T(THRUST_STD_COMPLEX_IMAG(z))}
 {}
+#endif // !_CCCL_COMPILER(NVRTC)
 
 /* --- Assignment Operators --- */
 
@@ -84,8 +86,9 @@ _CCCL_HOST_DEVICE complex<T>& complex<T>::operator=(const complex<U>& z)
   return *this;
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <typename T>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const std::complex<T>& z)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const ::std::complex<T>& z)
 {
   real(THRUST_STD_COMPLEX_REAL(z));
   imag(THRUST_STD_COMPLEX_IMAG(z));
@@ -94,12 +97,13 @@ _CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const std
 
 template <typename T>
 template <typename U>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const std::complex<U>& z)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE complex<T>& complex<T>::operator=(const ::std::complex<U>& z)
 {
   real(T(THRUST_STD_COMPLEX_REAL(z)));
   imag(T(THRUST_STD_COMPLEX_IMAG(z)));
   return *this;
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 /* --- Compound Assignment Operators --- */
 
@@ -175,17 +179,19 @@ _CCCL_HOST_DEVICE bool operator==(const complex<T0>& x, const complex<T1>& y)
   return x.real() == y.real() && x.imag() == y.imag();
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const std::complex<T1>& y)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const complex<T0>& x, const ::std::complex<T1>& y)
 {
   return x.real() == THRUST_STD_COMPLEX_REAL(y) && x.imag() == THRUST_STD_COMPLEX_IMAG(y);
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const std::complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator==(const ::std::complex<T0>& x, const complex<T1>& y)
 {
   return THRUST_STD_COMPLEX_REAL(x) == y.real() && THRUST_STD_COMPLEX_IMAG(x) == y.imag();
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator==(const T0& x, const complex<T1>& y)
@@ -205,17 +211,19 @@ _CCCL_HOST_DEVICE bool operator!=(const complex<T0>& x, const complex<T1>& y)
   return !(x == y);
 }
 
+#if !_CCCL_COMPILER(NVRTC)
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const std::complex<T1>& y)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const complex<T0>& x, const ::std::complex<T1>& y)
 {
   return !(x == y);
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const std::complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST THRUST_STD_COMPLEX_DEVICE bool operator!=(const ::std::complex<T0>& x, const complex<T1>& y)
 {
   return !(x == y);
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename T0, typename T1>
 _CCCL_HOST_DEVICE bool operator!=(const T0& x, const complex<T1>& y)

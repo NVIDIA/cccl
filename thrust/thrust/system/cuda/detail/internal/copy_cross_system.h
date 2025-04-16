@@ -114,7 +114,7 @@ OutputIt _CCCL_HOST cross_system_copy_n(
 
   // copy input data into host temp storage
   InputIt last = first;
-  thrust::advance(last, num_items);
+  ::cuda::std::advance(last, num_items);
   thrust::detail::temporary_array<InputTy, H> temp(host_s, num_items);
 
   for (Size idx = 0; idx != num_items; idx++)
@@ -195,7 +195,7 @@ template <class System1, class System2, class InputIterator, class OutputIterato
 OutputIterator _CCCL_HOST
 cross_system_copy(cross_system<System1, System2> systems, InputIterator begin, InputIterator end, OutputIterator result)
 {
-  return cross_system_copy_n(systems, begin, thrust::distance(begin, end), result);
+  return cross_system_copy_n(systems, begin, ::cuda::std::distance(begin, end), result);
 }
 
 } // namespace __copy

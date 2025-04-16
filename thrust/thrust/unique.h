@@ -158,7 +158,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last);
  *  ...
  *  const int N = 7;
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1};
- *  int *new_end = thrust::unique(thrust::host, A, A + N, thrust::equal_to<int>());
+ *  int *new_end = thrust::unique(thrust::host, A, A + N, ::cuda::std::equal_to<int>());
  *  // The first four values of A are now {1, 3, 2, 1}
  *  // Values beyond new_end are unspecified.
  *  \endcode
@@ -203,7 +203,7 @@ _CCCL_HOST_DEVICE ForwardIterator unique(
  *  ...
  *  const int N = 7;
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1};
- *  int *new_end = thrust::unique(A, A + N, thrust::equal_to<int>());
+ *  int *new_end = thrust::unique(A, A + N, ::cuda::std::equal_to<int>());
  *  // The first four values of A are now {1, 3, 2, 1}
  *  // Values beyond new_end are unspecified.
  *  \endcode
@@ -362,7 +362,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
  *  const int N = 7;
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1};
  *  int B[N];
- *  int *result_end = thrust::unique_copy(thrust::host, A, A + N, B, thrust::equal_to<int>());
+ *  int *result_end = thrust::unique_copy(thrust::host, A, A + N, B, ::cuda::std::equal_to<int>());
  *  // The first four values of B are now {1, 3, 2, 1} and (result_end - B) is 4
  *  // Values beyond result_end are unspecified.
  *  \endcode
@@ -410,7 +410,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
  *  const int N = 7;
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1};
  *  int B[N];
- *  int *result_end = thrust::unique_copy(A, A + N, B, thrust::equal_to<int>());
+ *  int *result_end = thrust::unique_copy(A, A + N, B, ::cuda::std::equal_to<int>());
  *  // The first four values of B are now {1, 3, 2, 1} and (result_end - B) is 4
  *  // Values beyond result_end are unspecified.
  *  \endcode
@@ -581,7 +581,7 @@ unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIt
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key(thrust::host, A, A + N, B, binary_pred);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
@@ -637,7 +637,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
  *  int B[N] = {9, 8, 7, 6, 5, 4, 3}; // values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key(A, A + N, B, binary_pred);
  *
  *  // The first four keys in A are now {1, 3, 2, 1} and new_end.first - A is 4.
@@ -830,7 +830,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key_copy(thrust::host, A, A + N, B, C, D, binary_pred);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -899,7 +899,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::unique_by_key_copy(A, A + N, B, C, D, binary_pred);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -952,7 +952,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
  *  ...
  *  const int N = 7;
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1};
- *  int count = thrust::unique_count(thrust::host, A, A + N, thrust::equal_to<int>());
+ *  int count = thrust::unique_count(thrust::host, A, A + N, ::cuda::std::equal_to<int>());
  *  // count is now 4
  *  \endcode
  *
@@ -1033,7 +1033,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
  *  ...
  *  const int N = 7;
  *  int A[N] = {1, 3, 3, 3, 2, 2, 1};
- *  int count = thrust::unique_count(A, A + N, thrust::equal_to<int>());
+ *  int count = thrust::unique_count(A, A + N, ::cuda::std::equal_to<int>());
  *  // count is now 4
  *  \endcode
  *

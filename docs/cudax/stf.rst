@@ -1781,7 +1781,7 @@ one may however already manage coherency or enforce dependencies.
 
 - The "logical data freezing" mechanism ensures data availability while letting
   the application take care of synchronization.
-- Logical token makes it possible to enforce concurrent execution while
+- Tokens make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 
 Freezing logical data
@@ -1856,24 +1856,24 @@ depend on the completion of the work in the streams used for any preceding
 It is possible to retrieve the access mode used to freeze a logical data with
 the ``get_access_mode()`` method of the ``frozen_logical_data`` object.
 
-Logical token
-^^^^^^^^^^^^^
+Tokens
+^^^^^^
 
-A logical token is a specific type of logical data whose only purpose is to
+A token is a specific type of logical data whose only purpose is to
 automate synchronization, while letting the application manage the actual data.
 This can, for example, be useful with user-provided buffers on a single device,
 where no allocations or transfers are required, but where concurrent accesses
 may occur.
 
-A logical token internally relies on the ``void_interface`` data interface,
+A token internally relies on the ``void_interface`` data interface,
 which is specifically optimized to skip unnecessary stages in the cache
 coherency protocol (e.g., data allocations or copying data). When appropriate,
-using a logical token rather than a logical data with a full-fledged data
+using a token rather than a logical data with a full-fledged data
 interface therefore minimizes runtime overhead.
 
 .. code:: cpp
 
-    auto token = ctx.logical_token();
+    auto token = ctx.token();
 
     // A and B are assumed to be two other valid logical data
     ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, auto a, auto b)
@@ -1881,10 +1881,10 @@ interface therefore minimizes runtime overhead.
         ...
     };
 
-The example above shows how to create a logical token and how to use it in a
+The example above shows how to create a token and how to use it in a
 task.
 
-Since the logical token is only used for synchronization purposes, the
+Since the token is only used for synchronization purposes, the
 corresponding argument may be omitted in the lambda function passed as the
 task’s implementation. Thus, the above task is equivalent to this code:
 
@@ -1897,10 +1897,14 @@ To avoid ambiguities, you must either consistently ignore every
 unused. Eliding these token arguments is possible in the ``ctx.task`` and
 ``ctx.host_launch`` constructs.
 
-Note that the token created by the ``logical_token`` method of the context
+Note that the token created by the ``token`` method of the context
 object is already valid, which means the first access can be either a ``read()``
 or an ``rw()`` access. There is no need to set any content in the token
 (unlike a logical data object created from a shape).
+
+A token corresponds to a ``logical_data<void_interface>`` object, so that the
+``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
+returns an object with a ``token`` type.
 
 Tools
 -----
@@ -2022,9 +2026,9 @@ illustrates how to add nested sections:
 .. code:: c++
 
     context ctx;
-    auto lA = ctx.logical_token().set_symbol("A");
-    auto lB = ctx.logical_token().set_symbol("B");
-    auto lC = ctx.logical_token().set_symbol("C");
+    auto lA = ctx.token().set_symbol("A");
+    auto lB = ctx.token().set_symbol("B");
+    auto lC = ctx.token().set_symbol("C");
 
     // Begin a top-level section named "foo"
     auto s_foo = ctx.dot_section("foo");

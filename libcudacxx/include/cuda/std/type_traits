@@ -72,6 +72,7 @@
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__type_traits/is_core_convertible.h>
+#include <cuda/std/__type_traits/is_corresponding_member.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_destructible.h>
 #include <cuda/std/__type_traits/is_empty.h>
@@ -84,6 +85,7 @@
 #include <cuda/std/__type_traits/is_implicitly_default_constructible.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/std/__type_traits/is_layout_compatible.h>
 #include <cuda/std/__type_traits/is_literal_type.h>
 #include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/is_member_object_pointer.h>
@@ -103,6 +105,8 @@
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__type_traits/is_pod.h>
 #include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_pointer_interconvertible_base_of.h>
+#include <cuda/std/__type_traits/is_pointer_interconvertible_with_class.h>
 #include <cuda/std/__type_traits/is_polymorphic.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/is_reference.h>

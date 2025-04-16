@@ -82,15 +82,15 @@ void TestCopyToDiscardIteratorZipped()
 
   // copy from host_vector
   ZipIterator1 h_result = thrust::copy(
-    thrust::make_zip_iterator(thrust::make_tuple(h_input.begin(), h_input.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(h_input.end(), h_input.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(), h_output.begin())));
+    thrust::make_zip_iterator(h_input.begin(), h_input.begin()),
+    thrust::make_zip_iterator(h_input.end(), h_input.end()),
+    thrust::make_zip_iterator(thrust::make_discard_iterator(), h_output.begin()));
 
   // copy from device_vector
   ZipIterator2 d_result = thrust::copy(
-    thrust::make_zip_iterator(thrust::make_tuple(d_input.begin(), d_input.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(d_input.end(), d_input.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(thrust::make_discard_iterator(), d_output.begin())));
+    thrust::make_zip_iterator(d_input.begin(), d_input.begin()),
+    thrust::make_zip_iterator(d_input.end(), d_input.end()),
+    thrust::make_zip_iterator(thrust::make_discard_iterator(), d_output.begin()));
 
   ASSERT_EQUAL(h_output, h_input);
   ASSERT_EQUAL(d_output, d_input);
@@ -442,7 +442,7 @@ struct always_true
   _CCCL_HOST_DEVICE bool operator()(const object_with_non_trivial_ctor&)
   {
     return true;
-  };
+  }
 };
 
 } // namespace
@@ -528,9 +528,9 @@ void TestCopyZipIterator()
   Vector v3(3, T(0));
   Vector v4(3, T(0));
 
-  thrust::copy(thrust::make_zip_iterator(thrust::make_tuple(v1.begin(), v2.begin())),
-               thrust::make_zip_iterator(thrust::make_tuple(v1.end(), v2.end())),
-               thrust::make_zip_iterator(thrust::make_tuple(v3.begin(), v4.begin())));
+  thrust::copy(thrust::make_zip_iterator(v1.begin(), v2.begin()),
+               thrust::make_zip_iterator(v1.end(), v2.end()),
+               thrust::make_zip_iterator(v3.begin(), v4.begin()));
 
   ASSERT_EQUAL(v1, v3);
   ASSERT_EQUAL(v2, v4);
@@ -547,7 +547,7 @@ void TestCopyConstantIteratorToZipIterator()
 
   thrust::copy(thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)),
                thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)) + v1.size(),
-               thrust::make_zip_iterator(thrust::make_tuple(v1.begin(), v2.begin())));
+               thrust::make_zip_iterator(v1.begin(), v2.begin()));
 
   Vector ref1{4, 4, 4};
   Vector ref2{7, 7, 7};
@@ -746,7 +746,7 @@ void TestCopyWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(0);
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                         = false;

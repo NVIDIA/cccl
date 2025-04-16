@@ -37,8 +37,8 @@
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/void_t.h>
+#include <cuda/std/cassert>
 
-#include <cassert>
 #include <thread>
 
 #include <tbb/blocked_range.h>
@@ -342,7 +342,7 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
     tail_flags.end(),
     interval_size,
     interval_output_offsets.begin() + 1,
-    thrust::plus<size_t>());
+    ::cuda::std::plus<size_t>());
   interval_output_offsets[0] = 0;
 
   // scan the counts to get each body's output offset

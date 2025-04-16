@@ -55,7 +55,7 @@
 
 //! Ensure that we switch on device assertions when all assertions are enabled
 #ifndef CCCL_ENABLE_DEVICE_ASSERTIONS
-#  ifdef CCCL_ENABLE_ASSERTIONS
+#  if defined(CCCL_ENABLE_ASSERTIONS) || defined(__CUDACC_DEBUG__)
 #    define CCCL_ENABLE_DEVICE_ASSERTIONS
 #  endif // CCCL_ENABLE_ASSERTIONS
 #endif // !CCCL_ENABLE_DEVICE_ASSERTIONS

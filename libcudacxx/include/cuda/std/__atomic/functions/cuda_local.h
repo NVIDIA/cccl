@@ -37,22 +37,25 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 {
-#  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
+#  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE) && !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
   return false;
 // Only NVCC+NVRTC define __isLocal, so drop to PTX
-#  elif _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC)
+// Some tests require using the inline PTX path to ensure it is bug-free
+#  elif _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC) || defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
   int __tmp = 0;
   asm("{\n\t"
       "  .reg .pred p;\n\t"
       "  isspacep.local p, %1;\n\t"
-      "  @p mov.s32 %0, 1;\n\t"
+      "  selp.u32 %0, 1, 0, p;\n\t"
       "}\n\t"
       : "=r"(__tmp)
       : "l"(const_cast<const void*>(__ptr)));
   return __tmp == 1;
-#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv other compiler vvv
+#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC) ||
+        // defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH) ^^^ / vvv other compiler vvv
   return __isLocal(const_cast<const void*>(__ptr));
-#  endif // _CCCL_CUDACC_AT_LEAST(12, 3) && !_CCCL_CUDA_COMPILER(NVHPC)
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3) && !_CCCL_CUDA_COMPILER(NVHPC) &&
+         // !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
 }
 
 template <class _Type>

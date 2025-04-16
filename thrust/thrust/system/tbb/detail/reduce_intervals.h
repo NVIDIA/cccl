@@ -32,9 +32,8 @@
 #include <thrust/system/tbb/detail/execution_policy.h>
 
 #include <cuda/std/__algorithm/min.h>
-
-#include <cassert>
-#include <type_traits>
+#include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 
 #include <tbb/parallel_for.h>
 
@@ -83,7 +82,7 @@ struct body
     RandomAccessIterator1 my_last  = first + offset_to_last;
 
     // carefully pass the init value for the interval with raw_reference_cast
-    using sum_type = typename std::decay<decltype(binary_op(*my_first, *my_first))>::type;
+    using sum_type = ::cuda::std::decay_t<decltype(binary_op(*my_first, *my_first))>;
     result[interval_idx] =
       thrust::reduce(thrust::seq, my_first + 1, my_last, sum_type(thrust::raw_reference_cast(*my_first)), binary_op);
   }
@@ -132,7 +131,7 @@ void reduce_intervals(
   using value_type = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   return thrust::system::tbb::detail::reduce_intervals(
-    exec, first, last, interval_size, result, thrust::plus<value_type>());
+    exec, first, last, interval_size, result, ::cuda::std::plus<value_type>());
 }
 
 } // namespace detail

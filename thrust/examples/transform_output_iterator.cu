@@ -32,7 +32,7 @@ int main()
   // gather multiple elements and apply a function before writing result in memory
   thrust::gather(IDX.begin(),
                  IDX.end(),
-                 thrust::make_zip_iterator(thrust::make_tuple(U.begin(), V.begin())),
+                 thrust::make_zip_iterator(U.begin(), V.begin()),
                  thrust::make_transform_output_iterator(W.begin(), Functor()));
 
   std::cout << "result= [ ";

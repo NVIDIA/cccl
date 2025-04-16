@@ -254,6 +254,7 @@ doxygen_aliases = []
 # more information on the format can be found at:
 #     https://www.doxygen.nl/manual/config.html#cfg_predefined
 doxygen_predefined = [
+  "_CCCL_AND=",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
@@ -269,6 +270,8 @@ doxygen_predefined = [
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
   "_CCCL_GLOBAL_CONSTANT=constexpr",
+  "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
+  "_CCCL_TEMPLATE(x)=template<x, ",
   "CUDASTF_HOST=",
   "CUDASTF_DEVICE=",
   "CUDASTF_HOST_DEVICE=",
@@ -278,7 +281,8 @@ doxygen_predefined = [
   "THRUST_PREVENT_MACRO_SUBSTITUTION",
   "THRUST_FWD(x)=x",
   "CCCL_DEPRECATED_BECAUSE(x)=",
-  "CCCL_DEPRECATED="
+  "CCCL_DEPRECATED=",
+  "_LIBCUDACXX_HIDE_FROM_ABI="
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -341,6 +345,7 @@ autodoc.mock_imports = [
     "llvmlite",
     "numpy",
     "cupy",
+    "cuda.parallel.experimental._bindings"
 ]
 
 enhanced_search_enabled = true

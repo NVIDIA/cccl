@@ -45,9 +45,10 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   auto do_engine = [&](auto&& engine_constructor) {
     caching_allocator_t alloc;
-    state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-      thrust::shuffle(policy(alloc, launch), data.begin(), data.end(), engine_constructor());
-    });
+    state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+               [&](nvbench::launch& launch) {
+                 thrust::shuffle(policy(alloc, launch), data.begin(), data.end(), engine_constructor());
+               });
   };
 
   const auto rng_engine = state.get_string("Engine");

@@ -63,26 +63,21 @@ private:
 
 public:
   buddy_allocator_metadata(size_t size, event_list init_prereqs)
+      : free_lists_(int_log2(next_power_of_two(size)) + 1)
   {
-    total_size_ = next_power_of_two(size);
-    assert(total_size_ == size);
-
-    max_level_ = int_log2(total_size_);
-
-    free_lists_.resize(max_level_ + 1);
-
+    _CCCL_ASSERT(size && (size & (size - 1)) == 0,
+                 "Allocation requests for this allocator must pass a size that is a power of two.");
     // Initially, the whole memory is free, but depends on init_prereqs
-    free_lists_[max_level_].emplace_back(0, init_prereqs);
+    free_lists_.back().emplace_back(0, mv(init_prereqs));
   }
 
   ::std::ptrdiff_t allocate(size_t size, event_list& prereqs)
   {
-    size         = next_power_of_two(size);
-    size_t level = int_log2(size);
-
-    if (level > max_level_)
+    size               = next_power_of_two(size);
+    const size_t level = int_log2(size);
+    if (level >= free_lists_.size())
     {
-      fprintf(stderr, "Level %zu > max level %zu\n", level, max_level_);
+      fprintf(stderr, "Level %zu > max level %zu\n", level, free_lists_.size() - 1);
       return -1;
     }
 
@@ -104,11 +99,11 @@ public:
     // Deallocated blocks will depend on these, and we will merge the
     // previous dependencies when merging buddies
     event_list block_prereqs(prereqs);
-
-    while (level < max_level_)
+    const size_t max_level = free_lists_.size() - 1;
+    while (level < max_level)
     {
-      size_t buddy_index = get_buddy_index(index, level);
-      auto& buddy_list   = free_lists_[level];
+      const size_t buddy_index = get_buddy_index(index, level);
+      auto& buddy_list         = free_lists_[level];
       auto it = ::std::find_if(buddy_list.begin(), buddy_list.end(), [buddy_index](const avail_block& block) {
         return block.index == buddy_index;
       });
@@ -144,7 +139,7 @@ public:
   void debug_print() const
   {
     size_t power = 1;
-    for (size_t i = 0; i <= max_level_; ++i, power *= 2)
+    for (size_t i = 0; i < free_lists_.size(); ++i, power *= 2)
     {
       if (!free_lists_[i].empty())
       {
@@ -161,16 +156,22 @@ public:
 private:
   static size_t next_power_of_two(size_t size)
   {
+    static_assert(sizeof(size_t) <= 8, "You must be from the future. Review and adjust this code.");
     if (size == 0)
     {
       return 1;
     }
-    size_t power = 1;
-    while (power < size)
+    --size;
+    size |= size >> 1;
+    size |= size >> 2;
+    size |= size >> 4;
+    size |= size >> 8;
+    size |= size >> 16;
+    if constexpr (sizeof(size_t) == 8)
     {
-      power *= 2;
+      size |= size >> 32;
     }
-    return power;
+    return size + 1;
   }
 
   static size_t int_log2(size_t n)
@@ -187,7 +188,7 @@ private:
 
   ::std::ptrdiff_t find_free_block(size_t level, event_list& prereqs)
   {
-    for (size_t current_level : each(level, max_level_ + 1))
+    for (size_t current_level : each(level, free_lists_.size()))
     {
       if (free_lists_[current_level].empty())
       {
@@ -222,8 +223,6 @@ private:
   }
 
   ::std::vector<::std::vector<avail_block>> free_lists_;
-  size_t total_size_ = 0;
-  size_t max_level_  = 0;
 };
 
 } // end namespace reserved
@@ -244,16 +243,20 @@ private:
   // Per data place buffer and its corresponding metadata
   struct per_place
   {
-    per_place(void* base_, size_t size, event_list& prereqs)
+    per_place(void* base_, size_t size, event_list prereqs)
         : base(base_)
         , buffer_size(size)
-    {
-      metadata = ::std::make_shared<reserved::buddy_allocator_metadata>(buffer_size, prereqs);
-    }
+        , metadata(buffer_size, mv(prereqs))
+    {}
+
+    per_place& operator=(const per_place&) = delete;
+    per_place& operator=(per_place&&)      = default;
+    per_place(const per_place&)            = delete;
+    per_place(per_place&&)                 = default;
 
     void* base         = nullptr;
     size_t buffer_size = 0;
-    ::std::shared_ptr<reserved::buddy_allocator_metadata> metadata;
+    reserved::buddy_allocator_metadata metadata;
   };
 
 public:
@@ -270,16 +273,16 @@ public:
       void* base          = a.allocate(ctx, memory_node, sz, prereqs);
 
       // 2. creates meta data for that buffer, and 3. associate it to the data place
-      it = map.emplace(memory_node, ::std::make_shared<per_place>(base, sz, prereqs)).first;
+      it = map.emplace(memory_node, per_place(base, sz, prereqs)).first;
     }
 
     // There should be exactly one entry in the map
     assert(map.count(memory_node) == 1);
     auto& m = it->second;
 
-    ::std::ptrdiff_t offset = m->metadata->allocate(s, prereqs);
+    ::std::ptrdiff_t offset = m.metadata.allocate(s, prereqs);
     assert(offset != -1);
-    return static_cast<char*>(m->base) + offset;
+    return static_cast<char*>(m.base) + offset;
   }
 
   void
@@ -287,11 +290,11 @@ public:
   {
     // There should be exactly one entry in the map
     assert(map.count(memory_node) == 1);
-    auto& m = map[memory_node];
+    auto& m = map.find(memory_node)->second;
 
-    size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m->base);
+    size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m.base);
 
-    m->metadata->deallocate(offset, sz, prereqs);
+    m.metadata.deallocate(offset, sz, prereqs);
   }
 
   event_list deinit(backend_ctx_untyped& ctx) override
@@ -303,11 +306,11 @@ public:
       event_list local_prereqs;
 
       // Deinitialize the metadata of the buddy allocator for this place
-      pp->metadata->deinit(local_prereqs);
+      pp.metadata.deinit(local_prereqs);
 
       // Deallocate the underlying buffer for this buddy allocator
       auto& a = root_allocator ? root_allocator : ctx.get_uncached_allocator();
-      a.deallocate(ctx, memory_node, local_prereqs, pp->base, pp->buffer_size);
+      a.deallocate(ctx, memory_node, local_prereqs, pp.base, pp.buffer_size);
 
       result.merge(local_prereqs);
     }
@@ -320,7 +323,7 @@ public:
   }
 
 private:
-  ::std::unordered_map<data_place, ::std::shared_ptr<per_place>, hash<data_place>> map;
+  ::std::unordered_map<data_place, per_place, hash<data_place>> map;
 
   block_allocator_untyped root_allocator;
 };
