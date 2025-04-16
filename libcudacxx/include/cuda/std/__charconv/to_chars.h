@@ -46,8 +46,9 @@ template <class _Tp>
 {
   using _Up = cuda::std::conditional_t<sizeof(_Tp) >= sizeof(uint32_t), make_unsigned_t<_Tp>, uint32_t>;
 
-  const auto __ubase = static_cast<_Up>(__base);
+  auto __uv = static_cast<_Up>(__v);
 
+  const auto __ubase   = static_cast<_Up>(__base);
   const auto __ubase_2 = __ubase * __ubase;
   const auto __ubase_3 = __ubase_2 * __ubase;
   const auto __ubase_4 = __ubase_2 * __ubase_2;
@@ -55,24 +56,24 @@ template <class _Tp>
   int __r = 0;
   while (true)
   {
-    if (__v < __ubase)
+    if (__uv < __ubase)
     {
       return __r + 1;
     }
-    else if (__v < __ubase_2)
+    else if (__uv < __ubase_2)
     {
       return __r + 2;
     }
-    else if (__v < __ubase_3)
+    else if (__uv < __ubase_3)
     {
       return __r + 3;
     }
-    else if (__v < __ubase_4)
+    else if (__uv < __ubase_4)
     {
       return __r + 4;
     }
 
-    __v /= __ubase_4;
+    __uv /= __ubase_4;
     __r += 4;
   }
 
