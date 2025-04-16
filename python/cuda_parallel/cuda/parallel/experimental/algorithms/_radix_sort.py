@@ -93,7 +93,6 @@ class _RadixSort:
         "d_in_values_cccl",
         "d_out_values_cccl",
         "decomposer_op",
-        "radix_sort_fn",
         "build_result",
     ]
 
@@ -127,12 +126,6 @@ class _RadixSort:
             self.d_in_values_cccl,
             self.decomposer_op,
             decomposer_return_type,
-        )
-
-        self.radix_sort_fn = (
-            self.build_result.compute_ascending
-            if order is SortOrder.ASCENDING
-            else self.build_result.compute_descending
         )
 
     def __call__(
@@ -178,7 +171,7 @@ class _RadixSort:
 
         selector = -1
 
-        temp_storage_bytes, selector = self.radix_sort_fn(
+        temp_storage_bytes, selector = self.build_result.compute(
             d_temp_storage,
             temp_storage_bytes,
             self.d_in_keys_cccl,

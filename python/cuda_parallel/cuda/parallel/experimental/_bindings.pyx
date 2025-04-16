@@ -1672,24 +1672,7 @@ cdef extern from "cccl/c/radix_sort.h":
         int, int, const char *, const char *, const char *, const char *
     ) nogil
 
-    cdef CUresult cccl_device_ascending_radix_sort(
-        cccl_device_radix_sort_build_result_t build,
-        void *d_storage_ptr,
-        size_t *d_storage_nbytes,
-        cccl_iterator_t d_keys_in,
-        cccl_iterator_t d_keys_out,
-        cccl_iterator_t d_values_in,
-        cccl_iterator_t d_values_out,
-        cccl_op_t decomposer,
-        size_t num_items,
-        int begin_bit,
-        int end_bit,
-        bint is_overwrite_okay,
-        int* selector,
-        CUstream stream
-    ) nogil
-
-    cdef CUresult cccl_device_descending_radix_sort(
+    cdef CUresult cccl_device_radix_sort(
         cccl_device_radix_sort_build_result_t build,
         void *d_storage_ptr,
         size_t *d_storage_nbytes,
@@ -1760,7 +1743,7 @@ cdef class DeviceRadixSortBuildResult:
                 f"Failed building radix_sort, error code: {status}"
             )
 
-    cpdef tuple compute_ascending(
+    cpdef tuple compute(
         DeviceRadixSortBuildResult self,
         temp_storage_ptr,
         temp_storage_bytes,
@@ -1783,7 +1766,7 @@ cdef class DeviceRadixSortBuildResult:
         cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
 
         with nogil:
-            status = cccl_device_ascending_radix_sort(
+            status = cccl_device_radix_sort(
                 self.build_data,
                 storage_ptr,
                 &storage_sz,
@@ -1803,52 +1786,6 @@ cdef class DeviceRadixSortBuildResult:
         if status != 0:
             raise RuntimeError(
                 f"Failed executing ascending radix_sort, error code: {status}"
-            )
-        return <object>storage_sz, <object>selector_int
-
-    cpdef tuple compute_descending(
-        DeviceRadixSortBuildResult self,
-        temp_storage_ptr,
-        temp_storage_bytes,
-        Iterator d_keys_in,
-        Iterator d_keys_out,
-        Iterator d_values_in,
-        Iterator d_values_out,
-        Op decomposer_op,
-        size_t num_items,
-        int begin_bit,
-        int end_bit,
-        bint is_overwrite_okay,
-        selector,
-        stream
-    ):
-        cdef CUresult status = -1
-        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
-        cdef size_t storage_sz = <size_t>temp_storage_bytes
-        cdef int selector_int = <int>selector
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
-
-        with nogil:
-            status = cccl_device_ascending_radix_sort(
-                self.build_data,
-                storage_ptr,
-                &storage_sz,
-                d_keys_in.iter_data,
-                d_keys_out.iter_data,
-                d_values_in.iter_data,
-                d_values_out.iter_data,
-                decomposer_op.op_data,
-                <uint64_t>num_items,
-                begin_bit,
-                end_bit,
-                is_overwrite_okay,
-                &selector_int,
-                c_stream
-            )
-
-        if status != 0:
-            raise RuntimeError(
-                f"Failed executing descending radix_sort, error code: {status}"
             )
         return <object>storage_sz, <object>selector_int
 
