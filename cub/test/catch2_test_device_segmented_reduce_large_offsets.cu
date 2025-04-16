@@ -245,24 +245,44 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
   }
 }
 
+// Helper to get the small and medium segment size thresholds
+// for the fixed size segmented reduce
+template <typename PolicyHub>
+struct dispatch_helper
+{
+  using tuple_t = ::cuda::std::tuple<int, int>;
+  tuple_t thresholds{};
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION cudaError_t Invoke()
+  {
+    thresholds = {ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE, ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE};
+    return cudaSuccess;
+  }
+
+  static _CCCL_HOST tuple_t get_thresholds()
+  {
+    // Get PTX version
+    int ptx_version = 0;
+    cudaError error = cub::PtxVersion(ptx_version);
+    REQUIRE(error == cudaSuccess);
+
+    dispatch_helper dispatch{};
+    typename PolicyHub::MaxPolicy max_policy{};
+    error = max_policy.Invoke(ptx_version, dispatch);
+    REQUIRE(error == cudaSuccess);
+    return dispatch.thresholds;
+  }
+};
+
 C2H_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]")
 {
   using offset_t        = ::cuda::std::int64_t;
   using segment_index_t = ::cuda::std::int64_t;
   using segment_size_t  = int; // fixed size segmented reduce supports only `int` as segment size
 
+  // To test atlest 2 invocations of the kernel
   const auto num_segments = static_cast<segment_index_t>(::cuda::std::numeric_limits<std::int32_t>::max()) + 1;
-  constexpr segment_size_t segment_size = 257; // smallest large segment size which will use block reduction
-  const ::cuda::std::int64_t num_items  = num_segments * segment_size;
-
-  // Input data
-  const auto segment_index_it = thrust::make_counting_iterator(segment_index_t{});
-
-  // Segment offsets
-  segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{0, num_segments, segment_size, num_items};
-  auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
-
-  CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<segment_index_t>(), num_segments, segment_size, num_items);
 
   SECTION("segmented reduce")
   {
@@ -276,6 +296,28 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
 
     // Binary reduction operator
     const auto reduction_op = op_t{};
+
+    using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<sum_t, offset_t, op_t>;
+
+    // Get small and medium segment size thresholds from dispatch helper
+    const auto thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
+    const auto small      = ::cuda::std::get<0>(thresholds);
+    const auto medium     = ::cuda::std::get<1>(thresholds);
+
+    // Take one random segment size from each of the segment sizes
+    const segment_size_t segment_size =
+      GENERATE_COPY(take(1, random(1, small)), take(1, random(small, medium)), take(1, random(medium, medium * 2)));
+
+    const ::cuda::std::int64_t num_items = num_segments * segment_size;
+
+    // Input data
+    const auto segment_index_it = thrust::make_counting_iterator(segment_index_t{});
+
+    // Segment offsets
+    segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{0, num_segments, segment_size, num_items};
+    auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
+
+    CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<segment_index_t>(), num_segments, segment_size, num_items);
 
     // Prepare helper to check results
     auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
