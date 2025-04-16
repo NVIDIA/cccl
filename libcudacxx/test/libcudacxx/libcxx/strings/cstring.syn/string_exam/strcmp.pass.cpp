@@ -31,7 +31,7 @@ __host__ __device__ constexpr void test_strcmp(const T* lhs, const T* rhs, int e
 
 __host__ __device__ constexpr bool test()
 {
-  // char8
+  // char
   test_strcmp<char>("", "", 0);
   test_strcmp<char>("a", "", 1);
   test_strcmp<char>("", "a", -1);
@@ -43,7 +43,21 @@ __host__ __device__ constexpr bool test()
   test_strcmp<char>("abcd0", "abcd1", -1);
   test_strcmp<char>("ab1de", "abcd0", -1);
 
-  // char16
+#if _LIBCUDACXX_HAS_CHAR8_T()
+  // char8_t
+  test_strcmp<char8_t>(u8"", u8"", 0);
+  test_strcmp<char8_t>(u8"a", u8"", 1);
+  test_strcmp<char8_t>(u8"", u8"a", -1);
+  test_strcmp<char8_t>(u8"hi", u8"hi", 0);
+  test_strcmp<char8_t>(u8"hi", u8"ho", -1);
+  test_strcmp<char8_t>(u8"ho", u8"hi", 1);
+  test_strcmp<char8_t>(u8"abcde", u8"abcde", 0);
+  test_strcmp<char8_t>(u8"abcd1", u8"abcd0", 1);
+  test_strcmp<char8_t>(u8"abcd0", u8"abcd1", -1);
+  test_strcmp<char8_t>(u8"ab1de", u8"abcd0", -1);
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
+
+  // char16_t
   test_strcmp<char16_t>(u"", u"", 0);
   test_strcmp<char16_t>(u"a", u"", 1);
   test_strcmp<char16_t>(u"", u"a", -1);
@@ -55,7 +69,7 @@ __host__ __device__ constexpr bool test()
   test_strcmp<char16_t>(u"abcd0", u"abcd1", -1);
   test_strcmp<char16_t>(u"ab1de", u"abcd0", -1);
 
-  // char32
+  // char32_t
   test_strcmp<char32_t>(U"", U"", 0);
   test_strcmp<char32_t>(U"a", U"", 1);
   test_strcmp<char32_t>(U"", U"a", -1);

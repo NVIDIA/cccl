@@ -30,7 +30,7 @@ __host__ __device__ constexpr void test_strcpy(const T* str, const T (&ref)[N])
 
 __host__ __device__ constexpr bool test()
 {
-  // char8
+  // char
   test_strcpy<char>("", "\0\0\0");
   test_strcpy<char>("a", "a\0\0");
   test_strcpy<char>("a\0", "a\0\0");
@@ -38,7 +38,17 @@ __host__ __device__ constexpr bool test()
   test_strcpy<char>("hello", "hello\0\0\0\0");
   test_strcpy<char>("hell\0o", "hell\0\0\0");
 
-  // char16
+#if _LIBCUDACXX_HAS_CHAR8_T()
+  // char8_t
+  test_strcpy<char8_t>(u8"", u8"\0\0\0");
+  test_strcpy<char8_t>(u8"a", u8"a\0\0");
+  test_strcpy<char8_t>(u8"a\0", u8"a\0\0");
+  test_strcpy<char8_t>(u8"a\0sdf\0", u8"a\0\0\0\0\0");
+  test_strcpy<char8_t>(u8"hello", u8"hello\0\0\0\0");
+  test_strcpy<char8_t>(u8"hell\0o", u8"hell\0\0\0");
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
+
+  // char16_t
   test_strcpy<char16_t>(u"", u"\0\0\0");
   test_strcpy<char16_t>(u"a", u"a\0\0");
   test_strcpy<char16_t>(u"a\0", u"a\0\0");
@@ -46,7 +56,7 @@ __host__ __device__ constexpr bool test()
   test_strcpy<char16_t>(u"hello", u"hello\0\0\0\0");
   test_strcpy<char16_t>(u"hell\0o", u"hell\0\0\0");
 
-  // char32
+  // char32_t
   test_strcpy<char32_t>(U"", U"\0\0\0");
   test_strcpy<char32_t>(U"a", U"a\0\0");
   test_strcpy<char32_t>(U"a\0", U"a\0\0");

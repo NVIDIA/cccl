@@ -35,7 +35,7 @@ __host__ __device__ constexpr void test_strncpy(const T* str, cuda::std::size_t 
 
 __host__ __device__ constexpr bool test()
 {
-  // char8
+  // char
   test_strncpy<char>("", 0, "xxx");
   test_strncpy<char>("", 1, "\0xx");
   test_strncpy<char>("", 2, "\0\0x");
@@ -57,7 +57,31 @@ __host__ __device__ constexpr bool test()
   test_strncpy<char>("hell\0o", 6, "hell\0\0x");
   test_strncpy<char>("hell\0o", 7, "hell\0\0\0");
 
-  // char16
+#if _LIBCUDACXX_HAS_CHAR8_T()
+  // char8_t
+  test_strncpy<char8_t>(u8"", 0, u8"xxx");
+  test_strncpy<char8_t>(u8"", 1, u8"\0xx");
+  test_strncpy<char8_t>(u8"", 2, u8"\0\0x");
+  test_strncpy<char8_t>(u8"", 3, u8"\0\0\0");
+  test_strncpy<char8_t>(u8"a", 0, u8"xxx");
+  test_strncpy<char8_t>(u8"a", 1, u8"axx");
+  test_strncpy<char8_t>(u8"a", 2, u8"a\0x");
+  test_strncpy<char8_t>(u8"a", 3, u8"a\0\0");
+  test_strncpy<char8_t>(u8"\0a", 0, u8"xxx");
+  test_strncpy<char8_t>(u8"\0a", 1, u8"\0xx");
+  test_strncpy<char8_t>(u8"\0a", 2, u8"\0\0x");
+  test_strncpy<char8_t>(u8"\0a", 3, u8"\0\0\0");
+  test_strncpy<char8_t>(u8"hello", 5, u8"helloxxx");
+  test_strncpy<char8_t>(u8"hello", 6, u8"hello\0xx");
+  test_strncpy<char8_t>(u8"hello", 7, u8"hello\0\0x");
+  test_strncpy<char8_t>(u8"hello", 8, u8"hello\0\0\0");
+  test_strncpy<char8_t>(u8"hell\0o", 4, u8"hellxxxx");
+  test_strncpy<char8_t>(u8"hell\0o", 5, u8"hell\0xx");
+  test_strncpy<char8_t>(u8"hell\0o", 6, u8"hell\0\0x");
+  test_strncpy<char8_t>(u8"hell\0o", 7, u8"hell\0\0\0");
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
+
+  // char16_t
   test_strncpy<char16_t>(u"", 0, u"xxx");
   test_strncpy<char16_t>(u"", 1, u"\0xx");
   test_strncpy<char16_t>(u"", 2, u"\0\0x");
@@ -79,7 +103,7 @@ __host__ __device__ constexpr bool test()
   test_strncpy<char16_t>(u"hell\0o", 6, u"hell\0\0x");
   test_strncpy<char16_t>(u"hell\0o", 7, u"hell\0\0\0");
 
-  // char32
+  // char32_t
   test_strncpy<char32_t>(U"", 0, U"xxx");
   test_strncpy<char32_t>(U"", 1, U"\0xx");
   test_strncpy<char32_t>(U"", 2, U"\0\0x");

@@ -24,6 +24,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/climits>
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -40,7 +41,9 @@ __cccl_constexpr_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRI
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::strcpy(__dst, __src);))
+      NV_IF_TARGET(NV_IS_HOST,
+                   (return reinterpret_cast<_CharT*>(
+                             ::strcpy(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src)));))
     }
   }
 
@@ -59,7 +62,9 @@ __cccl_constexpr_strncpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTR
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::strncpy(__dst, __src, __n);))
+      NV_IF_TARGET(NV_IS_HOST,
+                   (return reinterpret_cast<_CharT*>(
+                             ::strncpy(reinterpret_cast<char*>(__dst), reinterpret_cast<const char*>(__src), __n));))
     }
   }
 
@@ -85,7 +90,7 @@ template <class _CharT>
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::strlen(__ptr);))
+      NV_IF_TARGET(NV_IS_HOST, (return ::strlen(reinterpret_cast<const char*>(__ptr));))
     }
   }
 
@@ -105,7 +110,8 @@ __cccl_constexpr_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::strcmp(__lhs, __rhs);))
+      NV_IF_TARGET(NV_IS_HOST,
+                   (return ::strcmp(reinterpret_cast<const char*>(__lhs), reinterpret_cast<const char*>(__rhs));))
     }
   }
 
@@ -132,7 +138,8 @@ __cccl_constexpr_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) n
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::strncmp(__lhs, __rhs, __n);))
+      NV_IF_TARGET(NV_IS_HOST,
+                   (return ::strncmp(reinterpret_cast<const char*>(__lhs), reinterpret_cast<const char*>(__rhs), __n);))
     }
   }
 
@@ -163,7 +170,9 @@ template <class _CharT>
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::strchr(__ptr, static_cast<int>(__c));))
+      NV_IF_TARGET(NV_IS_HOST,
+                   (return reinterpret_cast<_CharT*>(::strchr(
+                     reinterpret_cast<char*>(const_cast<remove_const_t<_CharT>*>(__ptr)), static_cast<int>(__c)));))
     }
   }
 
@@ -185,7 +194,9 @@ template <class _CharT>
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return ::strrchr(__ptr, static_cast<int>(__c));))
+      NV_IF_TARGET(NV_IS_HOST,
+                   (return reinterpret_cast<_CharT*>(::strrchr(
+                     reinterpret_cast<char*>(const_cast<remove_const_t<_CharT>*>(__ptr)), static_cast<int>(__c)));))
     }
   }
 
@@ -213,7 +224,9 @@ template <class _Tp>
   {
     if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-      NV_IF_TARGET(NV_IS_HOST, (return reinterpret_cast<_Tp*>(::memchr(__ptr, static_cast<int>(__c), __n));))
+      NV_IF_TARGET(
+        NV_IS_HOST,
+        (return reinterpret_cast<_Tp*>(::memchr(const_cast<remove_const_t<_Tp>*>(__ptr), static_cast<int>(__c), __n));))
     }
   }
 

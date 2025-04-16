@@ -20,14 +20,23 @@ __host__ __device__ constexpr void test_memcpy(const T* src)
 
 __host__ __device__ constexpr bool test()
 {
-  // char8
+  // char
   test_memcpy<char, 0>("");
   test_memcpy<char, 0>("asdf");
   test_memcpy<char, 1>("a");
   test_memcpy<char, 3>("abcde");
   test_memcpy<char, 5>("abcde");
 
-  // char16
+#if _LIBCUDACXX_HAS_CHAR8_T()
+  // char8_t
+  test_memcpy<char8_t, 0>(u8"");
+  test_memcpy<char8_t, 0>(u8"asdf");
+  test_memcpy<char8_t, 1>(u8"a");
+  test_memcpy<char8_t, 3>(u8"abcde");
+  test_memcpy<char8_t, 5>(u8"abcde");
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
+
+  // char16_t
   test_memcpy<char16_t, 0>(u"");
   test_memcpy<char16_t, 0>(u"asdf");
   test_memcpy<char16_t, 1>(u"a");

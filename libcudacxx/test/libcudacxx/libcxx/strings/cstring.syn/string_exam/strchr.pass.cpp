@@ -54,12 +54,18 @@ __host__ __device__ constexpr void test_type();
   }
 
 TEST_SPECIALIZATION(char, )
+#if _LIBCUDACXX_HAS_CHAR8_T()
+TEST_SPECIALIZATION(char8_t, u8)
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
 TEST_SPECIALIZATION(char16_t, u)
 TEST_SPECIALIZATION(char32_t, U)
 
 __host__ __device__ constexpr bool test()
 {
   test_type<char>();
+#if _LIBCUDACXX_HAS_CHAR8_T()
+  test_type<char8_t>();
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
   test_type<char16_t>();
   test_type<char32_t>();
 

@@ -20,7 +20,7 @@ __host__ __device__ constexpr void test_strlen(const T* str, cuda::std::size_t e
 
 __host__ __device__ constexpr bool test()
 {
-  // char8
+  // char
   test_strlen<char>("", 0);
   test_strlen<char>("a", 1);
   test_strlen<char>("hi", 2);
@@ -34,7 +34,23 @@ __host__ __device__ constexpr bool test()
   test_strlen<char>("asdfa\0sdfasdfg\0we\0yr", 5);
   test_strlen<char>("asdfasdfasdfgweyr1239859102384\0\0", 30);
 
-  // char16
+#if _LIBCUDACXX_HAS_CHAR8_T()
+  // char8_t
+  test_strlen<char8_t>(u8"", 0);
+  test_strlen<char8_t>(u8"a", 1);
+  test_strlen<char8_t>(u8"hi", 2);
+  test_strlen<char8_t>(u8"asdfgh", 6);
+  test_strlen<char8_t>(u8"asdfasdfasdfgweyr", 17);
+  test_strlen<char8_t>(u8"asdfasdfasdfgweyr1239859102384", 30);
+  test_strlen<char8_t>(u8"\0\0", 0);
+  test_strlen<char8_t>(u8"a\0", 1);
+  test_strlen<char8_t>(u8"h\0i", 1);
+  test_strlen<char8_t>(u8"asdf\0g\0h", 4);
+  test_strlen<char8_t>(u8"asdfa\0sdfasdfg\0we\0yr", 5);
+  test_strlen<char8_t>(u8"asdfasdfasdfgweyr1239859102384\0\0", 30);
+#endif // _LIBCUDACXX_HAS_CHAR8_T()
+
+  // char16_t
   test_strlen<char16_t>(u"", 0);
   test_strlen<char16_t>(u"a", 1);
   test_strlen<char16_t>(u"hi", 2);
@@ -48,7 +64,7 @@ __host__ __device__ constexpr bool test()
   test_strlen<char16_t>(u"asdfa\0sdfasdfg\0we\0yr", 5);
   test_strlen<char16_t>(u"asdfasdfasdfgweyr1239859102384\0\0", 30);
 
-  // char32
+  // char32_t
   test_strlen<char32_t>(U"", 0);
   test_strlen<char32_t>(U"a", 1);
   test_strlen<char32_t>(U"hi", 2);
