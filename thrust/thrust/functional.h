@@ -280,6 +280,9 @@ struct project2nd<void, void>
  */
 
 //! deprecated [since 3.1]
+#ifdef _CCCL_DOXYGEN_INVOKED
+using ::cuda::std::not_fn;
+#else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 _CCCL_TEMPLATE(class _Fn)
 _CCCL_REQUIRES(::cuda::std::is_constructible_v<::cuda::std::decay_t<_Fn>, _Fn>
                  _CCCL_AND ::cuda::std::is_move_constructible_v<::cuda::std::decay_t<_Fn>>)
@@ -288,7 +291,7 @@ CCCL_DEPRECATED_BECAUSE("Use cuda::std::not_fn instead")
 {
   return ::cuda::std::not_fn(::cuda::std::forward<_Fn>(__f));
 }
-
+#endif // !_CCCL_DOXYGEN_INVOKED
 /*! \}
  */
 
