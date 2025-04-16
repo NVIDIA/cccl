@@ -49,7 +49,7 @@ jobs:
           workflows: nightly
           slack_token: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
-          slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          slack_alert: ${{ secrets.SLACK_CHANNEL_RAPIDS_CI_ALERT }}
 
   dispatch-groups-linux-two-stage:
     name: ${{ matrix.name }}
