@@ -106,6 +106,7 @@ struct BlockReduceWarpReductions
 
   // Thread fields
   _TempStorage& temp_storage;
+  typename WarpReduce::TempStorage warp_tmp;
   int linear_tid;
   int warp_id;
   int lane_id;
@@ -215,7 +216,7 @@ struct BlockReduceWarpReductions
       (EvenWarpSize && FULL_TILE && IsPowerOfTwo)
         ? ReduceLogicalMode::MultipleReductions
         : ReduceLogicalMode::SingleReduction;
-    auto warp_aggregate = WarpReduce::Sum(input, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
+    auto warp_aggregate = WarpReduce{warp_tmp}.Sum(input, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);
@@ -247,8 +248,9 @@ struct BlockReduceWarpReductions
       (EvenWarpSize && FULL_TILE && IsPowerOfTwo)
         ? ReduceLogicalMode::MultipleReductions
         : ReduceLogicalMode::SingleReduction;
+
     auto warp_aggregate =
-      WarpReduce::Reduce(input, reduction_op, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
+      WarpReduce{warp_tmp}.Reduce(input, reduction_op, warp_num_valid, reduce_logical_mode_t<logical_mode>{});
 
     // Update outputs and block_aggregate with warp-wide aggregates from lane-0s
     return ApplyWarpAggregates<FULL_TILE>(reduction_op, warp_aggregate, num_valid);

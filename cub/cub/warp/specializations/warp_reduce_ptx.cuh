@@ -325,12 +325,12 @@ template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems,
   }
 }
 
-template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
+template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented = false>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(
   reduce_logical_mode_t<LogicalMode> logical_mode,
   logical_warp_size_t<LogicalWarpSize> logical_size,
   last_pos_t<ValidItems> last_pos,
-  is_segmented_t<IsSegmented> is_segmented)
+  is_segmented_t<IsSegmented> is_segmented = {})
 {
   constexpr bool is_single_reduction = logical_mode == single_reduction;
   auto shift                         = is_single_reduction ? 0 : cub::internal::logical_warp_base_id(logical_size);
