@@ -288,6 +288,8 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
 
     Returns result of the call.
     """
+    global _check_sass
+
     cc_major, cc_minor = cuda.get_current_device().compute_capability
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
     common_data = CommonData(
@@ -298,7 +300,9 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         common_data,
         **kwargs,
     )
+
     if _check_sass:
         cubin = result._get_cubin()
         _check_compile_result(cubin)
+
     return result
