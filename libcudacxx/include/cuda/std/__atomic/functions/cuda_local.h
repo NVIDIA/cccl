@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 {
-#  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
+#  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE) && !defined(_LIBCUDACXX_FORCE_PTX_AUTOMATIC_STORAGE_PATH)
   return false;
 // Only NVCC+NVRTC define __isLocal, so drop to PTX
 // Some tests require using the inline PTX path to ensure it is bug-free
