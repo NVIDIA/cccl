@@ -14,7 +14,7 @@
 template <class T>
 __host__ __device__ constexpr void test_strlen(const T* str, cuda::std::size_t expected)
 {
-  const auto ret = cuda::std::__cccl_constexpr_strlen(str);
+  const auto ret = cuda::std::__cccl_strlen(str);
   assert(ret == expected);
 }
 

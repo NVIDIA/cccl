@@ -13,8 +13,8 @@
 template <class T>
 __host__ __device__ constexpr void test_memset(T* ptr, T c, cuda::std::size_t n, const T* ref)
 {
-  assert(cuda::std::__cccl_constexpr_memset(ptr, c, n) == ptr);
-  assert(cuda::std::__cccl_constexpr_memcmp(ptr, ref, n) == 0);
+  assert(cuda::std::__cccl_memset(ptr, c, n) == ptr);
+  assert(cuda::std::__cccl_memcmp(ptr, ref, n) == 0);
 }
 
 template <class T>

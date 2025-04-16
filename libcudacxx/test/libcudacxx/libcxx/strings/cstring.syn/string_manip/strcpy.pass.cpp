@@ -23,7 +23,7 @@ template <class T, cuda::std::size_t N>
 __host__ __device__ constexpr void test_strcpy(const T* str, const T (&ref)[N])
 {
   T buff[N]{};
-  const auto ret = cuda::std::__cccl_constexpr_strcpy(buff, str);
+  const auto ret = cuda::std::__cccl_strcpy(buff, str);
   assert(ret == buff);
   assert(equal_buffers(buff, ref, cuda::std::make_index_sequence<N - 1>{}));
 }

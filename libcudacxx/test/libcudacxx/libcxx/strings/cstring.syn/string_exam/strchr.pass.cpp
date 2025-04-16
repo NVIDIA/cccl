@@ -13,7 +13,7 @@
 template <class T>
 __host__ __device__ constexpr void test_strchr(T* str, T c, T* expected_ret)
 {
-  const auto ret = cuda::std::__cccl_constexpr_strchr(str, c);
+  const auto ret = cuda::std::__cccl_strchr(str, c);
   assert(ret == expected_ret);
 }
 

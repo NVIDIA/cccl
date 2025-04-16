@@ -28,7 +28,7 @@ __host__ __device__ constexpr void test_strncpy(const T* str, cuda::std::size_t 
     buff[i] = T('x');
   }
 
-  const auto ret = cuda::std::__cccl_constexpr_strncpy(buff, str, count);
+  const auto ret = cuda::std::__cccl_strncpy(buff, str, count);
   assert(ret == buff);
   assert(equal_buffers(buff, ref, cuda::std::make_index_sequence<N - 1>{}));
 }

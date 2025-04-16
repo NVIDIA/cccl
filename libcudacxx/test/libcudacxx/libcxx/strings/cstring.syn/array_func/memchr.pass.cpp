@@ -15,7 +15,7 @@ constexpr int not_found = -1;
 template <class T>
 __host__ __device__ constexpr void test_memchr(const T* ptr, T c, size_t n, int expected_pos)
 {
-  const T* ret = cuda::std::__cccl_constexpr_memchr<const T>(ptr, c, n);
+  const T* ret = cuda::std::__cccl_memchr<const T>(ptr, c, n);
 
   if (expected_pos == not_found)
   {

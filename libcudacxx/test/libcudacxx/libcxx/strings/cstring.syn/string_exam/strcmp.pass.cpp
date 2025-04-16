@@ -13,7 +13,7 @@
 template <class T>
 __host__ __device__ constexpr void test_strcmp(const T* lhs, const T* rhs, int expected)
 {
-  const auto ret = cuda::std::__cccl_constexpr_strcmp(lhs, rhs);
+  const auto ret = cuda::std::__cccl_strcmp(lhs, rhs);
 
   if (expected == 0)
   {

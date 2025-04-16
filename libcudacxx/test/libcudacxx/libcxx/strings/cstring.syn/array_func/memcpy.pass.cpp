@@ -14,8 +14,8 @@ template <class T, size_t n>
 __host__ __device__ constexpr void test_memcpy(const T* src)
 {
   T buf[n + 1]{}; // + 1 to prevent zero size buffer
-  assert(cuda::std::__cccl_constexpr_memcpy(buf, src, n) == buf);
-  assert(cuda::std::__cccl_constexpr_memcmp(buf, src, n) == 0);
+  assert(cuda::std::__cccl_memcpy(buf, src, n) == buf);
+  assert(cuda::std::__cccl_memcmp(buf, src, n) == 0);
 }
 
 __host__ __device__ constexpr bool test()

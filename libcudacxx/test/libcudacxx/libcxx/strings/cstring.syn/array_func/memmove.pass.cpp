@@ -16,75 +16,75 @@ __host__ __device__ constexpr bool test_out_of_place();
 template <class T>
 __host__ __device__ constexpr bool test_in_place();
 
-#define TEST_SPECIALIZATION(T, P)                                                    \
-  template <>                                                                        \
-  __host__ __device__ constexpr bool test_out_of_place<T>()                          \
-  {                                                                                  \
-    T src[] = P##"1234567890";                                                       \
-                                                                                     \
-    {                                                                                \
-      T dest[] = P##"abcdefghij";                                                    \
-      T ref[]  = P##"1234567890";                                                    \
-      assert(cuda::std::__cccl_constexpr_memmove(dest, src, 10) == dest);            \
-      assert(cuda::std::__cccl_constexpr_memcmp(dest, ref, 10) == 0);                \
-    }                                                                                \
-                                                                                     \
-    {                                                                                \
-      T dest[] = P##"abcdefghij";                                                    \
-      T ref[]  = P##"abc123456j";                                                    \
-      assert(cuda::std::__cccl_constexpr_memmove(dest + 3, src, 6) == dest + 3);     \
-      assert(cuda::std::__cccl_constexpr_memcmp(dest, ref, 10) == 0);                \
-    }                                                                                \
-                                                                                     \
-    {                                                                                \
-      T dest[] = P##"abcdefghij";                                                    \
-      T ref[]  = P##"56789fghij";                                                    \
-      assert(cuda::std::__cccl_constexpr_memmove(dest, src + 4, 5) == dest);         \
-      assert(cuda::std::__cccl_constexpr_memcmp(dest, ref, 10) == 0);                \
-    }                                                                                \
-                                                                                     \
-    {                                                                                \
-      T dest[] = P##"abcdefghij";                                                    \
-      T ref[]  = P##"ab789fghij";                                                    \
-      assert(cuda::std::__cccl_constexpr_memmove(dest + 2, src + 6, 3) == dest + 2); \
-      assert(cuda::std::__cccl_constexpr_memcmp(dest, ref, 10) == 0);                \
-    }                                                                                \
-                                                                                     \
-    return true;                                                                     \
-  }                                                                                  \
-                                                                                     \
-  template <>                                                                        \
-  __host__ __device__ bool test_in_place<T>()                                        \
-  {                                                                                  \
-    {                                                                                \
-      T buf[] = P##"1234567890";                                                     \
-      T ref[] = P##"1234567890";                                                     \
-      assert(cuda::std::__cccl_constexpr_memmove(buf, buf, 10) == buf);              \
-      assert(cuda::std::__cccl_constexpr_memcmp(buf, ref, 10) == 0);                 \
-    }                                                                                \
-                                                                                     \
-    {                                                                                \
-      T buf[] = P##"1234567890";                                                     \
-      T ref[] = P##"1231234567";                                                     \
-      assert(cuda::std::__cccl_constexpr_memmove(buf + 3, buf, 7) == buf + 3);       \
-      assert(cuda::std::__cccl_constexpr_memcmp(buf, ref, 10) == 0);                 \
-    }                                                                                \
-                                                                                     \
-    {                                                                                \
-      T buf[] = P##"1234567890";                                                     \
-      T ref[] = P##"5678967890";                                                     \
-      assert(cuda::std::__cccl_constexpr_memmove(buf, buf + 4, 5) == buf);           \
-      assert(cuda::std::__cccl_constexpr_memcmp(buf, ref, 10) == 0);                 \
-    }                                                                                \
-                                                                                     \
-    {                                                                                \
-      T buf[] = P##"1234567890";                                                     \
-      T ref[] = P##"1234897890";                                                     \
-      assert(cuda::std::__cccl_constexpr_memmove(buf + 4, buf + 7, 2) == buf + 4);   \
-      assert(cuda::std::__cccl_constexpr_memcmp(buf, ref, 10) == 0);                 \
-    }                                                                                \
-                                                                                     \
-    return true;                                                                     \
+#define TEST_SPECIALIZATION(T, P)                                          \
+  template <>                                                              \
+  __host__ __device__ constexpr bool test_out_of_place<T>()                \
+  {                                                                        \
+    T src[] = P##"1234567890";                                             \
+                                                                           \
+    {                                                                      \
+      T dest[] = P##"abcdefghij";                                          \
+      T ref[]  = P##"1234567890";                                          \
+      assert(cuda::std::__cccl_memmove(dest, src, 10) == dest);            \
+      assert(cuda::std::__cccl_memcmp(dest, ref, 10) == 0);                \
+    }                                                                      \
+                                                                           \
+    {                                                                      \
+      T dest[] = P##"abcdefghij";                                          \
+      T ref[]  = P##"abc123456j";                                          \
+      assert(cuda::std::__cccl_memmove(dest + 3, src, 6) == dest + 3);     \
+      assert(cuda::std::__cccl_memcmp(dest, ref, 10) == 0);                \
+    }                                                                      \
+                                                                           \
+    {                                                                      \
+      T dest[] = P##"abcdefghij";                                          \
+      T ref[]  = P##"56789fghij";                                          \
+      assert(cuda::std::__cccl_memmove(dest, src + 4, 5) == dest);         \
+      assert(cuda::std::__cccl_memcmp(dest, ref, 10) == 0);                \
+    }                                                                      \
+                                                                           \
+    {                                                                      \
+      T dest[] = P##"abcdefghij";                                          \
+      T ref[]  = P##"ab789fghij";                                          \
+      assert(cuda::std::__cccl_memmove(dest + 2, src + 6, 3) == dest + 2); \
+      assert(cuda::std::__cccl_memcmp(dest, ref, 10) == 0);                \
+    }                                                                      \
+                                                                           \
+    return true;                                                           \
+  }                                                                        \
+                                                                           \
+  template <>                                                              \
+  __host__ __device__ bool test_in_place<T>()                              \
+  {                                                                        \
+    {                                                                      \
+      T buf[] = P##"1234567890";                                           \
+      T ref[] = P##"1234567890";                                           \
+      assert(cuda::std::__cccl_memmove(buf, buf, 10) == buf);              \
+      assert(cuda::std::__cccl_memcmp(buf, ref, 10) == 0);                 \
+    }                                                                      \
+                                                                           \
+    {                                                                      \
+      T buf[] = P##"1234567890";                                           \
+      T ref[] = P##"1231234567";                                           \
+      assert(cuda::std::__cccl_memmove(buf + 3, buf, 7) == buf + 3);       \
+      assert(cuda::std::__cccl_memcmp(buf, ref, 10) == 0);                 \
+    }                                                                      \
+                                                                           \
+    {                                                                      \
+      T buf[] = P##"1234567890";                                           \
+      T ref[] = P##"5678967890";                                           \
+      assert(cuda::std::__cccl_memmove(buf, buf + 4, 5) == buf);           \
+      assert(cuda::std::__cccl_memcmp(buf, ref, 10) == 0);                 \
+    }                                                                      \
+                                                                           \
+    {                                                                      \
+      T buf[] = P##"1234567890";                                           \
+      T ref[] = P##"1234897890";                                           \
+      assert(cuda::std::__cccl_memmove(buf + 4, buf + 7, 2) == buf + 4);   \
+      assert(cuda::std::__cccl_memcmp(buf, ref, 10) == 0);                 \
+    }                                                                      \
+                                                                           \
+    return true;                                                           \
   }
 
 TEST_SPECIALIZATION(char, )

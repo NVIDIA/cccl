@@ -16,7 +16,7 @@
 template <class T>
 __host__ __device__ constexpr void test_strncmp(const T* lhs, const T* rhs, cuda::std::size_t n, int expected)
 {
-  const auto ret = cuda::std::__cccl_constexpr_strncmp(lhs, rhs, n);
+  const auto ret = cuda::std::__cccl_strncmp(lhs, rhs, n);
 
   if (expected == 0)
   {
