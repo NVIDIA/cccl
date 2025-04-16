@@ -35,9 +35,9 @@ template <class _CharT>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
 __cccl_constexpr_strcpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_CharT) == 1)
   {
-    if constexpr (sizeof(_CharT) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return ::strcpy(__dst, __src);))
     }
@@ -54,9 +54,9 @@ template <class _CharT>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT*
 __cccl_constexpr_strncpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_CharT) == 1)
   {
-    if constexpr (sizeof(_CharT) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return ::strncpy(__dst, __src, __n);))
     }
@@ -80,9 +80,9 @@ __cccl_constexpr_strncpy(_CharT* _CCCL_RESTRICT __dst, const _CharT* _CCCL_RESTR
 template <class _CharT>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __cccl_constexpr_strlen(const _CharT* __ptr) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_CharT) == 1)
   {
-    if constexpr (sizeof(_CharT) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return ::strlen(__ptr);))
     }
@@ -100,9 +100,9 @@ template <class _CharT>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
 __cccl_constexpr_strcmp(const _CharT* __lhs, const _CharT* __rhs) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_CharT) == 1)
   {
-    if constexpr (sizeof(_CharT) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return ::strcmp(__lhs, __rhs);))
     }
@@ -127,9 +127,9 @@ template <class _CharT>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
 __cccl_constexpr_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_CharT) == 1)
   {
-    if constexpr (sizeof(_CharT) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return ::strncmp(__lhs, __rhs, __n);))
     }
@@ -158,9 +158,9 @@ __cccl_constexpr_strncmp(const _CharT* __lhs, const _CharT* __rhs, size_t __n) n
 template <class _CharT>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT* __cccl_constexpr_strchr(_CharT* __ptr, _CharT __c) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_CharT) == 1)
   {
-    if constexpr (sizeof(_CharT) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return ::strchr(__ptr, static_cast<int>(__c));))
     }
@@ -180,9 +180,9 @@ template <class _CharT>
 template <class _CharT>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CharT* __cccl_constexpr_strrchr(_CharT* __ptr, _CharT __c) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_CharT) == 1)
   {
-    if constexpr (sizeof(_CharT) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return ::strrchr(__ptr, static_cast<int>(__c));))
     }
@@ -208,9 +208,9 @@ template <class _CharT>
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_constexpr_memchr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_Tp) == 1)
   {
-    if constexpr (sizeof(_Tp) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST, (return reinterpret_cast<_Tp*>(::memchr(__ptr, static_cast<int>(__c), __n));))
     }
