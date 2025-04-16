@@ -43,7 +43,7 @@
 #include <cub/thread/thread_reduce.cuh> // ThreadReduce
 #include <cub/util_arch.cuh> // warp_threads
 #include <cub/warp/specializations/warp_reduce_config.cuh>
-#include <cub/warp/specializations/warp_reduce_optimization.cuh>
+#include <cub/warp/specializations/warp_reduce_impl.cuh>
 
 #include <cuda/functional> // cuda::maximum
 #include <cuda/std/bit> // has_single_bit

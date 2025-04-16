@@ -411,14 +411,14 @@ template <bool IsHeadSegment,
   reduce_logical_mode_t<LogicalMode> logical_mode,
   logical_warp_size_t<LogicalWarpSize> logical_size)
 {
-  auto logical_warp_id = cub::internal::logical_warp_id(logical_size);
-  auto member_mask     = cub::internal::reduce_lane_mask(logical_mode, logical_size, last_pos_t<0>{});
-  auto warp_flags      = __ballot_sync(member_mask, flag);
+  auto logical_base_warp_id = cub::internal::logical_warp_base_id(logical_size);
+  auto member_mask          = cub::internal::reduce_lane_mask(logical_mode, logical_size, last_pos_t<0>{});
+  auto warp_flags           = __ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
   // Mask out the bits below the current thread
   warp_flags &= _CUDA_VPTX::get_sreg_lanemask_ge();
   // Mask in the last lane of each logical warp
-  warp_flags |= 1u << ((logical_warp_id + 1) * LogicalWarpSize - 1);
+  warp_flags |= 1u << (logical_base_warp_id + LogicalWarpSize - 1);
   // Find the next set flag
   auto last_lane = _CUDA_VSTD::countr_zero(warp_flags);
   auto last_pos  = last_pos_t<>{last_lane};
