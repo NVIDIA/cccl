@@ -33,6 +33,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _InputIterator, class _OutputIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _OutputIterator>
 __copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
@@ -62,6 +63,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __dispatch_memmove(_Up* __result, _Tp* 
 #endif // ^^^ !_CCCL_BUILTIN_MEMMOVE ^^^
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __constexpr_tail_overlap_fallback(_Tp* __first, _Up* __needle, _Tp* __last)
 {
@@ -76,6 +78,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __constexpr_tail_overlap_fallback(_Tp* 
   return false;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [[maybe_unused]] _Tp* __last)
@@ -89,6 +92,7 @@ __constexpr_tail_overlap(_Tp* __first, _Up* __needle, [[maybe_unused]] _Tp* __la
 #endif // !_CCCL_BUILTIN_CONSTANT_P
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Tp,
           class _Up,

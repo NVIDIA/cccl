@@ -115,6 +115,7 @@ struct _IterOps<_ClassicAlgPolicy>
   }
 
   // iter_move
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter, enable_if_t<is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr static
     // If the result of dereferencing `_Iter` is a reference type, deduce the result of calling `_CUDA_VSTD::move` on
@@ -127,6 +128,7 @@ struct _IterOps<_ClassicAlgPolicy>
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Iter>(__i));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter, enable_if_t<!is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr static
     // If the result of dereferencing `_Iter` is a value type, deduce the return value of this function to also be a
@@ -169,6 +171,7 @@ struct _IterOps<_ClassicAlgPolicy>
     return _CUDA_VSTD::prev(_CUDA_VSTD::forward<_Iter>(__iter), __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __advance_to(_Iter& __first, _Iter __last)
   {

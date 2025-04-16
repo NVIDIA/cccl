@@ -22,6 +22,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator replace_copy(
   _InputIterator __first,

@@ -42,10 +42,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Iter, bool = __is_cpp17_contiguous_iterator<_Iter>::value>
 struct __unwrap_iter_impl
 {
+  _CCCL_EXEC_CHECK_DISABLE
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap(_Iter, _Iter __iter)
   {
     return __iter;
   }
+  _CCCL_EXEC_CHECK_DISABLE
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __unwrap(_Iter __i) noexcept
   {
     return __i;
@@ -58,11 +60,13 @@ struct __unwrap_iter_impl<_Iter, true>
 {
   using _ToAddressT = decltype(_CUDA_VSTD::__to_address(_CUDA_VSTD::declval<_Iter>()));
 
+  _CCCL_EXEC_CHECK_DISABLE
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap(_Iter __orig_iter, _ToAddressT __unwrapped_iter)
   {
     return __orig_iter + (__unwrapped_iter - _CUDA_VSTD::__to_address(__orig_iter));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr _ToAddressT __unwrap(_Iter __i) noexcept
   {
     return _CUDA_VSTD::__to_address(__i);
@@ -76,6 +80,7 @@ __unwrap_iter(_Iter __i) noexcept
   return _Impl::__unwrap(__i);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _OrigIter, class _Iter, class _Impl = __unwrap_iter_impl<_OrigIter>>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _OrigIter __rewrap_iter(_OrigIter __orig_iter, _Iter __iter) noexcept
 {

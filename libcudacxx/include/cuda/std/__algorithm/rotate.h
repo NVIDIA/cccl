@@ -31,6 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 {
@@ -43,6 +44,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __rotate_left(_ForwardItera
   return __lm1;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator
 __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
@@ -58,6 +60,7 @@ __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
   return __fp1;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
@@ -101,6 +104,7 @@ __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIt
   return __r;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename _Integral>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integral __algo_gcd(_Integral __x, _Integral __y)
 {
@@ -113,6 +117,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integral __algo_gcd(_Integral __x, _Integra
   return __x;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, typename _RandomAccessIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator
 __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
@@ -153,6 +158,7 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
   return __first + __m2;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __rotate_impl(
   _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _CUDA_VSTD::forward_iterator_tag)
@@ -168,6 +174,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __rotate_impl(
   return _CUDA_VSTD::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator __rotate_impl(
   _BidirectionalIterator __first,
@@ -190,6 +197,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator __rotate_impl(
   return _CUDA_VSTD::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _RandomAccessIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator __rotate_impl(
   _RandomAccessIterator __first,
@@ -213,6 +221,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator __rotate_impl(
   return _CUDA_VSTD::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Iterator, class _Sentinel>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Iterator, _Iterator>
 __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
@@ -236,6 +245,7 @@ __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
   return _Ret(_CUDA_VSTD::move(__result), _CUDA_VSTD::move(__last_iter));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 rotate(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)

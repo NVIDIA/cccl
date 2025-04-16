@@ -33,6 +33,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Iter, class _Sent, class _Type, class _Proj, class _Comp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter
 __lower_bound(_Iter __first, _Sent __last, const _Type& __value, _Comp& __comp, _Proj& __proj)

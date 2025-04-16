@@ -31,6 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 __sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare&& __comp)
@@ -44,6 +45,7 @@ __sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compar
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
@@ -54,6 +56,7 @@ sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare 
   _CUDA_VSTD::__sort_heap<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void sort_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
