@@ -68,7 +68,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wpass-failed")
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::radix_sort
+namespace internal::radix_sort
 {
 template <typename MaxPolicyT, SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
 struct DeviceRadixSortKernelSource
@@ -157,7 +157,7 @@ struct DeviceSegmentedRadixSortKernelSource
   }
 };
 
-} // namespace detail::radix_sort
+} // namespace internal::radix_sort
 
 /******************************************************************************
  * Single-problem dispatch
@@ -186,11 +186,11 @@ template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT  = detail::identity_decomposer_t,
-          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
-          typename KernelSource = detail::radix_sort::
+          typename DecomposerT  = internal::identity_decomposer_t,
+          typename PolicyHub    = internal::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename KernelSource = internal::radix_sort::
             DeviceRadixSortKernelSource<typename PolicyHub::MaxPolicy, Order, KeyT, ValueT, OffsetT, DecomposerT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = internal::TripleChevronFactory>
 struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
@@ -1074,7 +1074,7 @@ struct DispatchRadixSort
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    auto wrapped_policy = detail::radix::MakeRadixSortPolicyWrapper(policy);
+    auto wrapped_policy = internal::radix::MakeRadixSortPolicyWrapper(policy);
 
     // Return if empty problem, or if no bits to sort and double-buffering is used
     if (num_items == 0 || (begin_bit == end_bit && is_overwrite_okay))
@@ -1114,17 +1114,17 @@ struct DispatchRadixSort
     else if (wrapped_policy.IsOnesweep())
     {
       // Regular size
-      return InvokeManyTiles(detail::bool_constant_v<true>, wrapped_policy);
+      return InvokeManyTiles(internal::bool_constant_v<true>, wrapped_policy);
     }
     else
     {
-      return InvokeManyTiles(detail::bool_constant_v<false>, wrapped_policy);
+      return InvokeManyTiles(internal::bool_constant_v<false>, wrapped_policy);
     }
 #else
     else
     {
       // Regular size
-      return InvokeManyTiles(detail::bool_constant_v<ActivePolicyT::ONESWEEP>, wrapped_policy);
+      return InvokeManyTiles(internal::bool_constant_v<ActivePolicyT::ONESWEEP>, wrapped_policy);
     }
 #endif
   }
@@ -1254,9 +1254,9 @@ template <SortOrder Order,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename SegmentSizeT,
-          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
-          typename DecomposerT  = detail::identity_decomposer_t,
-          typename KernelSource = detail::radix_sort::DeviceSegmentedRadixSortKernelSource<
+          typename PolicyHub    = internal::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
+          typename DecomposerT  = internal::identity_decomposer_t,
+          typename KernelSource = internal::radix_sort::DeviceSegmentedRadixSortKernelSource<
             typename PolicyHub::MaxPolicy,
             Order,
             KeyT,
@@ -1265,7 +1265,7 @@ template <SortOrder Order,
             EndOffsetIteratorT,
             SegmentSizeT,
             DecomposerT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = internal::TripleChevronFactory>
 struct DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
@@ -1646,7 +1646,7 @@ struct DispatchSegmentedRadixSort
     // Force kernel code-generation in all compiler passes
     return InvokePasses(kernel_source.SegmentedRadixSortKernel(),
                         kernel_source.AltSegmentedRadixSortKernel(),
-                        detail::radix::MakeRadixSortPolicyWrapper(policy));
+                        internal::radix::MakeRadixSortPolicyWrapper(policy));
   }
 
   //------------------------------------------------------------------------------
