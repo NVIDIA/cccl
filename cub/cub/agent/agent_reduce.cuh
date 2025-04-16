@@ -102,7 +102,7 @@ namespace detail
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   ReduceAgentPolicy,
   (GenericAgentPolicy),
-  ("", "", ""),
+  (0, 0, 0),
   (BLOCK_THREADS, BlockThreads, int),
   (ITEMS_PER_THREAD, ItemsPerThread, int),
   (VECTOR_LOAD_LENGTH, VectorLoadLength, int),

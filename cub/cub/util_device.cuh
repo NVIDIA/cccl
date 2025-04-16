@@ -559,10 +559,10 @@ namespace detail
       using namespace ptx_json;                                                                                      \
       return object<                                                                                                 \
         _CCCL_PP_FOR_EACH(CUB_DETAIL_POLICY_WRAPPER_ENCODED_FIELD, __VA_ARGS__)                                      \
-          key<"inner_struct">          = string<_CCCL_TO_STRING(_CCCL_PP_FIRST delay_constructor)>(),                \
-        key<"delay_constructor_name">  = string<_CCCL_TO_STRING(_CCCL_PP_SECOND delay_constructor)>(),               \
-        key<"delay_constructor_value"> = string<_CCCL_TO_STRING(StaticPolicyT::_CCCL_PP_THIRD delay_constructor)>(), \
-        key<"__dummy">()               = value<0>()>();                                                                            \
+          key<"inner_struct">()          = string(_CCCL_TO_STRING(_CCCL_PP_FIRST delay_constructor)),                \
+        key<"delay_constructor_name">()  = string(_CCCL_TO_STRING(_CCCL_PP_SECOND delay_constructor)),               \
+        key<"delay_constructor_value">() = string(_CCCL_TO_STRING(StaticPolicyT::_CCCL_PP_THIRD delay_constructor)), \
+        key<"__dummy">()                 = value<0>()>();                                                                            \
     }
 #else
 #  define CUB_DETAIL_POLICY_WRAPPER_ENCODED_POLICY(...)
