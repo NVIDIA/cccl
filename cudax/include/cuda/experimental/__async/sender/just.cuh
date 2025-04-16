@@ -89,6 +89,26 @@ private:
     _Values __values_;
   };
 
+  template <class... _Ts>
+  static _CUDAX_TRIVIAL_API auto __mk_values(_Ts&... __ts)
+  {
+#if _CCCL_STD_VER >= 2020 && _CCCL_COMPILER(CLANG)
+    // In C++20 we can directly move-capture a variadic pack of arguments:
+    return [... __ts = static_cast<_Ts&&>(__ts)](auto fn) mutable noexcept {
+      using _Fn = decltype(fn);
+      static_assert(__nothrow_callable<_Fn, _Ts...>);
+      return static_cast<_Fn&&>(fn)(static_cast<_Ts&&>(__ts)...);
+    };
+#else
+    // In C++17 we need to use a tuple to move-capture a variadic pack of arguments:
+    return [__ts = __tupl{static_cast<_Ts&&>(__ts)...}](auto fn) mutable noexcept {
+      using _Fn = decltype(fn);
+      static_assert(__nothrow_callable<_Fn, _Ts...>);
+      return __ts.__apply(static_cast<_Fn&&>(fn), static_cast<__tuple<_Ts...>&&>(__ts));
+    };
+#endif
+  }
+
 public:
   template <class _Values>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -132,25 +152,8 @@ template <__disposition_t _Disposition>
 template <class... _Ts>
 _CUDAX_TRIVIAL_API auto __just_t<_Disposition>::operator()(_Ts... __ts) const
 {
-#if _CCCL_STD_VER >= 2020
-  // In C++20 we can directly move-capture a variadic pack of arguments:
-  auto __mk_values = [&] {
-    return [... __ts = static_cast<_Ts&&>(__ts)](auto fn) mutable noexcept {
-      static_assert(__nothrow_callable<decltype(fn), _Ts...>);
-      return static_cast<decltype(fn)&&>(fn)(static_cast<_Ts&&>(__ts)...);
-    };
-  };
-#else
-  // In C++17 we need to use a tuple to move-capture a variadic pack of arguments:
-  auto __mk_values = [&] {
-    return [__ts = __tupl{static_cast<_Ts&&>(__ts)...}](auto fn) mutable noexcept {
-      static_assert(__nothrow_callable<decltype(fn), _Ts...>);
-      return __ts.__apply(static_cast<decltype(fn)&&>(fn), static_cast<__tuple<_Ts...>&&>(__ts));
-    };
-  };
-#endif
-  using _Values = decltype(__mk_values());
-  return __sndr_t<_Values>{{}, __mk_values()};
+  using _Values = decltype(__mk_values(__ts...));
+  return __sndr_t<_Values>{{}, __mk_values(__ts...)};
 }
 
 template <class _Fn>
