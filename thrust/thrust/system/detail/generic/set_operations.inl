@@ -114,13 +114,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
   using zip_iterator2 = thrust::zip_iterator<iterator_tuple2>;
   using zip_iterator3 = thrust::zip_iterator<iterator_tuple3>;
 
-  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(thrust::make_tuple(keys_first1, values_first1));
-  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(thrust::make_tuple(keys_last1, values_first1));
+  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(keys_first1, values_first1);
+  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(keys_last1, values_first1);
 
-  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(thrust::make_tuple(keys_first2, values_first2));
-  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(thrust::make_tuple(keys_last2, values_first2));
+  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(keys_first2, values_first2);
+  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(keys_last2, values_first2);
 
-  zip_iterator3 zipped_result = thrust::make_zip_iterator(thrust::make_tuple(keys_result, values_result));
+  zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
   thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
 
@@ -206,13 +206,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
   // XXX assumes value_type1 is default-constructible
   constant_iterator values_first2 = thrust::make_constant_iterator(value_type1());
 
-  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(thrust::make_tuple(keys_first1, values_first1));
-  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(thrust::make_tuple(keys_last1, values_first1));
+  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(keys_first1, values_first1);
+  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(keys_last1, values_first1);
 
-  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(thrust::make_tuple(keys_first2, values_first2));
-  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(thrust::make_tuple(keys_last2, values_first2));
+  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(keys_first2, values_first2);
+  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(keys_last2, values_first2);
 
-  zip_iterator3 zipped_result = thrust::make_zip_iterator(thrust::make_tuple(keys_result, values_result));
+  zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
   thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
 
@@ -296,13 +296,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_symmetric_d
   using zip_iterator2 = thrust::zip_iterator<iterator_tuple2>;
   using zip_iterator3 = thrust::zip_iterator<iterator_tuple3>;
 
-  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(thrust::make_tuple(keys_first1, values_first1));
-  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(thrust::make_tuple(keys_last1, values_first1));
+  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(keys_first1, values_first1);
+  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(keys_last1, values_first1);
 
-  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(thrust::make_tuple(keys_first2, values_first2));
-  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(thrust::make_tuple(keys_last2, values_first2));
+  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(keys_first2, values_first2);
+  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(keys_last2, values_first2);
 
-  zip_iterator3 zipped_result = thrust::make_zip_iterator(thrust::make_tuple(keys_result, values_result));
+  zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
   thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
 
@@ -387,13 +387,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
   using zip_iterator2 = thrust::zip_iterator<iterator_tuple2>;
   using zip_iterator3 = thrust::zip_iterator<iterator_tuple3>;
 
-  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(thrust::make_tuple(keys_first1, values_first1));
-  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(thrust::make_tuple(keys_last1, values_first1));
+  zip_iterator1 zipped_first1 = thrust::make_zip_iterator(keys_first1, values_first1);
+  zip_iterator1 zipped_last1  = thrust::make_zip_iterator(keys_last1, values_first1);
 
-  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(thrust::make_tuple(keys_first2, values_first2));
-  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(thrust::make_tuple(keys_last2, values_first2));
+  zip_iterator2 zipped_first2 = thrust::make_zip_iterator(keys_first2, values_first2);
+  zip_iterator2 zipped_last2  = thrust::make_zip_iterator(keys_last2, values_first2);
 
-  zip_iterator3 zipped_result = thrust::make_zip_iterator(thrust::make_tuple(keys_result, values_result));
+  zip_iterator3 zipped_result = thrust::make_zip_iterator(keys_result, values_result);
 
   thrust::detail::compare_first<StrictWeakOrdering> comp_first(comp);
 

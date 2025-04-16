@@ -131,8 +131,8 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
 {
   thrust::for_each(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(values_begin, output)),
-    thrust::make_zip_iterator(thrust::make_tuple(values_end, output + thrust::distance(values_begin, values_end))),
+    thrust::make_zip_iterator(values_begin, output),
+    thrust::make_zip_iterator(values_end, output + thrust::distance(values_begin, values_end)),
     detail::binary_search_functor<ForwardIterator, StrictWeakOrdering, BinarySearchFunction>(begin, end, comp, func));
 
   return output + thrust::distance(values_begin, values_end);

@@ -89,8 +89,8 @@ typename enable_if_bool_sort<RandomAccessIterator1>::type _CCCL_HOST_DEVICE stab
   // stable_partition puts true values first, so we need to logical_not
   sequential::stable_partition(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_last, values_first)),
+    thrust::make_zip_iterator(keys_first, values_first),
+    thrust::make_zip_iterator(keys_last, values_first),
     logical_not_first());
 }
 
