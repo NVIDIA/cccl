@@ -221,10 +221,10 @@
 #  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
 
-// nvcc cannot handle __builtin_clzg, clang-cuda's builtin is not constexpr
-#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
+// nvcc cannot handle __builtin_clzg
+#if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_CLZG
-#endif // _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_CTZ(...)   __builtin_ctz(__VA_ARGS__)

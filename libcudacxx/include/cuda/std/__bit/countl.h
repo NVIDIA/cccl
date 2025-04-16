@@ -121,7 +121,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 {
   int __count{};
 #if defined(_CCCL_BUILTIN_CLZG)
-  __count = _CCCL_BUILTIN_CLZG(__v);
+  __count = _CCCL_BUILTIN_CLZG(__v, numeric_limits<_Tp>::digits);
 #else // ^^^ _CCCL_BUILTIN_CLZG ^^^ // vvv !_CCCL_BUILTIN_CLZG vvv
   if constexpr (sizeof(_Tp) <= sizeof(uint64_t))
   {
