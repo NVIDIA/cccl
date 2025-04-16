@@ -293,7 +293,7 @@ _CUDAX_TRIVIAL_API continue_on_t::__closure_t<_Sch> continue_on_t::operator()(_S
 }
 
 template <class _Sndr, class _Sch>
-inline constexpr int structured_binding_size<continue_on_t::__sndr_t<_Sndr, _Sch>> = 3;
+inline constexpr size_t structured_binding_size<continue_on_t::__sndr_t<_Sndr, _Sch>> = 3;
 
 _CCCL_GLOBAL_CONSTANT continue_on_t continue_on{};
 } // namespace cuda::experimental::__async

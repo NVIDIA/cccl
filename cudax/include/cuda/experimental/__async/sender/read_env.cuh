@@ -144,7 +144,7 @@ _CUDAX_TRIVIAL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()
 }
 
 template <class _Query>
-inline constexpr int structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
+inline constexpr size_t structured_binding_size<read_env_t::__sndr_t<_Query>> = 2;
 
 _CCCL_GLOBAL_CONSTANT read_env_t read_env{};
 

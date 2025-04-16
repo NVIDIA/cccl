@@ -155,7 +155,7 @@ _CUDAX_API auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __s
 }
 
 template <class _Sndr1, class _Sndr2>
-inline constexpr int structured_binding_size<__seq_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
+inline constexpr size_t structured_binding_size<__seq_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
 
 using sequence_t = __seq_t;
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};

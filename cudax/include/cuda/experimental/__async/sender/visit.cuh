@@ -33,12 +33,12 @@ namespace cuda::experimental::__async
 
 // Specialize this for each sender type that can be used to initialize a structured binding.
 template <class _Sndr>
-inline constexpr int structured_binding_size = -1;
+inline constexpr size_t structured_binding_size = static_cast<size_t>(-1);
 
-template <int _Arity>
+template <size_t _Arity>
 struct __sender_type_cannot_be_used_to_initialize_a_structured_binding;
 
-template <int _Arity>
+template <size_t _Arity>
 extern __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity> __unpack;
 
 #define _CCCL_BIND_CHILD(_Ord) , _CCCL_PP_CAT(__child, _Ord)

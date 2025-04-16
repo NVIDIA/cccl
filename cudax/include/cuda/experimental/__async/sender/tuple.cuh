@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -66,10 +67,7 @@ struct __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 };
 
 template <auto _Value>
-struct __v
-{
-  static constexpr auto value = _Value;
-};
+using __v = _CUDA_VSTD::integral_constant<decltype(_Value), _Value>;
 
 // Unroll tuples up to some size
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_T, _Idx)
@@ -99,9 +97,13 @@ struct __v
         static_cast<_Us&&>(__us)... _CCCL_TUPLE_ELEMENT(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_ELEMENT, 1));       \
     }                                                                                                                 \
                                                                                                                       \
-    template <class _Idx>                                                                                             \
-    using __tupl_mbr_ptr_t _CCCL_NODEBUG_ALIAS =                                                                      \
-      _CUDA_VSTD::__type_index<_Idx, __v<&__tupl::__t0> _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>;          \
+    template <size_t _Idx>                                                                                            \
+    _CUDAX_API static constexpr auto __get_mbr_ptr() noexcept                                                         \
+    {                                                                                                                 \
+      using __result_t =                                                                                              \
+        _CUDA_VSTD::__type_index_c<_Idx, __v<&__tupl::__t0> _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>;      \
+      return __result_t::value;                                                                                       \
+    }                                                                                                                 \
   }
 
 _CCCL_DEFINE_TUPLE(0);
@@ -121,7 +123,7 @@ _CCCL_DEFINE_TUPLE(7);
 #undef _CCCL_TUPLE_ELEMENT
 #undef _CCCL_TUPLE_MBR_PTR
 
-template <size_t _Idx, class _Tupl, auto _MbrPtr = _Tupl::template __tupl_mbr_ptr_t<_Idx>::value>
+template <size_t _Idx, class _Tupl, auto _MbrPtr = _Tupl::template __get_mbr_ptr<_Idx>()>
 _CUDAX_TRIVIAL_API constexpr auto __cget(_Tupl const& __tupl) noexcept -> decltype(auto)
 {
   return __tupl.*_MbrPtr;

@@ -325,11 +325,11 @@ _CUDAX_TRIVIAL_API auto __upon_t<_Disposition>::operator()(_Fn __fn) const noexc
 }
 
 template <class _Sndr, class _Fn>
-inline constexpr int structured_binding_size<__upon_t<__value>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<__upon_t<__value>::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr int structured_binding_size<__upon_t<__error>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<__upon_t<__error>::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr int structured_binding_size<__upon_t<__stopped>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<__upon_t<__stopped>::__sndr_t<_Sndr, _Fn>> = 3;
 
 _CCCL_GLOBAL_CONSTANT struct then_t : __upon_t<__value>
 {

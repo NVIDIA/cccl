@@ -156,11 +156,11 @@ _CUDAX_TRIVIAL_API auto __just_from_t<_Disposition>::operator()(_Fn __fn) const 
 }
 
 template <class _Fn>
-inline constexpr int structured_binding_size<__just_from_t<__value>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<__just_from_t<__value>::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr int structured_binding_size<__just_from_t<__error>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<__just_from_t<__error>::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr int structured_binding_size<__just_from_t<__stopped>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<__just_from_t<__stopped>::__sndr_t<_Fn>> = 2;
 
 _CCCL_GLOBAL_CONSTANT struct just_from_t : __just_from_t<__value>
 {

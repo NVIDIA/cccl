@@ -111,7 +111,7 @@ _CUDAX_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __e
 }
 
 template <class _Sndr, class _Env>
-inline constexpr int structured_binding_size<write_env_t::__sndr_t<_Sndr, _Env>> = 3;
+inline constexpr size_t structured_binding_size<write_env_t::__sndr_t<_Sndr, _Env>> = 3;
 
 _CCCL_GLOBAL_CONSTANT write_env_t write_env{};
 } // namespace cuda::experimental::__async

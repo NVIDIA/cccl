@@ -147,7 +147,7 @@ _CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept 
 }
 
 template <class _Sch, class _Sndr>
-inline constexpr int structured_binding_size<start_on_t::__sndr_t<_Sch, _Sndr>> = 3;
+inline constexpr size_t structured_binding_size<start_on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
 _CCCL_GLOBAL_CONSTANT start_on_t start_on{};
 } // namespace cuda::experimental::__async
