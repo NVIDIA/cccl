@@ -220,9 +220,14 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
 {
   // TODO: we hardcode some of these values in order to make sure that the radix_sort tests do not fail due to the
   // memory op assertions. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  constexpr int onesweep_radix_bits                              = 8;
-  const int primary_radix_bits                                   = (key_size > 1) ? 7 : 5;
-  const int single_tile_radix_bits                               = (key_size > 1) ? 6 : 5;
+  constexpr int onesweep_radix_bits = 8;
+  const int primary_radix_bits      = (key_size > 1) ? 7 : 5;
+  const int single_tile_radix_bits  = (key_size > 1) ? 6 : 5;
+
+  const agent_radix_sort_histogram_policy histogram_policy{
+    256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits};
+  constexpr agent_radix_sort_exclusive_sum_policy exclusive_sum_policy{256, onesweep_radix_bits};
+
   const auto [onesweep_items_per_thread, onesweep_block_threads] = reg_bound_scaling(256, 21, key_size);
   // const auto [scan_items_per_thread, scan_block_threads]         = mem_bound_scaling(512, 23, key_size);
   const int scan_items_per_thread = 5;
@@ -235,8 +240,10 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
   const int alt_downsweep_block_threads                                = 256;
   const auto [single_tile_items_per_thread, single_tile_block_threads] = mem_bound_scaling(256, 19, key_size);
 
-  return {{256, 8, std::max(1, 1 * 4 / std::max(key_size, 4)), onesweep_radix_bits},
-          {256, onesweep_radix_bits},
+  constexpr bool is_onesweep = false;
+
+  return {histogram_policy,
+          exclusive_sum_policy,
           {onesweep_block_threads, onesweep_items_per_thread, 1, onesweep_radix_bits},
           {scan_block_threads, scan_items_per_thread},
           {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
@@ -244,7 +251,7 @@ radix_sort_runtime_tuning_policy get_policy(int /*cc*/, int key_size)
           {downsweep_block_threads, downsweep_items_per_thread, primary_radix_bits},
           {alt_downsweep_block_threads, alt_downsweep_items_per_thread, primary_radix_bits - 1},
           {single_tile_block_threads, single_tile_items_per_thread, single_tile_radix_bits},
-          false};
+          is_onesweep};
 };
 
 std::string get_single_tile_kernel_name(
@@ -600,8 +607,9 @@ struct {26} {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};

@@ -37,7 +37,7 @@ typedef enum cccl_type_enum
   CCCL_UINT64  = 7,
   CCCL_FLOAT32 = 8,
   CCCL_FLOAT64 = 9,
-  CCCL_STORAGE = 10
+  CCCL_STORAGE = 10,
 } cccl_type_enum;
 
 typedef struct cccl_type_info
@@ -50,7 +50,7 @@ typedef struct cccl_type_info
 typedef enum cccl_op_kind_t
 {
   CCCL_STATELESS = 0,
-  CCCL_STATEFUL  = 1
+  CCCL_STATEFUL  = 1,
 } cccl_op_kind_t;
 
 typedef struct cccl_op_t
@@ -90,7 +90,7 @@ typedef struct cccl_iterator_t
 typedef enum cccl_sort_order_t
 {
   CCCL_ASCENDING  = 0,
-  CCCL_DESCENDING = 1
+  CCCL_DESCENDING = 1,
 } cccl_sort_order_t;
 
 CCCL_C_EXTERN_C_END

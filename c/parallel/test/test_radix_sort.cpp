@@ -125,14 +125,17 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
   bool is_overwrite_okay = GENERATE(false, true);
   int selector           = -1;
 
+  cccl_op_t decomposer_no_op{};
+  constexpr const char* unused_decomposer_retty = "";
+
   radix_sort(
     order,
     input_keys_it,
     output_keys_it,
     input_items_it,
     output_items_it,
-    cccl_op_t{},
-    "",
+    decomposer_no_op,
+    unused_decomposer_retty,
     num_items,
     begin_bit,
     end_bit,
@@ -179,14 +182,17 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
   bool is_overwrite_okay = GENERATE(false, true);
   int selector           = -1;
 
+  cccl_op_t decomposer_no_op{};
+  constexpr const char* unused_decomposer_retty = "";
+
   radix_sort(
     order,
     input_keys_it,
     output_keys_it,
     input_items_it,
     output_items_it,
-    cccl_op_t{},
-    "",
+    decomposer_no_op,
+    unused_decomposer_retty,
     num_items,
     begin_bit,
     end_bit,
