@@ -407,9 +407,9 @@ CUresult cccl_device_segmented_reduce(
 
     auto exec_status = cub::DispatchSegmentedReduce<
       indirect_arg_t, // InputIteratorT
-      indirect_arg_t, // OutputIteratorT
-      indirect_arg_t, // BeginSegmentIteratorT
-      indirect_arg_t, // EndSegmentIteratorT
+      indirect_iterator_t, // OutputIteratorT
+      indirect_iterator_t, // BeginSegmentIteratorT
+      indirect_iterator_t, // EndSegmentIteratorT
       OffsetT, // OffsetT
       indirect_arg_t, // ReductionOpT
       indirect_arg_t, // InitT

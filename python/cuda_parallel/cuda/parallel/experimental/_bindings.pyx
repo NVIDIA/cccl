@@ -7,7 +7,7 @@
 # static type checker tools like mypy green-lights cuda.parallel
 
 from libc.string cimport memset, memcpy
-from libc.stdint cimport uint8_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 from cpython.buffer cimport (
@@ -68,6 +68,12 @@ cdef extern from "cccl/c/types.h":
         cccl_type_info type
         void *state
 
+    cdef union cccl_increment_t:
+        int64_t signed_offset
+        uint64_t unsigned_offset
+
+    ctypedef void (*cccl_host_op_fn_ptr_t)(void *, cccl_increment_t) nogil
+
     cdef struct cccl_iterator_t:
         size_t size
         size_t alignment
@@ -75,6 +81,7 @@ cdef extern from "cccl/c/types.h":
         cccl_op_t advance
         cccl_op_t dereference
         cccl_type_info value_type
+        cccl_host_op_fn_ptr_t host_advance
         void *state
 
     ctypedef enum cccl_sort_order_t:
@@ -799,10 +806,16 @@ cdef class IteratorState(StateBase):
         pass
 
 
+
+cdef cccl_host_op_fn_ptr_t unbox_host_advance_fn(object host_fn_obj) except *:
+    return <cccl_host_op_fn_ptr_t>NULL
+
+
 cdef class Iterator:
     cdef Op advance
     cdef Op dereference
     cdef object state_obj
+    cdef object host_advance_obj
     cdef cccl_iterator_t iter_data
 
     def __cinit__(self,
@@ -811,7 +824,8 @@ cdef class Iterator:
         Op advance_fn,
         Op dereference_fn,
         TypeInfo value_type,
-        state = None
+        state=None,
+        host_advance_fn=None
     ):
         cdef cccl_iterator_kind_t it_kind
         _validate_alignment(alignment)
@@ -836,6 +850,12 @@ cdef class Iterator:
                     "Expect for Iterator of kind POINTER, state must have type Pointer or int, "
                     f"got {type(state)}"
                 )
+            if host_advance_fn is not None:
+                raise ValueError(
+                    "host_advance_fn must be set to None for iterators of kind POINTER"
+                )
+            self.iter_data.host_advance = NULL
+            self.host_advance_obj = None
         elif it_kind == cccl_iterator_kind_t.CCCL_ITERATOR:
             if state is None:
                 self.state_obj = None
@@ -850,6 +870,12 @@ cdef class Iterator:
                     "For Iterator of kind ITERATOR, state must have type IteratorState, "
                     f"got type {type(state)}"
                 )
+            if host_advance_fn is not None:
+                self.iter_data.host_advance = unbox_host_advance_fn(host_advance_fn)
+                self.host_advance_obj = host_advance_fn
+            else:
+                self.iter_data.host_advance = NULL
+                self.host_advance_obj = None
         else:  # pragma: no cover
             raise ValueError("Unrecognized iterator kind")
         self.advance = advance_fn

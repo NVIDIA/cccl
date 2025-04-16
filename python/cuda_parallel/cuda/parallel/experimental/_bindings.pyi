@@ -132,6 +132,7 @@ class Iterator:
         dereference_fn: Op,
         value_type: TypeInfo,
         state=None,
+        host_advance_fn=None,
     ):
         pass
 
