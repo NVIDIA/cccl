@@ -1247,7 +1247,7 @@
 #endif
 
 // Some compilers provide std::move/std::forward/etc as builtins
-#if defined(__cplusplus) && !defined(__CUDA_ARCH__)
+#if defined(__cplusplus) // && !defined(__CUDA_ARCH__)
 // Bring in the feature test macros (needed for std::forward_like)
 #  if __has_include(<version>)
 #    include <version>
