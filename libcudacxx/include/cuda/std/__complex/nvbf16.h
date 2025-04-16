@@ -41,28 +41,16 @@
 namespace __cccl_internal
 {
 template <>
-struct __is_non_narrowing_convertible<__nv_bfloat16, float>
-{
-  static constexpr bool value = true;
-};
+inline constexpr bool __is_non_narrowing_convertible_v<__nv_bfloat16, float> = true;
 
 template <>
-struct __is_non_narrowing_convertible<__nv_bfloat16, double>
-{
-  static constexpr bool value = true;
-};
+inline constexpr bool __is_non_narrowing_convertible_v<__nv_bfloat16, double> = true;
 
 template <>
-struct __is_non_narrowing_convertible<float, __nv_bfloat16>
-{
-  static constexpr bool value = true;
-};
+inline constexpr bool __is_non_narrowing_convertible_v<float, __nv_bfloat16> = true;
 
 template <>
-struct __is_non_narrowing_convertible<double, __nv_bfloat16>
-{
-  static constexpr bool value = true;
-};
+inline constexpr bool __is_non_narrowing_convertible_v<double, __nv_bfloat16> = true;
 } // namespace __cccl_internal
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -117,14 +105,14 @@ public:
       : __repr_(__re, __im)
   {}
 
-  template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
+  template <class _Up, enable_if_t<__cccl_internal::__is_non_narrowing_convertible_v<value_type, _Up>, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const complex<_Up>& __c)
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
   template <class _Up,
-            enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
-            enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>                           = 0>
+            enable_if_t<!__cccl_internal::__is_non_narrowing_convertible_v<value_type, _Up>, int> = 0,
+            enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>                      = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit complex(const complex<_Up>& __c)
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
