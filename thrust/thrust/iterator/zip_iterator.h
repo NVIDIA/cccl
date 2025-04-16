@@ -198,8 +198,9 @@ public:
   //! This constructor creates a new \p zip_iterator from multiple iterators.
   //!
   //! \param iterators The iterators to zip.
-  _CCCL_TEMPLATE(class... Iterators)
-  _CCCL_REQUIRES((sizeof...(Iterators) != 0) && ::cuda::std::is_constructible_v<IteratorTuple, Iterators...>)
+  template <class... Iterators,
+            ::cuda::std::enable_if_t<(sizeof...(Iterators) != 0), int>                                  = 0,
+            ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<IteratorTuple, Iterators...>, int> = 0>
   inline _CCCL_HOST_DEVICE zip_iterator(Iterators&&... iterators)
       : m_iterator_tuple(::cuda::std::forward<Iterators>(iterators)...)
   {}
