@@ -36,8 +36,7 @@ void TestTrivialSequence()
   Vector A{0, 2, 1, 0, 1};
   Vector B{11, 11, 13, 10, 12};
 
-  test(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin())),
-       thrust::make_zip_iterator(thrust::make_tuple(A.end(), B.end())));
+  test(thrust::make_zip_iterator(A.begin(), B.begin()), thrust::make_zip_iterator(A.end(), B.end()));
 
   Vector refA{0, 2, 1, 0, 1};
   ASSERT_EQUAL(A, refA);

@@ -37,8 +37,8 @@ void TestAdjacentDifferenceDevice(ExecutionPolicy exec, const size_t n)
 
   ASSERT_EQUAL(h_output, d_output);
 
-  thrust::adjacent_difference(h_input.begin(), h_input.end(), h_output.begin(), thrust::plus<T>());
-  adjacent_difference_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin(), thrust::plus<T>());
+  thrust::adjacent_difference(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::plus<T>());
+  adjacent_difference_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::plus<T>());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -47,8 +47,8 @@ void TestAdjacentDifferenceDevice(ExecutionPolicy exec, const size_t n)
   ASSERT_EQUAL(h_output, d_output);
 
   // in-place operation
-  thrust::adjacent_difference(h_input.begin(), h_input.end(), h_input.begin(), thrust::plus<T>());
-  adjacent_difference_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_input.begin(), thrust::plus<T>());
+  thrust::adjacent_difference(h_input.begin(), h_input.end(), h_input.begin(), ::cuda::std::plus<T>());
+  adjacent_difference_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_input.begin(), ::cuda::std::plus<T>());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -135,7 +135,7 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(1);
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> all_differences_correct = thrust::device_malloc<bool>(1);
   *all_differences_correct                         = true;

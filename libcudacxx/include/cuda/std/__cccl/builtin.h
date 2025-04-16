@@ -146,11 +146,9 @@
 #if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #elif _CCCL_COMPILER(GCC, >=, 13)
-#  define _CCCL_BUILTIN_ASSUME(...) \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__attribute__((__assume__(__VA_ARGS__)));))
+#  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
 #elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_ASSUME(...) \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
+#  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
 #else
 #  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
@@ -205,6 +203,15 @@
 #  define _CCCL_BUILTIN_POPCOUNT(...)   __builtin_popcount(__VA_ARGS__)
 #  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
+
+#if _CCCL_CHECK_BUILTIN(builtin_popcountg)
+#  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
+
+// NVCC cannot handle __builtin_popcountg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_POPCOUNTG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)

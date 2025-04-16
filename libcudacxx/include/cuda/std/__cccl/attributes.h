@@ -102,9 +102,12 @@
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#elif _CCCL_CUDA_COMPILER(NVCC)
+#  define _CCCL_ASSUME(...) \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
+#else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
-#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#endif
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::no_specializations(_MSG)]]
