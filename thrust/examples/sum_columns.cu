@@ -59,7 +59,7 @@ int main()
   // Output the result.
   thrust::for_each_n(thrust::seq, flat_idx_begin, rows, [&](int i) {
     std::cout << "[ ";
-    std::for_each_n(flat_idx_begin, cols, [&](int j) {
+    thrust::for_each_n(thrust::seq, flat_idx_begin, cols, [&](int j) {
       std::cout << std::setw(2) << M(i, j) << " ";
     });
     std::cout << "]\n";
