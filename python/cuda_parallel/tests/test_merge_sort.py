@@ -160,9 +160,6 @@ def test_merge_sort_pairs_copy(dtype, num_items):
     np.testing.assert_array_equal(h_out_items, h_in_items)
 
 
-@pytest.mark.skip(
-    reason="Creating an array of gpu_struct keys does not work currently (see https://github.com/NVIDIA/cccl/issues/3789)"
-)
 def test_merge_sort_pairs_struct_type():
     @gpu_struct
     class key_pair:
@@ -203,8 +200,8 @@ def test_merge_sort_pairs_struct_type():
         d_in_keys, d_in_items, d_in_keys, d_in_items, struct_compare_op, num_items
     )
 
-    h_out_keys = d_in_keys.copy_to_host()
-    h_out_items = d_in_items.copy_to_host()
+    h_out_keys = d_in_keys.get()
+    h_out_items = d_in_items.get()
 
     argsort = np.argsort(h_in_keys, stable=True)
     h_in_keys = np.array(h_in_keys)[argsort]
