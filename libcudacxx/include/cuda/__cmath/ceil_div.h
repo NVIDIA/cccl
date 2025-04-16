@@ -24,6 +24,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -57,6 +58,11 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
   if constexpr (_CUDA_VSTD::is_signed_v<_Prom>)
   {
     return static_cast<_Common>((__a1 + __b1 - 1) / __b1);
+  }
+  else if (_CUDA_VSTD::is_constant_evaluated())
+  {
+    const auto __res = __a1 / __b1;
+    return static_cast<_Common>(__res + (__res * __b1 != __a1));
   }
   else
   {
