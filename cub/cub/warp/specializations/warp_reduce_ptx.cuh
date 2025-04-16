@@ -244,18 +244,18 @@ extern "C" _CCCL_DEVICE float redux_min_max_sync_is_not_supported_before_sm100a(
 
 #if __cccl_ptx_isa >= 860
 
-#  define _CUB_REDUX_FLOAT_OP(OPERATOR, PTX_OP)                                                              \
-                                                                                                             \
-    template <typename = void>                                                                               \
-    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float redux_sm100a_op(OPERATOR, float value, uint32_t mask) \
-    {                                                                                                        \
-      float result;                                                                                          \
-      asm volatile("{"                                                                                       \
-                   "redux.sync." #PTX_OP ".f32 %0, %1, %2;"                                                  \
-                   "}"                                                                                       \
-                   : "=f"(result)                                                                            \
-                   : "f"(value), "r"(mask));                                                                 \
-      return result;                                                                                         \
+#  define _CUB_REDUX_FLOAT_OP(OPERATOR, PTX_OP)                                                               \
+                                                                                                              \
+    template <typename = void>                                                                                \
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float redux_sm100a_ptx(OPERATOR, float value, uint32_t mask) \
+    {                                                                                                         \
+      float result;                                                                                           \
+      asm volatile("{"                                                                                        \
+                   "redux.sync." #PTX_OP ".f32 %0, %1, %2;"                                                   \
+                   "}"                                                                                        \
+                   : "=f"(result)                                                                             \
+                   : "f"(value), "r"(mask));                                                                  \
+      return result;                                                                                          \
     }
 
 _CUB_REDUX_FLOAT_OP(::cuda::minimum<>, min)
@@ -266,13 +266,13 @@ _CUB_REDUX_FLOAT_OP(::cuda::maximum<float>, max)
 #endif // __cccl_ptx_isa >= 860
 
 template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T reduce_sm100a_sync(ReductionOp reduction_op, T value, uint32_t mask)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T redux_sm100a(ReductionOp reduction_op, T value, uint32_t mask)
 {
   using namespace _CUDA_VSTD;
 #if __cccl_ptx_isa >= 860
   static_assert(is_same_v<T, float> && cub::internal::is_cuda_minimum_maximum_v<ReductionOp, T>);
   NV_IF_TARGET(NV_PROVIDES_SM_100,
-               (return cub::internal::redux_sm100a_op(reduction_op, value, mask);),
+               (return cub::internal::redux_sm100a_ptx(reduction_op, value, mask);),
                (return cub::internal::redux_min_max_sync_is_not_supported_before_sm100a();))
 #else
   static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
@@ -325,26 +325,47 @@ template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems,
   }
 }
 
-template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented = false>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(
-  reduce_logical_mode_t<LogicalMode> logical_mode,
-  logical_warp_size_t<LogicalWarpSize> logical_size,
-  last_pos_t<ValidItems> last_pos,
-  is_segmented_t<IsSegmented> is_segmented = {})
+template <typename Config>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(Config config)
 {
+  auto [logical_mode, _, logical_size, last_pos, is_segmented] = config;
+
   constexpr bool is_single_reduction = logical_mode == single_reduction;
   auto shift                         = is_single_reduction ? 0 : cub::internal::logical_warp_base_id(logical_size);
   if constexpr (last_pos.rank_dynamic() == 1)
   {
-    auto base_mask = ::cuda::bitmask<uint32_t>(0, last_pos.extent(0));
-    return base_mask << shift;
+    // auto base_mask = ::cuda::bitmask<uint32_t>(0, last_pos.extent(0) + 1);
+    // return base_mask << shift;
+    return __activemask();
   }
   else
   {
-    constexpr auto base_mask = ::cuda::bitmask<uint32_t>(0, LogicalWarpSize); // must be constexpr
+    constexpr auto base_mask = ::cuda::bitmask<uint32_t>(0, logical_size); // must be constexpr
     return base_mask << shift;
   }
 }
+
+// template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented = false>
+//[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(
+//   reduce_logical_mode_t<LogicalMode> logical_mode,
+//   logical_warp_size_t<LogicalWarpSize> logical_size,
+//   last_pos_t<ValidItems> last_pos,
+//   is_segmented_t<IsSegmented> is_segmented = {})
+//{
+//   // auto [logical_mode, _, logical_size, first_pos, last_pos, is_segmented] = config;
+//   constexpr bool is_single_reduction = logical_mode == single_reduction;
+//   auto shift                         = is_single_reduction ? 0 : cub::internal::logical_warp_base_id(logical_size);
+//   if constexpr (last_pos.rank_dynamic() == 1)
+//   {
+//     auto base_mask = ::cuda::bitmask<uint32_t>(0, last_pos.extent(0));
+//     return base_mask << shift;
+//   }
+//   else
+//   {
+//     constexpr auto base_mask = ::cuda::bitmask<uint32_t>(0, LogicalWarpSize); // must be constexpr
+//     return base_mask << shift;
+//   }
+// }
 
 } // namespace internal
 CUB_NAMESPACE_END

@@ -62,15 +62,13 @@ namespace internal
  * WarpReduce Base Step
  **********************************************************************************************************************/
 
-template <typename Input, typename ReductionOp, typename WarpConfigT>
+template <typename Input, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
-warp_reduce_redux_op(Input input, ReductionOp reduction_op, WarpConfigT config)
+warp_reduce_redux_op(Input input, ReductionOp reduction_op, Config config)
 {
   using namespace _CUDA_VSTD;
-  using namespace internal;
   static_assert(sizeof(Input) <= sizeof(uint32_t));
-  auto [logical_mode, result_mode, logical_size, last_pos, _] = config;
-  const auto mask = cub::internal::redux_lane_mask(logical_mode, logical_size, last_pos);
+  const auto mask = cub::internal::redux_lane_mask(config);
   if constexpr (is_integral_v<Input>)
   {
     using cast_t = _If<is_signed_v<Input>, int, uint32_t>;
@@ -101,7 +99,7 @@ warp_reduce_redux_op(Input input, ReductionOp reduction_op, WarpConfigT config)
   }
   else if constexpr (is_same_v<Input, float> && is_cuda_minimum_maximum_v<ReductionOp, Input>)
   {
-    return cub::internal::reduce_sm100a_sync(reduction_op, input, mask);
+    return cub::internal::redux_sm100a(reduction_op, input, mask);
   }
   else
   {
@@ -110,12 +108,11 @@ warp_reduce_redux_op(Input input, ReductionOp reduction_op, WarpConfigT config)
   }
 }
 
-template <typename Input, typename ReductionOp, typename WarpConfigT>
+template <typename Input, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
-warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, WarpConfigT config)
+warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, Config config)
 {
   using namespace _CUDA_VSTD;
-  using namespace internal;
   static_assert(is_integral_v<Input> || is_any_short2_v<Input> || is_arithmetic_cuda_floating_point_v<Input>,
                 "invalid input type/reduction operator combination");
   auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
@@ -137,9 +134,9 @@ warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, WarpConfigT config
   return input1;
 }
 
-template <typename Input, typename ReductionOp, typename WarpConfigT>
+template <typename Input, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
-warp_reduce_generic(Input input, ReductionOp reduction_op, WarpConfigT config)
+warp_reduce_generic(Input input, ReductionOp reduction_op, Config config)
 {
   auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
   constexpr auto is_power_of_two     = _CUDA_VSTD::has_single_bit(uint32_t{logical_size});
@@ -151,7 +148,7 @@ warp_reduce_generic(Input input, ReductionOp reduction_op, WarpConfigT config)
   for (int K = 0; K < log2_size; K++)
   {
     _CUDA_VDEV::warp_shuffle_result<Input> res;
-    if constexpr (is_power_of_two && last_pos.rank_dynamic() == 0 && !is_segmented)
+    if constexpr (is_power_of_two && last_pos.rank_dynamic() == 0)
     {
       res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
     }
@@ -179,15 +176,15 @@ warp_reduce_generic(Input input, ReductionOp reduction_op, WarpConfigT config)
  **********************************************************************************************************************/
 
 // forward declaration
-template <typename Input, typename ReductionOp, typename WarpConfigT>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(Input, ReductionOp, WarpConfigT);
+template <typename Input, typename ReductionOp, typename Config>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(Input, ReductionOp, Config);
 
 // NOTE: all recursive calls need that ALL lanes in a Logical Warp have the same value
 
-_CCCL_TEMPLATE(typename Input, typename ReductionOp, typename WarpConfigT)
+_CCCL_TEMPLATE(typename Input, typename ReductionOp, typename Config)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input
-warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_config)
+warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
 {
   using internal::merge_integers;
   using internal::split_integers;
@@ -198,10 +195,10 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_co
   return merge_integers(high_reduction, low_reduction);
 }
 
-_CCCL_TEMPLATE(typename Input, typename ReductionOp, typename WarpConfigT)
+_CCCL_TEMPLATE(typename Input, typename ReductionOp, typename Config)
 _CCCL_REQUIRES(cub::internal::is_cuda_minimum_maximum_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input
-warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_config)
+warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
 {
   using namespace _CUDA_VSTD;
   using internal::identity_v;
@@ -232,10 +229,10 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_co
   return merge_integers(static_cast<half_size_signed_t>(high_result), low_result);
 }
 
-_CCCL_TEMPLATE(typename Input, typename ReductionOp, typename WarpConfigT)
+_CCCL_TEMPLATE(typename Input, typename ReductionOp, typename Config)
 _CCCL_REQUIRES(cub::internal::is_cuda_std_plus_v<ReductionOp, Input>)
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
-warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_config)
+warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
 {
   using namespace _CUDA_VSTD;
   using internal::merge_integers;
@@ -256,9 +253,9 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, WarpConfigT warp_co
  * WarpReduce Dispatch
  **********************************************************************************************************************/
 
-template <typename Input, typename ReductionOp, typename WarpConfigT>
+template <typename Input, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
-warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
+warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
 {
   using cub::internal::comparable_int_to_floating_point;
   using cub::internal::floating_point_to_comparable_int;
@@ -374,8 +371,8 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
                       (return warp_reduce_shuffle_op(input, reduction_op, config);),
                       (return warp_reduce_generic(input, reduction_op, config);));
   }
-  // Any std operator: small integrals (int8, uint8, int16, uint16, int32, uint32)
-  //    [Plus]:        float, double
+  // [Plus/Min/Max]: small integrals (int8, uint8, int16, uint16, int32, uint32)
+  // [Plus]:         float, double
   else if constexpr (is_cuda_operator_v<ReductionOp, Input>
                      && (is_small_integer || _CUDA_VSTD::is_floating_point_v<Input>) )
   {
@@ -389,7 +386,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   }
   else
   {
-    // Any std operator: large integrals
+    // [Plus/Min/Max]: large integrals (int64, uint64, int128, uint128)
     if constexpr (is_cuda_operator_v<ReductionOp, Input> && is_integral_v<Input> && !is_segmented)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op, config);));
