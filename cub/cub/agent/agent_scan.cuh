@@ -122,7 +122,6 @@ namespace detail
 CUB_DETAIL_POLICY_WRAPPER_DEFINE(
   ScanAgentPolicy,
   (GenericAgentPolicy),
-  (detail, delay_constructor_t, DelayConstructorT),
   (BLOCK_THREADS, BlockThreads, int),
   (ITEMS_PER_THREAD, ItemsPerThread, int),
   (LOAD_ALGORITHM, LoadAlgorithm, cub::BlockLoadAlgorithm),

@@ -239,24 +239,30 @@ struct __align__({1}) storage_t {{
     constexpr size_t ptx_num_args      = 5;
     const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
 
+    std::string policy_hub_expr = std::format(
+      "cub::detail::scan::policy_hub<{}, {}, {}, {}, {}>",
+      input_it_value_t,
+      output_it_value_t,
+      accum_cpp,
+      offset_t,
+      "op_wrapper");
+
     nlohmann::json runtime_policy = get_policy(
-      std::format("cub::detail::scan::MakeScanPolicyWrapper(cub::detail::scan::policy_hub<{}, {}, "
-                  "{}, {}, {}>::MaxPolicy::ActivePolicy{{}})",
-                  input_it_value_t,
-                  output_it_value_t,
-                  accum_cpp,
-                  offset_t,
-                  "op_wrapper"),
+      std::format("cub::detail::scan::MakeScanPolicyWrapper({}::MaxPolicy::ActivePolicy{{}})", policy_hub_expr),
       "#include <cub/device/dispatch/tuning/tuning_scan.cuh>\n" + src,
       ptx_args);
 
-    using cub::detail::RuntimeScanAgentPolicy;
-    auto [scan_policy, scan_policy_str] = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT");
+    std::string delay_cons_type =
+      std::format("{}::MaxPolicy::ActivePolicy::ScanPolicyT::detail::delay_constructor_t;", policy_hub_expr);
 
-    std::cout << "ScanPolicyT: " << scan_policy_str << std::endl;
+    using cub::detail::RuntimeScanAgentPolicy;
+    auto [scan_policy,
+          scan_policy_str] = RuntimeScanAgentPolicy::from_json(runtime_policy, "ScanPolicyT", delay_cons_type);
 
     std::string final_src = std::format(
       R"XXX(
+#include <cub/device/dispatch/tuning/tuning_scan.cuh>
+#include <cuda/std/cstdint>
 {0}
 struct device_scan_policy {{
   struct ActivePolicy {{
@@ -280,8 +286,10 @@ struct device_scan_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    // We use `-default-device` since we are calling `MakeScanPolicyWrapper`
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-default-device"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
