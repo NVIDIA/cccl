@@ -142,10 +142,7 @@ _CCCL_DEVICE void* __associate_address_space(void* __ptr, _Property __prop)
   {
     [[maybe_unused]] bool __b = __isShared(__ptr);
     _CCCL_ASSERT(__b, "");
-#  if defined(_CCCL_BUILTIN_ASSUME)
-    _CCCL_BUILTIN_ASSUME(__b);
-#  else // ^^^ _CCCL_BUILTIN_ASSUME ^^^ / vvv !_CCCL_BUILTIN_ASSUME vvv
-#  endif // !_CCCL_BUILTIN_ASSUME
+    _CCCL_ASSUME(__b);
   }
   else if (std::is_same<_Property, access_property::global>::value == true
            || std::is_same<_Property, access_property::normal>::value == true
@@ -155,10 +152,7 @@ _CCCL_DEVICE void* __associate_address_space(void* __ptr, _Property __prop)
   {
     [[maybe_unused]] bool __b = __isGlobal(__ptr);
     _CCCL_ASSERT(__b, "");
-#  if defined(_CCCL_BUILTIN_ASSUME)
-    _CCCL_BUILTIN_ASSUME(__b);
-#  else // ^^^ !_CCCL_BUILTIN_ASSUME ^^^ / vvv _CCCL_BUILTIN_ASSUME vvv
-#  endif // !_CCCL_BUILTIN_ASSUME
+    _CCCL_ASSUME(__b);
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 

@@ -116,13 +116,13 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
   using namespace thrust::placeholders;
   thrust::zip_iterator<thrust::tuple<OutputIterator1, OutputIterator2>> result = thrust::copy_if(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_first, values_first)) + n,
+    thrust::make_zip_iterator(keys_first, values_first),
+    thrust::make_zip_iterator(keys_first, values_first) + n,
     stencil.begin(),
-    thrust::make_zip_iterator(thrust::make_tuple(keys_output, values_output)),
+    thrust::make_zip_iterator(keys_output, values_output),
     _1);
 
-  difference_type output_size = result - thrust::make_zip_iterator(thrust::make_tuple(keys_output, values_output));
+  difference_type output_size = result - thrust::make_zip_iterator(keys_output, values_output);
 
   return thrust::make_pair(keys_output + output_size, values_output + output_size);
 } // end unique_by_key_copy()

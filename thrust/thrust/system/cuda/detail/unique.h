@@ -634,7 +634,7 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
     return 0;
   }
   auto size = thrust::distance(first, last);
-  auto it   = thrust::make_zip_iterator(thrust::make_tuple(first, thrust::next(first)));
+  auto it   = thrust::make_zip_iterator(first, thrust::next(first));
   return 1 + thrust::count_if(policy, it, thrust::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
 }
 

@@ -144,8 +144,8 @@ _CCCL_HOST_DEVICE ForwardIterator is_sorted_until(
   ForwardIterator first_plus_one = first;
   thrust::advance(first_plus_one, 1);
 
-  ZipIterator zipped_first = thrust::make_zip_iterator(thrust::make_tuple(first_plus_one, first));
-  ZipIterator zipped_last  = thrust::make_zip_iterator(thrust::make_tuple(last, first));
+  ZipIterator zipped_first = thrust::make_zip_iterator(first_plus_one, first);
+  ZipIterator zipped_last  = thrust::make_zip_iterator(last, first);
 
   return thrust::get<0>(
     thrust::find_if(exec, zipped_first, zipped_last, thrust::detail::tuple_binary_predicate<Compare>(comp))
