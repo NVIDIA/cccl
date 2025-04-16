@@ -25,9 +25,12 @@
 #include <cuda/std/__charconv/to_chars_result.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cstddef/types.h>
+#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_signed.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -41,11 +44,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __to_chars_int_width(_Tp __v, int __base) noexcept
 {
-  const auto __ubase = static_cast<_Tp>(__base);
+  using _Up = cuda::std::conditional_t<sizeof(_Tp) >= sizeof(uint32_t), make_unsigned_t<_Tp>, uint32_t>;
 
-  const auto __ubase_2 = static_cast<_Tp>(__ubase * __ubase);
-  const auto __ubase_3 = static_cast<_Tp>(__ubase_2 * __ubase);
-  const auto __ubase_4 = static_cast<_Tp>(__ubase_2 * __ubase_2);
+  const auto __ubase = static_cast<_Up>(__base);
+
+  const auto __ubase_2 = __ubase * __ubase;
+  const auto __ubase_3 = __ubase_2 * __ubase;
+  const auto __ubase_4 = __ubase_2 * __ubase_2;
 
   int __r = 0;
   while (true)
