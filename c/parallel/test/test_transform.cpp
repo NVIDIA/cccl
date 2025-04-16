@@ -64,26 +64,28 @@ void binary_transform(
   REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
 }
 
-using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("Transform works with integral types", "[transform]", integral_types)
+using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+C2H_TEST("Transform works with integral types", "[transform]", integral_types)
 {
-  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                    = make_operation("op", get_unary_op(get_type_info<TestType>().type));
-  const std::vector<TestType> input = generate<TestType>(num_items);
-  const std::vector<TestType> output(num_items, 0);
-  pointer_t<TestType> input_ptr(input);
-  pointer_t<TestType> output_ptr(output);
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op              = make_operation("op", get_unary_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
 
   unary_transform(input_ptr, output_ptr, num_items, op);
 
-  std::vector<TestType> expected(num_items, 0);
-  std::transform(input.begin(), input.end(), expected.begin(), [](const TestType& x) {
+  std::vector<T> expected(num_items, 0);
+  std::transform(input.begin(), input.end(), expected.begin(), [](const T& x) {
     return 2 * x;
   });
 
   if (num_items > 0)
   {
-    REQUIRE(expected == std::vector<TestType>(output_ptr));
+    REQUIRE(expected == std::vector<T>(output_ptr));
   }
 }
 
@@ -98,7 +100,7 @@ struct pair
   }
 };
 
-TEST_CASE("Transform works with output of different type", "[transform]")
+C2H_TEST("Transform works with output of different type", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
@@ -125,7 +127,7 @@ TEST_CASE("Transform works with output of different type", "[transform]")
   }
 }
 
-TEST_CASE("Transform works with custom types", "[transform]")
+C2H_TEST("Transform works with custom types", "[transform]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
@@ -158,7 +160,7 @@ TEST_CASE("Transform works with custom types", "[transform]")
   }
 }
 
-TEST_CASE("Transform works with input iterators", "[transform]")
+C2H_TEST("Transform works with input iterators", "[transform]")
 {
   const std::size_t num_items = GENERATE(1, 42, take(1, random(1 << 12, 1 << 16)));
   operation_t op              = make_operation("op", get_unary_op(get_type_info<int>().type));
@@ -182,7 +184,7 @@ TEST_CASE("Transform works with input iterators", "[transform]")
   }
 }
 
-TEST_CASE("Transform works with output iterators", "[transform]")
+C2H_TEST("Transform works with output iterators", "[transform]")
 {
   const int num_items = GENERATE(1, 42, take(1, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_unary_op(get_type_info<int>().type));
@@ -205,7 +207,7 @@ TEST_CASE("Transform works with output iterators", "[transform]")
   }
 }
 
-TEST_CASE("Transform with binary operator", "[transform]")
+C2H_TEST("Transform with binary operator", "[transform]")
 {
   const std::size_t num_items   = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
   const std::vector<int> input1 = generate<int>(num_items);
@@ -234,7 +236,7 @@ TEST_CASE("Transform with binary operator", "[transform]")
   }
 }
 
-TEST_CASE("Binary transform with one iterator", "[transform]")
+C2H_TEST("Binary transform with one iterator", "[transform]")
 {
   const std::size_t num_items   = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
   const std::vector<int> input1 = generate<int>(num_items);

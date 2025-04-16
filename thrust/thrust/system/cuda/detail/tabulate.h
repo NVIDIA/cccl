@@ -74,7 +74,7 @@ void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator firs
 {
   using size_type = thrust::detail::it_difference_t<Iterator>;
 
-  size_type count = thrust::distance(first, last);
+  size_type count = ::cuda::std::distance(first, last);
 
   using functor_t = __tabulate::functor<Iterator, TabulateOp, size_type>;
 

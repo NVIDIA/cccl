@@ -37,10 +37,9 @@
     "RAPIDS_cumlprims_mg_GIT_REPO": "${localEnv:RAPIDS_cumlprims_mg_GIT_REPO}",
     "RAPIDS_cuml_GIT_REPO": "${localEnv:RAPIDS_cuml_GIT_REPO}",
     "RAPIDS_cugraph_GIT_REPO": "${localEnv:RAPIDS_cugraph_GIT_REPO}",
-    "RAPIDS_cugraph_gnn_GIT_REPO": "${localEnv:RAPIDS_cugraph_gnn_GIT_REPO}",
-    "RAPIDS_cuspatial_GIT_REPO": "${localEnv:RAPIDS_cuspatial_GIT_REPO}"
+    "RAPIDS_cugraph_gnn_GIT_REPO": "${localEnv:RAPIDS_cugraph_gnn_GIT_REPO}"
   },
-  "initializeCommand": ["/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,cugraph,cugraph-gnn,cuspatial}"],
+  "initializeCommand": ["/bin/bash", "-c", "mkdir -m 0755 -p ${localWorkspaceFolder}/.{aws,cache,config} ${localWorkspaceFolder}/ci/rapids/.{conda,log/devcontainer-utils} ${localWorkspaceFolder}/ci/rapids/.repos/{rmm,kvikio,ucxx,cudf,raft,cuvs,cuml,cugraph,cugraph-gnn}"],
   "postCreateCommand": ["/bin/bash", "-c", "if [ ${CI:-false} = 'false' ]; then . /home/coder/cccl/ci/rapids/post-create-command.sh; fi"],
   "postAttachCommand": ["/bin/bash", "-c", "if [ ${CODESPACES:-false} = 'true' ]; then . devcontainer-utils-post-attach-command; fi"],
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
@@ -58,7 +57,6 @@
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cuml,target=/home/coder/cuml,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph,target=/home/coder/cugraph,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.repos/cugraph-gnn,target=/home/coder/cugraph-gnn,type=bind,consistency=consistent",
-    "source=${localWorkspaceFolder}/ci/rapids/.repos/cuspatial,target=/home/coder/cuspatial,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.conda,target=/home/coder/.conda,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/ci/rapids/.log/devcontainer-utils,target=/var/log/devcontainer-utils,type=bind,consistency=consistent"
   ],

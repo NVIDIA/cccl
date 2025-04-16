@@ -133,7 +133,8 @@ public:
   void verify_sorted(const c2h::device_vector<key_t>& out_keys) const
   {
     // Verify keys are sorted next to each other
-    auto count = thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>());
+    auto count =
+      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), cuda::std::equal_to<int>());
     REQUIRE(count <= max_histo_size);
 
     // Verify keys are sorted using prior histogram computation
@@ -215,7 +216,7 @@ public:
 
     // Verify keys are sorted next to each other
     const auto count = static_cast<std::size_t>(
-      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>()));
+      thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), cuda::std::equal_to<int>()));
     REQUIRE(count <= sequence_length * num_segments);
 
     // // Verify keys are sorted using prior histogram computation
@@ -624,7 +625,7 @@ void host_sort_random_inputs(
           h_unsorted_keys.begin() + segment_begin,
           h_unsorted_keys.begin() + segment_end,
           h_unsorted_values.begin() + segment_begin,
-          thrust::greater<KeyT>{});
+          cuda::std::greater<KeyT>{});
       }
       else
       {
@@ -639,7 +640,7 @@ void host_sort_random_inputs(
       {
         thrust::stable_sort(h_unsorted_keys.begin() + segment_begin, //
                             h_unsorted_keys.begin() + segment_end,
-                            thrust::greater<KeyT>{});
+                            cuda::std::greater<KeyT>{});
       }
       else
       {

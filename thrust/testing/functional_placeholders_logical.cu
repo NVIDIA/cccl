@@ -49,8 +49,8 @@ struct rebind_vector<thrust::universal_vector<T, Allocator>, U>
   }                                                                                                   \
   DECLARE_VECTOR_UNITTEST(TestFunctionalPlaceholders##name);
 
-BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(LogicalAnd, &&, thrust::logical_and);
-BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(LogicalOr, ||, thrust::logical_or);
+BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(LogicalAnd, &&, ::cuda::std::logical_and);
+BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(LogicalOr, ||, ::cuda::std::logical_or);
 
 template <typename Vector>
 void TestFunctionalPlaceholdersLogicalNot()
@@ -66,7 +66,7 @@ void TestFunctionalPlaceholdersLogicalNot()
   } // end if
 
   bool_vector reference(input.size());
-  thrust::transform(input.begin(), input.end(), reference.begin(), thrust::logical_not<T>());
+  thrust::transform(input.begin(), input.end(), reference.begin(), ::cuda::std::logical_not<T>());
 
   using namespace thrust::placeholders;
   bool_vector result(input.size());

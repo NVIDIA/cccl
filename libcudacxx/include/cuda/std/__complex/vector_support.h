@@ -21,34 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __is_complex_float
-{
-  static constexpr auto value = _CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
-};
+inline constexpr bool __is_complex_float_v =
+  _CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
 
 template <class _Tp>
-struct __is_complex_arithmetic
-{
-  static constexpr auto value = _CCCL_TRAIT(is_arithmetic, _Tp) || __is_complex_float<_Tp>::value;
-};
+inline constexpr size_t __complex_alignment_v = 2 * sizeof(_Tp);
 
-template <class _Tp>
-struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
-{};
-
-#define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment<_Tp>::value)
+#define _LIBCUDACXX_COMPLEX_ALIGNAS _CCCL_ALIGNAS(__complex_alignment_v<_Tp>)
 
 template <class _Tp>
 struct __type_to_vector;
@@ -56,13 +44,11 @@ struct __type_to_vector;
 template <class _Tp>
 using __type_to_vector_t = typename __type_to_vector<_Tp>::__type;
 
-template <class _Tp, typename = void>
-struct __has_vector_type : false_type
-{};
+template <class _Tp, class = void>
+inline constexpr bool __has_vector_type_v = false;
 
 template <class _Tp>
-struct __has_vector_type<_Tp, void_t<__type_to_vector_t<_Tp>>> : true_type
-{};
+inline constexpr bool __has_vector_type_v<_Tp, void_t<__type_to_vector_t<_Tp>>> = true;
 
 template <class _Tp>
 struct __abcd_results
@@ -80,22 +66,25 @@ struct __ab_results
   _Tp __b;
 };
 
-template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES((!__has_vector_type_v<_Tp>) )
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   return {__a * __c, __b * __d, __a * __d, __b * __c};
 }
 
-template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES((!__has_vector_type_v<_Tp>) )
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   return {__x1 * __x2, __y1 * __y2};
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__has_vector_type_v<_Tp>)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   __abcd_results<_Tp> __ret;
@@ -117,8 +106,9 @@ __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
   return __ret;
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(__has_vector_type_v<_Tp>)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   __ab_results<_Tp> __ret;

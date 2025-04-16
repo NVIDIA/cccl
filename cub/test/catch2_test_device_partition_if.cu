@@ -203,7 +203,7 @@ C2H_TEST("DevicePartition::If is stable", "[device][partition_if]")
 
   partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
 
-  REQUIRE(num_selected_out[0] == thrust::distance(reference.begin(), boundary));
+  REQUIRE(num_selected_out[0] == cuda::std::distance(reference.begin(), boundary));
   REQUIRE(reference == out);
 }
 
@@ -232,7 +232,7 @@ C2H_TEST("DevicePartition::If works with iterators", "[device][partition_if]", a
 
   partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
 
-  REQUIRE(num_selected_out[0] == thrust::distance(reference.begin(), boundary));
+  REQUIRE(num_selected_out[0] == cuda::std::distance(reference.begin(), boundary));
   REQUIRE(reference == out);
 }
 
@@ -262,7 +262,7 @@ C2H_TEST("DevicePartition::If works with pointers", "[device][partition_if]", ty
   partition_if(
     thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), d_first_num_selected_out, num_items, le);
 
-  REQUIRE(num_selected_out[0] == thrust::distance(reference.begin(), boundary));
+  REQUIRE(num_selected_out[0] == cuda::std::distance(reference.begin(), boundary));
   REQUIRE(reference == out);
 }
 
@@ -311,7 +311,7 @@ C2H_TEST("DevicePartition::If works with a different output type", "[device][par
 
   partition_if(in.begin(), out.begin(), d_first_num_selected_out, num_items, le);
 
-  REQUIRE(num_selected_out[0] == thrust::distance(reference.begin(), boundary));
+  REQUIRE(num_selected_out[0] == cuda::std::distance(reference.begin(), boundary));
   REQUIRE(reference == out);
 }
 
