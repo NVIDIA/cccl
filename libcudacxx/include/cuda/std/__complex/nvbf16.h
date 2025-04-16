@@ -28,7 +28,6 @@
 #  include <cuda/std/__floating_point/nvfp_types.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
-#  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
 #  include <cuda/std/__type_traits/is_extended_floating_point.h>
 #  include <cuda/std/cmath>
@@ -69,8 +68,7 @@ struct __is_non_narrowing_convertible<double, __nv_bfloat16>
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <>
-struct __complex_alignment<__nv_bfloat16> : integral_constant<size_t, alignof(__nv_bfloat162)>
-{};
+inline constexpr size_t __complex_alignment_v<__nv_bfloat16> = alignof(__nv_bfloat162);
 
 template <>
 struct __type_to_vector<__nv_bfloat16>
@@ -166,11 +164,11 @@ public:
   }
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-  _LIBCUDACXX_HIDE_FROM_ABI value_type real() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type real() const
   {
     return __repr_.x;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI value_type imag() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type imag() const
   {
     return __repr_.y;
   }
@@ -185,11 +183,11 @@ public:
   }
 
   // Those additional volatile overloads are meant to help with reductions in thrust
-  _LIBCUDACXX_HIDE_FROM_ABI value_type real() const volatile
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type real() const volatile
   {
     return __repr_.x;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI value_type imag() const volatile
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI value_type imag() const volatile
   {
     return __repr_.y;
   }
@@ -230,7 +228,7 @@ public:
     return __lhs;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend bool operator==(const complex& __lhs, const complex& __rhs) noexcept
   {
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
@@ -268,7 +266,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<double>& complex<double>::operator=(const comp
   return *this;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 arg(__nv_bfloat16 __re)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 arg(__nv_bfloat16 __re)
 {
   return _CUDA_VSTD::atan2(__int2bfloat16_rn(0), __re);
 }
