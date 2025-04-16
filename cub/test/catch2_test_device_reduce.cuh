@@ -290,7 +290,7 @@ compute_single_problem_reference(InputItT h_in_begin, InputItT h_in_end, Reducti
   compute_host_reference(
     h_in_begin,
     thrust::make_constant_iterator(0),
-    thrust::make_constant_iterator(thrust::distance(h_in_begin, h_in_end)),
+    thrust::make_constant_iterator(cuda::std::distance(h_in_begin, h_in_end)),
     num_segments,
     reduction_op,
     init,
@@ -383,8 +383,9 @@ void compute_segmented_argmin_reference(
     {
       auto expected_result_it =
         std::min_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset = static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
-      h_results[seg]    = {result_offset, *expected_result_it};
+      int result_offset =
+        static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
+      h_results[seg] = {result_offset, *expected_result_it};
     }
   }
 }
@@ -410,8 +411,9 @@ void compute_segmented_argmax_reference(
     {
       auto expected_result_it =
         std::max_element(h_items.cbegin() + h_offsets[seg], h_items.cbegin() + h_offsets[seg + 1]);
-      int result_offset = static_cast<int>(thrust::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
-      h_results[seg]    = {result_offset, *expected_result_it};
+      int result_offset =
+        static_cast<int>(cuda::std::distance((h_items.cbegin() + h_offsets[seg]), expected_result_it));
+      h_results[seg] = {result_offset, *expected_result_it};
     }
   }
 }
@@ -450,7 +452,7 @@ inline c2h::host_vector<ItemT> compute_unique_keys_reference(const c2h::device_v
   c2h::host_vector<ItemT> h_unique_keys_out(d_keys.size());
 
   auto end_it = compute_unique_keys_reference(h_keys.cbegin(), h_keys.size(), h_unique_keys_out.begin());
-  h_unique_keys_out.resize(thrust::distance(h_unique_keys_out.begin(), end_it));
+  h_unique_keys_out.resize(cuda::std::distance(h_unique_keys_out.begin(), end_it));
   return h_unique_keys_out;
 }
 

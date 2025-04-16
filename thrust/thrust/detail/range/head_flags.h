@@ -36,7 +36,7 @@ namespace detail
 {
 
 template <typename RandomAccessIterator,
-          typename BinaryPredicate = equal_to<it_value_t<RandomAccessIterator>>,
+          typename BinaryPredicate = ::cuda::std::equal_to<it_value_t<RandomAccessIterator>>,
           typename ValueType       = bool,
           typename IndexType       = it_difference_t<RandomAccessIterator>>
 class head_flags

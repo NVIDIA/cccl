@@ -619,7 +619,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
   thrust::counting_iterator<offset_t> begin(offset_t{0});
   auto end = begin + num_items;
   thrust::counting_iterator<offset_t> stencil(offset_t{0});
-  ASSERT_EQUAL(static_cast<offset_t>(thrust::distance(begin, end)), num_items);
+  ASSERT_EQUAL(static_cast<offset_t>(::cuda::std::distance(begin, end)), num_items);
 
   // Run algorithm on large number of items
   offset_t match_every_nth      = 1000000;
@@ -639,7 +639,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
 
     // Ensure number of selected items are correct
     const offset_t num_selected_out =
-      static_cast<offset_t>(thrust::distance(partitioned_out.begin(), selected_out_end));
+      static_cast<offset_t>(::cuda::std::distance(partitioned_out.begin(), selected_out_end));
     ASSERT_EQUAL(num_selected_out, expected_num_written);
     partitioned_out.resize(expected_num_written);
 
@@ -663,7 +663,7 @@ void TestPartitionIfWithMagnitude(int magnitude)
 
     // Ensure number of rejected items are correct
     const offset_t num_rejected_out =
-      static_cast<offset_t>(thrust::distance(partitioned_out.begin(), rejected_out_end));
+      static_cast<offset_t>(::cuda::std::distance(partitioned_out.begin(), rejected_out_end));
     ASSERT_EQUAL(num_rejected_out, expected_num_written);
     partitioned_out.resize(expected_num_written);
 

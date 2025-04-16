@@ -213,7 +213,7 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
   thrust::counting_iterator<long long> begin2 = begin1 + (1ll << magnitude);
   thrust::counting_iterator<long long> end1   = begin2 + 1;
   thrust::counting_iterator<long long> end2   = begin2 + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin2, end1), 1);
+  ASSERT_EQUAL(::cuda::std::distance(begin2, end1), 1);
 
   thrust::device_vector<long long> result;
   result.resize(1);

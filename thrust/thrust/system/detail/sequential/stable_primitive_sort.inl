@@ -58,7 +58,7 @@ typename enable_if_bool_sort<RandomAccessIterator>::type _CCCL_HOST_DEVICE stabl
 {
   // use stable_partition if we're sorting bool
   // stable_partition puts true values first, so we need to logical_not
-  sequential::stable_partition(exec, first, last, thrust::logical_not<bool>());
+  sequential::stable_partition(exec, first, last, ::cuda::std::logical_not<bool>());
 }
 
 template <typename DerivedPolicy, typename RandomAccessIterator>

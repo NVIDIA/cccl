@@ -224,7 +224,7 @@ thrust_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp seco
     c2h::device_policy, in.begin(), in.end(), result.first_part.begin(), intermediate_result.begin(), first_selector);
 
   result.num_items_in_first_part =
-    static_cast<int>(thrust::distance(result.first_part.begin(), intermediate_iterators.first));
+    static_cast<int>(cuda::std::distance(result.first_part.begin(), intermediate_iterators.first));
 
   auto final_iterators = thrust::partition_copy(
     c2h::device_policy,
@@ -235,9 +235,10 @@ thrust_partition(FirstPartSelectionOp first_selector, SecondPartSelectionOp seco
     second_selector);
 
   result.num_items_in_second_part =
-    static_cast<int>(thrust::distance(result.second_part.begin(), final_iterators.first));
+    static_cast<int>(cuda::std::distance(result.second_part.begin(), final_iterators.first));
 
-  result.num_unselected_items = static_cast<int>(thrust::distance(result.unselected.begin(), final_iterators.second));
+  result.num_unselected_items =
+    static_cast<int>(cuda::std::distance(result.unselected.begin(), final_iterators.second));
 
   return result;
 }

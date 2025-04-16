@@ -80,7 +80,13 @@ void TestTransformScanDevice(ExecutionPolicy exec)
 
   // inclusive scan
   transform_inclusive_scan_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::plus<T>(), iter_vec.begin());
+    exec,
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    ::cuda::std::plus<T>(),
+    iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -93,7 +99,14 @@ void TestTransformScanDevice(ExecutionPolicy exec)
 
   // inclusive scan with nonzero init
   transform_inclusive_scan_init_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>(), iter_vec.begin());
+    exec,
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>(),
+    iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -107,7 +120,14 @@ void TestTransformScanDevice(ExecutionPolicy exec)
 
   // exclusive scan with 0 init
   transform_exclusive_scan_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), 0, thrust::plus<T>(), iter_vec.begin());
+    exec,
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    0,
+    ::cuda::std::plus<T>(),
+    iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -120,7 +140,14 @@ void TestTransformScanDevice(ExecutionPolicy exec)
 
   // exclusive scan with nonzero init
   transform_exclusive_scan_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>(), iter_vec.begin());
+    exec,
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>(),
+    iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -135,7 +162,7 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   // inplace inclusive scan
   input = input_copy;
   transform_inclusive_scan_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), input.begin(), thrust::negate<T>(), thrust::plus<T>(), iter_vec.begin());
+    exec, input.begin(), input.end(), input.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>(), iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -149,7 +176,14 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   // inplace inclusive scan with init
   input = input_copy;
   transform_inclusive_scan_init_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>(), iter_vec.begin());
+    exec,
+    input.begin(),
+    input.end(),
+    input.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>(),
+    iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -163,7 +197,14 @@ void TestTransformScanDevice(ExecutionPolicy exec)
   // inplace exclusive scan with init
   input = input_copy;
   transform_exclusive_scan_kernel<<<1, 1>>>(
-    exec, input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>(), iter_vec.begin());
+    exec,
+    input.begin(),
+    input.end(),
+    input.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>(),
+    iter_vec.begin());
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -206,7 +247,12 @@ void TestTransformScanCudaStreams()
 
   // inclusive scan
   iter = thrust::transform_inclusive_scan(
-    thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::plus<T>());
+    thrust::cuda::par.on(s),
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
@@ -215,7 +261,13 @@ void TestTransformScanCudaStreams()
 
   // inclusive scan with nonzero init
   iter = thrust::transform_inclusive_scan(
-    thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    thrust::cuda::par.on(s),
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {2, -1, 1, -3, 2};
@@ -225,7 +277,13 @@ void TestTransformScanCudaStreams()
 
   // exclusive scan with 0 init
   iter = thrust::transform_exclusive_scan(
-    thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::negate<T>(), 0, thrust::plus<T>());
+    thrust::cuda::par.on(s),
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    0,
+    ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {0, -1, -4, -2, -6};
@@ -235,7 +293,13 @@ void TestTransformScanCudaStreams()
 
   // exclusive scan with nonzero init
   iter = thrust::transform_exclusive_scan(
-    thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    thrust::cuda::par.on(s),
+    input.begin(),
+    input.end(),
+    output.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {3, 2, -1, 1, -3};
@@ -246,7 +310,12 @@ void TestTransformScanCudaStreams()
   // inplace inclusive scan
   input = input_copy;
   iter  = thrust::transform_inclusive_scan(
-    thrust::cuda::par.on(s), input.begin(), input.end(), input.begin(), thrust::negate<T>(), thrust::plus<T>());
+    thrust::cuda::par.on(s),
+    input.begin(),
+    input.end(),
+    input.begin(),
+    ::cuda::std::negate<T>(),
+    ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {-1, -4, -2, -6, -1};
@@ -256,7 +325,13 @@ void TestTransformScanCudaStreams()
   // inplace inclusive scan with init
   input = input_copy;
   iter  = thrust::transform_inclusive_scan(
-    thrust::cuda::par.on(s), input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    thrust::cuda::par.on(s),
+    input.begin(),
+    input.end(),
+    input.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {2, -1, 1, -3, 2};
@@ -266,7 +341,13 @@ void TestTransformScanCudaStreams()
   // inplace exclusive scan with init
   input = input_copy;
   iter  = thrust::transform_exclusive_scan(
-    thrust::cuda::par.on(s), input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    thrust::cuda::par.on(s),
+    input.begin(),
+    input.end(),
+    input.begin(),
+    ::cuda::std::negate<T>(),
+    3,
+    ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {3, 2, -1, 1, -3};
@@ -289,8 +370,8 @@ void TestTransformScanConstAccumulator()
   Vector output(5);
 
   thrust::transform_inclusive_scan(
-    input.begin(), input.end(), output.begin(), ::cuda::std::identity{}, thrust::plus<T>());
-  thrust::inclusive_scan(input.begin(), input.end(), reference.begin(), thrust::plus<T>());
+    input.begin(), input.end(), output.begin(), ::cuda::std::identity{}, ::cuda::std::plus<T>());
+  thrust::inclusive_scan(input.begin(), input.end(), reference.begin(), ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(output, reference);
 }

@@ -50,8 +50,8 @@ int main()
     array.begin(),
     row_indices.begin(),
     row_sums.begin(),
-    thrust::equal_to<int>(),
-    thrust::plus<int>());
+    ::cuda::std::equal_to<int>(),
+    ::cuda::std::plus<int>());
 
   // print data
   for (int i = 0; i < R; i++)

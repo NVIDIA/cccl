@@ -260,7 +260,7 @@ T reduce(InputIterator first, InputIterator last, T init);
  *  int result = thrust::reduce(thrust::host,
  *                              data, data + 6,
  *                              -1,
- *                              thrust::maximum<int>());
+ *                              ::cuda::maximum<int>());
  *  // result == 3
  *  \endcode
  *
@@ -312,7 +312,7 @@ _CCCL_HOST_DEVICE T reduce(
  *  int data[6] = {1, 0, 2, 2, 1, 3};
  *  int result = thrust::reduce(data, data + 6,
  *                              -1,
- *                              thrust::maximum<int>());
+ *                              ::cuda::maximum<int>());
  *  // result == 3
  *  \endcode
  *
@@ -499,7 +499,7 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::reduce_by_key(thrust::host, A, A + N, B, C, D, binary_pred);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -568,7 +568,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *  new_end = thrust::reduce_by_key(A, A + N, B, C, D, binary_pred);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -646,8 +646,8 @@ thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int> binary_op;
  *  new_end = thrust::reduce_by_key(thrust::host, A, A + N, B, C, D, binary_pred, binary_op);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.
@@ -723,8 +723,8 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> reduce_by_key(
  *  int D[N];                         // output values
  *
  *  thrust::pair<int*,int*> new_end;
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int> binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int> binary_op;
  *  new_end = thrust::reduce_by_key(A, A + N, B, C, D, binary_pred, binary_op);
  *
  *  // The first four keys in C are now {1, 3, 2, 1} and new_end.first - C is 4.

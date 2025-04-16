@@ -257,7 +257,7 @@ private:
   template <size_t... Is>
   inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, index_sequence<Is...>)
   {
-    (..., thrust::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
+    (..., ::cuda::std::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
   }
 
   // Advancing a zip_iterator means to advance all iterators in the tuple

@@ -105,7 +105,7 @@ struct make_constant_iterator_base
 //!   thrust::transform(data.begin(), data.end(),
 //!                     thrust::make_constant_iterator(10),
 //!                     data.begin(),
-//!                     thrust::plus<int>());
+//!                     ::cuda::std::plus<int>());
 //!
 //!   // data is now [13, 17, 12, 15]
 //!

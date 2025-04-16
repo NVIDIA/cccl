@@ -107,7 +107,7 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
   thrust::execution_policy<System>& system, InputIterator first, InputIterator last)
     : super_t(alloc_type(temporary_allocator<T, System>(system)))
 {
-  super_t::allocate(thrust::distance(first, last));
+  super_t::allocate(::cuda::std::distance(first, last));
 
   super_t::uninitialized_copy(system, first, last, super_t::begin());
 } // end temporary_array::temporary_array()
@@ -121,7 +121,7 @@ _CCCL_HOST_DEVICE temporary_array<T, System>::temporary_array(
   InputIterator last)
     : super_t(alloc_type(temporary_allocator<T, System>(system)))
 {
-  super_t::allocate(thrust::distance(first, last));
+  super_t::allocate(::cuda::std::distance(first, last));
 
   super_t::uninitialized_copy(input_system, first, last, super_t::begin());
 } // end temporary_array::temporary_array()
