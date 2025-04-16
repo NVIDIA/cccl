@@ -5,7 +5,7 @@
 
 .. code:: cpp
 
-   template <typename T>
+   template <typename T = uint32_t>
    [[nodiscard]] constexpr T
    bitmask(int start, int width) noexcept;
 
@@ -55,7 +55,7 @@ Example
     #include <cuda/std/cstdint>
 
     __global__ void bitmask_kernel() {
-        assert(cuda::bitmask<uint32_t>(2, 4) == 0b111100u);
+        assert(cuda::bitmask(2, 4) == 0b111100u);
         assert(cuda::bitmask<uint64_t>(1, 3) == uint64_t{0b1110});
     }
 
