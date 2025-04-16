@@ -286,7 +286,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, WarpConfigT config)
   {
     if constexpr (is_same_v<Input, float> && enable_redux && __cccl_ptx_isa >= 860)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_100, (return warp_reduce_redux_op(input, reduction_op, config);));
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return warp_reduce_redux_op(input, reduction_op, config);));
     }
     auto input_int  = floating_point_to_comparable_int(reduction_op, input);
     auto result_int = warp_reduce_dispatch(input_int, reduction_op, config);
