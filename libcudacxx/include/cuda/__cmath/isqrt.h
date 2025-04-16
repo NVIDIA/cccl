@@ -51,7 +51,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
 
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
 
-  const _Up __uv = static_cast<_Up>(__v);
+  _Up __uv = static_cast<_Up>(__v);
   _Up __ret{};
   _Up __bit = static_cast<_Up>(_Up{1} << ((_CUDA_VSTD::bit_width(__uv) - 1) & (~1)));
 
