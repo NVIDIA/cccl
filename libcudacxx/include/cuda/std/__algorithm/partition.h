@@ -28,6 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _ForwardIterator, class _Sentinel>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, forward_iterator_tag)
@@ -57,6 +58,7 @@ __partition_impl(_ForwardIterator __first, _Sentinel __last, _Predicate __pred, 
   return _CUDA_VSTD::make_pair(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__p));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Predicate, class _AlgPolicy, class _BidirectionalIterator, class _Sentinel>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_BidirectionalIterator, _BidirectionalIterator>
 __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicate __pred, bidirectional_iterator_tag)
@@ -90,6 +92,7 @@ __partition_impl(_BidirectionalIterator __first, _Sentinel __sentinel, _Predicat
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _ForwardIterator, class _Sentinel, class _Predicate, class _IterCategory>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator, _ForwardIterator>
 __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _IterCategory __iter_category)
@@ -98,6 +101,7 @@ __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _It
     _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __pred, __iter_category);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Predicate>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)

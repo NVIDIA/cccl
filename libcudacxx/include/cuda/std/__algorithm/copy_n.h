@@ -27,6 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
@@ -51,6 +52,7 @@ copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
   return __result;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator,
           class _Size,
           class _OutputIterator,
