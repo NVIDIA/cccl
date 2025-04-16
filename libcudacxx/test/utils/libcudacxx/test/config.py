@@ -724,7 +724,7 @@ class Configuration(object):
         if self.cxx.type == "nvrtcc":
             self.config.available_features.add("nvrtc")
         if self.cxx.type == "nvcc":
-            self.cxx.compile_flags += ["--extended-lambda"]
+            self.cxx.compile_flags += ["--extended-lambda -Wno-extra-semi"]
         real_arch_format = "-gencode=arch=compute_{0},code=sm_{0}"
         virt_arch_format = "-gencode=arch=compute_{0},code=compute_{0}"
         if self.cxx.type == "clang":

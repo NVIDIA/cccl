@@ -193,7 +193,7 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
 
     # enable lambdas for all API examples
     if ("${test_target}" MATCHES "test.[A-Za-z0-9_]+_api")
-      target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+      target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda -Wno-extra-semi>)
     endif()
 
     target_link_libraries(${test_target} PRIVATE
