@@ -67,8 +67,7 @@ logical_warp_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> = {})
   auto lane                             = _CUDA_VPTX::get_sreg_laneid();
   constexpr bool is_full_warp           = LogicalWarpSize == detail::warp_threads;
   constexpr auto is_single_logical_warp = is_full_warp || !_CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize});
-  auto logical_warp_id =
-    static_cast<int>(is_single_logical_warp ? 0 : (LogicalWarpSize == 1 ? lane : lane / LogicalWarpSize));
+  auto logical_warp_id                  = static_cast<int>(is_single_logical_warp ? 0 : lane / LogicalWarpSize);
   _CCCL_ASSUME(logical_warp_id >= 0 && logical_warp_id < detail::warp_threads / LogicalWarpSize);
   return logical_warp_id;
 }

@@ -41,8 +41,9 @@
 #include <cub/warp/specializations/warp_reduce_config.cuh>
 #include <cub/warp/warp_utils.cuh> // logical_warp_id
 
+#include <cuda/bit> // cuda::bitmask
 #include <cuda/functional>
-#include <cuda/std/bit>
+#include <cuda/std/bit> // has_single_bit
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -282,7 +283,7 @@ template <typename T, typename ReductionOp>
 // Generation of Shuffle Mask
 
 template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_mask(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_bound_mask(
   [[maybe_unused]] uint32_t step,
   [[maybe_unused]] logical_warp_size_t<LogicalWarpSize> logical_size,
   last_pos_t<ValidItems> last_pos,
@@ -308,7 +309,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 // Generation of Shuffle/Reduce Member Mask
 
 template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented = false>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_member_mask(
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_lane_mask(
   reduce_logical_mode_t<LogicalMode> logical_mode,
   logical_warp_size_t<LogicalWarpSize>,
   last_pos_t<ValidItems> last_pos,
@@ -321,6 +322,26 @@ template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems,
   else
   {
     return (logical_mode == single_reduction) ? (0xFFFFFFFF >> (detail::warp_threads - LogicalWarpSize)) : 0xFFFFFFFF;
+  }
+}
+
+template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(
+  reduce_logical_mode_t<LogicalMode> logical_mode,
+  logical_warp_size_t<LogicalWarpSize> logical_size,
+  last_pos_t<ValidItems> last_pos)
+{
+  constexpr bool is_single_reduction = logical_mode == single_reduction;
+  auto shift                         = is_single_reduction ? 0 : cub::internal::logical_warp_base_id(logical_size);
+  if constexpr (last_pos.rank_dynamic() == 1)
+  {
+    auto base_mask = ::cuda::bitmask<uint32_t>(0, last_pos.extent(0));
+    return base_mask << shift;
+  }
+  else
+  {
+    constexpr auto base_mask = ::cuda::bitmask<uint32_t>(0, LogicalWarpSize); // must be constexpr
+    return base_mask << shift;
   }
 }
 
