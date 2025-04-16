@@ -61,7 +61,7 @@ _CCCL_HOST pair<T*, ::cuda::std::ptrdiff_t> get_temporary_buffer(par_nosync_t&, 
 }
 
 template <typename Pointer>
-_CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std::ptrdiff_t n)
+_CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std::ptrdiff_t)
 {
   void* void_ptr = raw_pointer_cast(ptr);
 
@@ -72,7 +72,7 @@ _CCCL_HOST void return_temporary_buffer(par_nosync_t&, Pointer ptr, ::cuda::std:
     cudaGetLastError(); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
-    // supported like Windows, so try again with cudaMalloc.
+    // supported like Windows, so try again with cudaFree.
     status = cudaFree(void_ptr);
 
     if (status != cudaSuccess)
@@ -94,7 +94,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
     cudaGetLastError(); // Clear the CUDA global error state.
 
     // That didn't work. We could be somewhere where async allocation isn't
-    // supported like Windows, so try again with cudaMalloc.
+    // supported like Windows, so try again with cudaFree.
     status = cudaMalloc(&ptr, sizeof(T) * n);
 
     if (status != cudaSuccess)
@@ -107,7 +107,7 @@ get_temporary_buffer(execute_on_stream_nosync& system, ::cuda::std::ptrdiff_t n)
 }
 
 template <typename Pointer>
-_CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointer ptr, ::cuda::std::ptrdiff_t n)
+_CCCL_HOST void return_temporary_buffer(execute_on_stream_nosync& system, Pointer ptr, ::cuda::std::ptrdiff_t)
 {
   void* void_ptr = raw_pointer_cast(ptr);
 
