@@ -76,27 +76,27 @@ warp_reduce_redux_op(Input input, ReductionOp reduction_op, WarpConfigT config)
     using cast_t = _If<is_signed_v<Input>, int, uint32_t>;
     if constexpr (is_cuda_std_bit_and_v<ReductionOp, Input>)
     {
-      return static_cast<Input>(::__reduce_and_sync(mask, input));
+      return static_cast<Input>(__reduce_and_sync(mask, input));
     }
     else if constexpr (is_cuda_std_bit_or_v<ReductionOp, Input>)
     {
-      return static_cast<Input>(::__reduce_or_sync(mask, input));
+      return static_cast<Input>(__reduce_or_sync(mask, input));
     }
     else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, Input>)
     {
-      return static_cast<Input>(::__reduce_xor_sync(mask, input));
+      return static_cast<Input>(__reduce_xor_sync(mask, input));
     }
     else if constexpr (is_cuda_std_plus_v<ReductionOp, Input>)
     {
-      return ::__reduce_add_sync(mask, static_cast<cast_t>(input));
+      return __reduce_add_sync(mask, static_cast<cast_t>(input));
     }
     else if constexpr (is_cuda_minimum_v<ReductionOp, Input>)
     {
-      return ::__reduce_min_sync(mask, static_cast<cast_t>(input));
+      return __reduce_min_sync(mask, static_cast<cast_t>(input));
     }
     else if constexpr (is_cuda_maximum_v<ReductionOp, Input>)
     {
-      return ::__reduce_max_sync(mask, static_cast<cast_t>(input));
+      return __reduce_max_sync(mask, static_cast<cast_t>(input));
     }
   }
   else if constexpr (is_same_v<Input, float> && is_cuda_minimum_maximum_v<ReductionOp, Input>)
@@ -413,7 +413,7 @@ template <bool IsHeadSegment,
 {
   auto logical_warp_id = cub::internal::logical_warp_id(logical_size);
   auto member_mask     = cub::internal::reduce_member_mask(logical_mode, logical_size, last_pos_t<0>{});
-  auto warp_flags      = ::__ballot_sync(member_mask, flag);
+  auto warp_flags      = __ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
   // Mask out the bits below the current thread
   warp_flags &= _CUDA_VPTX::get_sreg_lanemask_ge();

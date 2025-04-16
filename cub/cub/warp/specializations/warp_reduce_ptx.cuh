@@ -316,7 +316,7 @@ template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems,
 {
   if constexpr (!is_segmented && last_pos.rank_dynamic() == 1)
   {
-    return ::__activemask(); // equivalent to (0xFFFFFFFF >> (warp_threads - last_pos))
+    return __activemask(); // equivalent to (0xFFFFFFFF >> (warp_threads - last_pos))
   }
   else
   {
