@@ -1370,33 +1370,24 @@ private:
   }
 };
 
-struct __no_narrowing_check
-{
-  template <class _Dest, class _Source>
-  using _Apply = type_identity<_Dest>;
-};
-
-struct __narrowing_check
-{
-  template <class _Dest, class _Source>
-  using _Apply _CCCL_NODEBUG_ALIAS =
-    enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Dest, _Source>::value, type_identity<_Dest>>;
-};
-
-template <class _Dest, class _Source>
-using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename _If<
-#ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
-  false &&
-#endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
-    _CCCL_TRAIT(is_arithmetic, _Dest),
-  __narrowing_check,
-  __no_narrowing_check>::template _Apply<_Dest, _Source>;
-
 template <class _Tp, size_t _Idx>
 struct __overload
 {
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> __check_for_narrowing<_Tp, _Up>;
+  static constexpr bool __check_narrowing =
+#ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
+    true;
+#else
+    __cccl_internal::__cccl_is_non_narrowing_v<_Tp, _Up>;
+#endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
+
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES((!is_arithmetic_v<_Tp>) )
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> type_identity<_Tp>;
+
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES(is_arithmetic_v<_Tp> _CCCL_AND __check_narrowing<_Up>)
+  _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> type_identity<_Tp>;
 };
 
 template <class _Tp, size_t>

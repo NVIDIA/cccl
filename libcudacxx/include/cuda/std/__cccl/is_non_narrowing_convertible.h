@@ -52,21 +52,26 @@ template <class...>
 using __cccl_void_t = void;
 
 template <class _Dest, class _Source, class = void>
-struct __is_non_narrowing_convertible
-{
-  static constexpr bool value = false;
-};
+inline constexpr bool __cccl_is_non_narrowing_v = false;
 
-// This also prohibits narrowing conversion in case of arithmetic types
 template <class _Dest, class _Source>
-struct __is_non_narrowing_convertible<_Dest,
-                                      _Source,
-                                      __cccl_void_t<decltype(__cccl_internal::__cccl_accepts_implicit_conversion<_Dest>(
-                                                      __cccl_internal::__cccl_declval<_Source>())),
-                                                    decltype(_Dest{__cccl_internal::__cccl_declval<_Source>()})>>
-{
-  static constexpr bool value = true;
-};
+inline constexpr bool
+  __cccl_is_non_narrowing_v<_Dest, _Source, __cccl_void_t<decltype(_Dest{__cccl_internal::__cccl_declval<_Source>()})>> =
+    true;
+
+template <class _Dest, class _Source, class = void>
+inline constexpr bool __cccl_accepts_conversion_v = false;
+
+template <class _Dest, class _Source>
+inline constexpr bool __cccl_accepts_conversion_v<
+  _Dest,
+  _Source,
+  __cccl_void_t<decltype(__cccl_internal::__cccl_accepts_implicit_conversion<_Dest>(
+    __cccl_internal::__cccl_declval<_Source>()))>> = true;
+
+template <class _Dest, class _Source>
+inline constexpr bool __is_non_narrowing_convertible_v =
+  __cccl_is_non_narrowing_v<_Dest, _Source> && __cccl_accepts_conversion_v<_Dest, _Source>;
 
 } // namespace __cccl_internal
 
