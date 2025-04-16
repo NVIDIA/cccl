@@ -21,7 +21,7 @@ void TestAdjacentDifferenceSimple()
   Vector ref{1, 3, 2, 1};
   ASSERT_EQUAL(output, ref);
 
-  result = thrust::adjacent_difference(input.begin(), input.end(), output.begin(), thrust::plus<T>());
+  result = thrust::adjacent_difference(input.begin(), input.end(), output.begin(), ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(result - output.begin(), 4);
   ref = {1, 5, 10, 13};
@@ -55,16 +55,16 @@ void TestAdjacentDifference(const size_t n)
   ASSERT_EQUAL(std::size_t(d_result - d_output.begin()), n);
   ASSERT_EQUAL(h_output, d_output);
 
-  h_result = thrust::adjacent_difference(h_input.begin(), h_input.end(), h_output.begin(), thrust::plus<T>());
-  d_result = thrust::adjacent_difference(d_input.begin(), d_input.end(), d_output.begin(), thrust::plus<T>());
+  h_result = thrust::adjacent_difference(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::plus<T>());
+  d_result = thrust::adjacent_difference(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(std::size_t(h_result - h_output.begin()), n);
   ASSERT_EQUAL(std::size_t(d_result - d_output.begin()), n);
   ASSERT_EQUAL(h_output, d_output);
 
   // in-place operation
-  h_result = thrust::adjacent_difference(h_input.begin(), h_input.end(), h_input.begin(), thrust::plus<T>());
-  d_result = thrust::adjacent_difference(d_input.begin(), d_input.end(), d_input.begin(), thrust::plus<T>());
+  h_result = thrust::adjacent_difference(h_input.begin(), h_input.end(), h_input.begin(), ::cuda::std::plus<T>());
+  d_result = thrust::adjacent_difference(d_input.begin(), d_input.end(), d_input.begin(), ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(std::size_t(h_result - h_input.begin()), n);
   ASSERT_EQUAL(std::size_t(d_result - d_input.begin()), n);
@@ -85,12 +85,12 @@ void TestAdjacentDifferenceInPlaceWithRelatedIteratorTypes(const size_t n)
   typename thrust::host_vector<T>::iterator h_result;
   typename thrust::device_vector<T>::iterator d_result;
 
-  h_result = thrust::adjacent_difference(h_input.begin(), h_input.end(), h_output.begin(), thrust::plus<T>());
-  d_result = thrust::adjacent_difference(d_input.begin(), d_input.end(), d_output.begin(), thrust::plus<T>());
+  h_result = thrust::adjacent_difference(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::plus<T>());
+  d_result = thrust::adjacent_difference(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::plus<T>());
 
   // in-place operation with different iterator types
-  h_result = thrust::adjacent_difference(h_input.cbegin(), h_input.cend(), h_input.begin(), thrust::plus<T>());
-  d_result = thrust::adjacent_difference(d_input.cbegin(), d_input.cend(), d_input.begin(), thrust::plus<T>());
+  h_result = thrust::adjacent_difference(h_input.cbegin(), h_input.cend(), h_input.begin(), ::cuda::std::plus<T>());
+  d_result = thrust::adjacent_difference(d_input.cbegin(), d_input.cend(), d_input.begin(), ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(std::size_t(h_result - h_input.begin()), n);
   ASSERT_EQUAL(std::size_t(d_result - d_input.begin()), n);

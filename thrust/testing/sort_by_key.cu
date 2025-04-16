@@ -77,8 +77,8 @@ void TestSortAscendingKeyValue(const size_t n)
   thrust::host_vector<T> h_values   = h_keys;
   thrust::device_vector<T> d_values = d_keys;
 
-  thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), thrust::less<T>());
-  thrust::sort_by_key(d_keys.begin(), d_keys.end(), d_values.begin(), thrust::less<T>());
+  thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), ::cuda::std::less<T>());
+  thrust::sort_by_key(d_keys.begin(), d_keys.end(), d_values.begin(), ::cuda::std::less<T>());
 
   ASSERT_EQUAL(h_keys, d_keys);
   ASSERT_EQUAL(h_values, d_values);
@@ -94,8 +94,8 @@ void TestSortDescendingKeyValue(const size_t n)
   thrust::host_vector<int> h_values   = h_keys;
   thrust::device_vector<int> d_values = d_keys;
 
-  thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), thrust::greater<int>());
-  thrust::sort_by_key(d_keys.begin(), d_keys.end(), d_values.begin(), thrust::greater<int>());
+  thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), ::cuda::std::greater<int>());
+  thrust::sort_by_key(d_keys.begin(), d_keys.end(), d_values.begin(), ::cuda::std::greater<int>());
 
   ASSERT_EQUAL(h_keys, d_keys);
   ASSERT_EQUAL(h_values, d_values);
@@ -130,8 +130,8 @@ void TestSortByKeyBoolDescending()
   thrust::device_vector<bool> d_keys  = h_keys;
   thrust::device_vector<int> d_values = h_values;
 
-  thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), thrust::greater<bool>());
-  thrust::sort_by_key(d_keys.begin(), d_keys.end(), d_values.begin(), thrust::greater<bool>());
+  thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), ::cuda::std::greater<bool>());
+  thrust::sort_by_key(d_keys.begin(), d_keys.end(), d_values.begin(), ::cuda::std::greater<bool>());
 
   ASSERT_EQUAL(h_keys, d_keys);
   ASSERT_EQUAL(h_values, d_values);

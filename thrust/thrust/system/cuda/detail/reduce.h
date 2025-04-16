@@ -858,14 +858,14 @@ _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, Inp
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
-  size_type num_items = static_cast<size_type>(thrust::distance(first, last));
+  size_type num_items = static_cast<size_type>(::cuda::std::distance(first, last));
   return cuda_cub::reduce_n(policy, first, num_items, init, binary_op);
 }
 
 template <class Derived, class InputIt, class T>
 _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
 {
-  return cuda_cub::reduce(policy, first, last, init, plus<T>());
+  return cuda_cub::reduce(policy, first, last, init, ::cuda::std::plus<T>());
 }
 
 template <class Derived, class InputIt>
