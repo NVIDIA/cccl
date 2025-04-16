@@ -32,7 +32,7 @@ int main()
     a(i) = 42 + 2 * i;
   };
 
-  auto ltoken = sctx.logical_token();
+  auto ltoken = sctx.token();
 
   /* Start to use a graph */
   sctx.push();
@@ -40,7 +40,7 @@ int main()
   lA.push(access_mode::rw);
   ltoken.push(access_mode::rw);
 
-  auto ltoken2 = sctx.logical_token();
+  auto ltoken2 = sctx.token();
 
   auto lB = sctx.logical_data(lA.shape());
   lB.set_symbol("B");

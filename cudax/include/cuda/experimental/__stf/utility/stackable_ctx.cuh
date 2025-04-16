@@ -503,7 +503,7 @@ public:
       traverse_nodes([this](int offset) {
         auto& ctx = get_ctx(offset);
         fprintf(stderr, "[context %d (%s)] logical data summary:\n", offset, ctx.to_string().c_str());
-      //  ctx.print_logical_data_summary();
+        //  ctx.print_logical_data_summary();
       });
     }
 
@@ -727,7 +727,7 @@ public:
       *this, head, true, get_ctx(head).template logical_data<T>(elements, more_sizes...), false);
   }
 
-  stackable_logical_data<void_interface> logical_token();
+  stackable_logical_data<void_interface> token();
 
   template <typename... Pack>
   auto logical_data(Pack&&... pack)
@@ -1691,10 +1691,10 @@ private:
   ::std::shared_ptr<impl> pimpl;
 };
 
-inline stackable_logical_data<void_interface> stackable_ctx::logical_token()
+inline stackable_logical_data<void_interface> stackable_ctx::token()
 {
   int head = pimpl->get_head_offset();
-  return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().logical_token(), true);
+  return stackable_logical_data<void_interface>(*this, head, true, get_root_ctx().token(), true);
 }
 
 /**
