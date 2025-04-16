@@ -145,6 +145,8 @@ function(cccl_build_compiler_targets)
     append_option_if_available("-Wunused-local-typedef" cxx_compile_options)
     append_option_if_available("-Wvla" cxx_compile_options)
     append_option_if_available("-Wextra-semi" cxx_compile_options)
+    # This produces a ton of false positives
+    append_option_if_available("-Wno-c++98-compat-extra-semi" cxx_compile_options)
 
     # Disable GNU extensions (flag is clang only)
     append_option_if_available("-Wgnu" cxx_compile_options)

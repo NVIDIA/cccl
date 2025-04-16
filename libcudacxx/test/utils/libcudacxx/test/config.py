@@ -1374,6 +1374,7 @@ class Configuration(object):
                 self.cxx.warning_flags += ["-Wuser-defined-warnings"]
                 self.config.available_features.add("diagnose-if-support")
             self.cxx.addWarningFlagIfSupported("-Wextra-semi")
+            self.cxx.addWarningFlagIfSupported("-Wno-c++98-compat-extra-semi")
             self.cxx.addWarningFlagIfSupported("-Wshadow")
             self.cxx.addWarningFlagIfSupported("-Wno-unused-command-line-argument")
             self.cxx.addWarningFlagIfSupported("-Wno-attributes")
