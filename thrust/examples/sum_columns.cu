@@ -43,7 +43,7 @@ int main()
   auto col_idx_end   = col_idx_begin + M.size();
 
   // Create a transposed view of the multidimensional array.
-  auto M_transposed = thrust::permutation_iterator(
+  auto M_transposed = thrust::make_permutation_iterator(
     M.data_handle(),
     thrust::make_transform_iterator(thrust::make_counting_iterator(0), [=] __host__ __device__(int flat) {
       int i = flat / cols;
@@ -54,7 +54,7 @@ int main()
   // Sum each column, storing the result in a new vector.
   thrust::universal_vector<int> sums(cols);
   thrust::reduce_by_key(
-    thrust::device, col_idx_begin, col_idx_end, M_transposed, thrust::discard_iterator(), sums.begin());
+    thrust::device, col_idx_begin, col_idx_end, M_transposed, thrust::make_discard_iterator(), sums.begin());
 
   // Output the result.
   thrust::for_each_n(thrust::seq, flat_idx_begin, rows, [&](int i) {

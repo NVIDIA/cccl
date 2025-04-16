@@ -45,7 +45,7 @@ int main()
   // Sum each row, storing the result in a new vector.
   thrust::universal_vector<int> sums(rows);
   thrust::reduce_by_key(
-    thrust::device, row_idx_begin, row_idx_end, M.data_handle(), thrust::discard_iterator(), sums.begin());
+    thrust::device, row_idx_begin, row_idx_end, M.data_handle(), thrust::make_discard_iterator(), sums.begin());
 
   // Output the result.
   thrust::for_each_n(thrust::seq, flat_idx_begin, rows, [&](int i) {
