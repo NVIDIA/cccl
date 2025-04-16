@@ -100,13 +100,13 @@ If a pull request encounters a failure during CI testing, it is usually helpful 
 
 CCCL uses [NVIDIA's self-hosted action runners](https://docs.gha-runners.nvidia.com/runners/) for CI jobs. For security, PR workflows are triggered using the [`copy-pr-bot` GitHub application](https://docs.gha-runners.nvidia.com/onboarding/), which copies code to a prefixed branch to ensure only vetted code runs on the runners.
 
-The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with an `/ok to test` comment.
+The CI pipeline will not start automatically for external contributors. A repository member will first review the changes and initiate the CI pipeline with an `/ok to test [commit SHA]` comment.
 
 ### SSH Signing Keys
 
 [Signed commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) are required for any internal NVIDIA contributors who want the convenience of CI running automatically whenever a commit is pushed to a branch (i.e., doesn't require using `/ok to test`).
 
-This is not required for external contributions, which will always require an explicit `/ok to test` comment from an approved account for each CI run.
+This is not required for external contributions, which will always require an explicit `/ok to test [commit SHA]` comment from an approved account for each CI run.
 
 To enable commit signing using your existing ssh key, set the following git options:
 
