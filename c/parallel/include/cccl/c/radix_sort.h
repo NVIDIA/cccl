@@ -18,6 +18,8 @@
 
 #include <cccl/c/extern_c.h>
 #include <cccl/c/types.h>
+#include <stdbool.h>
+#include <stdint.h>
 
 CCCL_C_EXTERN_C_BEGIN
 
@@ -55,23 +57,7 @@ CCCL_C_API CUresult cccl_device_radix_sort_build(
   const char* libcudacxx_path,
   const char* ctk_path);
 
-CCCL_C_API CUresult cccl_device_ascending_radix_sort(
-  cccl_device_radix_sort_build_result_t build,
-  void* d_temp_storage,
-  size_t* temp_storage_bytes,
-  cccl_iterator_t d_keys_in,
-  cccl_iterator_t d_keys_out,
-  cccl_iterator_t d_values_in,
-  cccl_iterator_t d_values_out,
-  cccl_op_t decomposer,
-  uint64_t num_items,
-  int begin_bit,
-  int end_bit,
-  bool is_overwrite_okay,
-  int* selector,
-  CUstream stream);
-
-CCCL_C_API CUresult cccl_device_descending_radix_sort(
+CCCL_C_API CUresult cccl_device_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,

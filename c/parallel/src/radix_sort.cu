@@ -194,6 +194,7 @@ struct radix_sort_runtime_tuning_policy
 std::pair<int, int>
 reg_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per_thread, int key_size)
 {
+  assert(key_size > 0);
   int items_per_thread = std::max(1, nominal_4_byte_items_per_thread * 4 / std::max(4, key_size));
   int block_threads =
     std::min(nominal_4_byte_block_threads,
@@ -205,6 +206,7 @@ reg_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per
 std::pair<int, int>
 mem_bound_scaling(int nominal_4_byte_block_threads, int nominal_4_byte_items_per_thread, int key_size)
 {
+  assert(key_size > 0);
   int items_per_thread =
     std::max(1, std::min(nominal_4_byte_items_per_thread * 4 / key_size, nominal_4_byte_items_per_thread * 2));
   int block_threads =
@@ -669,7 +671,7 @@ struct {26} {{
 }
 
 template <cub::SortOrder Order>
-CUresult cccl_device_radix_sort(
+CUresult cccl_device_radix_sort_impl(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -704,10 +706,15 @@ CUresult cccl_device_radix_sort(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
+    indirect_arg_t key_arg_in{d_keys_in};
+    indirect_arg_t key_arg_out{d_keys_out};
     cub::DoubleBuffer<indirect_arg_t> d_keys_buffer(
-      static_cast<indirect_arg_t*>(d_keys_in.state), static_cast<indirect_arg_t*>(d_keys_out.state));
+      *static_cast<indirect_arg_t**>(&key_arg_in), *static_cast<indirect_arg_t**>(&key_arg_out));
+
+    indirect_arg_t val_arg_in{d_values_in};
+    indirect_arg_t val_arg_out{d_values_out};
     cub::DoubleBuffer<indirect_arg_t> d_values_buffer(
-      static_cast<indirect_arg_t*>(d_values_in.state), static_cast<indirect_arg_t*>(d_values_out.state));
+      *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
     cub::DispatchRadixSort<Order,
                            indirect_arg_t,
@@ -751,7 +758,7 @@ CUresult cccl_device_radix_sort(
   return error;
 }
 
-CUresult cccl_device_ascending_radix_sort(
+CUresult cccl_device_radix_sort(
   cccl_device_radix_sort_build_result_t build,
   void* d_temp_storage,
   size_t* temp_storage_bytes,
@@ -767,42 +774,11 @@ CUresult cccl_device_ascending_radix_sort(
   int* selector,
   CUstream stream)
 {
-  assert(build.order == CCCL_ASCENDING);
-  return cccl_device_radix_sort<cub::SortOrder::Ascending>(
-    build,
-    d_temp_storage,
-    temp_storage_bytes,
-    d_keys_in,
-    d_keys_out,
-    d_values_in,
-    d_values_out,
-    decomposer,
-    num_items,
-    begin_bit,
-    end_bit,
-    is_overwrite_okay,
-    selector,
-    stream);
-}
-
-CUresult cccl_device_descending_radix_sort(
-  cccl_device_radix_sort_build_result_t build,
-  void* d_temp_storage,
-  size_t* temp_storage_bytes,
-  cccl_iterator_t d_keys_in,
-  cccl_iterator_t d_keys_out,
-  cccl_iterator_t d_values_in,
-  cccl_iterator_t d_values_out,
-  cccl_op_t decomposer,
-  uint64_t num_items,
-  int begin_bit,
-  int end_bit,
-  bool is_overwrite_okay,
-  int* selector,
-  CUstream stream)
-{
-  assert(build.order == CCCL_DESCENDING);
-  return cccl_device_radix_sort<cub::SortOrder::Descending>(
+  auto radix_sort_impl =
+    (build.order == CCCL_ASCENDING)
+      ? cccl_device_radix_sort_impl<cub::SortOrder::Ascending>
+      : cccl_device_radix_sort_impl<cub::SortOrder::Descending>;
+  return radix_sort_impl(
     build,
     d_temp_storage,
     temp_storage_bytes,

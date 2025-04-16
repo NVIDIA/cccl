@@ -114,7 +114,7 @@ struct op_wrapper {
 )XXX";
 
   constexpr std::string_view stateful_op = R"XXX(
-struct __align__(OP_ALIGNMENT) op_state {{
+struct __align__(OP_ALIGNMENT) op_state {
   char data[OP_SIZE];
 };
 extern "C" __device__ OUPUT_T OP_NAME(op_state* state, INPUT_T val);

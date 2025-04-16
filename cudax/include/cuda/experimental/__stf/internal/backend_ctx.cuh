@@ -952,7 +952,7 @@ public:
     return logical_data(make_slice(p, n), mv(dplace));
   }
 
-  auto logical_token()
+  auto token()
   {
     // We do not use a shape because we want the first rw() access to succeed
     // without an initial write()

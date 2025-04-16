@@ -19,7 +19,7 @@ C2H_TEST("Can create a stream and launch work into it", "[stream]")
   cudax::stream str;
   ::test::managed<int> i(0);
   cudax::launch(str, ::test::one_thread_dims, ::test::assign_42{}, i.get());
-  str.wait();
+  str.sync();
   CUDAX_REQUIRE(*i == 42);
 }
 
@@ -32,7 +32,7 @@ C2H_TEST("From native handle", "[stream]")
 
     ::test::managed<int> i(0);
     cudax::launch(stream, ::test::one_thread_dims, ::test::assign_42{}, i.get());
-    stream.wait();
+    stream.sync();
     CUDAX_REQUIRE(*i == 42);
     (void) stream.release();
   }
@@ -55,8 +55,8 @@ void add_dependency_test(const StreamType& waiter, const StreamType& waitee)
     CUDAX_REQUIRE(atomic_i.load() != 42);
     CUDAX_REQUIRE(!waiter.ready());
     atomic_i.store(80);
-    waiter.wait();
-    waitee.wait();
+    waiter.sync();
+    waitee.sync();
   };
 
   SECTION("Stream wait declared event")

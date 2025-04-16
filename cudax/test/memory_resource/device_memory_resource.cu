@@ -246,7 +246,7 @@ C2H_TEST("device_memory_resource allocation", "[memory_resource]")
     auto* ptr = res.allocate_async(42, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
+    stream.sync();
     ensure_device_ptr(ptr);
 
     res.deallocate_async(ptr, 42, stream);
@@ -261,7 +261,7 @@ C2H_TEST("device_memory_resource allocation", "[memory_resource]")
     auto* ptr = res.allocate_async(42, 4, stream);
     static_assert(cuda::std::is_same<decltype(ptr), void*>::value, "");
 
-    stream.wait();
+    stream.sync();
     ensure_device_ptr(ptr);
 
     res.deallocate_async(ptr, 42, 4, stream);
@@ -479,7 +479,7 @@ C2H_TEST("Async memory resource access", "")
         auto config = cudax::distribute<1>(1);
         cudax::launch(stream, config, test::assign_42{}, (int*) ptr1);
         cudax::launch(stream, config, test::assign_42{}, (int*) ptr2);
-        stream.wait();
+        stream.sync();
         resource.deallocate_async(ptr1, sizeof(int), stream);
         resource.deallocate(ptr2, sizeof(int));
       };
