@@ -24,6 +24,7 @@
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/make_nbit_int.h>
+#include <cuda/std/climits>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstring>
@@ -312,9 +313,9 @@ __cccl_constexpr_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __s
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_constexpr_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
-  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+  if constexpr (sizeof(_Tp) == 1)
   {
-    if constexpr (sizeof(_Tp) == 1)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
       NV_IF_TARGET(NV_IS_HOST,
                    (return reinterpret_cast<_Tp*>(::memset(__ptr, static_cast<int>(__c), __n * sizeof(_Tp)));))
