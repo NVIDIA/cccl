@@ -36,10 +36,14 @@
 #  endif // !_CCCL_COMPILER(MSVC)
 #endif // !__CUDA_ARCH__
 
-#define _CCCL_UNREACHABLE_WITH_CHECK()  \
-  {                                     \
-    _CCCL_ASSERT(false, "unreachable"); \
-    _CCCL_UNREACHABLE();                \
-  }
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVHPC)
+#  define _CCCL_UNREACHABLE_WITH_CHECK() _CCCL_UNREACHABLE()
+#else
+#  define _CCCL_UNREACHABLE_WITH_CHECK()  \
+    {                                     \
+      _CCCL_ASSERT(false, "unreachable"); \
+      _CCCL_UNREACHABLE();                \
+    }
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVHPC)
 
 #endif // __CCCL_UNREACHABLE_H
