@@ -32,7 +32,6 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-// #include <cstdio>
 #include <numeric>
 
 #include <c2h/catch2_test_helper.h>

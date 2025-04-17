@@ -284,22 +284,22 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_bound_mask(
   [[maybe_unused]] uint32_t step,
   [[maybe_unused]] logical_warp_size_t<LogicalWarpSize> logical_size,
-  last_pos_t<ValidItems> last_pos,
+  valid_items_t<ValidItems> valid_items,
   is_segmented_t<IsSegmented> is_segmented = {})
 {
   if constexpr (is_segmented)
   {
-    return last_pos.extent(0);
+    return valid_items.extent(0);
   }
-  else if constexpr (last_pos.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
+  else if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
   {
     const auto clamp   = 1u << step;
     const auto segmask = 0b11110u << (step + 8);
     return clamp | segmask;
   }
-  else // last_pos is dynamic
+  else // valid_items is dynamic
   {
-    return cub::internal::logical_warp_id(logical_size) * LogicalWarpSize + last_pos.extent(0);
+    return cub::internal::logical_warp_id(logical_size) * LogicalWarpSize + valid_items.extent(0);
   }
 }
 
@@ -310,12 +310,12 @@ template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems,
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_lane_mask(
   reduce_logical_mode_t<LogicalMode> logical_mode,
   logical_warp_size_t<LogicalWarpSize>,
-  last_pos_t<ValidItems> last_pos,
+  valid_items_t<ValidItems> valid_items,
   is_segmented_t<IsSegmented> is_segmented = {})
 {
-  if constexpr (!is_segmented && last_pos.rank_dynamic() == 1)
+  if constexpr (!is_segmented && valid_items.rank_dynamic() == 1)
   {
-    return __activemask(); // equivalent to (0xFFFFFFFF >> (warp_threads - last_pos))
+    return __activemask(); // equivalent to (0xFFFFFFFF >> (warp_threads - valid_items))
   }
   else
   {
@@ -326,23 +326,22 @@ template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems,
 template <typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(Config config)
 {
-  auto [logical_mode, _, logical_size, last_pos, is_segmented, first_pos] = config;
+  auto [logical_mode, _, logical_size, valid_items, is_segmented, first_pos] = config;
 
   constexpr bool is_single_reduction = logical_mode == single_reduction;
   auto shift                         = is_single_reduction ? 0 : cub::internal::logical_warp_base_id(logical_size);
   if constexpr (is_segmented)
   {
-    return ::cuda::bitmask<uint32_t>(first_pos, last_pos.extent(0) + 1 - first_pos);
+    return ::cuda::bitmask(first_pos, valid_items.extent(0) + 1 - first_pos);
   }
-  else if constexpr (last_pos.rank_dynamic() == 1)
+  else if constexpr (valid_items.rank_dynamic() == 1)
   {
-    auto base_mask = ::cuda::bitmask<uint32_t>(0, last_pos.extent(0) + 1);
+    auto base_mask = ::cuda::bitmask(0, valid_items.extent(0) + 1);
     return base_mask << shift;
-    // return __activemask();
   }
   else
   {
-    constexpr auto base_mask = ::cuda::bitmask<uint32_t>(0, logical_size); // must be constexpr
+    constexpr auto base_mask = ::cuda::bitmask(0, logical_size); // must be constexpr
     return base_mask << shift;
   }
 }

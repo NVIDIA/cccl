@@ -506,8 +506,8 @@ public:
     internal::reduce_result_mode_t<Kind> result_mode   = {})
   {
     _CCCL_ASSERT(valid_items > 0 && valid_items <= LogicalWarpThreads, "invalid valid_items");
-    auto last_pos = internal::last_pos_t<>{valid_items - 1};
-    internal::WarpReduceConfig config{logical_mode, result_mode, logical_warp_size, last_pos};
+    auto valid_items1 = internal::valid_items_t<>{valid_items - 1};
+    internal::WarpReduceConfig config{logical_mode, result_mode, logical_warp_size, valid_items1};
     return cub::internal::warp_reduce_dispatch(input, reduction_op, config);
   }
 

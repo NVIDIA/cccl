@@ -28,7 +28,7 @@
 
 #include <cub/detail/type_traits.cuh>
 
-#include <cuda/std/__complex/is_complex.h>
+#include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
 #include "c2h/catch2_test_helper.h"

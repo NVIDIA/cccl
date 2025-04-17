@@ -41,9 +41,9 @@
 #include <cub/warp/warp_utils.cuh> // logical_lane_id
 
 #include <cuda/cmath> // ilog2
-#include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/__type_traits/num_bits.h>
 #include <cuda/std/bit> // has_single_bit
+#include <cuda/std/complex> // __is_complex
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 #include <cuda/warp>
@@ -108,15 +108,15 @@ warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, Config config)
   using namespace _CUDA_VSTD;
   static_assert(is_integral_v<Input> || is_any_short2_v<Input> || is_arithmetic_cuda_floating_point_v<Input>,
                 "invalid input type/reduction operator combination");
-  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented, _] = config;
-  constexpr auto log2_size                                                  = ::cuda::ilog2(logical_size * 2 - 1);
-  const auto mask = cub::internal::reduce_lane_mask(logical_mode, logical_size, last_pos, is_segmented);
+  auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
+  constexpr auto log2_size                                                     = ::cuda::ilog2(logical_size * 2 - 1);
+  const auto mask = cub::internal::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
   using cast_t    = _If<is_integral_v<Input> && sizeof(Input) < sizeof(int), int, Input>;
   auto input1     = static_cast<cast_t>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
-    auto shuffle_mask = cub::internal::reduce_shuffle_bound_mask(K, logical_size, last_pos, is_segmented);
+    auto shuffle_mask = cub::internal::reduce_shuffle_bound_mask(K, logical_size, valid_items, is_segmented);
     input1            = cub::internal::shfl_down_op(reduction_op, input1, 1u << K, shuffle_mask, mask);
   }
   if constexpr (result_mode == all_lanes_result)
@@ -131,26 +131,26 @@ template <typename Input, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
 warp_reduce_generic(Input input, ReductionOp reduction_op, Config config)
 {
-  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented, _] = config;
+  auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
   constexpr auto is_power_of_two     = _CUDA_VSTD::has_single_bit(uint32_t{logical_size});
   constexpr auto log2_size           = ::cuda::ilog2(logical_size * 2 - 1);
   constexpr uint32_t logical_size1   = is_segmented ? detail::warp_threads : logical_size;
   constexpr auto logical_size1_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size1});
-  const auto mask = cub::internal::reduce_lane_mask(logical_mode, logical_size, last_pos, is_segmented);
+  const auto mask = cub::internal::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
     _CUDA_VDEV::warp_shuffle_result<Input> res;
-    if constexpr (is_power_of_two && last_pos.rank_dynamic() == 0)
+    if constexpr (is_power_of_two && valid_items.rank_dynamic() == 0)
     {
       res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
     }
     else
     {
       auto lane_dest = cub::internal::logical_lane_id<logical_size1>() + (1u << K);
-      auto dest      = ::min(lane_dest, last_pos.extent(0));
+      auto dest      = ::min(lane_dest, valid_items.extent(0));
       res            = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
-      res.pred       = lane_dest <= last_pos.extent(0);
+      res.pred       = lane_dest <= valid_items.extent(0);
     }
     if (res.pred)
     {
@@ -260,9 +260,10 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   check_warp_reduce_config(config);
   constexpr bool is_small_integer  = is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
   constexpr auto logical_warp_size = config.logical_size;
-  auto last_pos                    = config.last_pos;
+  auto valid_items                 = config.valid_items;
   // early exit for threads outside the range with dynamic number of valid items
-  if (!config.is_segmented && last_pos.rank_dynamic() == 1 && logical_lane_id(logical_warp_size) > last_pos.extent(0))
+  if (!config.is_segmented && valid_items.rank_dynamic() == 1
+      && logical_lane_id(logical_warp_size) > valid_items.extent(0))
   {
     return input;
   }
@@ -394,7 +395,7 @@ template <bool IsHeadSegment,
   logical_warp_size_t<LogicalWarpSize> logical_size)
 {
   auto logical_base_warp_id = cub::internal::logical_warp_base_id(logical_size);
-  auto member_mask          = cub::internal::reduce_lane_mask(logical_mode, logical_size, last_pos_t<0>{});
+  auto member_mask          = cub::internal::reduce_lane_mask(logical_mode, logical_size, valid_items_t<0>{});
   auto warp_flags           = __ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
   warp_flags |= (1u << (logical_base_warp_id + LogicalWarpSize - 1)); // Mask in the last lane of each logical warp
@@ -402,8 +403,9 @@ template <bool IsHeadSegment,
   auto warp_flags_first = warp_flags & _CUDA_VPTX::get_sreg_lanemask_lt(); // Clean the bits after the current thread
   auto last_lane        = _CUDA_VSTD::countr_zero(warp_flags_last); // Find the next set flag
   auto first_lane       = detail::warp_threads - _CUDA_VSTD::countl_zero(warp_flags_first); // Find the previous flag
-  auto last_pos         = last_pos_t<>{last_lane};
-  WarpReduceConfig config{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}, first_lane};
+  auto valid_items      = valid_items_t<>{last_lane};
+  WarpReduceConfig config{
+    logical_mode, first_lane_result, logical_size, valid_items, is_segmented_t<true>{}, first_lane};
   return cub::internal::warp_reduce_dispatch(input, reduction_op, config);
 }
 

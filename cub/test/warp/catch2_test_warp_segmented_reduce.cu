@@ -45,6 +45,10 @@ __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
   auto warp_id     = threadIdx.x / LOGICAL_WARP_THREADS;
   auto thread_data = in[threadIdx.x];
   // Instantiate and run warp reduction
+  if constexpr (LOGICAL_WARP_THREADS * TOTAL_WARPS % 32 == 0)
+  {
+    _CCCL_ASSERT(__activemask() == 0xFFFFFFFF, "invalid warp id");
+  }
   warp_reduce_t warp_reduce(storage[warp_id]);
   out[threadIdx.x] = action(threadIdx.x, warp_reduce, thread_data);
 }
@@ -249,7 +253,7 @@ C2H_TEST(
   using params                 = params_t<TestType>;
   using T                      = typename params::type;
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
-  CAPTURE(c2h::type_name<T>(), params::logical_warp_threads, segmented_mod);
+  CAPTURE(c2h::type_name<T>(), params::logical_warp_threads, segmented_mod, params::total_warps);
   using warp_seg_sum_t =
     cuda::std::_If<(segmented_mod == reduce_mode::tail_flags), warp_seg_sum_tail_t<T>, warp_seg_sum_head_t<T>>;
 

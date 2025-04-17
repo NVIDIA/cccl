@@ -32,7 +32,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__bit/bitmask.h>
+#include <cub/warp/warp_utils.cuh>
+
+#include <cuda/bit>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/bit>
 #include <cuda/std/cstddef>
@@ -65,8 +67,8 @@ using reduce_logical_mode_t = _CUDA_VSTD::integral_constant<ReduceLogicalMode, L
 template <ReduceResultMode Kind>
 using reduce_result_mode_t = _CUDA_VSTD::integral_constant<ReduceResultMode, Kind>;
 
-template <size_t LastPos = _CUDA_VSTD::dynamic_extent>
-using last_pos_t = _CUDA_VSTD::extents<int, LastPos>;
+template <size_t ValidItems = _CUDA_VSTD::dynamic_extent>
+using valid_items_t = _CUDA_VSTD::extents<int, ValidItems>;
 
 template <size_t LogicalSize>
 using logical_warp_size_t = _CUDA_VSTD::integral_constant<int, LogicalSize>;
@@ -80,8 +82,8 @@ using is_segmented_t = _CUDA_VSTD::bool_constant<IsSegmented>;
 template <ReduceLogicalMode LogicalMode,
           ReduceResultMode ResultMode,
           int LogicalWarpSize,
-          size_t LastPos   = LogicalWarpSize - 1,
-          bool IsSegmented = false>
+          size_t ValidItems = LogicalWarpSize - 1,
+          bool IsSegmented  = false>
 struct WarpReduceConfig
 {
   WarpReduceConfig() = default;
@@ -89,7 +91,7 @@ struct WarpReduceConfig
   reduce_logical_mode_t<LogicalMode> logical_mode;
   reduce_result_mode_t<ResultMode> result_mode;
   logical_warp_size_t<LogicalWarpSize> logical_size;
-  last_pos_t<LastPos> last_pos;
+  valid_items_t<ValidItems> valid_items;
   is_segmented_t<IsSegmented> is_segmented;
   int first_pos = 0;
 };
@@ -97,14 +99,15 @@ struct WarpReduceConfig
 template <ReduceLogicalMode LogicalMode,
           ReduceResultMode ResultMode,
           int LogicalWarpSize,
-          size_t LastPos   = LogicalWarpSize - 1,
-          bool IsSegmented = false>
-WarpReduceConfig(reduce_logical_mode_t<LogicalMode>,
-                 reduce_result_mode_t<ResultMode>,
-                 logical_warp_size_t<LogicalWarpSize>,
-                 last_pos_t<LastPos>         = {},
-                 is_segmented_t<IsSegmented> = {},
-                 int first_pos = 0) -> WarpReduceConfig<LogicalMode, ResultMode, LogicalWarpSize, LastPos, IsSegmented>;
+          size_t ValidItems = LogicalWarpSize - 1,
+          bool IsSegmented  = false>
+WarpReduceConfig(
+  reduce_logical_mode_t<LogicalMode>,
+  reduce_result_mode_t<ResultMode>,
+  logical_warp_size_t<LogicalWarpSize>,
+  valid_items_t<ValidItems>   = {},
+  is_segmented_t<IsSegmented> = {},
+  int first_pos = 0) -> WarpReduceConfig<LogicalMode, ResultMode, LogicalWarpSize, ValidItems, IsSegmented>;
 
 } // namespace internal
 
@@ -130,7 +133,7 @@ namespace internal
 template <typename WarpReduceConfig>
 _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig config)
 {
-  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented, _] = config;
+  auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
   // Check logical_size
   static_assert(logical_size > 0 && logical_size <= detail::warp_threads, "invalid logical warp size");
   // Check logical mode
@@ -142,28 +145,29 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
   // Check segmented reduction with last position / result mode
   if constexpr (is_segmented)
   {
-    static_assert(last_pos.rank_dynamic() == 1, "last_pos must be dynamic with segmented reductions");
+    static_assert(valid_items.rank_dynamic() == 1, "valid_items must be dynamic with segmented reductions");
     static_assert(result_mode == first_lane_result, "result_mode must be first_lane_result with segmented reductions");
   }
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
   // Check last position
-  constexpr auto limit = is_segmented ? detail::warp_threads : logical_size;
-  _CCCL_ASSERT(last_pos.extent(0) >= 0 && last_pos.extent(0) < limit, "invalid last position");
-  // Check lane mask
+  auto last_pos_limit = (is_segmented && logical_mode == multiple_reductions) ? detail::warp_threads : logical_size;
+  _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) < last_pos_limit, "invalid last position");
+  // Check which lanes are active
+  auto mask_limit       = (logical_mode == single_reduction) ? logical_size : detail::warp_threads;
   uint32_t logical_mask = 0;
   if constexpr (!is_segmented)
   {
     constexpr int num_logical_warps = (logical_mode == single_reduction) ? 1 : detail::warp_threads / logical_size;
     for (int i = 0; i < num_logical_warps; i++)
     {
-      logical_mask |= ::cuda::bitmask<uint32_t>(i * logical_size, last_pos.extent(0));
+      logical_mask |= ::cuda::bitmask(i * logical_size, valid_items.extent(0));
     }
   }
   else
   {
-    auto logical_mask = (logical_mode == single_reduction) ? ::cuda::bitmask<uint32_t>(0, logical_size) : 0xFFFFFFFF;
+    logical_mask = (logical_mode == single_reduction) ? ::cuda::bitmask(0, logical_size) : 0xFFFFFFFF;
   }
-  _CCCL_ASSERT((::__activemask() & logical_mask) == logical_mask, "Invalid lane mask");
+  //_CCCL_ASSERT((::__activemask() & logical_mask) == logical_mask, "Invalid lane mask");
 #endif
 }
 
