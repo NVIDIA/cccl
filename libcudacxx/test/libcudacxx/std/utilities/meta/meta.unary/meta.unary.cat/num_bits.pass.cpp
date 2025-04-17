@@ -7,8 +7,9 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/std/climits>
-#include <cuda/std/complex>
 #include <cuda/std/type_traits>
+//
+#include <cuda/std/complex>
 
 #include "test_macros.h"
 
