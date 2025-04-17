@@ -76,5 +76,5 @@ def verify_sass(monkeypatch):
     monkeypatch.setattr(
         cuda.parallel.experimental._cccl_interop,
         "_check_sass",
-        False,  # todo: change to True
+        True,
     )

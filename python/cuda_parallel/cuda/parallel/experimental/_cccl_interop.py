@@ -8,7 +8,8 @@ import functools
 import os
 import subprocess
 import tempfile
-from typing import Callable, List
+import textwrap
+from typing import TYPE_CHECKING, Callable, List
 
 import numba
 import numpy as np
@@ -47,6 +48,10 @@ _TYPE_TO_ENUM = {
     types.float32: TypeEnum.FLOAT32,
     types.float64: TypeEnum.FLOAT64,
 }
+
+
+if TYPE_CHECKING:
+    from numba.core.typing import Signature
 
 
 def _type_to_enum(numba_type: types.Type) -> IntEnumerationMember:
@@ -178,7 +183,9 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def to_cccl_op(op: Callable, sig) -> Op:
+def _to_cccl_op(op: Callable, sig: Signature) -> Op:
+    # Internal helper that doesn't do any wrapping of `op` (see
+    # `to_cccl_op` below).
     ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
     return Op(
         operator_type=OpKind.STATELESS,
@@ -187,6 +194,36 @@ def to_cccl_op(op: Callable, sig) -> Op:
         state_alignment=1,
         state=None,
     )
+
+
+def to_cccl_op(op: Callable, sig: Signature) -> Op:
+    # Return an `Op` object corresponding to the given callable `op`.
+    # Importantly, this wraps the callable in a device function that
+    # takes pointers to the arguments and a pointer to the return
+    # value.
+
+    op = cuda.jit(op, device=True)
+
+    def deref(s: str) -> str:
+        return f"{s}[0]"
+
+    arg_names = [f"arg_{i}" for i in range(len(sig.args))]
+
+    wrapped_op_src = textwrap.dedent(f"""
+    def wrapped_op({', '.join(arg_names)}, ret):
+        ret[0] = op({', '.join(map(deref, arg_names))})
+    """)
+    local_ns = {"op": op}
+    print(wrapped_op_src)
+    exec(wrapped_op_src, local_ns)
+    wrapped_op = local_ns["wrapped_op"]
+
+    # Construct the signature: n pointer args + 1 pointer return
+    cccl_sig = types.void(
+        *(types.CPointer(arg) for arg in sig.args), types.CPointer(sig.return_type)
+    )
+
+    return _to_cccl_op(wrapped_op, cccl_sig)
 
 
 def get_value_type(d_in: IteratorBase | DeviceArrayLike):
@@ -251,6 +288,8 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
 
     Returns result of the call.
     """
+    global _check_sass
+
     cc_major, cc_minor = cuda.get_current_device().compute_capability
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
     common_data = CommonData(
@@ -261,7 +300,9 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         common_data,
         **kwargs,
     )
+
     if _check_sass:
         cubin = result._get_cubin()
         _check_compile_result(cubin)
+
     return result

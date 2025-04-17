@@ -46,8 +46,7 @@ class _Scan:
             value_type = numba.from_dtype(h_init.dtype)
         else:
             value_type = numba.typeof(h_init)
-        sig = (value_type, value_type)
-        self.op_wrapper = cccl.to_cccl_op(op, sig)
+        self.op_wrapper = cccl.to_cccl_op(op, value_type(value_type, value_type))
         self.build_result = call_build(
             _bindings.DeviceScanBuildResult,
             self.d_in_cccl,

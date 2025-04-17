@@ -4,7 +4,6 @@
 
 import cupy as cp
 import numpy as np
-import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
@@ -68,7 +67,6 @@ def test_binary_transform(input_array):
     # example-end transform-binary
 
 
-@pytest.mark.skip(reason="https://github.com/NVIDIA/numba-cuda/issues/175")
 def test_unary_transform_struct_type():
     import numpy as np
 
@@ -105,7 +103,6 @@ def test_unary_transform_struct_type():
     np.testing.assert_allclose(got["y"], np.ones(num_values) + 10)
 
 
-@pytest.mark.skip(reason="https://github.com/NVIDIA/numba-cuda/issues/175")
 def test_binary_transform_struct_type():
     import numpy as np
 

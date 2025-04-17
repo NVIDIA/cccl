@@ -235,9 +235,6 @@ def test_unique_by_key_complex():
     np.testing.assert_array_equal(h_out_items, expected_items)
 
 
-@pytest.mark.skip(
-    reason="Creating an array of gpu_struct keys does not work currently (see https://github.com/NVIDIA/cccl/issues/3789)"
-)
 def test_unique_by_key_struct_types():
     @gpu_struct
     class key_pair:
@@ -291,11 +288,13 @@ def test_unique_by_key_struct_types():
 
     h_out_num_selected = d_out_num_selected.copy_to_host()
     num_selected = h_out_num_selected[0]
-    h_out_keys = d_out_keys.copy_to_host()[:num_selected]
-    h_out_items = d_out_items.copy_to_host()[:num_selected]
+    h_out_keys = d_out_keys.get()[:num_selected]
+    h_out_items = d_out_items.get()[:num_selected]
 
     expected_keys, expected_items = unique_by_key_host(
-        h_in_keys, h_in_items, struct_compare_op
+        h_in_keys,
+        h_in_items,
+        lambda lhs, rhs: (lhs["a"] == rhs["a"]) and (lhs["b"] == rhs["b"]),
     )
 
     np.testing.assert_array_equal(h_out_keys, expected_keys)
