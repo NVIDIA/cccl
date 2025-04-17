@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__bit/has_single_bit.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -23,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -52,7 +51,8 @@ _CCCL_TEMPLATE(typename _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int ceil_ilog2(_Tp __t) noexcept
 {
-  return ::cuda::ilog2(__t) + !_CUDA_VSTD::has_single_bit(__t);
+  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
+  return ::cuda::ilog2(__t) + !_CUDA_VSTD::has_single_bit(static_cast<_Up>(__t));
 }
 
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
