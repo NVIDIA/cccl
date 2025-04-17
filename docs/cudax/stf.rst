@@ -1601,6 +1601,103 @@ will differ between the different threads which call `inner()`.
     ...
     th.inner().sync(); // synchronize threads in the same block of the second level of the hierarchy
 
+``cuda_kernel`` construct
+-------------------------
+
+CUDASTF provides a `cuda_kernel` construct which implements a task that
+executes a CUDA kernel. This construct is especially useful when we writing
+code that may be executed using a CUDA graph backend, because its `task`
+construct relies on a graph capture mechanism which has some overhead, while
+the `cuda_kernel` construct is directly translated to CUDA kernel launch APIs.
+
+`cuda_kernel` takes the same argument as tasks, such as an execution place, and
+a list of data dependencies. It implements a `->*` operator that takes a lambda
+function as argument. This lambda function should return an object of type
+`cuda_kernel_desc` which describes a CUDA kernel. The constructor of the
+`cuda_kernel_desc` class, shown belown, takes the CUDA kernel function pointer
+(ie. the ``__global__`` method defining the kernel), a grid description, the
+amount of dynamically allocated shared memory, and finally all the arguments
+that must be passed to the CUDA kernel.
+
+.. code:: cpp
+  template <typename Fun, typename... Args>
+  cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
+
+For example, the following piece of code creates a task that launches a CUDA kernel that accesses two logical data.
+
+.. code:: cpp
+
+  ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
+    // calls __global__ void axpy(double a, slice<const double> x, slice<double> y);
+    // similarly to axpy<<<16, 128, 0, ...>>>(alpha, dX, dY)
+    return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
+  };
+
+Similarly to the `task` construct, `cuda_kernel` supports dynamic dependencies
+using `add_deps` and `get` on the result of `ctx.cuda_kernel`. The previous
+code can therefore be rewritten as:
+
+.. code:: cpp
+
+  auto t = ctx.cuda_kernel();
+  t.add_deps(lX.read());
+  t.add_deps(lY.rw());
+  t->*[&]() {
+    auto dX = t.template get<slice<double>>(0);
+    auto dY = t.template get<slice<double>>(1);
+    return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
+  };
+
+``cuda_kernel_chain`` construct
+-------------------------------
+
+In addition to `cuda_kernel`, the `cuda_kernel_chain` implements tasks that
+execute chains of CUDA kernels. Instead of returning a `cuda_kernel_desc`
+object, the lambda function passed to its `->*` operator should return a
+`::std::vector<cuda_kernel_desc>` object. The execution of the task corresponds
+to the sequential execution of each vector entry.
+
+The following two constructs are therefore equivalent, except that the
+`cuda_kernel_chain` implementation directly translate to CUDA kernel launch
+APIs, while the implementation of the `task` construct may rely on graph
+capture when using a CUDA graph backend.
+
+.. code:: cpp
+
+  /* Compute Y = Y + alpha X, Y = Y + beta X and then  Y = Y + gamma X */
+  ctx.cuda_kernel_chain(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
+     return ::std::vector<cuda_kernel_desc> {
+         { axpy, 16, 128, 0, alpha, dX, dY },
+         { axpy, 16, 128, 0, beta,  dX, dY },
+         { axpy, 16, 128, 0, gamma, dX, dY }
+     };
+  };
+
+  /* Equivalent to the previous construct, but possibly less efficient */
+  ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t stream, auto dX, auto dY) {
+     axpy<<<16, 128, 0, stream>>>(alpha, dX, dY);
+     axpy<<<16, 128, 0, stream>>>(beta,  dX, dY);
+     axpy<<<16, 128, 0, stream>>>(gamma, dX, dY);
+  };
+
+Similarly to the `cuda_kernel` constructs, dependencies can be set dynamically:
+
+.. code:: cpp
+
+  /* Compute Y = Y + alpha X, Y = Y + beta X and then  Y = Y + gamma X */
+  auto t = ctx.cuda_kernel_chain();
+  t.add_deps(lX.read());
+  t.add_deps(lY.rw());
+  t->*[&]() {
+    auto dX = t.template get<slice<double>>(0);
+    auto dY = t.template get<slice<double>>(1);
+    return ::std::vector<cuda_kernel_desc> {
+        { axpy, 16, 128, 0, alpha, dX, dY },
+        { axpy, 16, 128, 0, beta, dX, dY },
+        { axpy, 16, 128, 0, gamma, dX, dY }
+    };
+  };
+
 C++ Types of logical data and tasks
 -----------------------------------
 
