@@ -43,6 +43,7 @@
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
@@ -51,10 +52,10 @@ namespace cuda::experimental::__async
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
 {
-private:
   template <class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
+private:
   // Extract the first template parameter of the __state_t specialization.
   // The first template parameter is the receiver type.
   template <class _State>
@@ -145,8 +146,8 @@ private:
   template <class _Rcvr, class _CvFn, class _Sndrs>
   struct __state_t;
 
-  template <class _Rcvr, class _CvFn, class _Idx, class... _Sndrs>
-  struct __state_t<_Rcvr, _CvFn, __tupl<_Idx, _Sndrs...>>
+  template <class _Rcvr, class _CvFn, class _Idx, class _Ign0, class _Ign1, class... _Sndrs>
+  struct __state_t<_Rcvr, _CvFn, __tupl<_Idx, _Ign0, _Ign1, _Sndrs...>>
   {
     using __env_t     = when_all_t::__env_t<__zip<__state_t>>;
     using __sndr_t    = when_all_t::__sndr_t<_Sndrs...>;
@@ -282,16 +283,26 @@ private:
     __lazy<__stop_callback_t> __on_stop_;
   };
 
+  struct __start_all
+  {
+    template <class... _Ops>
+    _CUDAX_TRIVIAL_API void operator()(_Ops&... __ops) const noexcept
+    {
+      (__async::start(__ops), ...);
+    }
+  };
+
   /// The operation state for when_all
   template <class, class, class>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t;
 
-  template <class _Rcvr, class _CvFn, size_t... _Idx, class... _Sndrs>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sndrs...>>
+  template <class _Rcvr, class _CvFn, size_t... _Idx, class _Ign0, class _Ign1, class... _Sndrs>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT
+  __opstate_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<0, 1, _Idx...>, _Ign0, _Ign1, _Sndrs...>>
   {
     using operation_state_concept = operation_state_t;
-    using __sndrs_t               = _CUDA_VSTD::__type_call<_CvFn, __tuple<_Sndrs...>>;
-    using __state_t               = when_all_t::__state_t<_Rcvr, _CvFn, __tuple<_Sndrs...>>;
+    using __sndrs_t               = _CUDA_VSTD::__type_call<_CvFn, __tuple<_Ign0, _Ign1, _Sndrs...>>;
+    using __state_t               = when_all_t::__state_t<_Rcvr, _CvFn, __tuple<_Ign0, _Ign1, _Sndrs...>>;
 
     // This function object is used to connect all the sub-operations with
     // receivers, each of which knows which elements in the values tuple it
@@ -299,7 +310,7 @@ private:
     struct __connect_subs_fn
     {
       template <class... _CvSndrs>
-      _CUDAX_API auto operator()(__state_t& __state, _CvSndrs&&... __sndrs_) const
+      _CUDAX_API auto operator()(__state_t& __state, __ignore, __ignore, _CvSndrs&&... __sndrs_) const
       {
         using __state_ref_t = __zip<__state_t>;
         // When there are no offsets, the when_all sender has no value
@@ -310,7 +321,7 @@ private:
         // The offsets are used to determine which elements in the values
         // tuple each receiver is responsible for setting.
         return __tupl{__async::connect(
-          static_cast<_CvSndrs&&>(__sndrs_), __rcvr_t<__state_ref_t, __no_values ? 0 : _Idx>{__state})...};
+          static_cast<_CvSndrs&&>(__sndrs_), __rcvr_t<__state_ref_t, __no_values ? 0 : _Idx - 2>{__state})...};
       }
     };
 
@@ -349,7 +360,7 @@ private:
       else
       {
         // Start all the sub-operations.
-        __sub_ops_.__for_each(__async::start, __sub_ops_);
+        __sub_ops_.__apply(__start_all{}, __sub_ops_);
 
         // If there are no sub-operations, we're done.
         if constexpr (sizeof...(_Sndrs) == 0)
@@ -436,14 +447,10 @@ _CCCL_DIAG_POP
 
 // The sender for when_all
 template <class... _Sndrs>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : __tuple<when_all_t, __ignore, _Sndrs...>
 {
   using sender_concept = sender_t;
-  using __sndrs_t      = __tuple<_Sndrs...>;
-
-  _CCCL_NO_UNIQUE_ADDRESS when_all_t __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS __ignore __ignore1_;
-  __sndrs_t __sndrs_;
+  using __sndrs_t      = __tuple<when_all_t, __ignore, _Sndrs...>;
 
   template <class _Self, class... _Env>
   _CUDAX_API static constexpr auto __get_completions_and_offsets()
@@ -460,13 +467,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
   {
-    return __opstate_t<_Rcvr, __cp, __sndrs_t>(static_cast<__sndrs_t&&>(__sndrs_), static_cast<_Rcvr&&>(__rcvr));
+    return __opstate_t<_Rcvr, __cp, __sndrs_t>(static_cast<__sndrs_t&&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
-    return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(__sndrs_, static_cast<_Rcvr&&>(__rcvr));
+    return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 };
 
@@ -480,11 +487,13 @@ _CUDAX_API auto when_all_t::operator()(_Sndrs... __sndrs) const -> __sndr_t<_Snd
     using __completions = completion_signatures_of_t<__sndr_t<_Sndrs...>>;
     static_assert(__valid_completion_signatures<__completions>);
   }
-  return __sndr_t<_Sndrs...>{{}, {}, {static_cast<_Sndrs&&>(__sndrs)...}};
+  return __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}};
 }
 
-_CCCL_GLOBAL_CONSTANT when_all_t when_all{};
+template <class... _Sndrs>
+inline constexpr size_t structured_binding_size<when_all_t::__sndr_t<_Sndrs...>> = sizeof...(_Sndrs) + 2;
 
+_CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>
