@@ -22,26 +22,30 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_reference.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Ap, class _Bp>
-using _CopyConst = _If<_CCCL_TRAIT(is_const, _Ap), const _Bp, _Bp>;
+#if _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
+
+// The compiler treats ::std::forward_like as a builtin function so it does not need to be
+// instantiated and will be compiled away even at -O0.
+using ::std::forward_like;
+
+#else // ^^^ _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() vvv
 
 template <class _Ap, class _Bp>
-using _OverrideRef = _If<_CCCL_TRAIT(is_rvalue_reference, _Ap), remove_reference_t<_Bp>&&, _Bp&>;
-
-template <class _Ap, class _Bp>
-using _ForwardLike = _OverrideRef<_Ap&&, _CopyConst<remove_reference_t<_Ap>, remove_reference_t<_Bp>>>;
+using _ForwardLike = __copy_cvref_t<_Ap&&, remove_reference_t<_Bp>>;
 
 template <class _Tp, class _Up>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto forward_like(_Up&& __ux) noexcept -> _ForwardLike<_Tp, _Up>
+[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr auto forward_like(_Up&& __ux) noexcept
+  -> _ForwardLike<_Tp, _Up>
 {
   return static_cast<_ForwardLike<_Tp, _Up>>(__ux);
 }
+
+#endif // _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

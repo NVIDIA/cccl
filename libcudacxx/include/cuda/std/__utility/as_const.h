@@ -24,14 +24,24 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_HAS_BUILTIN_STD_AS_CONST()
+
+// The compiler treats ::std::as_const as a builtin function so it does not need to be
+// instantiated and will be compiled away even at -O0.
+using ::std::as_const;
+
+#else // ^^^ _CCCL_HAS_BUILTIN_STD_AS_CONST() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_AS_CONST() vvv
+
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr add_const_t<_Tp>& as_const(_Tp& __t) noexcept
 {
   return __t;
 }
 
 template <class _Tp>
 void as_const(const _Tp&&) = delete;
+
+#endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
