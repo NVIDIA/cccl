@@ -13,6 +13,7 @@
 #include <thrust/reduce.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -199,7 +200,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     {
       uninitialized_buffer buf{resource, 42};
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
-      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
+      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
       CUDAX_CHECK(res == TestType{84});
     }
   }

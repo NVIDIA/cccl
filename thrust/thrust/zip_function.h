@@ -93,8 +93,8 @@ _CCCL_HOST_DEVICE decltype(auto) apply(Function&& func, Tuple&& args)
  *    thrust::device_vector<float> C{2.f, 3.f, 4.f};
  *    thrust::device_vector<float> D(3);
  *
- *    auto begin = thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin(), C.begin()));
- *    auto end = thrust::make_zip_iterator(thrust::make_tuple(A.end(), B.end(), C.end()));
+ *    auto begin = thrust::make_zip_iterator(A.begin(), B.begin(), C.begin());
+ *    auto end = thrust::make_zip_iterator(A.end(), B.end(), C.end());
  *
  *    // The following four invocations of transform are equivalent:
  *    // Transform with 3-tuple

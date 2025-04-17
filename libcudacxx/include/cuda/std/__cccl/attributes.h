@@ -94,9 +94,37 @@
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#elif _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(NVHPC)
+#  define _CCCL_ASSUME(...) \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
+#else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
-#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#endif
+
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  if _CCCL_CUDA_COMPILER(NVCC, ==, 12) \
+    && (_CCCL_COMPILER(CLANG, <=, 14) || _CCCL_COMPILER(MSVC, <=, 19, 29) || _CCCL_COMPILER(GCC, <=, 9))
+#    define _CCCL_PURE
+#  else
+#    define _CCCL_PURE __nv_pure__
+#  endif
+#elif _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_COMPILER(CLANG)
+#  define _CCCL_PURE [[gnu::pure]]
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_PURE __declspec(noalias)
+#else
+#  define _CCCL_PURE
+#endif
+
+#if !_CCCL_COMPILER(MSVC) // _CCCL_HAS_CPP_ATTRIBUTE(const) doesn't work with MSVC
+#  if _CCCL_HAS_CPP_ATTRIBUTE(const) || _CCCL_COMPILER(CLANG)
+#    define _CCCL_CONST [[gnu::const]]
+#  else
+#    define _CCCL_CONST _CCCL_PURE
+#  endif
+#else
+#  define _CCCL_CONST _CCCL_PURE
+#endif
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
 #  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::no_specializations(_MSG)]]

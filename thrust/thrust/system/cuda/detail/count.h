@@ -56,7 +56,11 @@ count_if(execution_policy<Derived>& policy, InputIt first, InputIt last, UnaryPr
   using flag_iterator_t = transform_iterator<UnaryPred, InputIt, size_type, size_type>;
 
   return cuda_cub::reduce_n(
-    policy, flag_iterator_t(first, unary_pred), thrust::distance(first, last), size_type(0), plus<size_type>());
+    policy,
+    flag_iterator_t(first, unary_pred),
+    ::cuda::std::distance(first, last),
+    size_type(0),
+    ::cuda::std::plus<size_type>());
 }
 
 template <class Derived, class InputIt, class Value>

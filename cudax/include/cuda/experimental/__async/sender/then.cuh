@@ -34,6 +34,7 @@
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -322,6 +323,14 @@ _CUDAX_TRIVIAL_API auto __upon_t<_Disposition>::operator()(_Fn __fn) const noexc
 {
   return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
 }
+
+template <class _Sndr, class _Fn>
+inline constexpr size_t structured_binding_size<__upon_t<__value>::__sndr_t<_Sndr, _Fn>> = 3;
+template <class _Sndr, class _Fn>
+inline constexpr size_t structured_binding_size<__upon_t<__error>::__sndr_t<_Sndr, _Fn>> = 3;
+template <class _Sndr, class _Fn>
+inline constexpr size_t structured_binding_size<__upon_t<__stopped>::__sndr_t<_Sndr, _Fn>> = 3;
+
 _CCCL_GLOBAL_CONSTANT struct then_t : __upon_t<__value>
 {
 } then{};
