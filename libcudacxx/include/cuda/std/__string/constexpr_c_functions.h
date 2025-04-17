@@ -362,7 +362,7 @@ __cccl_memchr_impl_constexpr(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   while (__n--)
   {
-    if (*__ptr == static_cast<unsigned char>(__c))
+    if (*__ptr == __c)
     {
       return __ptr;
     }
@@ -435,7 +435,7 @@ __cccl_memmove_impl_host(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memmove(_Tp* __dst, const _Tp* __src, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
@@ -454,11 +454,13 @@ template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int
 __cccl_memcmp_impl_constexpr(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
+  using _Up = __make_nbit_uint_t<sizeof(_Tp) * CHAR_BIT>;
+
   while (__n--)
   {
     if (*__lhs != *__rhs)
     {
-      return *__lhs < *__rhs ? -1 : 1;
+      return static_cast<_Up>(*__lhs) < static_cast<_Up>(*__rhs) ? -1 : 1;
     }
     ++__lhs;
     ++__rhs;
@@ -471,7 +473,14 @@ template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST int
 __cccl_memcmp_impl_host(const _Tp* __lhs, const _Tp* __rhs, size_t __n) noexcept
 {
-  return ::memcmp(__lhs, __rhs, __n * sizeof(_Tp));
+  if constexpr (sizeof(_Tp) == 1)
+  {
+    return ::memcmp(__lhs, __rhs, __n);
+  }
+  else
+  {
+    return _CUDA_VSTD::__cccl_memcmp_impl_constexpr(__lhs, __rhs, __n);
+  }
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
@@ -515,7 +524,7 @@ __cccl_memcpy_impl_host(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __s
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp*
 __cccl_memcpy(_Tp* _CCCL_RESTRICT __dst, const _Tp* _CCCL_RESTRICT __src, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
@@ -560,7 +569,7 @@ template <class _Tp>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __cccl_memset(_Tp* __ptr, _Tp __c, size_t __n) noexcept
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
