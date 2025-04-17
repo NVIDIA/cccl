@@ -1604,24 +1604,30 @@ will differ between the different threads which call `inner()`.
 ``cuda_kernel`` construct
 -------------------------
 
-CUDASTF provides a `cuda_kernel` construct which implements a task that
-executes a CUDA kernel. This construct is especially useful when we writing
-code that may be executed using a CUDA graph backend, because its `task`
-construct relies on a graph capture mechanism which has some overhead, while
-the `cuda_kernel` construct is directly translated to CUDA kernel launch APIs.
+CUDASTF provides the `cuda_kernel` construct to implement tasks executing a
+CUDA kernel. This construct is especially useful when we writing code that may
+be executed using a CUDA graph backend, because its `task` construct relies on
+a graph capture mechanism which has some overhead, while the `cuda_kernel`
+construct is directly translated to CUDA kernel launch APIs, thus avoiding this
+overhead.
 
-`cuda_kernel` takes the same argument as tasks, such as an execution place, and
-a list of data dependencies. It implements a `->*` operator that takes a lambda
-function as argument. This lambda function should return an object of type
-`cuda_kernel_desc` which describes a CUDA kernel. The constructor of the
-`cuda_kernel_desc` class, shown belown, takes the CUDA kernel function pointer
-(ie. the ``__global__`` method defining the kernel), a grid description, the
-amount of dynamically allocated shared memory, and finally all the arguments
-that must be passed to the CUDA kernel.
+
+`cuda_kernel` accepts the same arguments as the task construct, including an
+execution place and a list of data dependencies.  It implements a `->*`
+operator that takes a lambda function as argument.  This lambda function must
+return an object of type `cuda_kernel_desc`, describing the CUDA kernel to
+execute.  The constructor of the `cuda_kernel_desc` class, shown below, takes
+the CUDA kernel function pointer (ie. the ``__global__`` method defining the
+kernel), a grid description, the amount of dynamically allocated shared memory,
+and finally all the arguments that must be passed to the CUDA kernel.
 
 .. code:: cpp
   template <typename Fun, typename... Args>
-  cuda_kernel_desc(Fun func, dim3 gridDim_, dim3 blockDim_, size_t sharedMem_, Args... args)
+  cuda_kernel_desc(Fun func,           // Pointer to the CUDA kernel function (__global__)
+                   dim3 gridDim_,      // Dimensions of the grid (number of thread blocks)
+                   dim3 blockDim_,     // Dimensions of each thread block
+                   size_t sharedMem_,  // Amount of dynamically allocated shared memory
+                   Args... args)       // Arguments passed to the CUDA kernel
 
 For example, the following piece of code creates a task that launches a CUDA kernel that accesses two logical data.
 
@@ -1633,9 +1639,9 @@ For example, the following piece of code creates a task that launches a CUDA ker
     return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
   };
 
-Similarly to the `task` construct, `cuda_kernel` supports dynamic dependencies
-using `add_deps` and `get` on the result of `ctx.cuda_kernel`. The previous
-code can therefore be rewritten as:
+Similar to the `task` construct, the `cuda_kernel` construct also supports
+specifying dynamic dependencies using the `add_deps` method and retrieving data
+instances using `get`. The previous code can therefore be rewritten as:
 
 .. code:: cpp
 
@@ -1651,20 +1657,21 @@ code can therefore be rewritten as:
 ``cuda_kernel_chain`` construct
 -------------------------------
 
-In addition to `cuda_kernel`, the `cuda_kernel_chain` implements tasks that
-execute chains of CUDA kernels. Instead of returning a `cuda_kernel_desc`
-object, the lambda function passed to its `->*` operator should return a
-`::std::vector<cuda_kernel_desc>` object. The execution of the task corresponds
-to the sequential execution of each vector entry.
+In addition to `cuda_kernel`, CUDASTF provides the `cuda_kernel_chain`
+construct to execute sequences of CUDA kernels within a single task. Unlike
+`cuda_kernel`, which expects a single kernel descriptor, the lambda passed to
+the `->*` operator of `cuda_kernel_chain` should return a
+`::std::vector<cuda_kernel_desc>` describing multiple kernel launches.
+Kernels specified within the vector are executed sequentially in the order they appear.
 
 The following two constructs are therefore equivalent, except that the
-`cuda_kernel_chain` implementation directly translate to CUDA kernel launch
-APIs, while the implementation of the `task` construct may rely on graph
-capture when using a CUDA graph backend.
+`cuda_kernel_chain` implementation directly translate to efficient, direct CUDA
+kernel launch APIs, while the implementation of the `task` construct may rely
+on graph capture when using a CUDA graph backend.
 
 .. code:: cpp
 
-  /* Compute Y = Y + alpha X, Y = Y + beta X and then  Y = Y + gamma X */
+  /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
   ctx.cuda_kernel_chain(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
      return ::std::vector<cuda_kernel_desc> {
          { axpy, 16, 128, 0, alpha, dX, dY },
@@ -1684,7 +1691,7 @@ Similarly to the `cuda_kernel` constructs, dependencies can be set dynamically:
 
 .. code:: cpp
 
-  /* Compute Y = Y + alpha X, Y = Y + beta X and then  Y = Y + gamma X */
+  /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
   auto t = ctx.cuda_kernel_chain();
   t.add_deps(lX.read());
   t.add_deps(lY.rw());
