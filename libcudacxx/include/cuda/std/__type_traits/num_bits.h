@@ -30,16 +30,14 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/climits>
-#include <cuda/std/complex>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __num_bits_impl() noexcept
 {
-  if constexpr (__is_complex_v<_Tp>)
+  if constexpr (false)
   {
-    return __num_bits_impl<remove_cv_t<typename _Tp::value_type>>() * 2;
   }
 #if _CCCL_HAS_NVFP16()
   else if constexpr (is_same_v<_Tp, __half2>)
