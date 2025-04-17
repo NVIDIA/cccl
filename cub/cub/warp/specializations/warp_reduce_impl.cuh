@@ -147,10 +147,12 @@ warp_reduce_generic(Input input, ReductionOp reduction_op, Config config)
     }
     else
     {
-      auto lane_dest = cub::internal::logical_lane_id<logical_size1>() + (1u << K);
-      auto dest      = ::min(lane_dest, valid_items.extent(0));
-      res            = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
-      res.pred       = lane_dest <= valid_items.extent(0);
+      constexpr auto logical_size1_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size1});
+      auto limit                         = valid_items.extent(0) - !is_segmented;
+      auto lane_dest                     = cub::internal::logical_lane_id<logical_size1>() + (1u << K);
+      auto dest                          = ::min(lane_dest, limit);
+      res                                = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
+      res.pred                           = lane_dest <= limit;
     }
     if (res.pred)
     {
@@ -263,7 +265,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   auto valid_items                 = config.valid_items;
   // early exit for threads outside the range with dynamic number of valid items
   if (!config.is_segmented && valid_items.rank_dynamic() == 1
-      && logical_lane_id(logical_warp_size) > valid_items.extent(0))
+      && logical_lane_id(logical_warp_size) >= valid_items.extent(0))
   {
     return input;
   }

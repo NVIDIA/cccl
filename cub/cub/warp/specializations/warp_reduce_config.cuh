@@ -82,7 +82,7 @@ using is_segmented_t = _CUDA_VSTD::bool_constant<IsSegmented>;
 template <ReduceLogicalMode LogicalMode,
           ReduceResultMode ResultMode,
           int LogicalWarpSize,
-          size_t ValidItems = LogicalWarpSize - 1,
+          size_t ValidItems = LogicalWarpSize,
           bool IsSegmented  = false>
 struct WarpReduceConfig
 {
@@ -99,7 +99,7 @@ struct WarpReduceConfig
 template <ReduceLogicalMode LogicalMode,
           ReduceResultMode ResultMode,
           int LogicalWarpSize,
-          size_t ValidItems = LogicalWarpSize - 1,
+          size_t ValidItems = LogicalWarpSize,
           bool IsSegmented  = false>
 WarpReduceConfig(
   reduce_logical_mode_t<LogicalMode>,
@@ -151,7 +151,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
   // Check last position
   auto last_pos_limit = (is_segmented && logical_mode == multiple_reductions) ? detail::warp_threads : logical_size;
-  _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) < last_pos_limit, "invalid last position");
+  _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) <= last_pos_limit, "invalid last position");
   // Check which lanes are active
   auto mask_limit       = (logical_mode == single_reduction) ? logical_size : detail::warp_threads;
   uint32_t logical_mask = 0;

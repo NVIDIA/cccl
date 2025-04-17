@@ -278,7 +278,7 @@ template <typename T, typename ReductionOp>
 }
 
 //----------------------------------------------------------------------------------------------------------------------
-// Generation of Shuffle Mask
+// Generation of Shuffle / Ballot Mask
 
 template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_shuffle_bound_mask(
@@ -289,7 +289,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 {
   if constexpr (is_segmented)
   {
-    return valid_items.extent(0);
+    return valid_items.extent(0); // segmented limit
   }
   else if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
   {
@@ -299,7 +299,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
   }
   else // valid_items is dynamic
   {
-    return cub::internal::logical_warp_id(logical_size) * LogicalWarpSize + valid_items.extent(0);
+    return cub::internal::logical_warp_id(logical_size) * LogicalWarpSize + valid_items.extent(0) - 1;
   }
 }
 
@@ -332,11 +332,11 @@ template <typename Config>
   auto shift                         = is_single_reduction ? 0 : cub::internal::logical_warp_base_id(logical_size);
   if constexpr (is_segmented)
   {
-    return ::cuda::bitmask(first_pos, valid_items.extent(0) + 1 - first_pos);
+    return ::cuda::bitmask(first_pos, valid_items.extent(0) - first_pos + 1);
   }
   else if constexpr (valid_items.rank_dynamic() == 1)
   {
-    auto base_mask = ::cuda::bitmask(0, valid_items.extent(0) + 1);
+    auto base_mask = ::cuda::bitmask(0, valid_items.extent(0));
     return base_mask << shift;
   }
   else
