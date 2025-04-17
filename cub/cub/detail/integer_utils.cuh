@@ -53,7 +53,7 @@ namespace internal
 {
 
 template <typename Input>
-[[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto split_integers(Input input)
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto split_integers(Input input)
 {
   using namespace _CUDA_VSTD;
   static_assert(is_integral_v<Input>);
@@ -67,7 +67,7 @@ template <typename Input>
 }
 
 template <typename Input>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integers(Input inputA, Input inputB)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto merge_integers(Input inputA, Input inputB)
 {
   using namespace _CUDA_VSTD;
   static_assert(is_integral_v<Input>);
@@ -79,7 +79,7 @@ template <typename Input>
 }
 
 template <typename T>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto comparable_int_to_floating_point(T value)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto comparable_int_to_floating_point(T value)
 {
   static_assert(_CUDA_VSTD::is_integral_v<T>);
   constexpr auto lowest = T{1} << (_CUDA_VSTD::__num_bits_v<T> - 1);
@@ -87,7 +87,7 @@ template <typename T>
 }
 
 template <typename ReductionOp, typename T>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(ReductionOp, T value)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(ReductionOp, T value)
 {
   using namespace _CUDA_VSTD;
   static_assert(::cuda::is_floating_point_v<T>);
