@@ -40,6 +40,7 @@
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/std/complex>
 #include <cuda/std/cstdint>
 #include <cuda/type_traits>
 

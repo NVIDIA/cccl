@@ -26,17 +26,15 @@
 
 #include <cuda/functional>
 #include <cuda/ptx>
-#include <cuda/std/__functional/invoke.h>
 #include <cuda/std/bit>
+#include <cuda/std/complex>
 #include <cuda/std/cstddef>
-#include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <cstdio>
+// #include <cstdio>
 #include <numeric>
 
-#include "cuda/__functional/maximum.h"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
