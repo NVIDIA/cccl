@@ -40,6 +40,7 @@ set(stf_test_sources
   local_stf/stackable.cu
   local_stf/stackable2.cu
   local_stf/stackable3.cu
+  local_stf/stackable_add_deps.cu
   local_stf/stackable_export.cu
   local_stf/stackable_export2.cu
   local_stf/stackable_move.cu
