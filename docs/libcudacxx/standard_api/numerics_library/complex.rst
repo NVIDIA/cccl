@@ -15,16 +15,6 @@ Omissions
 Extensions
 --------------
 
-- Handling of infinities
-
-  Our implementation by default recovers infinite values during multiplication and division. This adds a significant runtime overhead,
-  so we allow disabling that canonicalization if it is not desired.
-
-  Definition of ``LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS`` disables canonicalization for both multiplication *and* division.
-
-  Definition of ``LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION`` or ``LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_DIVISION`` disables
-  canonicalization for multiplication or division individually.
-
 - Support for half and bfloat16 (since libcu++ 2.4.0)
 
   Our implementation includes support for the ``__half`` type from ``<cuda_fp16.h>``, when the CUDA toolkit version is at
