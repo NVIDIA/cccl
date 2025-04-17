@@ -77,7 +77,7 @@ generate_n(execution_policy<Derived>& policy, OutputIt result, Size count, Gener
 template <class Derived, class OutputIt, class Generator>
 void _CCCL_HOST_DEVICE generate(execution_policy<Derived>& policy, OutputIt first, OutputIt last, Generator generator)
 {
-  cuda_cub::generate_n(policy, first, thrust::distance(first, last), generator);
+  cuda_cub::generate_n(policy, first, ::cuda::std::distance(first, last), generator);
 }
 
 } // namespace cuda_cub

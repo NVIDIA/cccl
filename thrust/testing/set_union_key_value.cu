@@ -62,8 +62,8 @@ void TestSetUnionKeyValueDescending(size_t n)
     h_b[i] = T(h_keys_b[i], h_values_b[i]);
   }
 
-  thrust::stable_sort(h_a.begin(), h_a.end(), thrust::greater<T>());
-  thrust::stable_sort(h_b.begin(), h_b.end(), thrust::greater<T>());
+  thrust::stable_sort(h_a.begin(), h_a.end(), ::cuda::std::greater<T>());
+  thrust::stable_sort(h_b.begin(), h_b.end(), ::cuda::std::greater<T>());
 
   thrust::device_vector<T> d_a = h_a;
   thrust::device_vector<T> d_b = h_b;
@@ -74,10 +74,12 @@ void TestSetUnionKeyValueDescending(size_t n)
   typename thrust::host_vector<T>::iterator h_end;
   typename thrust::device_vector<T>::iterator d_end;
 
-  h_end = thrust::set_union(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), h_result.begin(), thrust::greater<T>());
+  h_end =
+    thrust::set_union(h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), h_result.begin(), ::cuda::std::greater<T>());
   h_result.erase(h_end, h_result.end());
 
-  d_end = thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), thrust::greater<T>());
+  d_end =
+    thrust::set_union(d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), ::cuda::std::greater<T>());
   d_result.erase(d_end, d_result.end());
 
   ASSERT_EQUAL_QUIET(h_result, d_result);

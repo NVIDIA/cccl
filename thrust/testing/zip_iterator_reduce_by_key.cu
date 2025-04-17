@@ -52,7 +52,7 @@ struct TestZipIteratorReduceByKey
         make_zip_iterator(h_data1.begin(), h_data2.begin()),
         h_data3.begin(),
         make_zip_iterator(h_data4.begin(), h_data5.begin()),
-        equal_to<T>(),
+        ::cuda::std::equal_to<T>(),
         TuplePlus<Tuple>());
 
       // run on device
@@ -62,7 +62,7 @@ struct TestZipIteratorReduceByKey
         make_zip_iterator(d_data1.begin(), d_data2.begin()),
         d_data3.begin(),
         make_zip_iterator(d_data4.begin(), d_data5.begin()),
-        equal_to<T>(),
+        ::cuda::std::equal_to<T>(),
         TuplePlus<Tuple>());
 
       ASSERT_EQUAL(h_data3, d_data3);
@@ -100,7 +100,7 @@ struct TestZipIteratorReduceByKey
         make_zip_iterator(h_data1.begin(), h_data2.begin()),
         make_zip_iterator(h_data3.begin(), h_data4.begin()),
         make_zip_iterator(h_data5.begin(), h_data6.begin()),
-        equal_to<Tuple>(),
+        ::cuda::std::equal_to<Tuple>(),
         TuplePlus<Tuple>());
 
       // run on device
@@ -110,7 +110,7 @@ struct TestZipIteratorReduceByKey
         make_zip_iterator(d_data1.begin(), d_data2.begin()),
         make_zip_iterator(d_data3.begin(), d_data4.begin()),
         make_zip_iterator(d_data5.begin(), d_data6.begin()),
-        equal_to<Tuple>(),
+        ::cuda::std::equal_to<Tuple>(),
         TuplePlus<Tuple>());
 
       ASSERT_EQUAL(h_data3, d_data3);
@@ -139,10 +139,10 @@ struct TestZipIteratorReduceByKey
       float* h_begin6       = thrust::raw_pointer_cast(h_data6.data());
       thrust::reduce_by_key(
         thrust::host,
-        thrust::make_zip_iterator(thrust::make_tuple(h_begin1, h_begin2)),
-        thrust::make_zip_iterator(thrust::make_tuple(h_begin1, h_begin2)) + n,
+        thrust::make_zip_iterator(h_begin1, h_begin2),
+        thrust::make_zip_iterator(h_begin1, h_begin2) + n,
         h_begin3,
-        thrust::make_zip_iterator(thrust::make_tuple(h_begin4, h_begin5)),
+        thrust::make_zip_iterator(h_begin4, h_begin5),
         h_begin6);
 
       // run on device
@@ -154,10 +154,10 @@ struct TestZipIteratorReduceByKey
       float* d_begin6       = thrust::raw_pointer_cast(d_data6.data());
       thrust::reduce_by_key(
         thrust::device,
-        thrust::make_zip_iterator(thrust::make_tuple(d_begin1, d_begin2)),
-        thrust::make_zip_iterator(thrust::make_tuple(d_begin1, d_begin2)) + n,
+        thrust::make_zip_iterator(d_begin1, d_begin2),
+        thrust::make_zip_iterator(d_begin1, d_begin2) + n,
         d_begin3,
-        thrust::make_zip_iterator(thrust::make_tuple(d_begin4, d_begin5)),
+        thrust::make_zip_iterator(d_begin4, d_begin5),
         d_begin6);
 
       ASSERT_EQUAL(h_data3, d_data3);

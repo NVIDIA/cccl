@@ -101,7 +101,7 @@ void TestMergeSortKeySimple()
     InitializeSimpleKeySortTest(unsorted_keys, sorted_keys);
 
     thrust::cuda_bulk::tag cuda_tag;
-    thrust::system::cuda_bulk::detail::detail::stable_merge_sort(cuda_tag, unsorted_keys.begin(), unsorted_keys.end(), thrust::less<T>());
+    thrust::system::cuda_bulk::detail::detail::stable_merge_sort(cuda_tag, unsorted_keys.begin(), unsorted_keys.end(), ::cuda::std::less<T>());
 
     ASSERT_EQUAL(unsorted_keys, sorted_keys);
 #else
@@ -122,7 +122,7 @@ void TestMergeSortKeyValueSimple()
     InitializeSimpleKeyValueSortTest(unsorted_keys, unsorted_values, sorted_keys, sorted_values);
 
     thrust::cuda_bulk::tag cuda_tag;
-    thrust::system::cuda_bulk::detail::detail::stable_merge_sort_by_key(cuda_tag, unsorted_keys.begin(), unsorted_keys.end(), unsorted_values.begin(), thrust::less<T>());
+    thrust::system::cuda_bulk::detail::detail::stable_merge_sort_by_key(cuda_tag, unsorted_keys.begin(), unsorted_keys.end(), unsorted_values.begin(), ::cuda::std::less<T>());
 
     ASSERT_EQUAL(unsorted_keys,   sorted_keys);
     ASSERT_EQUAL(unsorted_values, sorted_values);
@@ -161,10 +161,10 @@ void TestMergeSortDescendingKey()
     thrust::host_vector<int>   h_data = unittest::random_integers<int>(n);
     thrust::device_vector<int> d_data = h_data;
 
-    thrust::sort(h_data.begin(), h_data.end(), thrust::greater<int>());
+    thrust::sort(h_data.begin(), h_data.end(), ::cuda::std::greater<int>());
 
     thrust::cuda_bulk::tag cuda_tag;
-    thrust::system::cuda_bulk::detail::detail::stable_merge_sort(cuda_tag, d_data.begin(), d_data.end(), thrust::greater<int>());
+    thrust::system::cuda_bulk::detail::detail::stable_merge_sort(cuda_tag, d_data.begin(), d_data.end(), ::cuda::std::greater<int>());
 
     ASSERT_EQUAL(h_data, d_data);
 #else
@@ -183,10 +183,10 @@ void TestMergeSortAscendingKeyValue([[maybe_unused]] const size_t n)
     thrust::host_vector<T>   h_values = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_values = h_values;
 
-    thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), thrust::less<T>());
+    thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), ::cuda::std::less<T>());
 
     thrust::cuda_bulk::tag cuda_tag;
-    thrust::system::cuda_bulk::detail::detail::stable_merge_sort_by_key(cuda_tag, d_keys.begin(), d_keys.end(), d_values.begin(), thrust::less<T>());
+    thrust::system::cuda_bulk::detail::detail::stable_merge_sort_by_key(cuda_tag, d_keys.begin(), d_keys.end(), d_values.begin(), ::cuda::std::less<T>());
 
     ASSERT_EQUAL(h_keys,   d_keys);
     ASSERT_EQUAL(h_values, d_values);
@@ -207,10 +207,10 @@ void TestMergeSortDescendingKeyValue()
     thrust::host_vector<int>   h_values = unittest::random_integers<int>(n);
     thrust::device_vector<int> d_values = h_values;
 
-    thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), thrust::greater<int>());
+    thrust::sort_by_key(h_keys.begin(), h_keys.end(), h_values.begin(), ::cuda::std::greater<int>());
 
     thrust::cuda_bulk::tag cuda_tag;
-    thrust::system::cuda_bulk::detail::detail::stable_merge_sort_by_key(cuda_tag, d_keys.begin(), d_keys.end(), d_values.begin(), thrust::greater<int>());
+    thrust::system::cuda_bulk::detail::detail::stable_merge_sort_by_key(cuda_tag, d_keys.begin(), d_keys.end(), d_values.begin(), ::cuda::std::greater<int>());
 
     ASSERT_EQUAL(h_keys,   d_keys);
     ASSERT_EQUAL(h_values, d_values);
@@ -239,7 +239,7 @@ void TestMergeSortKeyValue([[maybe_unused]] size_t n)
 
   thrust::stable_sort(h_data.begin(), h_data.end());
   thrust::cuda_bulk::tag cuda_tag;
-  thrust::system::cuda_bulk::detail::detail::stable_merge_sort(cuda_tag, d_data.begin(), d_data.end(), thrust::less<T>());
+  thrust::system::cuda_bulk::detail::detail::stable_merge_sort(cuda_tag, d_data.begin(), d_data.end(), ::cuda::std::less<T>());
 
   ASSERT_EQUAL_QUIET(h_data, d_data);
 #else

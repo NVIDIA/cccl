@@ -40,6 +40,40 @@ void TestZipIteratorTraits()
 DECLARE_UNITTEST(TestZipIteratorTraits);
 
 template <typename T>
+struct TestZipIteratorConstructionFromIterators
+{
+  template <typename Vector>
+  void test()
+  {
+    using namespace thrust;
+
+    Vector v0(4);
+    Vector v1(4);
+    Vector v2(4);
+
+    // initialize input
+    sequence(v0.begin(), v0.end());
+    sequence(v1.begin(), v1.end());
+    sequence(v2.begin(), v2.end());
+
+    using IteratorTuple = tuple<typename Vector::iterator, typename Vector::iterator>;
+    using ZipIterator   = zip_iterator<IteratorTuple>;
+
+    // test construction
+    zip_iterator iter0(v0.begin(), v1.begin());
+    ASSERT_EQUAL(true, iter0 == ZipIterator{make_tuple(v0.begin(), v1.begin())});
+  }
+
+  void operator()(void)
+  {
+    test<thrust::host_vector<T>>();
+    test<thrust::device_vector<T>>();
+  }
+};
+SimpleUnitTest<TestZipIteratorConstructionFromIterators, type_list<int>>
+  TestZipIteratorConstructionFromIteratorsInstance;
+
+template <typename T>
 struct TestZipIteratorManipulation
 {
   template <typename Vector>

@@ -50,11 +50,11 @@ struct TestPairScanByKey
 
     // scan on the host
     thrust::exclusive_scan_by_key(
-      h_keys.begin(), h_keys.end(), h_pairs.begin(), h_pairs.begin(), init, thrust::equal_to<T>(), add_pairs());
+      h_keys.begin(), h_keys.end(), h_pairs.begin(), h_pairs.begin(), init, ::cuda::std::equal_to<T>(), add_pairs());
 
     // scan on the device
     thrust::exclusive_scan_by_key(
-      d_keys.begin(), d_keys.end(), d_pairs.begin(), d_pairs.begin(), init, thrust::equal_to<T>(), add_pairs());
+      d_keys.begin(), d_keys.end(), d_pairs.begin(), d_pairs.begin(), init, ::cuda::std::equal_to<T>(), add_pairs());
 
     ASSERT_EQUAL_QUIET(h_pairs, d_pairs);
   }

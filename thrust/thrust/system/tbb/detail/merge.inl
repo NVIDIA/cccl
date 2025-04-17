@@ -80,8 +80,8 @@ struct range
       , grain_size(r.grain_size)
   {
     // we can assume n1 and n2 are not both 0
-    size_t n1 = thrust::distance(first1, last1);
-    size_t n2 = thrust::distance(first2, last2);
+    size_t n1 = ::cuda::std::distance(first1, last1);
+    size_t n2 = ::cuda::std::distance(first2, last2);
 
     InputIterator1 mid1 = first1;
     InputIterator2 mid2 = first2;
@@ -104,7 +104,7 @@ struct range
     // set second range to [mid1, last1), [mid2, last2), result + (mid1 - first1) + (mid2 - first2)
     first1 = mid1;
     first2 = mid2;
-    result += thrust::distance(r.first1, mid1) + thrust::distance(r.first2, mid2);
+    result += ::cuda::std::distance(r.first1, mid1) + ::cuda::std::distance(r.first2, mid2);
   }
 
   bool empty() const
@@ -114,7 +114,8 @@ struct range
 
   bool is_divisible() const
   {
-    return static_cast<size_t>(thrust::distance(first1, last1) + thrust::distance(first2, last2)) > grain_size;
+    return static_cast<size_t>(::cuda::std::distance(first1, last1) + ::cuda::std::distance(first2, last2))
+         > grain_size;
   }
 };
 
@@ -185,8 +186,8 @@ struct range
       , grain_size(r.grain_size)
   {
     // we can assume n1 and n2 are not both 0
-    size_t n1 = thrust::distance(keys_first1, keys_last1);
-    size_t n2 = thrust::distance(keys_first2, keys_last2);
+    size_t n1 = ::cuda::std::distance(keys_first1, keys_last1);
+    size_t n2 = ::cuda::std::distance(keys_first2, keys_last2);
 
     InputIterator1 mid1 = keys_first1;
     InputIterator2 mid2 = keys_first2;
@@ -210,10 +211,10 @@ struct range
     // keys_first2), values_result + (mid1 - keys_first1) + (mid2 - keys_first2)
     keys_first1 = mid1;
     keys_first2 = mid2;
-    values_first1 += thrust::distance(r.keys_first1, mid1);
-    values_first2 += thrust::distance(r.keys_first2, mid2);
-    keys_result += thrust::distance(r.keys_first1, mid1) + thrust::distance(r.keys_first2, mid2);
-    values_result += thrust::distance(r.keys_first1, mid1) + thrust::distance(r.keys_first2, mid2);
+    values_first1 += ::cuda::std::distance(r.keys_first1, mid1);
+    values_first2 += ::cuda::std::distance(r.keys_first2, mid2);
+    keys_result += ::cuda::std::distance(r.keys_first1, mid1) + ::cuda::std::distance(r.keys_first2, mid2);
+    values_result += ::cuda::std::distance(r.keys_first1, mid1) + ::cuda::std::distance(r.keys_first2, mid2);
   }
 
   bool empty() const
@@ -223,7 +224,8 @@ struct range
 
   bool is_divisible() const
   {
-    return static_cast<size_t>(thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2))
+    return static_cast<size_t>(
+             ::cuda::std::distance(keys_first1, keys_last1) + ::cuda::std::distance(keys_first2, keys_last2))
          > grain_size;
   }
 };
@@ -270,7 +272,7 @@ merge(execution_policy<DerivedPolicy>&,
 
   ::tbb::parallel_for(range, body);
 
-  thrust::advance(result, thrust::distance(first1, last1) + thrust::distance(first2, last2));
+  ::cuda::std::advance(result, ::cuda::std::distance(first1, last1) + ::cuda::std::distance(first2, last2));
 
   return result;
 } // end merge()
@@ -311,8 +313,10 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
 
   ::tbb::parallel_for(range, body);
 
-  thrust::advance(keys_result, thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2));
-  thrust::advance(values_result, thrust::distance(keys_first1, keys_last1) + thrust::distance(keys_first2, keys_last2));
+  ::cuda::std::advance(keys_result,
+                       ::cuda::std::distance(keys_first1, keys_last1) + ::cuda::std::distance(keys_first2, keys_last2));
+  ::cuda::std::advance(values_result,
+                       ::cuda::std::distance(keys_first1, keys_last1) + ::cuda::std::distance(keys_first2, keys_last2));
 
   return thrust::make_pair(keys_result, values_result);
 }

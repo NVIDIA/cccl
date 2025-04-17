@@ -131,7 +131,7 @@ void reduce_intervals(
   using value_type = thrust::detail::it_value_t<RandomAccessIterator1>;
 
   return thrust::system::tbb::detail::reduce_intervals(
-    exec, first, last, interval_size, result, thrust::plus<value_type>());
+    exec, first, last, interval_size, result, ::cuda::std::plus<value_type>());
 }
 
 } // namespace detail

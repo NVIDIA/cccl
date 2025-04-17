@@ -33,6 +33,7 @@
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
@@ -327,6 +328,13 @@ _CUDAX_TRIVIAL_API auto __let_t<_Disposition>::operator()(_Fn __fn) const noexce
 {
   return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
 }
+
+template <class _Sndr, class _Fn>
+inline constexpr size_t structured_binding_size<__let_t<__value>::__sndr_t<_Sndr, _Fn>> = 3;
+template <class _Sndr, class _Fn>
+inline constexpr size_t structured_binding_size<__let_t<__error>::__sndr_t<_Sndr, _Fn>> = 3;
+template <class _Sndr, class _Fn>
+inline constexpr size_t structured_binding_size<__let_t<__stopped>::__sndr_t<_Sndr, _Fn>> = 3;
 
 _CCCL_GLOBAL_CONSTANT struct let_value_t : __let_t<__value>
 {
