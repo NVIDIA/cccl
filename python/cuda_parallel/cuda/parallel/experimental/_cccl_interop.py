@@ -243,8 +243,7 @@ def _check_compile_result(cubin: bytes):
 
 # this global variable controls whether the compile result is checked
 # for LDL/STL instructions. Should be set to `True` for testing only.
-global _check_sass
-_check_sass = False
+_check_sass: bool = False
 
 
 def call_build(build_impl_fn: Callable, *args, **kwargs):
@@ -262,9 +261,7 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         common_data,
         **kwargs,
     )
-
     if _check_sass:
         cubin = result._get_cubin()
         _check_compile_result(cubin)
-
     return result

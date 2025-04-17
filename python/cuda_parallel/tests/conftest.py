@@ -69,17 +69,11 @@ def cuda_stream() -> Stream:
     return Stream(cp.cuda.Stream())
 
 
-@pytest.fixture(scope="session")
-def monkeysession():
-    with pytest.MonkeyPatch.context() as mp:
-        yield mp
-
-
-@pytest.fixture(scope="session", autouse=True)
-def verify_sass(monkeysession):
+@pytest.fixture(scope="function", autouse=True)
+def verify_sass(monkeypatch):
     import cuda.parallel.experimental._cccl_interop
 
-    monkeysession.setattr(
+    monkeypatch.setattr(
         cuda.parallel.experimental._cccl_interop,
         "_check_sass",
         False,  # todo: change to True
