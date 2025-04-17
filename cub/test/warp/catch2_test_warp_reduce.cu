@@ -1,12 +1,12 @@
 /***********************************************************************************************************************
- * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
- * Redistribution and use input source and binary forms, with or without modification, are permitted provided that the
+ * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
  *       following disclaimer.
- *     * Redistributions input binary form must reproduce the above copyright notice, this list of conditions and the
- *       following disclaimer input the documentation and/or other materials provided with the distribution.
+ *     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *       following disclaimer in the documentation and/or other materials provided with the distribution.
  *     * Neither the name of the NVIDIA CORPORATION nor the names of its contributors may be used to endorse or promote
  *       products derived from this software without specific prior written permission.
  *
@@ -210,7 +210,7 @@ void warp_reduce_multiple_items_launch(c2h::device_vector<T>& input, c2h::device
 
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
-/*
+
 using arithmetic_type_list = c2h::type_list<
   int8_t, uint16_t, int32_t, int64_t,
   float, double,
@@ -231,8 +231,6 @@ using arithmetic_type_list = c2h::type_list<
    , cuda::std::complex<__nv_bfloat16>
 #  endif // TEST_BF_T()
 >;
-*/
-using arithmetic_type_list = c2h::type_list<int>;
 
 using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
 #  if _CCCL_HAS_INT128()
@@ -261,8 +259,7 @@ using min_max_op_list = c2h::type_list<cuda::minimum<>, cuda::maximum<>>;
 
 using builtin_type_list = c2h::type_list<int8_t, uint16_t, int32_t, int64_t, float, double>;
 
-//using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;
-using logical_warp_threads = c2h::enum_type_list<unsigned, 32>;
+using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;
 
 // clang-format on
 /***********************************************************************************************************************
@@ -308,7 +305,7 @@ std::array<unsigned, 3> get_test_config(unsigned logical_warp_threads, unsigned 
 /***********************************************************************************************************************
  * Test cases
  **********************************************************************************************************************/
-#if 0
+
 C2H_TEST("WarpReduce::Sum", "[reduce][warp][predefined_op][full]", arithmetic_type_list, logical_warp_threads)
 {
   using T                                       = c2h::get<0, TestType>;
@@ -397,7 +394,7 @@ C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", logical_warp_
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results(h_out, d_out);
 }
-#endif
+
 //----------------------------------------------------------------------------------------------------------------------
 // partial
 
@@ -429,7 +426,7 @@ C2H_TEST("WarpReduce::Sum Partial", "[reduce][warp][predefined_op][partial]", ar
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
   verify_results(h_out, d_out);
 }
-#if 0
+
 C2H_TEST("WarpReduce::Bitwise Partial",
          "[reduce][warp][predefined_op][partial]",
          bitwise_type_list,
@@ -522,4 +519,3 @@ C2H_TEST("WarpReduce::Sum Multiple Items Per Thread",
   compute_host_reference<cuda::std::plus<>>(h_in, h_out, logical_warps, logical_warp_threads, 0, items_per_thread);
   verify_results(h_out, d_out);
 }
-#endif

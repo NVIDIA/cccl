@@ -1,17 +1,15 @@
 /***********************************************************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
+ *       following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *       following disclaimer in the documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the NVIDIA CORPORATION nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -86,11 +84,14 @@ template <ReduceLogicalMode LogicalMode,
           bool IsSegmented = false>
 struct WarpReduceConfig
 {
+  WarpReduceConfig() = default;
+
   reduce_logical_mode_t<LogicalMode> logical_mode;
   reduce_result_mode_t<ResultMode> result_mode;
   logical_warp_size_t<LogicalWarpSize> logical_size;
   last_pos_t<LastPos> last_pos;
   is_segmented_t<IsSegmented> is_segmented;
+  int first_pos = 0;
 };
 
 template <ReduceLogicalMode LogicalMode,
@@ -102,8 +103,8 @@ WarpReduceConfig(reduce_logical_mode_t<LogicalMode>,
                  reduce_result_mode_t<ResultMode>,
                  logical_warp_size_t<LogicalWarpSize>,
                  last_pos_t<LastPos>         = {},
-                 is_segmented_t<IsSegmented> = {})
-  -> WarpReduceConfig<LogicalMode, ResultMode, LogicalWarpSize, LastPos, IsSegmented>;
+                 is_segmented_t<IsSegmented> = {},
+                 int first_pos = 0) -> WarpReduceConfig<LogicalMode, ResultMode, LogicalWarpSize, LastPos, IsSegmented>;
 
 } // namespace internal
 
@@ -129,7 +130,7 @@ namespace internal
 template <typename WarpReduceConfig>
 _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig config)
 {
-  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
+  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented, _] = config;
   // Check logical_size
   static_assert(logical_size > 0 && logical_size <= detail::warp_threads, "invalid logical warp size");
   // Check logical mode

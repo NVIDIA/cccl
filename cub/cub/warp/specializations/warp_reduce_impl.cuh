@@ -1,17 +1,15 @@
 /***********************************************************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
+ *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
+ *       following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+ *       following disclaimer in the documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the NVIDIA CORPORATION nor the names of its contributors may be used to endorse or promote
+ *       products derived from this software without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
  * INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -35,21 +33,17 @@
 #endif // no system header
 
 #include <cub/detail/integer_utils.cuh>
-#include <cub/detail/type_traits.cuh>
+#include <cub/detail/type_traits.cuh> // is_any_short2_v
 #include <cub/detail/unsafe_bitcast.cuh>
-#include <cub/thread/thread_operators.cuh>
-#include <cub/util_arch.cuh>
-#include <cub/warp/specializations/warp_reduce_config.cuh>
-#include <cub/warp/specializations/warp_reduce_ptx.cuh>
-#include <cub/warp/warp_utils.cuh>
+#include <cub/thread/thread_operators.cuh> // is_cuda_minimum_maximum_v
+#include <cub/warp/specializations/warp_reduce_config.cuh> // WarpReduceConfig
+#include <cub/warp/specializations/warp_reduce_ptx.cuh> // shfl_down_op
+#include <cub/warp/warp_utils.cuh> // logical_lane_id
 
-#include <cuda/cmath>
-#include <cuda/functional>
-#include <cuda/ptx>
+#include <cuda/cmath> // ilog2
 #include <cuda/std/__complex/is_complex.h>
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/bit>
-#include <cuda/std/complex>
+#include <cuda/std/bit> // has_single_bit
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 #include <cuda/warp>
@@ -104,7 +98,6 @@ warp_reduce_redux_op(Input input, ReductionOp reduction_op, Config config)
   else
   {
     static_assert(__always_false_v<Input>, "invalid input type/reduction operator combination");
-    _CCCL_UNREACHABLE();
   }
 }
 
@@ -115,8 +108,8 @@ warp_reduce_shuffle_op(Input input, ReductionOp reduction_op, Config config)
   using namespace _CUDA_VSTD;
   static_assert(is_integral_v<Input> || is_any_short2_v<Input> || is_arithmetic_cuda_floating_point_v<Input>,
                 "invalid input type/reduction operator combination");
-  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
-  constexpr auto log2_size                                               = ::cuda::ilog2(logical_size * 2 - 1);
+  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented, _] = config;
+  constexpr auto log2_size                                                  = ::cuda::ilog2(logical_size * 2 - 1);
   const auto mask = cub::internal::reduce_lane_mask(logical_mode, logical_size, last_pos, is_segmented);
   using cast_t    = _If<is_integral_v<Input> && sizeof(Input) < sizeof(int), int, Input>;
   auto input1     = static_cast<cast_t>(input);
@@ -138,7 +131,7 @@ template <typename Input, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input
 warp_reduce_generic(Input input, ReductionOp reduction_op, Config config)
 {
-  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented] = config;
+  auto [logical_mode, result_mode, logical_size, last_pos, is_segmented, _] = config;
   constexpr auto is_power_of_two     = _CUDA_VSTD::has_single_bit(uint32_t{logical_size});
   constexpr auto log2_size           = ::cuda::ilog2(logical_size * 2 - 1);
   constexpr uint32_t logical_size1   = is_segmented ? detail::warp_threads : logical_size;
@@ -179,16 +172,14 @@ warp_reduce_generic(Input input, ReductionOp reduction_op, Config config)
 template <typename Input, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Input warp_reduce_dispatch(Input, ReductionOp, Config);
 
-// NOTE: all recursive calls need that ALL lanes in a Logical Warp have the same value
-
 _CCCL_TEMPLATE(typename Input, typename ReductionOp, typename Config)
-_CCCL_REQUIRES(cub::internal::is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
+_CCCL_REQUIRES(is_cuda_std_bitwise_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input
 warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
 {
-  using internal::merge_integers;
-  using internal::split_integers;
-  using internal::warp_reduce_dispatch;
+  using cub::internal::merge_integers;
+  using cub::internal::split_integers;
+  using cub::internal::warp_reduce_dispatch;
   auto [high, low]    = split_integers(input);
   auto high_reduction = warp_reduce_dispatch(high, reduction_op, warp_config);
   auto low_reduction  = warp_reduce_dispatch(low, reduction_op, warp_config);
@@ -196,15 +187,14 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
 }
 
 _CCCL_TEMPLATE(typename Input, typename ReductionOp, typename Config)
-_CCCL_REQUIRES(cub::internal::is_cuda_minimum_maximum_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
+_CCCL_REQUIRES(is_cuda_minimum_maximum_v<ReductionOp, Input> _CCCL_AND(_CUDA_VSTD::is_integral_v<Input>))
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static Input
 warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
 {
   using namespace _CUDA_VSTD;
-  using internal::identity_v;
-  using internal::merge_integers;
-  using internal::split_integers;
-  using internal::warp_reduce_dispatch;
+  using cub::internal::merge_integers;
+  using cub::internal::split_integers;
+  using cub::internal::warp_reduce_dispatch;
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   auto [high, low]         = split_integers(input);
   auto high_result         = warp_reduce_dispatch(high, reduction_op, warp_config);
@@ -242,7 +232,7 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
   auto high_reduction      = warp_reduce_dispatch(high, reduction_op, warp_config);
-  auto low_digits          = static_cast<uint32_t>(low >> (half_bits - 5));
+  auto low_digits          = static_cast<uint32_t>(low >> (half_bits - 5)); // carry out bits
   auto carry_out           = warp_reduce_dispatch(low_digits, reduction_op, warp_config);
   auto low_reduction       = warp_reduce_dispatch(low, reduction_op, warp_config);
   auto result_high         = high_reduction + (carry_out >> 5);
@@ -266,22 +256,20 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   using cub::internal::warp_reduce_recursive;
   using cub::internal::warp_reduce_redux_op;
   using cub::internal::warp_reduce_shuffle_op;
-  using namespace cub::internal;
   using namespace _CUDA_VSTD;
   check_warp_reduce_config(config);
   constexpr bool is_small_integer  = is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
   constexpr auto logical_warp_size = config.logical_size;
-  auto is_segmented                = config.is_segmented;
   auto last_pos                    = config.last_pos;
   // early exit for threads outside the range with dynamic number of valid items
-  if (!is_segmented && last_pos.rank_dynamic() == 1 && logical_lane_id(logical_warp_size) > last_pos.extent(0))
+  if (!config.is_segmented && last_pos.rank_dynamic() == 1 && logical_lane_id(logical_warp_size) > last_pos.extent(0))
   {
     return input;
   }
   // [Min/Max]: float, double
-  if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && _CUDA_VSTD::is_floating_point_v<Input>)
+  if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_floating_point_v<Input>)
   {
-    if constexpr (is_same_v<Input, float> && !is_segmented && __cccl_ptx_isa >= 860)
+    if constexpr (is_same_v<Input, float> && __cccl_ptx_isa >= 860)
     {
       NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return warp_reduce_redux_op(input, reduction_op, config);));
     }
@@ -294,15 +282,13 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_half_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);))
-    // TODO: _CCCL_ASSERT(false, "__half is not supported before SM53");
-    _CCCL_UNREACHABLE();
+    _CCCL_UNREACHABLE(); // "__half is not supported before SM53"
   }
   // [Min/Max]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_shuffle_op(input, reduction_op, config);))
-    // TODO: _CCCL_ASSERT(false, "bfloat16 is not supported before SM80");
-    _CCCL_UNREACHABLE();
+    _CCCL_UNREACHABLE(); // "bfloat16 is not supported before SM80"
   }
   // [Min/Max]: short2, ushort2
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_short2_v<Input> && __cccl_ptx_isa >= 800)
@@ -373,12 +359,11 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   }
   // [Plus/Min/Max]: small integrals (int8, uint8, int16, uint16, int32, uint32)
   // [Plus]:         float, double
-  else if constexpr (is_cuda_operator_v<ReductionOp, Input>
-                     && (is_small_integer || _CUDA_VSTD::is_floating_point_v<Input>) )
+  else if constexpr (is_cuda_operator_v<ReductionOp, Input> && (is_small_integer || is_floating_point_v<Input>) )
   {
     static_assert(!is_cuda_std_bitwise_v<ReductionOp, Input> || is_unsigned_v<Input>,
                   "Bitwise reduction operations are only supported for unsigned integral types.");
-    if constexpr (is_integral_v<Input> && !is_segmented)
+    if constexpr (is_integral_v<Input>)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_redux_op(input, reduction_op, config);));
     }
@@ -387,7 +372,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   else
   {
     // [Plus/Min/Max]: large integrals (int64, uint64, int128, uint128)
-    if constexpr (is_cuda_operator_v<ReductionOp, Input> && is_integral_v<Input> && !is_segmented)
+    if constexpr (is_cuda_operator_v<ReductionOp, Input> && is_integral_v<Input>)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op, config);));
     }
@@ -412,14 +397,13 @@ template <bool IsHeadSegment,
   auto member_mask          = cub::internal::reduce_lane_mask(logical_mode, logical_size, last_pos_t<0>{});
   auto warp_flags           = __ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
-  // Mask out the bits below the current thread
-  warp_flags &= _CUDA_VPTX::get_sreg_lanemask_ge();
-  // Mask in the last lane of each logical warp
-  warp_flags |= 1u << (logical_base_warp_id + LogicalWarpSize - 1);
-  // Find the next set flag
-  auto last_lane = _CUDA_VSTD::countr_zero(warp_flags);
-  auto last_pos  = last_pos_t<>{last_lane};
-  WarpReduceConfig config{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}};
+  warp_flags |= (1u << (logical_base_warp_id + LogicalWarpSize - 1)); // Mask in the last lane of each logical warp
+  auto warp_flags_last  = warp_flags & _CUDA_VPTX::get_sreg_lanemask_ge(); // Clean the bits below the current thread
+  auto warp_flags_first = warp_flags & _CUDA_VPTX::get_sreg_lanemask_lt(); // Clean the bits after the current thread
+  auto last_lane        = _CUDA_VSTD::countr_zero(warp_flags_last); // Find the next set flag
+  auto first_lane       = detail::warp_threads - _CUDA_VSTD::countl_zero(warp_flags_first); // Find the previous flag
+  auto last_pos         = last_pos_t<>{last_lane};
+  WarpReduceConfig config{logical_mode, first_lane_result, logical_size, last_pos, is_segmented_t<true>{}, first_lane};
   return cub::internal::warp_reduce_dispatch(input, reduction_op, config);
 }
 
