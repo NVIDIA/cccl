@@ -71,7 +71,7 @@ VariableUnitTest<TestComparisonSortDeviceDevice, unittest::type_list<unittest::i
 template <typename T, typename ExecutionPolicy>
 void TestSortDevice(ExecutionPolicy exec, const size_t n)
 {
-  TestComparisonSortDevice<T>(exec, n, thrust::less<T>());
+  TestComparisonSortDevice<T>(exec, n, ::cuda::std::less<T>());
 };
 
 template <typename T>
@@ -131,13 +131,13 @@ DECLARE_UNITTEST(TestComparisonSortCudaStreams);
 template <typename T>
 struct TestRadixSortDispatch
 {
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<T>>::value, "");
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<T>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<T>>::value, "");
 
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::less<>>::value, "");
-  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, thrust::greater<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value, "");
+  static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::less<>>::value, "");
   static_assert(thrust::cuda_cub::__smart_sort::can_use_primitive_sort<T, ::cuda::std::greater<>>::value, "");
 
@@ -272,8 +272,8 @@ struct TestSortAscendingKey
     thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
     thrust::device_vector<T> d_data = h_data;
 
-    std::sort(h_data.begin(), h_data.end(), thrust::less<T>{});
-    thrust::sort(d_data.begin(), d_data.end(), thrust::less<T>{});
+    std::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>{});
+    thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>{});
 
     ASSERT_EQUAL_QUIET(h_data, d_data);
   }

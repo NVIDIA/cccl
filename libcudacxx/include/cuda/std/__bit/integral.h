@@ -61,7 +61,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 {
   // if __t == 0, __bit_log2(0) returns 0xFFFFFFFF. Since unsigned overflow is well-defined, the result is -1 + 1 = 0
   auto __ret = _CUDA_VSTD::__bit_log2(__t) + 1;
-  _CCCL_BUILTIN_ASSUME(__ret <= numeric_limits<_Tp>::digits);
+  _CCCL_ASSUME(__ret <= numeric_limits<_Tp>::digits);
   return static_cast<int>(__ret);
 }
 
@@ -82,12 +82,12 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
       NV_IF_TARGET(NV_IS_DEVICE, //
                    (auto __shift = _CUDA_VPTX::shl(_Up{1}, __width); // 2^(ceil(log2(__t - 1)))
                     auto __ret   = static_cast<_Tp>(_CUDA_VSTD::max(_Up{1}, __shift)); //
-                    _CCCL_BUILTIN_ASSUME(__ret >= __t);
+                    _CCCL_ASSUME(__ret >= __t);
                     return __ret;))
     }
   }
   auto __ret = static_cast<_Tp>(__t <= 1 ? _Up{1} : _Up{1} << __width);
-  _CCCL_BUILTIN_ASSUME(__ret >= __t);
+  _CCCL_ASSUME(__ret >= __t);
   return __ret;
 }
 
@@ -106,12 +106,12 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
       // -> the result is 0 if __t == 0
       NV_IF_TARGET(NV_IS_DEVICE, //
                    (auto __ret = static_cast<_Tp>(_CUDA_VPTX::shl(_Up{1}, __log2)); // 2^(log2(t))
-                    _CCCL_BUILTIN_ASSUME(__ret >= __t / 2 && __ret <= __t);
+                    _CCCL_ASSUME(__ret >= __t / 2 && __ret <= __t);
                     return __ret;))
     }
   }
   auto __ret = static_cast<_Tp>(__t == 0 ? _Up{0} : _Up{1} << __log2);
-  _CCCL_BUILTIN_ASSUME(__ret >= __t / 2 && __ret <= __t);
+  _CCCL_ASSUME(__ret >= __t / 2 && __ret <= __t);
   return __ret;
 }
 

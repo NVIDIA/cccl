@@ -80,6 +80,7 @@
 #include <cuda/__ptx/instructions/cp_async_mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk_tensor.h>
+#include <cuda/__ptx/instructions/elect_sync.h>
 #include <cuda/__ptx/instructions/exit.h>
 #include <cuda/__ptx/instructions/fence.h>
 #include <cuda/__ptx/instructions/get_sreg.h>

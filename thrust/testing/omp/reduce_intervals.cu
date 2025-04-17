@@ -51,7 +51,7 @@ void TestOmpReduceIntervalsSimple()
   {
     uniform_decomposition<int> decomp(10, 10, 1);
     Vector output(decomp.size());
-    reduce_intervals(omp_tag, input.begin(), output.begin(), thrust::plus<T>(), decomp);
+    reduce_intervals(omp_tag, input.begin(), output.begin(), ::cuda::std::plus<T>(), decomp);
 
     ASSERT_EQUAL(output[0], 10);
   }
@@ -59,7 +59,7 @@ void TestOmpReduceIntervalsSimple()
   {
     uniform_decomposition<int> decomp(10, 6, 2);
     Vector output(decomp.size());
-    reduce_intervals(omp_tag, input.begin(), output.begin(), thrust::plus<T>(), decomp);
+    reduce_intervals(omp_tag, input.begin(), output.begin(), ::cuda::std::plus<T>(), decomp);
 
     ASSERT_EQUAL(output[0], 6);
     ASSERT_EQUAL(output[1], 4);
@@ -83,9 +83,9 @@ struct TestOmpReduceIntervals
     thrust::host_vector<T> h_output(decomp.size());
     thrust::device_vector<T> d_output(decomp.size());
 
-    ::reduce_intervals(h_input.begin(), h_output.begin(), thrust::plus<T>(), decomp);
+    ::reduce_intervals(h_input.begin(), h_output.begin(), ::cuda::std::plus<T>(), decomp);
     thrust::system::omp::tag omp_tag;
-    reduce_intervals(omp_tag, d_input.begin(), d_output.begin(), thrust::plus<T>(), decomp);
+    reduce_intervals(omp_tag, d_input.begin(), d_output.begin(), ::cuda::std::plus<T>(), decomp);
 
     ASSERT_EQUAL(h_output, d_output);
   }

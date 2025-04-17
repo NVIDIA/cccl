@@ -83,7 +83,7 @@ template <class Derived, class ForwardIterator, class T>
 void _CCCL_HOST_DEVICE
 fill(execution_policy<Derived>& policy, ForwardIterator first, ForwardIterator last, const T& value)
 {
-  cuda_cub::fill_n(policy, first, thrust::distance(first, last), value);
+  cuda_cub::fill_n(policy, first, ::cuda::std::distance(first, last), value);
 } // func fill
 
 } // namespace cuda_cub

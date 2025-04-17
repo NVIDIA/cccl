@@ -70,7 +70,7 @@ bool error_category ::operator!=(const error_category& rhs) const
 
 bool error_category ::operator<(const error_category& rhs) const
 {
-  return thrust::less<const error_category*>()(this, &rhs);
+  return ::cuda::std::less<const error_category*>()(this, &rhs);
 } // end error_category::operator<()
 
 namespace detail

@@ -21,7 +21,6 @@ def compile_benchmark(benchmark):
 
         benchmark.pedantic(
             function,
-            kwargs={"size": 10, "build_only": True},
             rounds=3,
             iterations=1,
             setup=setup,
