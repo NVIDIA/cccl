@@ -34,9 +34,9 @@ __host__ __device__ constexpr void test_format()
   test_int_conversion_operator<Fmt, bool>();
 
   test_int_conversion_operator<Fmt, char>();
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   test_int_conversion_operator<Fmt, char8_t>();
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
   test_int_conversion_operator<Fmt, char16_t>();
   test_int_conversion_operator<Fmt, char32_t>();
   test_int_conversion_operator<Fmt, wchar_t>();

@@ -29,11 +29,9 @@
 #endif // _LIBCUDACXX_HAS_ALIGNED_ALLOCATION() !_CCCL_COMPILER(NVRTC)
 
 #if !defined(__cpp_sized_deallocation) || __cpp_sized_deallocation < 201309L
-#  define _LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION
-#endif
-
-#if defined(_LIBCUDACXX_HAS_NO_LANGUAGE_SIZED_DEALLOCATION)
-#  define _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
+#  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 0
+#else
+#  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 1
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -88,11 +86,11 @@ _LIBCUDACXX_HIDE_FROM_ABI void* __cccl_allocate(size_t __size, [[maybe_unused]] 
 template <class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI void __do_deallocate_handle_size(void* __ptr, [[maybe_unused]] size_t __size, _Args... __args)
 {
-#ifdef _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
-  return _CUDA_VSTD::__cccl_operator_delete(__ptr, __args...);
-#else // ^^^ _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION ^^^ / vvv !_LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION vvv
+#if _LIBCUDACXX_HAS_SIZED_DEALLOCATION()
   return _CUDA_VSTD::__cccl_operator_delete(__ptr, __size, __args...);
-#endif // !_LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
+#else // ^^^ _LIBCUDACXX_HAS_SIZED_DEALLOCATION() ^^^ / vvv !_LIBCUDACXX_HAS_SIZED_DEALLOCATION() vvv
+  return _CUDA_VSTD::__cccl_operator_delete(__ptr, __args...);
+#endif // !_LIBCUDACXX_HAS_SIZED_DEALLOCATION()
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate(void* __ptr, size_t __size, [[maybe_unused]] size_t __align)

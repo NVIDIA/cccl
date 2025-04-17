@@ -97,7 +97,6 @@ constexpr bool test_to_string()
   return true;
 }
 
-#  ifndef TEST_HAS_NO_WIDE_CHARACTERS
 template <cuda::std::size_t N>
 constexpr bool test_to_string_wchar()
 {
@@ -135,7 +134,6 @@ constexpr bool test_to_string_wchar()
   }
   return true;
 }
-#  endif
 
 int main(int, char**)
 {
@@ -159,7 +157,6 @@ int main(int, char**)
   static_assert(test_to_string<65>(), "");
 #  endif
 
-#  ifndef TEST_HAS_NO_WIDE_CHARACTERS
   test_to_string_wchar<0>();
   test_to_string_wchar<1>();
   test_to_string_wchar<31>();
@@ -169,14 +166,13 @@ int main(int, char**)
   test_to_string_wchar<64>();
   test_to_string_wchar<65>();
   test_to_string_wchar<1000>(); // not in constexpr because of constexpr evaluation step limits
-#    if TEST_STD_VER >= 2023
+#  if TEST_STD_VER >= 2023
   static_assert(test_to_string_wchar<0>(), "");
   static_assert(test_to_string_wchar<1>(), "");
   static_assert(test_to_string_wchar<31>(), "");
   static_assert(test_to_string_wchar<32>(), "");
   static_assert(test_to_string_wchar<33>(), "");
   static_assert(test_to_string_wchar<63>(), "");
-#    endif
 #  endif
   return 0;
 }

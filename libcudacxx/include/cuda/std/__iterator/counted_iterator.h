@@ -370,7 +370,7 @@ public:
   {
     return __rhs.__count_ <=> __lhs.__count_;
   }
-#endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)

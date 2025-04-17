@@ -25,10 +25,6 @@
 
 _CCCL_PUSH_MACROS
 
-#ifdef _LIBCUDACXX_HAS_NO_THREADS
-#  error <latch> is not supported on this single threaded system
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <thread_scope _Sco = thread_scope_system>

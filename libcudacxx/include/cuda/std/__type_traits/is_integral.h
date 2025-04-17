@@ -54,11 +54,11 @@ struct __cccl_is_integral<unsigned char> : public true_type
 template <>
 struct __cccl_is_integral<wchar_t> : public true_type
 {};
-#  if _LIBCUDACXX_HAS_CHAR8_T()
+#  if _CCCL_HAS_CHAR8_T()
 template <>
 struct __cccl_is_integral<char8_t> : public true_type
 {};
-#  endif // _LIBCUDACXX_HAS_CHAR8_T()
+#  endif // _CCCL_HAS_CHAR8_T()
 template <>
 struct __cccl_is_integral<char16_t> : public true_type
 {};

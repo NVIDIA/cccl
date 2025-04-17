@@ -14,9 +14,6 @@
 
 #include <cuda/std/detail/__config>
 
-#ifdef _LIBCUDACXX_HAS_NO_THREADS
-# error <atomic> is not supported on this single threaded system
-#endif
 #ifdef _LIBCUDACXX_HAS_NO_ATOMIC_HEADER
 # error <atomic> is not implemented
 #endif

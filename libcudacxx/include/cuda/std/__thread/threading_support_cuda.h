@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
 
 #  include <cuda/std/chrono>
 #  include <cuda/std/climits>
@@ -42,6 +42,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_POP_MACROS
 
-#endif // !_LIBCUDACXX_HAS_NO_THREADS && _LIBCUDACXX_HAS_THREAD_API_CUDA
+#endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
 
 #endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_CUDA_H
