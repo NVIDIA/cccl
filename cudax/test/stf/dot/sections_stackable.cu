@@ -22,13 +22,13 @@ int main()
 {
 // TODO (miscco): Make it work for windows
 #if !_CCCL_COMPILER(MSVC)
-//  // Generate a random filename
-//  int r = rand();
-//
-//  char filename[64];
-//  snprintf(filename, 64, "output_%d.dot", r);
-//  // fprintf(stderr, "filename %s\n", filename);
-//  setenv("CUDASTF_DOT_FILE", filename, 1);
+  //  // Generate a random filename
+  //  int r = rand();
+  //
+  //  char filename[64];
+  //  snprintf(filename, 64, "output_%d.dot", r);
+  //  // fprintf(stderr, "filename %s\n", filename);
+  //  setenv("CUDASTF_DOT_FILE", filename, 1);
 
   stackable_ctx ctx;
 

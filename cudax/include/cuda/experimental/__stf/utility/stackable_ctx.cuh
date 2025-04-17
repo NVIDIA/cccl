@@ -1506,7 +1506,6 @@ class stackable_logical_data
     }
 
   private:
-
     template <typename, typename, bool>
     friend class stackable_task_dep;
 
@@ -1714,19 +1713,21 @@ public:
   {}
 
   // Implicit conversion to task_dep
-  operator task_dep<T, reduce_op, initialize>&() {
-      auto &sctx = d.get_impl()->sctx;
-      int offset = sctx.get_head_offset();
-      d.validate_access(offset, sctx, get_access_mode());
-      return dep;
+  operator task_dep<T, reduce_op, initialize>&()
+  {
+    auto& sctx = d.get_impl()->sctx;
+    int offset = sctx.get_head_offset();
+    d.validate_access(offset, sctx, get_access_mode());
+    return dep;
   }
 
   // Implicit conversion to task_dep
-  operator const task_dep<T, reduce_op, initialize>&() const {
-      auto &sctx = d.get_impl()->sctx;
-      int offset = sctx.get_head_offset();
-      d.validate_access(offset, sctx, get_access_mode());
-      return dep;
+  operator const task_dep<T, reduce_op, initialize>&() const
+  {
+    auto& sctx = d.get_impl()->sctx;
+    int offset = sctx.get_head_offset();
+    d.validate_access(offset, sctx, get_access_mode());
+    return dep;
   }
 
   const stackable_logical_data<T>& get_d() const
