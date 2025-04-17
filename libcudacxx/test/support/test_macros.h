@@ -44,6 +44,9 @@
 #  define TEST_THROW(...) assert(#__VA_ARGS__)
 #endif
 
+// Use the CCCL spaceship detection
+#define TEST_HAS_SPACESHIP() _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #else
