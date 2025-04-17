@@ -14,8 +14,6 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-#include <nv/target>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,8 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_COMPILER(MSVC)
-#  define _CCCL_UNREACHABLE() NV_IF_ELSE_TARGET(NV_IS_HOST, (__assume(0);), (__builtin_unreachable();))
+#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
+#  define _CCCL_UNREACHABLE() __assume(0)
 #else
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()
 #endif
