@@ -37,10 +37,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <typename _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __num_bits_impl() noexcept
 {
-  if constexpr (has_unique_object_representations_v<_Tp> || is_floating_point_v<_Tp> || __is_complex_v<_Tp>
-                || is_same_v<_Tp, bool>)
+  if constexpr (__is_complex_v<_Tp>)
   {
-    return sizeof(_Tp) * CHAR_BIT;
+    return __num_bits_impl<remove_cv_t<typename _Tp::value_type>>() * 2;
   }
 #if _CCCL_HAS_NVFP16()
   else if constexpr (is_same_v<_Tp, __half2>)
@@ -84,14 +83,20 @@ template <typename _Tp>
     return sizeof(_Tp) * CHAR_BIT;
   }
 #endif // _CCCL_HAS_FLOAT128()
+  else if constexpr (has_unique_object_representations_v<_Tp> || is_floating_point_v<_Tp> || is_same_v<_Tp, bool>)
+  {
+    return sizeof(_Tp) * CHAR_BIT;
+  }
   else
   {
     static_assert(__always_false_v<_Tp>, "unsupported type");
+    //_CCCL_UNREACHABLE();
+    return 0;
   }
 }
 
 template <typename _Tp>
-inline constexpr int __num_bits_v = __num_bits_impl<_CUDA_VSTD::remove_cv_t<_Tp>>();
+inline constexpr int __num_bits_v = __num_bits_impl<remove_cv_t<_Tp>>();
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
