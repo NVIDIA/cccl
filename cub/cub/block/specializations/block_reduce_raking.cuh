@@ -112,9 +112,6 @@ struct BlockReduceRaking
   /// Shared memory storage layout type
   union _TempStorage
   {
-    /// Storage for warp-synchronous reduction
-    typename WarpReduce::TempStorage warp_storage;
-
     /// Padded thread block raking grid
     typename BlockRakingLayout::TempStorage raking_grid;
   };
@@ -124,6 +121,7 @@ struct BlockReduceRaking
   {};
 
   // Thread fields
+  typename WarpReduce::TempStorage warp_tmp;
   _TempStorage& temp_storage;
   unsigned int linear_tid;
 
@@ -200,7 +198,7 @@ struct BlockReduceRaking
       // Short-circuit directly to warp synchronous reduction (unguarded if active threads is a power-of-two)
       constexpr auto logical_mode =
         IS_FULL_TILE && IsPowerOfTwo ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
-      partial = WarpReduce::Reduce(partial, reduction_op, num_valid, reduce_logical_mode_t<logical_mode>{});
+      partial = WarpReduce{warp_tmp}.Reduce(partial, reduction_op, num_valid, reduce_logical_mode_t<logical_mode>{});
     }
     else
     {
@@ -228,8 +226,8 @@ struct BlockReduceRaking
           (IS_FULL_TILE && RAKING_UNGUARDED && IsPowerOfTwo)
             ? ReduceLogicalMode::MultipleReductions
             : ReduceLogicalMode::SingleReduction;
-        partial =
-          WarpReduce::Reduce(partial, reduction_op, valid_raking_threads, reduce_logical_mode_t<logical_mode>{});
+        partial = WarpReduce{warp_tmp}.Reduce(
+          partial, reduction_op, valid_raking_threads, reduce_logical_mode_t<logical_mode>{});
       }
     }
 

@@ -86,7 +86,16 @@ template <ReduceLogicalMode LogicalMode,
           bool IsSegmented  = false>
 struct WarpReduceConfig
 {
-  WarpReduceConfig() = default;
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduceConfig(
+    reduce_logical_mode_t<LogicalMode>,
+    reduce_result_mode_t<ResultMode>,
+    logical_warp_size_t<LogicalWarpSize>,
+    valid_items_t<ValidItems> valid_items1 = {},
+    is_segmented_t<IsSegmented>            = {},
+    int first_pos1                         = 0)
+      : valid_items{valid_items1}
+      , first_pos{first_pos1}
+  {}
 
   reduce_logical_mode_t<LogicalMode> logical_mode;
   reduce_result_mode_t<ResultMode> result_mode;
@@ -95,19 +104,6 @@ struct WarpReduceConfig
   is_segmented_t<IsSegmented> is_segmented;
   int first_pos = 0;
 };
-
-template <ReduceLogicalMode LogicalMode,
-          ReduceResultMode ResultMode,
-          int LogicalWarpSize,
-          size_t ValidItems = LogicalWarpSize,
-          bool IsSegmented  = false>
-WarpReduceConfig(
-  reduce_logical_mode_t<LogicalMode>,
-  reduce_result_mode_t<ResultMode>,
-  logical_warp_size_t<LogicalWarpSize>,
-  valid_items_t<ValidItems>   = {},
-  is_segmented_t<IsSegmented> = {},
-  int first_pos = 0) -> WarpReduceConfig<LogicalMode, ResultMode, LogicalWarpSize, ValidItems, IsSegmented>;
 
 } // namespace internal
 
