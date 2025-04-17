@@ -275,7 +275,7 @@ struct device_scan_policy {{
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
     fflush(stdout);
 #endif
 
