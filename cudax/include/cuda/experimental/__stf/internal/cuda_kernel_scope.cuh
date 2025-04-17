@@ -215,6 +215,9 @@ public:
       }
 
       t.clear();
+
+      // Now that we have executed 'f', we do not need to access it anymore
+      untyped_t.reset();
     };
 
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
@@ -297,9 +300,6 @@ public:
           cudaLaunchKernel(res.func, res.gridDim, res.blockDim, res.args_ptr.data(), res.sharedMem, t.get_stream()));
       }
     }
-
-    // Now that we have executed 'f', we do not need to access it anymore
-    untyped_t.reset();
   }
 
 private:
