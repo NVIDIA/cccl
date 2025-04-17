@@ -1182,7 +1182,7 @@ struct DispatchFixedSizeSegmentedReduce
               detail::advance_iterators_if_supported(d_in, current_seg_offset * segment_size),
               detail::advance_iterators_if_supported(d_out, current_seg_offset),
               segment_size,
-              num_current_segments,
+              static_cast<::cuda::std::int32_t>(num_current_segments),
               reduction_op,
               init);
 
