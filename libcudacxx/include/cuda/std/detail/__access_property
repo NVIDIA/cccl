@@ -133,8 +133,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cstdint>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -239,10 +237,17 @@ struct __block_desc_t
 
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor_cexpr() const noexcept
   {
-    return uint64_t(__ap_reserved) << 0 | uint64_t(__block_count) << 37 | uint64_t(__block_start) << 44
-         | uint64_t(__ap_reserved2) << 51 | uint64_t(__block_size) << 52 | uint64_t(__l2_cop_off) << 56
-         | uint64_t(__l2_cop_on) << 57 | uint64_t(__l2_descriptor_mode) << 59 | uint64_t(__l1_inv_dont_allocate) << 61
-         | uint64_t(__l2_sector_promote_256B) << 62 | uint64_t(__ap_reserved3) << 63;
+    return static_cast<uint64_t>(__ap_reserved) << 0 | //
+           static_cast<uint64_t>(__block_count) << 37 | //
+           static_cast<uint64_t>(__block_start) << 44 | //
+           static_cast<uint64_t>(__ap_reserved2) << 51 | //
+           static_cast<uint64_t>(__block_size) << 52 | //
+           static_cast<uint64_t>(__l2_cop_off) << 56 | //
+           static_cast<uint64_t>(__l2_cop_on) << 57 | //
+           static_cast<uint64_t>(__l2_descriptor_mode) << 59 | //
+           static_cast<uint64_t>(__l1_inv_dont_allocate) << 61 | //
+           static_cast<uint64_t>(__l2_sector_promote_256B) << 62 | //
+           static_cast<uint64_t>(__ap_reserved3) << 63; //
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE uint64_t __get_descriptor_non_cexpr() const noexcept
@@ -287,8 +292,7 @@ struct __block_descriptor_builder
 
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t __calc_offset(size_t __total_bytes) noexcept
   {
-    return _CUDA_VSTD::max(uint32_t{12},
-                           static_cast<uint32_t>(__ap_ceil_log2(static_cast<uint32_t>(__total_bytes))) - uint32_t{7});
+    return _CUDA_VSTD::max(uint32_t{12}, ::cuda::__detail_ap::__ap_ceil_log2(static_cast<uint32_t>(__total_bytes)) - 7);
   }
 
   [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t
@@ -311,16 +315,16 @@ struct __block_descriptor_builder
     size_t __total_bytes,
     __on::__l2_cop_on_t __hit_prop,
     __off::__l2_cop_off_t __miss_prop) noexcept
-      : __offset(__calc_offset(__total_bytes))
-      , __block_size(static_cast<__block_size_t>(__calc_offset(__total_bytes) - uint32_t{12}))
-      , __block_start(__calc_block_start(__ptr, __total_bytes))
-      , __end_hit(__calc_end_hit(__ptr, __hit_bytes, __total_bytes))
-      , __block_count(__calc_end_hit(__ptr, __hit_bytes, __total_bytes) - __calc_block_start(__ptr, __total_bytes))
-      , __l2_cop_off(__miss_prop)
-      , __l2_cop_on(__hit_prop)
-      , __l2_descriptor_mode(_DESC_BLOCK_TYPE)
-      , __l1_inv_dont_allocate(false)
-      , __l2_sector_promote_256B(false)
+      : __offset{__calc_offset(__total_bytes)}
+      , __block_size{static_cast<__block_size_t>(__calc_offset(__total_bytes) - uint32_t{12})}
+      , __block_start{__calc_block_start(__ptr, __total_bytes)}
+      , __end_hit{__calc_end_hit(__ptr, __hit_bytes, __total_bytes)}
+      , __block_count{__calc_end_hit(__ptr, __hit_bytes, __total_bytes) - __calc_block_start(__ptr, __total_bytes)}
+      , __l2_cop_off{__miss_prop}
+      , __l2_cop_on{__hit_prop}
+      , __l2_descriptor_mode{_DESC_BLOCK_TYPE}
+      , __l1_inv_dont_allocate{false}
+      , __l2_sector_promote_256B{false}
   {}
 
   [[nodiscard]] _CCCL_HOST_DEVICE constexpr __block_desc_t __get_block() const noexcept
@@ -328,18 +332,18 @@ struct __block_descriptor_builder
     return __block_desc_t{
       0,
       _CUDA_VSTD::min(uint32_t{0x7f}, __block_count),
-      (__block_start & uint32_t{0x7f}),
+      __block_start & uint32_t{0x7f},
       0,
       __block_size,
       __l2_cop_off,
       __l2_cop_on,
       _DESC_BLOCK_TYPE,
-      false,
-      false,
-      0};
+      uint64_t{false},
+      uint64_t{false},
+      uint64_t{0}};
   }
 };
-static_assert(sizeof(uintptr_t) > 4, "uintptr_t needs at least 5 bytes for this code to work");
+static_assert(sizeof(uintptr_t) == 8, "uintptr_t needs at least 5 bytes for this code to work");
 
 struct __interleave_descriptor_t
 {
@@ -355,10 +359,10 @@ struct __interleave_descriptor_t
   _CCCL_HOST_DEVICE constexpr __interleave_descriptor_t(
     __on::__l2_cop_on_t __hit_prop, uint32_t __hit_ratio, __off::__l2_cop_off_t __miss_prop) noexcept
       : __ap_reserved{0}
-      , __fraction(__hit_ratio)
-      , __l2_cop_off(__miss_prop)
-      , __l2_cop_on(__hit_prop)
-      , __l2_descriptor_mode(_DESC_INTERLEAVED)
+      , __fraction{__hit_ratio}
+      , __l2_cop_off{__miss_prop}
+      , __l2_cop_on{__hit_prop}
+      , __l2_descriptor_mode{_DESC_INTERLEAVED}
       , __l1_inv_dont_allocate{0}
       , __l2_sector_promote_256B{0}
       , __ap_reserved2{0}
@@ -403,7 +407,7 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
   cudaAccessProperty __hit_prop, float __hit_ratio, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) noexcept
 {
   return __sm_80::__interleave_descriptor_t{
-    ((__hit_prop == cudaAccessPropertyNormal)
+    (__hit_prop == cudaAccessPropertyNormal
        ? __sm_80::__on::__l2_cop_on_t::_L2_EVICT_NORMAL_DEMOTE
        : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop)),
     _CUDA_VSTD::min((static_cast<uint32_t>(__hit_ratio * __sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS)),
