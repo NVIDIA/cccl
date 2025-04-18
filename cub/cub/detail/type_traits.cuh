@@ -184,6 +184,13 @@ inline constexpr bool is_arithmetic_cuda_floating_point_v =
 template <typename T>
 inline constexpr bool is_any_short2_v = _CUDA_VSTD::is_same_v<T, short2> || _CUDA_VSTD::is_same_v<T, ushort2>;
 
+// address the incompatibility between linux/windows for int/long
+template <typename T>
+using normalize_integer_t = _CUDA_VSTD::_If<
+  _CUDA_VSTD::__cccl_is_signed_integer_v<T> && sizeof(T) <= sizeof(int),
+  int,
+  _CUDA_VSTD::_If<_CUDA_VSTD::__cccl_is_unsigned_integer_v<T> && sizeof(T) <= sizeof(uint32_t), uint32_t, T>>;
+
 } // namespace internal
 
 CUB_NAMESPACE_END

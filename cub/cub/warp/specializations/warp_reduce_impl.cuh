@@ -108,7 +108,7 @@ template <typename Input, typename ReductionOp, typename Config>
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
   constexpr auto log2_size                                                     = ::cuda::ilog2(logical_size * 2 - 1);
   const auto mask = cub::internal::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
-  using cast_t    = _If<is_integral_v<Input> && sizeof(Input) < sizeof(int), int, Input>;
+  using cast_t    = normalize_integer_t<Input>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
   auto input1     = static_cast<cast_t>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
