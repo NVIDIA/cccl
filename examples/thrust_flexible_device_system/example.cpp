@@ -38,7 +38,7 @@ int main()
 
   std::cout << "Sum: " << result << std::endl;
 
-  if  (result != N)
+  if (result != N)
   {
     std::cerr << "Error: Expected sum of " << N << ", but got " << result << std::endl;
     return 1;
