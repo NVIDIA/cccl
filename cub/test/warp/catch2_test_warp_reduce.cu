@@ -214,7 +214,7 @@ using arithmetic_type_list = c2h::type_list<
   cuda::std::complex<float>, cuda::std::complex<double>,
   short2, ushort2, float2,
   ulonglong4, custom_t
-#  if _CCCL_HAS_INT128()
+#  if TEST_INT128_GENERATOR()
   , __int128_t
 #  endif
 #  if TEST_HALF_T()
@@ -234,7 +234,7 @@ using arithmetic_type_list = c2h::type_list<
 >;
 
 using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
-#  if _CCCL_HAS_INT128()
+#  if TEST_INT128_GENERATOR()
     , __uint128_t
 #  endif
 >;
@@ -244,7 +244,7 @@ using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>
 using min_max_type_list = c2h::type_list<
   int8_t, uint16_t, int32_t, int64_t,
   short2, ushort2,
-#  if _CCCL_HAS_INT128()
+#  if TEST_INT128_GENERATOR()
   __int128_t,
 #  endif
   float, double, custom_t
