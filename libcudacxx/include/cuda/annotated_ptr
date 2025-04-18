@@ -447,7 +447,6 @@ template <typename _Dst, typename _Src, typename _SrcProperty, typename _Shape, 
 _CCCL_HOST_DEVICE void
 memcpy_async(_Dst* __dst, annotated_ptr<_Src, _SrcProperty> __src, _Shape __shape, _Sync& __sync) noexcept
 {
-  NV_IF_TARGET(NV_IS_HOST, (static_assert(_CUDA_VSTD::__always_false_v<_Dst>, "memcpy_async not supported on host");))
   ::cuda::memcpy_async(__dst, __src.operator->(), __shape, __sync);
 }
 
@@ -458,7 +457,6 @@ _CCCL_HOST_DEVICE void memcpy_async(
   _Shape __shape,
   _Sync& __sync) noexcept
 {
-  NV_IF_TARGET(NV_IS_HOST, (static_assert(_CUDA_VSTD::__always_false_v<_Dst>, "memcpy_async not supported on host");))
   ::cuda::memcpy_async(__dst.operator->(), __src.operator->(), __shape, __sync);
 }
 
@@ -466,7 +464,6 @@ template <typename _Group, typename _Dst, typename _Src, typename _SrcProperty, 
 _CCCL_HOST_DEVICE void memcpy_async(
   const _Group& __group, _Dst* __dst, annotated_ptr<_Src, _SrcProperty> __src, _Shape __shape, _Sync& __sync) noexcept
 {
-  NV_IF_TARGET(NV_IS_HOST, (static_assert(_CUDA_VSTD::__always_false_v<_Group>, "memcpy_async not supported on host");))
   ::cuda::memcpy_async(__group, __dst, __src.operator->(), __shape, __sync);
 }
 
@@ -484,7 +481,6 @@ _CCCL_HOST_DEVICE void memcpy_async(
   _Shape __shape,
   _Sync& __sync) noexcept
 {
-  NV_IF_TARGET(NV_IS_HOST, (static_assert(_CUDA_VSTD::__always_false_v<_Group>, "memcpy_async not supported on host");))
   ::cuda::memcpy_async(__group, __dst.operator->(), __src.operator->(), __shape, __sync);
 }
 
