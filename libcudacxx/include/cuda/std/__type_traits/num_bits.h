@@ -81,7 +81,7 @@ template <typename _Tp>
     return sizeof(_Tp) * CHAR_BIT;
   }
 #endif // _CCCL_HAS_FLOAT128()
-  else if constexpr (has_unique_object_representations_v<_Tp> || is_floating_point_v<_Tp> || is_same_v<_Tp, bool>)
+  else if constexpr (__has_unique_object_representations(_Tp) || is_floating_point_v<_Tp> || is_same_v<_Tp, bool>)
   {
     return sizeof(_Tp) * CHAR_BIT;
   }
