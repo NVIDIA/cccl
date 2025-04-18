@@ -58,4 +58,15 @@ if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
     ${cmake_opts}
     ${cmake_cpm_opts}
   )
-endif()
+endif() # CTK > 12.0
+
+foreach (DEVICE_SYSTEM IN ITEMS CUDA OMP TBB CPP)
+  cccl_add_compile_test(test_name
+    cccl.example
+    thrust_flexible_device_system
+    "${DEVICE_SYSTEM}"
+    -D "CCCL_THRUST_DEVICE_SYSTEM=${DEVICE_SYSTEM}"
+    ${cmake_opts}
+    ${cmake_cpm_opts}
+  )
+endforeach()
