@@ -103,7 +103,7 @@
 
 #if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
 #  define _CCCL_PURE __nv_pure__
-#elif _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_COMPILER(CLANG)
+#elif _CCCL_HAS_CPP_ATTRIBUTE(gnu::pure)
 #  define _CCCL_PURE [[gnu::pure]]
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_PURE __declspec(noalias)
@@ -112,7 +112,7 @@
 #endif
 
 #if !_CCCL_COMPILER(MSVC) // _CCCL_HAS_CPP_ATTRIBUTE(const) doesn't work with MSVC
-#  if _CCCL_HAS_CPP_ATTRIBUTE(const) || _CCCL_COMPILER(CLANG)
+#  if _CCCL_HAS_CPP_ATTRIBUTE(gnu::const)
 #    define _CCCL_CONST [[gnu::const]]
 #  else
 #    define _CCCL_CONST _CCCL_PURE
