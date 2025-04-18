@@ -554,13 +554,17 @@ INSTANTIATE(char);
 #if TEST_HALF_T()
 INSTANTIATE(half_t);
 INSTANTIATE(__half);
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
 INSTANTIATE(cuda::std::complex<__half>);
+#  endif
 #endif // TEST_HALF_T()
 
 #if TEST_BF_T()
 INSTANTIATE(bfloat16_t);
 INSTANTIATE(__nv_bfloat16);
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
 INSTANTIATE(cuda::std::complex<__nv_bfloat16>);
+#  endif
 #endif // TEST_BF_T()
 
 #if _CCCL_HAS_INT128()
