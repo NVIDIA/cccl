@@ -24,8 +24,8 @@ set(cmake_opts
   -D "CMAKE_CUDA_ARCHITECTURES=${arches_escaped}"
 )
 
-set(CCCL_EXAMPLE_CPM_REPOSITORY "nvidia/cccl" CACHE STRING "GitHub repository used for CPM examples.")
-set(CCCL_EXAMPLE_CPM_TAG "main" CACHE STRING "Git tag/branch used for CPM examples.")
+set(CCCL_EXAMPLE_CPM_REPOSITORY "${CCCL_SOURCE_DIR}" CACHE STRING "Git repository used for CPM examples.")
+set(CCCL_EXAMPLE_CPM_TAG "HEAD" CACHE STRING "Git tag/branch used for CPM examples.")
 
 set(cmake_cpm_opts
   -D "CCCL_REPOSITORY=${CCCL_EXAMPLE_CPM_REPOSITORY}"

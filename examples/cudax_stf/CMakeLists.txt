@@ -21,10 +21,15 @@ project(CUDAX_SAMPLES CUDA CXX)
 # For more information, see https://github.com/cpm-cmake/CPM.cmake
 include(cmake/CPM.cmake)
 
+# We define these as variables so they can be overridden in CI to pull from a PR instead of CCCL `main`
+# In your project, these variables are unnecessary and you can just use the values directly
+set(CCCL_REPOSITORY "https://github.com/NVIDIA/cccl" CACHE STRING "Git repository to fetch CCCL from")
+set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
+
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
 CPMAddPackage(
   NAME CCCL
-  GITHUB_REPOSITORY "nvidia/cccl"
+  GIT_REPOSITORY "${CCCL_REPOSITORY}"
   GIT_TAG "main"
   # The following is required to make the `CCCL::cudax` target available:
   OPTIONS "CCCL_ENABLE_UNSTABLE ON"
