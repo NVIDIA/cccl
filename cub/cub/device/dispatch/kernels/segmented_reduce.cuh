@@ -264,8 +264,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     const int lane_id           = tid % small_threads_per_warp;
     const int global_segment_id = bid * segments_per_small_block + sid_within_block;
 
-    const ::cuda::std::int64_t segment_begin = global_segment_id * segment_size;
-
+    const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
     // If empty segment, write out the initial value
     if (segment_size == 0)
     {
@@ -298,7 +297,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     const int lane_id           = tid % medium_threads_per_warp;
     const int global_segment_id = bid * segments_per_medium_block + sid_within_block;
 
-    const ::cuda::std::int64_t segment_begin = global_segment_id * segment_size;
+    const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
 
     if (global_segment_id < num_segments)
     {
@@ -318,7 +317,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   }
   else
   {
-    const ::cuda::std::int64_t segment_begin = bid * segment_size;
+    const auto segment_begin = static_cast<::cuda::std::int64_t>(bid) * segment_size;
 
     // Consume input tiles
     AccumT block_aggregate = AgentReduceT(temp_storage.large_storage, d_in + segment_begin, reduction_op)

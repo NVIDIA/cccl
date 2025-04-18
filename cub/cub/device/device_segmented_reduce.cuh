@@ -344,7 +344,7 @@ public:
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     int segment_size,
     ReductionOpT reduction_op,
     T initial_value,
