@@ -284,8 +284,8 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   // [Min/Max]: __half, __half2
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_half_v<Input>)
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);))
-    _CCCL_UNREACHABLE(); // "__half is not supported before SM53"
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_shuffle_op(input, reduction_op, config);))
+    _CCCL_UNREACHABLE(); // "__half is not supported before SM80"
   }
   // [Min/Max]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_any_bfloat16_v<Input>)
