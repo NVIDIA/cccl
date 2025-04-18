@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include <cccl/c/types.h>
 
 struct indirect_arg_t
@@ -62,7 +64,9 @@ struct indirect_iterator_t
     return ptr;
   }
 
-  void operator+=(int64_t signed_offset)
+  template <typename U,
+            std::enable_if_t<std::is_integral_v<U> && std::is_signed_v<U> && sizeof(U) == sizeof(int64_t), int> = 0>
+  void operator+=(U signed_offset)
   {
     if (value_size)
     {
@@ -79,7 +83,9 @@ struct indirect_iterator_t
     }
   }
 
-  void operator+=(uint64_t unsigned_offset)
+  template <typename U,
+            std::enable_if_t<std::is_integral_v<U> && std::is_unsigned_v<U> && sizeof(U) == sizeof(uint64_t), int> = 0>
+  void operator+=(U unsigned_offset)
   {
     if (value_size)
     {

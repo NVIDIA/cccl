@@ -94,8 +94,8 @@ typedef struct cccl_iterator_t
   cccl_op_t advance;
   cccl_op_t dereference;
   cccl_type_info value_type;
-  cccl_host_op_fn_ptr_t host_advance;
   void* state;
+  cccl_host_op_fn_ptr_t host_advance;
 } cccl_iterator_t;
 
 typedef enum cccl_sort_order_t

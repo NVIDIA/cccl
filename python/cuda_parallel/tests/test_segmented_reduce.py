@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
+import cuda.parallel.experimental.iterators as iterators
 from cuda.parallel.experimental.struct import gpu_struct
 
 
@@ -108,3 +109,71 @@ def test_segmented_reduce_struct_type():
     expected = h_rgb[np.arange(h_rgb.shape[0]), h_rgb["g"].argmax(axis=-1)]
 
     np.testing.assert_equal(expected["g"], d_out.get()["g"])
+
+
+def make_host_cfunc(state_ptr_ty, fn):
+    import numba
+
+    sig = numba.void(state_ptr_ty, numba.int64)
+    c_advance_fn = numba.cfunc(sig)(fn)
+
+    return c_advance_fn.ctypes
+
+
+def test_large_num_segments():
+    import ctypes
+
+    input_it = iterators.ConstantIterator(np.int8(1))
+
+    def make_scaler(step):
+        def scale(row_id):
+            return row_id * step
+
+        return scale
+
+    zero = np.int64(0)
+    row_offset = make_scaler(np.int64(125))
+    start_offsets = iterators.TransformIterator(
+        iterators.CountingIterator(zero), row_offset
+    )
+    end_offsets = start_offsets + 1
+
+    num_segments = (2**16 + 2**3) * 2**15
+    res = cp.full(num_segments, fill_value=-1, dtype=cp.int8)
+    assert res.size == num_segments
+
+    def my_add(a, b):
+        return a + b
+
+    h_init = np.zeros(tuple(), dtype=np.int8)
+    print(0)
+    alg = algorithms.segmented_reduce(
+        input_it, res, start_offsets, end_offsets, my_add, h_init
+    )
+    print(1)
+    f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
+    alg.start_offsets_in_cccl.host_advance_fn = f1
+    f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
+    alg.end_offsets_in_cccl.host_advance_fn = f2
+
+    print("F1: ", hex(ctypes.cast(f1, ctypes.c_void_p).value))
+    print("F2: ", hex(ctypes.cast(f2, ctypes.c_void_p).value))
+
+    # print(alg.start_offsets_in_cccl.state)
+    # f1(ctypes.pointer(alg.start_offsets_in_cccl.state), ctypes.c_int64(7))
+    # print(alg.start_offsets_in_cccl.state)
+
+    print(2)
+    temp_storage_bytes = alg(
+        None, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+    print(3)
+
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    _ = alg(
+        d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+    print(4)
+
+    assert cp.all(res[:10] == 125)
+    assert cp.all(res[-10:] == 125)

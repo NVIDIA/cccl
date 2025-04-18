@@ -820,12 +820,17 @@ struct DispatchSegmentedReduce
       // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
       // indirect_arg_t as the iterator type, which does not support the + operator.
       // TODO (elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
+      printf("Am before\n");
+
       if (num_invocations > 1
           && !detail::all_iterators_support_add_assign_operator(
             ::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
       {
+        printf("Inside %ld\n", num_invocations);
         return cudaErrorInvalidValue;
       }
+
+      printf("Am here\n");
 
       for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
       {
