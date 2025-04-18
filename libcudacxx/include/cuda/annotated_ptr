@@ -185,10 +185,10 @@ public:
   };
 
   _CCCL_HOST_DEVICE constexpr access_property(global) noexcept
-      : __descriptor{::cuda::__detail_ap::__sm_80::__interleave_normal()}
+      : __descriptor{__detail_ap::__sm_80::__interleave_normal}
   {}
   _CCCL_HOST_DEVICE constexpr access_property() noexcept
-      : __descriptor{::cuda::__detail_ap::__sm_80::__interleave_normal()}
+      : __descriptor{__detail_ap::__sm_80::__interleave_normal}
   {}
   _CCCL_HIDE_FROM_ABI constexpr access_property(const access_property&) noexcept  = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
