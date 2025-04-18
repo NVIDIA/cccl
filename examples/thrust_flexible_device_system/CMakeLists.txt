@@ -55,7 +55,9 @@ if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
 endif()
 
 # Creates a cmake executable target for the main program
-add_executable(example_project example.cpp)
+add_executable(example_program example.cpp)
+ # Thrust requires at least C++17:
+target_compile_features(example_program PUBLIC cuda_std_17 cxx_std_17)
 
 # By default, CMake inspects the source file extension to determine whether to use C++ or CUDA
 # compilers. We can override this behavior by using source file properties. Here, we tell CMake
@@ -64,14 +66,14 @@ if (CCCL_THRUST_DEVICE_SYSTEM STREQUAL "CUDA")
   set_source_files_properties(example.cpp PROPERTIES LANGUAGE CUDA)
 endif()
 
-# "Links" the CCCL Cmake target to the `example_project` executable. This configures everything needed to use
+# "Links" the CCCL Cmake target to the `example_program` executable. This configures everything needed to use
 # CCCL headers, including setting up include paths, compiler flags, Thrust host/device configuration, etc.
-target_link_libraries(example_project PRIVATE CCCL::CCCL)
+target_link_libraries(example_program PRIVATE CCCL::CCCL)
 
 # This is only relevant for internal testing and not needed by end users.
 include(CTest)
 enable_testing()
-add_test(NAME example_project COMMAND example_project)
-set_tests_properties(example_project PROPERTIES
+add_test(NAME example_program COMMAND example_program)
+set_tests_properties(example_program PROPERTIES
   PASS_REGULAR_EXPRESSION "Detected device system: ${CCCL_THRUST_DEVICE_SYSTEM}"
 )
