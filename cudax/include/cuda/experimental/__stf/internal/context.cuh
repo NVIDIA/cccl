@@ -96,6 +96,27 @@ class context
       }
     }
 
+    template <typename... Args>
+    auto& add_deps(Args&&... args)
+    {
+      ::std::visit(
+        [&](auto& self) {
+          self.add_deps(::std::forward<Args>(args)...);
+        },
+        payload);
+      return *this;
+    }
+
+    template <typename T>
+    decltype(auto) get(size_t submitted_index) const
+    {
+      return ::std::visit(
+        [&](auto& self) {
+          return self.template get<T>(submitted_index);
+        },
+        payload);
+    }
+
   private:
     ::std::variant<T1, T2> payload;
   };
@@ -373,13 +394,15 @@ public:
   }
 
   template <typename T>
-  frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
-                                access_mode m    = access_mode::read,
-                                data_place where = data_place::invalid())
+  frozen_logical_data<T>
+  freeze(::cuda::experimental::stf::logical_data<T> d,
+         access_mode m    = access_mode::read,
+         data_place where = data_place::invalid(),
+         bool user_freeze = true)
   {
     return ::std::visit(
       [&](auto& self) {
-        return self.freeze(mv(d), m, mv(where));
+        return self.freeze(mv(d), m, mv(where), user_freeze);
       },
       payload);
   }

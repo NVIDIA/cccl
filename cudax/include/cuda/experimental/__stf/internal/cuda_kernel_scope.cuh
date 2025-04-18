@@ -116,6 +116,24 @@ public:
   // move-constructible
   cuda_kernel_scope(cuda_kernel_scope&&) = default;
 
+  /// Add a set of dependencies
+  template <typename... Pack>
+  void add_deps(task_dep_untyped first, Pack&&... pack)
+  {
+    dynamic_deps.push_back(mv(first));
+    if constexpr (sizeof...(Pack) > 0)
+    {
+      add_deps(::std::forward<Pack>(pack)...);
+    }
+  }
+
+  template <typename T>
+  decltype(auto) get(size_t submitted_index) const
+  {
+    _CCCL_ASSERT(untyped_t.has_value(), "uninitialized task");
+    return untyped_t->template get<T>(submitted_index);
+  }
+
   /**
    * @brief Sets the symbol for this object.
    *
@@ -143,7 +161,18 @@ public:
     // If a place is specified, use it
     auto t = e_place ? ctx.task(e_place.value()) : ctx.task();
 
+    // So that we can use get to retrieve dynamic dependencies
+    untyped_t = t;
+
     t.add_deps(deps);
+
+    // Append all dynamic deps
+    for (auto& d : dynamic_deps)
+    {
+      t.add_deps(mv(d));
+    }
+    dynamic_deps.clear();
+
     if (!symbol.empty())
     {
       t.set_symbol(symbol);
@@ -186,6 +215,9 @@ public:
       }
 
       t.clear();
+
+      // Now that we have executed 'f', we do not need to access it anymore
+      untyped_t.reset();
     };
 
     if constexpr (::std::is_same_v<Ctx, stream_ctx>)
@@ -286,7 +318,14 @@ private:
 
   ::std::string symbol;
   Ctx& ctx;
+  // Statically defined deps
   task_dep_vector<Deps...> deps;
+
+  // Dependencies added with add_deps
+  ::std::vector<task_dep_untyped> dynamic_deps;
+  // Used to retrieve deps with t.get<>(...)
+  ::std::optional<task> untyped_t;
+
   ::std::optional<exec_place> e_place;
 };
 
