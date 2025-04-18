@@ -39,6 +39,10 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/__functional/maximum.h"
+#include "cuda/std/__functional/operations.h"
+#include "cuda/std/__type_traits/always_false.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -370,49 +374,132 @@ namespace internal
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
-template <typename Op, typename T>
-inline constexpr bool is_cuda_std_plus_v =
-  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::plus<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::plus<T>>;
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_plus_v = false;
 
-template <typename Op, typename T>
-inline constexpr bool is_cuda_std_mul_v =
-  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::multiplies<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::multiplies<T>>;
+template <typename T>
+inline constexpr bool is_cuda_std_plus_v<_CUDA_VSTD::plus<T>, void> = true;
 
-template <typename Op, typename T>
-inline constexpr bool is_cuda_maximum_v =
-  _CUDA_VSTD::is_same_v<Op, ::cuda::maximum<>> || _CUDA_VSTD::is_same_v<Op, ::cuda::maximum<T>>;
+template <typename T>
+inline constexpr bool is_cuda_std_plus_v<_CUDA_VSTD::plus<T>, T> = true;
 
-template <typename Op, typename T>
-inline constexpr bool is_cuda_minimum_v =
-  _CUDA_VSTD::is_same_v<Op, ::cuda::minimum<>> || _CUDA_VSTD::is_same_v<Op, ::cuda::minimum<T>>;
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_mul_v = false;
 
-template <typename Op, typename T>
-inline constexpr bool is_cuda_std_bit_and_v =
-  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_and<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_and<T>>;
+template <typename T>
+inline constexpr bool is_cuda_std_mul_v<_CUDA_VSTD::multiplies<T>, void> = true;
 
-template <typename Op, typename T>
-inline constexpr bool is_cuda_std_bit_or_v =
-  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_or<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_or<T>>;
+template <typename T>
+inline constexpr bool is_cuda_std_mul_v<_CUDA_VSTD::multiplies<T>, T> = true;
 
-template <typename Op, typename T>
-inline constexpr bool is_cuda_std_bit_xor_v =
-  _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_xor<>> || _CUDA_VSTD::is_same_v<Op, _CUDA_VSTD::bit_xor<T>>;
+template <typename, typename = void>
+inline constexpr bool is_cuda_maximum_v = false;
 
-template <typename Op, typename T>
+template <typename T>
+inline constexpr bool is_cuda_maximum_v<::cuda::maximum<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_maximum_v<::cuda::maximum<T>, T> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_minimum_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_minimum_v<::cuda::minimum<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_minimum_v<::cuda::minimum<T>, T> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_bit_and_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_and_v<_CUDA_VSTD::bit_and<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_and_v<_CUDA_VSTD::bit_and<T>, T> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_bit_or_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_or_v<_CUDA_VSTD::bit_or<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_or_v<_CUDA_VSTD::bit_or<T>, T> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_bit_xor_v = false;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<T>, void> = true;
+
+template <typename T>
+inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<T>, T> = true;
+
+template <typename Op, typename T = void>
 inline constexpr bool is_cuda_minimum_maximum_v = is_cuda_maximum_v<Op, T> || is_cuda_minimum_v<Op, T>;
 
-template <typename Op, typename T>
+template <typename Op, typename T = void>
 inline constexpr bool is_cuda_std_plus_mul_v = is_cuda_std_plus_v<Op, T> || is_cuda_std_mul_v<Op, T>;
 
-template <typename Op, typename T>
+template <typename Op, typename T = void>
 inline constexpr bool is_cuda_std_bitwise_v =
   is_cuda_std_bit_and_v<Op, T> || is_cuda_std_bit_or_v<Op, T> || is_cuda_std_bit_xor_v<Op, T>;
 
-template <typename Op, typename T>
+template <typename Op, typename T = void>
 inline constexpr bool is_cuda_operator_v =
   is_cuda_minimum_maximum_v<Op, T> || //
   is_cuda_std_plus_mul_v<Op, T> || //
   is_cuda_std_bitwise_v<Op, T>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// Generalize Operator
+
+template <typename T, typename>
+struct GeneralizeOperator
+{
+  static_assert(_CUDA_VSTD::__always_false_v<T>);
+};
+
+template <typename T>
+struct GeneralizeOperator<_CUDA_VSTD::plus<T>, T>
+{
+  using type = _CUDA_VSTD::plus<>;
+};
+
+template <typename T>
+struct GeneralizeOperator<_CUDA_VSTD::bit_and<T>, T>
+{
+  using type = _CUDA_VSTD::bit_and<>;
+};
+
+template <typename T>
+struct GeneralizeOperator<_CUDA_VSTD::bit_or<T>, T>
+{
+  using type = _CUDA_VSTD::bit_or<>;
+};
+
+template <typename T>
+struct GeneralizeOperator<_CUDA_VSTD::bit_xor<T>, T>
+{
+  using type = _CUDA_VSTD::bit_xor<>;
+};
+
+template <typename T>
+struct GeneralizeOperator<::cuda::maximum<T>, T>
+{
+  using type = ::cuda::maximum<>;
+};
+
+template <typename T>
+struct GeneralizeOperator<::cuda::minimum<T>, T>
+{
+  using type = ::cuda::minimum<>;
+};
+
+template <typename Op, typename T>
+using generalize_operator_t = typename GeneralizeOperator<Op, T>::type;
 
 //----------------------------------------------------------------------------------------------------------------------
 // Identity

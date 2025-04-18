@@ -220,12 +220,16 @@ using arithmetic_type_list = c2h::type_list<
 #  if TEST_HALF_T()
    , __half
    , __half2
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
    , cuda::std::complex<__half>
+#endif
 #  endif // TEST_HALF_T()
 #  if TEST_BF_T()
    , __nv_bfloat16
    , __nv_bfloat162
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
    , cuda::std::complex<__nv_bfloat16>
+#endif
 #  endif // TEST_BF_T()
 >;
 
