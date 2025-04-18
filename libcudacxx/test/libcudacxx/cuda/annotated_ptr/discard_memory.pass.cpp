@@ -12,6 +12,8 @@
 // UNSUPPORTED: !nvcc
 // UNSUPPORTED: nvrtc
 
+#include <cuda/discard_memory>
+
 #include "utils.h"
 #define ARR_SZ 128
 
