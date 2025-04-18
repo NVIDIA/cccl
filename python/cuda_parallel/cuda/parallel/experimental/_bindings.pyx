@@ -1006,7 +1006,8 @@ cdef class CommonData:
 
 cdef extern from "cccl/c/reduce.h":
     cdef struct cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_reduce_build(
         cccl_device_reduce_build_result_t*,
@@ -1114,6 +1115,8 @@ cdef class DeviceReduceBuildResult:
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
 
 # ------------
 #   DeviceScan
@@ -1124,7 +1127,8 @@ cdef extern from "cccl/c/scan.h":
     ctypedef bint _Bool
 
     cdef struct cccl_device_scan_build_result_t 'cccl_device_scan_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_scan_build(
         cccl_device_scan_build_result_t*,
@@ -1279,6 +1283,8 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1287,7 +1293,8 @@ cdef class DeviceScanBuildResult:
 
 cdef extern from "cccl/c/segmented_reduce.h":
     cdef struct cccl_device_segmented_reduce_build_result_t 'cccl_device_segmented_reduce_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_segmented_reduce_build(
         cccl_device_segmented_reduce_build_result_t*,
@@ -1407,6 +1414,8 @@ cdef class DeviceSegmentedReduceBuildResult:
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
 # -----------------
 #   DeviceMergeSort
 # -----------------
@@ -1414,7 +1423,8 @@ cdef class DeviceSegmentedReduceBuildResult:
 
 cdef extern from "cccl/c/merge_sort.h":
     cdef struct cccl_device_merge_sort_build_result_t 'cccl_device_merge_sort_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_merge_sort_build(
         cccl_device_merge_sort_build_result_t *bld_ptr,
@@ -1527,13 +1537,20 @@ cdef class DeviceMergeSortBuildResult:
             )
         return storage_sz
 
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
+
 # -------------------
 #   DeviceUniqueByKey
 # -------------------
 
 cdef extern from "cccl/c/unique_by_key.h":
     cdef struct cccl_device_unique_by_key_build_result_t 'cccl_device_unique_by_key_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
+
 
     cdef CUresult cccl_device_unique_by_key_build(
         cccl_device_unique_by_key_build_result_t *build_ptr,
@@ -1790,12 +1807,16 @@ cdef class DeviceRadixSortBuildResult:
         return <object>storage_sz, <object>selector_int
 
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
 # --------------------------------------------
 cdef extern from "cccl/c/transform.h":
     cdef struct cccl_device_transform_build_result_t:
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_unary_transform_build(
         cccl_device_transform_build_result_t *build_ptr,
@@ -1902,6 +1923,10 @@ cdef class DeviceUnaryTransform:
             raise RuntimeError("Failed to compute unary transform")
 
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
+
 cdef class DeviceBinaryTransform:
     cdef cccl_device_transform_build_result_t build_data
 
@@ -1970,3 +1995,6 @@ cdef class DeviceBinaryTransform:
             )
         if (status != 0):
             raise RuntimeError("Failed to compute binary transform")
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]

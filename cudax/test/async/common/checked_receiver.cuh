@@ -22,7 +22,7 @@ struct checked_value_receiver
   using receiver_concept = cudax_async::receiver_t;
 
   checked_value_receiver(Values... values)
-      : _values{{values}...}
+      : _values{values...}
   {}
 
   // This overload is needed to avoid an nvcc compiler bug where a variadic

@@ -105,7 +105,7 @@ struct make_constant_iterator_base
 //!   thrust::transform(data.begin(), data.end(),
 //!                     thrust::make_constant_iterator(10),
 //!                     data.begin(),
-//!                     thrust::plus<int>());
+//!                     ::cuda::std::plus<int>());
 //!
 //!   // data is now [13, 17, 12, 15]
 //!
@@ -130,10 +130,7 @@ public:
   //! \endcond
 
   //! Default constructor initializes this \p constant_iterator's constant using its default constructor
-  _CCCL_HOST_DEVICE constant_iterator()
-      : super_t()
-      , m_value()
-  {}
+  constant_iterator() = default;
 
   //! Copy constructor copies the value of another \p constant_iterator with related System type.
   //!
@@ -180,27 +177,19 @@ public:
 
   //! \cond
 
-protected:
-  _CCCL_HOST_DEVICE Value const& value_reference() const
-  {
-    return m_value;
-  }
-
-  _CCCL_HOST_DEVICE Value& value_reference()
-  {
-    return m_value;
-  }
-
 private: // Core iterator interface
   _CCCL_HOST_DEVICE reference dereference() const
   {
     return m_value;
   }
 
-  Value m_value;
+  Value m_value{};
 
   //! \endcond
 };
+
+template <class ValueT>
+_CCCL_HOST_DEVICE constant_iterator(ValueT) -> constant_iterator<ValueT>;
 
 //! This version of \p make_constant_iterator creates a \p constant_iterator from values given for both value and index.
 //! The type of \p constant_iterator may be inferred by the compiler from the types of its parameters.

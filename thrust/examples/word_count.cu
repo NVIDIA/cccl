@@ -42,7 +42,7 @@ int word_count(const thrust::device_vector<char>& input)
     input.end() - 1, // sequence of left characters
     input.begin() + 1, // sequence of right characters
     0, // initialize sum to 0
-    thrust::plus<int>(), // sum values together
+    ::cuda::std::plus<int>(), // sum values together
     is_word_start()); // how to compare the left and right characters
 
   // if the first character is alphabetical, then it also begins a word

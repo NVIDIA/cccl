@@ -117,14 +117,14 @@ void TestTransformScanSimple()
 
   // inclusive scan
   iter = thrust::transform_inclusive_scan(
-    input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::plus<T>());
+    input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with 0 init
   iter = thrust::transform_inclusive_scan(
-    input.begin(), input.end(), output.begin(), thrust::negate<T>(), 0, thrust::plus<T>());
+    input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), 0, ::cuda::std::plus<T>());
   result = {-1, -4, -2, -6, -1};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
@@ -132,7 +132,7 @@ void TestTransformScanSimple()
 
   // exclusive scan with 0 init
   iter = thrust::transform_exclusive_scan(
-    input.begin(), input.end(), output.begin(), thrust::negate<T>(), 0, thrust::plus<T>());
+    input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), 0, ::cuda::std::plus<T>());
   result = {0, -1, -4, -2, -6};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
@@ -140,7 +140,7 @@ void TestTransformScanSimple()
 
   // inclusive scan with nonzero init
   iter = thrust::transform_inclusive_scan(
-    input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), 3, ::cuda::std::plus<T>());
   result = {2, -1, 1, -3, 2};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
@@ -148,7 +148,7 @@ void TestTransformScanSimple()
 
   // exclusive scan with nonzero init
   iter = thrust::transform_exclusive_scan(
-    input.begin(), input.end(), output.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), 3, ::cuda::std::plus<T>());
   result = {3, 2, -1, 1, -3};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
@@ -156,8 +156,8 @@ void TestTransformScanSimple()
 
   // inplace inclusive scan
   input = input_copy;
-  iter =
-    thrust::transform_inclusive_scan(input.begin(), input.end(), input.begin(), thrust::negate<T>(), thrust::plus<T>());
+  iter  = thrust::transform_inclusive_scan(
+    input.begin(), input.end(), input.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
   result = {-1, -4, -2, -6, -1};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
@@ -165,7 +165,7 @@ void TestTransformScanSimple()
   // inplace inclusive scan with init
   input = input_copy;
   iter  = thrust::transform_inclusive_scan(
-    input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    input.begin(), input.end(), input.begin(), ::cuda::std::negate<T>(), 3, ::cuda::std::plus<T>());
   result = {2, -1, 1, -3, 2};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
@@ -173,7 +173,7 @@ void TestTransformScanSimple()
   // inplace exclusive scan with init
   input = input_copy;
   iter  = thrust::transform_exclusive_scan(
-    input.begin(), input.end(), input.begin(), thrust::negate<T>(), 3, thrust::plus<T>());
+    input.begin(), input.end(), input.begin(), ::cuda::std::negate<T>(), 3, ::cuda::std::plus<T>());
   result = {3, 2, -1, 1, -3};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
@@ -222,8 +222,8 @@ void TestTransformInclusiveScanDifferentTypes()
 
   thrust::host_vector<Record> input_copy(h_input);
 
-  h_iter =
-    thrust::transform_inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), negate{}, thrust::plus<int>{});
+  h_iter = thrust::transform_inclusive_scan(
+    h_input.begin(), h_input.end(), h_output.begin(), negate{}, ::cuda::std::plus<int>{});
   ASSERT_EQUAL(std::size_t(h_iter - h_output.begin()), h_input.size());
   ASSERT_EQUAL(h_input, input_copy);
   ASSERT_EQUAL(h_output, result);
@@ -233,8 +233,8 @@ void TestTransformInclusiveScanDifferentTypes()
   thrust::device_vector<Record> d_input = h_input;
   thrust::device_vector<int> d_output(5);
 
-  d_iter =
-    thrust::transform_inclusive_scan(d_input.begin(), d_input.end(), d_output.begin(), negate{}, thrust::plus<int>{});
+  d_iter = thrust::transform_inclusive_scan(
+    d_input.begin(), d_input.end(), d_output.begin(), negate{}, ::cuda::std::plus<int>{});
   ASSERT_EQUAL(std::size_t(d_iter - d_output.begin()), d_input.size());
   ASSERT_EQUAL(d_input, input_copy);
   ASSERT_EQUAL(d_output, result);
@@ -253,44 +253,44 @@ struct TestTransformScan
     thrust::device_vector<T> d_output(n);
 
     thrust::transform_inclusive_scan(
-      h_input.begin(), h_input.end(), h_output.begin(), thrust::negate<T>(), thrust::plus<T>());
+      h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
     thrust::transform_inclusive_scan(
-      d_input.begin(), d_input.end(), d_output.begin(), thrust::negate<T>(), thrust::plus<T>());
+      d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
     ASSERT_EQUAL(d_output, h_output);
 
     thrust::transform_inclusive_scan(
-      h_input.begin(), h_input.end(), h_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     thrust::transform_inclusive_scan(
-      d_input.begin(), d_input.end(), d_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     ASSERT_EQUAL(d_output, h_output);
 
     thrust::transform_exclusive_scan(
-      h_input.begin(), h_input.end(), h_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     thrust::transform_exclusive_scan(
-      d_input.begin(), d_input.end(), d_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     ASSERT_EQUAL(d_output, h_output);
 
     // in-place scans
     h_output = h_input;
     d_output = d_input;
     thrust::transform_inclusive_scan(
-      h_output.begin(), h_output.end(), h_output.begin(), thrust::negate<T>(), thrust::plus<T>());
+      h_output.begin(), h_output.end(), h_output.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
     thrust::transform_inclusive_scan(
-      d_output.begin(), d_output.end(), d_output.begin(), thrust::negate<T>(), thrust::plus<T>());
+      d_output.begin(), d_output.end(), d_output.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
     ASSERT_EQUAL(d_output, h_output);
 
     thrust::transform_inclusive_scan(
-      h_output.begin(), h_output.end(), h_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      h_output.begin(), h_output.end(), h_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     thrust::transform_inclusive_scan(
-      d_output.begin(), d_output.end(), d_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      d_output.begin(), d_output.end(), d_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     ASSERT_EQUAL(d_output, h_output);
 
     h_output = h_input;
     d_output = d_input;
     thrust::transform_exclusive_scan(
-      h_output.begin(), h_output.end(), h_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      h_output.begin(), h_output.end(), h_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     thrust::transform_exclusive_scan(
-      d_output.begin(), d_output.end(), d_output.begin(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      d_output.begin(), d_output.end(), d_output.begin(), ::cuda::std::negate<T>(), (T) 11, ::cuda::std::plus<T>());
     ASSERT_EQUAL(d_output, h_output);
   }
 };
@@ -306,7 +306,7 @@ void TestTransformScanCountingIterator()
 
   Vector result(3);
 
-  thrust::transform_inclusive_scan(first, first + 3, result.begin(), thrust::negate<T>(), thrust::plus<T>());
+  thrust::transform_inclusive_scan(first, first + 3, result.begin(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
 
   Vector ref{-1, -3, -6};
   ASSERT_EQUAL(result, ref);
@@ -324,24 +324,44 @@ struct TestTransformScanToDiscardIterator
     thrust::discard_iterator<> reference(n);
 
     thrust::discard_iterator<> h_result = thrust::transform_inclusive_scan(
-      h_input.begin(), h_input.end(), thrust::make_discard_iterator(), thrust::negate<T>(), thrust::plus<T>());
+      h_input.begin(), h_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
 
     thrust::discard_iterator<> d_result = thrust::transform_inclusive_scan(
-      d_input.begin(), d_input.end(), thrust::make_discard_iterator(), thrust::negate<T>(), thrust::plus<T>());
+      d_input.begin(), d_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>(), ::cuda::std::plus<T>());
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
 
     h_result = thrust::transform_inclusive_scan(
-      h_input.begin(), h_input.end(), thrust::make_discard_iterator(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      h_input.begin(),
+      h_input.end(),
+      thrust::make_discard_iterator(),
+      ::cuda::std::negate<T>(),
+      (T) 11,
+      ::cuda::std::plus<T>());
 
     d_result = thrust::transform_inclusive_scan(
-      d_input.begin(), d_input.end(), thrust::make_discard_iterator(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      d_input.begin(),
+      d_input.end(),
+      thrust::make_discard_iterator(),
+      ::cuda::std::negate<T>(),
+      (T) 11,
+      ::cuda::std::plus<T>());
 
     h_result = thrust::transform_exclusive_scan(
-      h_input.begin(), h_input.end(), thrust::make_discard_iterator(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      h_input.begin(),
+      h_input.end(),
+      thrust::make_discard_iterator(),
+      ::cuda::std::negate<T>(),
+      (T) 11,
+      ::cuda::std::plus<T>());
 
     d_result = thrust::transform_exclusive_scan(
-      d_input.begin(), d_input.end(), thrust::make_discard_iterator(), thrust::negate<T>(), (T) 11, thrust::plus<T>());
+      d_input.begin(),
+      d_input.end(),
+      thrust::make_discard_iterator(),
+      ::cuda::std::negate<T>(),
+      (T) 11,
+      ::cuda::std::plus<T>());
 
     ASSERT_EQUAL_QUIET(reference, h_result);
     ASSERT_EQUAL_QUIET(reference, d_result);
@@ -362,20 +382,20 @@ void TestValueCategoryDeduction()
   vec.assign((T*) a_h, a_h + 10);
 
   thrust::transform_inclusive_scan(
-    thrust::device, vec.cbegin(), vec.cend(), vec.begin(), ::cuda::std::identity{}, thrust::maximum<>{});
+    thrust::device, vec.cbegin(), vec.cend(), vec.begin(), ::cuda::std::identity{}, ::cuda::maximum<>{});
 
   ASSERT_EQUAL((thrust::device_vector<T>{5, 5, 5, 8, 8, 8, 8, 8, 8, 9}), vec);
 
   vec.assign((T*) a_h, a_h + 10);
 
   thrust::transform_inclusive_scan(
-    thrust::device, vec.cbegin(), vec.cend(), vec.begin(), ::cuda::std::identity{}, T{}, thrust::maximum<>{});
+    thrust::device, vec.cbegin(), vec.cend(), vec.begin(), ::cuda::std::identity{}, T{}, ::cuda::maximum<>{});
 
   ASSERT_EQUAL((thrust::device_vector<T>{5, 5, 5, 8, 8, 8, 8, 8, 8, 9}), vec);
 
   vec.assign((T*) a_h, a_h + 10);
   thrust::transform_exclusive_scan(
-    thrust::device, vec.cbegin(), vec.cend(), vec.begin(), ::cuda::std::identity{}, T{}, thrust::maximum<>{});
+    thrust::device, vec.cbegin(), vec.cend(), vec.begin(), ::cuda::std::identity{}, T{}, ::cuda::maximum<>{});
 
   ASSERT_EQUAL((thrust::device_vector<T>{0, 5, 5, 5, 8, 8, 8, 8, 8, 8}), vec);
 }

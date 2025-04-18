@@ -142,7 +142,7 @@ template <typename Derived, typename InputIt, typename OutputIt, typename Binary
 OutputIt THRUST_RUNTIME_FUNCTION
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, BinaryOp binary_op)
 {
-  const auto num_items     = static_cast<std::size_t>(thrust::distance(first, last));
+  const auto num_items     = static_cast<std::size_t>(::cuda::std::distance(first, last));
   std::size_t storage_size = 0;
   cudaStream_t stream      = cuda_cub::stream(policy);
 
@@ -207,7 +207,7 @@ OutputIt _CCCL_HOST_DEVICE
 adjacent_difference(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   using input_type = thrust::detail::it_value_t<InputIt>;
-  return cuda_cub::adjacent_difference(policy, first, last, result, minus<input_type>());
+  return cuda_cub::adjacent_difference(policy, first, last, result, ::cuda::std::minus<input_type>());
 }
 
 } // namespace cuda_cub

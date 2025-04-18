@@ -253,7 +253,7 @@ void vector_base<T, Alloc>::range_init(InputIterator first, InputIterator last)
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    size_type new_size = thrust::distance(first, last);
+    size_type new_size = ::cuda::std::distance(first, last);
 
     allocate_and_copy(new_size, first, last, m_storage);
     m_size = new_size;
@@ -301,7 +301,7 @@ void vector_base<T, Alloc>::resize(size_type new_size)
   if (new_size < size())
   {
     iterator new_end = begin();
-    thrust::advance(new_end, new_size);
+    ::cuda::std::advance(new_end, new_size);
     erase(new_end, end());
   } // end if
   else
@@ -316,7 +316,7 @@ void vector_base<T, Alloc>::resize(size_type new_size, const value_type& x)
   if (new_size < size())
   {
     iterator new_end = begin();
-    thrust::advance(new_end, new_size);
+    ::cuda::std::advance(new_end, new_size);
     erase(new_end, end());
   } // end if
   else
@@ -443,7 +443,7 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::end()
 {
   iterator result = begin();
-  thrust::advance(result, size());
+  ::cuda::std::advance(result, size());
   return result;
 } // end vector_base::end()
 
@@ -451,7 +451,7 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE typename vector_base<T, Alloc>::const_iterator vector_base<T, Alloc>::end() const
 {
   const_iterator result = begin();
-  thrust::advance(result, size());
+  ::cuda::std::advance(result, size());
   return result;
 } // end vector_base::end()
 
@@ -610,14 +610,14 @@ template <typename T, typename Alloc>
 typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::insert(iterator position, const T& x)
 {
   // find the index of the insertion
-  size_type index = thrust::distance(begin(), position);
+  size_type index = ::cuda::std::distance(begin(), position);
 
   // make the insertion
   insert(position, 1, x);
 
   // return an iterator pointing back to position
   iterator result = begin();
-  thrust::advance(result, index);
+  ::cuda::std::advance(result, index);
   return result;
 } // end vector_base::insert()
 
@@ -673,7 +673,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
   if (first != last)
   {
     // how many new elements will we create?
-    const size_type num_new_elements = thrust::distance(first, last);
+    const size_type num_new_elements = ::cuda::std::distance(first, last);
     if (capacity() - size() >= num_new_elements)
     {
       // we've got room for all of them
@@ -701,7 +701,7 @@ void vector_base<T, Alloc>::copy_insert(iterator position, ForwardIterator first
       else
       {
         ForwardIterator mid = first;
-        thrust::advance(mid, num_displaced_elements);
+        ::cuda::std::advance(mid, num_displaced_elements);
 
         // construct copy new elements at the end of the vector
         m_storage.uninitialized_copy(mid, last, end());
@@ -950,7 +950,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
   using traversal = typename iterator_traversal<InputIterator>::type;
   if constexpr (::cuda::std::is_convertible_v<traversal, random_access_traversal_tag>)
   {
-    const size_type n = thrust::distance(first, last);
+    const size_type n = ::cuda::std::distance(first, last);
     if (n > capacity())
     {
       storage_type new_storage(copy_allocator_t(), m_storage);
@@ -984,7 +984,7 @@ void vector_base<T, Alloc>::range_assign(InputIterator first, InputIterator last
 
       // copy to elements which already exist
       InputIterator mid = first;
-      thrust::advance(mid, size());
+      ::cuda::std::advance(mid, size());
       thrust::copy(first, mid, begin());
 
       // uninitialize_copy to elements which must be constructed
@@ -1084,7 +1084,7 @@ void vector_base<T, Alloc>::allocate_and_copy(
     // something went wrong, so destroy & deallocate the new storage
     // XXX seems like this destroys too many elements -- should just be last - first instead of requested_size
     iterator new_storage_end = new_storage.begin();
-    thrust::advance(new_storage_end, requested_size);
+    ::cuda::std::advance(new_storage_end, requested_size);
     m_storage.destroy(new_storage.begin(), new_storage_end);
     new_storage.deallocate();
 
@@ -1104,7 +1104,7 @@ bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 fi
 template <typename InputIterator1, typename InputIterator2>
 bool vector_equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, thrust::detail::false_type)
 {
-  it_difference_t<InputIterator1> n = thrust::distance(first1, last1);
+  it_difference_t<InputIterator1> n = ::cuda::std::distance(first1, last1);
 
   using FromSystem1 = typename thrust::iterator_system<InputIterator1>::type;
   using FromSystem2 = typename thrust::iterator_system<InputIterator2>::type;

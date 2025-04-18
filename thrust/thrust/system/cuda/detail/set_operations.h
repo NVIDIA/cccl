@@ -1151,8 +1151,8 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 {
   using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
-  size_type num_keys1 = static_cast<size_type>(thrust::distance(keys1_first, keys1_last));
-  size_type num_keys2 = static_cast<size_type>(thrust::distance(keys2_first, keys2_last));
+  size_type num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
+  size_type num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
 
   if (num_keys1 + num_keys2 == 0)
   {
@@ -1277,7 +1277,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1324,7 +1324,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_intersection(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1371,7 +1371,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_symmetric_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1417,7 +1417,8 @@ OutputIt _CCCL_HOST_DEVICE set_union(
   OutputIt result)
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
-  return cuda_cub::set_union(policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+  return cuda_cub::set_union(
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1500,7 +1501,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1573,7 +1574,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
     items1_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1650,7 +1651,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1727,7 +1728,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 } // namespace cuda_cub
