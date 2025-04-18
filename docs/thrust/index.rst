@@ -34,7 +34,7 @@ CMake Example
 -------------
 
 A complete, standalone example project showing how to write a CMake build system that uses Thrust with any supported
-device system is available in the CCCL repository `here <https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system>`__
+device system is available in the CCCL repository `here <https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system>`__.
 
 ------------------
 Thrust API Example
