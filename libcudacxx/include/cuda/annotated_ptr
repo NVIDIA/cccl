@@ -193,19 +193,19 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr access_property(const access_property&) noexcept  = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
 
-  _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction)
+  _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction)}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(streaming, float __fraction)
+  _CCCL_HOST_DEVICE constexpr access_property(streaming, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(streaming{}, __fraction)}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(persisting, float __fraction)
+  _CCCL_HOST_DEVICE constexpr access_property(persisting, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction)}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction, streaming)
+  _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction, streaming{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(persisting, float __fraction, streaming)
+  _CCCL_HOST_DEVICE constexpr access_property(persisting, float __fraction, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction, streaming{})}
   {}
 
@@ -219,20 +219,21 @@ public:
       : access_property{persisting{}, 1.0f}
   {}
 
-  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal)
+  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming)
+  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, streaming{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting)
+  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming)
+  _CCCL_HOST_DEVICE constexpr access_property(
+    void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})}
   {}
   _CCCL_HOST_DEVICE constexpr access_property(
-    void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming)
+    void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})}
   {}
 
