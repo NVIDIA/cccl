@@ -33,25 +33,25 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element;
 
-template <size_t _Ip, class... _Tp>
-using __tuple_element_t _CCCL_NODEBUG_ALIAS = typename tuple_element<_Ip, _Tp...>::type;
+template <size_t _Ip, class _Tp>
+using tuple_element_t _CCCL_NODEBUG_ALIAS = typename tuple_element<_Ip, _Tp>::type;
 
 template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename add_const<__tuple_element_t<_Ip, _Tp>>::type;
+  using type _CCCL_NODEBUG_ALIAS = const tuple_element_t<_Ip, _Tp>;
 };
 
 template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, volatile _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename add_volatile<__tuple_element_t<_Ip, _Tp>>::type;
+  using type _CCCL_NODEBUG_ALIAS = volatile tuple_element_t<_Ip, _Tp>;
 };
 
 template <size_t _Ip, class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const volatile _Tp>
 {
-  using type _CCCL_NODEBUG_ALIAS = typename add_cv<__tuple_element_t<_Ip, _Tp>>::type;
+  using type _CCCL_NODEBUG_ALIAS = const volatile tuple_element_t<_Ip, _Tp>;
 };
 
 template <size_t _Ip, class... _Types>
@@ -60,9 +60,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, __tuple_types<_Types...>
   static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
   using type _CCCL_NODEBUG_ALIAS = __type_index_c<_Ip, _Types...>;
 };
-
-template <size_t _Ip, class... _Tp>
-using tuple_element_t _CCCL_NODEBUG_ALIAS = typename tuple_element<_Ip, _Tp...>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
