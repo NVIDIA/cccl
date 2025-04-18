@@ -302,9 +302,9 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
     using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<sum_t, offset_t, op_t>;
 
     // Get small and medium segment size thresholds from dispatch helper
-    const auto thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
-    const auto small      = ::cuda::std::get<0>(thresholds);
-    const auto medium     = ::cuda::std::get<1>(thresholds);
+    const ::cuda::std::tuple<int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
+    const auto small                              = ::cuda::std::get<0>(thresholds);
+    const auto medium                             = ::cuda::std::get<1>(thresholds);
 
     // Take one random segment size from each of the segment sizes
     const segment_size_t segment_size =
