@@ -13,6 +13,7 @@
 #include <type_traits>
 
 #include <cccl/c/types.h>
+#include <stdio.h>
 
 struct indirect_arg_t
 {
@@ -70,11 +71,17 @@ struct indirect_iterator_t
   {
     if (value_size)
     {
+      fflush(stderr);
+      printf("SIGNED  Pointer\n");
+      fflush(stdout);
       // CCCL_POINTER case
       ptr = reinterpret_cast<void*>(reinterpret_cast<char*>(ptr) + (signed_offset * value_size));
     }
     else
     {
+      fflush(stderr);
+      printf("SIGNED  Iterator\n");
+      fflush(stdout);
       if (host_advance_fn_p)
       {
         cccl_increment_t incr{.signed_offset = signed_offset};
@@ -89,11 +96,18 @@ struct indirect_iterator_t
   {
     if (value_size)
     {
+      fflush(stderr);
+      printf("UNSIGNED Pointer\n");
+      fflush(stdout);
       // CCCL_POINTER case
       ptr = reinterpret_cast<void*>(reinterpret_cast<char*>(ptr) + (unsigned_offset * value_size));
     }
     else
     {
+      fflush(stderr);
+      printf("UNSIGNED  Iterator\n");
+      fflush(stdout);
+
       if (host_advance_fn_p)
       {
         cccl_increment_t incr{.unsigned_offset = unsigned_offset};
