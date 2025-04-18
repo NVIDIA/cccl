@@ -11,6 +11,8 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/std/tuple>
+
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
