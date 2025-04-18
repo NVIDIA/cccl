@@ -21,7 +21,7 @@ def test_radix_sort():
     d_out_keys = cp.empty_like(d_in_keys)
     d_out_values = cp.empty_like(d_in_values)
 
-    # Instantiate merge_sort for the given keys, items, and operator
+    # Instantiate radix_sort for the given keys, items, and operator
     radix_sort = algorithms.radix_sort(
         d_in_keys, d_out_keys, d_in_values, d_out_values, algorithms.SortOrder.ASCENDING
     )
@@ -34,7 +34,7 @@ def test_radix_sort():
     # Allocate temporary storage
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
-    # Run merge_sort
+    # Run radix_sort
     radix_sort(
         d_temp_storage, d_in_keys, d_out_keys, d_in_values, d_out_values, d_in_keys.size
     )
@@ -73,7 +73,7 @@ def test_radix_sort_double_buffer():
     keys_double_buffer = algorithms.DoubleBuffer(d_in_keys, d_out_keys)
     values_double_buffer = algorithms.DoubleBuffer(d_in_values, d_out_values)
 
-    # Instantiate merge_sort for the given keys, items, and operator
+    # Instantiate radix_sort for the given keys, items, and operator
     radix_sort = algorithms.radix_sort(
         keys_double_buffer,
         None,
@@ -90,7 +90,7 @@ def test_radix_sort_double_buffer():
     # Allocate temporary storage
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
-    # Run merge_sort
+    # Run radix_sort
     radix_sort(
         d_temp_storage,
         keys_double_buffer,

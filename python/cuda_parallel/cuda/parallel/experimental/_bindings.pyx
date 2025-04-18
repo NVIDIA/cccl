@@ -1713,7 +1713,6 @@ cdef extern from "cccl/c/radix_sort.h":
 
 cdef class DeviceRadixSortBuildResult:
     cdef cccl_device_radix_sort_build_result_t build_data
-    cdef bint _initialized
 
     def __dealloc__(DeviceRadixSortBuildResult self):
         cdef CUresult status = -1

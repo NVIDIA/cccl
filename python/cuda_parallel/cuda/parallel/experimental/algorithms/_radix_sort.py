@@ -28,7 +28,7 @@ class DoubleBuffer:
         return self.d_buffers[self.selector]
 
     def alternate(self):
-        return self.d_buffers[self.selector ^ 1]
+        return self.d_buffers[1 - self.selector]
 
 
 def make_cache_key(
@@ -188,7 +188,7 @@ class _RadixSort:
         )
 
         if is_overwrite_okay and temp_storage is not None:
-            assert selector in {0, 1}
+            assert selector in (0, 1)
             assert isinstance(d_in_keys, DoubleBuffer)
             d_in_keys.selector = selector
             if d_in_values is not None:
