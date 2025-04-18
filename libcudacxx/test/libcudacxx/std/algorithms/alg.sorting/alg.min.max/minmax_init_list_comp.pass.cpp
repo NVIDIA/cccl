@@ -31,7 +31,7 @@ struct all_equal
   } // everything is equal
 };
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_all_equal(cuda::std::initializer_list<int> il)
+__host__ __device__ constexpr void test_all_equal(cuda::std::initializer_list<int> il)
 {
   binary_counting_predicate<all_equal, int, int> pred(all_equal{});
   cuda::std::pair<int, int> p = cuda::std::minmax(il, pred);
@@ -42,7 +42,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_all_equal(cuda::std::initiali
   unused(ptr);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
   assert((cuda::std::minmax({1, 2, 3}, cuda::std::greater<int>()) == cuda::std::pair<int, int>(3, 1)));
   assert((cuda::std::minmax({1, 3, 2}, cuda::std::greater<int>()) == cuda::std::pair<int, int>(3, 1)));

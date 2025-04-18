@@ -818,7 +818,7 @@ host.
 The first argument passed to ``ctx.task`` is called an *execution place*
 and tells CUDASTF where the task is expected to execute.
 ``exec_place::device(id)`` means that the task will run on device
-``id``, and ``exec_place::host`` specifies that the task will execute on
+``id``, and ``exec_place::host()`` specifies that the task will execute on
 the host.
 
 Regardless of the *execution place*, it is important to note that the
@@ -826,7 +826,7 @@ task’s body (i.e., the contents of the lambda function) corresponds to
 CPU code that is expected to launch computation asynchronously. When
 using ``exec_place::device(id)``, CUDASTF will automatically set the
 current CUDA device to ``id`` when the task is started, and restore the
-previous current device when the task ends. ``exec_place::host`` does
+previous current device when the task ends. ``exec_place::host()`` does
 not affect the current CUDA device.
 
 .. code:: cpp
@@ -845,7 +845,7 @@ not affect the current CUDA device.
        inc_kernel<<<1, 1, 0, stream>>>(sX);
    };
 
-   ctx.task(exec_place::host, lX.read())->*[](cudaStream_t stream, auto sX) {
+   ctx.task(exec_place::host(), lX.read())->*[](cudaStream_t stream, auto sX) {
        cudaStreamSynchronize(stream);
        assert(sX(0) == 44);
    };
@@ -897,7 +897,7 @@ for the second task.
        ...
    };
 
-   ctx.task(exec_place::host, lA.rw())->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::host(), lA.rw())->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -905,11 +905,11 @@ The code above is equivalent with:
 
 .. code:: cpp
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::affine))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::affine()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::affine))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::affine()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -921,7 +921,7 @@ The affinity can also be made explicit:
        ...
    };
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::host))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::host()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -932,7 +932,7 @@ device ``0``:
 
 .. code:: cpp
 
-   ctx.task(exec_place::device(0), lA.rw(data_place::host))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::device(0), lA.rw(data_place::host()))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -947,7 +947,7 @@ on a device:
 
 .. code:: cpp
 
-   ctx.task(exec_place::host, lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
+   ctx.task(exec_place::host(), lA.rw(data_place::device(0)))->*[](cudaStream_t s, auto a) {
        ...
    };
 
@@ -1781,7 +1781,7 @@ one may however already manage coherency or enforce dependencies.
 
 - The "logical data freezing" mechanism ensures data availability while letting
   the application take care of synchronization.
-- Logical token makes it possible to enforce concurrent execution while
+- Tokens make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 
 Freezing logical data
@@ -1814,7 +1814,7 @@ when calling ``get``.
 
     // Get a read-only copy of the frozen data on other data places
     auto dX1 = frozen_ld.get(data_place::device(1), stream);
-    auto hX = frozen_ld.get(data_place::host, stream);
+    auto hX = frozen_ld.get(data_place::host(), stream);
 
     fx.unfreeze(stream);
 
@@ -1856,24 +1856,24 @@ depend on the completion of the work in the streams used for any preceding
 It is possible to retrieve the access mode used to freeze a logical data with
 the ``get_access_mode()`` method of the ``frozen_logical_data`` object.
 
-Logical token
-^^^^^^^^^^^^^
+Tokens
+^^^^^^
 
-A logical token is a specific type of logical data whose only purpose is to
+A token is a specific type of logical data whose only purpose is to
 automate synchronization, while letting the application manage the actual data.
 This can, for example, be useful with user-provided buffers on a single device,
 where no allocations or transfers are required, but where concurrent accesses
 may occur.
 
-A logical token internally relies on the ``void_interface`` data interface,
+A token internally relies on the ``void_interface`` data interface,
 which is specifically optimized to skip unnecessary stages in the cache
 coherency protocol (e.g., data allocations or copying data). When appropriate,
-using a logical token rather than a logical data with a full-fledged data
+using a token rather than a logical data with a full-fledged data
 interface therefore minimizes runtime overhead.
 
 .. code:: cpp
 
-    auto token = ctx.logical_token();
+    auto token = ctx.token();
 
     // A and B are assumed to be two other valid logical data
     ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, auto a, auto b)
@@ -1881,10 +1881,10 @@ interface therefore minimizes runtime overhead.
         ...
     };
 
-The example above shows how to create a logical token and how to use it in a
+The example above shows how to create a token and how to use it in a
 task.
 
-Since the logical token is only used for synchronization purposes, the
+Since the token is only used for synchronization purposes, the
 corresponding argument may be omitted in the lambda function passed as the
 task’s implementation. Thus, the above task is equivalent to this code:
 
@@ -1897,10 +1897,14 @@ To avoid ambiguities, you must either consistently ignore every
 unused. Eliding these token arguments is possible in the ``ctx.task`` and
 ``ctx.host_launch`` constructs.
 
-Note that the token created by the ``logical_token`` method of the context
+Note that the token created by the ``token`` method of the context
 object is already valid, which means the first access can be either a ``read()``
 or an ``rw()`` access. There is no need to set any content in the token
 (unlike a logical data object created from a shape).
+
+A token corresponds to a ``logical_data<void_interface>`` object, so that the
+``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
+returns an object with a ``token`` type.
 
 Tools
 -----
@@ -2022,9 +2026,9 @@ illustrates how to add nested sections:
 .. code:: c++
 
     context ctx;
-    auto lA = ctx.logical_token().set_symbol("A");
-    auto lB = ctx.logical_token().set_symbol("B");
-    auto lC = ctx.logical_token().set_symbol("C");
+    auto lA = ctx.token().set_symbol("A");
+    auto lB = ctx.token().set_symbol("B");
+    auto lC = ctx.token().set_symbol("C");
 
     // Begin a top-level section named "foo"
     auto s_foo = ctx.dot_section("foo");
@@ -2249,8 +2253,8 @@ Syntax:
 
 - **Data Places**: Specify where a logical data in the data dependencies should be located:
 
-  - `data_place::affine` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
-  - `data_place::managed`: Use managed memory.
+  - `data_place::affine()` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
+  - `data_place::managed()`: Use managed memory.
   - `data_place::device(i)`: Put data in the memory of the i-th CUDA device (which may be different from the current device or the device of the execution place).
 
 - **Access Modes**:
@@ -2277,7 +2281,7 @@ Syntax:
 
   - `exec_place::current_device()` (default): Run on current CUDA device.
   - `exec_place::device(ID)`: Run on CUDA device identified by its index.
-  - `exec_place::host`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
+  - `exec_place::host()`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
 
 Examples:
 

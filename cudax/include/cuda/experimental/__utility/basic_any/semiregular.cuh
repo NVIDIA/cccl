@@ -27,6 +27,7 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
@@ -45,21 +46,21 @@
 _CCCL_PUSH_MACROS
 #undef interface
 
-#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
 // WAR for NVBUG #4924416
 #  define _CUDAX_FNPTR_CONSTANT_WAR(...) ::cuda::experimental::__constant_war(__VA_ARGS__)
 namespace cuda::experimental
 {
 template <class _Tp>
-_CCCL_NODISCARD _CUDAX_HOST_API constexpr _Tp __constant_war(_Tp __val) noexcept
+[[nodiscard]] _CUDAX_HOST_API constexpr _Tp __constant_war(_Tp __val) noexcept
 {
   return __val;
 }
 } // namespace cuda::experimental
-#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC) ^^^ /
-      // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC) vvv
 #  define _CUDAX_FNPTR_CONSTANT_WAR(...) __VA_ARGS__
-#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVHPC)
+#endif // !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVHPC)
 
 namespace cuda::experimental
 {
@@ -76,7 +77,7 @@ _CUDAX_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept -> void
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
-_CCCL_NODISCARD _CUDAX_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align) -> bool
+[[nodiscard]] _CUDAX_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
   if (__is_small<_Tp>(__size, __align))
   {
@@ -92,7 +93,7 @@ _CCCL_NODISCARD _CUDAX_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, si
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
-_CCCL_NODISCARD _CUDAX_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align) -> bool
+[[nodiscard]] _CUDAX_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
   if (__is_small<_Tp>(__size, __align))
   {
@@ -108,7 +109,7 @@ _CCCL_NODISCARD _CUDAX_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, 
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
-_CCCL_NODISCARD _CUDAX_PUBLIC_API auto
+[[nodiscard]] _CUDAX_PUBLIC_API auto
 __equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __other) -> bool
 {
   if (_CCCL_TYPEID(_Tp) == __type)
@@ -120,7 +121,7 @@ __equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __
 
 _CCCL_TEMPLATE(class _From, class _To)
 _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<_From, _To>)
-_CCCL_NODISCARD _CUDAX_PUBLIC_API _To __conversion_fn(_CUDA_VSTD::type_identity_t<_From> __self)
+[[nodiscard]] _CUDAX_PUBLIC_API _To __conversion_fn(_CUDA_VSTD::type_identity_t<_From> __self)
 {
   return static_cast<_To>(static_cast<_From&&>(__self));
 }
@@ -141,7 +142,7 @@ struct imovable : interface<imovable>
     return __cudax::virtcall<&__move_fn<imovable>>(this, __pv);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
+  [[nodiscard]] _CUDAX_HOST_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
   {
     return __cudax::virtcall<&__try_move_fn<imovable>>(this, __pv, __size, __align);
   }
@@ -154,7 +155,7 @@ struct icopyable : interface<icopyable, extends<imovable<>>>
   _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__copy_fn<_Tp>)>;
 
-  _CCCL_NODISCARD _CUDAX_HOST_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
+  [[nodiscard]] _CUDAX_HOST_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
     return virtcall<&__copy_fn<icopyable>>(this, __pv, __size, __align);
   }
@@ -171,13 +172,13 @@ struct iequality_comparable_base : interface<iequality_comparable>
   // These overloads are only necessary so that iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
   // `iequality_comparable<>::overloads` alias template below.
-  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
   operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
   }
 
-  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
@@ -275,11 +276,7 @@ struct __iconvertible_to
 template <class _To>
 struct __iconvertible_to<self&&, _To>
 {
-  template <class>
-  struct __always_false : _CUDA_VSTD::false_type
-  {};
-
-  static_assert(__always_false<_To>::value, "rvalue-qualified conversion operations are not yet supported");
+  static_assert(_CUDA_VSTD::__always_false_v<_To>, "rvalue-qualified conversion operations are not yet supported");
 };
 
 template <class _To>
@@ -288,7 +285,7 @@ struct __iconvertible_to<self, _To>
   template <class...>
   struct __interface_ : interface<__interface_>
   {
-    _CCCL_NODISCARD _CUDAX_HOST_API operator _To()
+    [[nodiscard]] _CUDAX_HOST_API operator _To()
     {
       return __cudax::virtcall<__conversion_fn<__interface_, _To>>(this);
     }
@@ -304,7 +301,7 @@ struct __iconvertible_to<self&, _To>
   template <class...>
   struct __interface_ : interface<__interface_>
   {
-    _CCCL_NODISCARD _CUDAX_HOST_API operator _To() &
+    [[nodiscard]] _CUDAX_HOST_API operator _To() &
     {
       return __cudax::virtcall<&__conversion_fn<__interface_&, _To>>(this);
     }
@@ -320,7 +317,7 @@ struct __iconvertible_to<self const&, _To>
   template <class...>
   struct __interface_ : interface<__interface_>
   {
-    _CCCL_NODISCARD _CUDAX_HOST_API operator _To() const&
+    [[nodiscard]] _CUDAX_HOST_API operator _To() const&
     {
       return __cudax::virtcall<&__conversion_fn<__interface_ const&, _To>>(this);
     }

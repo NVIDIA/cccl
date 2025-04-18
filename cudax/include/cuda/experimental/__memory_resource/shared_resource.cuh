@@ -21,16 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-// If the memory resource header was included without the experimental flag,
-// tell the user to define the experimental flag.
-#if defined(_CUDA_MEMORY_RESOURCE) && !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-#  error "To use the experimental memory resource, define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
-#endif
-
-#if !defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
-#  define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
-#endif
-
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_swappable.h>
@@ -145,7 +135,7 @@ struct shared_resource
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory
-  _CCCL_NODISCARD void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  [[nodiscard]] void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
     return __control_block->__resource.allocate(__bytes, __alignment);
   }
@@ -169,7 +159,7 @@ struct shared_resource
   //! operation has completed.
   _CCCL_TEMPLATE(class _ThisResource = _Resource)
   _CCCL_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  _CCCL_NODISCARD void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  [[nodiscard]] void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
     return this->__control_block->__resource.allocate_async(__bytes, __alignment, __stream);
   }

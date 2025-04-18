@@ -42,8 +42,7 @@ int main(int, char**)
 #  include "test_macros.h"
 
 template <class CharT, cuda::std::size_t N>
-TEST_CONSTEXPR_CXX14 void
-check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const& b, CharT zero, CharT one)
+constexpr void check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const& b, CharT zero, CharT one)
 {
   assert(s.size() == b.size());
   for (cuda::std::size_t i = 0; i < b.size(); ++i)
@@ -60,7 +59,7 @@ check_equal(cuda::std::basic_string<CharT> const& s, cuda::std::bitset<N> const&
 }
 
 template <cuda::std::size_t N>
-TEST_CONSTEXPR_CXX14 bool test_to_string()
+constexpr bool test_to_string()
 {
   cuda::std::vector<cuda::std::bitset<N>> const cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)
@@ -100,7 +99,7 @@ TEST_CONSTEXPR_CXX14 bool test_to_string()
 
 #  ifndef TEST_HAS_NO_WIDE_CHARACTERS
 template <cuda::std::size_t N>
-TEST_CONSTEXPR_CXX14 bool test_to_string_wchar()
+constexpr bool test_to_string_wchar()
 {
   cuda::std::vector<cuda::std::bitset<N>> const cases = get_test_cases(cuda::std::integral_constant<int, N>());
   for (cuda::std::size_t c = 0; c != cases.size(); ++c)

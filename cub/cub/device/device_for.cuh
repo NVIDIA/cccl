@@ -104,7 +104,7 @@ struct op_wrapper_vectorized_t
     { // Case of fully filled vector
       const vector_t vec = *reinterpret_cast<const vector_t*>(input + vec_size * i);
 
-#pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int j = 0; j < vec_size; j++)
       {
         (void) op(*(reinterpret_cast<const T*>(&vec) + j));
@@ -705,7 +705,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
 
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
@@ -832,7 +832,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
-    const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
+    const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 

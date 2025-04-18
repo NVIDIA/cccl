@@ -59,9 +59,8 @@ public:
   }
 
 private:
-  void sync_host_to_device(::cuda::stream_ref __str, detail::__param_kind __p) const
+  void sync_host_to_device([[maybe_unused]] ::cuda::stream_ref __str, detail::__param_kind __p) const
   {
-    (void) __str;
     if (__dirty_)
     {
       if (__p == detail::__param_kind::_out)
@@ -84,7 +83,7 @@ private:
     if (__p != detail::__param_kind::_in)
     {
       // TODO: use a memcpy async here
-      __str.wait(); // wait for the kernel to finish executing
+      __str.sync(); // wait for the kernel to finish executing
       __h_ = __d_;
     }
   }

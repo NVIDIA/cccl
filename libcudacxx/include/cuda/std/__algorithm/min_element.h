@@ -60,7 +60,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __l
 }
 
 template <class _ForwardIterator, class _Compare>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value, "std::min_element requires a ForwardIterator");
@@ -72,7 +72,7 @@ min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::min_element(__first, __last, __less{});

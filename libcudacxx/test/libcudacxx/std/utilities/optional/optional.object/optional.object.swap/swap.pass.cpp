@@ -82,14 +82,14 @@ public:
   {
     return x.i_ == y.i_;
   }
-  __host__ __device__ friend TEST_CONSTEXPR_CXX14 void swap(W& x, W& y) noexcept
+  __host__ __device__ friend constexpr void swap(W& x, W& y) noexcept
   {
     cuda::std::swap(x.i_, y.i_);
   }
 };
 
 template <class T>
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool check_swap()
+__host__ __device__ constexpr bool check_swap()
 {
   {
     optional<T> opt1;
@@ -157,7 +157,7 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
@@ -250,7 +250,7 @@ void test_exceptions()
     assert(*opt2 == 2);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -402,9 +402,9 @@ int main(int, char**)
     assert(cuda::std::addressof(other_value) == cuda::std::addressof(*opt1));
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

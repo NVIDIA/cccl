@@ -87,7 +87,7 @@ public:
     event_list prereqs = acquire(ctx);
 
     // The CUDA graph API does not like duplicate dependencies
-    prereqs.optimize();
+    prereqs.optimize(ctx);
 
     // Reserve for better performance
     ready_dependencies.reserve(prereqs.size());
@@ -235,7 +235,7 @@ public:
     auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
-    const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto;
+    const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto();
     bool calibrate     = false;
 
     // We need to know the data footprint if scheduling or calibrating tasks

@@ -56,7 +56,7 @@ struct get_stream_t
 {
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__convertible_to_stream_ref<_Tp>)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
     noexcept(noexcept(static_cast<::cuda::stream_ref>(__t)))
   {
     return static_cast<::cuda::stream_ref>(__t);
@@ -64,7 +64,7 @@ struct get_stream_t
 
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_stream<_Tp>)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
     noexcept(noexcept(__t.get_stream()))
   {
     return __t.get_stream();
@@ -72,7 +72,7 @@ struct get_stream_t
 
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_stream<_Env>)
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)), "");
     return __env.query(*this);

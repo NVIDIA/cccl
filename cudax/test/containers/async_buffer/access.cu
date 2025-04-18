@@ -23,14 +23,15 @@
 #include "helper.h"
 #include "types.h"
 
-TEMPLATE_TEST_CASE("cudax::async_buffer access",
-                   "[container][async_buffer]",
-                   cuda::std::tuple<cuda::mr::host_accessible>,
-                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
+C2H_TEST("cudax::async_buffer access",
+         "[container][async_buffer]",
+         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
 {
-  using Env             = typename extract_properties<TestType>::env;
-  using Resource        = typename extract_properties<TestType>::resource;
-  using Buffer          = typename extract_properties<TestType>::async_buffer;
+  using TestT           = c2h::get<0, TestType>;
+  using Env             = typename extract_properties<TestT>::env;
+  using Resource        = typename extract_properties<TestT>::resource;
+  using Buffer          = typename extract_properties<TestT>::async_buffer;
   using T               = typename Buffer::value_type;
   using reference       = typename Buffer::reference;
   using const_reference = typename Buffer::const_reference;
@@ -66,7 +67,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer access",
 
     {
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.wait();
+      buf.sync();
       auto& res = buf.get_unsynchronized(2);
       CUDAX_CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
@@ -85,14 +86,14 @@ TEMPLATE_TEST_CASE("cudax::async_buffer access",
 
     { // Works without allocation
       Buffer buf{env};
-      buf.wait();
+      buf.sync();
       CUDAX_CHECK(buf.data() == nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == nullptr);
     }
 
     { // Works with allocation
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.wait();
+      buf.sync();
       CUDAX_CHECK(buf.data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());

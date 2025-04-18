@@ -49,21 +49,6 @@
 #  define _CCCL_DECLSPEC_EMPTY_BASES
 #endif // !_CCCL_COMPILER(MSVC)
 
-// Use a function like macro to imply that it must be followed by a semicolon
-#if _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
-#  define _CCCL_FALLTHROUGH() [[fallthrough]]
-#elif _CCCL_COMPILER(NVRTC)
-#  define _CCCL_FALLTHROUGH() ((void) 0)
-#elif _CCCL_HAS_CPP_ATTRIBUTE(clang::fallthrough)
-#  define _CCCL_FALLTHROUGH() [[clang::fallthrough]]
-#elif _CCCL_COMPILER(NVHPC)
-#  define _CCCL_FALLTHROUGH()
-#elif _CCCL_HAS_ATTRIBUTE(fallthrough) || _CCCL_COMPILER(GCC, >=, 7)
-#  define _CCCL_FALLTHROUGH() __attribute__((__fallthrough__))
-#else
-#  define _CCCL_FALLTHROUGH() ((void) 0)
-#endif
-
 #if _CCCL_HAS_ATTRIBUTE(__nodebug__)
 #  define _CCCL_NODEBUG __attribute__((__nodebug__))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__nodebug__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__nodebug__) vvv
@@ -94,28 +79,11 @@
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || _CCCL_COMPILER(MSVC)
-#  define _CCCL_NODISCARD [[nodiscard]]
-#else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv
-#  define _CCCL_NODISCARD
-#endif // no nodiscard
-
-// NVCC below 11.3 does not support nodiscard on friend operators
 // It always fails with clang
 #if _CCCL_COMPILER(CLANG)
 #  define _CCCL_NODISCARD_FRIEND friend
 #else
-#  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
-#endif
-
-#define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
-
-#if _CCCL_COMPILER(MSVC)
-#  define _CCCL_NORETURN __declspec(noreturn)
-#elif _CCCL_HAS_CPP_ATTRIBUTE(noreturn)
-#  define _CCCL_NORETURN [[noreturn]]
-#else
-#  define _CCCL_NORETURN __attribute__((noreturn))
+#  define _CCCL_NODISCARD_FRIEND [[nodiscard]] friend
 #endif
 
 #if _CCCL_COMPILER(MSVC) // vvv _CCCL_COMPILER(MSVC) vvv
@@ -126,8 +94,45 @@
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#elif _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(NVHPC)
+#  define _CCCL_ASSUME(...) \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
+#else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
-#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#endif
+
+#if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
+#  define _CCCL_PURE __nv_pure__
+#elif _CCCL_HAS_CPP_ATTRIBUTE(pure) || _CCCL_COMPILER(CLANG)
+#  define _CCCL_PURE [[gnu::pure]]
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_PURE __declspec(noalias)
+#else
+#  define _CCCL_PURE
+#endif
+
+#if !_CCCL_COMPILER(MSVC) // _CCCL_HAS_CPP_ATTRIBUTE(const) doesn't work with MSVC
+#  if _CCCL_HAS_CPP_ATTRIBUTE(const) || _CCCL_COMPILER(CLANG)
+#    define _CCCL_CONST [[gnu::const]]
+#  else
+#    define _CCCL_CONST _CCCL_PURE
+#  endif
+#else
+#  define _CCCL_CONST _CCCL_PURE
+#endif
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::no_specializations(_MSG)]]
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[msvc::no_specializations(_MSG)]]
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
+#else // ^^^ has attribute no_specializations ^^^ / vvv hasn't attribute no_specializations vvv
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 0
+#endif // ^^^ hasn't attribute no_specializations ^^^
+
+#define _CCCL_NO_SPECIALIZATIONS \
+  _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")
 
 #endif // __CCCL_ATTRIBUTES_H

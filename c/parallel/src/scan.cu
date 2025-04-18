@@ -133,7 +133,8 @@ get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t /*output_it*/, cc
   return std::format("cub::detail::scan::DeviceScanInitKernel<cub::ScanTileState<{0}>>", accum_cpp_t);
 }
 
-std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t op, cccl_value_t init)
+std::string get_scan_kernel_name(
+  cccl_iterator_t input_it, cccl_iterator_t output_it, cccl_op_t op, cccl_value_t init, bool force_inclusive)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_scan_policy>(&chained_policy_t));
@@ -167,7 +168,7 @@ std::string get_scan_kernel_name(cccl_iterator_t input_it, cccl_iterator_t outpu
     init_t, // 5
     offset_t, // 6
     accum_cpp_t, // 7
-    "false", // 8 - for now, always exclusive
+    force_inclusive ? "true" : "false", // 8
     init_t); // 9
 }
 
@@ -214,6 +215,7 @@ CUresult cccl_device_scan_build(
   cccl_iterator_t output_it,
   cccl_op_t op,
   cccl_value_t init,
+  bool force_inclusive,
   int cc_major,
   int cc_minor,
   const char* cub_path,
@@ -239,7 +241,7 @@ CUresult cccl_device_scan_build(
     const std::string output_iterator_src =
       make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
 
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
+    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
     constexpr std::string_view src_template = R"XXX(
 #include <cub/block/block_scan.cuh>
@@ -287,14 +289,15 @@ struct device_scan_policy {{
 #endif
 
     std::string init_kernel_name = scan::get_init_kernel_name(input_it, output_it, op, init);
-    std::string scan_kernel_name = scan::get_scan_kernel_name(input_it, output_it, op, init);
+    std::string scan_kernel_name = scan::get_scan_kernel_name(input_it, output_it, op, init, force_inclusive);
     std::string init_kernel_lowered_name;
     std::string scan_kernel_lowered_name;
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -330,6 +333,7 @@ struct device_scan_policy {{
     build_ptr->cubin                      = (void*) result.data.release();
     build_ptr->cubin_size                 = result.size;
     build_ptr->accumulator_type           = accum_t;
+    build_ptr->force_inclusive            = force_inclusive;
     build_ptr->description_bytes_per_tile = description_bytes_per_tile;
     build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   }
@@ -344,6 +348,7 @@ struct device_scan_policy {{
   return error;
 }
 
+template <cub::ForceInclusive EnforceInclusive>
 CUresult cccl_device_scan(
   cccl_device_scan_build_result_t build,
   void* d_temp_storage,
@@ -370,7 +375,7 @@ CUresult cccl_device_scan(
       indirect_arg_t,
       ::cuda::std::size_t,
       void,
-      cub::ForceInclusive::No,
+      EnforceInclusive,
       scan::dynamic_scan_policy_t<&scan::get_policy>,
       scan::scan_kernel_source,
       cub::detail::CudaDriverLauncherFactory>::
@@ -405,6 +410,38 @@ CUresult cccl_device_scan(
     cuCtxPopCurrent(&cu_context);
   }
   return error;
+}
+
+CUresult cccl_device_exclusive_scan(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_value_t init,
+  CUstream stream)
+{
+  assert(!build.force_inclusive);
+  return cccl_device_scan<cub::ForceInclusive::No>(
+    build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
+}
+
+CUresult cccl_device_inclusive_scan(
+  cccl_device_scan_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_in,
+  cccl_iterator_t d_out,
+  uint64_t num_items,
+  cccl_op_t op,
+  cccl_value_t init,
+  CUstream stream)
+{
+  assert(build.force_inclusive);
+  return cccl_device_scan<cub::ForceInclusive::Yes>(
+    build, d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, stream);
 }
 
 CUresult cccl_device_scan_cleanup(cccl_device_scan_build_result_t* build_ptr)

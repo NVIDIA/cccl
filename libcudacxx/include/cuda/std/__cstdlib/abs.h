@@ -23,27 +23,27 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int abs(int __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int abs(int __val) noexcept
 {
   return (__val < 0) ? -__val : __val;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long labs(long __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr long labs(long __val) noexcept
 {
   return (__val < 0l) ? -__val : __val;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long abs(long __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr long abs(long __val) noexcept
 {
   return _CUDA_VSTD::labs(__val);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long long llabs(long long __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr long long llabs(long long __val) noexcept
 {
   return (__val < 0ll) ? -__val : __val;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long long abs(long long __val) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr long long abs(long long __val) noexcept
 {
   return _CUDA_VSTD::llabs(__val);
 }

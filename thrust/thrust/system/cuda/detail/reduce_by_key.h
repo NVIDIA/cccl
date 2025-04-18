@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -58,9 +58,8 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
+#  include <cuda/std/cstdint>
 #  include <cuda/std/iterator>
-
-#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -212,8 +211,8 @@ struct ReduceByKeyAgent
 
     // Whether or not the scan operation has a zero-valued identity value
     // (true if we're performing addition on a primitive type)
-    HAS_IDENTITY_ZERO =
-      ::cuda::std::is_same<ReductionOp, plus<value_type>>::value && ::cuda::std::is_arithmetic<value_type>::value
+    HAS_IDENTITY_ZERO = ::cuda::std::is_same<ReductionOp, ::cuda::std::plus<value_type>>::value
+                     && ::cuda::std::is_arithmetic<value_type>::value
   };
 
   struct impl
@@ -293,7 +292,7 @@ struct ReduceByKeyAgent
       size_value_pair_t (&scan_items)[ITEMS_PER_THREAD])
     {
       // Zip values and segment_flags
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         // Set segment_flags for first out-of-bounds item, zero for others
@@ -314,7 +313,7 @@ struct ReduceByKeyAgent
       key_value_pair_t (&scatter_items)[ITEMS_PER_THREAD])
     {
       // Zip values and segment_flags
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         scatter_items[ITEM].key   = keys[ITEM];
@@ -335,7 +334,7 @@ struct ReduceByKeyAgent
       size_type (&segment_indices)[ITEMS_PER_THREAD])
     {
       // Scatter flagged keys and values
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (segment_flags[ITEM])
@@ -363,7 +362,7 @@ struct ReduceByKeyAgent
       __syncthreads();
 
       // Compact and scatter keys
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (segment_flags[ITEM])
@@ -895,7 +894,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
 {
   using size_type = thrust::detail::it_difference_t<KeysInputIt>;
 
-  size_type num_items = thrust::distance(keys_first, keys_last);
+  size_type num_items = ::cuda::std::distance(keys_first, keys_last);
 
   pair<KeysOutputIt, ValuesOutputIt> result = thrust::make_pair(keys_output, values_output);
 
@@ -967,7 +966,14 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
                                       thrust::detail::it_value_t<ValInputIt>,
                                       thrust::detail::it_value_t<ValOutputIt>>;
   return cuda_cub::reduce_by_key(
-    policy, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, plus<value_type>());
+    policy,
+    keys_first,
+    keys_last,
+    values_first,
+    keys_output,
+    values_output,
+    binary_pred,
+    ::cuda::std::plus<value_type>());
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
@@ -981,7 +987,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
 {
   using KeyT = thrust::detail::it_value_t<KeyInputIt>;
   return cuda_cub::reduce_by_key(
-    policy, keys_first, keys_last, values_first, keys_output, values_output, equal_to<KeyT>());
+    policy, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyT>());
 }
 
 } // namespace cuda_cub

@@ -18,7 +18,9 @@ struct UserAtomicType
 {
   int i;
 
-  __host__ __device__ explicit UserAtomicType(int d = 0) TEST_NOEXCEPT : i(d) {}
+  __host__ __device__ explicit UserAtomicType(int d = 0) noexcept
+      : i(d)
+  {}
 
   __host__ __device__ friend bool operator==(const UserAtomicType& x, const UserAtomicType& y)
   {
@@ -49,10 +51,8 @@ struct TestEachIntegralType
     TestFunctor<long long, Selector, Scope>()();
     TestFunctor<unsigned long long, Selector, Scope>()();
     TestFunctor<wchar_t, Selector, Scope>();
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
     TestFunctor<char16_t, Selector, Scope>()();
     TestFunctor<char32_t, Selector, Scope>()();
-#endif
     TestFunctor<int8_t, Selector, Scope>()();
     TestFunctor<uint8_t, Selector, Scope>()();
     TestFunctor<int16_t, Selector, Scope>()();

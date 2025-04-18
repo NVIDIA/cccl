@@ -22,9 +22,7 @@
 #include "test_convertible.h"
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4244) // conversion from 'const From' to 'short', possible loss of data
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const From' to 'short', possible loss of data
 
 using cuda::std::optional;
 
@@ -82,9 +80,8 @@ enum class IsExplicit
 };
 
 template <IsExplicit is_explicit, class To, class From>
-__host__ __device__ constexpr void test(From input)
+__host__ __device__ constexpr void test([[maybe_unused]] From input)
 {
-  (void) input;
   if constexpr (cuda::std::is_convertible_v<const From&, optional<To>>)
   {
     static_assert(is_explicit == IsExplicit::No);
@@ -172,7 +169,7 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct ImplicitThrow
 {
   constexpr ImplicitThrow(int x)
@@ -222,7 +219,7 @@ void test_exceptions()
   test_exceptions<ImplicitThrow>();
   test_exceptions<ExplicitThrow>();
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -259,9 +256,9 @@ int main(int, char**)
     assert(T::alive() == 0);
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

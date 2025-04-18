@@ -164,9 +164,9 @@ struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 //!   thrust::device_vector<int> int_in{0, 1, 2}, int_out(3);
 //!   thrust::device_vector<float> float_in{0.0f, 10.0f, 20.0f}, float_out(3);
 //!
-//!   thrust::copy(thrust::make_zip_iterator(thrust::make_tuple(int_in.begin(), float_in.begin())),
-//!                thrust::make_zip_iterator(thrust::make_tuple(int_in.end(),   float_in.end())),
-//!                thrust::make_zip_iterator(thrust::make_tuple(int_out.begin(),float_out.begin())));
+//!   thrust::copy(thrust::make_zip_iterator(int_in.begin(), float_in.begin()),
+//!                thrust::make_zip_iterator(int_in.end(),   float_in.end()),
+//!                thrust::make_zip_iterator(int_out.begin(),float_out.begin()));
 //!
 //!   // int_out is now [0, 1, 2]
 //!   // float_out is now [0.0f, 10.0f, 20.0f]
@@ -193,6 +193,16 @@ public:
   //! \param iterator_tuple The \p tuple of iterators to copy from.
   inline _CCCL_HOST_DEVICE zip_iterator(IteratorTuple iterator_tuple)
       : m_iterator_tuple(iterator_tuple)
+  {}
+
+  //! This constructor creates a new \p zip_iterator from multiple iterators.
+  //!
+  //! \param iterators The iterators to zip.
+  template <class... Iterators,
+            ::cuda::std::enable_if_t<(sizeof...(Iterators) != 0), int>                                  = 0,
+            ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<IteratorTuple, Iterators...>, int> = 0>
+  inline _CCCL_HOST_DEVICE zip_iterator(Iterators&&... iterators)
+      : m_iterator_tuple(::cuda::std::forward<Iterators>(iterators)...)
   {}
 
   //! This copy constructor creates a new \p zip_iterator from another \p zip_iterator.
@@ -247,7 +257,7 @@ private:
   template <size_t... Is>
   inline _CCCL_HOST_DEVICE void advance_impl(typename super_t::difference_type n, index_sequence<Is...>)
   {
-    (..., thrust::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
+    (..., ::cuda::std::advance(::cuda::std::get<Is>(m_iterator_tuple), n));
   }
 
   // Advancing a zip_iterator means to advance all iterators in the tuple
@@ -296,16 +306,19 @@ private:
   //! \endcond
 };
 
+template <class... Iterators>
+_CCCL_HOST_DEVICE zip_iterator(Iterators...) -> zip_iterator<::cuda::std::tuple<Iterators...>>;
+
 //! \p make_zip_iterator creates a \p zip_iterator from a \p tuple of iterators.
 //!
 //! \param t The \p tuple of iterators to copy.
 //! \return A newly created \p zip_iterator which zips the iterators encapsulated in \p t.
 //! \see zip_iterator
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>>
-make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t)
+inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>>
+make_zip_iterator(::cuda::std::tuple<Iterators...> t)
 {
-  return zip_iterator<_CUDA_VSTD::tuple<Iterators...>>(t);
+  return zip_iterator<::cuda::std::tuple<Iterators...>>{t};
 }
 
 //! \p make_zip_iterator creates a \p zip_iterator from
@@ -316,9 +329,9 @@ make_zip_iterator(_CUDA_VSTD::tuple<Iterators...> t)
 //!
 //! \see zip_iterator
 template <typename... Iterators>
-inline _CCCL_HOST_DEVICE zip_iterator<_CUDA_VSTD::tuple<Iterators...>> make_zip_iterator(Iterators... its)
+inline _CCCL_HOST_DEVICE zip_iterator<::cuda::std::tuple<Iterators...>> make_zip_iterator(Iterators... its)
 {
-  return make_zip_iterator(_CUDA_VSTD::make_tuple(its...));
+  return zip_iterator<::cuda::std::tuple<Iterators...>>{its...};
 }
 
 //! \} // end fancyiterators

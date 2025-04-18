@@ -109,9 +109,9 @@ static_assert(cuda::std::is_trivially_copy_constructible<ThrowingDefaultConstruc
 static_assert(cuda::std::is_trivially_move_constructible<ThrowingDefaultConstruct>::value, "");
 static_assert(cuda::std::is_trivially_copy_assignable<ThrowingDefaultConstruct>::value, "");
 static_assert(cuda::std::is_trivially_move_assignable<ThrowingDefaultConstruct>::value, "");
-#if !defined(TEST_COMPILER_GCC) || __GNUC__ >= 10
+#if !TEST_COMPILER(GCC, <, 10)
 static_assert(!cuda::std::is_nothrow_default_constructible<ThrowingDefaultConstruct>::value, "");
-#endif // !TEST_COMPILER_GCC < 10
+#endif // !TEST_COMPILER(GCC, <, 10)
 
 struct ThrowingCopyConstructor
 {

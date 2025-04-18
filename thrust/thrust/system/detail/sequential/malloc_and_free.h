@@ -28,7 +28,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/system/detail/sequential/execution_policy.h>
 
-#include <cstdlib> // for malloc & free
+#include <cuda/std/cstdlib> // for malloc & free
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -41,13 +41,13 @@ namespace sequential
 template <typename DerivedPolicy>
 inline _CCCL_HOST_DEVICE void* malloc(execution_policy<DerivedPolicy>&, std::size_t n)
 {
-  return std::malloc(n);
+  return ::cuda::std::malloc(n);
 } // end mallc()
 
 template <typename DerivedPolicy, typename Pointer>
 inline _CCCL_HOST_DEVICE void free(sequential::execution_policy<DerivedPolicy>&, Pointer ptr)
 {
-  std::free(thrust::raw_pointer_cast(ptr));
+  ::cuda::std::free(thrust::raw_pointer_cast(ptr));
 } // end mallc()
 
 } // namespace sequential

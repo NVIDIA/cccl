@@ -20,16 +20,13 @@
 // TODO: Move TEST_IS_CONSTANT_EVALUATED_CXX23() into it's own header
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_NVCC) || defined(TEST_COMPILER_NVRTC)
+#if TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
 TEST_NV_DIAG_SUPPRESS(3060) // call to __builtin_is_constant_evaluated appearing in a non-constexpr function
-#endif // TEST_COMPILER_NVCC || TEST_COMPILER_NVRTC
-#if defined(TEST_COMPILER_GCC)
-#  pragma GCC diagnostic ignored "-Wtautological-compare"
-#elif defined(TEST_COMPILER_CLANG)
-#  pragma clang diagnostic ignored "-Wtautological-compare"
-#endif
+#endif // TEST_CUDA_COMPILER(NVCC) || TEST_COMPILER(NVRTC)
+TEST_DIAG_SUPPRESS_GCC("-Wtautological-compare")
+TEST_DIAG_SUPPRESS_CLANG("-Wtautological-compare")
 
-STATIC_TEST_GLOBAL_VAR int A_next_ = 0;
+TEST_GLOBAL_VARIABLE int A_next_ = 0;
 class A
 {
   int state_;

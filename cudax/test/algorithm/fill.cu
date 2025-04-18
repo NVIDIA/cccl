@@ -10,12 +10,12 @@
 
 #include "common.cuh"
 
-TEST_CASE("Fill", "[data_manipulation]")
+C2H_TEST("Fill", "[data_manipulation]")
 {
   cudax::stream _stream;
   SECTION("Host resource")
   {
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(host_resource, buffer_size);
 
     cudax::fill_bytes(_stream, buffer, fill_byte);
@@ -37,7 +37,7 @@ TEST_CASE("Fill", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cudax::pinned_memory_resource host_resource;
+    cudax::legacy_pinned_memory_resource host_resource;
     cudax::weird_buffer buffer(host_resource, buffer_size);
 
     cudax::fill_bytes(_stream, buffer, fill_byte);
@@ -45,7 +45,7 @@ TEST_CASE("Fill", "[data_manipulation]")
   }
 }
 
-TEST_CASE("Mdspan Fill", "[data_manipulation]")
+C2H_TEST("Mdspan Fill", "[data_manipulation]")
 {
   cudax::stream stream;
   {
@@ -65,11 +65,29 @@ TEST_CASE("Mdspan Fill", "[data_manipulation]")
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
   }
   {
+    cudax::legacy_pinned_memory_resource host_resource;
     using static_extents = cuda::std::extents<size_t, 2, 3, 4>;
     auto size            = cuda::std::layout_left::mapping<static_extents>().required_span_size();
-    cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(cudax::pinned_memory_resource{}, size);
+    cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(host_resource, size);
 
     cudax::fill_bytes(stream, buffer, fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data, buffer.size));
+  }
+}
+
+C2H_TEST("Non exhaustive mdspan fill_bytes", "[data_manipulation]")
+{
+  cudax::stream stream;
+  {
+    auto fake_strided_mdspan = create_fake_strided_mdspan();
+
+    try
+    {
+      cudax::fill_bytes(stream, fake_strided_mdspan, fill_byte);
+    }
+    catch (const ::std::invalid_argument& e)
+    {
+      CHECK(e.what() == ::std::string("fill_bytes supports only exhaustive mdspans"));
+    }
   }
 }

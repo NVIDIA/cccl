@@ -644,7 +644,7 @@ std::size_t gen_uniform_offsets(
       policy, segment_offsets.data(), segment_offsets.data() + segment_offsets.size(), segment_offsets.data());
     auto iter = thrust::find_if(
       policy, segment_offsets.data(), segment_offsets.data() + segment_offsets.size(), ge_t<T>{total_elements});
-    auto dist = thrust::distance(segment_offsets.data(), iter);
+    auto dist = cuda::std::distance(segment_offsets.data(), iter);
     thrust::fill_n(policy, segment_offsets.data() + dist, 1, total_elements);
     return dist + 1;
   };
@@ -736,10 +736,7 @@ void gen_power_law_segment_offsets_device(seed_t seed, cuda::std::span<T> segmen
   generator_t{}.power_law_segment_offsets<T>(executor::device, seed, segment_offsets, elements);
 }
 
-void do_not_optimize(const void* ptr)
-{
-  (void) ptr;
-}
+void do_not_optimize([[maybe_unused]] const void* ptr) {}
 
 } // namespace detail
 

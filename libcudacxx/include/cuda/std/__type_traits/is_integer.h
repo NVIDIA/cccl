@@ -30,8 +30,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // In contrast to is_integral, __cccl_is_integer excludes bool and character types.
 // See https://eel.is/c++draft/basic.fundamental#1
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __cccl_is_integer_v =
-  __cccl_is_signed_integer_v<_Tp> || __cccl_is_unsigned_integer_v<_Tp>;
+inline constexpr bool __cccl_is_integer_v = __cccl_is_signed_integer_v<_Tp> || __cccl_is_unsigned_integer_v<_Tp>;
+
+template <class _Tp>
+inline constexpr bool __cccl_is_cv_integer_v =
+  __cccl_is_cv_signed_integer_v<_Tp> || __cccl_is_cv_unsigned_integer_v<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

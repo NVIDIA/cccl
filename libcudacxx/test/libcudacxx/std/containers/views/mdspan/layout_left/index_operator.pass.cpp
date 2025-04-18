@@ -53,7 +53,7 @@ __host__ __device__ constexpr void iterate_left(M m, T& count, Args... args)
   using extents = typename M::extents_type;
   if constexpr (extents::rank() == sizeof...(Args))
   {
-    ASSERT_NOEXCEPT(m(args...));
+    static_assert(noexcept(m(args...)));
     assert(count == m(args...));
     count++;
   }

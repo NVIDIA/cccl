@@ -66,7 +66,7 @@ public:
       , block_size(block_size)
       , root_allocator(mv(root_allocator_))
   {
-    if (this->place == data_place::host || this->place == data_place::managed)
+    if (this->place.is_host() || this->place.is_managed())
     {
       /* Pinned memory is not cheap, so we currently only allocate 4 blocks (arbitrarily) */
       nentries = 4;
@@ -170,7 +170,7 @@ public:
   {
     const ptrdiff_t offset = static_cast<char*>(ptr) - static_cast<char*>(base);
     // Add an assertion that offset % block_size == 0 ?
-    return (offset >= 0 && offset < static_cast<ptrdiff_t>(entries.size() * block_size));
+    return offset >= 0 && offset < static_cast<ptrdiff_t>(entries.size() * block_size);
   }
 
   // Free the memory allocated for this block of allocations

@@ -26,25 +26,16 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-#ifdef TEST_COMPILER_MSVC
-#  pragma warning(disable : 4018) // signed/unsigned mismatch
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4018) // signed/unsigned mismatch
+TEST_DIAG_SUPPRESS_GCC("-Wsign-compare")
+TEST_DIAG_SUPPRESS_CLANG("-Wsign-compare")
 
-#ifdef TEST_COMPILER_GCC
-#  pragma GCC diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_GCC
-
-#ifdef TEST_COMPILER_CLANG
-#  pragma clang diagnostic ignored "-Wsign-compare"
-#endif // TEST_COMPILER_CLANG
-
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+__host__ __device__ constexpr bool test()
 {
-  int ia[]          = {0, 1, 2, 2, 0, 1, 2, 3};
-  const unsigned sa = sizeof(ia) / sizeof(ia[0]);
-  int ib[]          = {0, 1, 2, 3, 0, 1, 2, 3};
-  const unsigned sb = sizeof(ib) / sizeof(ib[0]);
-  ((void) sb); // unused in C++11
+  int ia[]                           = {0, 1, 2, 2, 0, 1, 2, 3};
+  const unsigned sa                  = sizeof(ia) / sizeof(ia[0]);
+  int ib[]                           = {0, 1, 2, 3, 0, 1, 2, 3};
+  [[maybe_unused]] const unsigned sb = sizeof(ib) / sizeof(ib[0]);
 
   typedef cpp17_input_iterator<const int*> II;
   typedef random_access_iterator<const int*> RAI;

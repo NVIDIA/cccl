@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -56,7 +56,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -303,7 +303,7 @@ struct ReduceAgent
       T* d_in_unqualified = const_cast<T*>(input_it) + block_offset + (threadIdx.x * VECTOR_LOAD_LENGTH);
       VectorLoadIt vec_load_it(reinterpret_cast<Vector*>(d_in_unqualified));
 
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < WORDS; ++i)
       {
         vec_items[i] = vec_load_it[BLOCK_THREADS * i];
@@ -858,14 +858,14 @@ _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, Inp
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
   // FIXME: Check for RA iterator.
-  size_type num_items = static_cast<size_type>(thrust::distance(first, last));
+  size_type num_items = static_cast<size_type>(::cuda::std::distance(first, last));
   return cuda_cub::reduce_n(policy, first, num_items, init, binary_op);
 }
 
 template <class Derived, class InputIt, class T>
 _CCCL_HOST_DEVICE T reduce(execution_policy<Derived>& policy, InputIt first, InputIt last, T init)
 {
-  return cuda_cub::reduce(policy, first, last, init, plus<T>());
+  return cuda_cub::reduce(policy, first, last, init, ::cuda::std::plus<T>());
 }
 
 template <class Derived, class InputIt>

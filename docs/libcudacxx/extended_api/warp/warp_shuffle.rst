@@ -8,14 +8,14 @@ Warp Shuffle
 .. code:: cuda
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_idx(const T& data,
                      int      src_lane,
                      uint32_t lane_mask = 0xFFFFFFFF,
                      cuda::std::integral_constant<int, Width> = {})
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_idx(const T& data,
                      int      src_lane,
                      cuda::std::integral_constant<int, Width>) // lane_mask is 0xFFFFFFFF
@@ -25,14 +25,14 @@ Warp Shuffle
 .. code:: cuda
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_up(const T& data,
                     int      delta,
                     uint32_t lane_mask = 0xFFFFFFFF,
                     cuda::std::integral_constant<int, Width> = {})
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_up(const T& data,
                     int      delta,
                     cuda::std::integral_constant<int, Width>) // lane_mask is 0xFFFFFFFF
@@ -42,14 +42,14 @@ Warp Shuffle
 .. code:: cuda
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_down(const T& data,
                       int      delta,
                       uint32_t lane_mask = 0xFFFFFFFF,
                       cuda::std::integral_constant<int, Width> = {})
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_down(const T& data,
                       int      delta,
                       cuda::std::integral_constant<int, Width>) // lane_mask is 0xFFFFFFFF
@@ -59,14 +59,14 @@ Warp Shuffle
 .. code:: cuda
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_xor(const T& data,
                      int      xor_mask,
                      uint32_t lane_mask = 0xFFFFFFFF,
                      cuda::std::integral_constant<int, Width> = {})
 
     template <int Width = 32, typename T>
-    [[nodiscard]] __device__ WarpShuffleResult<T>
+    [[nodiscard]] __device__ warp_shuffle_result<T>
     warp_shuffle_xor(const T& data,
                      int      xor_mask,
                      cuda::std::integral_constant<int, Width>) // lane_mask is 0xFFFFFFFF
@@ -76,7 +76,7 @@ Result type:
 .. code:: cuda
 
     template <typename T>
-    struct WarpShuffleResult {
+    struct warp_shuffle_result {
         T    data;
         bool pred;
 
@@ -95,7 +95,7 @@ The functions allow to exchange data of any data size, including raw arrays, poi
 
 **Return value**
 
-``WarpShuffleResult``:
+``warp_shuffle_result``:
 
 - ``data``: data of the destination lane.
 - ``pred``: ``true`` if the destination lane is within the source lane window. ``false`` otherwise.

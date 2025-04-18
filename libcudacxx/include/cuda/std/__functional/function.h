@@ -51,17 +51,17 @@
 
 #ifndef __cuda_std__
 
-#  ifndef _CCCL_NO_EXCEPTIONS
+#  if _CCCL_HAS_EXCEPTIONS()
 #    include <function>
-#  endif // _CCCL_NO_EXCEPTIONS
+#  endif // !_CCCL_HAS_EXCEPTIONS()
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
+[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
 {
-#  ifndef _CCCL_NO_EXCEPTIONS
+#  if _CCCL_HAS_EXCEPTIONS()
   NV_IF_ELSE_TARGET(NV_IS_HOST, (throw ::std::bad_function_call();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
+#  else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // _CCCL_NO_EXCEPTIONS
+#  endif // !_CCCL_HAS_EXCEPTIONS()
 }
 
 template <class _Fp>
@@ -596,7 +596,7 @@ template <typename _Fun>
 struct __use_small_storage
     : public integral_constant<
         bool,
-        sizeof(_Fun) <= sizeof(__policy_storage)&& _LIBCUDACXX_ALIGNOF(_Fun) <= _LIBCUDACXX_ALIGNOF(__policy_storage)
+        sizeof(_Fun) <= sizeof(__policy_storage) && alignof(_Fun) <= alignof(__policy_storage)
           && is_trivially_copy_constructible<_Fun>::value && is_trivially_destructible<_Fun>::value>
 {};
 

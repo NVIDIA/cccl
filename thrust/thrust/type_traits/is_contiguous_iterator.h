@@ -33,7 +33,7 @@
 #endif // no system header
 #include <thrust/detail/type_traits/is_thrust_pointer.h>
 
-#include <cuda/std/iterator> // Needed for __gnu_cxx::__normal_iterator
+#include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -161,7 +161,7 @@ template <typename Iterator>
 struct is_contiguous_iterator_impl
     : integral_constant<
         bool,
-        ::cuda::std::is_pointer<Iterator>::value || is_thrust_pointer<Iterator>::value
+        ::cuda::std::contiguous_iterator<Iterator> || is_thrust_pointer<Iterator>::value
           || is_libcxx_wrap_iter<Iterator>::value || is_libstdcxx_normal_iterator<Iterator>::value
           || is_msvc_contiguous_iterator<Iterator>::value || proclaim_contiguous_iterator<Iterator>::value>
 {};

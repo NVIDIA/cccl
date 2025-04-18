@@ -85,7 +85,8 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void
 sequence(thrust::execution_policy<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init, T step)
 {
-  thrust::tabulate(exec, first, last, detail::compute_sequence_value<T>{std::move(init), std::move(step)});
+  thrust::tabulate(
+    exec, first, last, detail::compute_sequence_value<T>{::cuda::std::move(init), ::cuda::std::move(step)});
 } // end sequence()
 
 } // end namespace generic

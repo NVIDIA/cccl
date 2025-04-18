@@ -38,9 +38,8 @@
 #include <thrust/mr/memory_resource.h>
 #include <thrust/mr/pool_options.h>
 
+#include <cuda/std/cassert>
 #include <cuda/std/cstdint>
-
-#include <cassert>
 
 THRUST_NAMESPACE_BEGIN
 namespace mr
@@ -257,7 +256,7 @@ public:
     m_cached_oversized = oversized_block_descriptor_ptr();
   }
 
-  _CCCL_NODISCARD virtual void_ptr
+  [[nodiscard]] virtual void_ptr
   do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
     bytes = (std::max)(bytes, m_options.smallest_block_size);

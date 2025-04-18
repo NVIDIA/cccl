@@ -10,16 +10,16 @@
 
 // less
 
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
 #include "test_macros.h"
-#ifndef TEST_COMPILER_NVRTC
+#if !TEST_COMPILER(NVRTC)
 #  include "pointer_comparison_test_helper.hpp"
-#endif
+#endif // !TEST_COMPILER(NVRTC)
 
 // ensure that we allow `__device__` functions too
 struct with_device_op

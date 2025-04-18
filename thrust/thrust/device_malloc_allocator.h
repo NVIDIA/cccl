@@ -34,8 +34,8 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_reference.h>
 
-#include <limits>
-#include <stdexcept>
+#include <cuda/std/__new/bad_alloc.h>
+#include <cuda/std/limits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -142,7 +142,7 @@ public:
   {
     if (cnt > this->max_size())
     {
-      throw std::bad_alloc();
+      ::cuda::std::__throw_bad_alloc();
     } // end if
 
     return pointer(device_malloc<T>(cnt));
@@ -154,11 +154,8 @@ public:
    *  \note Memory deallocated by this function must previously have been
    *        allocated with \p allocate.
    */
-  _CCCL_HOST inline void deallocate(pointer p, size_type cnt) noexcept
+  _CCCL_HOST inline void deallocate(pointer p, [[maybe_unused]] size_type cnt) noexcept
   {
-    // silence unused parameter warning while still leaving the parameter name for Doxygen
-    (void) (cnt);
-
     device_free(p);
   } // end deallocate()
 
@@ -167,7 +164,7 @@ public:
    */
   inline size_type max_size() const
   {
-    return (std::numeric_limits<size_type>::max)() / sizeof(T);
+    return (::cuda::std::numeric_limits<size_type>::max)() / sizeof(T);
   } // end max_size()
 
   /*! Compares against another \p device_malloc_allocator for equality.

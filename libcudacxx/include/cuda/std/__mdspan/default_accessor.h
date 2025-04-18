@@ -54,11 +54,11 @@ struct default_accessor
   _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _OtherElementType (*)[], element_type (*)[]))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr default_accessor(default_accessor<_OtherElementType>) noexcept {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
     return __p[__i];
   }
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr data_handle_type
   offset(data_handle_type __p, size_t __i) const noexcept
   {
     return __p + __i;

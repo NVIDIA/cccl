@@ -41,9 +41,9 @@ struct __emplace_device
 {
   int __id_;
 
-  _CCCL_NODISCARD operator device() const;
+  [[nodiscard]] operator device() const;
 
-  _CCCL_NODISCARD constexpr const __emplace_device* operator->() const;
+  [[nodiscard]] constexpr const __emplace_device* operator->() const;
 };
 } // namespace detail
 
@@ -145,12 +145,12 @@ private:
 
 namespace detail
 {
-_CCCL_NODISCARD inline __emplace_device::operator device() const
+[[nodiscard]] inline __emplace_device::operator device() const
 {
   return device(__id_);
 }
 
-_CCCL_NODISCARD inline constexpr const __emplace_device* __emplace_device::operator->() const
+[[nodiscard]] inline constexpr const __emplace_device* __emplace_device::operator->() const
 {
   return this;
 }

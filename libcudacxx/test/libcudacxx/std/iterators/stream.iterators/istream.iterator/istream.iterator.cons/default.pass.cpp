@@ -36,8 +36,7 @@ struct test_trivial
 {
   void operator()() const
   {
-    constexpr cuda::std::istream_iterator<T> it;
-    (void) it;
+    [[maybe_unused]] constexpr cuda::std::istream_iterator<T> it;
   }
 };
 
@@ -53,8 +52,7 @@ int main(int, char**)
     typedef cuda::std::istream_iterator<int> T;
     T it;
     assert(it == T());
-    constexpr T it2;
-    (void) it2;
+    [[maybe_unused]] constexpr T it2;
   }
 
   test_trivial<int>()();

@@ -70,8 +70,8 @@ public:
   //! properties we need
   template <class _Env>
   static constexpr bool __is_compatible_env =
-    __async::__queryable<_Env, get_memory_resource_t> && __async::__queryable<_Env, get_stream_t>
-    && __async::__queryable<_Env, execution::get_execution_policy_t>;
+    __async::__queryable_with<_Env, get_memory_resource_t> && __async::__queryable_with<_Env, get_stream_t>
+    && __async::__queryable_with<_Env, execution::get_execution_policy_t>;
 
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
@@ -83,17 +83,17 @@ public:
       , __policy_(__env.query(execution::get_execution_policy))
   {}
 
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __resource& query(get_memory_resource_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource& query(get_memory_resource_t) const noexcept
   {
     return __mr_;
   }
 
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI __stream_ref query(get_stream_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI __stream_ref query(get_stream_t) const noexcept
   {
     return __stream_;
   }
 
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI execution::execution_policy query(execution::get_execution_policy_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI execution::execution_policy query(execution::get_execution_policy_t) const noexcept
   {
     return __policy_;
   }

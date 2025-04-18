@@ -60,9 +60,9 @@ concept __just_deref = !__unqualified_iter_move<_Tp> && !__move_deref<_Tp> && re
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __unqualified_iter_move_,
-  requires(_Tp&& __t)(requires(__class_or_enum<remove_cvref_t<_Tp>>), (iter_move(_CUDA_VSTD::forward<_Tp>(__t)))));
+_CCCL_CONCEPT_FRAGMENT(__unqualified_iter_move_,
+                       requires(_Tp&& __t)(requires(__class_or_enum<remove_cvref_t<_Tp>>),
+                                           ((void) iter_move(_CUDA_VSTD::forward<_Tp>(__t)))));
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_iter_move = _CCCL_FRAGMENT(__unqualified_iter_move_, _Tp);
@@ -89,26 +89,29 @@ _CCCL_CONCEPT __just_deref = _CCCL_FRAGMENT(__just_deref_, _Tp);
 
 struct __fn
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__unqualified_iter_move<_Ip>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator()(_Ip&& __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator()(_Ip&& __i) const
     noexcept(noexcept(iter_move(_CUDA_VSTD::forward<_Ip>(__i))))
   {
     return iter_move(_CUDA_VSTD::forward<_Ip>(__i));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__move_deref<_Ip>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i))))
       -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
   {
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(__just_deref<_Ip>)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(*_CUDA_VSTD::forward<_Ip>(__i))) -> decltype(*_CUDA_VSTD::forward<_Ip>(__i))
   {
     return *_CUDA_VSTD::forward<_Ip>(__i);

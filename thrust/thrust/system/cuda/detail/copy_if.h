@@ -35,7 +35,8 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-#if _CCCL_HAS_CUDA_COMPILER
+
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/system/cuda/config.h>
 
@@ -55,7 +56,7 @@
 #  include <thrust/system/cuda/detail/par_to_seq.h>
 #  include <thrust/system/cuda/detail/util.h>
 
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 // XXX declare generic copy_if interface
@@ -169,7 +170,7 @@ struct DispatchCopyIf
     status = cuda_cub::synchronize(policy);
     _CUDA_CUB_RET_IF_FAIL(status);
     OffsetT num_selected = get_value(policy, d_num_selected_out);
-    thrust::advance(output, num_selected);
+    ::cuda::std::advance(output, num_selected);
     return status;
   }
 };
@@ -190,7 +191,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
 {
   using size_type = thrust::detail::it_difference_t<InputIt>;
 
-  size_type num_items       = static_cast<size_type>(thrust::distance(first, last));
+  size_type num_items       = static_cast<size_type>(::cuda::std::distance(first, last));
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
 

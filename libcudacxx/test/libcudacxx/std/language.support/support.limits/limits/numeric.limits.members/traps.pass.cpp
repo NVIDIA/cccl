@@ -39,10 +39,8 @@ int main(int, char**)
 #if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
   test<char8_t, integral_types_trap>();
 #endif
-#ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<char16_t, integral_types_trap>();
   test<char32_t, integral_types_trap>();
-#endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<short, integral_types_trap>();
   test<unsigned short, integral_types_trap>();
   test<int, integral_types_trap>();
@@ -84,6 +82,9 @@ int main(int, char**)
 #if _CCCL_HAS_NVFP4_E2M1()
   test<__nv_fp4_e2m1, false>();
 #endif // _CCCL_HAS_NVFP4_E2M1()
+#if _CCCL_HAS_FLOAT128()
+  test<__float128, false>();
+#endif // _CCCL_HAS_FLOAT128()
 
   return 0;
 }

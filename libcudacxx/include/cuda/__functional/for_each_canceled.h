@@ -28,7 +28,7 @@
 
 #include <nv/target>
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 #    if __cccl_ptx_isa >= 870
 
 template <int _Index>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
+[[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI int __cluster_get_dim(__int128 __result) noexcept
 {
   int __r;
   if constexpr (_Index == 0)
@@ -270,6 +270,6 @@ _CCCL_DEVICE _CCCL_HIDE_FROM_ABI void for_each_canceled_block(__UnaryFunction __
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 #endif // _CUDA__FUNCTIONAL_FOR_EACH_CANCELED_H

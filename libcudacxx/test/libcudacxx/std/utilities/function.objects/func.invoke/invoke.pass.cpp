@@ -36,7 +36,7 @@
 ///   (1.5) - f(t1, t2, ..., tN) in all other cases.
 
 #define _LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/cassert>
 #include <cuda/std/functional>
@@ -374,18 +374,18 @@ __host__ __device__ void noexcept_test()
     CopyThrows arg;
     unused(arg); // suppress unused warning
     static_assert(noexcept(cuda::std::invoke(obj)), "");
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
     static_assert(!noexcept(cuda::std::invoke(obj, arg)), "");
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
     static_assert(noexcept(cuda::std::invoke(obj, cuda::std::move(arg))), "");
   }
-#ifndef TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#if !TEST_COMPILER(NVHPC)
   {
     ThrowsCallable obj;
     unused(obj); // suppress unused warning
     static_assert(!noexcept(cuda::std::invoke(obj)), "");
   }
-#endif // TEST_COMPILER_BROKEN_SMF_NOEXCEPT
+#endif // TEST_COMPILER(NVHPC)
   {
     MemberObj obj{42};
     unused(obj); // suppress unused warning.

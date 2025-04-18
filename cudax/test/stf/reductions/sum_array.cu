@@ -110,7 +110,7 @@ int main()
   ctx.task(var_handle.read())->*[](cudaStream_t /*unused*/, auto /*unused*/) {};
 
   // Check result
-  ctx.task(exec_place::host, var_handle.read())->*[=](cudaStream_t stream, auto h_var) {
+  ctx.task(exec_place::host(), var_handle.read())->*[=](cudaStream_t stream, auto h_var) {
     cuda_safe_call(cudaStreamSynchronize(stream));
     int value = h_var(0);
     EXPECT(value == check_sum);

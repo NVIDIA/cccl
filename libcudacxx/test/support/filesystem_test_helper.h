@@ -285,9 +285,8 @@ private:
   {
     // check that the fs test root in the environment matches what we were
     // compiled with.
-    static bool checked = checkDynamicTestRoot();
-    ((void) checked);
-    std::string cmd = LIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER;
+    [[maybe_unused]] static bool checked = checkDynamicTestRoot();
+    std::string cmd                      = LIBCXX_FILESYSTEM_DYNAMIC_TEST_HELPER;
     cmd += " \"" + raw_cmd + "\"";
     int ret = std::system(cmd.c_str());
     assert(ret == 0);
@@ -534,7 +533,7 @@ struct ExceptionChecker
     TEST_CHECK(ErrorIsImp(Err.code(), {expected_err}));
     TEST_CHECK(Err.path1() == expected_path1);
     TEST_CHECK(Err.path2() == expected_path2);
-    LIBCPP_ONLY(check_libcxx_string(Err));
+    assert(check_libcxx_string(Err));
   }
 
   void check_libcxx_string(fs::filesystem_error const& Err)

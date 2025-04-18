@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <thrust/detail/alignment.h>
 #  include <thrust/detail/mpl/math.h>
@@ -54,8 +54,7 @@
 
 #  include <cuda/std/__algorithm/max.h>
 #  include <cuda/std/__algorithm/min.h>
-
-#  include <cstdint>
+#  include <cuda/std/cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -390,7 +389,7 @@ struct SetOpAgent
     {
       if (IS_FULL_TILE)
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD - 1; ++ITEM)
         {
           int idx      = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -408,7 +407,7 @@ struct SetOpAgent
       }
       else
       {
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           int idx = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -423,7 +422,7 @@ struct SetOpAgent
     template <class T, class It>
     THRUST_DEVICE_FUNCTION void reg_to_shared(It output, T (&input)[ITEMS_PER_THREAD])
     {
-#  pragma unroll
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         int idx     = BLOCK_THREADS * ITEM + threadIdx.x;
@@ -442,7 +441,8 @@ struct SetOpAgent
       int tile_output_count)
     {
       int local_scatter_idx = thread_output_prefix - tile_output_prefix;
-#  pragma unroll
+
+      _CCCL_PRAGMA_UNROLL_FULL()
       for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
       {
         if (active_mask & (1 << ITEM))
@@ -610,7 +610,7 @@ struct SetOpAgent
 
         // gather items from shared mem
         //
-#  pragma unroll
+        _CCCL_PRAGMA_UNROLL_FULL()
         for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
         {
           if (active_mask & (1 << ITEM))
@@ -807,7 +807,7 @@ struct serial_set_intersection
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pA = compare_op(aKey, bKey);
@@ -863,7 +863,7 @@ struct serial_set_symmetric_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -925,7 +925,7 @@ struct serial_set_difference
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -987,7 +987,7 @@ struct serial_set_union
     T aKey = keys[aBegin];
     T bKey = keys[bBegin];
 
-#  pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       bool pB = aBegin >= aEnd;
@@ -1151,8 +1151,8 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> set_operations(
 {
   using size_type = thrust::detail::it_difference_t<KeysIt1>;
 
-  size_type num_keys1 = static_cast<size_type>(thrust::distance(keys1_first, keys1_last));
-  size_type num_keys2 = static_cast<size_type>(thrust::distance(keys2_first, keys2_last));
+  size_type num_keys1 = static_cast<size_type>(::cuda::std::distance(keys1_first, keys1_last));
+  size_type num_keys2 = static_cast<size_type>(::cuda::std::distance(keys2_first, keys2_last));
 
   if (num_keys1 + num_keys2 == 0)
   {
@@ -1277,7 +1277,7 @@ OutputIt _CCCL_HOST_DEVICE set_difference(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1324,7 +1324,7 @@ OutputIt _CCCL_HOST_DEVICE set_intersection(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_intersection(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1371,7 +1371,7 @@ OutputIt _CCCL_HOST_DEVICE set_symmetric_difference(
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
   return cuda_cub::set_symmetric_difference(
-    policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1417,7 +1417,8 @@ OutputIt _CCCL_HOST_DEVICE set_union(
   OutputIt result)
 {
   using value_type = thrust::detail::it_value_t<ItemsIt1>;
-  return cuda_cub::set_union(policy, items1_first, items1_last, items2_first, items2_last, result, less<value_type>());
+  return cuda_cub::set_union(
+    policy, items1_first, items1_last, items2_first, items2_last, result, ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1500,7 +1501,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_difference_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1573,7 +1574,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_intersection_by_key(
     items1_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1650,7 +1651,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_symmetric_difference_by_
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 /*****************************/
@@ -1727,7 +1728,7 @@ pair<KeysOutputIt, ItemsOutputIt> _CCCL_HOST_DEVICE set_union_by_key(
     items2_first,
     keys_result,
     items_result,
-    less<value_type>());
+    ::cuda::std::less<value_type>());
 }
 
 } // namespace cuda_cub

@@ -43,15 +43,15 @@ public:
 
   all_devices() = default;
 
-  _CCCL_NODISCARD const device& operator[](size_type __i) const noexcept;
+  [[nodiscard]] const device& operator[](size_type __i) const;
 
-  _CCCL_NODISCARD const device& at(size_type __i) const;
+  [[nodiscard]] size_type size() const;
 
-  _CCCL_NODISCARD size_type size() const;
+  [[nodiscard]] iterator begin() const noexcept;
 
-  _CCCL_NODISCARD iterator begin() const noexcept;
+  [[nodiscard]] iterator end() const noexcept;
 
-  _CCCL_NODISCARD iterator end() const noexcept;
+  operator ::std::vector<device_ref>() const;
 
 private:
   struct __initializer_iterator;
@@ -109,34 +109,41 @@ struct all_devices::__initializer_iterator
   }
 };
 
-_CCCL_NODISCARD inline const device& all_devices::operator[](size_type __id_) const noexcept
-{
-  _CCCL_ASSERT(__id_ < size(), "cuda::experimental::all_devices::subscript device index out of range");
-  return __devices()[__id_];
-}
-
-_CCCL_NODISCARD inline const device& all_devices::at(size_type __id_) const
+[[nodiscard]] inline const device& all_devices::operator[](size_type __id_) const
 {
   if (__id_ >= size())
   {
-    _CUDA_VSTD::__throw_out_of_range("device index out of range");
+    if (size() == 0)
+    {
+      _CUDA_VSTD::__throw_out_of_range("device was requested but no CUDA devices found");
+    }
+    else
+    {
+      _CUDA_VSTD::__throw_out_of_range(
+        (::std::string("device index out of range: ") + ::std::to_string(__id_)).c_str());
+    }
   }
   return __devices()[__id_];
 }
 
-_CCCL_NODISCARD inline all_devices::size_type all_devices::size() const
+[[nodiscard]] inline all_devices::size_type all_devices::size() const
 {
   return __devices().size();
 }
 
-_CCCL_NODISCARD inline all_devices::iterator all_devices::begin() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::begin() const noexcept
 {
   return __devices().begin();
 }
 
-_CCCL_NODISCARD inline all_devices::iterator all_devices::end() const noexcept
+[[nodiscard]] inline all_devices::iterator all_devices::end() const noexcept
 {
   return __devices().end();
+}
+
+inline all_devices::operator ::std::vector<device_ref>() const
+{
+  return ::std::vector<device_ref>(begin(), end());
 }
 
 inline const ::std::vector<device>& all_devices::__devices()
@@ -194,7 +201,7 @@ inline const arch_traits_t& device_ref::get_arch_traits() const
   return devices[get()].get_arch_traits();
 }
 
-_CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const
+[[nodiscard]] inline ::std::vector<device_ref> device_ref::get_peers() const
 {
   ::std::vector<device_ref> __result;
   __result.reserve(devices.size());

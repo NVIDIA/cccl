@@ -38,9 +38,9 @@
 #include <thrust/iterator/detail/iterator_traversal_tags.h>
 #include <thrust/iterator/iterator_adaptor.h>
 
+#include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
 
-#include <cstddef>
 #include <ostream>
 
 THRUST_NAMESPACE_BEGIN

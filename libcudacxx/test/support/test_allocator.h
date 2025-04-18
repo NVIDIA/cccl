@@ -94,19 +94,19 @@ public:
     typedef test_allocator<U> other;
   };
 
-  test_allocator() TEST_NOEXCEPT
+  test_allocator() noexcept
       : data_(0)
       , id_(0)
   {
     ++count;
   }
-  explicit test_allocator(int i, int id = 0) TEST_NOEXCEPT
+  explicit test_allocator(int i, int id = 0) noexcept
       : data_(i)
       , id_(id)
   {
     ++count;
   }
-  test_allocator(const test_allocator& a) TEST_NOEXCEPT
+  test_allocator(const test_allocator& a) noexcept
       : data_(a.data_)
       , id_(a.id_)
   {
@@ -114,7 +114,7 @@ public:
     ++copied;
     assert(a.data_ != destructed_value && a.id_ != destructed_value && "copying from destroyed allocator");
   }
-  test_allocator(test_allocator&& a) TEST_NOEXCEPT
+  test_allocator(test_allocator&& a) noexcept
       : data_(a.data_)
       , id_(a.id_)
   {
@@ -125,14 +125,14 @@ public:
     a.id_   = moved_value;
   }
   template <class U>
-  test_allocator(const test_allocator<U>& a) TEST_NOEXCEPT
+  test_allocator(const test_allocator<U>& a) noexcept
       : data_(a.data_)
       , id_(a.id_)
   {
     ++count;
     ++converted;
   }
-  ~test_allocator() TEST_NOEXCEPT
+  ~test_allocator() noexcept
   {
     assert(data_ >= 0);
     assert(id_ >= 0);
@@ -153,7 +153,7 @@ public:
     assert(data_ >= 0);
     if (time_to_throw >= throw_after)
     {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
       throw std::bad_alloc();
 #else
       std::terminate();
@@ -169,7 +169,7 @@ public:
     --alloc_count;
     ::operator delete((void*) p);
   }
-  size_type max_size() const TEST_NOEXCEPT
+  size_type max_size() const noexcept
   {
     return UINT_MAX / sizeof(T);
   }
@@ -224,21 +224,24 @@ public:
     typedef non_default_test_allocator<U> other;
   };
 
-  //    non_default_test_allocator() TEST_NOEXCEPT : data_(0) {++count;}
-  explicit non_default_test_allocator(int i) TEST_NOEXCEPT : data_(i)
+  //    non_default_test_allocator() noexcept : data_(0) {++count;}
+  explicit non_default_test_allocator(int i) noexcept
+      : data_(i)
   {
     ++count;
   }
-  non_default_test_allocator(const non_default_test_allocator& a) TEST_NOEXCEPT : data_(a.data_)
+  non_default_test_allocator(const non_default_test_allocator& a) noexcept
+      : data_(a.data_)
   {
     ++count;
   }
   template <class U>
-  non_default_test_allocator(const non_default_test_allocator<U>& a) TEST_NOEXCEPT : data_(a.data_)
+  non_default_test_allocator(const non_default_test_allocator<U>& a) noexcept
+      : data_(a.data_)
   {
     ++count;
   }
-  ~non_default_test_allocator() TEST_NOEXCEPT
+  ~non_default_test_allocator() noexcept
   {
     assert(data_ >= 0);
     --count;
@@ -257,7 +260,7 @@ public:
     assert(data_ >= 0);
     if (time_to_throw >= throw_after)
     {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
       throw std::bad_alloc();
 #else
       std::terminate();
@@ -273,7 +276,7 @@ public:
     --alloc_count;
     ::operator delete((void*) p);
   }
-  size_type max_size() const TEST_NOEXCEPT
+  size_type max_size() const noexcept
   {
     return UINT_MAX / sizeof(T);
   }
@@ -319,24 +322,24 @@ public:
     typedef test_allocator<U> other;
   };
 
-  test_allocator() TEST_NOEXCEPT
+  test_allocator() noexcept
       : data_(0)
       , id_(0)
   {}
-  explicit test_allocator(int i, int id = 0) TEST_NOEXCEPT
+  explicit test_allocator(int i, int id = 0) noexcept
       : data_(i)
       , id_(id)
   {}
-  test_allocator(const test_allocator& a) TEST_NOEXCEPT
+  test_allocator(const test_allocator& a) noexcept
       : data_(a.data_)
       , id_(a.id_)
   {}
   template <class U>
-  test_allocator(const test_allocator<U>& a) TEST_NOEXCEPT
+  test_allocator(const test_allocator<U>& a) noexcept
       : data_(a.data_)
       , id_(a.id_)
   {}
-  ~test_allocator() TEST_NOEXCEPT
+  ~test_allocator() noexcept
   {
     data_ = -1;
     id_   = -1;

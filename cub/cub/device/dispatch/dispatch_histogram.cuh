@@ -114,7 +114,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceHistogramInitKernel(
 
   int output_bin = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
   {
     if (output_bin < num_output_bins_wrapper[CHANNEL])

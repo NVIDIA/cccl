@@ -234,10 +234,10 @@ __host__ __device__ constexpr bool test()
   static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<true>>())), "");
   static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<true>>())), "");
 // old GCC seems to fall over the chaining of the noexcept clauses here
-#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9)
+#if !TEST_COMPILER(GCC, <, 9)
   static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<false>>())), "");
   static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<false>>())), "");
-#endif
+#endif // !TEST_COMPILER(GCC, <, 9)
 
   return true;
 }

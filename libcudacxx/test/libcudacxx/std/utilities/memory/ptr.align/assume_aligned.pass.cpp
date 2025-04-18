@@ -18,14 +18,12 @@
 
 #include "test_macros.h"
 
-#if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
-#endif // TEST_COMPILER_MSVC
+TEST_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
 
 template <typename T>
 __host__ __device__ constexpr void check(T* p)
 {
-  ASSERT_SAME_TYPE(T*, decltype(cuda::std::assume_aligned<1>(p)));
+  static_assert(cuda::std::is_same_v<T*, decltype(cuda::std::assume_aligned<1>(p))>);
   constexpr cuda::std::size_t alignment = alignof(T);
   assert(p == cuda::std::assume_aligned<alignment>(p));
 }

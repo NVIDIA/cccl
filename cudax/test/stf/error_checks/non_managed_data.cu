@@ -62,7 +62,7 @@ int main()
   should_abort = true;
 
   int X[128];
-  lX = ctx.logical_data(X, data_place::managed);
+  lX = ctx.logical_data(X, data_place::managed());
 
   assert(0 && "This should not be reached");
   return EXIT_FAILURE;

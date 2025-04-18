@@ -15,9 +15,9 @@
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
-#if !defined(TEST_COMPILER_MSVC)
+#if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
-#endif
+#endif // !TEST_COMPILER(MSVC)
 #include "cuda_space_selector.h"
 
 struct non_arithmetic

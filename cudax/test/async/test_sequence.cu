@@ -25,7 +25,7 @@
 
 namespace
 {
-TEST_CASE("simple use of sequence executes both child operations", "[adaptors][sequence]")
+C2H_TEST("simple use of sequence executes both child operations", "[adaptors][sequence]")
 {
   bool flag1{false};
   bool flag2{false};

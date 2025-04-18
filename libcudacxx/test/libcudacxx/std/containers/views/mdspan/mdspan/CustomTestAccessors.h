@@ -54,7 +54,7 @@ struct not_const_convertible_handle
 };
 
 // handle where move has side effects
-STATIC_TEST_GLOBAL_VAR int move_counted_handle_c = 0;
+TEST_GLOBAL_VARIABLE int move_counted_handle_c = 0;
 template <class T>
 struct move_counted_handle
 {
