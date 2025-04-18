@@ -160,9 +160,9 @@ public:
         T* addr_h = get_block_h(rowb, colb);
 #ifdef TILED
         // tiles are stored contiguously
-        int ld = mb;
+        size_t ld = mb;
 #else
-        int ld = m;
+        size_t ld = m;
 #endif
 
         for (size_t lrow = 0; lrow < mb; lrow++)
@@ -224,6 +224,9 @@ void DGEMM(
     dev, A.get_handle(A_row, A_col).read(), B.get_handle(B_row, B_col).read(), C.get_handle(C_row, C_col).rw());
   t.set_symbol("DGEMM");
 
+  // To ensure this is done lazily, but outside a stream capture
+  [[maybe_unused]] auto ignored = get_cublas_handle();
+
   t->*[&](cudaStream_t stream, auto tA, auto tB, auto tC) {
     cuda_safe_call(cublasSetStream(get_cublas_handle(), stream));
     int k = tA.extent(transa == CUBLAS_OP_N ? 1 : 0);
@@ -262,7 +265,7 @@ void PDGEMM(Ctx& ctx,
       //=========================================
       // alpha*A*B does not contribute; scale C
       //=========================================
-      int inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
+      size_t inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
       if (alpha == 0.0 || inner_k == 0)
       {
         DGEMM(ctx, transa, transb, alpha, A, 0, 0, B, 0, 0, beta, C, m, n);

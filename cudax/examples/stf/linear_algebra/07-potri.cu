@@ -834,20 +834,20 @@ void PDPOTRF(matrix<double>& A)
   assert(A.m == A.n);
   assert(A.mt == A.nt);
 
-  int NBLOCKS = A.mt;
+  size_t NBLOCKS = A.mt;
   assert(A.mb == A.nb);
 
-  for (int K = 0; K < NBLOCKS; K++)
+  for (size_t K = 0; K < NBLOCKS; K++)
   {
     cuda_try(cudaSetDevice(A.get_preferred_devid(K, K)));
     DPOTRF(CUBLAS_FILL_MODE_LOWER, A, K, K);
 
-    for (int row = K + 1; row < NBLOCKS; row++)
+    for (size_t row = K + 1; row < NBLOCKS; row++)
     {
       cuda_try(cudaSetDevice(A.get_preferred_devid(row, K)));
       DTRSM(CUBLAS_SIDE_RIGHT, CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, CUBLAS_DIAG_NON_UNIT, 1.0, A, K, K, A, row, K);
 
-      for (int col = K + 1; col < row; col++)
+      for (size_t col = K + 1; col < row; col++)
       {
         cuda_try(cudaSetDevice(A.get_preferred_devid(row, col)));
         DGEMM(CUBLAS_OP_N, CUBLAS_OP_T, -1.0, A, row, K, A, col, K, 1.0, A, row, col);
@@ -987,7 +987,7 @@ void PDGEMM(cublasOperation_t transa,
       //=========================================
       // alpha*A*B does not contribute; scale C
       //=========================================
-      int inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
+      size_t inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
       if (alpha == 0.0 || inner_k == 0)
       {
         DGEMM(transa, transb, alpha, A, 0, 0, B, 0, 0, beta, C, m, n);
