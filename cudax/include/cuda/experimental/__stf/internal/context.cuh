@@ -96,6 +96,27 @@ class context
       }
     }
 
+    template <typename... Args>
+    auto& add_deps(Args&&... args)
+    {
+      ::std::visit(
+        [&](auto& self) {
+          self.add_deps(::std::forward<Args>(args)...);
+        },
+        payload);
+      return *this;
+    }
+
+    template <typename T>
+    decltype(auto) get(size_t submitted_index) const
+    {
+      return ::std::visit(
+        [&](auto& self) {
+          return self.template get<T>(submitted_index);
+        },
+        payload);
+    }
+
   private:
     ::std::variant<T1, T2> payload;
   };
