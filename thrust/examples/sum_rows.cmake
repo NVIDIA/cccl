@@ -1,5 +1,4 @@
-target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: --extended-lambda>)
-
+target_compile_options(${example_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: --extended-lambda>)
 # This check is actually not correct, because we must check the host compiler, not the CXX compiler.
 # We rely on these usually being the same ;)
 if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 13)
@@ -8,5 +7,5 @@ if ("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND CMAKE_CXX_COMPILER_VERSION V
     #   312 | __nv_hdl_wrapper_t & operator=(const __nv_hdl_wrapper_t &in) = delete;
     #   |                      ^
     # Let's suppress it until NVBug 4980157 is resolved.
-    target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: -Wno-deprecated-copy>)
+    target_compile_options(${example_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: -Wno-deprecated-copy>)
 endif ()

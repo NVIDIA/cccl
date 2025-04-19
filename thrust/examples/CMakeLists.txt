@@ -129,6 +129,20 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
   if (("OMP" IN_LIST config_systems) OR ("TBB" IN_LIST config_systems))
     set_tests_properties(${example_target} PROPERTIES RUN_SERIAL ON)
   endif()
+
+  # Check for per-example script. Script will be included in the current scope
+  # to allow custom property modifications.
+  get_filename_component(example_cmake_script "${example_src}" NAME_WLE)
+  set(example_cmake_script "${CMAKE_CURRENT_LIST_DIR}/${example_cmake_script}.cmake")
+  # Use a glob so we can detect if this changes:
+  file(GLOB example_cmake_script
+    RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+    CONFIGURE_DEPENDS
+    "${example_cmake_script}"
+  )
+  if (example_cmake_script) # Will be non-empty only if the script exists
+    include("${example_cmake_script}")
+  endif()
 endfunction()
 
 file(GLOB example_srcs
