@@ -131,6 +131,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 namespace __detail_ap
@@ -247,7 +249,7 @@ struct __block_desc_t
   _CCCL_HOST_DEVICE constexpr std::uint64_t __get_descriptor() const noexcept
   {
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-    return cuda::std::is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
+    return _CUDA_VSTD::is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
 #else
     return __get_descriptor_cexpr();
 #endif
