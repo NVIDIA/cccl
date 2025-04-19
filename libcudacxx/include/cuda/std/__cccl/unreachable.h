@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/visibility.h>
+#include <cuda/std/__cccl/assert.h>
 
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()
@@ -35,5 +35,15 @@
 #    define _CCCL_UNREACHABLE() __builtin_unreachable()
 #  endif // !_CCCL_COMPILER(MSVC)
 #endif // !__CUDA_ARCH__
+
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVHPC)
+#  define _CCCL_UNREACHABLE_WITH_CHECK() _CCCL_UNREACHABLE()
+#else
+#  define _CCCL_UNREACHABLE_WITH_CHECK()  \
+    {                                     \
+      _CCCL_ASSERT(false, "unreachable"); \
+      _CCCL_UNREACHABLE();                \
+    }
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVHPC)
 
 #endif // __CCCL_UNREACHABLE_H

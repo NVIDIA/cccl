@@ -175,13 +175,13 @@ struct iequality_comparable_base : interface<iequality_comparable>
   [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
   operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 
   [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
 
   // These are the overloads that get used when testing two `basic_any` objects

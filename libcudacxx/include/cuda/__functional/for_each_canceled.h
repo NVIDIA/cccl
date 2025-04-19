@@ -63,7 +63,7 @@ template <int _Index>
   }
   else
   {
-    _CCCL_UNREACHABLE();
+    _CCCL_UNREACHABLE_WITH_CHECK();
   }
   return __r;
 }
