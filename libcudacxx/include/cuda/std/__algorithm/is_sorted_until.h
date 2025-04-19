@@ -26,6 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 __is_sorted_until(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)

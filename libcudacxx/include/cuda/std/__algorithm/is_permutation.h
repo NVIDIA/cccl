@@ -28,6 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator1, class _ForwardIterator2, class _BinaryPredicate>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_permutation(
   _ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIterator2 __first2, _BinaryPredicate __pred)
@@ -106,6 +107,7 @@ is_permutation(_ForwardIterator1 __first1, _ForwardIterator1 __last1, _ForwardIt
   return _CUDA_VSTD::is_permutation(__first1, __last1, __first2, __equal_to{});
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_permutation(
   _ForwardIterator1 __first1,
@@ -189,6 +191,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   return true;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_permutation(
   _RandomAccessIterator1 __first1,

@@ -28,6 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_right(
   _ForwardIterator __first,
@@ -44,6 +45,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_right(
   return _CUDA_VSTD::move_backward(__first, __m, __last);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_right(
   _ForwardIterator __first,
@@ -63,6 +65,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_right(
   return _CUDA_VSTD::move_backward(__first, __m, __last);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __shift_right(
   _ForwardIterator __first,

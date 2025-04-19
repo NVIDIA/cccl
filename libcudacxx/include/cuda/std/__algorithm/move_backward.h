@@ -30,6 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _BidirectionalIterator, class _OutputIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_BidirectionalIterator, _OutputIterator>
 __move_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _OutputIterator __result)
@@ -41,6 +42,7 @@ __move_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _
   return {__first, __result};
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Tp,
           class _Up,

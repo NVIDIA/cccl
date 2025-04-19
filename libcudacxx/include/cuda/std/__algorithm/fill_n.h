@@ -25,6 +25,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _OutputIterator, class _Size, class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator __fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {

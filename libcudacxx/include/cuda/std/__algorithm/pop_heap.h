@@ -32,6 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _RandomAccessIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void __pop_heap(
   _RandomAccessIterator __first,
@@ -65,6 +66,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __pop_heap(
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator, class _Compare>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void
 pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
@@ -77,6 +79,7 @@ pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare _
   _CUDA_VSTD::__pop_heap<_ClassicAlgPolicy>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __len);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _RandomAccessIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr void pop_heap(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {

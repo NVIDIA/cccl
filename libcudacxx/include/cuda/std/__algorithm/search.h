@@ -32,6 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_ForwardIterator1, _ForwardIterator1> __search(
   _ForwardIterator1 __first1,
@@ -83,6 +84,7 @@ template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterato
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_RandomAccessIterator1, _RandomAccessIterator1> __search(
   _RandomAccessIterator1 __first1,

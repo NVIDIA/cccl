@@ -30,6 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _BidirectionalIterator, class _Sentinel>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_BidirectionalIterator, bool>
 __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& __comp)
@@ -63,6 +64,7 @@ __prev_permutation(_BidirectionalIterator __first, _Sentinel __last, _Compare&& 
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator, class _Compare>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 prev_permutation(_BidirectionalIterator __first, _BidirectionalIterator __last, _Compare __comp)
