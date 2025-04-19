@@ -14,7 +14,6 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include "cuda/std/__type_traits/is_constant_evaluated.h"
 #include "test_macros.h"
 
 template <class T>
@@ -24,14 +23,31 @@ __host__ __device__ constexpr void test_log2()
   for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 2; value *= 2)
   {
     assert(cuda::ilog2(value) == i);
-    if (i >= 1)
+    if (value > 1)
     {
       assert(cuda::ilog2(static_cast<T>(value - 1)) == i - 1);
-      assert(cuda::ilog2(static_cast<T>(value + 1)) == i); // not true if value == 1
+      assert(cuda::ilog2(static_cast<T>(value + 1)) == i);
     }
     i++;
   }
   assert(cuda::ilog2(cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::digits - 1);
+}
+
+template <class T>
+__host__ __device__ constexpr void test_ceil_log2()
+{
+  int i = 0;
+  for (T value = 1; value <= cuda::std::numeric_limits<T>::max() / 2; value *= 2)
+  {
+    assert(cuda::ceil_ilog2(value) == i);
+    assert(cuda::ceil_ilog2(static_cast<T>(value + 1)) == i + 1);
+    if (value > 2)
+    {
+      assert(cuda::ceil_ilog2(static_cast<T>(value - 1)) == i);
+    }
+    i++;
+  }
+  assert(cuda::ceil_ilog2(cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::digits);
 }
 
 template <class T>
@@ -62,6 +78,7 @@ template <class T>
 __host__ __device__ constexpr void test()
 {
   test_log2<T>();
+  test_ceil_log2<T>();
   test_log10<T>();
 }
 
