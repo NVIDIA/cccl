@@ -178,7 +178,16 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def to_cccl_op(op: Callable, sig) -> Op:
+def to_cccl_op(op: Callable | None, sig) -> Op:
+    if op is None:
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=None,
+            ltoir=None,
+            state_alignment=1,
+            state=None,
+        )
+
     ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
     return Op(
         operator_type=OpKind.STATELESS,
