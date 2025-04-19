@@ -141,7 +141,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -342,7 +341,7 @@ protected:
   uint64_t __prop;
 
   _CCCL_HOST_DEVICE constexpr __annotated_ptr_base() noexcept
-      : __prop{access_property()}
+      : __prop{access_property{}}
   {}
   _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(uint64_t __property) noexcept
       : __prop{__property}
@@ -363,7 +362,9 @@ protected:
 
   [[nodiscard]] _CCCL_HOST_DEVICE access_property __get_property() const noexcept
   {
-    return _CUDA_VSTD::bit_cast<access_property>(__prop);
+    access_property __access_prop;
+    ::memcpy(&__access_prop, &__prop, sizeof(access_property));
+    return __access_prop;
   }
 };
 
