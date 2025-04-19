@@ -258,8 +258,7 @@ class DeviceSegmentedReduceBuildResult:
 # ---------------
 
 class DeviceMergeSortBuildResult:
-    def __init__(self): ...
-    def build(
+    def __init__(
         self,
         d_in_keys: Iterator,
         d_in_items: Iterator,
@@ -267,7 +266,7 @@ class DeviceMergeSortBuildResult:
         d_out_itemss: Iterator,
         binary_op: Op,
         info: CommonData,
-    ) -> int: ...
+    ): ...
     def compute(
         self,
         temp_storage_ptr: int,
@@ -279,15 +278,14 @@ class DeviceMergeSortBuildResult:
         num_items: int,
         binary_op: Op,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> int: ...
 
 # -----------------
 # DeviceUniqueByKey
 # -----------------
 
 class DeviceUniqueByKeyBuildResult:
-    def __init__(self): ...
-    def build(
+    def __init__(
         self,
         d_keys_in: Iterator,
         d_values_in: Iterator,
@@ -296,7 +294,7 @@ class DeviceUniqueByKeyBuildResult:
         d_num_selected_out: Iterator,
         binary_op: Op,
         info: CommonData,
-    ) -> int: ...
+    ): ...
     def compute(
         self,
         temp_storage_ptr: int,
@@ -309,7 +307,7 @@ class DeviceUniqueByKeyBuildResult:
         binary_op: Op,
         num_items: int,
         stream,
-    ) -> tuple[int, int]: ...
+    ) -> int: ...
 
 # --------------------
 # DeviceUnaryTransform
