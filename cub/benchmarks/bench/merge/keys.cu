@@ -31,10 +31,10 @@ void keys(nvbench::state& state, nvbench::type_list<KeyT, OffsetT>)
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<key_t>;
-  using dispatch_t = cub::cub::detail::merge::
+  using dispatch_t = cub::internal::merge::
     dispatch_t<key_it_t, value_it_t, key_it_t, value_it_t, key_it_t, value_it_t, offset_t, compare_op_t, policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::detail::merge::
+  using dispatch_t = cub::internal::merge::
     dispatch_t<key_it_t, value_it_t, key_it_t, value_it_t, key_it_t, value_it_t, offset_t, compare_op_t>;
 #endif // TUNE_BASE
 

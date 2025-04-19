@@ -47,7 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 
 // Compute the submdspan size of a given rank
@@ -113,6 +113,6 @@ template <int Rank, typename Extents>
   return true;
 }
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

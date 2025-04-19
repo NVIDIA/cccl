@@ -43,25 +43,25 @@ C2H_TEST("Tests non_void_value_t", "[util][type]")
 
   // falls back for const void*
   STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
-                                        cub::detail::non_void_value_t<const void*, fallback_t>>);
+                                        cub::internal::non_void_value_t<const void*, fallback_t>>);
   // falls back for const volatile void*
   STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
-                                        cub::detail::non_void_value_t<const volatile void*, fallback_t>>);
+                                        cub::internal::non_void_value_t<const volatile void*, fallback_t>>);
   // falls back for volatile void*
   STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
-                                        cub::detail::non_void_value_t<volatile void*, fallback_t>>);
+                                        cub::internal::non_void_value_t<volatile void*, fallback_t>>);
   // falls back for void*
   STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
-                                        cub::detail::non_void_value_t<void*, fallback_t>>);
+                                        cub::internal::non_void_value_t<void*, fallback_t>>);
   // works for int*
   STATIC_REQUIRE(::cuda::std::is_same_v<int, //
-                                        cub::detail::non_void_value_t<int*, void>>);
+                                        cub::internal::non_void_value_t<int*, void>>);
   // falls back for fancy iterator with a void value type
   STATIC_REQUIRE(::cuda::std::is_same_v<fallback_t, //
-                                        cub::detail::non_void_value_t<void_fancy_it, fallback_t>>);
+                                        cub::internal::non_void_value_t<void_fancy_it, fallback_t>>);
   // works for a fancy iterator that has int as value type
   STATIC_REQUIRE(::cuda::std::is_same_v<int, //
-                                        cub::detail::non_void_value_t<non_void_fancy_it, fallback_t>>);
+                                        cub::internal::non_void_value_t<non_void_fancy_it, fallback_t>>);
 }
 
 CUB_DEFINE_DETECT_NESTED_TYPE(cat_detect, cat);
@@ -90,7 +90,7 @@ struct CustomHalf
 C2H_TEST("Test CustomHalf", "[util][type]")
 {
   // type not registered with cub::Traits
-  STATIC_REQUIRE(!cub::detail::is_primitive<CustomHalf>::value);
+  STATIC_REQUIRE(!cub::internal::is_primitive<CustomHalf>::value);
   STATIC_REQUIRE(!cuda::std::is_floating_point<CustomHalf>::value);
   STATIC_REQUIRE(!cuda::std::is_floating_point_v<CustomHalf>);
   STATIC_REQUIRE(!cuda::is_floating_point<CustomHalf>::value);
@@ -98,7 +98,7 @@ C2H_TEST("Test CustomHalf", "[util][type]")
   STATIC_REQUIRE(!cuda::std::numeric_limits<CustomHalf>::is_specialized);
 
   // type registered with cub::Traits (specializes NumericTraits, numeric_limits, and is_floating_point)
-  STATIC_REQUIRE(cub::detail::is_primitive<half_t>::value);
+  STATIC_REQUIRE(cub::internal::is_primitive<half_t>::value);
   STATIC_REQUIRE(!cuda::std::is_floating_point<half_t>::value); // the std traits are not affected
   STATIC_REQUIRE(!cuda::std::is_floating_point_v<half_t>);
   STATIC_REQUIRE(cuda::is_floating_point<half_t>::value);

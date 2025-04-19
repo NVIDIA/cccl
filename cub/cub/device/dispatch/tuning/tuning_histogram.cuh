@@ -46,7 +46,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace histogram
 {
@@ -239,6 +239,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace histogram
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

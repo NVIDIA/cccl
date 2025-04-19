@@ -58,7 +58,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace batch_memcpy
 {
@@ -425,7 +425,7 @@ public:
       // we use the PTX instruction `shr` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
       const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      val |= detail::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
+      val |= internal::LogicShiftRight(data[i], bit_shift) & ITEM_MASK;
     }
     return val;
   }
@@ -443,7 +443,7 @@ public:
       // we use the PTX instruction `shl` to make sure behaviour is well-defined.
       // Negative bit-shift amounts wrap around in unsigned integer math and are ultimately clamped.
       const uint32_t bit_shift = target_offset - i * USED_BITS_PER_UNIT;
-      data[i] += detail::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
+      data[i] += internal::LogicShiftLeft(value, bit_shift) & UNIT_MASK;
     }
   }
 
@@ -1176,6 +1176,6 @@ private:
   BLevBlockOffsetTileState blev_block_scan_state;
 };
 } // namespace batch_memcpy
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

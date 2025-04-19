@@ -85,7 +85,7 @@ template <int _BLOCK_THREADS,
           BlockLoadAlgorithm _LOAD_ALGORITHM,
           CacheLoadModifier _LOAD_MODIFIER,
           BlockScanAlgorithm _SCAN_ALGORITHM,
-          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
+          typename DelayConstructorT = internal::fixed_delay_constructor_t<350, 450>>
 struct AgentReduceByKeyPolicy
 {
   ///< Threads per thread block
@@ -113,7 +113,7 @@ struct AgentReduceByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace internal
 {
 namespace reduce
 {
@@ -697,6 +697,6 @@ struct AgentReduceByKey
 };
 
 } // namespace reduce
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

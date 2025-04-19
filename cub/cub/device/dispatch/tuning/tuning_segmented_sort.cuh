@@ -43,7 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace segmented_sort
 {
@@ -244,6 +244,6 @@ struct policy_hub
   using MaxPolicy = Policy860;
 };
 } // namespace segmented_sort
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

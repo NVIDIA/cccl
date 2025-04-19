@@ -54,7 +54,7 @@
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 
 template <typename Invokable, typename... Args>
@@ -119,6 +119,6 @@ inline constexpr int static_size_v<_CUDA_VSTD::mdspan<T, E, L, A>> =
 template <typename T>
 using implicit_prom_t = decltype(+T{});
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

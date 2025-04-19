@@ -49,7 +49,7 @@ template <int ItemsPerThread,
           typename OutputIteratorT>
 __global__ void kernel(cuda::std::true_type, InputIteratorT input, OutputIteratorT output, int num_items)
 {
-  using input_t      = cub::detail::it_value_t<InputIteratorT>;
+  using input_t      = cub::internal::it_value_t<InputIteratorT>;
   using block_load_t = cub::BlockLoad<input_t, ThreadsInBlock, ItemsPerThread, LoadAlgorithm>;
   using storage_t    = typename block_load_t::TempStorage;
 
@@ -99,7 +99,7 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputIteratorT input)
   using block_load_t = cub::BlockLoad<T, ThreadsInBlock, ItemsPerThread, LoadAlgorithm>;
   using storage_t    = typename block_load_t::TempStorage;
   constexpr auto sufficient_resources =
-    cuda::std::bool_constant<sizeof(storage_t) <= cub::detail::max_smem_per_block>{};
+    cuda::std::bool_constant<sizeof(storage_t) <= cub::internal::max_smem_per_block>{};
 
   c2h::device_vector<T> d_output(d_input.size());
   kernel<ItemsPerThread, ThreadsInBlock, LoadAlgorithm><<<1, ThreadsInBlock>>>(

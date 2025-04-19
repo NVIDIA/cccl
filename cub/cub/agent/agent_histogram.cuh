@@ -132,7 +132,7 @@ struct AgentHistogramPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace internal
 {
 namespace histogram
 {
@@ -187,7 +187,7 @@ struct AgentHistogram
   //---------------------------------------------------------------------
 
   /// The sample type of the input iterator
-  using SampleT = cub::detail::it_value_t<SampleIteratorT>;
+  using SampleT = cub::internal::it_value_t<SampleIteratorT>;
 
   /// The pixel type of SampleT
   using PixelT = typename CubVector<SampleT, NUM_CHANNELS>::Type;
@@ -914,6 +914,6 @@ struct AgentHistogram
 };
 
 } // namespace histogram
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

@@ -98,9 +98,9 @@ using a_few_fundamental_types = c2h::type_list<std::uint8_t, std::uint64_t>;
 C2H_TEST("Radix operations extract digits from fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
-  using traits       = cub::detail::radix::traits_t<key_t>;
+  using traits       = cub::internal::radix::traits_t<key_t>;
   using extractor_t  = fundamental_extractor_t<key_t>;
-  using decomposer_t = cub::detail::identity_decomposer_t;
+  using decomposer_t = cub::internal::identity_decomposer_t;
 
   auto decomposer            = decomposer_t{};
   constexpr int max_key_bits = sizeof(key_t) * CHAR_BIT;
@@ -269,9 +269,9 @@ template <class... Ts>
 void test_tuple()
 {
   using tpl_t        = ::cuda::std::tuple<Ts...>;
-  using traits       = cub::detail::radix::traits_t<tpl_t>;
+  using traits       = cub::internal::radix::traits_t<tpl_t>;
   using decomposer_t = tuple_decomposer_t<tpl_t>;
-  using extractor_t  = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
+  using extractor_t  = cub::internal::radix::custom_digit_extractor_t<decomposer_t>;
 
   tpl_t tpl{};
   c2h::host_vector<char> output_buffer_mem(sizeof(std::uint32_t));
@@ -348,9 +348,9 @@ C2H_TEST("Radix operations extract digits from tetrads",
 C2H_TEST("Radix operations inverse fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
-  using traits       = cub::detail::radix::traits_t<key_t>;
+  using traits       = cub::internal::radix::traits_t<key_t>;
   using extractor_t  = fundamental_extractor_t<key_t>;
-  using decomposer_t = cub::detail::identity_decomposer_t;
+  using decomposer_t = cub::internal::identity_decomposer_t;
 
   auto decomposer = decomposer_t{};
 
@@ -390,9 +390,9 @@ C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
                                    typename c2h::get<1, TestType>>;
 
-  using traits       = cub::detail::radix::traits_t<tpl_t>;
+  using traits       = cub::internal::radix::traits_t<tpl_t>;
   using decomposer_t = tuple_decomposer_t<tpl_t>;
-  using extractor_t  = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
+  using extractor_t  = cub::internal::radix::custom_digit_extractor_t<decomposer_t>;
 
   auto decomposer = decomposer_t{};
 
@@ -423,8 +423,8 @@ C2H_TEST("Radix operations inverse pairs", "[radix][operations]", fundamental_ty
 C2H_TEST("Radix operations infere minimal value for fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
-  using traits       = cub::detail::radix::traits_t<key_t>;
-  using decomposer_t = cub::detail::identity_decomposer_t;
+  using traits       = cub::internal::radix::traits_t<key_t>;
+  using decomposer_t = cub::internal::identity_decomposer_t;
 
   c2h::host_vector<char> output_buffer_mem(sizeof(key_t));
   c2h::host_vector<char> input_buffer_mem(sizeof(key_t));
@@ -441,7 +441,7 @@ C2H_TEST(
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
                                    typename c2h::get<1, TestType>>;
 
-  using traits       = cub::detail::radix::traits_t<tpl_t>;
+  using traits       = cub::internal::radix::traits_t<tpl_t>;
   using decomposer_t = tuple_decomposer_t<tpl_t>;
 
   tpl_t ref;
@@ -459,8 +459,8 @@ C2H_TEST(
 C2H_TEST("Radix operations infere maximal value for fundamental types", "[radix][operations]", fundamental_types)
 {
   using key_t        = typename c2h::get<0, TestType>;
-  using traits       = cub::detail::radix::traits_t<key_t>;
-  using decomposer_t = cub::detail::identity_decomposer_t;
+  using traits       = cub::internal::radix::traits_t<key_t>;
+  using decomposer_t = cub::internal::identity_decomposer_t;
 
   key_t ref = ::cuda::std::numeric_limits<key_t>::max();
   key_t val = traits::max_raw_binary_key(decomposer_t{});
@@ -474,7 +474,7 @@ C2H_TEST(
   using tpl_t = ::cuda::std::tuple<typename c2h::get<0, TestType>, //
                                    typename c2h::get<1, TestType>>;
 
-  using traits       = cub::detail::radix::traits_t<tpl_t>;
+  using traits       = cub::internal::radix::traits_t<tpl_t>;
   using decomposer_t = tuple_decomposer_t<tpl_t>;
 
   tpl_t ref;
@@ -508,7 +508,7 @@ C2H_TEST("Radix operations reorder values for pair types",
   using UT2   = std::make_unsigned_t<T2>;
   using tpl_t = ::cuda::std::tuple<T1, T2>;
 
-  using traits            = cub::detail::radix::traits_t<tpl_t>;
+  using traits            = cub::internal::radix::traits_t<tpl_t>;
   using conversion_policy = typename traits::bit_ordered_conversion_policy;
   using decomposer_t      = tuple_decomposer_t<tpl_t>;
 
@@ -593,10 +593,10 @@ struct flipped_fp_aggregate_decomposer_t
  */
 TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]")
 {
-  using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
+  using traits            = cub::internal::radix::traits_t<fp_aggregate_t>;
   using conversion_policy = typename traits::bit_ordered_conversion_policy;
   using decomposer_t      = fp_aggregate_decomposer_t;
-  using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
+  using extractor_t       = cub::internal::radix::custom_digit_extractor_t<decomposer_t>;
 
   fp_aggregate_t negative{-0.0, -0.0f};
   fp_aggregate_t positive{+0.0, +0.0f};
@@ -622,10 +622,10 @@ TEST_CASE("Radix operations treat -0/+0 as being equal", "[radix][operations]")
  */
 TEST_CASE("Radix operations allow fields permutation", "[radix][operations]")
 {
-  using traits            = cub::detail::radix::traits_t<fp_aggregate_t>;
+  using traits            = cub::internal::radix::traits_t<fp_aggregate_t>;
   using conversion_policy = typename traits::bit_ordered_conversion_policy;
   using decomposer_t      = flipped_fp_aggregate_decomposer_t;
-  using extractor_t       = cub::detail::radix::custom_digit_extractor_t<decomposer_t>;
+  using extractor_t       = cub::internal::radix::custom_digit_extractor_t<decomposer_t>;
 
   fp_aggregate_t lhs{4.2, 2.4f};
   fp_aggregate_t rhs{2.4, 4.2f};

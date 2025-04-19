@@ -16,7 +16,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 
 struct CudaDriverLauncher
@@ -112,6 +112,6 @@ struct CudaDriverLauncherFactory
   int cc;
 };
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

@@ -50,7 +50,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace detail
+namespace internal
 {
 
 /**
@@ -115,7 +115,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t AliasTemporaries(
   return cudaSuccess;
 }
 
-} // namespace detail
+} // namespace internal
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

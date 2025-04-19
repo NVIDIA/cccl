@@ -49,7 +49,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace detail
+namespace internal
 {
 
 static _CCCL_DEVICE _CCCL_FORCEINLINE uint4 load_relaxed(uint4 const* ptr)
@@ -182,7 +182,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_acquire(unsigned int con
   return retval;
 }
 
-} // namespace detail
+} // namespace internal
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

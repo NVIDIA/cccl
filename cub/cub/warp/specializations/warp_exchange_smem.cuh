@@ -50,7 +50,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 
 template <typename InputT, int ITEMS_PER_THREAD, int LOGICAL_WARP_THREADS = warp_threads>
@@ -172,6 +172,6 @@ public:
   }
 };
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

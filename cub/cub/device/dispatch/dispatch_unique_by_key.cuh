@@ -54,7 +54,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::unique_by_key
+namespace internal::unique_by_key
 {
 template <typename MaxPolicyT,
           typename KeyInputIteratorT,
@@ -69,7 +69,7 @@ template <typename MaxPolicyT,
 struct DeviceUniqueByKeyKernelSource
 {
   CUB_DEFINE_KERNEL_GETTER(CompactInitKernel,
-                           detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>);
+                           internal::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>);
 
   CUB_DEFINE_KERNEL_GETTER(
     UniqueByKeySweepKernel,
@@ -89,7 +89,7 @@ struct DeviceUniqueByKeyKernelSource
     return ScanTileStateT();
   }
 };
-} // namespace detail::unique_by_key
+} // namespace internal::unique_by_key
 
 /******************************************************************************
  * Dispatch
@@ -119,30 +119,29 @@ struct DeviceUniqueByKeyKernelSource
  * @tparam OffsetT
  *   Signed integer type for global offsets
  */
-template <
-  typename KeyInputIteratorT,
-  typename ValueInputIteratorT,
-  typename KeyOutputIteratorT,
-  typename ValueOutputIteratorT,
-  typename NumSelectedIteratorT,
-  typename EqualityOpT,
-  typename OffsetT,
-  typename PolicyHub =
-    detail::unique_by_key::policy_hub<detail::it_value_t<KeyInputIteratorT>, detail::it_value_t<ValueInputIteratorT>>,
-  typename KernelSource = detail::unique_by_key::DeviceUniqueByKeyKernelSource<
-    typename PolicyHub::MaxPolicy,
-    KeyInputIteratorT,
-    ValueInputIteratorT,
-    KeyOutputIteratorT,
-    ValueOutputIteratorT,
-    NumSelectedIteratorT,
-    ScanTileState<OffsetT>,
-    EqualityOpT,
-    OffsetT>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory,
-  typename VSMemHelperT          = detail::unique_by_key::VSMemHelper,
-  typename KeyT                  = detail::it_value_t<KeyInputIteratorT>,
-  typename ValueT                = detail::it_value_t<ValueInputIteratorT>>
+template <typename KeyInputIteratorT,
+          typename ValueInputIteratorT,
+          typename KeyOutputIteratorT,
+          typename ValueOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename PolicyHub    = internal::unique_by_key::policy_hub<internal::it_value_t<KeyInputIteratorT>,
+                                                                      internal::it_value_t<ValueInputIteratorT>>,
+          typename KernelSource = internal::unique_by_key::DeviceUniqueByKeyKernelSource<
+            typename PolicyHub::MaxPolicy,
+            KeyInputIteratorT,
+            ValueInputIteratorT,
+            KeyOutputIteratorT,
+            ValueOutputIteratorT,
+            NumSelectedIteratorT,
+            ScanTileState<OffsetT>,
+            EqualityOpT,
+            OffsetT>,
+          typename KernelLauncherFactory = internal::TripleChevronFactory,
+          typename VSMemHelperT          = internal::unique_by_key::VSMemHelper,
+          typename KeyT                  = internal::it_value_t<KeyInputIteratorT>,
+          typename ValueT                = internal::it_value_t<ValueInputIteratorT>>
 struct DispatchUniqueByKey
 {
   /******************************************************************************
@@ -316,7 +315,7 @@ struct DispatchUniqueByKey
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
       void* allocations[2] = {nullptr, nullptr};
 
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -354,7 +353,7 @@ struct DispatchUniqueByKey
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -418,7 +417,7 @@ struct DispatchUniqueByKey
                 equality_op,
                 num_items,
                 num_tiles,
-                cub::detail::vsmem_t{allocations[1]});
+                cub::internal::vsmem_t{allocations[1]});
 
       // Check for failure to launch
       error = CubDebug(error);
@@ -428,7 +427,7 @@ struct DispatchUniqueByKey
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -441,7 +440,7 @@ struct DispatchUniqueByKey
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::unique_by_key::MakeUniqueByKeyPolicyWrapper(active_policy);
+    auto wrapped_policy = internal::unique_by_key::MakeUniqueByKeyPolicyWrapper(active_policy);
 
     return Invoke(kernel_source.CompactInitKernel(), kernel_source.UniqueByKeySweepKernel(), wrapped_policy);
   }

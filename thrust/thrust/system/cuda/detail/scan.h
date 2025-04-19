@@ -119,8 +119,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
-  using ValueT      = cub::detail::it_value_t<InputIt>;
+  using InputValueT = cub::internal::InputValue<InitValueT>;
+  using ValueT      = cub::internal::it_value_t<InputIt>;
   using AccumT      = ::cuda::std::__accumulator_t<ScanOp, ValueT, InitValueT>;
 
   using Dispatch32 =
@@ -180,7 +180,7 @@ _CCCL_HOST_DEVICE OutputIt exclusive_scan_n_impl(
   InitValueT init,
   ScanOp scan_op)
 {
-  using InputValueT = cub::detail::InputValue<InitValueT>;
+  using InputValueT = cub::internal::InputValue<InitValueT>;
   using Dispatch32  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint32_t, InitValueT>;
   using Dispatch64  = cub::DispatchScan<InputIt, OutputIt, ScanOp, InputValueT, std::uint64_t, InitValueT>;
 

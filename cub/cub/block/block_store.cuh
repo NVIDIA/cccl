@@ -349,9 +349,9 @@ template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD])
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
+  int tid         = linear_tid & (internal::warp_threads - 1);
+  int wid         = linear_tid >> internal::log2_warp_threads;
+  int warp_offset = wid * internal::warp_threads * ITEMS_PER_THREAD;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -359,7 +359,7 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
-    thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+    thread_itr[(ITEM * internal::warp_threads)] = items[ITEM];
   }
 }
 
@@ -401,9 +401,9 @@ template <typename T, int ITEMS_PER_THREAD, typename OutputIteratorT>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
 StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITEMS_PER_THREAD], int valid_items)
 {
-  int tid         = linear_tid & (detail::warp_threads - 1);
-  int wid         = linear_tid >> detail::log2_warp_threads;
-  int warp_offset = wid * detail::warp_threads * ITEMS_PER_THREAD;
+  int tid         = linear_tid & (internal::warp_threads - 1);
+  int wid         = linear_tid >> internal::log2_warp_threads;
+  int warp_offset = wid * internal::warp_threads * ITEMS_PER_THREAD;
 
   OutputIteratorT thread_itr = block_itr + warp_offset + tid;
 
@@ -411,9 +411,9 @@ StoreDirectWarpStriped(int linear_tid, OutputIteratorT block_itr, T (&items)[ITE
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ITEM++)
   {
-    if (warp_offset + tid + (ITEM * detail::warp_threads) < valid_items)
+    if (warp_offset + tid + (ITEM * internal::warp_threads) < valid_items)
     {
-      thread_itr[(ITEM * detail::warp_threads)] = items[ITEM];
+      thread_itr[(ITEM * internal::warp_threads)] = items[ITEM];
     }
   }
 }
@@ -916,7 +916,7 @@ private:
   {
     enum
     {
-      WARP_THREADS = detail::warp_threads
+      WARP_THREADS = internal::warp_threads
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
@@ -999,7 +999,7 @@ private:
   {
     enum
     {
-      WARP_THREADS = detail::warp_threads
+      WARP_THREADS = internal::warp_threads
     };
 
     // Assert BLOCK_THREADS must be a multiple of WARP_THREADS
@@ -1236,7 +1236,7 @@ public:
 };
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-template <class Policy, class It, class T = cub::detail::it_value_t<It>>
+template <class Policy, class It, class T = cub::internal::it_value_t<It>>
 struct BlockStoreType
 {
   using type = cub::BlockStore<T, Policy::BLOCK_THREADS, Policy::ITEMS_PER_THREAD, Policy::STORE_ALGORITHM>;

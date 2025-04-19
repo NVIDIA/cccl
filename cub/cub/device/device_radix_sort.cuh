@@ -189,7 +189,7 @@ private:
     cudaStream_t stream)
   {
     constexpr int begin_bit = 0;
-    const int end_bit       = detail::radix::traits_t<KeyT>::default_end_bit(decomposer);
+    const int end_bit       = internal::radix::traits_t<KeyT>::default_end_bit(decomposer);
 
     return DeviceRadixSort::custom_radix_sort<Order>(
       ::cuda::std::true_type{},
@@ -336,7 +336,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     // TODO API that doesn't accept decomposer should also contain a static
     //      assert that the key type is fundamental.
@@ -483,8 +483,8 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -621,8 +621,8 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -775,7 +775,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -894,8 +894,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -1039,8 +1039,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -1181,7 +1181,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
     // `DispatchRadixSort::Dispatch` will allocate temporary storage and
@@ -1319,8 +1319,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -1459,8 +1459,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -1608,7 +1608,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -1728,8 +1728,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -1874,8 +1874,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -2011,7 +2011,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
     // `DispatchRadixSort::Dispatch` will allocate temporary storage and
@@ -2143,8 +2143,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -2271,8 +2271,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -2407,7 +2407,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -2516,8 +2516,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -2649,8 +2649,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -2777,7 +2777,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     // We cast away const-ness, but will *not* write to these arrays.
     // `DispatchRadixSort::Dispatch` will allocate temporary storage and
@@ -2901,8 +2901,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -3027,8 +3027,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -3158,7 +3158,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Unsigned integer type for global offsets.
-    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using OffsetT = internal::choose_offset_t<NumItemsT>;
 
     constexpr bool is_overwrite_okay = true;
 
@@ -3268,8 +3268,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "
@@ -3402,8 +3402,8 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // unsigned integer type for global offsets
-    using offset_t           = detail::choose_offset_t<NumItemsT>;
-    using decomposer_check_t = detail::radix::decomposer_check_t<KeyT, DecomposerT>;
+    using offset_t           = internal::choose_offset_t<NumItemsT>;
+    using decomposer_check_t = internal::radix::decomposer_check_t<KeyT, DecomposerT>;
 
     static_assert(decomposer_check_t::value,
                   "DecomposerT must be a callable object returning a tuple of references to "

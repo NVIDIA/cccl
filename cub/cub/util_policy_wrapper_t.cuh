@@ -34,7 +34,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace detail
+namespace internal
 {
 /**
  * @brief Helper class template that allows overwriting the `BLOCK_THREAD` and `ITEMS_PER_THREAD`
@@ -48,7 +48,7 @@ struct policy_wrapper_t : PolicyT
   static constexpr int BLOCK_THREADS    = BLOCK_THREADS_;
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 };
-} // namespace detail
+} // namespace internal
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

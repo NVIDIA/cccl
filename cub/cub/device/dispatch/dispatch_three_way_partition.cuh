@@ -54,7 +54,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::three_way_partition
+namespace internal::three_way_partition
 {
 // Offset type used to instantiate the stream three-way-partition-kernel and agent to index the items within one
 // partition
@@ -228,22 +228,23 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
     }
   }
 }
-} // namespace detail::three_way_partition
+} // namespace internal::three_way_partition
 
 /******************************************************************************
  * Dispatch
  ******************************************************************************/
 
-template <typename InputIteratorT,
-          typename FirstOutputIteratorT,
-          typename SecondOutputIteratorT,
-          typename UnselectedOutputIteratorT,
-          typename NumSelectedIteratorT,
-          typename SelectFirstPartOp,
-          typename SelectSecondPartOp,
-          typename OffsetT,
-          typename PolicyHub = detail::three_way_partition::
-            policy_hub<cub::detail::it_value_t<InputIteratorT>, detail::three_way_partition::per_partition_offset_t>>
+template <
+  typename InputIteratorT,
+  typename FirstOutputIteratorT,
+  typename SecondOutputIteratorT,
+  typename UnselectedOutputIteratorT,
+  typename NumSelectedIteratorT,
+  typename SelectFirstPartOp,
+  typename SelectSecondPartOp,
+  typename OffsetT,
+  typename PolicyHub = internal::three_way_partition::policy_hub<cub::internal::it_value_t<InputIteratorT>,
+                                                                 internal::three_way_partition::per_partition_offset_t>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************
@@ -251,14 +252,14 @@ struct DispatchThreeWayPartitionIf
    ****************************************************************************/
 
   // Offset type used to instantiate the three-way partition-kernel and agent to index the items within one partition
-  using per_partition_offset_t = detail::three_way_partition::per_partition_offset_t;
+  using per_partition_offset_t = internal::three_way_partition::per_partition_offset_t;
 
   // Type used to provide streaming information about each partition's context
   static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
 
-  using streaming_context_t = detail::three_way_partition::streaming_context_t<OffsetT>;
+  using streaming_context_t = internal::three_way_partition::streaming_context_t<OffsetT>;
 
-  using AccumPackHelperT = detail::three_way_partition::accumulator_pack_t<per_partition_offset_t>;
+  using AccumPackHelperT = internal::three_way_partition::accumulator_pack_t<per_partition_offset_t>;
   using AccumPackT       = typename AccumPackHelperT::pack_t;
   using ScanTileStateT   = cub::ScanTileState<AccumPackT>;
 
@@ -345,7 +346,7 @@ struct DispatchThreeWayPartitionIf
     // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
     void* allocations[2] = {};
 
-    error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
     if (cudaSuccess != error)
     {
       return error;
@@ -404,7 +405,7 @@ struct DispatchThreeWayPartitionIf
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -463,7 +464,7 @@ struct DispatchThreeWayPartitionIf
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -481,8 +482,8 @@ struct DispatchThreeWayPartitionIf
   {
     using MaxPolicyT = typename PolicyHub::MaxPolicy;
     return Invoke<ActivePolicyT>(
-      detail::three_way_partition::DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      detail::three_way_partition::DeviceThreeWayPartitionKernel<
+      internal::three_way_partition::DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      internal::three_way_partition::DeviceThreeWayPartitionKernel<
         MaxPolicyT,
         InputIteratorT,
         FirstOutputIteratorT,

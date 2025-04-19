@@ -50,7 +50,7 @@
 #include <cub/warp/warp_reduce.cuh>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 /**
  * @brief BlockReduceRaking provides raking-based methods of parallel reduction across a CUDA thread
@@ -247,6 +247,6 @@ struct BlockReduceRaking
     return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
   }
 };
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

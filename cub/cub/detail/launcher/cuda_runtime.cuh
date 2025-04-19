@@ -16,7 +16,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 
 struct TripleChevronFactory
@@ -66,6 +66,6 @@ struct TripleChevronFactory
   }
 };
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

@@ -42,7 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace for_each
 {
@@ -58,6 +58,6 @@ struct policy_hub_t
 };
 
 } // namespace for_each
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

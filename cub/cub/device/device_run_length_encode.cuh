@@ -198,16 +198,16 @@ struct DeviceRunLengthEncode
     using reduction_op = ::cuda::std::plus<>; // Value reduction operator
 
     // The lengths output value type
-    using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
+    using length_t = cub::internal::non_void_value_t<LengthsOutputIteratorT, offset_t>;
 
     // Generator type for providing 1s values for run-length reduction
     using lengths_input_iterator_t = THRUST_NS_QUALIFIER::constant_iterator<length_t, offset_t>;
 
     using accum_t = ::cuda::std::__accumulator_t<reduction_op, length_t, length_t>;
 
-    using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+    using key_t = cub::internal::non_void_value_t<UniqueOutputIteratorT, cub::internal::it_value_t<InputIteratorT>>;
 
-    using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
+    using policy_t = internal::rle::encode::policy_hub<accum_t, key_t>;
 
     return DispatchReduceByKey<
       InputIteratorT,

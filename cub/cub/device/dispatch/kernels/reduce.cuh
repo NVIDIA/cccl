@@ -42,7 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace reduce
 {
@@ -159,7 +159,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
+  using AgentReduceT = internal::reduce::AgentReduce<
     typename ChainedPolicyT::ActivePolicy::ReducePolicy,
     InputIteratorT,
     AccumT*,
@@ -177,7 +177,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
+    internal::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
   }
 }
 
@@ -241,7 +241,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
                                        TransformOpT transform_op)
 {
   // Thread block type for reducing input tiles
-  using AgentReduceT = detail::reduce::AgentReduce<
+  using AgentReduceT = internal::reduce::AgentReduce<
     typename ChainedPolicyT::ActivePolicy::SingleTilePolicy,
     InputIteratorT,
     OutputIteratorT,
@@ -258,7 +258,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   {
     if (threadIdx.x == 0)
     {
-      *d_out = detail::reduce::unwrap_empty_problem_init(init);
+      *d_out = internal::reduce::unwrap_empty_problem_init(init);
     }
 
     return;
@@ -271,10 +271,10 @@ CUB_DETAIL_KERNEL_ATTRIBUTES __launch_bounds__(
   // Output result
   if (threadIdx.x == 0)
   {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
+    internal::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
   }
 }
 } // namespace reduce
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

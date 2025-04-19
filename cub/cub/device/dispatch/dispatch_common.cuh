@@ -42,7 +42,7 @@ enum class SelectImpl
   Partition
 };
 
-namespace detail
+namespace internal
 {
 template <typename T, typename U, typename = void>
 struct has_plus_operator : ::cuda::std::false_type
@@ -86,6 +86,6 @@ _CCCL_HOST_DEVICE bool all_iterators_support_plus_operator(OffsetT /*offset*/, I
   }
 }
 
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

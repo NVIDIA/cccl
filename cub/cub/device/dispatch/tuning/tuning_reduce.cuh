@@ -43,7 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
+namespace internal
 {
 namespace reduce
 {
@@ -316,6 +316,6 @@ struct policy_hub
   using MaxPolicy = Policy500;
 };
 } // namespace fixed_size_segmented_reduce
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

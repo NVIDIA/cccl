@@ -65,7 +65,7 @@ struct policy_hub_t
     LOAD_MODIFIER,
     STORE_ALGORITHM,
     SCAN_ALGORITHM,
-    cub::detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
+    cub::internal::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
     delay_constructor_t>;
 
   struct policy_t : cub::ChainedPolicy<300, policy_t, policy_t>
@@ -88,11 +88,11 @@ template <typename T, typename OffsetT>
 static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
   using init_t         = T;
-  using wrapped_init_t = cub::detail::InputValue<init_t>;
+  using wrapped_init_t = cub::internal::InputValue<init_t>;
   using accum_t        = ::cuda::std::__accumulator_t<op_t, init_t, T>;
   using input_it_t     = const T*;
   using output_it_t    = T*;
-  using offset_t       = cub::detail::choose_offset_t<OffsetT>;
+  using offset_t       = cub::internal::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t>;

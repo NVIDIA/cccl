@@ -59,23 +59,23 @@
     }                                      \
   }
 
-#define _CUB_RETURN_IF_STREAM_ERROR(STREAM)                         \
-  {                                                                 \
-    cudaError_t error_ = CubDebug(detail::DebugSyncStream(STREAM)); \
-    if (error_ != cudaSuccess)                                      \
-    {                                                               \
-      CubDebug(error_ = SyncStream(STREAM));                        \
-      return error_;                                                \
-    }                                                               \
+#define _CUB_RETURN_IF_STREAM_ERROR(STREAM)                           \
+  {                                                                   \
+    cudaError_t error_ = CubDebug(internal::DebugSyncStream(STREAM)); \
+    if (error_ != cudaSuccess)                                        \
+    {                                                                 \
+      CubDebug(error_ = SyncStream(STREAM));                          \
+      return error_;                                                  \
+    }                                                                 \
   }
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::for_each_in_extents
+namespace internal::for_each_in_extents
 {
 
 // The dispatch layer is in the detail namespace until we figure out the tuning API
-template <typename ExtentsType, typename OpType, typename PolicyHubT = cub::detail::for_each::policy_hub_t>
+template <typename ExtentsType, typename OpType, typename PolicyHubT = cub::internal::for_each::policy_hub_t>
 class dispatch_t
 {
   using index_type          = typename ExtentsType::index_type;
@@ -95,7 +95,7 @@ public:
       : _ext{ext}
       , _op{op}
       , _stream{stream}
-      , _size{cub::detail::size(ext)}
+      , _size{cub::internal::size(ext)}
   {}
 
   dispatch_t(const dispatch_t&) = delete;
@@ -107,14 +107,14 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::true_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    array_type extents_div_array        = cub::detail::extents_fast_div_mod(_ext, seq);
+    array_type sub_sizes_div_array      = cub::internal::sub_sizes_fast_div_mod(_ext, seq);
+    array_type extents_div_array        = cub::internal::extents_fast_div_mod(_ext, seq);
     constexpr unsigned block_threads    = ActivePolicyT::for_policy_t::block_threads;
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
     unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
 #ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking detail::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
+    _CubLog("Invoking internal::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,
             _stream,
@@ -122,7 +122,7 @@ public:
 #endif
     auto status =
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
-        .doit(detail::for_each_in_extents::
+        .doit(internal::for_each_in_extents::
                 static_kernel<max_policy_t, OpType, ExtentsType, decltype(sub_sizes_div_array), Ranks...>,
               _op,
               _ext,
@@ -137,10 +137,10 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::false_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    array_type extents_div_array        = cub::detail::extents_fast_div_mod(_ext, seq);
+    array_type sub_sizes_div_array      = cub::internal::sub_sizes_fast_div_mod(_ext, seq);
+    array_type extents_div_array        = cub::internal::extents_fast_div_mod(_ext, seq);
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
-    auto kernel                         = detail::for_each_in_extents::
+    auto kernel                         = internal::for_each_in_extents::
       dynamic_kernel<max_policy_t, index_type, OpType, decltype(sub_sizes_div_array), unsigned_index_type, Ranks...>;
 
     unsigned block_threads = 256;
@@ -152,7 +152,7 @@ public:
     unsigned num_cta = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
 #ifdef CUB_DEBUG_LOG
-    _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
+    _CubLog("Invoking internal::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
             block_threads,
             _stream,
@@ -199,6 +199,6 @@ private:
   unsigned_index_type _size;
 };
 
-} // namespace detail::for_each_in_extents
+} // namespace internal::for_each_in_extents
 
 CUB_NAMESPACE_END

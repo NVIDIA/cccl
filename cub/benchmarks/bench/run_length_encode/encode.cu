@@ -96,7 +96,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     accum_t,
     reduce_by_key_policy_hub>;
 #else
-  using policy_t   = cub::detail::rle::encode::policy_hub<accum_t, T>;
+  using policy_t   = cub::internal::rle::encode::policy_hub<accum_t, T>;
   using dispatch_t = cub::DispatchReduceByKey<
     keys_input_it_t,
     unique_output_it_t,

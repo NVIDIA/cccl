@@ -45,7 +45,7 @@
 #endif // no system header
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 /**
  * @brief The BlockHistogramAtomic class provides atomic-based methods for constructing block-wide
@@ -81,6 +81,6 @@ struct BlockHistogramAtomic
     }
   }
 };
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

@@ -56,7 +56,7 @@ template <cub::RadixRankAlgorithm RankAlgorithm,
 __launch_bounds__(BlockThreads, 1) __global__ void kernel(Key* d_keys, int* d_ranks)
 {
   using block_radix_rank =
-    cub::detail::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
+    cub::internal::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
 
   using storage_t = typename block_radix_rank::TempStorage;
 
@@ -238,10 +238,10 @@ void Test()
 {
   // Check size of smem storage for the target arch to make sure it will fit
   using block_radix_rank =
-    cub::detail::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
+    cub::internal::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
   using storage_t = typename block_radix_rank::TempStorage;
 
-  cuda::std::bool_constant<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
+  cuda::std::bool_constant<(sizeof(storage_t) <= cub::internal::max_smem_per_block)> fits_smem_capacity;
 
   TestValid<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(fits_smem_capacity);
 }

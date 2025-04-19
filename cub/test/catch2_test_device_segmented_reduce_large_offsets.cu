@@ -180,7 +180,7 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
     auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
     auto offset_pair_it              = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
     auto expected_result_it          = thrust::make_transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
-    auto check_result_helper         = detail::large_problem_test_helper(num_segments);
+    auto check_result_helper         = internal::large_problem_test_helper(num_segments);
     auto check_result_it             = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
     // Run test
@@ -199,7 +199,7 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
     auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
     auto offset_pair_it              = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
     auto expected_result_it          = thrust::make_transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
-    auto check_result_helper         = detail::large_problem_test_helper(num_segments);
+    auto check_result_helper         = internal::large_problem_test_helper(num_segments);
     auto check_result_it             = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
     // Run test
@@ -216,7 +216,7 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
       get_min_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::max()});
     auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
     auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_min_from_offset_pair_op);
-    auto check_result_helper = detail::large_problem_test_helper(num_segments);
+    auto check_result_helper = internal::large_problem_test_helper(num_segments);
 
     auto check_result_it = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
@@ -233,7 +233,7 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
       get_max_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::lowest()});
     auto offset_pair_it      = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
     auto expected_result_it  = thrust::make_transform_iterator(offset_pair_it, get_max_from_offset_pair_op);
-    auto check_result_helper = detail::large_problem_test_helper(num_segments);
+    auto check_result_helper = internal::large_problem_test_helper(num_segments);
 
     auto check_result_it = check_result_helper.get_flagging_output_iterator(expected_result_it);
 

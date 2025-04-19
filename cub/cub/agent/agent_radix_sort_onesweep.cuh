@@ -85,7 +85,7 @@ template <
   BlockScanAlgorithm _SCAN_ALGORITHM,
   RadixSortStoreAlgorithm _STORE_ALGORITHM,
   int _RADIX_BITS,
-  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+  typename ScalingType = internal::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortOnesweepPolicy : ScalingType
 {
   enum
@@ -98,7 +98,7 @@ struct AgentRadixSortOnesweepPolicy : ScalingType
   static constexpr RadixSortStoreAlgorithm STORE_ALGORITHM = _STORE_ALGORITHM;
 };
 
-namespace detail
+namespace internal
 {
 namespace radix_sort
 {
@@ -699,6 +699,6 @@ struct AgentRadixSortOnesweep
 };
 
 } // namespace radix_sort
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

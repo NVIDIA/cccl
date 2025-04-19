@@ -68,7 +68,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wpass-failed")
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::radix_sort
+namespace internal::radix_sort
 {
 template <typename MaxPolicyT, SortOrder Order, typename KeyT, typename ValueT, typename OffsetT, typename DecomposerT>
 struct DeviceRadixSortKernelSource
@@ -157,7 +157,7 @@ struct DeviceSegmentedRadixSortKernelSource
   }
 };
 
-} // namespace detail::radix_sort
+} // namespace internal::radix_sort
 
 /******************************************************************************
  * Single-problem dispatch
@@ -186,11 +186,11 @@ template <SortOrder Order,
           typename KeyT,
           typename ValueT,
           typename OffsetT,
-          typename DecomposerT  = detail::identity_decomposer_t,
-          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, OffsetT>,
-          typename KernelSource = detail::radix_sort::
+          typename DecomposerT  = internal::identity_decomposer_t,
+          typename PolicyHub    = internal::radix::policy_hub<KeyT, ValueT, OffsetT>,
+          typename KernelSource = internal::radix_sort::
             DeviceRadixSortKernelSource<typename PolicyHub::MaxPolicy, Order, KeyT, ValueT, OffsetT, DecomposerT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = internal::TripleChevronFactory>
 struct DispatchRadixSort
 {
   //------------------------------------------------------------------------------
@@ -341,7 +341,7 @@ struct DispatchRadixSort
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -413,7 +413,7 @@ struct DispatchRadixSort
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -440,7 +440,7 @@ struct DispatchRadixSort
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -478,7 +478,7 @@ struct DispatchRadixSort
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -496,11 +496,11 @@ struct DispatchRadixSort
   struct PassConfig
   {
     UpsweepKernelT upsweep_kernel;
-    detail::KernelConfig upsweep_config;
+    internal::KernelConfig upsweep_config;
     ScanKernelT scan_kernel;
-    detail::KernelConfig scan_config;
+    internal::KernelConfig scan_config;
     DownsweepKernelT downsweep_kernel;
-    detail::KernelConfig downsweep_config;
+    internal::KernelConfig downsweep_config;
     int radix_bits;
     int radix_digits;
     int max_downsweep_grid_size;
@@ -548,7 +548,7 @@ struct DispatchRadixSort
           break;
         }
 
-        max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * detail::subscription_factor;
+        max_downsweep_grid_size = (downsweep_config.sm_occupancy * sm_count) * internal::subscription_factor;
 
         even_share.DispatchInit(
           num_items, max_downsweep_grid_size, _CUDA_VSTD::max(downsweep_config.tile_size, upsweep_config.tile_size));
@@ -594,7 +594,7 @@ struct DispatchRadixSort
     };
     constexpr int NUM_ALLOCATIONS      = sizeof(allocation_sizes) / sizeof(allocation_sizes[0]);
     void* allocations[NUM_ALLOCATIONS] = {};
-    detail::AliasTemporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    internal::AliasTemporaries<NUM_ALLOCATIONS>(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 
     // just return if no temporary storage is provided
     cudaError_t error = cudaSuccess;
@@ -670,7 +670,7 @@ struct DispatchRadixSort
         break;
       }
 
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -696,7 +696,7 @@ struct DispatchRadixSort
         break;
       }
 
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -764,7 +764,7 @@ struct DispatchRadixSort
             break;
           }
 
-          error = CubDebug(detail::DebugSyncStream(stream));
+          error = CubDebug(internal::DebugSyncStream(stream));
           if (cudaSuccess != error)
           {
             break;
@@ -905,7 +905,7 @@ struct DispatchRadixSort
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -1039,7 +1039,7 @@ struct DispatchRadixSort
       return error;
     }
 
-    error = CubDebug(detail::DebugSyncStream(stream));
+    error = CubDebug(internal::DebugSyncStream(stream));
     if (cudaSuccess != error)
     {
       return error;
@@ -1059,7 +1059,7 @@ struct DispatchRadixSort
         return error;
       }
 
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -1074,7 +1074,7 @@ struct DispatchRadixSort
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT policy = {})
   {
-    auto wrapped_policy = detail::radix::MakeRadixSortPolicyWrapper(policy);
+    auto wrapped_policy = internal::radix::MakeRadixSortPolicyWrapper(policy);
 
     // Return if empty problem, or if no bits to sort and double-buffering is used
     if (num_items == 0 || (begin_bit == end_bit && is_overwrite_okay))
@@ -1090,7 +1090,7 @@ struct DispatchRadixSort
     if (begin_bit == end_bit)
     {
       bool has_uva      = false;
-      cudaError_t error = detail::HasUVA(has_uva);
+      cudaError_t error = internal::HasUVA(has_uva);
       if (error != cudaSuccess)
       {
         return error;
@@ -1114,17 +1114,17 @@ struct DispatchRadixSort
     else if (wrapped_policy.IsOnesweep())
     {
       // Regular size
-      return InvokeManyTiles(detail::bool_constant_v<true>, wrapped_policy);
+      return InvokeManyTiles(internal::bool_constant_v<true>, wrapped_policy);
     }
     else
     {
-      return InvokeManyTiles(detail::bool_constant_v<false>, wrapped_policy);
+      return InvokeManyTiles(internal::bool_constant_v<false>, wrapped_policy);
     }
 #else
     else
     {
       // Regular size
-      return InvokeManyTiles(detail::bool_constant_v<ActivePolicyT::ONESWEEP>, wrapped_policy);
+      return InvokeManyTiles(internal::bool_constant_v<ActivePolicyT::ONESWEEP>, wrapped_policy);
     }
 #endif
   }
@@ -1254,9 +1254,9 @@ template <SortOrder Order,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
           typename SegmentSizeT,
-          typename PolicyHub    = detail::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
-          typename DecomposerT  = detail::identity_decomposer_t,
-          typename KernelSource = detail::radix_sort::DeviceSegmentedRadixSortKernelSource<
+          typename PolicyHub    = internal::radix::policy_hub<KeyT, ValueT, SegmentSizeT>,
+          typename DecomposerT  = internal::identity_decomposer_t,
+          typename KernelSource = internal::radix_sort::DeviceSegmentedRadixSortKernelSource<
             typename PolicyHub::MaxPolicy,
             Order,
             KeyT,
@@ -1265,7 +1265,7 @@ template <SortOrder Order,
             EndOffsetIteratorT,
             SegmentSizeT,
             DecomposerT>,
-          typename KernelLauncherFactory = detail::TripleChevronFactory>
+          typename KernelLauncherFactory = internal::TripleChevronFactory>
 struct DispatchSegmentedRadixSort
 {
   //------------------------------------------------------------------------------
@@ -1405,7 +1405,7 @@ struct DispatchSegmentedRadixSort
     // If d_begin_offsets and d_end_offsets do not support operator+ then we can't have more than
     // max_num_segments_per_invocation segments per invocation
     if (num_invocations > 1
-        && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
+        && !internal::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
     {
       return cudaErrorInvalidValue;
     }
@@ -1440,8 +1440,8 @@ struct DispatchSegmentedRadixSort
               d_keys_out,
               d_values_in,
               d_values_out,
-              detail::advance_iterators_if_supported(d_begin_offsets, current_segment_offset),
-              detail::advance_iterators_if_supported(d_end_offsets, current_segment_offset),
+              internal::advance_iterators_if_supported(d_begin_offsets, current_segment_offset),
+              internal::advance_iterators_if_supported(d_end_offsets, current_segment_offset),
               current_bit,
               pass_bits,
               decomposer);
@@ -1454,7 +1454,7 @@ struct DispatchSegmentedRadixSort
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
+      error = CubDebug(internal::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         return error;
@@ -1472,7 +1472,7 @@ struct DispatchSegmentedRadixSort
   struct PassConfig
   {
     SegmentedKernelT segmented_kernel;
-    detail::KernelConfig segmented_config;
+    internal::KernelConfig segmented_config;
     int radix_bits;
     int radix_digits;
 
@@ -1539,7 +1539,7 @@ struct DispatchSegmentedRadixSort
       };
 
       // Alias the temporary allocations from the single storage blob (or compute the necessary size of the blob)
-      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -1646,7 +1646,7 @@ struct DispatchSegmentedRadixSort
     // Force kernel code-generation in all compiler passes
     return InvokePasses(kernel_source.SegmentedRadixSortKernel(),
                         kernel_source.AltSegmentedRadixSortKernel(),
-                        detail::radix::MakeRadixSortPolicyWrapper(policy));
+                        internal::radix::MakeRadixSortPolicyWrapper(policy));
   }
 
   //------------------------------------------------------------------------------

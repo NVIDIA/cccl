@@ -64,7 +64,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace detail
+namespace internal
 {
 /**
  * \brief Empty kernel for querying PTX manifest metadata (e.g., version) for the current device
@@ -73,7 +73,7 @@ template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
-} // namespace detail
+} // namespace internal
 
 #endif // _CCCL_DOXYGEN_INVOKED
 
@@ -170,7 +170,7 @@ struct PerDeviceAttributeCache
   };
 
 private:
-  std::array<DeviceEntry, detail::max_devices> entries_;
+  std::array<DeviceEntry, internal::max_devices> entries_;
 
 public:
   /**
@@ -179,7 +179,7 @@ public:
   _CCCL_HOST inline PerDeviceAttributeCache()
       : entries_()
   {
-    assert(DeviceCount() <= detail::max_devices);
+    assert(DeviceCount() <= internal::max_devices);
   }
 
   /**
@@ -264,7 +264,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // Instantiate `EmptyKernel<void>` in both host and device code to ensure
   // it can be called.
   using EmptyKernelPtr                         = void (*)();
-  [[maybe_unused]] EmptyKernelPtr empty_kernel = detail::EmptyKernel<void>;
+  [[maybe_unused]] EmptyKernelPtr empty_kernel = internal::EmptyKernel<void>;
 
   // Define a temporary macro that expands to the current target ptx version
   // in device code.
@@ -424,7 +424,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t SyncStream([[maybe_unused]] cudaStream_t
   NV_IF_TARGET(NV_IS_HOST, (return CubDebug(cudaStreamSynchronize(stream));), (return cudaErrorNotSupported;))
 }
 
-namespace detail
+namespace internal
 {
 //! If CUB_DEBUG_SYNC is defined and this function is called from host code, a sync is performed and the
 //! sync result is returned. Otherwise, does nothing.
@@ -460,7 +460,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t HasUVA(bool& has_uva)
   return error;
 }
 
-} // namespace detail
+} // namespace internal
 
 /**
  * @brief Computes maximum SM occupancy in thread blocks for executing the given kernel function
@@ -518,7 +518,7 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
  ******************************************************************************/
 // PolicyWrapper
 
-namespace detail
+namespace internal
 {
 
 template <typename PolicyT, typename = void>
@@ -575,18 +575,18 @@ struct KernelConfig
   int tile_size{0};
   int sm_occupancy{0};
 
-  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = internal::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads    = cub::detail::MakePolicyWrapper(agent_policy).BlockThreads();
-    items_per_thread = cub::detail::MakePolicyWrapper(agent_policy).ItemsPerThread();
+    block_threads    = cub::internal::MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = cub::internal::MakePolicyWrapper(agent_policy).ItemsPerThread();
     tile_size        = block_threads * items_per_thread;
     return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
 
-} // namespace detail
+} // namespace internal
 #endif // !_CCCL_COMPILER(NVRTC)
 
 /// Helper for dispatching into a policy chain

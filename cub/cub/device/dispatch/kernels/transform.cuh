@@ -31,7 +31,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::transform
+namespace internal::transform
 {
 
 template <typename T>
@@ -450,6 +450,6 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
     select_kernel_arg(alg, ::cuda::std::move(ins))...);
 }
 
-} // namespace detail::transform
+} // namespace internal::transform
 
 CUB_NAMESPACE_END

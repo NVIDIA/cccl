@@ -67,7 +67,7 @@ template <int _BLOCK_THREADS,
           cub::BlockLoadAlgorithm _LOAD_ALGORITHM = cub::BLOCK_LOAD_DIRECT,
           cub::CacheLoadModifier _LOAD_MODIFIER   = cub::LOAD_LDG,
           cub::BlockScanAlgorithm _SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS,
-          typename DelayConstructorT              = detail::fixed_delay_constructor_t<350, 450>>
+          typename DelayConstructorT              = internal::fixed_delay_constructor_t<350, 450>>
 struct AgentUniqueByKeyPolicy
 {
   enum
@@ -89,7 +89,7 @@ struct AgentUniqueByKeyPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace detail
+namespace internal
 {
 namespace unique_by_key
 {
@@ -133,8 +133,8 @@ struct AgentUniqueByKey
   //---------------------------------------------------------------------
 
   // The input key and value type
-  using KeyT   = cub::detail::it_value_t<KeyInputIteratorT>;
-  using ValueT = cub::detail::it_value_t<ValueInputIteratorT>;
+  using KeyT   = cub::internal::it_value_t<KeyInputIteratorT>;
+  using ValueT = cub::internal::it_value_t<ValueInputIteratorT>;
 
   // Tile status descriptor interface type
   using ScanTileStateT = ScanTileState<OffsetT>;
@@ -609,6 +609,6 @@ struct AgentUniqueByKey
 };
 
 } // namespace unique_by_key
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

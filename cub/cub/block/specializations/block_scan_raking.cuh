@@ -52,7 +52,7 @@
 #include <cub/warp/warp_scan.cuh>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 /**
  * @brief BlockScanRaking provides variants of raking-based parallel prefix scan across a CUDA
@@ -291,7 +291,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -344,7 +344,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -399,7 +399,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -467,7 +467,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -548,7 +548,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -615,7 +615,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -669,7 +669,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -747,7 +747,7 @@ struct BlockScanRaking
     {
       // Place thread partial into shared memory raking grid
       T* placement_ptr = BlockRakingLayout::PlacementPtr(temp_storage.raking_grid, linear_tid);
-      detail::uninitialized_copy_single(placement_ptr, input);
+      internal::uninitialized_copy_single(placement_ptr, input);
 
       __syncthreads();
 
@@ -785,6 +785,6 @@ struct BlockScanRaking
     }
   }
 };
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

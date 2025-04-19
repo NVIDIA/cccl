@@ -49,7 +49,7 @@
 #include <cub/util_ptx.cuh>
 
 CUB_NAMESPACE_BEGIN
-namespace detail
+namespace internal
 {
 /**
  * @brief The BlockHistogramSort class provides sorting-based methods for constructing block-wide
@@ -235,6 +235,6 @@ struct BlockHistogramSort
     }
   }
 };
-} // namespace detail
+} // namespace internal
 
 CUB_NAMESPACE_END

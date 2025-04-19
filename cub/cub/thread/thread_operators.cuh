@@ -124,7 +124,7 @@ struct ArgMin
   }
 };
 
-namespace detail
+namespace internal
 {
 template <typename ScanOpT>
 struct ScanBySegmentOp
@@ -207,7 +207,7 @@ struct basic_binary_op_t<::cuda::maximum<T>>
 {
   static constexpr bool value = true;
 };
-} // namespace detail
+} // namespace internal
 
 /// @brief Default cast functor
 template <typename B>
@@ -368,29 +368,29 @@ namespace internal
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_min_max_v =
-  cub::detail::is_one_of_v<ReductionOp, //
-                           ::cuda::minimum<>,
-                           ::cuda::minimum<T>,
-                           ::cuda::maximum<>,
-                           ::cuda::maximum<T>>;
+  cub::internal::is_one_of_v<ReductionOp, //
+                             ::cuda::minimum<>,
+                             ::cuda::minimum<T>,
+                             ::cuda::maximum<>,
+                             ::cuda::maximum<T>>;
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_plus_mul_v =
-  cub::detail::is_one_of_v<ReductionOp, //
-                           _CUDA_VSTD::plus<>,
-                           _CUDA_VSTD::plus<T>,
-                           _CUDA_VSTD::multiplies<>,
-                           _CUDA_VSTD::multiplies<T>>;
+  cub::internal::is_one_of_v<ReductionOp, //
+                             _CUDA_VSTD::plus<>,
+                             _CUDA_VSTD::plus<T>,
+                             _CUDA_VSTD::multiplies<>,
+                             _CUDA_VSTD::multiplies<T>>;
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_bitwise_v =
-  cub::detail::is_one_of_v<ReductionOp,
-                           _CUDA_VSTD::bit_and<>,
-                           _CUDA_VSTD::bit_and<T>,
-                           _CUDA_VSTD::bit_or<>,
-                           _CUDA_VSTD::bit_or<T>,
-                           _CUDA_VSTD::bit_xor<>,
-                           _CUDA_VSTD::bit_xor<T>>;
+  cub::internal::is_one_of_v<ReductionOp,
+                             _CUDA_VSTD::bit_and<>,
+                             _CUDA_VSTD::bit_and<T>,
+                             _CUDA_VSTD::bit_or<>,
+                             _CUDA_VSTD::bit_or<T>,
+                             _CUDA_VSTD::bit_xor<>,
+                             _CUDA_VSTD::bit_xor<T>>;
 
 template <typename ReductionOp, typename T>
 inline constexpr bool is_cuda_std_operator_v =
