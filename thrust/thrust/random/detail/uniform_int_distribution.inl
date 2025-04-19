@@ -75,7 +75,13 @@ uniform_int_distribution<IntType>::operator()(UniformRandomNumberGenerator& urng
   // XXX adding 1.0 to a potentially large floating point number seems like a bad idea
   uniform_real_distribution<float_type> real_dist(real_min, real_max + float_type(1));
 
-  return static_cast<result_type>(real_dist(urng));
+  // Get the base number from real distribution
+  result_type base = static_cast<result_type>(real_dist(urng));
+
+  // Add random lower bits to fix last 12-bits always being 0.
+  result_type lower_bits = static_cast<result_type>(urng()) & 0xFFF; // Get 12 **uniformly** random bits
+  return base | lower_bits; // Combine them
+
 } // end uniform_int_distribution::operator()()
 
 template <typename IntType>
