@@ -117,7 +117,7 @@ public:
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type extent(rank_type __r) const noexcept
   {
     return mapping().extents().extent(__r);
-  };
+  }
 
 public:
   //--------------------------------------------------------------------------------
@@ -413,55 +413,55 @@ public:
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
   {
     return mapping().extents();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const data_handle_type& data_handle() const noexcept
   {
     return this->template __get<0>();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const mapping_type& mapping() const noexcept
   {
     return this->template __get<1>();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const accessor_type& accessor() const noexcept
   {
     return this->template __get<2>();
-  };
+  }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   is_always_unique() noexcept(noexcept(mapping_type::is_always_unique()))
   {
     return mapping_type::is_always_unique();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   is_always_exhaustive() noexcept(noexcept(mapping_type::is_always_exhaustive()))
   {
     return mapping_type::is_always_exhaustive();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   is_always_strided() noexcept(noexcept(mapping_type::is_always_strided()))
   {
     return mapping_type::is_always_strided();
-  };
+  }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const
     noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_unique()))
   {
     return mapping().is_unique();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const
     noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_exhaustive()))
   {
     return mapping().is_exhaustive();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const
     noexcept(noexcept(_CUDA_VSTD::declval<const mapping_type&>().is_strided()))
   {
     return mapping().is_strided();
-  };
+  }
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const
   {
     return mapping().stride(__r);
-  };
+  }
 };
 
 _CCCL_TEMPLATE(class _ElementType, class... _OtherIndexTypes)

@@ -75,9 +75,9 @@ __host__ __device__ void do_throw<true>()
 template <bool NT_Copy, bool NT_Move, bool NT_CopyAssign, bool NT_MoveAssign, bool NT_Swap, bool EnableSwap = true>
 struct NothrowTypeImp
 {
-  STATIC_MEMBER_VAR(move_called, int);
-  STATIC_MEMBER_VAR(move_assign_called, int);
-  STATIC_MEMBER_VAR(swap_called, int);
+  STATIC_MEMBER_VAR(move_called, int)
+  STATIC_MEMBER_VAR(move_assign_called, int)
+  STATIC_MEMBER_VAR(swap_called, int)
   __host__ __device__ static void reset()
   {
     move_called() = move_assign_called() = swap_called() = 0;
@@ -144,7 +144,7 @@ using ThrowingMoveAssignNothrowMoveCtor = NothrowTypeImp<false, true, false, fal
 
 struct NonThrowingNonNoexceptType
 {
-  STATIC_MEMBER_VAR(move_called, int);
+  STATIC_MEMBER_VAR(move_called, int)
   __host__ __device__ static void reset()
   {
     move_called() = 0;

@@ -28,7 +28,7 @@ struct never
 
 struct NoValueCtor
 {
-  STATIC_MEMBER_VAR(count, int);
+  STATIC_MEMBER_VAR(count, int)
 
   __host__ __device__ NoValueCtor()
       : id(++count())

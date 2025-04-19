@@ -74,7 +74,8 @@ struct __atomic_small_storage
   static constexpr __atomic_tag __tag = __atomic_tag::__atomic_small_tag;
 
   _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage() noexcept
-      : __a_value{__proxy_t{}} {};
+      : __a_value{__proxy_t{}}
+  {}
 
   _CCCL_HOST_DEVICE constexpr inline explicit __atomic_small_storage(_Tp __value) noexcept
       : __a_value{__atomic_small_to_32(__value)}

@@ -89,7 +89,6 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT totally_ordered_with = _CCCL_FRAGMENT(__totally_ordered_with_, _Tp, _Up);
-;
 
 #endif // _CCCL_NO_CONCEPTS
 

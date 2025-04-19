@@ -70,7 +70,7 @@ function(add_bench_dir bench_dir)
       thrust_clone_target_properties(${bench_name} ${thrust_target})
 
       if ("CUDA" STREQUAL "${config_device}")
-        target_compile_options(${bench_name} PRIVATE "--extended-lambda")
+        target_compile_options(${bench_name} PRIVATE "--extended-lambda -Wno-extra-semi")
       endif()
     endforeach()
   endforeach()

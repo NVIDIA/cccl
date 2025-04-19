@@ -224,7 +224,7 @@ public:
   virtual ::std::optional<cudaMemoryType> get_memory_type(instance_id_t)
   {
     return ::std::nullopt;
-  };
+  }
 
   /// @brief Unpin host memory.
   ///

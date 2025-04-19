@@ -23,7 +23,7 @@ using cuda::std::optional;
 #if TEST_HAS_EXCEPTIONS()
 struct X
 {
-  STATIC_MEMBER_VAR(throw_now, bool);
+  STATIC_MEMBER_VAR(throw_now, bool)
 
   X() = default;
   X(const X&)

@@ -109,7 +109,7 @@ class Z
   int j_ = 0;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, bool);
+  STATIC_MEMBER_VAR(dtor_called, bool)
   Z()
       : i_(0)
   {}

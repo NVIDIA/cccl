@@ -57,7 +57,7 @@ function(cudax_add_header_test label definitions)
       target_link_libraries(${headertest_target} PUBLIC ${cn_target})
       target_compile_options(${headertest_target} PRIVATE
         # Required by stf headers:
-        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda -Wno-extra-semi>
         # FIXME: We should be able to refactor away from needing this by
         # using _CCCL_HOST_DEVICE and friends + `::cuda::std` utilities where
         # necessary.
