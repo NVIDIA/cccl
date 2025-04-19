@@ -812,25 +812,20 @@ struct DispatchSegmentedReduce
         break;
       }
 
-      const auto num_segments_per_invocation =
-        static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+      const auto num_segments_per_invocation = (::cuda::std::int64_t{1} << 20) - 1;
+        // static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
       const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
       // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
       // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
       // indirect_arg_t as the iterator type, which does not support the + operator.
       // TODO (elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
-      printf("Am before\n");
-
       if (num_invocations > 1
           && !detail::all_iterators_support_add_assign_operator(
             ::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
       {
-        printf("Inside %ld\n", num_invocations);
         return cudaErrorInvalidValue;
       }
-
-      printf("Am here\n");
 
       for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
       {

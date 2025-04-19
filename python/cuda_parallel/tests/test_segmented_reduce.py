@@ -138,7 +138,7 @@ def test_large_num_segments():
     )
     end_offsets = start_offsets + 1
 
-    num_segments = (2**16 + 2**3) * 2**15
+    num_segments = (2**11 + 2**3) * 2**10
     res = cp.full(num_segments, fill_value=-1, dtype=cp.int8)
     assert res.size == num_segments
 
@@ -146,34 +146,23 @@ def test_large_num_segments():
         return a + b
 
     h_init = np.zeros(tuple(), dtype=np.int8)
-    print(0)
     alg = algorithms.segmented_reduce(
         input_it, res, start_offsets, end_offsets, my_add, h_init
     )
-    print(1)
+
+    # band-aid solution for setting of host advance function
     f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
     alg.start_offsets_in_cccl.host_advance_fn = f1
     f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
     alg.end_offsets_in_cccl.host_advance_fn = f2
 
-    print("F1: ", hex(ctypes.cast(f1, ctypes.c_void_p).value))
-    print("F2: ", hex(ctypes.cast(f2, ctypes.c_void_p).value))
-
-    # print(alg.start_offsets_in_cccl.state)
-    # f1(ctypes.pointer(alg.start_offsets_in_cccl.state), ctypes.c_int64(7))
-    # print(alg.start_offsets_in_cccl.state)
-
-    print(2)
     temp_storage_bytes = alg(
         None, input_it, res, num_segments, start_offsets, end_offsets, h_init
     )
-    print(3)
 
     d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
     _ = alg(
         d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
     )
-    print(4)
 
-    assert cp.all(res[:10] == 125)
-    assert cp.all(res[-10:] == 125)
+    assert cp.all(res == 125)

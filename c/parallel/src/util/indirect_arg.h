@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <type_traits>
 
 #include <cccl/c/types.h>
@@ -66,52 +67,32 @@ struct indirect_iterator_t
   }
 
   template <typename U,
-            std::enable_if_t<std::is_integral_v<U> && std::is_signed_v<U> && sizeof(U) == sizeof(int64_t), int> = 0>
-  void operator+=(U signed_offset)
+            std::enable_if_t<std::is_integral_v<U> && sizeof(U) == sizeof(int64_t), int> = 0>
+  void operator+=(U offset)
   {
     if (value_size)
     {
-      fflush(stderr);
-      printf("SIGNED  Pointer\n");
-      fflush(stdout);
       // CCCL_POINTER case
-      ptr = reinterpret_cast<void*>(reinterpret_cast<char*>(ptr) + (signed_offset * value_size));
+      // ptr is a pointer to pointer we need to increment
+      // read the iterator pointer value
+      char **p = static_cast<char **>(ptr);
+      // increment the value
+      p[0] = p[0] + (offset * value_size);
+
+      // read it back
+      printf("Value after %p\n", *static_cast<char **>(ptr));
     }
     else
     {
-      fflush(stderr);
-      printf("SIGNED  Iterator\n");
-      fflush(stdout);
       if (host_advance_fn_p)
       {
-        cccl_increment_t incr{.signed_offset = signed_offset};
-        (*host_advance_fn_p)(ptr, incr);
-      }
-    }
-  }
-
-  template <typename U,
-            std::enable_if_t<std::is_integral_v<U> && std::is_unsigned_v<U> && sizeof(U) == sizeof(uint64_t), int> = 0>
-  void operator+=(U unsigned_offset)
-  {
-    if (value_size)
-    {
-      fflush(stderr);
-      printf("UNSIGNED Pointer\n");
-      fflush(stdout);
-      // CCCL_POINTER case
-      ptr = reinterpret_cast<void*>(reinterpret_cast<char*>(ptr) + (unsigned_offset * value_size));
-    }
-    else
-    {
-      fflush(stderr);
-      printf("UNSIGNED  Iterator\n");
-      fflush(stdout);
-
-      if (host_advance_fn_p)
-      {
-        cccl_increment_t incr{.unsigned_offset = unsigned_offset};
-        (*host_advance_fn_p)(ptr, incr);
+        if constexpr (std::is_signed_v<U>) {
+          cccl_increment_t incr{.signed_offset = offset};
+          (*host_advance_fn_p)(ptr, incr);  
+        } else {
+          cccl_increment_t incr{.unsigned_offset = offset};
+          (*host_advance_fn_p)(ptr, incr);  
+        }
       }
     }
   }
