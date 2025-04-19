@@ -68,6 +68,45 @@ _CCCL_HOST_DEVICE T reduce(
 } // end reduce()
 
 _CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator>
+_CCCL_HOST_DEVICE void reduce_into(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output)
+{
+  using thrust::system::detail::generic::reduce_into;
+  reduce_into(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, output);
+} // end reduce_into()
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T>
+_CCCL_HOST_DEVICE void reduce_into(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init)
+{
+  using thrust::system::detail::generic::reduce_into;
+  reduce_into(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, output, init);
+} // end reduce_into()
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+_CCCL_HOST_DEVICE void reduce_into(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator output,
+  T init,
+  BinaryFunction binary_op)
+{
+  using thrust::system::detail::generic::reduce_into;
+  reduce_into(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, output, init, binary_op);
+} // end reduce_into()
+
+_CCCL_EXEC_CHECK_DISABLE
 template <typename DerivedPolicy,
           typename InputIterator1,
           typename InputIterator2,
@@ -182,6 +221,48 @@ T reduce(InputIterator first, InputIterator last, T init, BinaryFunction binary_
   System system;
 
   return thrust::reduce(select_system(system), first, last, init, binary_op);
+}
+
+template <typename InputIterator, typename OutputIterator>
+void reduce_into(InputIterator first, InputIterator last, OutputIterator output)
+{
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+
+  thrust::reduce_into(select_system(system1, system2), first, last, output);
+}
+
+template <typename InputIterator, typename OutputIterator, typename T>
+void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init)
+{
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+
+  thrust::reduce_into(select_system(system1, system2), first, last, output, init);
+}
+
+template <typename InputIterator, typename OutputIterator, typename T, typename BinaryFunction>
+void reduce_into(InputIterator first, InputIterator last, OutputIterator output, T init, BinaryFunction binary_op)
+{
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+
+  thrust::reduce_into(select_system(system1, system2), first, last, output, init, binary_op);
 }
 
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator1, typename OutputIterator2>
