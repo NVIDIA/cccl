@@ -7,7 +7,9 @@
 
 #include <thrust/equal.h>
 #include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 
 #include <cuda/std/__cccl/execution_space.h>
 
@@ -15,6 +17,35 @@
 
 namespace detail
 {
+
+// Helper that concatenates two iterators into a single iterator
+template <typename FirstSegmentItT, typename SecondSegmentItT>
+struct concat_iterators_op
+{
+  FirstSegmentItT first_it;
+  SecondSegmentItT second_it;
+  ::cuda::std::int64_t num_first_items;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t i)
+  {
+    if (i < num_first_items)
+    {
+      return first_it[i];
+    }
+    else
+    {
+      return second_it[i - num_first_items];
+    }
+  }
+};
+
+template <typename FirstSegmentItT, typename SecondSegmentItT>
+auto make_concat_iterators_op(FirstSegmentItT first_it, SecondSegmentItT second_it, ::cuda::std::int64_t num_first_items)
+{
+  return thrust::make_transform_iterator(
+    thrust::make_counting_iterator(::cuda::std::int64_t{0}),
+    concat_iterators_op<FirstSegmentItT, SecondSegmentItT>{first_it, second_it, num_first_items});
+}
 
 template <typename ExpectedValuesItT>
 struct flag_correct_writes_op
@@ -74,6 +105,7 @@ struct large_problem_test_helper
   // Checks whether all results have been written correctly
   void check_all_results_correct()
   {
+    // Check that all bits are set in the correctness flags
     REQUIRE(thrust::equal(correctness_flags.cbegin(),
                           correctness_flags.cbegin() + (num_elements / bits_per_element),
                           thrust::make_constant_iterator(0xFFFFFFFFU)));
