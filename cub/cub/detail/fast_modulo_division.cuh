@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh> // implicit_prom_t
+#include <cub/detail/type_traits.cuh> // internal::implicit_prom_t
 #include <cub/util_type.cuh> // _CCCL_HAS_INT128()
 
 #include <cuda/cmath> // cuda::std::ceil_div
@@ -92,7 +92,7 @@ template <typename T>
 using larger_unsigned_type_t = typename larger_unsigned_type<T>::type;
 
 template <typename T>
-using unsigned_implicit_prom_t = ::cuda::std::make_unsigned_t<implicit_prom_t<T>>;
+using unsigned_implicit_prom_t = ::cuda::std::make_unsigned_t<internal::implicit_prom_t<T>>;
 
 template <typename T>
 using supported_integral =
@@ -219,13 +219,15 @@ public:
   }
 
   template <typename R>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend implicit_prom_t<T> operator/(R dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend internal::implicit_prom_t<T>
+  operator/(R dividend, fast_div_mod div) noexcept
   {
     return div(dividend).quotient;
   }
 
   template <typename R>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend implicit_prom_t<T> operator%(R dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend internal::implicit_prom_t<T>
+  operator%(R dividend, fast_div_mod div) noexcept
   {
     return div(dividend).remainder;
   }
