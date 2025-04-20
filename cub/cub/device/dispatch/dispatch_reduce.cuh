@@ -46,7 +46,7 @@
 
 #include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/detail/type_traits.cuh> // for cub::detail::invoke_result_t
-#include <cub/device/dispatch/dispatch_common.cuh>
+#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
@@ -823,7 +823,8 @@ struct DispatchSegmentedReduce
       // indirect_arg_t as the iterator type, which does not support the + operator.
       // TODO (elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
       if (num_invocations > 1
-          && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
+          && !detail::all_iterators_support_add_assign_operator(
+            ::cuda::std::int64_t{}, d_out, d_begin_offsets, d_end_offsets))
       {
         return cudaErrorInvalidValue;
       }
@@ -848,19 +849,20 @@ struct DispatchSegmentedReduce
         // Invoke DeviceReduceKernel
         launcher_factory(
           static_cast<::cuda::std::uint32_t>(num_current_segments), policy.SegmentedReduce().BlockThreads(), 0, stream)
-          .doit(segmented_reduce_kernel,
-                d_in,
-                detail::advance_iterators_if_supported(d_out, current_seg_offset),
-                detail::advance_iterators_if_supported(d_begin_offsets, current_seg_offset),
-                detail::advance_iterators_if_supported(d_end_offsets, current_seg_offset),
-                reduction_op,
-                init);
+          .doit(segmented_reduce_kernel, d_in, d_out, d_begin_offsets, d_end_offsets, reduction_op, init);
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
         if (cudaSuccess != error)
         {
           break;
+        }
+
+        if (invocation_index + 1 < num_invocations)
+        {
+          detail::advance_iterators_inplace_if_supported(d_out, num_current_segments);
+          detail::advance_iterators_inplace_if_supported(d_begin_offsets, num_current_segments);
+          detail::advance_iterators_inplace_if_supported(d_end_offsets, num_current_segments);
         }
 
         // Sync the stream if specified to flush runtime errors

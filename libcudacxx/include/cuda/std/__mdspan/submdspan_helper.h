@@ -118,7 +118,7 @@ template <size_t _Index, class... _Slices>
 }
 
 template <size_t _Index, class... _Slices>
-using __get_slice_type = __tuple_element_t<_Index, __tuple_types<_Slices...>>;
+using __get_slice_type = tuple_element_t<_Index, __tuple_types<_Slices...>>;
 
 template <class _IndexType, size_t _Index, class... _Slices>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _IndexType __first_extent_from_slice(_Slices... __slices) noexcept
