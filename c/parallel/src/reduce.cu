@@ -404,16 +404,17 @@ CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchReduce<indirect_arg_t, // InputIteratorT
-                        indirect_arg_t, // OutputIteratorT
-                        ::cuda::std::size_t, // OffsetT
-                        indirect_arg_t, // ReductionOpT
-                        indirect_arg_t, // InitT
-                        void, // AccumT
-                        ::cuda::std::__identity, // TransformOpT
-                        reduce::dynamic_reduce_policy_t<&reduce::get_policy>, // PolicyHub
-                        reduce::reduce_kernel_source, // KernelSource
-                        cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory
+    auto exec_status = cub::DispatchReduce<
+      indirect_arg_t, // InputIteratorT
+      indirect_arg_t, // OutputIteratorT
+      ::cuda::std::size_t, // OffsetT
+      indirect_arg_t, // ReductionOpT
+      indirect_arg_t, // InitT
+      void, // AccumT
+      ::cuda::std::__identity, // TransformOpT
+      reduce::dynamic_reduce_policy_t<&reduce::get_policy>, // PolicyHub
+      reduce::reduce_kernel_source, // KernelSource
+      cub::detail::CudaDriverLauncherFactory>:: // KernelLauncherFactory
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
@@ -427,6 +428,8 @@ CUresult cccl_device_reduce(
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {reduce::get_accumulator_type(op, d_in, init)});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

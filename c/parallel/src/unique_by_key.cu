@@ -440,7 +440,7 @@ CUresult cccl_device_unique_by_key(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchUniqueByKey<
+    auto exec_status = cub::DispatchUniqueByKey<
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
@@ -466,6 +466,8 @@ CUresult cccl_device_unique_by_key(
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_keys_in.value_type.size});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {
