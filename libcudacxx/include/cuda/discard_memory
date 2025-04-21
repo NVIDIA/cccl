@@ -30,7 +30,6 @@ inline _CCCL_HOST_DEVICE void
 discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] _CUDA_VSTD::size_t __nbytes) noexcept
 {
   // The discard PTX instruction is only available with PTX ISA 7.4 and later
-#if __cccl_ptx_isa >= 740ULL
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
     (if (!__isGlobal((void*) __ptr)) return;
@@ -48,7 +47,6 @@ discard_memory([[maybe_unused]] volatile void* __ptr, [[maybe_unused]] _CUDA_VST
        asm volatile("discard.global.L2 [%0], 128;" ::"l"(__start_aligned) :);
        __start_aligned += _LINE_SIZE;
      }))
-#endif
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

@@ -59,7 +59,6 @@ template <class _Full>
 template <class _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __byteswap_impl_device(_Tp __val) noexcept
 {
-#if __cccl_ptx_isa >= 200
   if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
     return static_cast<uint16_t>(_CUDA_VPTX::prmt(static_cast<uint32_t>(__val), uint32_t{0}, uint32_t{0x3201}));
@@ -78,7 +77,6 @@ template <class _Tp>
     return static_cast<uint64_t>(__new_hi) << 32 | static_cast<uint64_t>(__new_lo);
   }
   else
-#endif // __cccl_ptx_isa >= 200
   {
     return _CUDA_VSTD::__byteswap_impl_recursive(__val);
   }
