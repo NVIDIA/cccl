@@ -812,8 +812,8 @@ struct DispatchSegmentedReduce
         break;
       }
 
-      const auto num_segments_per_invocation = (::cuda::std::int64_t{1} << 20) - 1;
-        // static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+      const auto num_segments_per_invocation =
+        static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
       const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
 
       // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
