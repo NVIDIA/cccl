@@ -412,7 +412,7 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
        : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop)),
     _CUDA_VSTD::min(
       (static_cast<uint32_t>(__hit_ratio * uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS})),
-      static_cast<uint32_t>(__sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS - 1)),
+      uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS} - 1),
     static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
     .__get_descriptor();
 }
