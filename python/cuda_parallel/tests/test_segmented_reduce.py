@@ -121,7 +121,17 @@ def make_host_cfunc(state_ptr_ty, fn):
 
 
 def test_large_num_segments():
-    input_it = iterators.ConstantIterator(np.int8(1))
+    def make_difference(idx: np.int64) -> np.int8:
+        def Fu(idx: np.int64) -> np.int8:
+            i8 = np.int8(idx % 5) + np.int8(idx % 3)
+            f = (i8 * (i8 + 1)) % 7
+            return f
+
+        return (Fu(idx + 1) - Fu(idx)) % 7
+
+    input_it = iterators.TransformIterator(
+        iterators.CountingIterator(np.int64(0)), make_difference
+    )
 
     def make_scaler(step):
         def scale(row_id):
@@ -129,11 +139,11 @@ def test_large_num_segments():
 
         return scale
 
-    segment_size = 117
-    zero = np.int64(0)
+    segment_size = 116
+    offset0 = np.int64(0)
     row_offset = make_scaler(np.int64(segment_size))
     start_offsets = iterators.TransformIterator(
-        iterators.CountingIterator(zero), row_offset
+        iterators.CountingIterator(offset0), row_offset
     )
     end_offsets = start_offsets + 1
 
@@ -142,7 +152,7 @@ def test_large_num_segments():
     assert res.size == num_segments
 
     def my_add(a, b):
-        return a + b
+        return (a + b) % 7
 
     h_init = np.zeros(tuple(), dtype=np.int8)
     alg = algorithms.segmented_reduce(
@@ -150,10 +160,10 @@ def test_large_num_segments():
     )
 
     # band-aid solution for setting of host advance function
-    # f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
-    # alg.start_offsets_in_cccl.host_advance_fn = f1
-    # f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
-    # alg.end_offsets_in_cccl.host_advance_fn = f2
+    f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
+    alg.start_offsets_in_cccl.host_advance_fn = f1
+    f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
+    alg.end_offsets_in_cccl.host_advance_fn = f2
 
     temp_storage_bytes = alg(
         None, input_it, res, num_segments, start_offsets, end_offsets, h_init
@@ -164,4 +174,8 @@ def test_large_num_segments():
         d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
     )
 
-    assert cp.all(res == segment_size)
+    iota = cp.arange(
+        (num_segments + 1) * segment_size, step=segment_size, dtype=cp.int64
+    )
+    i = cp.asarray(iota % 5, dtype=cp.int8) + cp.asarray(iota % 3, dtype=cp.int8)
+    assert cp.all(res == cp.diff(i * (i + 1) % 7) % 7)
