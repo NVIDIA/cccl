@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/annotated_ptr>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
 
@@ -105,13 +106,28 @@ inline constexpr auto prefetch_256B         = __prefetch_256B_t{};
  * Cache Hint
  **********************************************************************************************************************/
 
-template <bool _Enabled = true>
-struct _CacheHint
-{
-  uint64_t __property;
-};
+// template <bool _Enabled = true>
+// struct _CacheHint
+//{
+//   uint64_t __property;
+// };
+//
+// inline constexpr auto __no_cache_hint = _CacheHint<false>{};
 
-inline constexpr auto __no_cache_hint = _CacheHint<false>{};
+template <typename _AccessProperty>
+struct _CacheHint : _CUDA_VSTD::bool_constant<_CUDA_VSTD::is_same_v<_AccessProperty, ::cuda::access_property::global>>
+{
+  // TODO: remove comment after PR #4503
+  // static_assert(::cuda::__ap_detail::is_global_access_property<_AccessProperty>, "invalid access property");
+
+  // static constexpr bool __enable = !_CUDA_VSTD::is_same_v<_AccessProperty, ::cuda::access_property::global>;
+
+  uint64_t __property;
+
+  _CacheHint(_AccessProperty __property)
+      : __property(static_cast<uint64_t>(__property))
+  {}
+};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 

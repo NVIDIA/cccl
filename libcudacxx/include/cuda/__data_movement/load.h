@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <cuda/__barrier/aligned_size.h>
 #  include <cuda/__data_movement/aligned_data.h>
@@ -33,6 +33,7 @@
 #  include <cuda/std/__bit/has_single_bit.h>
 #  include <cuda/std/__cccl/unreachable.h>
 #  include <cuda/std/__memory/assume_aligned.h>
+#  include <cuda/std/__type_traits/is_same.h>
 #  include <cuda/std/__utility/integer_sequence.h>
 #  include <cuda/std/array>
 #  include <cuda/std/cstddef>
@@ -41,69 +42,76 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 /***********************************************************************************************************************
- * INTERNAL LOAD FUNCTIONS
+ * CUDA TO PTX MAPPINGS
  **********************************************************************************************************************/
 
-#  define _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, EVICT_POLICY, PREFETCH)          \
-    if constexpr ((PREFETCH) == prefetch_spatial_none)                            \
-    {                                                                             \
-      return _CUDA_VPTX::ld_global##LOAD_BEHAVIOR##EVICT_POLICY(__ptr);           \
-    }                                                                             \
-    else if constexpr ((PREFETCH) == prefetch_64B)                                \
-    {                                                                             \
-      return _CUDA_VPTX::ld_global##LOAD_BEHAVIOR##EVICT_POLICY##_L2_64B(__ptr);  \
-    }                                                                             \
-    else if constexpr ((PREFETCH) == prefetch_128B)                               \
-    {                                                                             \
-      return _CUDA_VPTX::ld_global##LOAD_BEHAVIOR##EVICT_POLICY##_L2_128B(__ptr); \
-    }                                                                             \
-    else if constexpr ((PREFETCH) == prefetch_256B)                               \
-    {                                                                             \
-      return _CUDA_VPTX::ld_global##LOAD_BEHAVIOR##EVICT_POLICY##_L2_256B(__ptr); \
+#  define _CCCL_LOAD_ADD_PREFETCH(_LOAD_BEHAVIOR, EVICT_POLICY, _PREFETCH, _CACHE_HINT, ...)                       \
+    if constexpr ((_PREFETCH) == prefetch_spatial_none)                                                            \
+    {                                                                                                              \
+      return _CUDA_VPTX::ld##_LOAD_BEHAVIOR##EVICT_POLICY##_CACHE_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__); \
+    }                                                                                                              \
+    else if constexpr ((_PREFETCH) == prefetch_64B)                                                                \
+    {                                                                                                              \
+      return _CUDA_VPTX::ld##_LOAD_BEHAVIOR##EVICT_POLICY##_CACHE_HINT##_L2_64B(                                   \
+        _CUDA_VPTX::space_global_t{}, __VA_ARGS__);                                                                \
+    }                                                                                                              \
+    else if constexpr ((_PREFETCH) == prefetch_128B)                                                               \
+    {                                                                                                              \
+      return _CUDA_VPTX::ld##_LOAD_BEHAVIOR##EVICT_POLICY##_CACHE_HINT##_L2_128B(                                  \
+        _CUDA_VPTX::space_global_t{}, __VA_ARGS__);                                                                \
+    }                                                                                                              \
+    else if constexpr ((_PREFETCH) == prefetch_256B)                                                               \
+    {                                                                                                              \
+      return _CUDA_VPTX::ld##_LOAD_BEHAVIOR##EVICT_POLICY##_CACHE_HINT##_L2_256B(                                  \
+        _CUDA_VPTX::space_global_t{}, __VA_ARGS__);                                                                \
     }
 
-#  define _CCCL_LOAD_ADD_EVICTION_POLICY(LOAD_BEHAVIOR, EVICTION_POLICY, PREFETCH) \
-    if constexpr ((EVICTION_POLICY) == eviction_none)                              \
-    {                                                                              \
-      _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, , PREFETCH);                          \
-    }                                                                              \
-    else if constexpr ((EVICTION_POLICY) == eviction_normal)                       \
-    {                                                                              \
-      _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, _L1_evict_normal, PREFETCH);          \
-    }                                                                              \
-    else if constexpr ((EVICTION_POLICY) == eviction_first)                        \
-    {                                                                              \
-      _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, _L1_evict_first, PREFETCH);           \
-    }                                                                              \
-    else if constexpr ((EVICTION_POLICY) == eviction_last)                         \
-    {                                                                              \
-      _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, _L1_evict_last, PREFETCH);            \
-    }                                                                              \
-    else if constexpr ((EVICTION_POLICY) == eviction_unchanged)                    \
-    {                                                                              \
-      _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, _L1_evict_unchanged, PREFETCH);       \
-    }                                                                              \
-    else if constexpr ((EVICTION_POLICY) == eviction_no_alloc)                     \
-    {                                                                              \
-      _CCCL_LOAD_ADD_PREFETCH(LOAD_BEHAVIOR, _L1_no_allocate, PREFETCH);           \
+#  define _CCCL_LOAD_ADD_EVICTION_POLICY(_LOAD_BEHAVIOR, _EVICTION_POLICY, _PREFETCH, _CACHE_HINT, ...)  \
+    if constexpr ((_EVICTION_POLICY) == eviction_none)                                                   \
+    {                                                                                                    \
+      _CCCL_LOAD_ADD_PREFETCH(_LOAD_BEHAVIOR, , _PREFETCH, _CACHE_HINT, __VA_ARGS__);                    \
+    }                                                                                                    \
+    else if constexpr ((_EVICTION_POLICY) == eviction_normal)                                            \
+    {                                                                                                    \
+      _CCCL_LOAD_ADD_PREFETCH(_LOAD_BEHAVIOR, _L1_evict_normal, _PREFETCH, _CACHE_HINT, __VA_ARGS__);    \
+    }                                                                                                    \
+    else if constexpr ((_EVICTION_POLICY) == eviction_first)                                             \
+    {                                                                                                    \
+      _CCCL_LOAD_ADD_PREFETCH(_LOAD_BEHAVIOR, _L1_evict_first, _PREFETCH, _CACHE_HINT, __VA_ARGS__);     \
+    }                                                                                                    \
+    else if constexpr ((_EVICTION_POLICY) == eviction_last)                                              \
+    {                                                                                                    \
+      _CCCL_LOAD_ADD_PREFETCH(_LOAD_BEHAVIOR, _L1_evict_last, _PREFETCH, _CACHE_HINT, __VA_ARGS__);      \
+    }                                                                                                    \
+    else if constexpr ((_EVICTION_POLICY) == eviction_unchanged)                                         \
+    {                                                                                                    \
+      _CCCL_LOAD_ADD_PREFETCH(_LOAD_BEHAVIOR, _L1_evict_unchanged, _PREFETCH, _CACHE_HINT, __VA_ARGS__); \
+    }                                                                                                    \
+    else if constexpr ((_EVICTION_POLICY) == eviction_no_alloc)                                          \
+    {                                                                                                    \
+      _CCCL_LOAD_ADD_PREFETCH(_LOAD_BEHAVIOR, _L1_no_allocate, _PREFETCH, _CACHE_HINT, __VA_ARGS__);     \
     }
+
+/***********************************************************************************************************************
+ * SM-Specific Functions
+ **********************************************************************************************************************/
 
 template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm70(
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm70(
   const _Tp* __ptr, __memory_access_t<_Bp> __memory_access, __eviction_policy_t<_Ep> __eviction_policy) noexcept
 {
   if constexpr (__memory_access == read_write)
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, prefetch_spatial_none);
+    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, prefetch_spatial_none, , __ptr);
   }
   else
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, prefetch_spatial_none);
+    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, prefetch_spatial_none, , __ptr);
   }
 }
 
 template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm75(
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm75(
   const _Tp* __ptr,
   __memory_access_t<_Bp> __memory_access,
   __eviction_policy_t<_Ep> __eviction_policy,
@@ -111,44 +119,49 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm75(
 {
   if constexpr (__memory_access == read_write && __prefetch == prefetch_256B)
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, prefetch_128B); // fallback
+    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, prefetch_128B, , __ptr); // fallback
   }
   else if constexpr (__memory_access == read_write)
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, __prefetch);
+    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, __prefetch, , __ptr);
   }
   else if constexpr (__memory_access == read_only && __prefetch == prefetch_256B)
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, prefetch_128B); // fallback
+    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, prefetch_128B, , __ptr); // fallback
   }
   else
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, __prefetch);
+    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, __prefetch, , __ptr);
   }
 }
 
-template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm80(
+template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp, bool _Enabled>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_sm80(
   const _Tp* __ptr,
   __memory_access_t<_Bp> __memory_access,
   __eviction_policy_t<_Ep> __eviction_policy,
-  __prefetch_spatial_t<_Pp> __prefetch) noexcept
+  __prefetch_spatial_t<_Pp> __prefetch,
+  [[maybe_unused]] _CacheHint<_Enabled> __cache_hint) noexcept
 {
   if constexpr (__memory_access == read_write)
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, __prefetch);
+    _CCCL_LOAD_ADD_EVICTION_POLICY(, __eviction_policy, __prefetch, _L2_cache_hint, __ptr, __cache_hint.__property);
   }
   else
   {
-    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, __prefetch);
+    _CCCL_LOAD_ADD_EVICTION_POLICY(_nc, __eviction_policy, __prefetch, _L2_cache_hint, __ptr, __cache_hint.__property);
   }
 }
 
 #  undef _CCCL_LOAD_ADD_PREFETCH
 #  undef _CCCL_LOAD_ADD_EVICTION_POLICY
 
+/***********************************************************************************************************************
+ * INTERNAL DISPATCH
+ **********************************************************************************************************************/
+
 template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp, bool _Enabled>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_arch_dispatch(
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_arch_dispatch(
   const _Tp* __ptr,
   [[maybe_unused]] __memory_access_t<_Bp> __memory_access,
   [[maybe_unused]] __eviction_policy_t<_Ep> __eviction_policy,
@@ -193,19 +206,19 @@ template <typename _Tp,
           _MemoryAccess _Bp,
           _EvictionPolicyEnum _Ep,
           _PrefetchSpatialEnum _Pp,
-          bool _Enabled, //
+          typename _AccessProperty,
           size_t... _Ip>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE auto __unroll_load(
   const _Tp* __ptr,
   __memory_access_t<_Bp> __memory_access,
   __eviction_policy_t<_Ep> __eviction_policy,
   __prefetch_spatial_t<_Pp> __prefetch,
-  _CacheHint<_Enabled> __cache_hint,
+  _CacheHint<_AccessProperty> __cache_hint,
   _CUDA_VSTD::index_sequence<_Ip...> = {})
 {
   _CUDA_VSTD::array<_Tp, sizeof...(_Ip)> __tmp;
   if constexpr (__memory_access == read_write && __eviction_policy == eviction_none
-                && __prefetch == prefetch_spatial_none)
+                && __prefetch == prefetch_spatial_none && !__cache_hint)
   {
     ((__tmp[_Ip] = __ptr[_Ip]), ...);
   }
@@ -222,20 +235,20 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE auto __unroll_load(
  * INTERNAL API
  **********************************************************************************************************************/
 
-template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp, bool _Enable>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_element(
+template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpatialEnum _Pp, typename _AccessProperty>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __load_element(
   const _Tp* __ptr,
   __memory_access_t<_Bp> __memory_access,
   __eviction_policy_t<_Ep> __eviction_policy,
   __prefetch_spatial_t<_Pp> __prefetch,
-  [[maybe_unused]] _CacheHint<_Enable> __cache_hint) noexcept
+  [[maybe_unused]] _CacheHint<_AccessProperty> __cache_hint) noexcept
 {
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
   _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % alignof(_Tp) == 0, "'ptr' must be aligned");
   _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
   auto __ptr_gmem = _CUDA_VSTD::bit_cast<const _Tp*>(__cvta_generic_to_global(__ptr));
   if constexpr (__memory_access == read_write && __eviction_policy == eviction_none
-                && __prefetch == prefetch_spatial_none)
+                && __prefetch == prefetch_spatial_none && !__cache_hint)
   {
     return *__ptr_gmem;
   }
@@ -260,14 +273,14 @@ template <size_t _Np,
           _MemoryAccess _Bp,
           _EvictionPolicyEnum _Ep,
           _PrefetchSpatialEnum _Pp,
-          bool _Enable>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np> __load_array(
+          typename _AccessProperty>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np> __load_array(
   const _Tp* __ptr,
   aligned_size_t<_Align>,
   __memory_access_t<_Bp> __memory_access,
   __eviction_policy_t<_Ep> __eviction_policy,
   __prefetch_spatial_t<_Pp> __prefetch,
-  _CacheHint<_Enable> __cache_hint) noexcept
+  _CacheHint<_AccessProperty> __cache_hint) noexcept
 {
   static_assert(_CUDA_VSTD::has_single_bit(_Align), "_Align must be a power of 2");
   static_assert(_Np > 0);
@@ -296,14 +309,17 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np> __l
 template <typename _Tp,
           _MemoryAccess _Bp        = _MemoryAccess::_ReadWrite,
           _EvictionPolicyEnum _Ep  = _EvictionPolicyEnum::_None,
-          _PrefetchSpatialEnum _Pp = _PrefetchSpatialEnum::_None>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp
+          _PrefetchSpatialEnum _Pp = _PrefetchSpatialEnum::_None,
+          typename _AccessProperty = access_property::global>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp
 load(const _Tp* __ptr,
      __memory_access_t<_Bp> __memory_access     = read_write,
      __eviction_policy_t<_Ep> __eviction_policy = eviction_none,
-     __prefetch_spatial_t<_Pp> __prefetch       = prefetch_spatial_none) noexcept
+     __prefetch_spatial_t<_Pp> __prefetch       = prefetch_spatial_none,
+     _AccessProperty __access_property          = access_property::global{}) noexcept
 {
-  return _CUDA_VDEV::__load_element(__ptr, __memory_access, __eviction_policy, __prefetch, __no_cache_hint);
+  return _CUDA_VDEV::__load_element(
+    __ptr, __memory_access, __eviction_policy, __prefetch, _CacheHint{__access_property});
 }
 
 template <typename _Tp,
@@ -311,14 +327,13 @@ template <typename _Tp,
           _MemoryAccess _Bp        = _MemoryAccess::_ReadWrite,
           _EvictionPolicyEnum _Ep  = _EvictionPolicyEnum::_None,
           _PrefetchSpatialEnum _Pp = _PrefetchSpatialEnum::_None>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp
 load(annotated_ptr<_Tp, _Prop> __ptr,
      __memory_access_t<_Bp> __memory_access     = read_write,
      __eviction_policy_t<_Ep> __eviction_policy = eviction_none,
      __prefetch_spatial_t<_Pp> __prefetch       = prefetch_spatial_none) noexcept
 {
-  auto __cache_hint = _CacheHint<true>{static_cast<uint64_t>(__ptr.__property())};
-  return _CUDA_VDEV::__load_element(__ptr.get(), __memory_access, __eviction_policy, __prefetch, __cache_hint);
+  return _CUDA_VDEV::__load_element(__ptr.get(), __memory_access, __eviction_policy, __prefetch, __ptr.__property());
 }
 
 template <size_t _Np,
@@ -326,15 +341,18 @@ template <size_t _Np,
           size_t _Align            = alignof(_Tp),
           _MemoryAccess _Bp        = _MemoryAccess::_ReadWrite,
           _EvictionPolicyEnum _Ep  = _EvictionPolicyEnum::_None,
-          _PrefetchSpatialEnum _Pp = _PrefetchSpatialEnum::_None>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np>
+          _PrefetchSpatialEnum _Pp = _PrefetchSpatialEnum::_None,
+          typename _AccessProperty = ::cuda::access_property::global>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np>
 load(const _Tp* __ptr,
      aligned_size_t<_Align> __align             = aligned_size_t<_Align>{alignof(_Tp)},
      __memory_access_t<_Bp> __memory_access     = read_write,
      __eviction_policy_t<_Ep> __eviction_policy = eviction_none,
-     __prefetch_spatial_t<_Pp> __prefetch       = prefetch_spatial_none) noexcept
+     __prefetch_spatial_t<_Pp> __prefetch       = prefetch_spatial_none,
+     _AccessProperty __access_property          = ::cuda::access_property::global{}) noexcept
 {
-  return _CUDA_VDEV::__load_array<_Np>(__ptr, __align, __memory_access, __eviction_policy, __prefetch, __no_cache_hint);
+  return _CUDA_VDEV::__load_array<_Np>(
+    __ptr, __align, __memory_access, __eviction_policy, __prefetch, _CacheHint{__access_property});
 }
 
 template <size_t _Np,
@@ -344,19 +362,18 @@ template <size_t _Np,
           _MemoryAccess _Bp        = _MemoryAccess::_ReadWrite,
           _EvictionPolicyEnum _Ep  = _EvictionPolicyEnum::_None,
           _PrefetchSpatialEnum _Pp = _PrefetchSpatialEnum::_None>
-_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np>
 load(annotated_ptr<_Tp, _Prop> __ptr,
      aligned_size_t<_Align> __align             = aligned_size_t<_Align>{alignof(_Tp)},
      __memory_access_t<_Bp> __memory_access     = read_write,
      __eviction_policy_t<_Ep> __eviction_policy = eviction_none,
      __prefetch_spatial_t<_Pp> __prefetch       = prefetch_spatial_none) noexcept
 {
-  auto __cache_hint = _CacheHint<true>{static_cast<uint64_t>(__ptr.__property())};
   return _CUDA_VDEV::__load_array<_Np>(
-    __ptr.get(), __align, __memory_access, __eviction_policy, __prefetch, __cache_hint);
+    __ptr.get(), __align, __memory_access, __eviction_policy, __prefetch, __ptr.__property());
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
-#endif // _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 #endif // _CUDA___DATA_MOVEMENT_LOAD_H

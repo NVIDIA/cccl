@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER()
 
 #  include <cuda/__barrier/aligned_size.h>
 #  include <cuda/__data_movement/aligned_data.h>
@@ -45,23 +45,23 @@ __store_sm70(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy)
 {
   if constexpr (__eviction_policy == eviction_unchanged)
   {
-    _CUDA_VPTX::st_global_L1_evict_unchanged(__ptr, __data);
+    _CUDA_VPTX::st_L1_evict_unchanged(_CUDA_VPTX::space_global_t{}, __ptr, __data);
   }
   else if constexpr (__eviction_policy == eviction_normal)
   {
-    _CUDA_VPTX::st_global_L1_evict_normal(__ptr, __data);
+    _CUDA_VPTX::st_L1_evict_normal(_CUDA_VPTX::space_global_t{}, __ptr, __data);
   }
   else if constexpr (__eviction_policy == eviction_first)
   {
-    _CUDA_VPTX::st_global_L1_evict_first(__ptr, __data);
+    _CUDA_VPTX::st_L1_evict_first(_CUDA_VPTX::space_global_t{}, __ptr, __data);
   }
   else if constexpr (__eviction_policy == eviction_last)
   {
-    _CUDA_VPTX::st_global_L1_evict_last(__ptr, __data);
+    _CUDA_VPTX::st_L1_evict_last(_CUDA_VPTX::space_global_t{}, __ptr, __data);
   }
   else if constexpr (__eviction_policy == eviction_no_alloc)
   {
-    _CUDA_VPTX::st_global_L1_no_allocate(__ptr, __data);
+    _CUDA_VPTX::st_L1_no_allocate(_CUDA_VPTX::space_global_t{}, __ptr, __data);
   }
 }
 
@@ -184,10 +184,19 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_array(
  * USER API
  **********************************************************************************************************************/
 
-template <typename _Tp, _EvictionPolicyEnum _Ep = _EvictionPolicyEnum::_None>
+template <typename _Tp,
+          _EvictionPolicyEnum _Ep  = _EvictionPolicyEnum::_None,
+          typename _AccessProperty = ::cuda::access_property::global>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
-store(_Tp __data, _Tp* __ptr, __eviction_policy_t<_Ep> __eviction_policy = eviction_none) noexcept
+store(_Tp __data,
+      _Tp* __ptr,
+      __eviction_policy_t<_Ep> __eviction_policy = eviction_none,
+      _AccessProperty __access_property          = ::cuda::access_property::global{}) noexcept
 {
+  // TODO: remove comment after PR #4503
+  // static_assert(::cuda::__ap_detail::is_global_access_property<_AccessProperty>, "invalid access property");
+  constexpr bool __enable = !_CUDA_VSTD::is_same_v<_AccessProperty, ::cuda::access_property::global>;
+  auto __cache_hint       = _CacheHint<__enable>{static_cast<uint64_t>(access_property{__access_property})};
   _CUDA_VDEV::__store_element(__data, __ptr, __eviction_policy, __no_cache_hint);
 }
 
