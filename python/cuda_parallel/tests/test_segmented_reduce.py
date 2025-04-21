@@ -129,8 +129,9 @@ def test_large_num_segments():
 
         return scale
 
+    segment_size = 117
     zero = np.int64(0)
-    row_offset = make_scaler(np.int64(125))
+    row_offset = make_scaler(np.int64(segment_size))
     start_offsets = iterators.TransformIterator(
         iterators.CountingIterator(zero), row_offset
     )
@@ -149,10 +150,10 @@ def test_large_num_segments():
     )
 
     # band-aid solution for setting of host advance function
-    f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
-    alg.start_offsets_in_cccl.host_advance_fn = f1
-    f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
-    alg.end_offsets_in_cccl.host_advance_fn = f2
+    # f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
+    # alg.start_offsets_in_cccl.host_advance_fn = f1
+    # f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
+    # alg.end_offsets_in_cccl.host_advance_fn = f2
 
     temp_storage_bytes = alg(
         None, input_it, res, num_segments, start_offsets, end_offsets, h_init
@@ -163,4 +164,4 @@ def test_large_num_segments():
         d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
     )
 
-    assert cp.all(res == 125)
+    assert cp.all(res == segment_size)
