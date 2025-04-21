@@ -121,8 +121,6 @@ def make_host_cfunc(state_ptr_ty, fn):
 
 
 def test_large_num_segments():
-    import ctypes
-
     input_it = iterators.ConstantIterator(np.int8(1))
 
     def make_scaler(step):
@@ -138,7 +136,7 @@ def test_large_num_segments():
     )
     end_offsets = start_offsets + 1
 
-    num_segments = (2**11 + 2**3) * 2**10
+    num_segments = (2**15 + 2**3) * 2**16
     res = cp.full(num_segments, fill_value=-1, dtype=cp.int8)
     assert res.size == num_segments
 
