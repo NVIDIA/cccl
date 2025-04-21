@@ -149,7 +149,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
   auto last_pos_limit = (is_segmented && logical_mode == multiple_reductions) ? detail::warp_threads : logical_size;
   _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) <= last_pos_limit, "invalid last position");
   // Check which lanes are active
-  auto mask_limit       = (logical_mode == single_reduction) ? logical_size : detail::warp_threads;
   uint32_t logical_mask = 0;
   if constexpr (!is_segmented)
   {
