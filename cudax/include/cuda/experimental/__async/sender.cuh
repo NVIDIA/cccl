@@ -41,6 +41,7 @@
 #include <cuda/experimental/__async/sender/sync_wait.cuh>      // IWYU pragma: export
 #include <cuda/experimental/__async/sender/then.cuh>           // IWYU pragma: export
 #include <cuda/experimental/__async/sender/thread_context.cuh> // IWYU pragma: export
+#include <cuda/experimental/__async/sender/visit.cuh>          // IWYU pragma: export
 #include <cuda/experimental/__async/sender/when_all.cuh>       // IWYU pragma: export
 #include <cuda/experimental/__async/sender/write_env.cuh>      // IWYU pragma: export
 

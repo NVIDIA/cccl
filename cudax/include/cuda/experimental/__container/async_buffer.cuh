@@ -197,7 +197,7 @@ private:
       // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
       // The test passes fine with compute-sanitizer but we really do not want to take the performance hit for this.
       // See https://github.com/NVIDIA/cccl/issues/3814
-      __buf_.get_stream().wait();
+      __buf_.get_stream().sync();
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "cudax::async_buffer::__copy_cross: failed to copy data",
@@ -240,7 +240,7 @@ private:
     else
     {
       ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream()), __first, __count, _Tp());
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, _Tp());
     }
   }
 
@@ -262,7 +262,7 @@ private:
     else
     {
       ::cuda::experimental::__ensure_current_device __guard(__buf_.get_stream());
-      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream()), __first, __count, __value);
+      thrust::fill_n(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first, __count, __value);
     }
   }
 
@@ -555,7 +555,7 @@ public:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI reference get(const size_type __n) noexcept
   {
     _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
-    this->wait();
+    this->sync();
     return begin()[__n];
   }
 
@@ -565,7 +565,7 @@ public:
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reference get(const size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
-    this->wait();
+    this->sync();
     return begin()[__n];
   }
 
@@ -648,10 +648,10 @@ public:
     __policy_ = __new_policy;
   }
 
-  //! @brief Waits on the currently stored stream
-  _CCCL_HIDE_FROM_ABI void wait() const
+  //! @brief Synchronizes the currently stored stream
+  _CCCL_HIDE_FROM_ABI void sync() const
   {
-    __buf_.get_stream().wait();
+    __buf_.get_stream().sync();
   }
 
   //! @}
@@ -755,8 +755,8 @@ public:
     if constexpr (__is_host_only)
     {
       // need to wait here because `host_launch` does not return values, so we cannot easily put it in stream order
-      __lhs.wait();
-      __rhs.wait();
+      __lhs.sync();
+      __rhs.sync();
       return _CUDA_VSTD::equal(
         __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
     }
@@ -764,7 +764,7 @@ public:
     {
       ::cuda::experimental::__ensure_current_device __guard(__lhs.get_stream().get());
       return (__lhs.size() == __rhs.size())
-          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream()),
+          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream().get()),
                            __lhs.__unwrapped_begin(),
                            __lhs.__unwrapped_end(),
                            __rhs.__unwrapped_begin());
@@ -806,7 +806,7 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
 {
   env_t<_TargetProperties...> __env{__mr, __stream};
   async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), uninit};
-  __source.wait();
+  __source.sync();
 
   _CCCL_TRY_CUDA_API(
     ::cudaMemcpyAsync,

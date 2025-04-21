@@ -169,10 +169,10 @@ auto configuration_test(
     }
     cudax::launch(stream, config, empty_kernel, 0);
   }
-  stream.wait();
+  stream.sync();
 }
 
-TEST_CASE("Launch configuration", "[launch]")
+C2H_TEST("Launch configuration", "[launch]")
 {
   cudaStream_t stream;
   CUDART(cudaStreamCreate(&stream));
@@ -189,7 +189,7 @@ TEST_CASE("Launch configuration", "[launch]")
   CUDAX_CHECK(replacementCalled);
 }
 
-TEST_CASE("Hierarchy construction in config", "[launch]")
+C2H_TEST("Hierarchy construction in config", "[launch]")
 {
   auto config = cudax::make_config(cudax::grid_dims<2>(), cudax::cooperative_launch());
   static_assert(config.dims.count(cudax::block) == 2);
@@ -204,7 +204,7 @@ TEST_CASE("Hierarchy construction in config", "[launch]")
   static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cudax::__empty_hierarchy>);
 }
 
-TEST_CASE("Configuration combine", "[launch]")
+C2H_TEST("Configuration combine", "[launch]")
 {
   auto grid    = cudax::grid_dims<2>;
   auto cluster = cudax::cluster_dims<2, 2>;

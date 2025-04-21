@@ -50,9 +50,10 @@ void TestScanDevice(ExecutionPolicy exec, const size_t n)
 
   ASSERT_EQUAL(d_output, h_output);
 
-  thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), (T) 11, thrust::plus<T>{});
+  thrust::inclusive_scan(h_input.begin(), h_input.end(), h_output.begin(), (T) 11, ::cuda::std::plus<T>{});
 
-  inclusive_scan_kernel<<<1, 1>>>(exec, d_input.begin(), d_input.end(), d_output.begin(), (T) 11, thrust::plus<T>{});
+  inclusive_scan_kernel<<<1, 1>>>(
+    exec, d_input.begin(), d_input.end(), d_output.begin(), (T) 11, ::cuda::std::plus<T>{});
   {
     cudaError_t const err = cudaDeviceSynchronize();
     ASSERT_EQUAL(cudaSuccess, err);
@@ -173,7 +174,8 @@ void TestScanCudaStreams()
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with op
-  iter = thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::plus<T>());
+  iter =
+    thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {1, 4, 2, 6, 1};
@@ -182,8 +184,8 @@ void TestScanCudaStreams()
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with init and op
-  iter =
-    thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, thrust::plus<T>());
+  iter = thrust::inclusive_scan(
+    thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {4, 7, 5, 9, 4};
@@ -192,8 +194,8 @@ void TestScanCudaStreams()
   ASSERT_EQUAL(output, result);
 
   // exclusive scan with init and op
-  iter =
-    thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, thrust::plus<T>());
+  iter = thrust::exclusive_scan(
+    thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, ::cuda::std::plus<T>());
   cudaStreamSynchronize(s);
 
   result = {3, 4, 7, 5, 9};

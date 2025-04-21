@@ -527,7 +527,7 @@ THRUST_RUNTIME_FUNCTION ItemsOutputIt unique(
   //  using size_type = thrust::detail::it_difference_t<ItemsInputIt>;
   using size_type = int;
 
-  size_type num_items       = static_cast<size_type>(thrust::distance(items_first, items_last));
+  size_type num_items       = static_cast<size_type>(::cuda::std::distance(items_first, items_last));
   size_t temp_storage_bytes = 0;
   cudaStream_t stream       = cuda_cub::stream(policy);
 
@@ -591,7 +591,7 @@ template <class Derived, class InputIt, class OutputIt>
 OutputIt _CCCL_HOST_DEVICE unique_copy(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result)
 {
   using input_type = thrust::detail::it_value_t<InputIt>;
-  return cuda_cub::unique_copy(policy, first, last, result, equal_to<input_type>());
+  return cuda_cub::unique_copy(policy, first, last, result, ::cuda::std::equal_to<input_type>());
 }
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -609,7 +609,7 @@ template <class Derived, class ForwardIt>
 ForwardIt _CCCL_HOST_DEVICE unique(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last)
 {
   using input_type = thrust::detail::it_value_t<ForwardIt>;
-  return cuda_cub::unique(policy, first, last, equal_to<input_type>());
+  return cuda_cub::unique(policy, first, last, ::cuda::std::equal_to<input_type>());
 }
 
 template <typename BinaryPred>
@@ -633,9 +633,10 @@ unique_count(execution_policy<Derived>& policy, ForwardIt first, ForwardIt last,
   {
     return 0;
   }
-  auto size = thrust::distance(first, last);
-  auto it   = thrust::make_zip_iterator(thrust::make_tuple(first, thrust::next(first)));
-  return 1 + thrust::count_if(policy, it, thrust::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
+  auto size = ::cuda::std::distance(first, last);
+  auto it   = thrust::make_zip_iterator(first, ::cuda::std::next(first));
+  return 1
+       + thrust::count_if(policy, it, ::cuda::std::next(it, size - 1), zip_adj_not_predicate<BinaryPred>{binary_pred});
 }
 
 } // namespace cuda_cub

@@ -72,9 +72,10 @@ template <typename... Args>
 void bench_transform(nvbench::state& state, Args&&... args)
 {
   caching_allocator_t alloc; // transform shouldn't allocate, but let's be consistent
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::transform(policy(alloc, launch), ::cuda::std::forward<Args>(args)...);
-  });
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch | nvbench::exec_tag::sync,
+             [&](nvbench::launch& launch) {
+               thrust::transform(policy(alloc, launch), ::cuda::std::forward<Args>(args)...);
+             });
 }
 
 template <typename T>

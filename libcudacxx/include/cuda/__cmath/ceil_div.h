@@ -24,6 +24,7 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -44,7 +45,6 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: 'b' must be positive");
-
   if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__a >= _Tp{0}, "cuda::ceil_div: 'a' must be non negative");
@@ -60,11 +60,19 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
   }
   else
   {
-    // the ::min method is faster even if __b is a compile-time constant
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (return static_cast<_Common>(_CUDA_VSTD::min(__a1, 1 + ((__a1 - 1) / __b1)));),
-                      (const auto __res = __a1 / __b1; //
-                       return static_cast<_Common>(__res + (__res * __b1 != __a1));))
+    if (_CUDA_VSTD::is_constant_evaluated())
+    {
+      const auto __res = __a1 / __b1;
+      return static_cast<_Common>(__res + (__res * __b1 != __a1));
+    }
+    else
+    {
+      // the ::min method is faster even if __b is a compile-time constant
+      NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                        (return static_cast<_Common>(_CUDA_VSTD::min(__a1, 1 + ((__a1 - 1) / __b1)));),
+                        (const auto __res = __a1 / __b1; //
+                         return static_cast<_Common>(__res + (__res * __b1 != __a1));))
+    }
   }
 }
 

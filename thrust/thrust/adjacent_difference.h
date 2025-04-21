@@ -134,7 +134,8 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
  *  thrust::device_vector<int> d_data(h_data, h_data + 8);
  *  thrust::device_vector<int> d_result(8);
  *
- *  thrust::adjacent_difference(thrust::device, d_data.begin(), d_data.end(), d_result.begin(), thrust::plus<int>());
+ *  thrust::adjacent_difference(thrust::device, d_data.begin(), d_data.end(), d_result.begin(),
+ * ::cuda::std::plus<int>());
  *
  *  // d_result is now [1, 3, 3, 3, 3, 3, 3, 3]
  *  \endcode
@@ -233,7 +234,7 @@ OutputIterator adjacent_difference(InputIterator first, InputIterator last, Outp
  *  thrust::device_vector<int> d_data(h_data, h_data + 8);
  *  thrust::device_vector<int> d_result(8);
  *
- *  thrust::adjacent_difference(d_data.begin(), d_data.end(), d_result.begin(), thrust::plus<int>());
+ *  thrust::adjacent_difference(d_data.begin(), d_data.end(), d_result.begin(), ::cuda::std::plus<int>());
  *
  *  // d_result is now [1, 3, 3, 3, 3, 3, 3, 3]
  *  \endcode

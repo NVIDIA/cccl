@@ -50,6 +50,9 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to an unsigned type
+
 template <class _Int>
 struct __avoid_promotions
 {
@@ -81,10 +84,7 @@ struct __avoid_promotions
   }
 
   _DEFINE_UNARY(~)
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to an unsigned type
   _DEFINE_UNARY(-)
-  _CCCL_DIAG_POP
 #undef _DEFINE_UNARY
 
 #define _DEFINE_SHIFT(__op)                                                                                            \
@@ -175,6 +175,8 @@ struct __avoid_promotions
 
   _Int __data;
 };
+
+_CCCL_DIAG_POP
 
 static_assert(sizeof(__avoid_promotions<uint_least8_t>) == sizeof(uint_least8_t), "");
 static_assert(sizeof(__avoid_promotions<uint_least16_t>) == sizeof(uint_least16_t), "");
@@ -432,6 +434,9 @@ private:
   }
 };
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4293) // shift count negative or too big
+                               // MSVC is slightly overeager with diagnosing that here
 template <size_t _Size>
 class __bitset<1, _Size>
 {
@@ -464,15 +469,11 @@ protected:
       : __first_(0)
   {}
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4293) // shift count negative or too big
-                                 // MSVC is slightly overeager with diagnosing that here
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __bitset(unsigned long long __v) noexcept
       : __first_(_Size == __bits_per_word
                    ? static_cast<__storage_type>(__v)
                    : static_cast<__storage_type>(__v) & ((__storage_type(1) << _Size) - __storage_type(1)))
   {}
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference __make_ref(size_t __pos) noexcept
   {
@@ -559,6 +560,8 @@ protected:
     return __first_;
   }
 };
+
+_CCCL_DIAG_POP
 
 template <>
 class __bitset<0, 0>

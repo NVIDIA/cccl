@@ -47,20 +47,22 @@ void reduce(cccl_iterator_t input, cccl_iterator_t output, uint64_t num_items, c
   REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
 }
 
-using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("Reduce works with integral types", "[reduce]", integral_types)
+using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
 {
-  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
-  const std::vector<TestType> input = generate<TestType>(num_items);
-  pointer_t<TestType> input_ptr(input);
-  pointer_t<TestType> output_ptr(1);
-  value_t<TestType> init{TestType{42}};
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  operation_t op              = make_operation("op", get_reduce_op(get_type_info<T>().type));
+  const std::vector<T> input  = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{42}};
 
   reduce(input_ptr, output_ptr, num_items, op, init);
 
-  const TestType output   = output_ptr[0];
-  const TestType expected = std::accumulate(input.begin(), input.end(), init.value);
+  const T output   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), init.value);
   REQUIRE(output == expected);
 }
 
@@ -70,7 +72,7 @@ struct pair
   size_t b;
 };
 
-TEST_CASE("Reduce works with custom types", "[reduce]")
+C2H_TEST("Reduce works with custom types", "[reduce]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
@@ -101,7 +103,7 @@ TEST_CASE("Reduce works with custom types", "[reduce]")
   REQUIRE(output.b == expected.b);
 }
 
-TEST_CASE("Reduce works with input iterators", "[reduce]")
+C2H_TEST("Reduce works with input iterators", "[reduce]")
 {
   const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -117,7 +119,7 @@ TEST_CASE("Reduce works with input iterators", "[reduce]")
   REQUIRE(output == expected);
 }
 
-TEST_CASE("Reduce works with output iterators", "[reduce]")
+C2H_TEST("Reduce works with output iterators", "[reduce]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -136,7 +138,7 @@ TEST_CASE("Reduce works with output iterators", "[reduce]")
   REQUIRE(output == expected * 2);
 }
 
-TEST_CASE("Reduce works with input and output iterators", "[reduce]")
+C2H_TEST("Reduce works with input and output iterators", "[reduce]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
   operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
@@ -155,7 +157,7 @@ TEST_CASE("Reduce works with input and output iterators", "[reduce]")
   REQUIRE(output == expected);
 }
 
-TEST_CASE("Reduce accumulator type is influenced by initial value", "[reduce]")
+C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
 {
   const std::size_t num_items = 1 << 14; // 16384 > 128
 
@@ -172,7 +174,7 @@ TEST_CASE("Reduce accumulator type is influenced by initial value", "[reduce]")
   REQUIRE(output == expected);
 }
 
-TEST_CASE("Reduce works with large inputs", "[reduce]")
+C2H_TEST("Reduce works with large inputs", "[reduce]")
 {
   const size_t num_items = 1ull << 33;
   operation_t op         = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
@@ -193,7 +195,7 @@ struct invocation_counter_state_t
   int* d_counter;
 };
 
-TEST_CASE("Reduce works with stateful operators", "[reduce]")
+C2H_TEST("Reduce works with stateful operators", "[reduce]")
 {
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);

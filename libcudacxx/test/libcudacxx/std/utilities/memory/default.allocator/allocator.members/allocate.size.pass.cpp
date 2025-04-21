@@ -14,16 +14,16 @@
 // allocator:
 // constexpr T* allocate(size_t n);
 
-#define _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
+// ADDITIONAL_COMPILE_DEFINITIONS: _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS
 
 #include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 template <typename T>
-__host__ __device__ void test_max(cuda::std::size_t count)
+void test_max(cuda::std::size_t count)
 {
   cuda::std::allocator<T> a;
   try
@@ -36,7 +36,7 @@ __host__ __device__ void test_max(cuda::std::size_t count)
 }
 
 template <typename T>
-__host__ __device__ void test()
+void test()
 {
   // Bug 26812 -- allocating too large
   typedef cuda::std::allocator<T> A;
@@ -47,14 +47,14 @@ __host__ __device__ void test()
   test_max<T>(((cuda::std::size_t) -1) / sizeof(T) + 1); // multiply will overflow
   test_max<T>((cuda::std::size_t) -1); // way too large
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test<double>();));
   NV_IF_TARGET(NV_IS_HOST, (test<const double>();));
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

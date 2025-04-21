@@ -65,7 +65,7 @@ get_reference(c2h::device_vector<T> const& in, c2h::device_vector<FlagT> const& 
 
   auto end =
     std::copy_if(zipped_in_it, zipped_in_it + in.size(), zipped_out_it, predicate_op_wrapper_t<Pred>{if_predicate});
-  reference.resize(thrust::distance(zipped_out_it, end));
+  reference.resize(cuda::std::distance(zipped_out_it, end));
   return reference;
 }
 
