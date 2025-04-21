@@ -267,7 +267,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   if (!config.is_segmented && valid_items.rank_dynamic() == 1
       && logical_lane_id(logical_warp_size) >= valid_items.extent(0))
   {
-    return input;
+    return Input{};
   }
   // [Min/Max]: float, double
   if constexpr (is_cuda_minimum_maximum_v<ReductionOp, Input> && is_floating_point_v<Input>)

@@ -46,6 +46,7 @@
 #include <cub/warp/specializations/warp_reduce_impl.cuh>
 
 #include <cuda/functional> // cuda::maximum
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/bit> // has_single_bit
 #include <cuda/std/type_traits> // _CCCL_TEMPLATE
 
@@ -505,8 +506,7 @@ public:
     internal::reduce_logical_mode_t<Mode> logical_mode = {},
     internal::reduce_result_mode_t<Kind> result_mode   = {})
   {
-    _CCCL_ASSERT(valid_items > 0 && valid_items <= LogicalWarpThreads, "invalid valid_items");
-    auto valid_items1 = internal::valid_items_t<>{valid_items};
+    auto valid_items1 = internal::valid_items_t<>{_CUDA_VSTD::clamp(valid_items, 0, LogicalWarpThreads)};
     internal::WarpReduceConfig config{logical_mode, result_mode, logical_warp_size, valid_items1};
     return cub::internal::warp_reduce_dispatch(input, reduction_op, config);
   }
