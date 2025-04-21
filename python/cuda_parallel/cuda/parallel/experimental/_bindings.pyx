@@ -1671,13 +1671,17 @@ cdef class DeviceUniqueByKeyBuildResult:
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
 # -----------------
 # DeviceRadixSort
 # -----------------
 
 cdef extern from "cccl/c/radix_sort.h":
     cdef struct cccl_device_radix_sort_build_result_t 'cccl_device_radix_sort_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_radix_sort_build(
         cccl_device_radix_sort_build_result_t *build_ptr,
