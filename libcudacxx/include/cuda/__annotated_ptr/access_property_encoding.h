@@ -128,9 +128,8 @@
  *
  * (v. August 20, 2021)
  */
-
-#ifndef _CUDA_ANNOTATED_PTR
-#define _CUDA_ANNOTATED_PTR
+#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
+#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING
 
 #include <cuda/std/detail/__config>
 
@@ -142,6 +141,302 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__annotated_ptr/annotated_ptr.h>
+#include <cuda_runtime_api.h>
 
-#endif // _CUDA_ANNOTATED_PTR
+#include <cuda/__cmath/ilog.h>
+#include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__bit/has_single_bit.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/cstddef>
+#include <cuda/std/cstdint>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+namespace __detail_ap
+{
+
+// TODO: replace with ceil_ilog2 when available
+_CCCL_HOST_DEVICE constexpr uint32_t __ap_ceil_log2(uint32_t __x) noexcept
+{
+  return ::cuda::ilog2(__x) + static_cast<int>(!_CUDA_VSTD::has_single_bit(__x));
+}
+
+// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
+// Specifically search for 8.4 and 9.3 and above to guarantee uint64_t enum.
+#if _CCCL_COMPILER(GCC, <, 9, 3)
+#  define _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
+#else
+#  define _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION : uint64_t
+#endif
+
+namespace __sm_80
+{
+namespace __off
+{
+enum __l2_cop_off_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
+{
+  _L2_EVICT_NORMAL = 0,
+  _L2_EVICT_FIRST  = 1,
+};
+} // namespace __off
+
+namespace __on
+{
+enum __l2_cop_on_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
+{
+  _L2_EVICT_NORMAL        = 0,
+  _L2_EVICT_FIRST         = 1,
+  _L2_EVICT_LAST          = 2,
+  _L2_EVICT_NORMAL_DEMOTE = 3,
+};
+} // namespace __on
+
+enum __l2_descriptor_mode_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
+{
+  _DESC_IMPLICIT    = 0,
+  _DESC_INTERLEAVED = 2,
+  _DESC_BLOCK_TYPE  = 3,
+};
+
+enum __l2_eviction_max_way_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
+{
+  _CUDA_AMPERE_MAX_L2_WAYS = 16,
+};
+
+enum __block_size_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
+{
+  _BLOCKSIZE_4K   = 0,
+  _BLOCKSIZE_8K   = 1,
+  _BLOCKSIZE_16K  = 2,
+  _BLOCKSIZE_32K  = 3,
+  _BLOCKSIZE_64K  = 4,
+  _BLOCKSIZE_128K = 5,
+  _BLOCKSIZE_256K = 6,
+  _BLOCKSIZE_512K = 7,
+  _BLOCKSIZE_1M   = 8,
+  _BLOCKSIZE_2M   = 9,
+  _BLOCKSIZE_4M   = 10,
+  _BLOCKSIZE_8M   = 11,
+  _BLOCKSIZE_16M  = 12,
+  _BLOCKSIZE_32M  = 13,
+};
+
+struct __block_desc_t
+{
+  uint64_t __ap_reserved                      : 37;
+  uint64_t __block_count                      : 7;
+  uint64_t __block_start                      : 7;
+  uint64_t __ap_reserved2                     : 1;
+  __block_size_t __block_size                 : 4;
+  __off::__l2_cop_off_t __l2_cop_off          : 1;
+  __on::__l2_cop_on_t __l2_cop_on             : 2;
+  __l2_descriptor_mode_t __l2_descriptor_mode : 2;
+  uint64_t __l1_inv_dont_allocate             : 1;
+  uint64_t __l2_sector_promote_256B           : 1;
+  uint64_t __ap_reserved3                     : 1;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor_cexpr() const noexcept
+  {
+    return static_cast<uint64_t>(__ap_reserved) << 0 | //
+           static_cast<uint64_t>(__block_count) << 37 | //
+           static_cast<uint64_t>(__block_start) << 44 | //
+           static_cast<uint64_t>(__ap_reserved2) << 51 | //
+           static_cast<uint64_t>(__block_size) << 52 | //
+           static_cast<uint64_t>(__l2_cop_off) << 56 | //
+           static_cast<uint64_t>(__l2_cop_on) << 57 | //
+           static_cast<uint64_t>(__l2_descriptor_mode) << 59 | //
+           static_cast<uint64_t>(__l1_inv_dont_allocate) << 61 | //
+           static_cast<uint64_t>(__l2_sector_promote_256B) << 62 | //
+           static_cast<uint64_t>(__ap_reserved3) << 63; //
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE uint64_t __get_descriptor_non_cexpr() const noexcept
+  {
+    return *reinterpret_cast<const uint64_t*>(this);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor() const noexcept
+  {
+    return _CUDA_VSTD::__cccl_default_is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
+  }
+};
+static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
+static_assert(sizeof(__block_desc_t) == sizeof(uint64_t));
+static_assert(
+  __block_desc_t{
+    uint64_t{1},
+    uint64_t{1},
+    uint64_t{1},
+    uint64_t{1},
+    __block_size_t::_BLOCKSIZE_8K,
+    __off::_L2_EVICT_FIRST,
+    __on::_L2_EVICT_FIRST,
+    __l2_descriptor_mode_t::_DESC_INTERLEAVED,
+    uint64_t{1},
+    uint64_t{1},
+    uint64_t{1}}
+    .__get_descriptor()
+  == 0xF318102000000001);
+
+/* Factory like struct to build a __block_desc_t due to constexpr C++11 */
+struct __block_descriptor_builder
+{ // variable declaration order matters == usage order
+  uint32_t __offset;
+  __block_size_t __block_size;
+  uint32_t __block_start, __end_hit;
+  uint32_t __block_count;
+  __off::__l2_cop_off_t __l2_cop_off;
+  __on::__l2_cop_on_t __l2_cop_on;
+  __l2_descriptor_mode_t __l2_descriptor_mode;
+  bool __l1_inv_dont_allocate;
+  bool __l2_sector_promote_256B;
+
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t __calc_offset(size_t __total_bytes) noexcept
+  {
+    return _CUDA_VSTD::max(uint32_t{12}, ::cuda::__detail_ap::__ap_ceil_log2(static_cast<uint32_t>(__total_bytes)) - 7);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t
+  __calc_block_start(uintptr_t __ptr, size_t __total_bytes) noexcept
+  {
+    return static_cast<uint32_t>(__ptr >> __calc_offset(static_cast<uint32_t>(__total_bytes)));
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t
+  __calc_end_hit(uintptr_t __ptr, size_t __hit_bytes, size_t __total_bytes) noexcept
+  {
+    return static_cast<uint32_t>(
+      (__ptr + __hit_bytes + (uintptr_t{1} << (__calc_offset(static_cast<uint32_t>(__total_bytes)))) - 1)
+      >> __calc_offset(static_cast<uint32_t>(__total_bytes)));
+  }
+
+  _CCCL_HOST_DEVICE constexpr __block_descriptor_builder(
+    uintptr_t __ptr,
+    size_t __hit_bytes,
+    size_t __total_bytes,
+    __on::__l2_cop_on_t __hit_prop,
+    __off::__l2_cop_off_t __miss_prop) noexcept
+      : __offset{__calc_offset(__total_bytes)}
+      , __block_size{static_cast<__block_size_t>(__calc_offset(__total_bytes) - uint32_t{12})}
+      , __block_start{__calc_block_start(__ptr, __total_bytes)}
+      , __end_hit{__calc_end_hit(__ptr, __hit_bytes, __total_bytes)}
+      , __block_count{__calc_end_hit(__ptr, __hit_bytes, __total_bytes) - __calc_block_start(__ptr, __total_bytes)}
+      , __l2_cop_off{__miss_prop}
+      , __l2_cop_on{__hit_prop}
+      , __l2_descriptor_mode{_DESC_BLOCK_TYPE}
+      , __l1_inv_dont_allocate{false}
+      , __l2_sector_promote_256B{false}
+  {}
+
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __block_desc_t __get_block() const noexcept
+  {
+    return __block_desc_t{
+      0,
+      _CUDA_VSTD::min(uint32_t{0x7f}, __block_count),
+      __block_start & uint32_t{0x7f},
+      0,
+      __block_size,
+      __l2_cop_off,
+      __l2_cop_on,
+      _DESC_BLOCK_TYPE,
+      uint64_t{false},
+      uint64_t{false},
+      uint64_t{0}};
+  }
+};
+static_assert(sizeof(uintptr_t) == 8, "uintptr_t needs at least 5 bytes for this code to work");
+
+struct __interleave_descriptor_t
+{
+  uint64_t __ap_reserved                      : 52;
+  uint64_t __fraction                         : 4;
+  __off::__l2_cop_off_t __l2_cop_off          : 1;
+  __on::__l2_cop_on_t __l2_cop_on             : 2;
+  __l2_descriptor_mode_t __l2_descriptor_mode : 2;
+  uint64_t __l1_inv_dont_allocate             : 1;
+  uint64_t __l2_sector_promote_256B           : 1;
+  uint64_t __ap_reserved2                     : 1;
+
+  _CCCL_HOST_DEVICE constexpr __interleave_descriptor_t(
+    __on::__l2_cop_on_t __hit_prop, uint32_t __hit_ratio, __off::__l2_cop_off_t __miss_prop) noexcept
+      : __ap_reserved{0}
+      , __fraction{__hit_ratio}
+      , __l2_cop_off{__miss_prop}
+      , __l2_cop_on{__hit_prop}
+      , __l2_descriptor_mode{_DESC_INTERLEAVED}
+      , __l1_inv_dont_allocate{0}
+      , __l2_sector_promote_256B{0}
+      , __ap_reserved2{0}
+  {}
+
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor_cexpr() const noexcept
+  {
+    return static_cast<uint64_t>(__ap_reserved) | //
+           static_cast<uint64_t>(__fraction) << 52 | //
+           static_cast<uint64_t>(__l2_cop_off) << 56 | //
+           static_cast<uint64_t>(__l2_cop_on) << 57 | //
+           static_cast<uint64_t>(__l2_descriptor_mode) << 59 | //
+           static_cast<uint64_t>(__l1_inv_dont_allocate) << 61 | //
+           static_cast<uint64_t>(__l2_sector_promote_256B) << 62 | //
+           static_cast<uint64_t>(__ap_reserved2) << 63;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE uint64_t __get_descriptor_non_cexpr() const noexcept
+  {
+    return *reinterpret_cast<const uint64_t*>(this);
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor() const noexcept
+  {
+    return _CUDA_VSTD::__cccl_default_is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
+  }
+};
+static_assert(sizeof(__interleave_descriptor_t) == 8, "__interleave_descriptor_t should be 8 bytes");
+static_assert(sizeof(__interleave_descriptor_t) == sizeof(uint64_t));
+
+inline constexpr auto __interleave_normal = uint64_t{0x10F0000000000000};
+
+inline constexpr auto __interleave_streaming = uint64_t{0x12F0000000000000};
+
+inline constexpr auto __interleave_persisting = uint64_t{0x14F0000000000000};
+
+inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
+
+} // namespace __sm_80
+
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __interleave(
+  cudaAccessProperty __hit_prop, float __hit_ratio, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) noexcept
+{
+  return __sm_80::__interleave_descriptor_t{
+    (__hit_prop == cudaAccessPropertyNormal
+       ? __sm_80::__on::__l2_cop_on_t::_L2_EVICT_NORMAL_DEMOTE
+       : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop)),
+    _CUDA_VSTD::min((static_cast<uint32_t>(__hit_ratio * __sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS)),
+                    static_cast<uint32_t>(__sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS - 1)),
+    static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
+    .__get_descriptor();
+}
+
+[[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __block(
+  void* __ptr,
+  size_t __hit_bytes,
+  size_t __total_bytes,
+  cudaAccessProperty __hit_prop,
+  cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) noexcept
+{
+  return (__total_bytes <= size_t{0xFFFFFFFF} && __total_bytes != 0 && __hit_bytes <= __total_bytes)
+         ? __sm_80::__block_descriptor_builder{reinterpret_cast<uintptr_t>(__ptr),
+                                               __hit_bytes,
+                                               __total_bytes,
+                                               (__hit_prop == cudaAccessPropertyNormal)
+                                                 ? __sm_80::__on::_L2_EVICT_NORMAL_DEMOTE
+                                                 : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop),
+                                               static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
+             .__get_block()
+             .__get_descriptor()
+         : ::cuda::__detail_ap::__sm_80::__interleave_normal;
+}
+
+} // namespace __detail_ap
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING

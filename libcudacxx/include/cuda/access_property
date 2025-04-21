@@ -129,8 +129,8 @@
  * (v. August 20, 2021)
  */
 
-#ifndef _CUDA_ANNOTATED_PTR
-#define _CUDA_ANNOTATED_PTR
+#ifndef _CUDA_ACCESS_PROPERTY
+#define _CUDA_ACCESS_PROPERTY
 
 #include <cuda/std/detail/__config>
 
@@ -142,6 +142,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__annotated_ptr/annotated_ptr.h>
+#include <cuda/__annotated_ptr/access_property.h>
 
-#endif // _CUDA_ANNOTATED_PTR
+#endif // _CUDA_ACCESS_PROPERTY

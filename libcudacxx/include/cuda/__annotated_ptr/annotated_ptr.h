@@ -128,8 +128,9 @@
  *
  * (v. August 20, 2021)
  */
-#ifndef _CUDA_STD_DETAIL___ANNOTATED_PTR
-#define _CUDA_STD_DETAIL___ANNOTATED_PTR
+
+#ifndef _CUDA_ANNOTATED_PTR
+#define _CUDA_ANNOTATED_PTR
 
 #include <cuda/std/detail/__config>
 
@@ -141,233 +142,176 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_one_of.h>
-#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/__annotated_ptr/annotated_ptr_base.h>
+#include <cuda/__memcpy_async/memcpy_async.h>
+#include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-namespace __detail_ap
-{
 
-#if _CCCL_HAS_CUDA_COMPILER()
-
-template <typename _Property>
-[[nodiscard]] _CCCL_DEVICE void* __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
+template <typename _Tp, typename _Property>
+class annotated_ptr : public ::cuda::__detail_ap::__annotated_ptr_base<_Property>
 {
-  if constexpr (_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
+public:
+  using value_type      = _Tp;
+  using size_type       = size_t;
+  using reference       = value_type&;
+  using pointer         = value_type*;
+  using const_pointer   = const value_type*;
+  using difference_type = ptrdiff_t;
+
+private:
+  // Converting from a 64-bit to 32-bit shared pointer and maybe back just for storage might or might not be profitable.
+  pointer __repr = reinterpret_cast<pointer>(size_type{0});
+
+  [[nodiscard]] _CCCL_HOST_DEVICE pointer
+  __get([[maybe_unused]] bool __skip_prop = false, difference_type __n = 0) const noexcept
   {
-    [[maybe_unused]] bool __b = __isShared(__ptr);
-    _CCCL_ASSERT(__b, "");
-    _CCCL_ASSUME(__b);
+    // clang-format off
+    NV_IF_TARGET(NV_IS_DEVICE,
+      (if (!__skip_prop)
+       {
+          auto __repr1 = const_cast<void*>(static_cast<const volatile void*>(this->__repr));
+          return static_cast<pointer>(this->__apply_prop(__repr1));
+       }))
+    // clang-format on
+    return __repr + __n;
   }
-  else if constexpr (_CUDA_VSTD::__is_one_of_v<_Property,
-                                               access_property::global,
-                                               access_property::normal,
-                                               access_property::persisting,
-                                               access_property::streaming,
-                                               access_property>)
+
+  [[nodiscard]] _CCCL_HOST_DEVICE pointer __offset(difference_type __n, bool __skip_prop = false) const noexcept
   {
-    [[maybe_unused]] bool __b = __isGlobal(__ptr);
-    _CCCL_ASSERT(__b, "");
-    _CCCL_ASSUME(__b);
+    return __get(__skip_prop, __n);
   }
-  return __ptr;
-}
 
-template <typename __Prop>
-[[nodiscard]] _CCCL_DEVICE void* __associate_descriptor(void* __ptr, __Prop __prop)
-{
-  return __associate_descriptor(__ptr, static_cast<uint64_t>(access_property{__prop}));
-}
+public:
+  [[nodiscard]] _CCCL_HOST_DEVICE pointer operator->() const noexcept
+  {
+    return __get();
+  }
 
-template <>
-[[nodiscard]] inline _CCCL_DEVICE void* __associate_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
-{
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);), (return __ptr;))
-}
+  [[nodiscard]] _CCCL_HOST_DEVICE reference operator*() const noexcept
+  {
+    _CCCL_ASSERT(__get() != nullptr, "dereference of null annotated_ptr");
+    return *__get();
+  }
 
-template <>
-[[nodiscard]] inline _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
-{
-  return __ptr;
-}
+  [[nodiscard]] _CCCL_HOST_DEVICE reference operator[](difference_type __n) const noexcept
+  {
+    _CCCL_ASSERT(__offset(__n) != nullptr, "dereference of null annotated_ptr");
+    return *__offset(__n);
+  }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr difference_type operator-(annotated_ptr __other) const noexcept
+  {
+    _CCCL_ASSERT(__repr >= __other.__repr, "underflow");
+    return __repr - __other.__repr;
+  }
 
-template <typename _Type, typename _Property>
-[[nodiscard]] _CCCL_HOST_DEVICE _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
-{
-  NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (return static_cast<_Type*>(::cuda::__detail_ap::__associate_descriptor(
-      ::cuda::__detail_ap::__associate_address_space(const_cast<void*>(static_cast<const void*>(__ptr)), __prop),
-      __prop));),
-    (return __ptr;))
-}
+  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr() noexcept                                      = default;
+  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr(annotated_ptr const&) noexcept                  = default;
+  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+
+  _CCCL_HOST_DEVICE explicit annotated_ptr(pointer __p) noexcept
+      : __repr{__p}
+  {
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (_CCCL_ASSERT((_CUDA_VSTD::is_same_v<_Property, access_property::shared> && __isShared((void*) __p))
+                                 || __isGlobal((void*) __p),
+                               "__p must be shared or global");))
+  }
+
+  template <typename _RuntimeProperty>
+  _CCCL_HOST_DEVICE annotated_ptr(pointer __p, _RuntimeProperty __prop) noexcept
+      : ::cuda::__detail_ap::__annotated_ptr_base<_Property>{static_cast<uint64_t>(access_property{__prop})}
+      , __repr{__p}
+  {
+    static_assert(_CUDA_VSTD::is_same_v<_Property, access_property>,
+                  "This method requires annotated_ptr<T, cuda::access_property>");
+    static_assert(__detail_ap::__is_global_access_property_v<_RuntimeProperty>,
+                  "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
+    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
+  }
+
+  template <class _OtherType, class _OtherProperty>
+  _CCCL_HOST_DEVICE annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
+      : ::cuda::__detail_ap::__annotated_ptr_base<_Property>(__other.__property())
+      , __repr{__other.get()}
+  {
+    using namespace _CUDA_VSTD;
+    static_assert(is_assignable_v<pointer&, _OtherType*>, "pointer must be assignable from other pointer");
+    static_assert((is_same_v<_Property, _OtherProperty>
+                     || (is_same_v<_Property, access_property> && !is_same_v<_OtherProperty, access_property::shared>),
+                   "Both properties must have same address space, or current property is access_property and "
+                   "OtherProperty is not shared"));
+    // note: precondition "__other.__rep must be compatible with _Property" currently always holds
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE constexpr explicit operator bool() const noexcept
+  {
+    return __repr != nullptr;
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE pointer get() const noexcept
+  {
+    constexpr bool __is_shared = _CUDA_VSTD::is_same_v<_Property, access_property::shared>;
+    if (__is_shared || __repr == nullptr)
+    {
+      return __repr;
+    }
+    return annotated_ptr<value_type, access_property::global>{__repr}.operator->();
+  }
+
+  [[nodiscard]] _CCCL_HOST_DEVICE _Property __property() const noexcept
+  {
+    return this->__get_property();
+  }
+};
 
 //----------------------------------------------------------------------------------------------------------------------
-// __annotated_ptr_base
+// memcpy_async
 
-template <typename _Property>
-class __annotated_ptr_base
+template <typename _Dst, typename _Src, typename _SrcProperty, typename _Shape, typename _Sync>
+_CCCL_HOST_DEVICE void
+memcpy_async(_Dst* __dst, annotated_ptr<_Src, _SrcProperty> __src, _Shape __shape, _Sync& __sync) noexcept
 {
-  using __error = typename _Property::__unknown_access_property_type;
-};
+  ::cuda::memcpy_async(__dst, __src.operator->(), __shape, __sync);
+}
 
-template <>
-class __annotated_ptr_base<access_property::shared>
+template <typename _Dst, typename _DstProperty, typename _Src, typename _SrcProperty, typename _Shape, typename _Sync>
+_CCCL_HOST_DEVICE void memcpy_async(
+  annotated_ptr<_Dst, _DstProperty> __dst,
+  annotated_ptr<_Src, _SrcProperty> __src,
+  _Shape __shape,
+  _Sync& __sync) noexcept
 {
-protected:
-  static constexpr uint64_t __prop = 0;
+  ::cuda::memcpy_async(__dst.operator->(), __src.operator->(), __shape, __sync);
+}
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                                       = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::shared) noexcept {}
-
-#if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return ::cuda::__detail_ap::__associate(__p, access_property::shared{});
-  }
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::shared __get_property() const noexcept
-  {
-    return access_property::shared{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::global>
+template <typename _Group, typename _Dst, typename _Src, typename _SrcProperty, typename _Shape, typename _Sync>
+_CCCL_HOST_DEVICE void memcpy_async(
+  const _Group& __group, _Dst* __dst, annotated_ptr<_Src, _SrcProperty> __src, _Shape __shape, _Sync& __sync) noexcept
 {
-protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_normal;
+  ::cuda::memcpy_async(__group, __dst, __src.operator->(), __shape, __sync);
+}
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                                       = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::global) noexcept {}
-
-#if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return ::cuda::__detail_ap::__associate(__p, access_property::global{});
-  }
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::global __get_property() const noexcept
-  {
-    return access_property::global{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::normal>
+template <typename _Group,
+          typename _Dst,
+          typename _DstProperty,
+          typename _Src,
+          typename _SrcProperty,
+          typename _Shape,
+          typename _Sync>
+_CCCL_HOST_DEVICE void memcpy_async(
+  const _Group& __group,
+  annotated_ptr<_Dst, _DstProperty> __dst,
+  annotated_ptr<_Src, _SrcProperty> __src,
+  _Shape __shape,
+  _Sync& __sync) noexcept
 {
-protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_normal_demote;
+  ::cuda::memcpy_async(__group, __dst.operator->(), __src.operator->(), __shape, __sync);
+}
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                                       = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::normal) noexcept {}
-
-#if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return ::cuda::__detail_ap::__associate(__p, access_property::normal{});
-  }
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::normal __get_property() const noexcept
-  {
-    return access_property::normal{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::persisting>
-{
-protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_persisting;
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::persisting) noexcept {}
-
-#if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return ::cuda::__detail_ap::__associate(__p, access_property::persisting{});
-  }
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::persisting __get_property() const noexcept
-  {
-    return access_property::persisting{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::streaming>
-{
-protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_streaming;
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::streaming) noexcept {}
-
-#if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return ::cuda::__detail_ap::__associate(__p, access_property::streaming{});
-  }
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::streaming __get_property() const noexcept
-  {
-    return access_property::streaming{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property>
-{
-protected:
-  uint64_t __prop;
-
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base() noexcept
-      : __prop{access_property{}}
-  {}
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(uint64_t __property) noexcept
-      : __prop{__property}
-  {}
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property __property) noexcept
-      : __annotated_ptr_base{static_cast<uint64_t>(__property)}
-  {}
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-
-#if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return ::cuda::__detail_ap::__associate(__p, __prop);
-  }
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-  [[nodiscard]] _CCCL_HOST_DEVICE access_property __get_property() const noexcept
-  {
-    access_property __access_prop;
-    ::memcpy(&__access_prop, &__prop, sizeof(access_property));
-    return __access_prop;
-  }
-};
-
-} // namespace __detail_ap
 _LIBCUDACXX_END_NAMESPACE_CUDA
-#endif // _CUDA_STD_DETAIL___ANNOTATED_PTR
+
+#endif // _CUDA_ANNOTATED_PTR
