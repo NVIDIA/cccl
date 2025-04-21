@@ -162,11 +162,11 @@ class __annotated_ptr_base<access_property::shared>
 protected:
   static constexpr uint64_t __prop = 0;
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                                       = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                                       = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
   _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::shared) noexcept {}
 
@@ -189,11 +189,11 @@ class __annotated_ptr_base<access_property::global>
 protected:
   static constexpr uint64_t __prop = __sm_80::__interleave_normal;
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                                       = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                                       = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
   _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::global) noexcept {}
 
@@ -216,11 +216,11 @@ class __annotated_ptr_base<access_property::normal>
 protected:
   static constexpr uint64_t __prop = __sm_80::__interleave_normal_demote;
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                                       = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                                       = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base const&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
   _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::normal) noexcept {}
 
@@ -243,11 +243,11 @@ class __annotated_ptr_base<access_property::persisting>
 protected:
   static constexpr uint64_t __prop = __sm_80::__interleave_persisting;
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base&&)                 = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(__annotated_ptr_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                              = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&)            = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&)      = default;
 
   _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::persisting) noexcept {}
 
@@ -270,11 +270,11 @@ class __annotated_ptr_base<access_property::streaming>
 protected:
   static constexpr uint64_t __prop = __sm_80::__interleave_streaming;
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base&&)                 = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(__annotated_ptr_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                              = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&)            = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&)      = default;
 
   _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::streaming) noexcept {}
 
@@ -307,10 +307,10 @@ protected:
       : __annotated_ptr_base{static_cast<uint64_t>(__property)}
   {}
 
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(const __annotated_ptr_base&&) noexcept           = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
@@ -322,7 +322,7 @@ protected:
   [[nodiscard]] _CCCL_HOST_DEVICE access_property __get_property() const noexcept
   {
     access_property __access_prop;
-    ::memcpy(&__access_prop, &__prop, sizeof(access_property));
+    ::memcpy(static_cast<void*>(&__access_prop), &__prop, sizeof(access_property));
     return __access_prop;
   }
 };

@@ -129,8 +129,8 @@
  * (v. August 20, 2021)
  */
 
-#ifndef _CUDA_ACCESS_PROPERTY
-#define _CUDA_ACCESS_PROPERTY
+#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
+#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
 
 #include <cuda/std/detail/__config>
 
@@ -189,10 +189,10 @@ public:
   _CCCL_HOST_DEVICE constexpr access_property() noexcept
       : __descriptor{__detail_ap::__sm_80::__interleave_normal}
   {}
-  _CCCL_HIDE_FROM_ABI constexpr access_property(const access_property&) noexcept  = default;
-  _CCCL_HIDE_FROM_ABI constexpr access_property(access_property&&) noexcept       = default;
+  _CCCL_HIDE_FROM_ABI access_property(const access_property&) noexcept = default;
+  //_CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
+  //_CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
 
   _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction)}
@@ -385,4 +385,4 @@ _CCCL_HOST_DEVICE void apply_access_property(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_ACCESS_PROPERTY
+#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY

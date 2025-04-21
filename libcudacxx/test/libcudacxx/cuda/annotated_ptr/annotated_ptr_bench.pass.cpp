@@ -152,6 +152,6 @@ __device__ __host__ __noinline__ void bench()
 
 int main(int argc, char** argv)
 {
-  bench();
+  NV_IF_TARGET(NV_IS_DEVICE, (bench();))
   return 0;
 }

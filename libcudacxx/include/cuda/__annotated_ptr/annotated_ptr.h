@@ -129,8 +129,8 @@
  * (v. August 20, 2021)
  */
 
-#ifndef _CUDA_ANNOTATED_PTR
-#define _CUDA_ANNOTATED_PTR
+#ifndef _CUDA___ANNOTATED_PTR_ANNOTATED_PTR
+#define _CUDA___ANNOTATED_PTR_ANNOTATED_PTR
 
 #include <cuda/std/detail/__config>
 
@@ -172,7 +172,7 @@ private:
     NV_IF_TARGET(NV_IS_DEVICE,
       (if (!__skip_prop)
        {
-          auto __repr1 = const_cast<void*>(static_cast<const volatile void*>(this->__repr));
+          auto __repr1 = const_cast<void*>(static_cast<const volatile void*>(this->__repr + __n));
           return static_cast<pointer>(this->__apply_prop(__repr1));
        }))
     // clang-format on
@@ -240,10 +240,10 @@ public:
   {
     using namespace _CUDA_VSTD;
     static_assert(is_assignable_v<pointer&, _OtherType*>, "pointer must be assignable from other pointer");
-    static_assert((is_same_v<_Property, _OtherProperty>
-                     || (is_same_v<_Property, access_property> && !is_same_v<_OtherProperty, access_property::shared>),
-                   "Both properties must have same address space, or current property is access_property and "
-                   "OtherProperty is not shared"));
+    static_assert(is_same_v<_Property, _OtherProperty>
+                    || (is_same_v<_Property, access_property> && !is_same_v<_OtherProperty, access_property::shared>),
+                  "Both properties must have same address space, or current property is access_property and "
+                  "OtherProperty is not shared");
     // note: precondition "__other.__rep must be compatible with _Property" currently always holds
   }
 
@@ -314,4 +314,4 @@ _CCCL_HOST_DEVICE void memcpy_async(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_ANNOTATED_PTR
+#endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR
