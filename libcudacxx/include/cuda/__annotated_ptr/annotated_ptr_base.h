@@ -327,7 +327,7 @@ protected:
 #else
     access_property __access_prop;
     ::memcpy(&__access_prop, &__prop, sizeof(__prop));
-    return _CUDA_VSTD::bit_cast<access_property>(__prop);
+    return __access_prop;
 #endif // defined(_CCCL_BUILTIN_BIT_CAST)
   }
 };
