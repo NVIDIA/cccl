@@ -155,16 +155,17 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   // clang-format off
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
-    (auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+    (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
+     auto __ptr1 = const_cast<void*>(__ptr);
+     if (!__isGlobal(__ptr1) || __nbytes == 0)
      {
        return;
      }
-     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
      constexpr size_t __line_size = 128;
+     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
      auto __nbytes                = static_cast<size_t>(__shape);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
-     for (size_t __i = 0; __i < __nbytes + __line_size; __i += __line_size) {
+     for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
        asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(__p + __i) :);
      }))
   // clang-format on
@@ -179,8 +180,9 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   // clang-format off
   NV_IF_TARGET(
     NV_PROVIDES_SM_80,
-    (auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+    (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
+     auto __ptr1 = const_cast<void*>(__ptr);
+     if (!__isGlobal(__ptr1) || __nbytes == 0)
      {
        return;
      }
@@ -188,7 +190,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
      auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
      auto __nbytes                = static_cast<size_t>(__shape);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
-     for (size_t __i = 0; __i < __nbytes + __line_size; __i += __line_size) {
+     for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
        asm volatile("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + __i * __line_size) :);
      }))
   // clang-format on
