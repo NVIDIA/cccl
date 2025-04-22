@@ -1,22 +1,11 @@
 .. _libcudacxx-extended-api-memory-access-properties-access-property:
 
-cuda::access_property
+``cuda::access_property``
 =========================
 
-Defined in header ``<cuda/annotated_ptr>``:
+Defined in header ``<cuda/annotated_ptr>``.
 
-.. code:: cuda
-
-   namespace cuda {
-   class access_property;
-   } // namespace cuda
-
-The class ``cuda::access_property`` is a `LiteralType <https://en.cppreference.com/w/cpp/named_req/LiteralType>`_
-that provides an opaque encoding for properties of memory operations. It is used in combination with
-:ref:`cuda::annotated_ptr <libcudacxx-extended-api-memory-access-properties-annotated-ptr>`,
-:ref:`cuda::associate_access_property <libcudacxx-extended-api-memory-access-properties-associate-access-property>` and
-:ref:`cuda::apply_access_property <libcudacxx-extended-api-memory-access-properties-apply-access-property>`
-to *request* the application of properties to memory operations.
+The class ``cuda::access_property`` is a `LiteralType <https://en.cppreference.com/w/cpp/named_req/LiteralType>`_ that provides an opaque encoding for *memory residence* control and *memory space* properties. It is used in combination with :ref:`cuda::annotated_ptr <libcudacxx-extended-api-memory-access-properties-annotated-ptr>`, :ref:`cuda::associate_access_property <libcudacxx-extended-api-memory-access-properties-associate-access-property>` and :ref:`cuda::apply_access_property <libcudacxx-extended-api-memory-access-properties-apply-access-property>` to *request* the application of properties to memory operations.
 
 .. code:: cuda
 
@@ -40,13 +29,13 @@ to *request* the application of properties to memory operations.
        };
 
        // Default constructor:
-       __host__ __device__ constexpr access_property() noexcept;
+       access_property() noexcept = default;
 
        // Copy constructor:
-       constexpr access_property(access_property const&) noexcept = default;
+       access_property(const access_property&) noexcept = default;
 
        // Copy assignment:
-       access_property& operator=(const access_property& other) noexcept = default;
+       access_property& operator=(const access_property&) noexcept = default;
 
        // Constructors from static global memory residence control properties:
        __host__ __device__ constexpr access_property(global)     noexcept;
@@ -71,65 +60,59 @@ to *request* the application of properties to memory operations.
 
    } // namespace cuda
 
-Kinds of access properties
+Kinds of Access Properties
 --------------------------
 
 Access properties are either *static* compile-time values or *dynamic* runtime values. The following properties
 of a memory access are provided:
 
--  Static memory space properties:
+*Shared Memory property*:
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-shared:
 
-   -  ``cuda::access_property::shared``: memory access to the shared memory space,
+- ``cuda::access_property::shared``: memory access to the shared memory space.
 
--  Static global memory space *and* residence control properties:
+*Static Global Memory properties*:
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-global:
 
-   -  ``cuda::access_property::global``: memory access to the global memory space without indicating an expected
-      frequency of access to that memory,
+- ``cuda::access_property::global``: memory access to the global memory space without indicating an expected    frequency of access to that memory.
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-normal:
 
-   -  ``cuda::access_property::normal``: memory access to the global memory space expecting the memory to be
-      accessed as frequent as other memory,
+- ``cuda::access_property::normal``: memory access to the global memory space expecting the memory to be accessed as frequent as other memory.
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-persisting:
 
-   -  ``cuda::access_property::persisting``: memory access to the global memory space expecting the memory to be
-      accessed more frequently than other memory; this priority is suitable for data that should remain persistent in cache,
+- ``cuda::access_property::persisting``: memory access to the global memory space expecting the memory to be accessed more frequently than other memory; this priority is suitable for data that should remain persistent in cache.
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-streaming:
 
-   -  ``cuda::access_property::streaming``: memory access to the global memory space expecting the memory to be
-      accessed infrequently; this priority is suitable for streaming data.
+- ``cuda::access_property::streaming``: memory access to the global memory space expecting the memory to be accessed infrequently; this priority is suitable for streaming data.
 
--  Dynamic global memory residence control properties:
+*Dynamic Global Memory properties*:
 
-   -  ``normal``, ``persisting``, ``streaming``: static memory residence control properties may be specified at runtime,
-   -  ``interleaved``: choose a ``probability`` of memory addresses to be accessed with one property and the remaining
-      ``1 - probability`` addresses with another,
-   -  ``range``: choose a partitioned memory range with memory accesses to the “middle” sub-partition using the
-      *primary* property, and memory accesess to the head and tail sub-partitions using the *secondary* property.
+-  ``normal``, ``persisting``, ``streaming``: static memory residence control properties may be specified at runtime.
+-  ``interleaved``: choose a ``probability`` of memory addresses to be accessed with one property and the remaining ``1 - probability`` addresses with another.
+-  ``range``: choose a partitioned memory range with memory accesses to the "middle" sub-partition using the *primary* property, and memory accesses to the head and tail sub-partitions using the *secondary* property.
 
-**Note**: the difference between ``cuda::access_property::global`` and ``cuda::access_property::normal``is subtle.
+**Note**: The difference between ``cuda::access_property::global`` and ``cuda::access_property::normal`` is subtle.
 The ``cuda::access_property::normal`` hints that the pointer points to the global address space *and* the memory will
-be accessed with “normal frequency”, while ``cuda::access_property::global`` only hints that the pointer points to
+be accessed with "normal frequency", while ``cuda::access_property::global`` only hints that the pointer points to
 the global address-space, it does not hint about how frequent the accesses will be.
 
 .. warning::
 
    The behavior of *requesting* the application of ``cuda::access_property`` to memory accesses, or their association
    with memory addresses, outside of the corresponding address space is *undefined*
-   (note: even if that address is not “used”).
+   (note: even if that address is not used). The correctness of the input pointer and memory properties are verified in debug mode.
 
 Default constructor
 -------------------
 
 .. code:: cuda
 
-   __host__ __device__ constexpr access_property() noexcept;
+   access_property() noexcept = default;
 
 **Effects**: as if ``access_property(global)``.
 
@@ -143,8 +126,7 @@ Static global memory residence control property constructors
    __host__ __device__ constexpr access_property::access_property(streaming) noexcept;
    __host__ __device__ constexpr access_property::access_property(persisting) noexcept;
 
-**Effects**: as-if ``access_property(PROPERTY, 1.0)`` where ``PROPERTY``
-is one of ``global``, ``normal``, ``streaming``, or ``persisting``.
+**Effects**: as if ``access_property(PROPERTY, 1.0)`` where ``PROPERTY`` is one of ``global``, ``normal``, ``streaming``, or ``persisting``.
 
 Dynamic interleaved global memory residence control property constructors
 -------------------------------------------------------------------------
@@ -159,11 +141,7 @@ Dynamic interleaved global memory residence control property constructors
 
 **Preconditions**: ``0 < probability <= 1.0``.
 
-**Effects**: constructs an *interleaved* access property that *requests*
-the first and third arguments - access properties - to be applied with
-``probability`` and ``1 - probability`` to memory accesses. The
-overloads without a third argument request applying ``global`` with
-``1 - probability``.
+**Effects**: constructs an *interleaved* access property that *requests* the first and third arguments - access properties - to be applied with ``probability`` and ``1 - probability`` to memory accesses. The overloads without a third argument request applying ``global`` with ``1 - probability``.
 
 Dynamic range global memory residence control property constructors
 -------------------------------------------------------------------
@@ -186,37 +164,21 @@ Dynamic range global memory residence control property constructors
    - ``ptr`` is a generic pointer that is *valid* to cast to a pointer to the global memory address space.
    - ``0 < leading_bytes <= total_bytes <= 4GB``.
 
-**Postconditions**: memory accesses requesting the application of this
-property must be in range
-``[max(0, ptr + leading_bytes - total_bytes), ptr + total_bytes)``.
+**Postconditions**: memory accesses requesting the application of this property must be in range ``[ptr, ptr + total_bytes)``.
 
-**Effects**: the fourth and fifth arguments, access properties, are
-called *primary* and *secondary* properties. The overloads without a
-fifth argument use ``global`` as the *secondary* property. Constructs a
-*range* access property *requesting* the properties to be
-**approximately** applied to memory accesses as follows:
+**Effects**: the fourth and fifth arguments, access properties, are called *primary* and *secondary* properties. The overloads without a fifth argument use ``global`` as the *secondary* property. Constructs a *range* access property *requesting* the properties to be **approximately** applied to memory accesses as follows:
 
--  secondary property to accesses in address-range:
-   ``[max(0, ptr + leading_bytes - total_bytes), ptr)``
--  primary property to accesses in address-range:
-   ``[ptr, ptr + leading_bytes)``
--  secondary property to accesses in address-range:
-   ``[ptr + leading_bytes, ptr + total_bytes)``
+-  *primary property* to accesses in address-range:   ``[ptr, ptr + leading_bytes)``
+-  *secondary property* to accesses in address-range: ``[ptr + leading_bytes, ptr + total_bytes)``
 
 **Note**: This property enables three main use cases:
 
-1. Unary range ``[ptr, ptr + total_bytes)`` with primary property by
-   using ``leading_bytes == total_bytes``.
+1. Unary range ``[ptr, ptr + total_bytes)`` with primary property by using ``leading_bytes == total_bytes``.
 
-2. Binary range ``[ptr, ptr + leading_bytes)`` and
-   ``[ptr + leading_bytes, ptr + total_bytes)`` with primary and
-   secondary properties by just not using this range to access any
-   memory in range ``[max(0, ptr + leading_bytes - total_bytes), ptr)``.
+2. Binary range ``[ptr, ptr + leading_bytes)`` and ``[ptr + leading_bytes, ptr + total_bytes)`` with primary and
+   secondary properties by just not using this range to access any memory in range ``[max(0, ptr + leading_bytes - total_bytes), ptr)``.
 
-3. Primary range with secondary “halo” ranges (see example below). Given
-   ``leading_bytes`` for the primary range, and ``halo_bytes`` for the
-   size of each of the secondary ranges by using
-   ``total_bytes == leading_bytes + halo_bytes``:
+3. Primary range with secondary "halo" ranges (see example below). Given ``leading_bytes`` for the primary range, and ``halo_bytes`` for the size of each of the secondary ranges by using ``total_bytes == leading_bytes + halo_bytes``:
 
    .. code:: cpp
 
