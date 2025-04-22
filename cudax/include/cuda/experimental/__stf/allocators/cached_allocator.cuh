@@ -246,7 +246,7 @@ public:
 
     /* Create one large block of memory */
     const char* fifo_env = getenv("CUDASTF_CACHED_FIFO");
-    size_t cnt = (fifo_env ? atol(fifo_env):50);
+    size_t cnt           = (fifo_env ? atol(fifo_env) : 50);
 
     ::std::ptrdiff_t large_sz = cnt * s;
     auto* base                = root_allocator.allocate(ctx, memory_node, large_sz, prereqs);
