@@ -644,10 +644,10 @@ public:
   // IDs of the sections in this context
   ::std::vector<int> section_id_stack;
 
+  mutable ::std::mutex mtx;
+
 private:
   mutable ::std::string ctx_symbol;
-
-  mutable ::std::mutex mtx;
 
   ::std::vector<int> vertices;
 
@@ -1392,9 +1392,9 @@ private:
   size_t edge_count;
   size_t vertex_count;
 
-private:
   mutable ::std::mutex mtx;
 
+private:
   // A vector that keeps track of all per context stored data
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 
@@ -1420,6 +1420,8 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
   auto sec = ::std::make_shared<dot_section>(mv(symbol));
   int id   = sec->get_id();
 
+  ::std::lock_guard<::std::mutex> guard(pc->mtx);
+
   // This must at least contain the section of the context
   auto& section_stack = pc->section_id_stack;
   sec->parent_id      = section_stack.back();
@@ -1436,6 +1438,8 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
 
 inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
 {
+  ::std::lock_guard<::std::mutex> guard(pc->mtx);
+
   pc->section_id_stack.pop_back();
 
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
