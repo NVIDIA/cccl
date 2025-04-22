@@ -133,6 +133,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__internal/namespaces.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -321,7 +323,13 @@ protected:
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST access_property __get_property() const noexcept
   {
+#if defined(_CCCL_BUILTIN_BIT_CAST)
     return _CUDA_VSTD::bit_cast<access_property>(__prop);
+#else
+    access_property __access_prop;
+    ::memcpy(&__access_prop, &__prop, sizeof(__prop));
+    return _CUDA_VSTD::bit_cast<access_property>(__prop);
+#endif // defined(_CCCL_BUILTIN_BIT_CAST)
   }
 };
 
