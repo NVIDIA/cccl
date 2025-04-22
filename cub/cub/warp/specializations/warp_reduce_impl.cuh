@@ -129,10 +129,10 @@ template <typename Input, typename ReductionOp, typename Config>
 warp_reduce_generic(Input input, ReductionOp reduction_op, Config config)
 {
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
-  constexpr auto is_power_of_two     = _CUDA_VSTD::has_single_bit(uint32_t{logical_size});
-  constexpr auto log2_size           = ::cuda::ilog2(logical_size * 2 - 1);
-  constexpr uint32_t logical_size1   = is_segmented ? detail::warp_threads : logical_size;
-  constexpr auto logical_size1_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size1});
+  constexpr auto is_power_of_two                      = _CUDA_VSTD::has_single_bit(uint32_t{logical_size});
+  constexpr auto log2_size                            = ::cuda::ilog2(logical_size * 2 - 1);
+  constexpr uint32_t logical_size1                    = is_segmented ? detail::warp_threads : logical_size;
+  [[maybe_unused]] constexpr auto logical_size1_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size1});
   const auto mask = cub::internal::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
