@@ -8,10 +8,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+// todo: Once we can pass additional flags to the compiler, remove the `test_constexpr` and execute the whole `test`
+// instead
+
 #include <cuda/std/__charconv_>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+#include <cuda/std/cstring>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -19,31 +23,6 @@
 
 constexpr int first_base = 2;
 constexpr int last_base  = 36;
-
-[[nodiscard]] __host__ __device__ constexpr bool str_equal(const char* str1, const char* str2, size_t max_len)
-{
-  for (size_t i = 0; i < max_len; ++i)
-  {
-    if (str1[i] != str2[i])
-    {
-      return false;
-    }
-    if (str1[i] == '\0')
-    {
-      return true;
-    }
-  }
-  return true;
-}
-
-[[nodiscard]] __host__ __device__ constexpr size_t str_len(const char* str)
-{
-  size_t i{};
-  for (; str[i]; ++i)
-  {
-  }
-  return i;
-}
 
 struct TestItem
 {
@@ -53,10 +32,10 @@ struct TestItem
 };
 
 template <int Base>
-constexpr cuda::std::array<TestItem, 0> test_items{};
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 0> test_items{};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<2>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<2>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "10"},
@@ -109,7 +88,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<2>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<3>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<3>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -154,7 +133,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<3>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<4>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<4>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -198,7 +177,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<4>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<5>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<5>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -242,7 +221,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<5>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<6>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<6>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -286,7 +265,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<6>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<7>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<7>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -330,7 +309,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<7>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<8>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<8>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -374,7 +353,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<8>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<9>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<9>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -418,7 +397,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<9>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<10>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<10>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -462,7 +441,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<10>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<11>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<11>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -506,7 +485,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<11>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<12>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<12>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -550,7 +529,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<12>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<13>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<13>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -594,7 +573,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<13>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<14>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<14>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -638,7 +617,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<14>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<15>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<15>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -682,7 +661,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<15>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<16>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<16>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -726,7 +705,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<16>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<17>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<17>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -770,7 +749,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<17>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<18>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<18>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -814,7 +793,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<18>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<19>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<19>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -858,7 +837,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<19>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<20>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<20>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -902,7 +881,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<20>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<21>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<21>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -946,7 +925,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<21>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<22>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<22>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -990,7 +969,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<22>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<23>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<23>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1034,7 +1013,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<23>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<24>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<24>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1078,7 +1057,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<24>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<25>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<25>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1122,7 +1101,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<25>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<26>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<26>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1166,7 +1145,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<26>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<27>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<27>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1210,7 +1189,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<27>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<28>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<28>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1254,7 +1233,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<28>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<29>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<29>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1298,7 +1277,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<29>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<30>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<30>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1342,7 +1321,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<30>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<31>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<31>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1386,7 +1365,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<31>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<32>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<32>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1430,7 +1409,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<32>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<33>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<33>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1474,7 +1453,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<33>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<34>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<34>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1518,7 +1497,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<34>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<35>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<35>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1562,7 +1541,7 @@ constexpr cuda::std::array<TestItem, 40> test_items<35>{{
 }};
 
 template <>
-constexpr cuda::std::array<TestItem, 40> test_items<36>{{
+_CCCL_GLOBAL_CONSTANT cuda::std::array<TestItem, 40> test_items<36>{{
   TestItem{0, "0"},
   TestItem{1, "1"},
   TestItem{2, "2"},
@@ -1623,7 +1602,7 @@ __host__ __device__ constexpr void test_to_chars(const TestItem& item)
 
   if (cuda::std::in_range<RangeT>(item.val))
   {
-    const auto ref_len = str_len(item.str_signed);
+    const auto ref_len = cuda::std::strlen(item.str_signed);
     char buff[buff_size + 1]{};
     char* buff_start = buff + 1;
 
@@ -1637,7 +1616,7 @@ __host__ __device__ constexpr void test_to_chars(const TestItem& item)
       assert(result.ptr == buff_start + ref_len);
 
       // Compare with reference string
-      assert(str_equal(buff_start, ref_str, buff_size));
+      assert(cuda::std::strncmp(buff_start, ref_str, buff_size) == 0);
 
       // Check that the operation did not underflow the buffer
       assert(buff[0] == '\0');
@@ -1662,13 +1641,6 @@ __host__ __device__ constexpr void test_to_chars(const TestItem& item)
 template <int Base>
 __host__ __device__ constexpr void test_base()
 {
-  // Test invocability with char (char values are tested during int8_t)
-  static_assert(
-    cuda::std::is_same_v<
-      cuda::std::to_chars_result,
-      decltype(cuda::std::to_chars(cuda::std::declval<char*>(), cuda::std::declval<char*>(), char{}, int{}))>);
-  static_assert(noexcept(cuda::std::to_chars(cuda::std::declval<char*>(), cuda::std::declval<char*>(), char{}, int{})));
-
   for (const auto& item : test_items<Base>)
   {
     test_to_chars<char, Base>(item);
@@ -1693,10 +1665,42 @@ __host__ __device__ constexpr void test_base()
   }
 }
 
+template <int Base>
+__host__ __device__ constexpr void test_constexpr_base()
+{
+  const auto& item = test_items<Base>[12];
+
+  test_to_chars<char, Base>(item);
+
+  test_to_chars<signed char, Base>(item);
+  test_to_chars<signed short, Base>(item);
+  test_to_chars<signed int, Base>(item);
+  test_to_chars<signed long, Base>(item);
+  test_to_chars<signed long long, Base>(item);
+#if _CCCL_HAS_INT128()
+  test_to_chars<__int128_t, Base>(item);
+#endif // _CCCL_HAS_INT128()
+
+  test_to_chars<unsigned char, Base>(item);
+  test_to_chars<unsigned short, Base>(item);
+  test_to_chars<unsigned int, Base>(item);
+  test_to_chars<unsigned long, Base>(item);
+  test_to_chars<unsigned long long, Base>(item);
+#if _CCCL_HAS_INT128()
+  test_to_chars<__uint128_t, Base>(item);
+#endif // _CCCL_HAS_INT128()
+}
+
 template <int... Base>
 __host__ __device__ constexpr void test_helper(cuda::std::integer_sequence<int, Base...>)
 {
   (test_base<Base + first_base>(), ...);
+}
+
+template <int... Base>
+__host__ __device__ constexpr void test_constexpr_helper(cuda::std::integer_sequence<int, Base...>)
+{
+  (test_constexpr_base<Base + first_base>(), ...);
 }
 
 __host__ __device__ constexpr bool test()
@@ -1706,9 +1710,16 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
+__host__ __device__ constexpr bool test_constexpr()
+{
+  test_constexpr_helper(cuda::std::make_integer_sequence<int, last_base - first_base + 1>{});
+
+  return true;
+}
+
 int main(int, char**)
 {
   test();
-  static_assert(test());
+  static_assert(test_constexpr());
   return 0;
 }
