@@ -80,11 +80,25 @@ template <typename _Tp>
 {
   // nvcc does not support __builtin_ctz, so we use it only for host code
 #  if defined(_CCCL_BUILTIN_CTZ)
-  return (sizeof(_Tp) == sizeof(uint32_t)) ? _CCCL_BUILTIN_CTZ(__v) : _CCCL_BUILTIN_CTZLL(__v);
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return _CCCL_BUILTIN_CTZ(__v);
+  }
+  else
+  {
+    return _CCCL_BUILTIN_CTZLL(__v);
+  }
 #  elif _CCCL_COMPILER(MSVC)
   unsigned long __where{};
-  const auto __res =
-    (sizeof(_Tp) == sizeof(uint32_t)) ? ::_BitScanForward(&__where, __v) : ::_BitScanForward64(&__where, __v);
+  unsigned char __res{};
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    __res = ::_BitScanForward(&__where, __v);
+  }
+  else
+  {
+    __res = ::_BitScanForward64(&__where, __v);
+  }
   return (__res) ? static_cast<int>(__where) : numeric_limits<_Tp>::digits;
 #  else
   return _CUDA_VSTD::__cccl_countr_zero_impl_constexpr(__v);
@@ -96,7 +110,14 @@ template <typename _Tp>
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_countr_zero_impl_device(_Tp __v) noexcept
 {
-  return (sizeof(_Tp) == sizeof(uint32_t)) ? ::__clz(::__brev(__v)) : ::__clzll(::__brevll(__v));
+  if constexpr (sizeof(_Tp) == sizeof(uint32_t))
+  {
+    return ::__clz(static_cast<int>(::__brev(__v)));
+  }
+  else
+  {
+    return ::__clzll(static_cast<long long>(::__brevll(__v)));
+  }
 }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
