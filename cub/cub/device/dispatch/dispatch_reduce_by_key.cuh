@@ -368,7 +368,7 @@ struct DispatchReduceByKey
         break;
       }
 
-      // Return if empty problem
+      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in init_kernel above
       if (num_items == 0)
       {
         break;

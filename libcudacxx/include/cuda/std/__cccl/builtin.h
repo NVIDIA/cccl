@@ -207,7 +207,7 @@
 #  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
 
-// NVCC cannot handle __builtin_popcountg
+// nvcc cannot handle __builtin_popcountg
 #if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_POPCOUNTG
 #endif // _CCCL_CUDA_COMPILER(NVCC)
@@ -216,6 +216,15 @@
 #  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_clz)
+
+#if _CCCL_CHECK_BUILTIN(builtin_clzg)
+#  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
+
+// nvcc cannot handle __builtin_clzg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_CLZG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_CTZ(...)   __builtin_ctz(__VA_ARGS__)
@@ -930,7 +939,7 @@
 #  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_trivial_destructor) && gcc >= 4.3
 
-#if _CCCL_CHECK_BUILTIN(has_unique_object_representations) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_CHECK_BUILTIN(has_unique_object_representations) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_unique_object_representations) && gcc >= 7.0
 

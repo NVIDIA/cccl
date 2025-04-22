@@ -55,8 +55,6 @@ using all_types =
 
 using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
-#if 0 // DeviceRunLengthEncode::Encode cannot handle empty inputs
-      // https://github.com/NVIDIA/cccl/issues/426
 C2H_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
 {
   constexpr int num_items = 0;
@@ -64,15 +62,15 @@ C2H_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_l
   c2h::device_vector<int> out_num_runs(1, 42);
 
   // Note intentionally no discard_iterator as we want to ensure nothing is written to the output arrays
-  run_length_encode(in.begin(),
-                    static_cast<int*>(nullptr),
-                    static_cast<int*>(nullptr),
-                    thrust::raw_pointer_cast(out_num_runs.data()),
-                    num_items);
+  run_length_encode(
+    in.begin(),
+    static_cast<int*>(nullptr),
+    static_cast<int*>(nullptr),
+    thrust::raw_pointer_cast(out_num_runs.data()),
+    num_items);
 
   REQUIRE(out_num_runs.front() == num_items);
 }
-#endif
 
 C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 {
