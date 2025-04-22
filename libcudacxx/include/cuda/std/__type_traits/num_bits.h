@@ -88,7 +88,6 @@ template <typename _Tp>
   else
   {
     static_assert(__always_false_v<_Tp>, "unsupported type");
-    //_CCCL_UNREACHABLE();
     return 0;
   }
 }
