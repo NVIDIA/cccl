@@ -476,6 +476,30 @@ public:
       stream);
   }
 
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Sum(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    // The output value type
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::std::plus<>, OutputT>::Dispatch(
+        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, {}, OutputT{}, stream);
+  }
+
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
   //!
@@ -597,6 +621,38 @@ public:
       ::cuda::minimum<>{},
       ::cuda::std::numeric_limits<InputT>::max(),
       stream);
+  }
+
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Min(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    // The input value type
+    using InputT = cub::detail::it_value_t<InputIteratorT>;
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, InputT>::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        segment_size,
+        ::cuda::minimum<>{},
+        ::cuda::std::numeric_limits<InputT>::max(),
+        stream);
   }
 
   //! @rst
@@ -860,6 +916,38 @@ public:
       stream);
   }
 
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  Max(void* d_temp_storage,
+      size_t& temp_storage_bytes,
+      InputIteratorT d_in,
+      OutputIteratorT d_out,
+      ::cuda::std::int64_t num_segments,
+      int segment_size,
+      cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using offset_t = int;
+
+    // The input value type
+    using InputT = cub::detail::it_value_t<InputIteratorT>;
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, InputT>::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        segment_size,
+        ::cuda::maximum<>{},
+        ::cuda::std::numeric_limits<InputT>::lowest(),
+        stream);
+  }
+
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
   //! greater-than (``>``) operator, also returning the in-segment index of that item
@@ -1010,6 +1098,57 @@ public:
       cub::ArgMax(),
       initial_value,
       stream);
+  }
+
+  template <typename InputIteratorT, typename OutputIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    OutputIteratorT d_out,
+    ::cuda::std::int64_t num_segments,
+    int segment_size,
+    cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::ArgMax");
+
+    // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
+    // integral constant or larger integral types
+    using OffsetT = int;
+
+    // The input type
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
+
+    // The output tuple type
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+
+    using AccumT = OutputTupleT;
+
+    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
+
+    // The output value type
+    using OutputValueT = typename OutputTupleT::Value;
+
+    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
+    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
+
+    ArgIndexInputIteratorT d_indexed_in(d_in);
+
+    // Initial value
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+
+    return detail::reduce::
+      DispatchFixedSizeSegmentedReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT,
+      AccumT>::
+        Dispatch(d_temp_storage,
+                 temp_storage_bytes,
+                 d_indexed_in,
+                 d_out,
+                 num_segments,
+                 segment_size,
+                 cub::ArgMax(),
+                 initial_value,
+                 stream);
   }
 };
 
