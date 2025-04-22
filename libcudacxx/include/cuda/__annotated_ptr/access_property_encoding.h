@@ -324,7 +324,7 @@ struct __block_descriptor_builder
       , __block_count{__calc_end_hit(__ptr, __hit_bytes, __total_bytes) - __calc_block_start(__ptr, __total_bytes)}
       , __l2_cop_off{__miss_prop}
       , __l2_cop_on{__hit_prop}
-      , __l2_descriptor_mode{_Desc_Esc_Block_Type}
+      , __l2_descriptor_mode{_Desc_Block_Type}
       , __l1_inv_dont_allocate{false}
       , __l2_sector_promote_256B{false}
   {}
@@ -339,7 +339,7 @@ struct __block_descriptor_builder
       __block_size,
       __l2_cop_off,
       __l2_cop_on,
-      _Desc_Esc_Block_Type,
+      _Desc_Block_Type,
       uint64_t{false},
       uint64_t{false},
       uint64_t{0}};
