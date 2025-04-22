@@ -44,6 +44,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/device/dispatch/dispatch_advance_iterators.cuh>
 #include <cub/device/dispatch/kernels/radix_sort.cuh>
 #include <cub/device/dispatch/tuning/tuning_radix_sort.cuh>
 #include <cub/util_debug.cuh>
@@ -1405,10 +1406,13 @@ struct DispatchSegmentedRadixSort
     // If d_begin_offsets and d_end_offsets do not support operator+ then we can't have more than
     // max_num_segments_per_invocation segments per invocation
     if (num_invocations > 1
-        && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
+        && !detail::all_iterators_support_add_assign_operator(::cuda::std::int64_t{}, d_begin_offsets, d_end_offsets))
     {
       return cudaErrorInvalidValue;
     }
+
+    BeginOffsetIteratorT begin_offsets_current_it = d_begin_offsets;
+    EndOffsetIteratorT end_offsets_current_it     = d_end_offsets;
 
     // Iterate over chunks of segments
     for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
@@ -1440,8 +1444,8 @@ struct DispatchSegmentedRadixSort
               d_keys_out,
               d_values_in,
               d_values_out,
-              detail::advance_iterators_if_supported(d_begin_offsets, current_segment_offset),
-              detail::advance_iterators_if_supported(d_end_offsets, current_segment_offset),
+              begin_offsets_current_it,
+              end_offsets_current_it,
               current_bit,
               pass_bits,
               decomposer);
@@ -1451,6 +1455,12 @@ struct DispatchSegmentedRadixSort
       if (cudaSuccess != error)
       {
         return error;
+      }
+
+      if (invocation_index + 1 < num_invocations)
+      {
+        detail::advance_iterators_inplace_if_supported(begin_offsets_current_it, num_current_segments);
+        detail::advance_iterators_inplace_if_supported(end_offsets_current_it, num_current_segments);
       }
 
       // Sync the stream if specified to flush runtime errors

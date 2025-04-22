@@ -129,7 +129,7 @@ struct __mu_return2
 template <class _Ti, class _Uj>
 struct __mu_return2<true, _Ti, _Uj>
 {
-  using type = __tuple_element_t<is_placeholder<_Ti>::value - 1, _Uj>;
+  using type = tuple_element_t<is_placeholder<_Ti>::value - 1, _Uj>;
 };
 
 template <class _Ti, class _Uj>
@@ -138,7 +138,7 @@ enable_if_t<0 < is_placeholder<_Ti>::value, typename __mu_return2<0 < is_placeho
 __mu(_Ti&, _Uj& __uj)
 {
   const size_t _Indx = is_placeholder<_Ti>::value - 1;
-  return _CUDA_VSTD::forward<__tuple_element_t<_Indx, _Uj>>(_CUDA_VSTD::get<_Indx>(__uj));
+  return _CUDA_VSTD::forward<tuple_element_t<_Indx, _Uj>>(_CUDA_VSTD::get<_Indx>(__uj));
 }
 
 template <class _Ti, class _Uj>
@@ -173,7 +173,7 @@ struct __mu_return_impl<_Ti, false, true, false, tuple<_Uj...>>
 template <class _Ti, class _TupleUj>
 struct __mu_return_impl<_Ti, false, false, true, _TupleUj>
 {
-  using type = __tuple_element_t<is_placeholder<_Ti>::value - 1, _TupleUj>&&;
+  using type = tuple_element_t<is_placeholder<_Ti>::value - 1, _TupleUj>&&;
 };
 
 template <class _Ti, class _TupleUj>
