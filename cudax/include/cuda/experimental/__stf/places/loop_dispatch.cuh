@@ -53,10 +53,19 @@ inline size_t customHash(size_t value)
 
 class stackable_ctx;
 
+inline bool disable_stackable()
+{
+  static const bool disabled = [] {
+    const char* env_val = ::std::getenv("DISABLE_STACKABLE");
+    return env_val && env_val[0] == '1';
+  }();
+  return disabled;
+}
+
 /* TODO : introduce a policy to decide whether or not to use threads, and the thread-index mapping (currently random) */
 template <typename context_t, typename exec_place_t, bool use_threads = true>
 inline void loop_dispatch(
-  context_t ctx,
+  context_t& ctx,
   exec_place_t root_exec_place,
   place_partition_scope scope,
   size_t start,
@@ -73,7 +82,7 @@ inline void loop_dispatch(
 
   int head = -1;
 
-  if constexpr (::std::is_same_v<context_t, stackable_ctx>)
+  if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
   {
     head = ctx.get_head_offset();
     fprintf(stderr, "LOOP DISPATCH on stackable ctx ... head %d\n", head);
@@ -87,11 +96,14 @@ inline void loop_dispatch(
   {
     // Work that should be performed by thread "tid"
     auto tid_work = [=, &ctx, &func]() {
-      if constexpr (::std::is_same_v<context_t, stackable_ctx>)
+      if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
       {
         ctx.set_head_offset(head);
-        fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d\n", head);
-        ctx.push();
+        fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d - tid %ld / nthreads %ld\n", head, tid, nthreads);
+        if (!disable_stackable())
+        {
+          ctx.push();
+        }
       }
 
       // Distribute subplaces in a round robin fashion
@@ -110,9 +122,12 @@ inline void loop_dispatch(
         }
       }
 
-      if constexpr (::std::is_same_v<context_t, stackable_ctx>)
+      if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
       {
-        ctx.pop();
+        if (!disable_stackable())
+        {
+          ctx.pop();
+        }
       }
 
       ctx.pop_affinity();
