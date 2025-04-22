@@ -1070,7 +1070,7 @@ typename uniform_int_distribution<_IntType>::result_type uniform_int_distributio
   {
     return static_cast<result_type>(_Eng(__g, _Dt)());
   }
-  size_t __w = _Dt - __cccl_clz(_Rp) - 1;
+  size_t __w = _Dt - _CUDA_VSTD::countl_zero(_Rp) - 1;
   if ((_Rp & (std::numeric_limits<_UIntType>::max() >> (_Dt - __w))) != 0)
   {
     ++__w;
