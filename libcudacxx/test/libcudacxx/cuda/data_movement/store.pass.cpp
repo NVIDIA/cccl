@@ -20,27 +20,33 @@ __device__ void update(cuda::std::array<T, N>& array)
   }
 }
 
-template <typename T, typename Eviction>
-__device__ void store_call(T& value, T* output, Eviction eviction)
+template <typename T, typename Eviction, typename AccessProperty>
+__device__ void store_call(T& value, T* output, Eviction eviction, AccessProperty property)
 {
   update(value);
-  cuda::device::store(value, output, eviction);
+  cuda::device::store(value, output, eviction, property);
   __threadfence();
   assert(*output == value);
   __threadfence();
+}
+
+template <typename T, typename Prefetch>
+__device__ void store_call(T& value, T* output, Prefetch prefetch)
+{
+  store_call(value, output, prefetch, cuda::access_property::global{});
+  store_call(value, output, prefetch, cuda::access_property::streaming{});
+  store_call(value, output, prefetch, cuda::access_property::persisting{});
 }
 
 template <typename T>
 __device__ void store_call(T& value, T* output)
 {
   store_call(value, output, cuda::device::eviction_none);
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_70,
-    (store_call(value, output, cuda::device::eviction_normal);
-     store_call(value, output, cuda::device::eviction_unchanged);
-     store_call(value, output, cuda::device::eviction_first);
-     store_call(value, output, cuda::device::eviction_last);
-     store_call(value, output, cuda::device::eviction_no_alloc);))
+  store_call(value, output, cuda::device::eviction_normal);
+  store_call(value, output, cuda::device::eviction_unchanged);
+  store_call(value, output, cuda::device::eviction_first);
+  store_call(value, output, cuda::device::eviction_last);
+  store_call(value, output, cuda::device::eviction_no_alloc);
 }
 
 __device__ uint8_t pointer[256];

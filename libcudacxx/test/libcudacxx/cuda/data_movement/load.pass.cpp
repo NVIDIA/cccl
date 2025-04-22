@@ -22,15 +22,24 @@ __device__ void update(cuda::std::array<T, N>& array)
   }
 }
 
-template <typename T, typename Access, typename Eviction, typename Prefetch>
-__device__ void load_call(T* input, T& value, Access access, Eviction eviction, Prefetch prefetch)
+template <typename T, typename Access, typename Eviction, typename Prefetch, typename AccessProperty>
+__device__ void
+load_call(T* input, T& value, Access access, Eviction eviction, Prefetch prefetch, AccessProperty property)
 {
   update(value);
   *input = value;
   __threadfence();
-  auto result = cuda::device::load(input, access, eviction, prefetch);
+  auto result = cuda::device::load(input, access, eviction, prefetch, property);
   assert(result == value);
   __threadfence();
+}
+
+template <typename T, typename Access, typename Eviction, typename Prefetch>
+__device__ void load_call(T* input, T& value, Access access, Eviction eviction, Prefetch prefetch)
+{
+  load_call(input, value, access, eviction, prefetch, cuda::access_property::global{});
+  load_call(input, value, access, eviction, prefetch, cuda::access_property::streaming{});
+  load_call(input, value, access, eviction, prefetch, cuda::access_property::persisting{});
 }
 
 template <typename T, typename Access, typename Eviction>

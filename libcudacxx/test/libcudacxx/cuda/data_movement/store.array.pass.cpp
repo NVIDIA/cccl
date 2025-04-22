@@ -37,14 +37,11 @@ template <size_t Align, typename T, size_t N>
 __device__ void store_call(cuda::std::array<T, N>& value, T* output)
 {
   store_call<Align>(value, output, cuda::device::eviction_none);
-  NV_IF_TARGET(
-    NV_PROVIDES_SM_70,
-    (store_call<Align>(value, output, cuda::device::eviction_normal);
-     store_call<Align>(value, output, cuda::device::eviction_normal);
-     store_call<Align>(value, output, cuda::device::eviction_unchanged);
-     store_call<Align>(value, output, cuda::device::eviction_first);
-     store_call<Align>(value, output, cuda::device::eviction_last);
-     store_call<Align>(value, output, cuda::device::eviction_no_alloc);))
+  store_call<Align>(value, output, cuda::device::eviction_normal);
+  store_call<Align>(value, output, cuda::device::eviction_unchanged);
+  store_call<Align>(value, output, cuda::device::eviction_first);
+  store_call<Align>(value, output, cuda::device::eviction_last);
+  store_call<Align>(value, output, cuda::device::eviction_no_alloc);
 }
 
 __device__ uint32_t pointer[256];

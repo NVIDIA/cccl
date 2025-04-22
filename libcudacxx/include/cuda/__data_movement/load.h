@@ -177,7 +177,6 @@ template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpa
   [[maybe_unused]] _CacheHint<_AccessProperty> __cache_hint) noexcept
 {
   static_assert(sizeof(_Tp) <= __max_ptx_access_size);
-  // #  if __cccl_ptx_isa >= 830
   // clang-format off
   NV_DISPATCH_TARGET(
     NV_PROVIDES_SM_70, (return _CUDA_VDEV::__load_sm70(__ptr, __memory_access, __eviction_policy);),
@@ -186,24 +185,6 @@ template <typename _Tp, _MemoryAccess _Bp, _EvictionPolicyEnum _Ep, _PrefetchSpa
                                                        __cache_hint);),
     NV_IS_DEVICE, (return *__ptr;)); // fallback
   // clang-format on
-  // #  elif __cccl_ptx_isa >= 740 // __cccl_ptx_isa >= 740 && __cccl_ptx_isa < 830
-  //   if constexpr (sizeof(_Tp) <= 8)
-  //   {
-  //     // clang-format off
-  //     NV_DISPATCH_TARGET(
-  //       NV_PROVIDES_SM_70, (return _CUDA_VDEV::__load_sm70(__ptr, __memory_access, __eviction_policy);),
-  //       NV_PROVIDES_SM_75, (return _CUDA_VDEV::__load_sm75(__ptr, __memory_access, __eviction_policy, __prefetch);),
-  //       NV_PROVIDES_SM_80, (return _CUDA_VDEV::__load_sm80(__ptr, __memory_access, __eviction_policy, __prefetch);),
-  //       NV_IS_DEVICE, (return *__ptr;)); // fallback
-  //     // clang-format on
-  //   }
-  //   else
-  //   {
-  //     return *__ptr;
-  //   }
-  // #  else // __cccl_ptx_isa < 740
-  //   return *__ptr;
-  // #  endif
   _CCCL_UNREACHABLE();
 }
 
