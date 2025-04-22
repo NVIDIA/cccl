@@ -32,7 +32,7 @@ __device__ __host__ __noinline__ void test_access_property_interleave()
   ap = cuda::access_property(cuda::access_property::streaming());
   assert(static_cast<uint64_t>(ap) == INTERLEAVE_STREAMING);
 
-  ap = cuda::access_property(cuda::access_property::normal(), 2.0f);
+  ap = cuda::access_property(cuda::access_property::normal(), 1.0f);
   assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL_DEMOTE);
 }
 
@@ -42,22 +42,11 @@ __device__ __host__ __noinline__ void test_access_property_block()
   const size_t TOTAL_BYTES                               = 0xFFFFFFFF;
   const size_t HIT_BYTES                                 = 0xFFFFFFFF;
   const size_t BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES = size_t{0x1DD00FE000000000};
-  const uint64_t INTERLEAVE_NORMAL                       = uint64_t{0x10F0000000000000};
-
+  //  const uint64_t INTERLEAVE_NORMAL                       = uint64_t{0x10F0000000000000};
+  auto ptr1 = reinterpret_cast<void*>(0xF);
   cuda::access_property ap(
-    0x0, HIT_BYTES, TOTAL_BYTES, cuda::access_property::persisting{}, cuda::access_property::streaming{});
+    ptr1, HIT_BYTES, TOTAL_BYTES, cuda::access_property::persisting{}, cuda::access_property::streaming{});
   assert(static_cast<uint64_t>(ap) == BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES);
-
-  ap = cuda::access_property(
-    0x0, 0xFFFFFFFF, 0xFFFFFFFFF, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-  assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL);
-
-  ap = cuda::access_property(
-    0x0, 0xFFFFFFFFF, 0xFFFFFFFF, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-  assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL);
-
-  ap = cuda::access_property(0x0, 0, 0, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-  assert(static_cast<uint64_t>(ap) == INTERLEAVE_NORMAL);
 
   for (size_t ptr = 1; ptr < size_t{0xFFFFFFFF}; ptr <<= 1)
   {

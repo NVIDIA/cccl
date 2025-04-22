@@ -145,6 +145,7 @@
 
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/min.h>
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
@@ -373,13 +374,13 @@ struct __interleave_descriptor_t
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __get_descriptor_cexpr() const noexcept
   {
     // clang-format off
-    return static_cast<uint64_t>(__ap_reserved) //
-         | static_cast<uint64_t>(__fraction) << 52 //
-         | static_cast<uint64_t>(__l2_cop_off) << 56 //
-         | static_cast<uint64_t>(__l2_cop_on) << 57 //
-         | static_cast<uint64_t>(__l2_descriptor_mode) << 59 //
-         | static_cast<uint64_t>(__l1_inv_dont_allocate) << 61 //
-         | static_cast<uint64_t>(__l2_sector_promote_256B) << 62 //
+    return static_cast<uint64_t>(__ap_reserved)
+         | static_cast<uint64_t>(__fraction) << 52
+         | static_cast<uint64_t>(__l2_cop_off) << 56
+         | static_cast<uint64_t>(__l2_cop_on) << 57
+         | static_cast<uint64_t>(__l2_descriptor_mode) << 59
+         | static_cast<uint64_t>(__l1_inv_dont_allocate) << 61
+         | static_cast<uint64_t>(__l2_sector_promote_256B) << 62
          | static_cast<uint64_t>(__ap_reserved2) << 63;
     // clang-format on
   }
@@ -410,35 +411,42 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __interleave(
   cudaAccessProperty __hit_prop, float __hit_ratio, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) noexcept
 {
+  _CCCL_ASSERT(__hit_ratio > 0.0f && __hit_ratio <= 1.0f, "__hit_ratio must be between 0.0f and 1.0f");
+  auto __l2_cop = __hit_prop == cudaAccessPropertyNormal
+                  ? __sm_80::__on::__l2_cop_on_t::_L2_Evict_Normal_Demote
+                  : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop);
+  auto __hit_ratio1 =
+    static_cast<uint32_t>(__hit_ratio * uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_Ampere_Max_L2_Ways});
+  auto __fraction =
+    _CUDA_VSTD::min(__hit_ratio1, uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_Ampere_Max_L2_Ways} - 1);
   return __sm_80::__interleave_descriptor_t{
-    (__hit_prop == cudaAccessPropertyNormal
-       ? __sm_80::__on::__l2_cop_on_t::_L2_Evict_Normal_Demote
-       : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop)),
-    _CUDA_VSTD::min(
-      (static_cast<uint32_t>(__hit_ratio * uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_Ampere_Max_L2_Ways})),
-      uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_Ampere_Max_L2_Ways} - 1),
-    static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
+    __l2_cop, __fraction, static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
     .__get_descriptor();
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __block(
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI uint64_t constexpr __block(
   void* __ptr,
   size_t __hit_bytes,
   size_t __total_bytes,
   cudaAccessProperty __hit_prop,
   cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) noexcept
 {
-  return (__total_bytes <= size_t{0xFFFFFFFF} && __total_bytes != 0 && __hit_bytes <= __total_bytes)
-         ? __sm_80::__block_descriptor_builder{reinterpret_cast<uintptr_t>(__ptr),
-                                               __hit_bytes,
-                                               __total_bytes,
-                                               (__hit_prop == cudaAccessPropertyNormal)
-                                                 ? __sm_80::__on::_L2_Evict_Normal_Demote
-                                                 : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop),
-                                               static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
-             .__get_block()
-             .__get_descriptor()
-         : ::cuda::__detail_ap::__sm_80::__interleave_normal;
+  _CCCL_ASSERT(__ptr != nullptr, "ptr must not be null");
+  NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal(__ptr), "ptr must be global");))
+  _CCCL_ASSERT(__hit_bytes > 0, "hit_bytes must be greater than 0");
+  _CCCL_ASSERT(__hit_bytes <= __total_bytes, "hit_bytes must be less than or equal to total_bytes");
+  _CCCL_ASSERT(__total_bytes <= size_t{0xFFFFFFFF}, "total_bytes must be less than or equal to 4GB");
+  auto __l2_cop = (__hit_prop == cudaAccessPropertyNormal)
+                  ? __sm_80::__on::_L2_Evict_Normal_Demote
+                  : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop);
+  return __sm_80::__block_descriptor_builder{
+    _CUDA_VSTD::bit_cast<uintptr_t>(__ptr),
+    __hit_bytes,
+    __total_bytes,
+    __l2_cop,
+    static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
+    .__get_block()
+    .__get_descriptor();
 }
 
 } // namespace __detail_ap
