@@ -493,7 +493,7 @@ CUresult cccl_device_merge_sort(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchMergeSort<
+    auto exec_status = cub::DispatchMergeSort<
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
@@ -517,6 +517,8 @@ CUresult cccl_device_merge_sort(
                                 {build},
                                 cub::internal::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_out_keys.value_type.size});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

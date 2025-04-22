@@ -595,7 +595,7 @@ auto policy(caching_allocator_t&)
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 auto policy(caching_allocator_t& alloc, nvbench::launch& launch)
 {
-  return thrust::cuda::par(alloc).on(static_cast<::cudaStream_t>(launch.get_stream()));
+  return thrust::cuda::par(alloc).on(launch.get_stream());
 }
 #else
 auto policy(caching_allocator_t&, nvbench::launch&)

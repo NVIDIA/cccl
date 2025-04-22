@@ -859,6 +859,8 @@ public:
   //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
   //! Furthermore the value ``126`` will be stored in ``block_aggregate`` for all threads.
   //!
+  //! \note ``initial_value`` is not applied to the block-wide aggregate.
+  //!
   //! @endrst
   //!
   //! @tparam ScanOp
@@ -872,7 +874,9 @@ public:
   //!
   //! @param[in] initial_value
   //!   @rst
-  //!   Initial value to seed the exclusive scan (and is assigned to ``output[0]`` in *thread*\ :sub:`0`)
+  //!   Initial value to seed the exclusive scan (and is assigned to ``output[0]`` in *thread*\ :sub:`0`). It is not
+  //!   taken into account for ``block_aggregate``.
+  //!
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -1117,6 +1121,8 @@ public:
   //! ``{ [INT_MIN,0,0,2], [2,4,4,6], ..., [506,508,508,510] }``.
   //! Furthermore the value ``510`` will be stored in ``block_aggregate`` for all threads.
   //!
+  //! \note ``initial_value`` is not applied to the block-wide aggregate.
+  //!
   //! @endrst
   //!
   //! @tparam ITEMS_PER_THREAD
@@ -1133,7 +1139,8 @@ public:
   //!
   //! @param[in] initial_value
   //!   @rst
-  //!   Initial value to seed the exclusive scan (and is assigned to `output[0]` in *thread*\ :sub:`0`)
+  //!   Initial value to seed the exclusive scan (and is assigned to `output[0]` in *thread*\ :sub:`0`). It is not taken
+  //!   into account for ``block_aggregate``.
   //!   @endrst
   //!
   //! @param[in] scan_op
@@ -2405,6 +2412,8 @@ public:
   //!
   //! The value ``126`` will be stored in ``block_aggregate`` for all threads.
   //!
+  //! \note ``initial_value`` is not applied to the block-wide aggregate.
+  //!
   //! @endrst
   //!
   //! @tparam ITEMS_PER_THREAD
@@ -2421,7 +2430,7 @@ public:
   //!
   //! @param[in] initial_value
   //!   Initial value to seed the inclusive scan (uniform across block). It is not taken
-  //!   into account for block_aggregate.
+  //!   into account for ``block_aggregate``.
   //!
   //! @param[in] scan_op
   //!   Binary scan functor

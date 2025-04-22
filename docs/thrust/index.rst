@@ -8,9 +8,9 @@ Thrust: The C++ Parallel Algorithms Library
    :maxdepth: 2
 
    :ref:`Overview <thrust-module>`
-   setup
    releases
    release_process
+   developer_build
    api
    ${repo_docs_api_path}/thrust_api
 
@@ -28,6 +28,17 @@ Examples
 --------
 
 Thrust is best learned through examples.
+
+-------------
+CMake Example
+-------------
+
+A complete, standalone example project showing how to write a CMake build system that uses Thrust with any supported
+device system is available in the CCCL repository `here <https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system>`__.
+
+------------------
+Thrust API Example
+------------------
 
 The following example generates random numbers serially and then transfers them
   to a parallel device where they are sorted.

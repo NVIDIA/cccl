@@ -77,6 +77,9 @@ cdef extern from "cccl/c/types.h":
         cccl_type_info value_type
         void *state
 
+    ctypedef enum cccl_sort_order_t:
+        CCCL_ASCENDING
+        CCCL_DESCENDING
 
 cdef void arg_type_check(
     str arg_name,
@@ -410,11 +413,47 @@ cdef class Enumeration_IteratorKind(IntEnumerationBase):
     def ITERATOR(self):
         return self._iterator
 
+cdef class Enumeration_SortOrder(IntEnumerationBase):
+    "Enumeration of sort orders (ascending or descending)"
+    cdef IntEnumerationMember _ascending
+    cdef IntEnumerationMember _descending
+
+    def __cinit__(self):
+        self.enum_name = "SortOrder"
+        self._ascending = self.make_ASCENDING()
+        self._descending = self.make_DESCENDING()
+
+    cdef IntEnumerationMember make_ASCENDING(self):
+        cdef str prop_name = "ASCENDING"
+        return IntEnumerationMember(
+            type(self),
+            self.enum_name,
+            prop_name,
+            cccl_sort_order_t.CCCL_ASCENDING
+        )
+
+    cdef IntEnumerationMember make_DESCENDING(self):
+        cdef str prop_name = "DESCENDING"
+        return IntEnumerationMember(
+            type(self),
+            self.enum_name,
+            prop_name,
+            cccl_sort_order_t.CCCL_DESCENDING
+        )
+
+    @property
+    def ASCENDING(self):
+        return self._ascending
+
+    @property
+    def DESCENDING(self):
+        return self._descending
+
 
 TypeEnum = Enumeration_CCCLType()
 OpKind = Enumeration_OpKind()
 IteratorKind = Enumeration_IteratorKind()
-
+SortOrder = Enumeration_SortOrder()
 
 cpdef bint is_TypeEnum(IntEnumerationMember attr):
     "Return True if attribute is a member of TypeEnum enumeration"
@@ -429,6 +468,10 @@ cpdef bint is_OpKind(IntEnumerationMember attr):
 cpdef bint is_IteratorKind(IntEnumerationMember attr):
     "Return True if attribute is a member of IteratorKind enumeration"
     return attr.parent_class is Enumeration_IteratorKind
+
+cpdef bint is_SortOrder(IntEnumerationMember attr):
+    "Return True if attribute is a member of SortOrder enumeration"
+    return attr.parent_class is Enumeration_SortOrder
 
 
 cdef void _validate_alignment(int alignment) except *:
@@ -963,7 +1006,8 @@ cdef class CommonData:
 
 cdef extern from "cccl/c/reduce.h":
     cdef struct cccl_device_reduce_build_result_t 'cccl_device_reduce_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_reduce_build(
         cccl_device_reduce_build_result_t*,
@@ -1071,6 +1115,8 @@ cdef class DeviceReduceBuildResult:
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
 
 # ------------
 #   DeviceScan
@@ -1081,7 +1127,8 @@ cdef extern from "cccl/c/scan.h":
     ctypedef bint _Bool
 
     cdef struct cccl_device_scan_build_result_t 'cccl_device_scan_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_scan_build(
         cccl_device_scan_build_result_t*,
@@ -1236,6 +1283,8 @@ cdef class DeviceScanBuildResult:
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
 
 # -----------------------
 #   DeviceSegmentedReduce
@@ -1244,7 +1293,8 @@ cdef class DeviceScanBuildResult:
 
 cdef extern from "cccl/c/segmented_reduce.h":
     cdef struct cccl_device_segmented_reduce_build_result_t 'cccl_device_segmented_reduce_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_segmented_reduce_build(
         cccl_device_segmented_reduce_build_result_t*,
@@ -1364,6 +1414,8 @@ cdef class DeviceSegmentedReduceBuildResult:
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
 # -----------------
 #   DeviceMergeSort
 # -----------------
@@ -1371,7 +1423,8 @@ cdef class DeviceSegmentedReduceBuildResult:
 
 cdef extern from "cccl/c/merge_sort.h":
     cdef struct cccl_device_merge_sort_build_result_t 'cccl_device_merge_sort_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_merge_sort_build(
         cccl_device_merge_sort_build_result_t *bld_ptr,
@@ -1484,13 +1537,20 @@ cdef class DeviceMergeSortBuildResult:
             )
         return storage_sz
 
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
+
 # -------------------
 #   DeviceUniqueByKey
 # -------------------
 
 cdef extern from "cccl/c/unique_by_key.h":
     cdef struct cccl_device_unique_by_key_build_result_t 'cccl_device_unique_by_key_build_result_t':
-        pass
+        const char* cubin
+        size_t cubin_size
+
 
     cdef CUresult cccl_device_unique_by_key_build(
         cccl_device_unique_by_key_build_result_t *build_ptr,
@@ -1604,19 +1664,162 @@ cdef class DeviceUniqueByKeyBuildResult:
                 <uint64_t>num_items,
                 c_stream
             )
+
         if status != 0:
             raise RuntimeError(
                 f"Failed executing unique_by_key, error code: {status}"
             )
         return storage_sz
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
+# -----------------
+# DeviceRadixSort
+# -----------------
+
+cdef extern from "cccl/c/radix_sort.h":
+    cdef struct cccl_device_radix_sort_build_result_t 'cccl_device_radix_sort_build_result_t':
+        const char* cubin
+        size_t cubin_size
+
+    cdef CUresult cccl_device_radix_sort_build(
+        cccl_device_radix_sort_build_result_t *build_ptr,
+        cccl_sort_order_t sort_order,
+        cccl_iterator_t d_keys_in,
+        cccl_iterator_t d_values_in,
+        cccl_op_t decomposer,
+        const char* decomposer_return_type,
+        int, int, const char *, const char *, const char *, const char *
+    ) nogil
+
+    cdef CUresult cccl_device_radix_sort(
+        cccl_device_radix_sort_build_result_t build,
+        void *d_storage_ptr,
+        size_t *d_storage_nbytes,
+        cccl_iterator_t d_keys_in,
+        cccl_iterator_t d_keys_out,
+        cccl_iterator_t d_values_in,
+        cccl_iterator_t d_values_out,
+        cccl_op_t decomposer,
+        size_t num_items,
+        int begin_bit,
+        int end_bit,
+        bint is_overwrite_okay,
+        int* selector,
+        CUstream stream
+    ) nogil
+
+    cdef CUresult cccl_device_radix_sort_cleanup(
+        cccl_device_radix_sort_build_result_t *build_ptr,
+    ) nogil
+
+
+cdef class DeviceRadixSortBuildResult:
+    cdef cccl_device_radix_sort_build_result_t build_data
+
+    def __dealloc__(DeviceRadixSortBuildResult self):
+        cdef CUresult status = -1
+        with nogil:
+            status = cccl_device_radix_sort_cleanup(&self.build_data)
+        if (status != 0):
+            print(f"Return code {status} encountered during radix_sort result cleanup")
+
+    def __cinit__(
+        DeviceRadixSortBuildResult self,
+        cccl_sort_order_t order,
+        Iterator d_keys_in,
+        Iterator d_values_in,
+        Op decomposer_op,
+        const char* decomposer_return_type,
+        CommonData common_data
+    ):
+        cdef CUresult status = -1
+        cdef int cc_major = common_data.get_cc_major()
+        cdef int cc_minor = common_data.get_cc_minor()
+        cdef const char *cub_path = common_data.cub_path_get_c_str()
+        cdef const char *thrust_path = common_data.thrust_path_get_c_str()
+        cdef const char *libcudacxx_path = common_data.libcudacxx_path_get_c_str()
+        cdef const char *ctk_path = common_data.ctk_path_get_c_str()
+
+        memset(&self.build_data, 0, sizeof(cccl_device_radix_sort_build_result_t))
+        with nogil:
+            status = cccl_device_radix_sort_build(
+                &self.build_data,
+                order,
+                d_keys_in.iter_data,
+                d_values_in.iter_data,
+                decomposer_op.op_data,
+                decomposer_return_type,
+                cc_major,
+                cc_minor,
+                cub_path,
+                thrust_path,
+                libcudacxx_path,
+                ctk_path,
+            )
+        if status != 0:
+            raise RuntimeError(
+                f"Failed building radix_sort, error code: {status}"
+            )
+
+    cpdef tuple compute(
+        DeviceRadixSortBuildResult self,
+        temp_storage_ptr,
+        temp_storage_bytes,
+        Iterator d_keys_in,
+        Iterator d_keys_out,
+        Iterator d_values_in,
+        Iterator d_values_out,
+        Op decomposer_op,
+        size_t num_items,
+        int begin_bit,
+        int end_bit,
+        bint is_overwrite_okay,
+        selector,
+        stream
+    ):
+        cdef CUresult status = -1
+        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef size_t storage_sz = <size_t>temp_storage_bytes
+        cdef int selector_int = <int>selector
+        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+
+        with nogil:
+            status = cccl_device_radix_sort(
+                self.build_data,
+                storage_ptr,
+                &storage_sz,
+                d_keys_in.iter_data,
+                d_keys_out.iter_data,
+                d_values_in.iter_data,
+                d_values_out.iter_data,
+                decomposer_op.op_data,
+                <uint64_t>num_items,
+                begin_bit,
+                end_bit,
+                is_overwrite_okay,
+                &selector_int,
+                c_stream
+            )
+
+        if status != 0:
+            raise RuntimeError(
+                f"Failed executing ascending radix_sort, error code: {status}"
+            )
+        return <object>storage_sz, <object>selector_int
+
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
 
 # --------------------------------------------
 #   DeviceUnaryTransform/DeviceBinaryTransform
 # --------------------------------------------
 cdef extern from "cccl/c/transform.h":
     cdef struct cccl_device_transform_build_result_t:
-        pass
+        const char* cubin
+        size_t cubin_size
 
     cdef CUresult cccl_device_unary_transform_build(
         cccl_device_transform_build_result_t *build_ptr,
@@ -1723,6 +1926,10 @@ cdef class DeviceUnaryTransform:
             raise RuntimeError("Failed to compute unary transform")
 
 
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]
+
+
 cdef class DeviceBinaryTransform:
     cdef cccl_device_transform_build_result_t build_data
 
@@ -1791,3 +1998,6 @@ cdef class DeviceBinaryTransform:
             )
         if (status != 0):
             raise RuntimeError("Failed to compute binary transform")
+
+    def _get_cubin(self):
+        return self.build_data.cubin[:self.build_data.cubin_size]

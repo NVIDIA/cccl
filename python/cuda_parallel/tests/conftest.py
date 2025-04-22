@@ -67,3 +67,14 @@ class Stream:
 @pytest.fixture(scope="function")
 def cuda_stream() -> Stream:
     return Stream(cp.cuda.Stream())
+
+
+@pytest.fixture(scope="function", autouse=True)
+def verify_sass(monkeypatch):
+    import cuda.parallel.experimental._cccl_interop
+
+    monkeypatch.setattr(
+        cuda.parallel.experimental._cccl_interop,
+        "_check_sass",
+        False,  # todo: change to True
+    )

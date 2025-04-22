@@ -94,11 +94,31 @@
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#elif _CCCL_CUDA_COMPILER(NVCC)
+#elif _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(NVHPC)
 #  define _CCCL_ASSUME(...) \
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
 #else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
+#endif
+
+#if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
+#  define _CCCL_PURE __nv_pure__
+#elif _CCCL_HAS_CPP_ATTRIBUTE(gnu::pure)
+#  define _CCCL_PURE [[gnu::pure]]
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_PURE __declspec(noalias)
+#else
+#  define _CCCL_PURE
+#endif
+
+#if !_CCCL_COMPILER(MSVC) // _CCCL_HAS_CPP_ATTRIBUTE(const) doesn't work with MSVC
+#  if _CCCL_HAS_CPP_ATTRIBUTE(gnu::const)
+#    define _CCCL_CONST [[gnu::const]]
+#  else
+#    define _CCCL_CONST _CCCL_PURE
+#  endif
+#else
+#  define _CCCL_CONST _CCCL_PURE
 #endif
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
