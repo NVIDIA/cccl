@@ -163,82 +163,85 @@ public:
   {};
   struct persisting
   {
-    [[nodiscard]] _CCCL_HOST_DEVICE constexpr operator cudaAccessProperty() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
     {
       return cudaAccessProperty::cudaAccessPropertyPersisting;
     }
   };
   struct streaming
   {
-    [[nodiscard]] _CCCL_HOST_DEVICE constexpr operator cudaAccessProperty() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
     {
       return cudaAccessProperty::cudaAccessPropertyStreaming;
     }
   };
   struct normal
   {
-    [[nodiscard]] _CCCL_HOST_DEVICE constexpr operator cudaAccessProperty() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
     {
       return cudaAccessProperty::cudaAccessPropertyNormal;
     }
   };
 
-  _CCCL_HOST_DEVICE constexpr access_property(global) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept
       : __descriptor{__detail_ap::__sm_80::__interleave_normal}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property() noexcept
       : __descriptor{__detail_ap::__sm_80::__interleave_normal}
   {}
-  _CCCL_HIDE_FROM_ABI access_property(const access_property&) noexcept = default;
-  //_CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI access_property(const access_property&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
-  //_CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
 
-  _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction)}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(streaming, float __fraction) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(streaming{}, __fraction)}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(persisting, float __fraction) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction)}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction, streaming{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(persisting, float __fraction, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction, streaming{})}
   {}
 
-  _CCCL_HOST_DEVICE constexpr access_property(normal) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal) noexcept
       : access_property{normal{}, 1.0f}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming) noexcept
       : access_property{streaming{}, 1.0f}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(persisting) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting) noexcept
       : access_property{persisting{}, 1.0f}
   {}
 
-  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
+    void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
+    void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, streaming{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
+    void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
     void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})}
   {}
-  _CCCL_HOST_DEVICE constexpr access_property(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
     void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr explicit operator uint64_t() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator uint64_t() const noexcept
   {
     return __descriptor;
   }
@@ -272,7 +275,8 @@ inline constexpr bool __is_global_access_property_v =
 #if _CCCL_HAS_CUDA_COMPILER()
 
 template <typename _Property>
-[[nodiscard]] _CCCL_DEVICE void* __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
+__associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 {
   if constexpr (_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
   {
@@ -289,20 +293,21 @@ template <typename _Property>
   return __ptr;
 }
 
-template <typename __Prop>
-[[nodiscard]] _CCCL_DEVICE void* __associate_descriptor(void* __ptr, __Prop __prop)
+template <typename _Prop>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, _Prop __prop)
 {
-  return __associate_descriptor(__ptr, static_cast<uint64_t>(access_property{__prop}));
+  return ::cuda::__detail_ap::__associate_descriptor(__ptr, static_cast<uint64_t>(access_property{__prop}));
 }
 
 template <>
-[[nodiscard]] inline _CCCL_DEVICE void* __associate_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
+__associate_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);), (return __ptr;))
 }
 
 template <>
-[[nodiscard]] inline _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
 {
   return __ptr;
 }
@@ -310,13 +315,13 @@ template <>
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
 template <typename _Type, typename _Property>
-[[nodiscard]] _CCCL_HOST_DEVICE _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
 {
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
-    (return static_cast<_Type*>(::cuda::__detail_ap::__associate_descriptor(
-      ::cuda::__detail_ap::__associate_address_space(const_cast<void*>(static_cast<const void*>(__ptr)), __prop),
-      __prop));),
+    (auto __void_ptr       = const_cast<void*>(static_cast<const void*>(__ptr));
+     auto __associated_ptr = ::cuda::__detail_ap::__associate_address_space(__void_ptr, __prop);
+     return static_cast<_Type*>(::cuda::__detail_ap::__associate_descriptor(__associated_ptr, __prop));),
     (return __ptr;))
 }
 
@@ -326,7 +331,7 @@ template <typename _Type, typename _Property>
 // Public access property methods
 
 template <typename _Tp, typename _Property>
-[[nodiscard]] _CCCL_HOST_DEVICE _Tp* associate_access_property(_Tp* __ptr, _Property __prop) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* associate_access_property(_Tp* __ptr, _Property __prop) noexcept
 {
   static_assert(::cuda::__detail_ap::__is_access_property_v<_Property>,
                 "property is not convertible to cuda::access_property");
@@ -334,7 +339,7 @@ template <typename _Tp, typename _Property>
 }
 
 template <class _Shape>
-_CCCL_HOST_DEVICE void apply_access_property(
+_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::persisting __prop) noexcept
@@ -359,7 +364,7 @@ _CCCL_HOST_DEVICE void apply_access_property(
 }
 
 template <class _Shape>
-_CCCL_HOST_DEVICE void apply_access_property(
+_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
   [[maybe_unused]] access_property::normal __prop) noexcept

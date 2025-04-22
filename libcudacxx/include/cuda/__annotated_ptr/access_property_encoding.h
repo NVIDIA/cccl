@@ -155,7 +155,7 @@ namespace __detail_ap
 {
 
 // TODO: replace with ceil_ilog2 when available
-_CCCL_HOST_DEVICE constexpr uint32_t __ap_ceil_log2(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __ap_ceil_log2(uint32_t __x) noexcept
 {
   return ::cuda::ilog2(__x) + static_cast<int>(!_CUDA_VSTD::has_single_bit(__x));
 }
@@ -234,27 +234,29 @@ struct __block_desc_t
   uint64_t __l2_sector_promote_256B           : 1;
   uint64_t __ap_reserved3                     : 1;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor_cexpr() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __get_descriptor_cexpr() const noexcept
   {
-    return static_cast<uint64_t>(__ap_reserved) << 0 | //
-           static_cast<uint64_t>(__block_count) << 37 | //
-           static_cast<uint64_t>(__block_start) << 44 | //
-           static_cast<uint64_t>(__ap_reserved2) << 51 | //
-           static_cast<uint64_t>(__block_size) << 52 | //
-           static_cast<uint64_t>(__l2_cop_off) << 56 | //
-           static_cast<uint64_t>(__l2_cop_on) << 57 | //
-           static_cast<uint64_t>(__l2_descriptor_mode) << 59 | //
-           static_cast<uint64_t>(__l1_inv_dont_allocate) << 61 | //
-           static_cast<uint64_t>(__l2_sector_promote_256B) << 62 | //
-           static_cast<uint64_t>(__ap_reserved3) << 63; //
+    // clang-format off
+    return static_cast<uint64_t>(__ap_reserved) << 0
+         | static_cast<uint64_t>(__block_count) << 37
+         | static_cast<uint64_t>(__block_start) << 44
+         | static_cast<uint64_t>(__ap_reserved2) << 51
+         | static_cast<uint64_t>(__block_size) << 52
+         | static_cast<uint64_t>(__l2_cop_off) << 56
+         | static_cast<uint64_t>(__l2_cop_on) << 57
+         | static_cast<uint64_t>(__l2_descriptor_mode) << 59
+         | static_cast<uint64_t>(__l1_inv_dont_allocate) << 61
+         | static_cast<uint64_t>(__l2_sector_promote_256B) << 62
+         | static_cast<uint64_t>(__ap_reserved3) << 63;
+    // clang-format on
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE uint64_t __get_descriptor_non_cexpr() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI uint64_t __get_descriptor_non_cexpr() const noexcept
   {
     return *reinterpret_cast<const uint64_t*>(this);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __get_descriptor() const noexcept
   {
     return _CUDA_VSTD::__cccl_default_is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
   }
@@ -290,18 +292,18 @@ struct __block_descriptor_builder
   bool __l1_inv_dont_allocate;
   bool __l2_sector_promote_256B;
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t __calc_offset(size_t __total_bytes) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t __calc_offset(size_t __total_bytes) noexcept
   {
     return _CUDA_VSTD::max(uint32_t{12}, ::cuda::__detail_ap::__ap_ceil_log2(static_cast<uint32_t>(__total_bytes)) - 7);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t
   __calc_block_start(uintptr_t __ptr, size_t __total_bytes) noexcept
   {
     return static_cast<uint32_t>(__ptr >> __calc_offset(static_cast<uint32_t>(__total_bytes)));
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE static constexpr uint32_t
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t
   __calc_end_hit(uintptr_t __ptr, size_t __hit_bytes, size_t __total_bytes) noexcept
   {
     return static_cast<uint32_t>(
@@ -309,7 +311,7 @@ struct __block_descriptor_builder
       >> __calc_offset(static_cast<uint32_t>(__total_bytes)));
   }
 
-  _CCCL_HOST_DEVICE constexpr __block_descriptor_builder(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __block_descriptor_builder(
     uintptr_t __ptr,
     size_t __hit_bytes,
     size_t __total_bytes,
@@ -327,7 +329,7 @@ struct __block_descriptor_builder
       , __l2_sector_promote_256B{false}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr __block_desc_t __get_block() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr __block_desc_t __get_block() const noexcept
   {
     return __block_desc_t{
       0,
@@ -356,7 +358,7 @@ struct __interleave_descriptor_t
   uint64_t __l2_sector_promote_256B           : 1;
   uint64_t __ap_reserved2                     : 1;
 
-  _CCCL_HOST_DEVICE constexpr __interleave_descriptor_t(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __interleave_descriptor_t(
     __on::__l2_cop_on_t __hit_prop, uint32_t __hit_ratio, __off::__l2_cop_off_t __miss_prop) noexcept
       : __ap_reserved{0}
       , __fraction{__hit_ratio}
@@ -368,24 +370,26 @@ struct __interleave_descriptor_t
       , __ap_reserved2{0}
   {}
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor_cexpr() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __get_descriptor_cexpr() const noexcept
   {
-    return static_cast<uint64_t>(__ap_reserved) | //
-           static_cast<uint64_t>(__fraction) << 52 | //
-           static_cast<uint64_t>(__l2_cop_off) << 56 | //
-           static_cast<uint64_t>(__l2_cop_on) << 57 | //
-           static_cast<uint64_t>(__l2_descriptor_mode) << 59 | //
-           static_cast<uint64_t>(__l1_inv_dont_allocate) << 61 | //
-           static_cast<uint64_t>(__l2_sector_promote_256B) << 62 | //
-           static_cast<uint64_t>(__ap_reserved2) << 63;
+    // clang-format off
+    return static_cast<uint64_t>(__ap_reserved) //
+         | static_cast<uint64_t>(__fraction) << 52 //
+         | static_cast<uint64_t>(__l2_cop_off) << 56 //
+         | static_cast<uint64_t>(__l2_cop_on) << 57 //
+         | static_cast<uint64_t>(__l2_descriptor_mode) << 59 //
+         | static_cast<uint64_t>(__l1_inv_dont_allocate) << 61 //
+         | static_cast<uint64_t>(__l2_sector_promote_256B) << 62 //
+         | static_cast<uint64_t>(__ap_reserved2) << 63;
+    // clang-format on
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE uint64_t __get_descriptor_non_cexpr() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI uint64_t __get_descriptor_non_cexpr() const noexcept
   {
     return *reinterpret_cast<const uint64_t*>(this);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __get_descriptor() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __get_descriptor() const noexcept
   {
     return _CUDA_VSTD::__cccl_default_is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
   }
@@ -403,7 +407,7 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
 
 } // namespace __sm_80
 
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __interleave(
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __interleave(
   cudaAccessProperty __hit_prop, float __hit_ratio, cudaAccessProperty __miss_prop = cudaAccessPropertyNormal) noexcept
 {
   return __sm_80::__interleave_descriptor_t{
@@ -417,7 +421,7 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
     .__get_descriptor();
 }
 
-[[nodiscard]] _CCCL_HOST_DEVICE constexpr uint64_t __block(
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __block(
   void* __ptr,
   size_t __hit_bytes,
   size_t __total_bytes,

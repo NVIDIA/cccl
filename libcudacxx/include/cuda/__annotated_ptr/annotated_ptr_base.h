@@ -168,16 +168,16 @@ protected:
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::shared) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(access_property::shared) noexcept {}
 
 #if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__detail_ap::__associate(__p, access_property::shared{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::shared __get_property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property::shared __get_property() const noexcept
   {
     return access_property::shared{};
   }
@@ -195,16 +195,16 @@ protected:
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::global) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(access_property::global) noexcept {}
 
 #if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__detail_ap::__associate(__p, access_property::global{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::global __get_property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property::global __get_property() const noexcept
   {
     return access_property::global{};
   }
@@ -222,16 +222,16 @@ protected:
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::normal) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(access_property::normal) noexcept {}
 
 #if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__detail_ap::__associate(__p, access_property::normal{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::normal __get_property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property::normal __get_property() const noexcept
   {
     return access_property::normal{};
   }
@@ -249,16 +249,16 @@ protected:
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&)      = default;
 
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::persisting) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(access_property::persisting) noexcept {}
 
 #if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__detail_ap::__associate(__p, access_property::persisting{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::persisting __get_property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property::persisting __get_property() const noexcept
   {
     return access_property::persisting{};
   }
@@ -276,16 +276,16 @@ protected:
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&)      = default;
 
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::streaming) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(access_property::streaming) noexcept {}
 
 #if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__detail_ap::__associate(__p, access_property::streaming{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr access_property::streaming __get_property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property::streaming __get_property() const noexcept
   {
     return access_property::streaming{};
   }
@@ -297,13 +297,13 @@ class __annotated_ptr_base<access_property>
 protected:
   uint64_t __prop;
 
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept
       : __prop{access_property{}}
   {}
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(uint64_t __property) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(uint64_t __property) noexcept
       : __prop{__property}
   {}
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property __property) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(access_property __property) noexcept
       : __annotated_ptr_base{static_cast<uint64_t>(__property)}
   {}
 
@@ -313,13 +313,13 @@ protected:
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
 
 #if _CCCL_HAS_CUDA_COMPILER()
-  [[nodiscard]] _CCCL_DEVICE void* __apply_prop(void* __p) const
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__detail_ap::__associate(__p, __prop);
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-  [[nodiscard]] _CCCL_HOST_DEVICE access_property __get_property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI access_property __get_property() const noexcept
   {
     access_property __access_prop;
     ::memcpy(static_cast<void*>(&__access_prop), &__prop, sizeof(access_property));

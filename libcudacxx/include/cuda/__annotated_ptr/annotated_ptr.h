@@ -165,7 +165,7 @@ private:
   // Converting from a 64-bit to 32-bit shared pointer and maybe back just for storage might or might not be profitable.
   pointer __repr = reinterpret_cast<pointer>(size_type{0});
 
-  [[nodiscard]] _CCCL_HOST_DEVICE pointer
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer
   __get([[maybe_unused]] bool __skip_prop = false, difference_type __n = 0) const noexcept
   {
     // clang-format off
@@ -179,30 +179,30 @@ private:
     return __repr + __n;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE pointer __offset(difference_type __n, bool __skip_prop = false) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer __offset(difference_type __n, bool __skip_prop = false) const noexcept
   {
     return __get(__skip_prop, __n);
   }
 
 public:
-  [[nodiscard]] _CCCL_HOST_DEVICE pointer operator->() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const noexcept
   {
     return __get();
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE reference operator*() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const noexcept
   {
     _CCCL_ASSERT(__get() != nullptr, "dereference of null annotated_ptr");
     return *__get();
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE reference operator[](difference_type __n) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator[](difference_type __n) const noexcept
   {
     _CCCL_ASSERT(__offset(__n) != nullptr, "dereference of null annotated_ptr");
     return *__offset(__n);
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr difference_type operator-(annotated_ptr __other) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type operator-(annotated_ptr __other) const noexcept
   {
     _CCCL_ASSERT(__repr >= __other.__repr, "underflow");
     return __repr - __other.__repr;
@@ -212,7 +212,7 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr annotated_ptr(annotated_ptr const&) noexcept                  = default;
   _CCCL_HIDE_FROM_ABI constexpr annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
 
-  _CCCL_HOST_DEVICE explicit annotated_ptr(pointer __p) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit annotated_ptr(pointer __p) noexcept
       : __repr{__p}
   {
     NV_IF_TARGET(NV_IS_DEVICE,
@@ -222,7 +222,7 @@ public:
   }
 
   template <typename _RuntimeProperty>
-  _CCCL_HOST_DEVICE annotated_ptr(pointer __p, _RuntimeProperty __prop) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(pointer __p, _RuntimeProperty __prop) noexcept
       : ::cuda::__detail_ap::__annotated_ptr_base<_Property>{static_cast<uint64_t>(access_property{__prop})}
       , __repr{__p}
   {
@@ -234,7 +234,7 @@ public:
   }
 
   template <class _OtherType, class _OtherProperty>
-  _CCCL_HOST_DEVICE annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
       : ::cuda::__detail_ap::__annotated_ptr_base<_Property>(__other.__property())
       , __repr{__other.get()}
   {
@@ -247,12 +247,12 @@ public:
     // note: precondition "__other.__rep must be compatible with _Property" currently always holds
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE constexpr explicit operator bool() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
   {
     return __repr != nullptr;
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE pointer get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer get() const noexcept
   {
     constexpr bool __is_shared = _CUDA_VSTD::is_same_v<_Property, access_property::shared>;
     if (__is_shared || __repr == nullptr)
@@ -262,7 +262,7 @@ public:
     return annotated_ptr<value_type, access_property::global>{__repr}.operator->();
   }
 
-  [[nodiscard]] _CCCL_HOST_DEVICE _Property __property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Property __property() const noexcept
   {
     return this->__get_property();
   }
@@ -272,14 +272,14 @@ public:
 // memcpy_async
 
 template <typename _Dst, typename _Src, typename _SrcProperty, typename _Shape, typename _Sync>
-_CCCL_HOST_DEVICE void
+_LIBCUDACXX_HIDE_FROM_ABI void
 memcpy_async(_Dst* __dst, annotated_ptr<_Src, _SrcProperty> __src, _Shape __shape, _Sync& __sync) noexcept
 {
   ::cuda::memcpy_async(__dst, __src.operator->(), __shape, __sync);
 }
 
 template <typename _Dst, typename _DstProperty, typename _Src, typename _SrcProperty, typename _Shape, typename _Sync>
-_CCCL_HOST_DEVICE void memcpy_async(
+_LIBCUDACXX_HIDE_FROM_ABI void memcpy_async(
   annotated_ptr<_Dst, _DstProperty> __dst,
   annotated_ptr<_Src, _SrcProperty> __src,
   _Shape __shape,
@@ -289,7 +289,7 @@ _CCCL_HOST_DEVICE void memcpy_async(
 }
 
 template <typename _Group, typename _Dst, typename _Src, typename _SrcProperty, typename _Shape, typename _Sync>
-_CCCL_HOST_DEVICE void memcpy_async(
+_LIBCUDACXX_HIDE_FROM_ABI void memcpy_async(
   const _Group& __group, _Dst* __dst, annotated_ptr<_Src, _SrcProperty> __src, _Shape __shape, _Sync& __sync) noexcept
 {
   ::cuda::memcpy_async(__group, __dst, __src.operator->(), __shape, __sync);
@@ -302,7 +302,7 @@ template <typename _Group,
           typename _SrcProperty,
           typename _Shape,
           typename _Sync>
-_CCCL_HOST_DEVICE void memcpy_async(
+_LIBCUDACXX_HIDE_FROM_ABI void memcpy_async(
   const _Group& __group,
   annotated_ptr<_Dst, _DstProperty> __dst,
   annotated_ptr<_Src, _SrcProperty> __src,
