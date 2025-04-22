@@ -31,6 +31,10 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
+#if _CCCL_COMPILER(MSVC)
+#  include <intrin.h>
+#endif // _CCCL_COMPILER(MSVC)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
