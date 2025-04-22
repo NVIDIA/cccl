@@ -9,6 +9,15 @@ from other CMake projects. Requirements:
 See the [Fixing Legacy FindThrust.cmake](#fixing-legacy-findthrustcmake)
 section for solutions that work on older Thrust versions.
 
+## Quick Start: Use CCCL Example
+
+The CCCL repository contains a [stand-alone example](https://github.com/NVIDIA/cccl/tree/main/examples/thrust_flexible_device_system) project the demonstrates how to use Thrust with any device system (CUDA, OpenMP, TBB, or CPP) from CMake using the CCCL package.
+The choice of device system is flexible and determined at configure-time via the `CCCL_THRUST_DEVICE_SYSTEM` CMake variable, which initializes the default `CCCL::Thrust` target's configuration.
+
+If the default `CCCL::Thrust` target is not desired and your project would like more control over the Thrust configuration, set the CMake variable `CCCL_ENABLE_DEFAULT_THRUST_TARGET=OFF` and use the `thrust_create_target` function manually, as described in the following document.
+
+Note that `find_package(CCCL)` internally calls `find_package(Thrust)`. These may be used interchangeably if you're only interested in the Thrust component of CCCL.
+
 ## User Guide
 
 #### Default Configuration (CUDA)

@@ -51,7 +51,7 @@ int main()
   cudax::stream stream{};
 
   // The execution policy we want to use to run all work on the same stream
-  auto policy = thrust::cuda::par_nosync.on(stream);
+  auto policy = thrust::cuda::par_nosync.on(stream.get());
 
   // An environment we use to pass all necessary information to the containers
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
