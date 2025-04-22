@@ -142,6 +142,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/__annotated_ptr/associate_access_property.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>

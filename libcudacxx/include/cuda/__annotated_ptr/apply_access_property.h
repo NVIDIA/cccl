@@ -129,8 +129,8 @@
  * (v. August 20, 2021)
  */
 
-#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
-#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
+#ifndef _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
+#define _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
 
 #include <cuda/std/detail/__config>
 
@@ -142,106 +142,58 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__annotated_ptr/access_property_encoding.h>
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/cstddef>
-#include <cuda/std/cstdint>
+#include <cuda/__annotated_ptr/access_property.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-class access_property
+template <typename _Shape>
+_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+  [[maybe_unused]] const volatile void* __ptr,
+  [[maybe_unused]] _Shape __shape,
+  [[maybe_unused]] access_property::persisting __prop) noexcept
 {
-private:
-  uint64_t __descriptor = __detail_ap::__sm_80::__interleave_normal;
+  // clang-format off
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (auto __ptr1 = const_cast<void*>(__ptr);
+     if (!__isGlobal(__ptr1))
+     {
+       return;
+     }
+     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     constexpr size_t __line_size = 128;
+     auto __nbytes                = static_cast<size_t>(__shape);
+     // Apply to all 128 bytes aligned cache lines inclusive of __p
+     for (size_t __i = 0; __i < __nbytes + __line_size; __i += __line_size) {
+       asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(__p + __i) :);
+     }))
+  // clang-format on
+}
 
-public:
-  struct shared
-  {};
-  struct global
-  {};
-  struct persisting
-  {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
-    {
-      return cudaAccessProperty::cudaAccessPropertyPersisting;
-    }
-  };
-  struct streaming
-  {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
-    {
-      return cudaAccessProperty::cudaAccessPropertyStreaming;
-    }
-  };
-  struct normal
-  {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
-    {
-      return cudaAccessProperty::cudaAccessPropertyNormal;
-    }
-  };
-
-  _CCCL_HIDE_FROM_ABI access_property() noexcept                                  = default;
-  _CCCL_HIDE_FROM_ABI access_property(const access_property&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction)}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(streaming{}, __fraction)}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction)}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction, streaming{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction, streaming{})}
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal) noexcept
-      : access_property{normal{}, 1.0f}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming) noexcept
-      : access_property{streaming{}, 1.0f}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting) noexcept
-      : access_property{persisting{}, 1.0f}
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, streaming{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})}
-  {}
-
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator uint64_t() const noexcept
-  {
-    return __descriptor;
-  }
-};
+template <typename _Shape>
+_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+  [[maybe_unused]] const volatile void* __ptr,
+  [[maybe_unused]] _Shape __shape,
+  [[maybe_unused]] access_property::normal __prop) noexcept
+{
+  // clang-format off
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (auto __ptr1 = const_cast<void*>(__ptr);
+     if (!__isGlobal(__ptr1))
+     {
+       return;
+     }
+     constexpr size_t __line_size = 128;
+     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     auto __nbytes                = static_cast<size_t>(__shape);
+     // Apply to all 128 bytes aligned cache lines inclusive of __p
+     for (size_t __i = 0; __i < __nbytes + __line_size; __i += __line_size) {
+       asm volatile("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + __i * __line_size) :);
+     }))
+  // clang-format on
+}
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
+#endif // _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY

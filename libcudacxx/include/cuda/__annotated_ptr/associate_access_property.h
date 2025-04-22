@@ -129,8 +129,8 @@
  * (v. August 20, 2021)
  */
 
-#ifndef _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
-#define _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
+#ifndef _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY
+#define _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY
 
 #include <cuda/std/detail/__config>
 
@@ -142,106 +142,103 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__annotated_ptr/access_property_encoding.h>
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/cstddef>
+#include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/std/__type_traits/is_one_of.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-class access_property
+//----------------------------------------------------------------------------------------------------------------------
+// Private access property methods
+
+namespace __detail_ap
 {
-private:
-  uint64_t __descriptor = __detail_ap::__sm_80::__interleave_normal;
 
-public:
-  struct shared
-  {};
-  struct global
-  {};
-  struct persisting
+template <typename _Property>
+inline constexpr bool __is_access_property_v =
+  _CUDA_VSTD::__is_one_of_v<_Property,
+                            access_property::shared,
+                            access_property::global,
+                            access_property::normal,
+                            access_property::persisting,
+                            access_property::streaming,
+                            access_property>;
+
+template <typename _Property>
+inline constexpr bool __is_global_access_property_v =
+  _CUDA_VSTD::__is_one_of_v<_Property,
+                            access_property::global,
+                            access_property::normal,
+                            access_property::persisting,
+                            access_property::streaming,
+                            access_property>;
+
+#if _CCCL_HAS_CUDA_COMPILER()
+
+template <typename _Property>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
+__associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
+{
+  if constexpr (_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
   {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
-    {
-      return cudaAccessProperty::cudaAccessPropertyPersisting;
-    }
-  };
-  struct streaming
-  {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
-    {
-      return cudaAccessProperty::cudaAccessPropertyStreaming;
-    }
-  };
-  struct normal
-  {
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
-    {
-      return cudaAccessProperty::cudaAccessPropertyNormal;
-    }
-  };
-
-  _CCCL_HIDE_FROM_ABI access_property() noexcept                                  = default;
-  _CCCL_HIDE_FROM_ABI access_property(const access_property&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction)}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(streaming{}, __fraction)}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction)}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction, streaming{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction, streaming{})}
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal) noexcept
-      : access_property{normal{}, 1.0f}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming) noexcept
-      : access_property{streaming{}, 1.0f}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting) noexcept
-      : access_property{persisting{}, 1.0f}
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, streaming{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
-  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})}
-  {}
-
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator uint64_t() const noexcept
-  {
-    return __descriptor;
+    [[maybe_unused]] bool __b = __isShared(__ptr);
+    _CCCL_ASSERT(__b, "");
+    _CCCL_ASSUME(__b);
   }
-};
+  else if constexpr (__is_global_access_property_v<_Property>)
+  {
+    [[maybe_unused]] bool __b = __isGlobal(__ptr);
+    _CCCL_ASSERT(__b, "");
+    _CCCL_ASSUME(__b);
+  }
+  return __ptr;
+}
+
+template <typename _Prop>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, _Prop __prop)
+{
+  return ::cuda::__detail_ap::__associate_descriptor(__ptr, static_cast<uint64_t>(access_property{__prop}));
+}
+
+template <>
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
+{
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);), (return __ptr;))
+}
+
+template <>
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
+{
+  return __ptr;
+}
+
+#endif // _CCCL_HAS_CUDA_COMPILER()
+
+template <typename _Type, typename _Property>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE,
+    (auto __void_ptr       = const_cast<void*>(static_cast<const void*>(__ptr));
+     auto __associated_ptr = ::cuda::__detail_ap::__associate_address_space(__void_ptr, __prop);
+     return static_cast<_Type*>(::cuda::__detail_ap::__associate_descriptor(__associated_ptr, __prop));),
+    (return __ptr;))
+}
+
+} // namespace __detail_ap
+
+//----------------------------------------------------------------------------------------------------------------------
+// Public access property methods
+
+template <typename _Tp, typename _Property>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* associate_access_property(_Tp* __ptr, _Property __prop) noexcept
+{
+  static_assert(::cuda::__detail_ap::__is_access_property_v<_Property>,
+                "property is not convertible to cuda::access_property");
+  return ::cuda::__detail_ap::__associate(__ptr, __prop);
+}
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY
+#endif // _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY
