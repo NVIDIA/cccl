@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__type_traits/num_bits.h>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
