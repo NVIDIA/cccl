@@ -3,9 +3,13 @@
 add_custom_target(libcudacxx.test.public_headers_host_only)
 
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-  find_package(NVHPC)
+  # Use the path to the nvc++ binary to find the right NVHPCConfig.cmake file
+  cmake_path(GET CMAKE_CXX_COMPILER PARENT_PATH _nvhpc_bin_path)
+  file(REAL_PATH "${_nvhpc_bin_path}/../../cmake" _nvhpc_bin_path)
+  list(APPEND CMAKE_PREFIX_PATH "${_nvhpc_bin_path}")
+  find_package(NVHPC REQUIRED)
 else()
-  find_package(CUDAToolkit)
+  find_package(CUDAToolkit REQUIRED)
 endif()
 
 # Grep all public headers
