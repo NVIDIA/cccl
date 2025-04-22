@@ -122,7 +122,7 @@ static_assert(CUB_MAX_DEVICES > 0, "CUB_MAX_DEVICES must be greater than 0.");
 #    define CUB_PTX_PREFER_CONFLICT_OVER_PADDING CUB_PREFER_CONFLICT_OVER_PADDING(0)
 #  endif
 
-namespace internal
+namespace detail
 {
 
 inline constexpr int max_devices       = CUB_MAX_DEVICES;
@@ -145,7 +145,7 @@ struct RegBoundScaling
     (::cuda::std::max)(1, Nominal4ByteItemsPerThread * 4 / (::cuda::std::max)(4, int{sizeof(T)}));
   static constexpr int BLOCK_THREADS = (::cuda::std::min)(
     Nominal4ByteBlockThreads,
-    ::cuda::ceil_div(int{internal::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
 template <int Nominal4ByteBlockThreads, int Nominal4ByteItemsPerThread, typename T>
@@ -155,10 +155,10 @@ struct MemBoundScaling
     1, (::cuda::std::min)(Nominal4ByteItemsPerThread * 4 / int{sizeof(T)}, Nominal4ByteItemsPerThread * 2));
   static constexpr int BLOCK_THREADS = (::cuda::std::min)(
     Nominal4ByteBlockThreads,
-    ::cuda::ceil_div(int{internal::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
+    ::cuda::ceil_div(int{detail::max_smem_per_block} / (int{sizeof(T)} * ITEMS_PER_THREAD), 32) * 32);
 };
 
-} // namespace internal
+} // namespace detail
 #endif // Do not document
 
 CUB_NAMESPACE_END

@@ -53,7 +53,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairsDescending, sort_pairs_des
 using custom_value_t = c2h::custom_type_t<c2h::equal_comparable_t>;
 using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, custom_value_t>;
 
-// cub::internal::ChooseOffsetsT only selected 32/64 bit unsigned types:
+// cub::detail::ChooseOffsetsT only selected 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
 C2H_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", value_types, num_items_types)

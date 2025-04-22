@@ -492,11 +492,11 @@ try
   auto expected_third_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 2});
 
   // Prepare tabulate output iterators to verify results in a memory-efficient way
-  auto check_first_partition_helper  = internal::large_problem_test_helper(expected_first);
+  auto check_first_partition_helper  = detail::large_problem_test_helper(expected_first);
   auto check_first_it                = check_first_partition_helper.get_flagging_output_iterator(expected_first_it);
-  auto check_second_partition_helper = internal::large_problem_test_helper(expected_second);
+  auto check_second_partition_helper = detail::large_problem_test_helper(expected_second);
   auto check_second_it               = check_second_partition_helper.get_flagging_output_iterator(expected_second_it);
-  auto check_third_partition_helper  = internal::large_problem_test_helper(expected_third);
+  auto check_third_partition_helper  = detail::large_problem_test_helper(expected_third);
   auto check_third_it                = check_third_partition_helper.get_flagging_output_iterator(expected_third_it);
 
   // Needs to be device accessible

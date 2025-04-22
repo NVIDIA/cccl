@@ -256,13 +256,13 @@ OutputIt THRUST_FUNCTION cub_transform_many(
 
   constexpr auto stable_address =
     (::cuda::proclaims_copyable_arguments<TransformOp>::value)
-      ? cub::internal::transform::requires_stable_address::no
-      : cub::internal::transform::requires_stable_address::yes;
+      ? cub::detail::transform::requires_stable_address::no
+      : cub::detail::transform::requires_stable_address::yes;
 
   cudaError_t status;
   THRUST_INDEX_TYPE_DISPATCH(
     status,
-    (cub::internal::transform::
+    (cub::detail::transform::
        dispatch_t<stable_address, decltype(num_items_fixed), ::cuda::std::tuple<InputIts...>, OutputIt, TransformOp>::
          dispatch),
     num_items,

@@ -37,7 +37,7 @@
 struct device_reduce_policy;
 using TransformOpT = ::cuda::std::identity;
 using OffsetT      = unsigned long long;
-static_assert(std::is_same_v<cub::internal::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
 namespace reduce
 {
@@ -99,7 +99,7 @@ reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
   auto four_bytes_per_thread = items_per_thread * 4 / accumulator_type.size;
   items_per_thread = _CUDA_VSTD::clamp<decltype(items_per_thread)>(four_bytes_per_thread, 1, items_per_thread * 2);
 
-  auto work_per_sm    = cub::internal::max_smem_per_block / (accumulator_type.size * items_per_thread);
+  auto work_per_sm    = cub::detail::max_smem_per_block / (accumulator_type.size * items_per_thread);
   auto max_block_size = cuda::round_up(work_per_sm, 32);
   block_size          = _CUDA_VSTD::min<decltype(block_size)>(block_size, max_block_size);
 
@@ -140,7 +140,7 @@ std::string get_single_tile_kernel_name(
   }
 
   return std::format(
-    "cub::internal::reduce::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
+    "cub::detail::reduce::DeviceReduceSingleTileKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}>",
     chained_policy_t,
     input_iterator_t,
     output_iterator_t,
@@ -163,7 +163,7 @@ std::string get_device_reduce_kernel_name(
   check(nvrtcGetTypeName<cuda::std::__identity>(&transform_op_t));
 
   return std::format(
-    "cub::internal::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    "cub::detail::reduce::DeviceReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t,
     input_iterator_t,
     offset_t,
@@ -397,7 +397,7 @@ CUresult cccl_device_reduce(
         stream,
         {},
         {build},
-        cub::internal::CudaDriverLauncherFactory{cu_device, build.cc},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {reduce::get_accumulator_type(op, d_in, init)});
 
     error = static_cast<CUresult>(exec_status);

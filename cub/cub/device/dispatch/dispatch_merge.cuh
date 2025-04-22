@@ -25,7 +25,7 @@
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
-namespace internal::merge
+namespace detail::merge
 {
 inline constexpr int fallback_BLOCK_THREADS    = 64;
 inline constexpr int fallback_ITEMS_PER_THREAD = 1;
@@ -164,7 +164,7 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicyHub = internal::merge::policy_hub<it_value_t<KeyIt1>, it_value_t<ValueIt1>>>
+          typename PolicyHub = detail::merge::policy_hub<it_value_t<KeyIt1>, it_value_t<ValueIt1>>>
 struct dispatch_t
 {
   void* d_temp_storage;
@@ -196,7 +196,7 @@ struct dispatch_t
       const size_t virtual_shared_memory_size = num_tiles * vsmem_helper_impl<agent_t>::vsmem_per_block;
       const size_t allocation_sizes[2]        = {merge_partitions_size, virtual_shared_memory_size};
       const auto error =
-        CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+        CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         return error;
@@ -301,5 +301,5 @@ struct dispatch_t
     return cudaSuccess;
   }
 };
-} // namespace internal::merge
+} // namespace detail::merge
 CUB_NAMESPACE_END

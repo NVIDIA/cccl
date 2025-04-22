@@ -65,7 +65,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal::select
+namespace detail::select
 {
 // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
 using per_partition_offset_t = ::cuda::std::int32_t;
@@ -376,7 +376,7 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
-} // namespace internal::select
+} // namespace detail::select
 
 /******************************************************************************
  * Dispatch
@@ -420,12 +420,12 @@ template <
   typename EqualityOpT,
   typename OffsetT,
   SelectImpl SelectionOpt,
-  typename PolicyHub = internal::select::policy_hub<
-    internal::it_value_t<InputIteratorT>,
-    internal::it_value_t<FlagsInputIteratorT>,
+  typename PolicyHub = detail::select::policy_hub<
+    detail::it_value_t<InputIteratorT>,
+    detail::it_value_t<FlagsInputIteratorT>,
     // if/flagged/unique only have a single code path for different offset types, partition has different code paths
-    ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, internal::select::per_partition_offset_t>,
-    internal::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+    ::cuda::std::conditional_t<SelectionOpt == SelectImpl::Partition, OffsetT, detail::select::per_partition_offset_t>,
+    detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
     SelectionOpt>>
 struct DispatchSelectIf
 {
@@ -434,7 +434,7 @@ struct DispatchSelectIf
    ******************************************************************************/
 
   // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
-  using per_partition_offset_t = internal::select::per_partition_offset_t;
+  using per_partition_offset_t = detail::select::per_partition_offset_t;
 
   // Offset type large enough to represent any index within the input and output iterators
   using num_total_items_t = OffsetT;
@@ -448,7 +448,7 @@ struct DispatchSelectIf
     (static_cast<::cuda::std::uint64_t>(partition_size)
      < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
 
-  using streaming_context_t = internal::select::streaming_context_t<num_total_items_t, may_require_streaming>;
+  using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, may_require_streaming>;
 
   using ScanTileStateT = ScanTileState<per_partition_offset_t>;
 
@@ -560,9 +560,9 @@ struct DispatchSelectIf
   {
     using Policy = typename ActivePolicyT::SelectIfPolicyT;
 
-    using VsmemHelperT = cub::internal::vsmem_helper_default_fallback_policy_t<
+    using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
       Policy,
-      internal::select::agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
+      detail::select::agent_select_if_wrapper_t<SelectionOpt>::template agent_t,
       InputIteratorT,
       FlagsInputIteratorT,
       SelectedOutputIteratorT,
@@ -620,7 +620,7 @@ struct DispatchSelectIf
       // Compute allocation pointers into the single storage blob (or compute the necessary size of the blob)
       void* allocations[3] = {};
 
-      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -676,7 +676,7 @@ struct DispatchSelectIf
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(internal::DebugSyncStream(stream));
+        error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           return error;
@@ -725,7 +725,7 @@ struct DispatchSelectIf
                 static_cast<per_partition_offset_t>(current_num_items),
                 current_num_tiles,
                 streaming_context,
-                cub::internal::vsmem_t{allocations[1]});
+                cub::detail::vsmem_t{allocations[1]});
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -735,7 +735,7 @@ struct DispatchSelectIf
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(internal::DebugSyncStream(stream));
+        error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           return error;
@@ -753,8 +753,8 @@ struct DispatchSelectIf
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      internal::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
-      internal::select::DeviceSelectSweepKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
+      detail::select::DeviceSelectSweepKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
         FlagsInputIteratorT,

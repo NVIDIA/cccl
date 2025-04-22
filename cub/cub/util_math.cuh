@@ -49,7 +49,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 
 template <typename T>
@@ -72,7 +72,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
   return lhs + capped_operand_rhs;
 }
 
-} // namespace internal
+} // namespace detail
 
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)
 {

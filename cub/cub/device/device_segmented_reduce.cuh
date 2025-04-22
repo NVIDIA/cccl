@@ -253,7 +253,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Reduce");
 
     // Integer type for global offsets
-    using OffsetT               = internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OffsetT               = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -356,7 +356,7 @@ public:
     // integral constant or larger integral types
     using offset_t = int;
 
-    return internal::reduce::
+    return detail::reduce::
       DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ReductionOpT, T>::Dispatch(
         d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, reduction_op, initial_value, stream);
   }
@@ -452,10 +452,10 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Sum");
 
     // Integer type for global offsets
-    using OffsetT = internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The output value type
-    using OutputT = cub::internal::non_void_value_t<OutputIteratorT, cub::internal::it_value_t<InputIteratorT>>;
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -575,10 +575,10 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Min");
 
     // Integer type for global offsets
-    using OffsetT = internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input value type
-    using InputT                = cub::internal::it_value_t<InputIteratorT>;
+    using InputT                = cub::detail::it_value_t<InputIteratorT>;
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -704,20 +704,20 @@ public:
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
-    using OffsetT = int; // internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
-    using InputValueT = cub::internal::it_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::internal::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     // The output value type
     using OutputValueT = typename OutputTupleT::Value;
 
     using AccumT = OutputTupleT;
 
-    using InitT = internal::reduce::empty_problem_init_t<AccumT>;
+    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
@@ -841,10 +841,10 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSegmentedReduce::Max");
 
     // Integer type for global offsets
-    using OffsetT = internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OffsetT = detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input value type
-    using InputT = cub::internal::it_value_t<InputIteratorT>;
+    using InputT = cub::detail::it_value_t<InputIteratorT>;
 
     using integral_offset_check = ::cuda::std::is_integral<OffsetT>;
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
@@ -968,17 +968,17 @@ public:
     // Integer type for global offsets
     // Using common iterator value type is a breaking change, see:
     // https://github.com/NVIDIA/cccl/pull/414#discussion_r1330632615
-    using OffsetT = int; // internal::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
+    using OffsetT = int; // detail::common_iterator_value_t<BeginOffsetIteratorT, EndOffsetIteratorT>;
 
     // The input type
-    using InputValueT = cub::internal::it_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::internal::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     using AccumT = OutputTupleT;
 
-    using InitT = internal::reduce::empty_problem_init_t<AccumT>;
+    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
 
     // The output value type
     using OutputValueT = typename OutputTupleT::Value;

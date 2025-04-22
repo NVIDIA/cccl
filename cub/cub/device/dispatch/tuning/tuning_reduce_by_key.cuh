@@ -50,7 +50,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace reduce_by_key
 {
@@ -91,13 +91,13 @@ enum class accum_size
 template <class T>
 constexpr primitive_key is_primitive_key()
 {
-  return internal::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
+  return detail::is_primitive<T>::value ? primitive_key::yes : primitive_key::no;
 }
 
 template <class T>
 constexpr primitive_accum is_primitive_accum()
 {
-  return internal::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
+  return detail::is_primitive<T>::value ? primitive_accum::yes : primitive_accum::no;
 }
 
 template <class ReductionOpT>
@@ -146,7 +146,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<975>;
+  using delay_constructor                            = detail::no_delay_constructor_t<975>;
 };
 
 template <class KeyT, class AccumT>
@@ -155,7 +155,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 224;
   static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<840>;
+  using delay_constructor                            = detail::no_delay_constructor_t<840>;
 };
 
 template <class KeyT, class AccumT>
@@ -164,7 +164,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<760>;
+  using delay_constructor                            = detail::no_delay_constructor_t<760>;
 };
 
 template <class KeyT, class AccumT>
@@ -173,7 +173,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 224;
   static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1070>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1070>;
 };
 
 template <class KeyT, class AccumT>
@@ -182,7 +182,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1175>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1175>;
 };
 
 // 16-bit key
@@ -192,7 +192,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<620>;
+  using delay_constructor                            = detail::no_delay_constructor_t<620>;
 };
 
 template <class KeyT, class AccumT>
@@ -201,7 +201,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 224;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<640>;
+  using delay_constructor                            = detail::no_delay_constructor_t<640>;
 };
 
 template <class KeyT, class AccumT>
@@ -210,7 +210,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<905>;
+  using delay_constructor                            = detail::no_delay_constructor_t<905>;
 };
 
 template <class KeyT, class AccumT>
@@ -219,7 +219,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 224;
   static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<810>;
+  using delay_constructor                            = detail::no_delay_constructor_t<810>;
 };
 
 template <class KeyT, class AccumT>
@@ -228,7 +228,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 160;
   static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1115>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1115>;
 };
 
 // 32-bit key
@@ -238,7 +238,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 288;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1110>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1110>;
 };
 
 template <class KeyT, class AccumT>
@@ -247,7 +247,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 192;
   static constexpr int items                         = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1200>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1200>;
 };
 
 template <class KeyT, class AccumT>
@@ -256,7 +256,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1110>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1110>;
 };
 
 template <class KeyT, class AccumT>
@@ -265,7 +265,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 224;
   static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1165>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1165>;
 };
 
 template <class KeyT, class AccumT>
@@ -274,7 +274,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 160;
   static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1100>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1100>;
 };
 
 // 64-bit key
@@ -284,7 +284,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 192;
   static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1175>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1175>;
 };
 
 template <class KeyT, class AccumT>
@@ -293,7 +293,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 224;
   static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1075>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1075>;
 };
 
 template <class KeyT, class AccumT>
@@ -302,7 +302,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 384;
   static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1040>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1040>;
 };
 
 template <class KeyT, class AccumT>
@@ -311,7 +311,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1080>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1080>;
 };
 
 template <class KeyT, class AccumT>
@@ -320,7 +320,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<430>;
+  using delay_constructor                            = detail::no_delay_constructor_t<430>;
 };
 
 // 128-bit key
@@ -330,7 +330,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 192;
   static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1105>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1105>;
 };
 
 template <class KeyT, class AccumT>
@@ -339,7 +339,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 192;
   static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<755>;
+  using delay_constructor                            = detail::no_delay_constructor_t<755>;
 };
 
 template <class KeyT, class AccumT>
@@ -348,7 +348,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 192;
   static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<535>;
+  using delay_constructor                            = detail::no_delay_constructor_t<535>;
 };
 
 template <class KeyT, class AccumT>
@@ -357,7 +357,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 192;
   static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1035>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1035>;
 };
 
 template <class KeyT, class AccumT>
@@ -366,7 +366,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1090>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1090>;
 };
 
 template <class KeyT,
@@ -385,7 +385,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<720>;
+  using delay_constructor                            = detail::no_delay_constructor_t<720>;
 };
 
 template <class KeyT, class AccumT>
@@ -394,7 +394,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 320;
   static constexpr int items                         = 23;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<865>;
+  using delay_constructor                            = detail::no_delay_constructor_t<865>;
 };
 
 template <class KeyT, class AccumT>
@@ -403,7 +403,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 192;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<735>;
+  using delay_constructor                            = detail::no_delay_constructor_t<735>;
 };
 
 template <class KeyT, class AccumT>
@@ -412,7 +412,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<580>;
+  using delay_constructor                            = detail::no_delay_constructor_t<580>;
 };
 
 template <class KeyT, class AccumT>
@@ -421,7 +421,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1100>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1100>;
 };
 
 // 16-bit key
@@ -431,7 +431,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 23;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<985>;
+  using delay_constructor                            = detail::no_delay_constructor_t<985>;
 };
 
 template <class KeyT, class AccumT>
@@ -440,7 +440,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<276, 650>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<276, 650>;
 };
 
 template <class KeyT, class AccumT>
@@ -449,7 +449,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<240, 765>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<240, 765>;
 };
 
 template <class KeyT, class AccumT>
@@ -458,7 +458,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 19;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1190>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1190>;
 };
 
 template <class KeyT, class AccumT>
@@ -467,7 +467,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1175>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1175>;
 };
 
 // 32-bit key
@@ -477,7 +477,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<404, 645>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<404, 645>;
 };
 
 template <class KeyT, class AccumT>
@@ -486,7 +486,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1160>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1160>;
 };
 
 template <class KeyT, class AccumT>
@@ -495,7 +495,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1170>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1170>;
 };
 
 template <class KeyT, class AccumT>
@@ -504,7 +504,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1055>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1055>;
 };
 
 template <class KeyT, class AccumT>
@@ -513,7 +513,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1195>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1195>;
 };
 
 // 64-bit key
@@ -523,7 +523,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1170>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1170>;
 };
 
 template <class KeyT, class AccumT>
@@ -532,7 +532,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 256;
   static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<236, 1030>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<236, 1030>;
 };
 
 template <class KeyT, class AccumT>
@@ -541,7 +541,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<152, 560>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<152, 560>;
 };
 
 template <class KeyT, class AccumT>
@@ -550,7 +550,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 23;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1030>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1030>;
 };
 
 template <class KeyT, class AccumT>
@@ -559,7 +559,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primitiv
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1125>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1125>;
 };
 
 // 128-bit key
@@ -569,7 +569,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1080>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1080>;
 };
 
 template <class KeyT, class AccumT>
@@ -578,7 +578,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<320, 1005>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<320, 1005>;
 };
 
 template <class KeyT, class AccumT>
@@ -587,7 +587,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<232, 1100>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<232, 1100>;
 };
 
 template <class KeyT, class AccumT>
@@ -596,7 +596,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1195>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1195>;
 };
 
 template <class KeyT, class AccumT>
@@ -605,7 +605,7 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr int threads                       = 128;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1150>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1150>;
 };
 
 template <class KeyT,
@@ -670,7 +670,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 // static constexpr int threads                       = 128;
 // static constexpr int items                         = 11;
 // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-// using delay_constructor                            = internal::no_delay_constructor_t<1100>;
+// using delay_constructor                            = detail::no_delay_constructor_t<1100>;
 // };
 
 // 16-bit key
@@ -681,7 +681,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
   static constexpr int items                         = 14;
   static constexpr int threads                       = 128;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::exponential_backoff_constructor_t<164, 290>;
+  using delay_constructor                            = detail::exponential_backoff_constructor_t<164, 290>;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
 };
 
@@ -731,7 +731,7 @@ struct sm100_tuning<KeyT, float, primitive_op::yes, primitive_key::yes, primitiv
 // static constexpr int threads                       = 128;
 // static constexpr int items                         = 11;
 // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-// using delay_constructor                            = internal::no_delay_constructor_t<1100>;
+// using delay_constructor                            = detail::no_delay_constructor_t<1100>;
 // };
 
 // 32-bit key
@@ -788,7 +788,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 // static constexpr int threads                       = 128;
 // static constexpr int items                         = 11;
 // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-// using delay_constructor                            = internal::no_delay_constructor_t<1100>;
+// using delay_constructor                            = detail::no_delay_constructor_t<1100>;
 // };
 
 // 64-bit key
@@ -844,7 +844,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 //   static constexpr int threads                       = 128;
 //   static constexpr int items                         = 11;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-//   using delay_constructor                            = internal::no_delay_constructor_t<1125>;
+//   using delay_constructor                            = detail::no_delay_constructor_t<1125>;
 // };
 
 // todo(gonidelis): Add tunings for 128-bit key.
@@ -856,7 +856,7 @@ struct sm100_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::yes, primiti
 //   static constexpr int threads                       = 128;
 //   static constexpr int items                         = 11;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-//   using delay_constructor                            = internal::no_delay_constructor_t<1125>;
+//   using delay_constructor                            = detail::no_delay_constructor_t<1125>;
 // };
 
 template <class ReductionOpT, class AccumT, class KeyT>
@@ -940,6 +940,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace reduce_by_key
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

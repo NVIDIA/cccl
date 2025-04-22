@@ -49,7 +49,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal::select
+namespace detail::select
 {
 
 enum class may_alias
@@ -103,7 +103,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 992;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<395>;
+  using delay_constructor                            = detail::no_delay_constructor_t<395>;
 };
 
 template <class Input>
@@ -112,7 +112,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 576;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<870>;
+  using delay_constructor                            = detail::no_delay_constructor_t<870>;
 };
 
 template <class Input>
@@ -121,7 +121,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 256;
   static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1130>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1130>;
 };
 
 template <class Input>
@@ -130,7 +130,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 192;
   static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<832, 1165>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<832, 1165>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -140,7 +140,7 @@ struct sm80_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, p
   static constexpr int threads                       = 384;
   static constexpr int items                         = 4;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1140>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1140>;
 };
 
 template <>
@@ -156,7 +156,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 224;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<735>;
+  using delay_constructor                            = detail::no_delay_constructor_t<735>;
 };
 
 template <class Input>
@@ -165,7 +165,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 256;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1155>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1155>;
 };
 
 template <class Input>
@@ -174,7 +174,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 320;
   static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<124, 1115>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<124, 1115>;
 };
 
 template <class Input>
@@ -183,7 +183,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 384;
   static constexpr int items                         = 6;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1130>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1130>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -193,7 +193,7 @@ struct sm80_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, 
   static constexpr int threads                       = 256;
   static constexpr int items                         = 5;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<464, 1025>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<464, 1025>;
 };
 
 template <>
@@ -209,7 +209,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 512;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<510>;
+  using delay_constructor                            = detail::no_delay_constructor_t<510>;
 };
 
 template <class Input>
@@ -218,7 +218,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 224;
   static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1045>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1045>;
 };
 
 template <class Input>
@@ -227,7 +227,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 192;
   static constexpr int items                         = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<1040>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1040>;
 };
 
 template <class Input>
@@ -236,7 +236,7 @@ struct sm80_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 192;
   static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<68, 1160>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<68, 1160>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -246,7 +246,7 @@ struct sm80_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, 
   static constexpr int threads                       = 256;
   static constexpr int items                         = 5;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<400, 1090>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<400, 1090>;
 };
 
 template <>
@@ -262,7 +262,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 512;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<595>;
+  using delay_constructor                            = detail::no_delay_constructor_t<595>;
 };
 
 template <class Input>
@@ -271,7 +271,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 224;
   static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::no_delay_constructor_t<1105>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1105>;
 };
 
 template <class Input>
@@ -280,7 +280,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 192;
   static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<912, 1025>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<912, 1025>;
 };
 
 template <class Input>
@@ -289,7 +289,7 @@ struct sm80_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 192;
   static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<884, 1130>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<884, 1130>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -299,7 +299,7 @@ struct sm80_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4,
   static constexpr int threads                       = 256;
   static constexpr int items                         = 5;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<400, 1090>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<400, 1090>;
 };
 
 template <>
@@ -318,7 +318,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 256;
   static constexpr int items                         = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<580>;
+  using delay_constructor                            = detail::no_delay_constructor_t<580>;
 };
 
 template <class Input>
@@ -327,7 +327,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 256;
   static constexpr int items                         = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<320, 605>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<320, 605>;
 };
 
 template <class Input>
@@ -336,7 +336,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 384;
   static constexpr int items                         = 17;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<76, 1150>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<76, 1150>;
 };
 
 template <class Input>
@@ -345,7 +345,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primit
   static constexpr int threads                       = 384;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<380, 1140>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<380, 1140>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -355,7 +355,7 @@ struct sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, p
   static constexpr int threads                       = 512;
   static constexpr int items                         = 5;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<460, 1145>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<460, 1145>;
 };
 
 template <>
@@ -371,7 +371,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 448;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::no_delay_constructor_t<715>;
+  using delay_constructor                            = detail::no_delay_constructor_t<715>;
 };
 
 template <class Input>
@@ -380,7 +380,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 448;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<504, 765>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<504, 765>;
 };
 
 template <class Input>
@@ -389,7 +389,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 384;
   static constexpr int items                         = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<415, 1125>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<415, 1125>;
 };
 
 template <class Input>
@@ -398,7 +398,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primi
   static constexpr int threads                       = 384;
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<360, 1170>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<360, 1170>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -408,7 +408,7 @@ struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, 
   static constexpr int threads                       = 512;
   static constexpr int items                         = 3;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<284, 1130>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<284, 1130>;
 };
 
 template <>
@@ -424,7 +424,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 384;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<908, 995>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<908, 995>;
 };
 
 template <class Input>
@@ -433,7 +433,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 320;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<500, 560>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<500, 560>;
 };
 
 template <class Input>
@@ -442,7 +442,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 256;
   static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<536, 1055>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<536, 1055>;
 };
 
 template <class Input>
@@ -451,7 +451,7 @@ struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primi
   static constexpr int threads                       = 128;
   static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<512, 1075>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<512, 1075>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -461,7 +461,7 @@ struct sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, 
   static constexpr int threads                       = 192;
   static constexpr int items                         = 5;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<1616, 1115>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<1616, 1115>;
 };
 
 template <>
@@ -477,7 +477,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 256;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<580, 850>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<580, 850>;
 };
 
 template <class Input>
@@ -486,7 +486,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 512;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<388, 1055>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<388, 1055>;
 };
 
 template <class Input>
@@ -495,7 +495,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 256;
   static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<72, 1165>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<72, 1165>;
 };
 
 template <class Input>
@@ -504,7 +504,7 @@ struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, prim
   static constexpr int threads                       = 224;
   static constexpr int items                         = 6;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<532, 1180>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<532, 1180>;
 };
 
 #if _CCCL_HAS_INT128()
@@ -514,7 +514,7 @@ struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4,
   static constexpr int threads                       = 160;
   static constexpr int items                         = 5;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = internal::fixed_delay_constructor_t<720, 1105>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<720, 1105>;
 };
 
 template <>
@@ -549,7 +549,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = internal::exponential_backoff_constructor_t<0, 915>;
+  using delay_constructor                            = detail::exponential_backoff_constructor_t<0, 915>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -567,7 +567,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = internal::exponential_backon_jitter_constructor_t<596, 295>;
+  using delay_constructor                            = detail::exponential_backon_jitter_constructor_t<596, 295>;
 };
 
 // todo(gonidelis): for large input size select.unique regresses a lot and select.if regresses a bit.
@@ -587,7 +587,7 @@ struct sm100_tuning<Input,
 //   static constexpr int nominal_4b_items              = 20;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 //   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-//   using delay_constructor                            = internal::exponential_backon_constructor_t<516, 685>;
+//   using delay_constructor                            = detail::exponential_backon_constructor_t<516, 685>;
 // };
 
 // template <class Input, distinct_partitions DistinctPartitions>
@@ -605,7 +605,7 @@ struct sm100_tuning<Input,
 //   static constexpr int nominal_4b_items              = 20;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 //   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-//   using delay_constructor = internal::exponential_backon_jitter_window_constructor_t<1060, 375>;
+//   using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1060, 375>;
 // };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -623,7 +623,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor = internal::exponential_backon_jitter_window_constructor_t<1508, 585>;
+  using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1508, 585>;
 };
 
 // todo(gonidelis): for large input size select.unique regresses a lot and select.if regresses a bit.
@@ -643,7 +643,7 @@ struct sm100_tuning<Input,
 //   static constexpr int nominal_4b_items              = 19;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 //   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-//   using delay_constructor                            = internal::exponential_backon_constructor_t<928, 770>;
+//   using delay_constructor                            = detail::exponential_backon_constructor_t<928, 770>;
 // };
 
 // template <class Input, may_alias MayAlias, distinct_partitions DistinctPartitions>
@@ -662,7 +662,7 @@ struct sm100_tuning<Input,
 //   static constexpr int nominal_4b_items              = 23;
 //   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
 //   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-//   using delay_constructor                            = internal::exponential_backon_constructor_t<1140, 520>;
+//   using delay_constructor                            = detail::exponential_backon_constructor_t<1140, 520>;
 // };
 
 // TODO(gonidelis): Tune for I128.
@@ -675,7 +675,7 @@ struct sm100_tuning<Input,
 
 // // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-// // using delay_constructor = internal::fixed_delay_constructor_t<460, 1145>;
+// // using delay_constructor = detail::fixed_delay_constructor_t<460, 1145>;
 // };
 
 // template <>
@@ -686,7 +686,7 @@ struct sm100_tuning<Input,
 
 // // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-// // using delay_constructor = internal::fixed_delay_constructor_t<460, 1145>;
+// // using delay_constructor = detail::fixed_delay_constructor_t<460, 1145>;
 // };
 #endif
 
@@ -706,7 +706,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = internal::exponential_backon_constructor_t<84, 480>;
+  using delay_constructor                            = detail::exponential_backon_constructor_t<84, 480>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -724,7 +724,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = internal::exponential_backon_jitter_constructor_t<360, 380>;
+  using delay_constructor                            = detail::exponential_backon_jitter_constructor_t<360, 380>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -742,7 +742,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor = internal::exponential_backon_jitter_window_constructor_t<1292, 750>;
+  using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1292, 750>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -760,7 +760,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = internal::exponential_backoff_constructor_t<136, 760>;
+  using delay_constructor                            = detail::exponential_backoff_constructor_t<136, 760>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -778,7 +778,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = internal::exponential_backon_jitter_constructor_t<844, 675>;
+  using delay_constructor                            = detail::exponential_backon_jitter_constructor_t<844, 675>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -796,7 +796,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
-  using delay_constructor                            = internal::exponential_backon_constructor_t<524, 635>;
+  using delay_constructor                            = detail::exponential_backon_constructor_t<524, 635>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -814,7 +814,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
   static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  using delay_constructor                            = internal::exponential_backon_constructor_t<660, 1030>;
+  using delay_constructor                            = detail::exponential_backon_constructor_t<660, 1030>;
 };
 
 template <class Input, distinct_partitions DistinctPartitions>
@@ -832,7 +832,7 @@ struct sm100_tuning<Input,
   static constexpr int nominal_4b_items              = 21;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr CacheLoadModifier load_modifier   = LOAD_CA;
-  using delay_constructor = internal::exponential_backon_jitter_window_constructor_t<1316, 990>;
+  using delay_constructor = detail::exponential_backon_jitter_window_constructor_t<1316, 990>;
 };
 
 // TODO(gonidelis): Tune for I128.
@@ -845,7 +845,7 @@ struct sm100_tuning<Input,
 
 // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-// using delay_constructor = internal::fixed_delay_constructor_t<284, 1130>;
+// using delay_constructor = detail::fixed_delay_constructor_t<284, 1130>;
 // };
 
 // template <>
@@ -856,7 +856,7 @@ struct sm100_tuning<Input,
 
 // static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
 
-// using delay_constructor = internal::fixed_delay_constructor_t<284, 1130>;
+// using delay_constructor = detail::fixed_delay_constructor_t<284, 1130>;
 // };
 #endif
 
@@ -1445,7 +1445,7 @@ struct sm100_tuning<Input,
 template <class InputT>
 constexpr primitive is_primitive()
 {
-  return internal::is_primitive_v<InputT> ? primitive::yes : primitive::no;
+  return detail::is_primitive_v<InputT> ? primitive::yes : primitive::no;
 }
 
 template <class FlagT>
@@ -1508,7 +1508,7 @@ struct policy_hub
                           BLOCK_LOAD_DIRECT,
                           LoadModifier,
                           BLOCK_SCAN_WARP_SCANS,
-                          internal::fixed_delay_constructor_t<350, 450>>;
+                          detail::fixed_delay_constructor_t<350, 450>>;
   };
 
   struct Policy500
@@ -1582,6 +1582,6 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
-} // namespace internal::select
+} // namespace detail::select
 
 CUB_NAMESPACE_END

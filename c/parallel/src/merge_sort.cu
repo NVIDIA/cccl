@@ -27,7 +27,7 @@
 struct op_wrapper;
 struct device_merge_sort_policy;
 using OffsetT = unsigned long long;
-static_assert(std::is_same_v<cub::internal::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
 struct input_keys_iterator_state_t;
 struct input_items_iterator_state_t;
@@ -162,7 +162,7 @@ std::string get_merge_sort_kernel_name(
       : cccl_type_enum_to_name<items_storage_t>(output_items_it.value_type.type);
 
   return std::format(
-    "cub::internal::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, device_merge_sort_vsmem_helper>",
+    "cub::detail::merge_sort::{0}<{1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, device_merge_sort_vsmem_helper>",
     kernel_name,
     chained_policy_t,
     input_keys_iterator_t,
@@ -188,7 +188,7 @@ std::string get_partition_kernel_name(cccl_iterator_t output_keys_it)
   std::string key_t = cccl_type_enum_to_name(output_keys_it.value_type.type);
 
   return std::format(
-    "cub::internal::merge_sort::DeviceMergeSortPartitionKernel<{0}, {1}, {2}, {3}>",
+    "cub::detail::merge_sort::DeviceMergeSortPartitionKernel<{0}, {1}, {2}, {3}>",
     output_keys_iterator_t,
     offset_t,
     compare_op_t,
@@ -355,14 +355,14 @@ struct device_merge_sort_vsmem_helper {{
   template<typename ActivePolicyT, typename KeyInputIteratorT, typename ValueInputIteratorT, typename... Ts>
   struct MergeSortVSMemHelperT {{
     using policy_t = agent_policy_t;
-    using block_sort_agent_t = cub::internal::merge_sort::AgentBlockSort<agent_policy_t, KeyInputIteratorT, ValueInputIteratorT, Ts...>;
-    using merge_agent_t = cub::internal::merge_sort::AgentMerge<agent_policy_t, Ts...>;
+    using block_sort_agent_t = cub::detail::merge_sort::AgentBlockSort<agent_policy_t, KeyInputIteratorT, ValueInputIteratorT, Ts...>;
+    using merge_agent_t = cub::detail::merge_sort::AgentMerge<agent_policy_t, Ts...>;
   }};
   template <typename AgentT>
   struct VSmemHelperT {{
     using static_temp_storage_t = typename AgentT::TempStorage;
     static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
-      static_temp_storage_t& static_temp_storage, cub::internal::vsmem_t& vsmem)
+      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem)
     {{
         return static_temp_storage;
     }}
@@ -502,7 +502,7 @@ CUresult cccl_device_merge_sort(
       indirect_arg_t,
       merge_sort::dynamic_merge_sort_policy_t<&merge_sort::get_policy>,
       merge_sort::merge_sort_kernel_source,
-      cub::internal::CudaDriverLauncherFactory,
+      cub::detail::CudaDriverLauncherFactory,
       merge_sort::dynamic_vsmem_helper_t,
       indirect_arg_t,
       indirect_arg_t>::Dispatch(d_temp_storage,
@@ -515,7 +515,7 @@ CUresult cccl_device_merge_sort(
                                 op,
                                 stream,
                                 {build},
-                                cub::internal::CudaDriverLauncherFactory{cu_device, build.cc},
+                                cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_out_keys.value_type.size});
 
     error = static_cast<CUresult>(exec_status);

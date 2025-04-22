@@ -85,7 +85,7 @@ void fixed_size_segmented_reduce(nvbench::state& state, nvbench::type_list<T>)
   using output_it_t = T*;
   using init_t      = T;
 
-  using dispatch_t = cub::internal::reduce::DispatchFixedSizeSegmentedReduce<
+  using dispatch_t = cub::detail::reduce::DispatchFixedSizeSegmentedReduce<
     input_it_t,
     output_it_t,
     int,

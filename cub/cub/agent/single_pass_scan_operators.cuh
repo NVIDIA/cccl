@@ -133,7 +133,7 @@ enum class MemoryOrder
   acquire_release
 };
 
-namespace internal
+namespace detail
 {
 template <int Delay, unsigned int GridThreshold = 500>
 _CCCL_DEVICE _CCCL_FORCEINLINE void delay()
@@ -529,7 +529,7 @@ struct tile_state_with_memory_order
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = internal::default_no_delay_t>
+  template <class DelayT = detail::default_no_delay_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
   {
     tile_state.template WaitForValid<DelayT, Order>(tile_idx, status, value, delay);
@@ -586,12 +586,12 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t tile_state_init(
   return AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
 }
 
-} // namespace internal
+} // namespace detail
 
 /**
  * Tile status interface.
  */
-template <typename T, bool SINGLE_WORD = internal::is_primitive<T>::value>
+template <typename T, bool SINGLE_WORD = detail::is_primitive<T>::value>
 struct ScanTileState;
 
 /**
@@ -623,7 +623,7 @@ struct ScanTileState<T, true>
   // Constants
   enum
   {
-    TILE_STATUS_PADDING = internal::warp_threads,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Device storage
@@ -671,7 +671,7 @@ struct ScanTileState<T, true>
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
     temp_storage_bytes =
-      internal::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
+      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
     return cudaSuccess;
   }
 
@@ -705,21 +705,21 @@ private:
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
-    internal::store_relaxed(ptr, alias);
+    detail::store_relaxed(ptr, alias);
   }
 
   template <MemoryOrder Order>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::acquire_release), void>
   StoreStatus(TxnWord* ptr, TxnWord alias)
   {
-    internal::store_release(ptr, alias);
+    detail::store_release(ptr, alias);
   }
 
   template <MemoryOrder Order>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(Order == MemoryOrder::relaxed), TxnWord>
   LoadStatus(TxnWord* ptr)
   {
-    return internal::load_relaxed(ptr);
+    return detail::load_relaxed(ptr);
   }
 
   template <MemoryOrder Order>
@@ -727,7 +727,7 @@ private:
   LoadStatus(TxnWord* ptr)
   {
     // For pre-volta we hoist the memory barrier to outside the loop, i.e., after reading a valid state
-    NV_IF_TARGET(NV_PROVIDES_SM_70, (return internal::load_acquire(ptr);), (return internal::load_relaxed(ptr);));
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (return detail::load_acquire(ptr);), (return detail::load_relaxed(ptr);));
   }
 
   template <MemoryOrder Order>
@@ -772,7 +772,7 @@ public:
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = internal::default_delay_t<T>, MemoryOrder Order = MemoryOrder::relaxed>
+  template <class DelayT = detail::default_delay_t<T>, MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay_or_prevent_hoisting = {})
   {
@@ -824,7 +824,7 @@ struct ScanTileState<T, false>
   // Constants
   enum
   {
-    TILE_STATUS_PADDING = internal::warp_threads,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Device storage
@@ -863,7 +863,7 @@ struct ScanTileState<T, false>
     do
     {
       void* allocations[3] = {};
-      error                = internal::tile_state_init(
+      error                = detail::tile_state_init(
         description_bytes_per_tile, payload_bytes_per_tile, num_tiles, d_temp_storage, temp_storage_bytes, allocations);
       if (cudaSuccess != error)
       {
@@ -891,7 +891,7 @@ struct ScanTileState<T, false>
   AllocationSize(int num_tiles, size_t& temp_storage_bytes)
   {
     temp_storage_bytes =
-      internal::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
+      detail::tile_state_allocation_size(description_bytes_per_tile, payload_bytes_per_tile, num_tiles);
     return cudaSuccess;
   }
   /**
@@ -921,7 +921,7 @@ struct ScanTileState<T, false>
   {
     // Update tile inclusive value
     ThreadStore<STORE_CG>(d_tile_inclusive + TILE_STATUS_PADDING + tile_idx, tile_inclusive);
-    internal::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
+    detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_INCLUSIVE));
   }
 
   /**
@@ -932,19 +932,19 @@ struct ScanTileState<T, false>
   {
     // Update tile partial value
     ThreadStore<STORE_CG>(d_tile_partial + TILE_STATUS_PADDING + tile_idx, tile_partial);
-    internal::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
+    detail::store_release(d_tile_status + TILE_STATUS_PADDING + tile_idx, StatusWord(SCAN_TILE_PARTIAL));
   }
 
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = internal::default_no_delay_t, MemoryOrder Order = MemoryOrder::relaxed>
+  template <class DelayT = detail::default_no_delay_t, MemoryOrder Order = MemoryOrder::relaxed>
   _CCCL_DEVICE _CCCL_FORCEINLINE void WaitForValid(int tile_idx, StatusWord& status, T& value, DelayT delay = {})
   {
     do
     {
       delay();
-      status = internal::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
+      status = detail::load_relaxed(d_tile_status + TILE_STATUS_PADDING + tile_idx);
       __threadfence();
     } while (__any_sync(0xffffffff, (status == SCAN_TILE_INVALID)));
 
@@ -978,7 +978,7 @@ struct ScanTileState<T, false>
  */
 template <typename ValueT,
           typename KeyT,
-          bool SINGLE_WORD = internal::is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16)>
+          bool SINGLE_WORD = detail::is_primitive<ValueT>::value && (sizeof(ValueT) + sizeof(KeyT) < 16)>
 struct ReduceByKeyScanTileState;
 
 /**
@@ -1012,7 +1012,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TXN_WORD_SIZE    = 1 << Log2<PAIR_SIZE + 1>::VALUE,
     STATUS_WORD_SIZE = TXN_WORD_SIZE - PAIR_SIZE,
 
-    TILE_STATUS_PADDING = internal::warp_threads,
+    TILE_STATUS_PADDING = detail::warp_threads,
   };
 
   // Status word type
@@ -1127,7 +1127,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    internal::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void SetPartial(int tile_idx, KeyValuePairT tile_partial)
@@ -1140,13 +1140,13 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     TxnWord alias;
     *reinterpret_cast<TileDescriptor*>(&alias) = tile_descriptor;
 
-    internal::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
+    detail::store_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx, alias);
   }
 
   /**
    * Wait for the corresponding tile to become non-invalid
    */
-  template <class DelayT = internal::fixed_delay_constructor_t<350, 450>::delay_t>
+  template <class DelayT = detail::fixed_delay_constructor_t<350, 450>::delay_t>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WaitForValid(int tile_idx, StatusWord& status, KeyValuePairT& value, DelayT delay_or_prevent_hoisting = {})
   {
@@ -1170,7 +1170,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
     do
     {
       delay_or_prevent_hoisting();
-      TxnWord alias   = internal::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
+      TxnWord alias   = detail::load_relaxed(d_tile_descriptors + TILE_STATUS_PADDING + tile_idx);
       tile_descriptor = reinterpret_cast<TileDescriptor&>(alias);
 
     } while (__any_sync(0xffffffff, (tile_descriptor.status == SCAN_TILE_INVALID)));
@@ -1198,7 +1198,7 @@ struct ReduceByKeyScanTileState<ValueT, KeyT, true>
 template <typename T,
           typename ScanOpT,
           typename ScanTileStateT,
-          typename DelayConstructorT = internal::default_delay_constructor_t<T>>
+          typename DelayConstructorT = detail::default_delay_constructor_t<T>>
 struct TilePrefixCallbackOp
 {
   // Parameterized warp reduce
@@ -1257,7 +1257,7 @@ struct TilePrefixCallbackOp
    * @param[out] window_aggregate
    *   Relevant partial reduction from this window of preceding tiles
    */
-  template <class DelayT = internal::default_delay_t<T>>
+  template <class DelayT = detail::default_delay_t<T>>
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   ProcessWindow(int predecessor_idx, StatusWord& predecessor_status, T& window_aggregate, DelayT delay = {})
   {
@@ -1278,7 +1278,7 @@ struct TilePrefixCallbackOp
     // Update our status with our tile-aggregate
     if (threadIdx.x == 0)
     {
-      internal::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
+      detail::uninitialized_copy_single(&temp_storage.block_aggregate, block_aggregate);
 
       tile_status.SetPartial(tile_idx, block_aggregate);
     }
@@ -1297,7 +1297,7 @@ struct TilePrefixCallbackOp
     // Keep sliding the window back until we come across a tile whose inclusive prefix is known
     while (__all_sync(0xffffffff, (predecessor_status != StatusWord(SCAN_TILE_INCLUSIVE))))
     {
-      predecessor_idx -= internal::warp_threads;
+      predecessor_idx -= detail::warp_threads;
 
       // Update exclusive tile prefix with the window prefix
       ProcessWindow(predecessor_idx, predecessor_status, window_aggregate, construct_delay());
@@ -1310,9 +1310,9 @@ struct TilePrefixCallbackOp
       inclusive_prefix = scan_op(exclusive_prefix, block_aggregate);
       tile_status.SetInclusive(tile_idx, inclusive_prefix);
 
-      internal::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.exclusive_prefix, exclusive_prefix);
 
-      internal::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
+      detail::uninitialized_copy_single(&temp_storage.inclusive_prefix, inclusive_prefix);
     }
 
     // Return exclusive_prefix

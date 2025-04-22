@@ -62,7 +62,7 @@ CCCL_DEPRECATED _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void MergePathSearch(
   OffsetT diagonal, AIteratorT a, BIteratorT b, OffsetT a_len, OffsetT b_len, CoordinateT& path_coordinate)
 {
   /// The value type of the input iterator
-  using T = cub::internal::it_value_t<AIteratorT>;
+  using T = cub::detail::it_value_t<AIteratorT>;
 
   OffsetT split_min = _CUDA_VSTD::max(diagonal - b_len, 0);
   OffsetT split_max = _CUDA_VSTD::min(diagonal, a_len);

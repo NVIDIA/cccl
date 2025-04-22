@@ -51,7 +51,7 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 /**
  * @brief WarpReduceSmem provides smem-based variants of parallel reduction of items partitioned
@@ -400,6 +400,6 @@ struct WarpReduceSmem
     return SegmentedReduce<HEAD_SEGMENTED>(input, flag, reduction_op, ::cuda::std::true_type());
   }
 };
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

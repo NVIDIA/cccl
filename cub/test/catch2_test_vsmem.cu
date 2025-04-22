@@ -87,7 +87,7 @@ struct agent_dummy_algorithm_t
   static constexpr auto items_per_thread = ActivePolicyT::ITEMS_PER_THREAD;
   static constexpr auto tile_size        = block_threads * items_per_thread;
 
-  using item_t = cub::internal::it_value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   using block_load_t = cub::BlockLoad<item_t, block_threads, items_per_thread, cub::BLOCK_LOAD_TRANSPOSE>;
 
@@ -134,7 +134,7 @@ struct agent_dummy_algorithm_t
 //----------------------------------------------------------------------------
 template <typename ChainedPolicyT, typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
 void __global__ __launch_bounds__(
-  cub::internal::vsmem_helper_fallback_policy_t<
+  cub::detail::vsmem_helper_fallback_policy_t<
     typename ChainedPolicyT::ActivePolicy::DummyAlgorithmPolicy,
     typename ChainedPolicyT::ActivePolicy::FallbackDummyAlgorithmPolicy,
     agent_dummy_algorithm_t,
@@ -146,14 +146,14 @@ void __global__ __launch_bounds__(
     OutputIteratorT d_out,
     OffsetT num_items,
     kernel_test_info_t* kernel_test_info,
-    cub::internal::vsmem_t vsmem)
+    cub::detail::vsmem_t vsmem)
 {
   using active_policy_t   = typename ChainedPolicyT::ActivePolicy;
   using default_policy_t  = typename active_policy_t::DummyAlgorithmPolicy;
   using fallback_policy_t = typename active_policy_t::FallbackDummyAlgorithmPolicy;
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, InputIteratorT, OutputIteratorT, OffsetT>;
 
-  using vsmem_helper_t = cub::internal::vsmem_helper_fallback_policy_t<
+  using vsmem_helper_t = cub::detail::vsmem_helper_fallback_policy_t<
     default_policy_t,
     fallback_policy_t,
     agent_dummy_algorithm_t,
@@ -193,7 +193,7 @@ void __global__ __launch_bounds__(
 template <typename InputIteratorT>
 struct device_dummy_algorithm_policy_t
 {
-  using item_t = cub::internal::it_value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   static constexpr int FALLBACK_BLOCK_THREADS = 64;
 
@@ -203,7 +203,7 @@ struct device_dummy_algorithm_policy_t
 
     // The fallback policy that's used if there's insufficient shared memory for the default policy,
     // yet still sufficient memory for the fallback policy
-    using FallbackDummyAlgorithmPolicy = cub::internal::policy_wrapper_t<DummyAlgorithmPolicy, FALLBACK_BLOCK_THREADS>;
+    using FallbackDummyAlgorithmPolicy = cub::detail::policy_wrapper_t<DummyAlgorithmPolicy, FALLBACK_BLOCK_THREADS>;
   };
 
   /// MaxPolicy
@@ -219,7 +219,7 @@ template <typename InputIteratorT,
           typename PolicyHub = device_dummy_algorithm_policy_t<InputIteratorT>>
 struct dispatch_dummy_algorithm_t
 {
-  using item_t = cub::internal::it_value_t<InputIteratorT>;
+  using item_t = cub::detail::it_value_t<InputIteratorT>;
 
   /// Device-accessible allocation of temporary storage. When nullptr, the required
   /// allocation size is written to \p temp_storage_bytes and no work is done.
@@ -272,7 +272,7 @@ struct dispatch_dummy_algorithm_t
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
   {
-    using vsmem_helper_t = cub::internal::vsmem_helper_fallback_policy_t<
+    using vsmem_helper_t = cub::detail::vsmem_helper_fallback_policy_t<
       typename ActivePolicyT::DummyAlgorithmPolicy,
       typename ActivePolicyT::FallbackDummyAlgorithmPolicy,
       agent_dummy_algorithm_t,
@@ -307,7 +307,7 @@ struct dispatch_dummy_algorithm_t
     // Compute temporary storage requirements
     void* allocations[1]            = {nullptr};
     std::size_t allocation_sizes[1] = {total_vsmem};
-    error = cub::internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    error = cub::detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (cudaSuccess != error)
     {
       return error;
@@ -328,7 +328,7 @@ struct dispatch_dummy_algorithm_t
             d_out,
             num_items,
             kernel_test_info,
-            cub::internal::vsmem_t{allocations[0]});
+            cub::detail::vsmem_t{allocations[0]});
     return cudaPeekAtLastError();
   }
 
@@ -430,9 +430,9 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
   std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
   bool expected_to_use_fallback =
-    default_smem_size > cub::internal::max_smem_per_block && fallback_smem_size <= cub::internal::max_smem_per_block;
+    default_smem_size > cub::detail::max_smem_per_block && fallback_smem_size <= cub::detail::max_smem_per_block;
   std::size_t expected_smem_per_block = expected_to_use_fallback ? fallback_smem_size : default_smem_size;
-  bool expected_needs_vsmem           = expected_smem_per_block > cub::internal::max_smem_per_block;
+  bool expected_needs_vsmem           = expected_smem_per_block > cub::detail::max_smem_per_block;
   std::size_t expected_block_threads =
     expected_to_use_fallback ? fallback_policy_t::BLOCK_THREADS : default_policy_t::BLOCK_THREADS;
   std::size_t expected_items_per_thread =

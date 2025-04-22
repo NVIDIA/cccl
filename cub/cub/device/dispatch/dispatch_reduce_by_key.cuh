@@ -64,7 +64,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace internal::reduce
+namespace detail::reduce
 {
 
 /**
@@ -179,7 +179,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     .ConsumeRange(num_items, tile_state, start_tile);
 }
 
-} // namespace internal::reduce
+} // namespace detail::reduce
 
 /******************************************************************************
  * Dispatch
@@ -226,12 +226,12 @@ template <typename KeysInputIteratorT,
           typename ReductionOpT,
           typename OffsetT,
           typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
-                                                            cub::internal::it_value_t<ValuesInputIteratorT>,
-                                                            cub::internal::it_value_t<ValuesInputIteratorT>>,
-          typename PolicyHub = internal::reduce_by_key::policy_hub<
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>,
+                                                            cub::detail::it_value_t<ValuesInputIteratorT>>,
+          typename PolicyHub = detail::reduce_by_key::policy_hub<
             ReductionOpT,
             AccumT,
-            cub::internal::non_void_value_t<UniqueOutputIteratorT, cub::internal::it_value_t<KeysInputIteratorT>>>>
+            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::it_value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
@@ -239,7 +239,7 @@ struct DispatchReduceByKey
   //-------------------------------------------------------------------------
 
   // The input values type
-  using ValueInputT = cub::internal::it_value_t<ValuesInputIteratorT>;
+  using ValueInputT = cub::detail::it_value_t<ValuesInputIteratorT>;
 
   static constexpr int INIT_KERNEL_THREADS = 128;
 
@@ -322,7 +322,7 @@ struct DispatchReduceByKey
       // the necessary size of the blob)
       void* allocations[1] = {};
 
-      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -362,7 +362,7 @@ struct DispatchReduceByKey
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(internal::DebugSyncStream(stream));
+      error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -429,7 +429,7 @@ struct DispatchReduceByKey
         }
 
         // Sync the stream if specified to flush runtime errors
-        error = CubDebug(internal::DebugSyncStream(stream));
+        error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           break;
@@ -444,8 +444,8 @@ struct DispatchReduceByKey
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      internal::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      internal::reduce::DeviceReduceByKeyKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::reduce::DeviceReduceByKeyKernel<
         typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
         UniqueOutputIteratorT,

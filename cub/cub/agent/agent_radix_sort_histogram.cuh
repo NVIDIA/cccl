@@ -82,7 +82,7 @@ struct AgentRadixSortExclusiveSumPolicy
   };
 };
 
-namespace internal
+namespace detail
 {
 namespace radix_sort
 {
@@ -281,6 +281,6 @@ struct AgentRadixSortHistogram
 };
 
 } // namespace radix_sort
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

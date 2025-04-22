@@ -26,7 +26,7 @@
 #include <cuda/std/__algorithm/min.h>
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 namespace merge
 {
@@ -223,5 +223,5 @@ struct agent_t
   }
 };
 } // namespace merge
-} // namespace internal
+} // namespace detail
 CUB_NAMESPACE_END

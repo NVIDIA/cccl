@@ -49,7 +49,7 @@ struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
   }
 };
 
-namespace internal
+namespace detail
 {
 
 template <class List, class... Ts>
@@ -62,10 +62,10 @@ struct push_back<nvbench::type_list<As...>, Ts...>
   using type = nvbench::type_list<As..., Ts...>;
 };
 
-} // namespace internal
+} // namespace detail
 
 template <class List, class... Ts>
-using push_back_t = typename internal::push_back<List, Ts...>::type;
+using push_back_t = typename detail::push_back<List, Ts...>::type;
 
 #ifdef TUNE_OffsetT
 using offset_types = nvbench::type_list<TUNE_OffsetT>;
@@ -200,7 +200,7 @@ NVBENCH_DECLARE_TYPE_STRINGS(bit_entropy, "BE", "bit entropy");
   throw std::runtime_error("Can't convert string to bit entropy");
 }
 
-namespace internal
+namespace detail
 {
 
 void do_not_optimize(const void* ptr);
@@ -418,14 +418,14 @@ struct gen_t
 };
 } // namespace
 
-} // namespace internal
+} // namespace detail
 
-inline internal::gen_t generate;
+inline detail::gen_t generate;
 
 template <class T>
 void do_not_optimize(const T& val)
 {
-  internal::do_not_optimize(&val);
+  detail::do_not_optimize(&val);
 }
 
 struct less_t

@@ -105,7 +105,7 @@ CUB_NAMESPACE_BEGIN
  */
 template <typename InputIteratorT,
           typename OffsetT      = ptrdiff_t,
-          typename OutputValueT = internal::it_value_t<InputIteratorT>>
+          typename OutputValueT = detail::it_value_t<InputIteratorT>>
 class ArgIndexInputIterator
 {
 public:

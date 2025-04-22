@@ -194,7 +194,7 @@ try
   auto input_data_it = thrust::make_counting_iterator(data_t{42});
 
   // Prepare helper to check results
-  auto check_result_helper = internal::large_problem_test_helper(num_items);
+  auto check_result_helper = detail::large_problem_test_helper(num_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(input_data_it);
 
   // Run test
@@ -273,7 +273,7 @@ try
     thrust::make_transform_iterator(thrust::make_counting_iterator(range_offset_t{0}), src_skip_first_n_op);
 
   // Prepare helper to check results
-  auto check_result_helper = internal::large_problem_test_helper(num_total_items);
+  auto check_result_helper = detail::large_problem_test_helper(num_total_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(in_it);
   using range_out_it_t     = decltype(check_result_it);
 

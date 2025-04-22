@@ -38,7 +38,7 @@
 struct op_wrapper;
 struct device_scan_policy;
 using OffsetT = unsigned long long;
-static_assert(std::is_same_v<cub::internal::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
 struct input_iterator_state_t;
 struct output_iterator_t;
@@ -130,7 +130,7 @@ get_init_kernel_name(cccl_iterator_t input_it, cccl_iterator_t /*output_it*/, cc
 {
   const cccl_type_info accum_t  = scan::get_accumulator_type(op, input_it, init);
   const std::string accum_cpp_t = cccl_type_enum_to_name(accum_t.type);
-  return std::format("cub::internal::scan::DeviceScanInitKernel<cub::ScanTileState<{0}>>", accum_cpp_t);
+  return std::format("cub::detail::scan::DeviceScanInitKernel<cub::ScanTileState<{0}>>", accum_cpp_t);
 }
 
 std::string get_scan_kernel_name(
@@ -159,7 +159,7 @@ std::string get_scan_kernel_name(
 
   auto tile_state_t = std::format("cub::ScanTileState<{0}>", accum_cpp_t);
   return std::format(
-    "cub::internal::scan::DeviceScanKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
+    "cub::detail::scan::DeviceScanKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}>",
     chained_policy_t, // 0
     input_iterator_t, // 1
     output_iterator_t, // 2
@@ -260,7 +260,7 @@ struct agent_policy_t {{
   static constexpr cub::BlockStoreAlgorithm STORE_ALGORITHM = cub::BLOCK_STORE_WARP_TRANSPOSE;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
   struct detail {{
-    using delay_constructor_t = cub::internal::default_delay_constructor_t<{7}>;
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<{7}>;
   }};
 }};
 struct device_scan_policy {{
@@ -379,7 +379,7 @@ CUresult cccl_device_scan(
       EnforceInclusive,
       scan::dynamic_scan_policy_t<&scan::get_policy>,
       scan::scan_kernel_source,
-      cub::internal::CudaDriverLauncherFactory>::
+      cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
@@ -390,7 +390,7 @@ CUresult cccl_device_scan(
         num_items,
         stream,
         {build},
-        cub::internal::CudaDriverLauncherFactory{cu_device, build.cc},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {scan::get_accumulator_type(op, d_in, init)});
 
     error = static_cast<CUresult>(exec_status);

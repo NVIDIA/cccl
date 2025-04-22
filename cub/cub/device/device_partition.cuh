@@ -188,7 +188,7 @@ struct DevicePartition
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
-    using ChooseOffsetT = internal::choose_signed_offset<NumItemsT>;
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using SelectOp      = NullType; // Selection op (not used)
     using EqualityOp    = NullType; // Equality operator (not used)
@@ -345,7 +345,7 @@ struct DevicePartition
      cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
-    using ChooseOffsetT = internal::choose_signed_offset<NumItemsT>;
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using FlagIterator  = NullType*; // FlagT iterator type (not used)
     using EqualityOp    = NullType; // Equality operator (not used)
@@ -412,7 +412,7 @@ private:
     SelectSecondPartOp select_second_part_op,
     cudaStream_t stream = 0)
   {
-    using ChooseOffsetT                = internal::choose_signed_offset<NumItemsT>;
+    using ChooseOffsetT                = detail::choose_signed_offset<NumItemsT>;
     using OffsetT                      = typename ChooseOffsetT::type;
     using DispatchThreeWayPartitionIfT = DispatchThreeWayPartitionIf<
       InputIteratorT,

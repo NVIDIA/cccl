@@ -41,7 +41,7 @@ std::size_t get_temporary_storage_size(std::size_t (&sizes)[Items])
 {
   void* pointers[Items]{};
   std::size_t temp_storage_bytes{};
-  CubDebugExit(cub::internal::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
+  CubDebugExit(cub::detail::AliasTemporaries(nullptr, temp_storage_bytes, pointers, sizes));
   return temp_storage_bytes;
 }
 
@@ -55,7 +55,7 @@ std::size_t get_actual_zero()
 C2H_TEST("Test empty storage", "[temporary_storage_layout]", num_storage_slots)
 {
   constexpr auto storage_slots = c2h::get<0, TestType>::value;
-  cub::internal::temporary_storage::layout<storage_slots> temporary_storage;
+  cub::detail::temporary_storage::layout<storage_slots> temporary_storage;
   CHECK(temporary_storage.get_size() == get_actual_zero());
 }
 
@@ -67,9 +67,9 @@ C2H_TEST("Test partially filled storage", "[temporary_storage_layout]", num_stor
   constexpr std::size_t full_slot_elements = target_elements * sizeof(target_type);
   constexpr std::size_t empty_slot_elements{};
 
-  cub::internal::temporary_storage::layout<storage_slots> temporary_storage;
+  cub::detail::temporary_storage::layout<storage_slots> temporary_storage;
 
-  std::unique_ptr<cub::internal::temporary_storage::alias<target_type>> arrays[storage_slots];
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> arrays[storage_slots];
   std::size_t sizes[storage_slots]{};
 
   for (int slot_id = 0; slot_id < storage_slots; slot_id++)
@@ -80,7 +80,7 @@ C2H_TEST("Test partially filled storage", "[temporary_storage_layout]", num_stor
 
     sizes[slot_id] = elements * sizeof(target_type);
     arrays[slot_id].reset(
-      new cub::internal::temporary_storage::alias<target_type>(slot->template create_alias<target_type>(elements)));
+      new cub::detail::temporary_storage::alias<target_type>(slot->template create_alias<target_type>(elements)));
   }
 
   const std::size_t temp_storage_bytes = temporary_storage.get_size();
@@ -110,21 +110,21 @@ C2H_TEST("Test grow", "[temporary_storage_layout]", num_storage_slots)
   using target_type                            = std::uint64_t;
   constexpr std::size_t target_elements_number = 42;
 
-  cub::internal::temporary_storage::layout<StorageSlots> preset_layout;
-  std::unique_ptr<cub::internal::temporary_storage::alias<target_type>> preset_arrays[StorageSlots];
+  cub::detail::temporary_storage::layout<StorageSlots> preset_layout;
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> preset_arrays[StorageSlots];
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    preset_arrays[slot_id].reset(new cub::internal::temporary_storage::alias<target_type>(
+    preset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
       preset_layout.get_slot(slot_id)->template create_alias<target_type>(target_elements_number)));
   }
 
-  cub::internal::temporary_storage::layout<StorageSlots> postset_layout;
-  std::unique_ptr<cub::internal::temporary_storage::alias<target_type>> postset_arrays[StorageSlots];
+  cub::detail::temporary_storage::layout<StorageSlots> postset_layout;
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> postset_arrays[StorageSlots];
 
   for (int slot_id = 0; slot_id < StorageSlots; slot_id++)
   {
-    postset_arrays[slot_id].reset(new cub::internal::temporary_storage::alias<target_type>(
+    postset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
       postset_layout.get_slot(slot_id)->template create_alias<target_type>()));
     postset_arrays[slot_id]->grow(target_elements_number);
   }
@@ -149,21 +149,21 @@ C2H_TEST("Test double grow", "[temporary_storage_layout]", num_storage_slots)
   using target_type                            = std::uint64_t;
   constexpr std::size_t target_elements_number = 42;
 
-  cub::internal::temporary_storage::layout<storage_slots> preset_layout;
-  std::unique_ptr<cub::internal::temporary_storage::alias<target_type>> preset_arrays[storage_slots];
+  cub::detail::temporary_storage::layout<storage_slots> preset_layout;
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> preset_arrays[storage_slots];
 
   for (int slot_id = 0; slot_id < storage_slots; slot_id++)
   {
-    preset_arrays[slot_id].reset(new cub::internal::temporary_storage::alias<target_type>(
+    preset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
       preset_layout.get_slot(slot_id)->template create_alias<target_type>(2 * target_elements_number)));
   }
 
-  cub::internal::temporary_storage::layout<storage_slots> postset_layout;
-  std::unique_ptr<cub::internal::temporary_storage::alias<target_type>> postset_arrays[storage_slots];
+  cub::detail::temporary_storage::layout<storage_slots> postset_layout;
+  std::unique_ptr<cub::detail::temporary_storage::alias<target_type>> postset_arrays[storage_slots];
 
   for (int slot_id = 0; slot_id < storage_slots; slot_id++)
   {
-    postset_arrays[slot_id].reset(new cub::internal::temporary_storage::alias<target_type>(
+    postset_arrays[slot_id].reset(new cub::detail::temporary_storage::alias<target_type>(
       postset_layout.get_slot(slot_id)->template create_alias<target_type>(target_elements_number)));
     postset_arrays[slot_id]->grow(2 * target_elements_number);
   }

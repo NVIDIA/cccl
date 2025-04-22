@@ -56,7 +56,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 
 template <class A = int, class = A>
@@ -603,7 +603,7 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && internal::reduce_add_exists<>::value,
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_add_exists<>::value,
     T>
   ReduceImpl(::cuda::std::true_type /* all_lanes_valid */,
              T input,
@@ -622,7 +622,7 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && internal::reduce_min_exists<>::value,
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_min_exists<>::value,
     T>
   ReduceImpl(
     ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::minimum<> /* reduction_op */)
@@ -639,7 +639,7 @@ struct WarpReduceShfl
 
   template <class U = T>
   _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<
-    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && internal::reduce_max_exists<>::value,
+    (::cuda::std::is_same_v<int, U> || ::cuda::std::is_same_v<unsigned int, U>) && detail::reduce_max_exists<>::value,
     T>
   ReduceImpl(
     ::cuda::std::true_type /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::maximum<> /* reduction_op */)
@@ -724,6 +724,6 @@ struct WarpReduceShfl
     return output;
   }
 };
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

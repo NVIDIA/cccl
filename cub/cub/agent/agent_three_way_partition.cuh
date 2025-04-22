@@ -58,7 +58,7 @@ template <int _BLOCK_THREADS,
           BlockLoadAlgorithm _LOAD_ALGORITHM,
           CacheLoadModifier _LOAD_MODIFIER,
           BlockScanAlgorithm _SCAN_ALGORITHM,
-          class DelayConstructorT = internal::fixed_delay_constructor_t<350, 450>>
+          class DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentThreeWayPartitionPolicy
 {
   static constexpr int BLOCK_THREADS                 = _BLOCK_THREADS;
@@ -73,7 +73,7 @@ struct AgentThreeWayPartitionPolicy
   };
 };
 
-namespace internal
+namespace detail
 {
 
 namespace three_way_partition
@@ -587,6 +587,6 @@ struct AgentThreeWayPartition
 };
 
 } // namespace three_way_partition
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

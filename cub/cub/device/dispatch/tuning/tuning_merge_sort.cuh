@@ -42,7 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal::merge_sort
+namespace detail::merge_sort
 {
 
 template <typename PolicyT, typename = void>
@@ -113,6 +113,6 @@ struct policy_hub
   using MaxPolicy = Policy600;
 };
 
-} // namespace internal::merge_sort
+} // namespace detail::merge_sort
 
 CUB_NAMESPACE_END

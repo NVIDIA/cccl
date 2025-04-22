@@ -27,18 +27,18 @@
 
 template <typename... RandomAccessIteratorsIn>
 #if TUNE_BASE
-using policy_hub_t = cub::internal::transform::policy_hub<false, ::cuda::std::tuple<RandomAccessIteratorsIn...>>;
+using policy_hub_t = cub::detail::transform::policy_hub<false, ::cuda::std::tuple<RandomAccessIteratorsIn...>>;
 #else
 struct policy_hub_t
 {
   struct max_policy : cub::ChainedPolicy<500, max_policy, max_policy>
   {
-    static constexpr int min_bif    = cub::internal::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
-    static constexpr auto algorithm = static_cast<cub::internal::transform::Algorithm>(TUNE_ALGORITHM);
+    static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
+    static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
     using algo_policy =
-      ::cuda::std::_If<algorithm == cub::internal::transform::Algorithm::prefetch,
-                       cub::internal::transform::prefetch_policy_t<TUNE_THREADS>,
-                       cub::internal::transform::async_copy_policy_t<TUNE_THREADS>>;
+      ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
+                       cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
+                       cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>;
   };
 };
 #endif
@@ -79,8 +79,8 @@ void bench_transform(
   ExecTag exec_tag = nvbench::exec_tag::no_batch)
 {
   state.exec(nvbench::exec_tag::gpu | exec_tag, [&](const nvbench::launch& launch) {
-    cub::internal::transform::dispatch_t<
-      cub::internal::transform::requires_stable_address::no,
+    cub::detail::transform::dispatch_t<
+      cub::detail::transform::requires_stable_address::no,
       OffsetT,
       ::cuda::std::tuple<RandomAccessIteratorsIn...>,
       RandomAccessIteratorOut,

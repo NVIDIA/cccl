@@ -64,7 +64,7 @@ struct policy_hub_t
 
 #if !TUNE_BASE
     using policy_t   = policy_hub_t<output_tuple_t, per_partition_offset_t>;
-    using dispatch_t = cub::internal::reduce::dispatch_streaming_arg_reduce_t<
+    using dispatch_t = cub::detail::reduce::dispatch_streaming_arg_reduce_t<
       input_it_t,
       output_tuple_t*,
       per_partition_offset_t,
@@ -73,7 +73,7 @@ struct policy_hub_t
       T,
       policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::internal::reduce::
+  using dispatch_t = cub::detail::reduce::
     dispatch_streaming_arg_reduce_t<input_it_t, output_tuple_t*, per_partition_offset_t, global_offset_t, OpT, T>;
 #endif // TUNE_BASE
 

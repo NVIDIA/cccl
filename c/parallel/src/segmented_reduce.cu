@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cub/detail/choose_offset.cuh> // cub::internal::choose_offset_t
-#include <cub/detail/launcher/cuda_driver.cuh> // cub::internal::CudaDriverLauncherFactory
+#include <cub/detail/choose_offset.cuh> // cub::detail::choose_offset_t
+#include <cub/detail/launcher/cuda_driver.cuh> // cub::detail::CudaDriverLauncherFactory
 #include <cub/device/dispatch/dispatch_reduce.cuh> // cub::DispatchSegmentedReduce
 #include <cub/thread/thread_load.cuh> // cub::LoadModifier
 
@@ -34,7 +34,7 @@
 struct op_wrapper;
 struct device_segmented_reduce_policy;
 using OffsetT = unsigned long long;
-static_assert(std::is_same_v<cub::internal::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
 // check we can map OffsetT to ::cuda::std::uint64_t
 static_assert(std::is_unsigned_v<OffsetT>);
@@ -105,7 +105,7 @@ segmented_reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumul
   items_per_thread           = _CUDA_VSTD::min<decltype(items_per_thread)>(four_bytes_per_thread, items_per_thread * 2);
   items_per_thread           = _CUDA_VSTD::min(1, items_per_thread);
 
-  auto work_per_sm    = cub::internal::max_smem_per_block / (accumulator_type.size * items_per_thread);
+  auto work_per_sm    = cub::detail::max_smem_per_block / (accumulator_type.size * items_per_thread);
   auto max_block_size = cuda::round_up(work_per_sm, 32);
   block_size          = _CUDA_VSTD::min<decltype(block_size)>(block_size, max_block_size);
 
@@ -201,7 +201,7 @@ std::string get_device_segmented_reduce_kernel_name(
    DeviceSegmentedReduceKernel(...);
   */
   return std::format(
-    "cub::internal::reduce::DeviceSegmentedReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::reduce::DeviceSegmentedReduceKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
     chained_policy_t, // 0
     input_iterator_t, // 1
     output_iterator_t, // 2
@@ -415,7 +415,7 @@ CUresult cccl_device_segmented_reduce(
       void, // AccumT
       segmented_reduce::dynamic_reduce_policy_t<&segmented_reduce::get_policy>, // PolicHub
       segmented_reduce::segmented_reduce_kernel_source, // KernelSource
-      cub::internal::CudaDriverLauncherFactory>:: // KernelLaunchFactory
+      cub::detail::CudaDriverLauncherFactory>:: // KernelLaunchFactory
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
@@ -428,7 +428,7 @@ CUresult cccl_device_segmented_reduce(
         init,
         stream,
         /* kernel_source */ {build},
-        /* launcher_factory &*/ cub::internal::CudaDriverLauncherFactory{cu_device, build.cc},
+        /* launcher_factory &*/ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         /* policy */ {segmented_reduce::get_accumulator_type(op, d_in, init)});
 
     error = static_cast<CUresult>(exec_status);

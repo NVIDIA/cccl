@@ -47,7 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace three_way_partition
 {
@@ -402,6 +402,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 } // namespace three_way_partition
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

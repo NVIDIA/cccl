@@ -149,9 +149,9 @@ C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", 
   constexpr auto rank = ext.rank();
   using data_t        = cuda::std::array<index_type, rank>;
   using store_op_t    = LinearStore<index_type, rank>;
-  c2h::device_vector<data_t> d_output(cub::internal::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output(cub::internal::size(ext), data_t{});
-  auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::internal::size(ext)};
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>());
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
@@ -170,9 +170,9 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   auto Y             = GENERATE_COPY(take(3, random(2, 10)));
   auto Z             = GENERATE_COPY(take(3, random(2, 10)));
   cuda::std::dextents<index_type, 3> ext{X, Y, Z};
-  c2h::device_vector<data_t> d_output(cub::internal::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output(cub::internal::size(ext), data_t{});
-  auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::internal::size(ext)};
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});

@@ -51,7 +51,7 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 /**
  * @brief BlockScanWarpScans provides warpscan-based variants of parallel prefix scan across a CUDA
@@ -192,7 +192,7 @@ struct BlockScanWarpScans
     // Last lane in each warp shares its warp-aggregate
     if (lane_id == WARP_THREADS - 1)
     {
-      internal::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
+      detail::uninitialized_copy_single(temp_storage.warp_aggregates + warp_id, warp_aggregate);
     }
 
     __syncthreads();
@@ -415,7 +415,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        internal::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
+        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
 
         exclusive_output = block_prefix; // The block prefix is the exclusive output for tid0
       }
@@ -522,7 +522,7 @@ struct BlockScanWarpScans
       if (lane_id == 0)
       {
         // Share the prefix with all threads
-        internal::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
+        detail::uninitialized_copy_single(&temp_storage.block_prefix, block_prefix);
       }
     }
 
@@ -533,6 +533,6 @@ struct BlockScanWarpScans
     exclusive_output = scan_op(block_prefix, exclusive_output);
   }
 };
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -76,7 +76,7 @@ template <
   int _VECTOR_LOAD_LENGTH,
   BlockReduceAlgorithm _BLOCK_ALGORITHM,
   CacheLoadModifier _LOAD_MODIFIER,
-  typename ScalingType = internal::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+  typename ScalingType = detail::MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentReducePolicy : ScalingType
 {
   /// Number of items per vectorized load
@@ -117,7 +117,7 @@ struct AgentWarpReducePolicy
 
   /// Number of items per thread
   static constexpr int ITEMS_PER_THREAD =
-    internal::MemBoundScaling<0, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>::ITEMS_PER_THREAD;
+    detail::MemBoundScaling<0, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>::ITEMS_PER_THREAD;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = _LOAD_MODIFIER;
@@ -135,7 +135,7 @@ struct AgentWarpReducePolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace internal
+namespace detail
 {
 namespace reduce
 {
@@ -652,6 +652,6 @@ struct AgentWarpReduce
 };
 
 } // namespace reduce
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

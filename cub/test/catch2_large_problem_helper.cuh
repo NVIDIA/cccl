@@ -13,7 +13,7 @@
 
 #include <c2h/catch2_test_helper.h>
 
-namespace internal
+namespace detail
 {
 
 template <typename ExpectedValuesItT>
@@ -85,4 +85,4 @@ struct large_problem_test_helper
   }
 };
 
-} // namespace internal
+} // namespace detail

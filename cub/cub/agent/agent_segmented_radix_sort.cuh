@@ -45,7 +45,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace radix_sort
 {
@@ -287,6 +287,6 @@ struct AgentSegmentedRadixSort
 };
 
 } // namespace radix_sort
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

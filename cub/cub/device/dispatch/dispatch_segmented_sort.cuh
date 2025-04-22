@@ -70,7 +70,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal::segmented_sort
+namespace detail::segmented_sort
 {
 // Type used to index within segments within a single invocation
 using local_segment_index_t = ::cuda::std::uint32_t;
@@ -694,7 +694,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
   // Due to (4, 5), we can't pass the user-provided stream in the continuation.
   // Due to (1, 2, 3) it's safe to pass the main stream.
   cudaError_t error =
-    internal::segmented_sort::DeviceSegmentedSortContinuation<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
+    detail::segmented_sort::DeviceSegmentedSortContinuation<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
       large_kernel,
       small_kernel,
       num_segments,
@@ -715,7 +715,7 @@ __launch_bounds__(1) CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceSegmentedSortContin
 }
 #endif // CUB_RDC_ENABLED
 
-} // namespace internal::segmented_sort
+} // namespace detail::segmented_sort
 
 template <SortOrder Order,
           typename KeyT,
@@ -723,11 +723,11 @@ template <SortOrder Order,
           typename OffsetT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename PolicyHub = internal::segmented_sort::policy_hub<KeyT, ValueT>>
+          typename PolicyHub = detail::segmented_sort::policy_hub<KeyT, ValueT>>
 struct DispatchSegmentedSort
 {
-  using local_segment_index_t   = internal::segmented_sort::local_segment_index_t;
-  using global_segment_offset_t = internal::segmented_sort::global_segment_offset_t;
+  using local_segment_index_t   = detail::segmented_sort::local_segment_index_t;
+  using global_segment_offset_t = detail::segmented_sort::global_segment_offset_t;
 
   static constexpr int KEYS_ONLY = ::cuda::std::is_same_v<ValueT, NullType>;
 
@@ -881,7 +881,7 @@ struct DispatchSegmentedSort
 
       const bool partition_segments = num_segments > ActivePolicyT::PARTITIONING_THRESHOLD;
 
-      cub::internal::temporary_storage::layout<5> temporary_storage_layout;
+      cub::detail::temporary_storage::layout<5> temporary_storage_layout;
 
       auto keys_slot                          = temporary_storage_layout.get_slot(0);
       auto values_slot                        = temporary_storage_layout.get_slot(1);
@@ -1020,13 +1020,13 @@ struct DispatchSegmentedSort
        * further reduce the auxiliary memory requirements. `is_overwrite_okay`
        * indicates this use case.
        */
-      internal::device_double_buffer<KeyT> d_keys_double_buffer(
+      detail::device_double_buffer<KeyT> d_keys_double_buffer(
         (is_overwrite_okay || is_num_passes_odd) ? d_keys.Alternate() : keys_allocation.get(),
         (is_overwrite_okay)   ? d_keys.Current()
         : (is_num_passes_odd) ? keys_allocation.get()
                               : d_keys.Alternate());
 
-      internal::device_double_buffer<ValueT> d_values_double_buffer(
+      detail::device_double_buffer<ValueT> d_values_double_buffer(
         (is_overwrite_okay || is_num_passes_odd) ? d_values.Alternate() : values_allocation.get(),
         (is_overwrite_okay)   ? d_values.Current()
         : (is_num_passes_odd) ? values_allocation.get()
@@ -1039,7 +1039,7 @@ struct DispatchSegmentedSort
         // Partition input segments into size groups and assign specialized
         // kernels for each of them.
         error = SortWithPartitioning<LargeSegmentPolicyT, SmallAndMediumPolicyT>(
-          internal::segmented_sort::DeviceSegmentedSortKernelLarge<
+          detail::segmented_sort::DeviceSegmentedSortKernelLarge<
             Order,
             MaxPolicyT,
             KeyT,
@@ -1047,7 +1047,7 @@ struct DispatchSegmentedSort
             BeginOffsetIteratorT,
             EndOffsetIteratorT,
             OffsetT>,
-          internal::segmented_sort::DeviceSegmentedSortKernelSmall<
+          detail::segmented_sort::DeviceSegmentedSortKernelSmall<
             Order,
             MaxPolicyT,
             KeyT,
@@ -1071,7 +1071,7 @@ struct DispatchSegmentedSort
         // on extra partitioning steps.
 
         error = SortWithoutPartitioning<LargeSegmentPolicyT>(
-          internal::segmented_sort::DeviceSegmentedSortFallbackKernel<
+          detail::segmented_sort::DeviceSegmentedSortFallbackKernel<
             Order,
             MaxPolicyT,
             KeyT,
@@ -1171,14 +1171,14 @@ private:
     LargeKernelT large_kernel,
     SmallKernelT small_kernel,
     size_t three_way_partition_temp_storage_bytes,
-    cub::internal::device_double_buffer<KeyT>& d_keys_double_buffer,
-    cub::internal::device_double_buffer<ValueT>& d_values_double_buffer,
+    cub::detail::device_double_buffer<KeyT>& d_keys_double_buffer,
+    cub::detail::device_double_buffer<ValueT>& d_values_double_buffer,
     LargeSegmentsSelectorT& large_segments_selector,
     SmallSegmentsSelectorT& small_segments_selector,
-    cub::internal::temporary_storage::alias<uint8_t>& device_partition_temp_storage,
-    cub::internal::temporary_storage::alias<local_segment_index_t>& large_and_medium_segments_indices,
-    cub::internal::temporary_storage::alias<local_segment_index_t>& small_segments_indices,
-    cub::internal::temporary_storage::alias<local_segment_index_t>& group_sizes)
+    cub::detail::temporary_storage::alias<uint8_t>& device_partition_temp_storage,
+    cub::detail::temporary_storage::alias<local_segment_index_t>& large_and_medium_segments_indices,
+    cub::detail::temporary_storage::alias<local_segment_index_t>& small_segments_indices,
+    cub::detail::temporary_storage::alias<local_segment_index_t>& group_sizes)
   {
     cudaError_t error = cudaSuccess;
 
@@ -1234,7 +1234,7 @@ private:
     error =                                                                  \
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, 1, 0, stream) \
         .doit(                                                               \
-          internal::segmented_sort::DeviceSegmentedSortContinuationKernel<   \
+          detail::segmented_sort::DeviceSegmentedSortContinuationKernel<     \
             typename PolicyHub::MaxPolicy,                                   \
             LargeKernelT,                                                    \
             SmallKernelT,                                                    \
@@ -1263,7 +1263,7 @@ private:
       return error;                                                          \
     }                                                                        \
                                                                              \
-    error = CubDebug(internal::DebugSyncStream(stream));                     \
+    error = CubDebug(detail::DebugSyncStream(stream));                       \
     if (cudaSuccess != error)                                                \
     {                                                                        \
       return error;                                                          \
@@ -1295,7 +1295,7 @@ private:
           return error;
         }
 
-        error = internal::segmented_sort::DeviceSegmentedSortContinuation<LargeSegmentPolicyT,
+        error = detail::segmented_sort::DeviceSegmentedSortContinuation<LargeSegmentPolicyT,
                                                 SmallAndMediumPolicyT>(
           large_kernel,
           small_kernel,
@@ -1324,8 +1324,8 @@ private:
   template <typename LargeSegmentPolicyT, typename FallbackKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t SortWithoutPartitioning(
     FallbackKernelT fallback_kernel,
-    cub::internal::device_double_buffer<KeyT>& d_keys_double_buffer,
-    cub::internal::device_double_buffer<ValueT>& d_values_double_buffer)
+    cub::detail::device_double_buffer<KeyT>& d_keys_double_buffer,
+    cub::detail::device_double_buffer<ValueT>& d_values_double_buffer)
   {
     cudaError_t error = cudaSuccess;
 
@@ -1363,7 +1363,7 @@ private:
     }
 
     // Sync the stream if specified to flush runtime errors
-    error = CubDebug(internal::DebugSyncStream(stream));
+    error = CubDebug(detail::DebugSyncStream(stream));
     if (cudaSuccess != error)
     {
       return error;

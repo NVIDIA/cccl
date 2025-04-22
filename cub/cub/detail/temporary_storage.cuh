@@ -33,7 +33,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 
 namespace temporary_storage
@@ -203,7 +203,7 @@ _CCCL_HOST_DEVICE alias<T> slot::create_alias(size_t elements)
  *
  * @par A Simple Example
  * @code
- * cub::internal::temporary_storage::layout<3> temporary_storage;
+ * cub::detail::temporary_storage::layout<3> temporary_storage;
  *
  * auto slot_1 = temporary_storage.get_slot(0);
  * auto slot_2 = temporary_storage.get_slot(1);
@@ -284,7 +284,7 @@ public:
     // AliasTemporaries can return error only in mapping stage,
     // so it's safe to ignore it here.
     size_t temp_storage_bytes{};
-    internal::AliasTemporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
+    detail::AliasTemporaries(nullptr, temp_storage_bytes, m_pointers, m_sizes);
 
     if (temp_storage_bytes == 0)
     {
@@ -316,7 +316,7 @@ public:
     this->prepare_interface();
 
     cudaError_t error = cudaSuccess;
-    if ((error = internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
+    if ((error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, m_pointers, m_sizes)))
     {
       return error;
     }
@@ -350,6 +350,6 @@ private:
 
 } // namespace temporary_storage
 
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

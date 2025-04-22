@@ -111,7 +111,7 @@ using remove = ::cuda::std::__type_remove<TypeList, T>;
 
 } // namespace c2h
 
-namespace internal
+namespace detail
 {
 template <class T>
 std::vector<T> to_vec(c2h::device_vector<T> const& vec)
@@ -131,16 +131,16 @@ std::vector<T> to_vec(std::vector<T> const& vec)
 {
   return vec;
 }
-} // namespace internal
+} // namespace detail
 
 #define REQUIRE_APPROX_EQ(ref, out)                          \
   {                                                          \
-    auto vec_ref = internal::to_vec(ref);                    \
-    auto vec_out = internal::to_vec(out);                    \
+    auto vec_ref = detail::to_vec(ref);                      \
+    auto vec_out = detail::to_vec(out);                      \
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out)); \
   }
 
-namespace internal
+namespace detail
 {
 // Returns true if values are equal, or both NaN:
 struct equal_or_nans
@@ -197,20 +197,20 @@ auto BitwiseEqualsRange(const Range& range) -> CustomEqualsRangeMatcher<Range, b
 {
   return CustomEqualsRangeMatcher<Range, bitwise_equal>(range);
 }
-} // namespace internal
+} // namespace detail
 
-#define REQUIRE_EQ_WITH_NAN_MATCHING(ref, out)                \
-  {                                                           \
-    auto vec_ref = internal::to_vec(ref);                     \
-    auto vec_out = internal::to_vec(out);                     \
-    REQUIRE_THAT(vec_ref, internal::NaNEqualsRange(vec_out)); \
+#define REQUIRE_EQ_WITH_NAN_MATCHING(ref, out)              \
+  {                                                         \
+    auto vec_ref = detail::to_vec(ref);                     \
+    auto vec_out = detail::to_vec(out);                     \
+    REQUIRE_THAT(vec_ref, detail::NaNEqualsRange(vec_out)); \
   }
 
-#define REQUIRE_BITWISE_EQ(ref, out)                          \
-  {                                                           \
-    auto vec_ref = internal::to_vec(ref);                     \
-    auto vec_out = internal::to_vec(out);                     \
-    REQUIRE_THAT(vec_ref, internal::NaNEqualsRange(vec_out)); \
+#define REQUIRE_BITWISE_EQ(ref, out)                        \
+  {                                                         \
+    auto vec_ref = detail::to_vec(ref);                     \
+    auto vec_out = detail::to_vec(out);                     \
+    REQUIRE_THAT(vec_ref, detail::NaNEqualsRange(vec_out)); \
   }
 
 #include <cuda/std/tuple>
@@ -272,7 +272,7 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_STR(a) #a
 
-namespace internal
+namespace detail
 {
 inline std::size_t adjust_seed_count(std::size_t requested)
 {
@@ -282,12 +282,12 @@ inline std::size_t adjust_seed_count(std::size_t requested)
   static int override             = override_str ? std::atoi(override_str) : 0;
   return override_str ? override : requested;
 }
-} // namespace internal
+} // namespace detail
 
 #define C2H_SEED(N)                                                                         \
   c2h::seed_t                                                                               \
   {                                                                                         \
-    GENERATE_COPY(take(internal::adjust_seed_count(N),                                      \
+    GENERATE_COPY(take(detail::adjust_seed_count(N),                                        \
                        random(::cuda::std::numeric_limits<unsigned long long int>::min(),   \
                               ::cuda::std::numeric_limits<unsigned long long int>::max()))) \
   }

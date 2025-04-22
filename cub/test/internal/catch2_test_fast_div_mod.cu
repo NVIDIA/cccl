@@ -49,7 +49,7 @@ using index_types =
 
 C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
 {
-  using cub::internal::fast_div_mod;
+  using cub::detail::fast_div_mod;
   using index_type         = c2h::get<0, TestType>;
   constexpr auto max_value = +cuda::std::numeric_limits<index_type>::max();
   auto dividend            = GENERATE_COPY(take(20, random(+index_type{1}, max_value)));
@@ -64,7 +64,7 @@ C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
 
 C2H_TEST("FastDivMod edge cases", "[FastDivMod][EdgeCases]", index_types)
 {
-  using cub::internal::fast_div_mod;
+  using cub::detail::fast_div_mod;
   using index_type         = c2h::get<0, TestType>;
   constexpr auto max_value = cuda::std::numeric_limits<index_type>::max();
   CAPTURE(c2h::type_name<index_type>());

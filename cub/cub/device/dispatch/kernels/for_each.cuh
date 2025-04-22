@@ -43,7 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace for_each
 {
@@ -149,6 +149,6 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
 }
 
 } // namespace for_each
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

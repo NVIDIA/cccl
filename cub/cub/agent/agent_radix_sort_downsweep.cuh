@@ -97,7 +97,7 @@ template <
   RadixRankAlgorithm _RANK_ALGORITHM,
   BlockScanAlgorithm _SCAN_ALGORITHM,
   int _RADIX_BITS,
-  typename ScalingType = internal::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
+  typename ScalingType = detail::RegBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>>
 struct AgentRadixSortDownsweepPolicy : ScalingType
 {
   enum
@@ -123,7 +123,7 @@ struct AgentRadixSortDownsweepPolicy : ScalingType
  * Thread block abstractions
  ******************************************************************************/
 
-namespace internal
+namespace detail
 {
 namespace radix_sort
 {
@@ -761,6 +761,6 @@ struct AgentRadixSortDownsweep
 };
 
 } // namespace radix_sort
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

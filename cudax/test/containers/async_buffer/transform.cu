@@ -25,7 +25,7 @@
 #include "helper.h"
 #include "types.h"
 
-using cub::internal::transform::Algorithm;
+using cub::detail::transform::Algorithm;
 
 template <Algorithm Alg>
 struct policy_hub_for_alg
@@ -36,8 +36,8 @@ struct policy_hub_for_alg
     static constexpr Algorithm algorithm = Alg;
     using algo_policy =
       ::cuda::std::_If<Alg == Algorithm::prefetch,
-                       cub::internal::transform::prefetch_policy_t<256>,
-                       cub::internal::transform::async_copy_policy_t<256>>;
+                       cub::detail::transform::prefetch_policy_t<256>,
+                       cub::detail::transform::async_copy_policy_t<256>>;
   };
 };
 
@@ -53,12 +53,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg(
   TransformOp transform_op,
   cudaStream_t stream = nullptr)
 {
-  return cub::internal::transform::dispatch_t<cub::internal::transform::requires_stable_address::no,
-                                              Offset,
-                                              ::cuda::std::tuple<RandomAccessIteratorsIn...>,
-                                              RandomAccessIteratorOut,
-                                              TransformOp,
-                                              policy_hub_for_alg<Alg>>{}
+  return cub::detail::transform::dispatch_t<cub::detail::transform::requires_stable_address::no,
+                                            Offset,
+                                            ::cuda::std::tuple<RandomAccessIteratorsIn...>,
+                                            RandomAccessIteratorOut,
+                                            TransformOp,
+                                            policy_hub_for_alg<Alg>>{}
     .dispatch(inputs, output, num_items, transform_op, stream);
 }
 

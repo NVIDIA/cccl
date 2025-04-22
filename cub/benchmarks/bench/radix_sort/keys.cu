@@ -126,7 +126,7 @@ constexpr std::size_t max_temp_storage_size()
 template <typename KeyT, typename ValueT, typename OffsetT>
 constexpr bool fits_in_default_shared_memory()
 {
-  return max_temp_storage_size<KeyT, ValueT, OffsetT>() < cub::internal::max_smem_per_block;
+  return max_temp_storage_size<KeyT, ValueT, OffsetT>() < cub::detail::max_smem_per_block;
 }
 #else // TUNE_BASE
 template <typename, typename, typename>
@@ -139,7 +139,7 @@ constexpr bool fits_in_default_shared_memory()
 template <typename T, typename OffsetT>
 void radix_sort_keys(std::integral_constant<bool, true>, nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using offset_t = cub::internal::choose_offset_t<OffsetT>;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
   using key_t = T;
   using dispatch_t =
@@ -218,7 +218,7 @@ void radix_sort_keys(std::integral_constant<bool, false>, nvbench::state&, nvben
 template <typename T, typename OffsetT>
 void radix_sort_keys(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
 {
-  using offset_t = cub::internal::choose_offset_t<OffsetT>;
+  using offset_t = cub::detail::choose_offset_t<OffsetT>;
 
   radix_sort_keys(std::integral_constant<bool, fits_in_default_shared_memory<T, value_t, offset_t>()>{}, state, tl);
 }

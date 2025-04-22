@@ -67,7 +67,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace internal::rle
+namespace detail::rle
 {
 
 /**
@@ -157,7 +157,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
   AgentRleT(temp_storage, d_in, d_offsets_out, d_lengths_out, equality_op, num_items)
     .ConsumeRange(num_tiles, tile_status, d_num_runs_out);
 }
-} // namespace internal::rle
+} // namespace detail::rle
 
 /******************************************************************************
  * Dispatch
@@ -195,8 +195,8 @@ template <typename InputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
           typename PolicyHub =
-            internal::rle::non_trivial_runs::policy_hub<cub::internal::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                        cub::internal::it_value_t<InputIteratorT>>>
+            detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+                                                      cub::detail::it_value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************
@@ -204,7 +204,7 @@ struct DeviceRleDispatch
    ******************************************************************************/
 
   // The lengths output value type
-  using LengthT = cub::internal::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
+  using LengthT = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
 
   enum
   {
@@ -332,7 +332,7 @@ struct DeviceRleDispatch
       // the blob)
       void* allocations[1] = {};
 
-      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (error != cudaSuccess)
       {
         break;
@@ -374,7 +374,7 @@ struct DeviceRleDispatch
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(internal::DebugSyncStream(stream));
+      error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -443,7 +443,7 @@ struct DeviceRleDispatch
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(internal::DebugSyncStream(stream));
+      error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -457,8 +457,8 @@ struct DeviceRleDispatch
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      internal::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      internal::rle::DeviceRleSweepKernel<
+      detail::scan::DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
+      detail::rle::DeviceRleSweepKernel<
         typename PolicyHub::MaxPolicy,
         InputIteratorT,
         OffsetsOutputIteratorT,

@@ -10,7 +10,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/dispatch/dispatch_transform.cuh>
-#include <cub/device/dispatch/tuning/tuning_transform.cuh> // cub::internal::transform::Algorithm
+#include <cub/device/dispatch/tuning/tuning_transform.cuh> // cub::detail::transform::Algorithm
 #include <cub/util_arch.cuh>
 #include <cub/util_temporary_storage.cuh>
 #include <cub/util_type.cuh>
@@ -35,7 +35,7 @@ struct op_wrapper;
 struct device_transform_policy;
 
 using OffsetT = long;
-static_assert(std::is_same_v<cub::internal::choose_signed_offset_t<OffsetT>, OffsetT>,
+static_assert(std::is_same_v<cub::detail::choose_signed_offset_t<OffsetT>, OffsetT>,
               "OffsetT must be signed int32 or int64");
 
 struct input_storage_t;
@@ -60,9 +60,9 @@ struct transform_runtime_tuning_policy
 
   // Note: when we extend transform to support UBLKCP, we may no longer
   // be able to keep this constexpr:
-  static constexpr cub::internal::transform::Algorithm GetAlgorithm()
+  static constexpr cub::detail::transform::Algorithm GetAlgorithm()
   {
-    return cub::internal::transform::Algorithm::prefetch;
+    return cub::detail::transform::Algorithm::prefetch;
   }
 
   int BlockThreads()
@@ -118,7 +118,7 @@ std::string get_kernel_name(cccl_iterator_t input_it, cccl_iterator_t output_it,
   check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
 
   return std::format(
-    "cub::internal::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -143,7 +143,7 @@ get_kernel_name(cccl_iterator_t input1_it, cccl_iterator_t input2_it, cccl_itera
   check(nvrtcGetTypeName<op_wrapper>(&transform_op_t));
 
   return std::format(
-    "cub::internal::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}, {5}>",
+    "cub::detail::transform::transform_kernel<{0}, {1}, {2}, {3}, {4}, {5}>",
     chained_policy_t, // 0
     offset_t, // 1
     transform_op_t, // 2
@@ -235,7 +235,7 @@ struct prefetch_policy_t {{
 }};
 struct device_transform_policy {{
   struct ActivePolicy {{
-    static constexpr auto algorithm = cub::internal::transform::Algorithm::prefetch;
+    static constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
     using algo_policy = prefetch_policy_t;
   }};
 }};
@@ -338,17 +338,16 @@ CUresult cccl_device_unary_transform(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    auto cuda_error = cub::internal::transform::dispatch_t<
-      cub::internal::transform::requires_stable_address::no, // TODO implement yes
+    auto cuda_error = cub::detail::transform::dispatch_t<
+      cub::detail::transform::requires_stable_address::no, // TODO implement yes
       OffsetT,
       ::cuda::std::tuple<indirect_arg_t>,
       indirect_arg_t,
       indirect_arg_t,
       transform::dynamic_transform_policy_t<&transform::get_policy>,
       transform::transform_kernel_source,
-      cub::internal::CudaDriverLauncherFactory>::
-      dispatch(
-        d_in, d_out, num_items, op, stream, {build}, cub::internal::CudaDriverLauncherFactory{cu_device, build.cc});
+      cub::detail::CudaDriverLauncherFactory>::
+      dispatch(d_in, d_out, num_items, op, stream, {build}, cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
     if (cuda_error != cudaSuccess)
     {
       const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
@@ -433,7 +432,7 @@ struct prefetch_policy_t {{
 
 struct device_transform_policy {{
   struct ActivePolicy {{
-    static constexpr auto algorithm = cub::internal::transform::Algorithm::prefetch;
+    static constexpr auto algorithm = cub::detail::transform::Algorithm::prefetch;
     using algo_policy = prefetch_policy_t;
   }};
 }};
@@ -539,7 +538,7 @@ CUresult cccl_device_binary_transform(
       indirect_arg_t,
       transform::dynamic_transform_policy_t<&transform::get_policy>,
       transform::transform_kernel_source,
-      cub::internal::CudaDriverLauncherFactory>::
+      cub::detail::CudaDriverLauncherFactory>::
       dispatch(::cuda::std::make_tuple<indirect_arg_t, indirect_arg_t>(d_in1, d_in2),
                d_out,
                num_items,

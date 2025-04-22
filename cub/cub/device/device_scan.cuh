@@ -190,19 +190,19 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSum");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
-    using InitT   = cub::internal::it_value_t<InputIteratorT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using InitT   = cub::detail::it_value_t<InputIteratorT>;
 
     // Initial value
     InitT init_value{};
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, internal::InputValue<InitT>, OffsetT>::
+    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, detail::InputValue<InitT>, OffsetT>::
       Dispatch(d_temp_storage,
                temp_storage_bytes,
                d_in,
                d_out,
                ::cuda::std::plus<>{},
-               internal::InputValue<InitT>(init_value),
+               detail::InputValue<InitT>(init_value),
                num_items,
                stream);
   }
@@ -402,15 +402,15 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, internal::InputValue<InitValueT>, OffsetT>::Dispatch(
+    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
-      internal::InputValue<InitValueT>(init_value),
+      detail::InputValue<InitValueT>(init_value),
       num_items,
       stream);
   }
@@ -652,15 +652,15 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScan");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, internal::InputValue<InitValueT>, OffsetT>::Dispatch(
+    return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, detail::InputValue<InitValueT>, OffsetT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       scan_op,
-      internal::InputValue<InitValueT>(init_value),
+      detail::InputValue<InitValueT>(init_value),
       num_items,
       stream);
   }
@@ -875,7 +875,7 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSum");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, stream);
@@ -1066,7 +1066,7 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScan");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScan<InputIteratorT, OutputIteratorT, ScanOpT, NullType, OffsetT>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, NullType(), num_items, stream);
@@ -1155,14 +1155,14 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanInit");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
-    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::internal::it_value_t<InputIteratorT>, InitValueT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using AccumT  = ::cuda::std::__accumulator_t<ScanOpT, cub::detail::it_value_t<InputIteratorT>, InitValueT>;
 
     return DispatchScan<
       InputIteratorT,
       OutputIteratorT,
       ScanOpT,
-      internal::InputValue<InitValueT>,
+      detail::InputValue<InitValueT>,
       OffsetT,
       AccumT,
       ForceInclusive::Yes>::Dispatch(d_temp_storage,
@@ -1170,7 +1170,7 @@ struct DeviceScan
                                      d_in,
                                      d_out,
                                      scan_op,
-                                     internal::InputValue<InitValueT>(init_value),
+                                     detail::InputValue<InitValueT>(init_value),
                                      num_items,
                                      stream);
   }
@@ -1389,8 +1389,8 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveSumByKey");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
-    using InitT   = cub::internal::it_value_t<ValuesInputIteratorT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
+    using InitT   = cub::detail::it_value_t<ValuesInputIteratorT>;
 
     // Initial value
     InitT init_value{};
@@ -1575,7 +1575,7 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::ExclusiveScanByKey");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScanByKey<
       KeysInputIteratorT,
@@ -1709,7 +1709,7 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveSumByKey");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScanByKey<
       KeysInputIteratorT,
@@ -1875,7 +1875,7 @@ struct DeviceScan
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceScan::InclusiveScanByKey");
 
     // Unsigned integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchScanByKey<
       KeysInputIteratorT,

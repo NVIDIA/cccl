@@ -52,7 +52,7 @@
 #include <cuda/std/__algorithm_>
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 /**
  * @brief WarpScanShfl provides SHFL-based variants of parallel prefix scan of items partitioned
@@ -683,6 +683,6 @@ struct WarpScanShfl
     Update(input, inclusive, exclusive, scan_op, initial_value, is_integer);
   }
 };
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

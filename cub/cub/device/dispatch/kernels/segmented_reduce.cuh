@@ -43,7 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace reduce
 {
@@ -335,6 +335,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 }
 
 } // namespace reduce
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

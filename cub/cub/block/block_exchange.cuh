@@ -146,10 +146,10 @@ template <typename T,
 class BlockExchange
 {
   static constexpr int BLOCK_THREADS = BLOCK_DIM_X * BLOCK_DIM_Y * BLOCK_DIM_Z; ///< The thread block size in threads
-  static constexpr int WARP_THREADS  = internal::warp_threads;
+  static constexpr int WARP_THREADS  = detail::warp_threads;
   static constexpr int WARPS = (BLOCK_THREADS + WARP_THREADS - 1) / WARP_THREADS; // TODO(bgruber): use ceil_div in
                                                                                   // C++14
-  static constexpr int LOG_SMEM_BANKS = internal::log2_smem_banks;
+  static constexpr int LOG_SMEM_BANKS = detail::log2_smem_banks;
 
   static constexpr int TILE_ITEMS  = BLOCK_THREADS * ITEMS_PER_THREAD;
   static constexpr int TIME_SLICES = WARP_TIME_SLICING ? WARPS : 1;
@@ -212,7 +212,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -263,7 +263,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -321,7 +321,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -362,7 +362,7 @@ private:
         {
           item_offset += item_offset >> LOG_SMEM_BANKS;
         }
-        internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+        detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
       }
 
       __syncwarp(0xffffffff);
@@ -394,7 +394,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -435,7 +435,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -494,7 +494,7 @@ private:
             {
               item_offset += item_offset >> LOG_SMEM_BANKS;
             }
-            internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+            detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
           }
         }
       }
@@ -546,7 +546,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncwarp(0xffffffff);
@@ -559,7 +559,7 @@ private:
       {
         item_offset += item_offset >> LOG_SMEM_BANKS;
       }
-      internal::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
+      detail::uninitialized_copy_single(output_items + i, temp_storage.buff[item_offset]);
     }
   }
 
@@ -592,7 +592,7 @@ private:
           {
             item_offset += item_offset >> LOG_SMEM_BANKS;
           }
-          internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
 
         __syncwarp(0xffffffff);
@@ -636,7 +636,7 @@ private:
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -689,7 +689,7 @@ private:
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -743,7 +743,7 @@ private:
       {
         item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
       }
-      internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+      detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
     }
 
     __syncthreads();
@@ -797,7 +797,7 @@ private:
           {
             item_offset = (item_offset >> LOG_SMEM_BANKS) + item_offset;
           }
-          internal::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
+          detail::uninitialized_copy_single(temp_storage.buff + item_offset, input_items[i]);
         }
       }
 
@@ -896,7 +896,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   StripedToBlocked(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    StripedToBlocked(input_items, output_items, internal::bool_constant_v<WARP_TIME_SLICING>);
+    StripedToBlocked(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -947,7 +947,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToStriped(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    BlockedToStriped(input_items, output_items, internal::bool_constant_v<WARP_TIME_SLICING>);
+    BlockedToStriped(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -998,7 +998,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   WarpStripedToBlocked(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    WarpStripedToBlocked(input_items, output_items, internal::bool_constant_v<WARP_TIME_SLICING>);
+    WarpStripedToBlocked(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -1052,7 +1052,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void
   BlockedToWarpStriped(const T (&input_items)[ITEMS_PER_THREAD], OutputT (&output_items)[ITEMS_PER_THREAD])
   {
-    BlockedToWarpStriped(input_items, output_items, internal::bool_constant_v<WARP_TIME_SLICING>);
+    BlockedToWarpStriped(input_items, output_items, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @}  end member group
@@ -1082,7 +1082,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    ScatterToBlocked(input_items, output_items, ranks, internal::bool_constant_v<WARP_TIME_SLICING>);
+    ScatterToBlocked(input_items, output_items, ranks, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst
@@ -1109,7 +1109,7 @@ public:
     OutputT (&output_items)[ITEMS_PER_THREAD],
     OffsetT (&ranks)[ITEMS_PER_THREAD])
   {
-    ScatterToStriped(input_items, output_items, ranks, internal::bool_constant_v<WARP_TIME_SLICING>);
+    ScatterToStriped(input_items, output_items, ranks, detail::bool_constant_v<WARP_TIME_SLICING>);
   }
 
   //! @rst

@@ -57,7 +57,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace reduce
 {
@@ -75,7 +75,7 @@ struct unzip_and_write_arg_extremum_op
   }
 };
 } // namespace reduce
-} // namespace internal
+} // namespace detail
 
 //! @rst
 //! DeviceReduce provides device-wide, parallel operations for computing
@@ -222,7 +222,7 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
     // Signed integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, T>::Dispatch(
       d_temp_storage, temp_storage_bytes, d_in, d_out, static_cast<OffsetT>(num_items), reduction_op, init, stream);
@@ -315,10 +315,10 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
 
     // Signed integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The output value type
-    using OutputT = cub::internal::non_void_value_t<OutputIteratorT, cub::internal::it_value_t<InputIteratorT>>;
+    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
     using InitT = OutputT;
 
@@ -421,10 +421,10 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
     // Signed integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The input value type
-    using InputT = cub::internal::it_value_t<InputIteratorT>;
+    using InputT = cub::detail::it_value_t<InputIteratorT>;
 
     using InitT = InputT;
 
@@ -539,7 +539,7 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
     // The input type
-    using InputValueT = cub::internal::it_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // Offset type used within the kernel and to index within one partition
     using PerPartitionOffsetT = int;
@@ -548,7 +548,7 @@ struct DeviceReduce
     using GlobalOffsetT = ::cuda::std::int64_t;
 
     // The value type used for the extremum
-    using OutputExtremumT = internal::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
     using InitT           = OutputExtremumT;
 
     // Reduction operation
@@ -559,10 +559,9 @@ struct DeviceReduce
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
     auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
-      internal::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{
-        d_min_out, d_index_out});
+      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
-    return internal::reduce::dispatch_streaming_arg_reduce_t<
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
       InputIteratorT,
       decltype(out_it),
       PerPartitionOffsetT,
@@ -674,14 +673,14 @@ struct DeviceReduce
     using OffsetT = int;
 
     // The input type
-    using InputValueT = cub::internal::it_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::internal::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     using AccumT = OutputTupleT;
 
-    using InitT = internal::reduce::empty_problem_init_t<AccumT>;
+    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
 
     // The output value type
     using OutputValueT = typename OutputTupleT::Value;
@@ -783,10 +782,10 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
     // Signed integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // The input value type
-    using InputT = cub::internal::it_value_t<InputIteratorT>;
+    using InputT = cub::detail::it_value_t<InputIteratorT>;
 
     using InitT = InputT;
 
@@ -901,7 +900,7 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
     // The input type
-    using InputValueT = cub::internal::it_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // Offset type used within the kernel and to index within one partition
     using PerPartitionOffsetT = int;
@@ -910,7 +909,7 @@ struct DeviceReduce
     using GlobalOffsetT = ::cuda::std::int64_t;
 
     // The value type used for the extremum
-    using OutputExtremumT = internal::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
     using InitT           = OutputExtremumT;
 
     // Reduction operation
@@ -921,10 +920,9 @@ struct DeviceReduce
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
     auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
-      internal::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{
-        d_max_out, d_index_out});
+      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
-    return internal::reduce::dispatch_streaming_arg_reduce_t<
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
       InputIteratorT,
       decltype(out_it),
       PerPartitionOffsetT,
@@ -1040,17 +1038,17 @@ struct DeviceReduce
     using OffsetT = int;
 
     // The input type
-    using InputValueT = cub::internal::it_value_t<InputIteratorT>;
+    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::internal::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
 
     using AccumT = OutputTupleT;
 
     // The output value type
     using OutputValueT = typename OutputTupleT::Value;
 
-    using InitT = internal::reduce::empty_problem_init_t<AccumT>;
+    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
     using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
@@ -1188,7 +1186,7 @@ struct DeviceReduce
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     return DispatchTransformReduce<InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, TransformOpT, T>::Dispatch(
       d_temp_storage,
@@ -1358,7 +1356,7 @@ struct DeviceReduce
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 
     // Signed integer type for global offsets
-    using OffsetT = internal::choose_offset_t<NumItemsT>;
+    using OffsetT = detail::choose_offset_t<NumItemsT>;
 
     // FlagT iterator type (not used)
 

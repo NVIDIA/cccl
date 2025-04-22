@@ -1628,7 +1628,7 @@ c2h::device_vector<int> generate_edge_case_offsets()
 {
   C2H_TIME_SCOPE("generate_edge_case_offsets");
 
-  using MaxPolicyT = typename cub::internal::segmented_sort::policy_hub<KeyT, ValueT>::MaxPolicy;
+  using MaxPolicyT = typename cub::detail::segmented_sort::policy_hub<KeyT, ValueT>::MaxPolicy;
 
   int ptx_version = 0;
   REQUIRE(cudaSuccess == CubDebug(cub::PtxVersion(ptx_version)));

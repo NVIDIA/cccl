@@ -94,7 +94,7 @@ using fp_key_types         = c2h::type_list<double>;
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 
-// Index types used for NumItemsT testing. cub::internal::ChooseOffsetT only selects 32/64 bit unsigned types:
+// Index types used for NumItemsT testing. cub::detail::ChooseOffsetT only selects 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
 C2H_TEST("DeviceRadixSort::SortKeys: basic testing", "[keys][radix][sort][device]", key_types)

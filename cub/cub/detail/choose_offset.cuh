@@ -43,7 +43,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 
 /**
@@ -150,6 +150,6 @@ struct common_iterator_value
 template <typename... Iter>
 using common_iterator_value_t = typename common_iterator_value<Iter...>::type;
 
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -53,7 +53,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal::merge_sort
+namespace detail::merge_sort
 {
 template <typename MaxPolicyT,
           typename KeyInputIteratorT,
@@ -64,8 +64,8 @@ template <typename MaxPolicyT,
           typename CompareOpT>
 struct DeviceMergeSortKernelSource
 {
-  using KeyT   = cub::internal::it_value_t<KeyIteratorT>;
-  using ValueT = cub::internal::it_value_t<ValueIteratorT>;
+  using KeyT   = cub::detail::it_value_t<KeyIteratorT>;
+  using ValueT = cub::detail::it_value_t<ValueIteratorT>;
 
   CUB_DEFINE_KERNEL_GETTER(
     MergeSortBlockSortKernel,
@@ -105,7 +105,7 @@ struct DeviceMergeSortKernelSource
     return sizeof(ValueT);
   }
 };
-} // namespace internal::merge_sort
+} // namespace detail::merge_sort
 
 /*******************************************************************************
  * Policy
@@ -117,8 +117,8 @@ template <typename KeyInputIteratorT,
           typename ValueIteratorT,
           typename OffsetT,
           typename CompareOpT,
-          typename PolicyHub    = internal::merge_sort::policy_hub<KeyIteratorT>,
-          typename KernelSource = internal::merge_sort::DeviceMergeSortKernelSource<
+          typename PolicyHub    = detail::merge_sort::policy_hub<KeyIteratorT>,
+          typename KernelSource = detail::merge_sort::DeviceMergeSortKernelSource<
             typename PolicyHub::MaxPolicy,
             KeyInputIteratorT,
             ValueInputIteratorT,
@@ -126,10 +126,10 @@ template <typename KeyInputIteratorT,
             ValueIteratorT,
             OffsetT,
             CompareOpT>,
-          typename KernelLauncherFactory = internal::TripleChevronFactory,
-          typename VSMemHelperT          = internal::merge_sort::VSMemHelper,
-          typename KeyT                  = cub::internal::it_value_t<KeyIteratorT>,
-          typename ValueT                = cub::internal::it_value_t<ValueIteratorT>>
+          typename KernelLauncherFactory = detail::TripleChevronFactory,
+          typename VSMemHelperT          = detail::merge_sort::VSMemHelper,
+          typename KeyT                  = cub::detail::it_value_t<KeyIteratorT>,
+          typename ValueT                = cub::detail::it_value_t<ValueIteratorT>>
 struct DispatchMergeSort
 {
   /// Whether or not there are values to be trucked along with keys
@@ -217,7 +217,7 @@ struct DispatchMergeSort
 
     do
     {
-      auto wrapped_policy  = internal::merge_sort::MakeMergeSortPolicyWrapper(policy);
+      auto wrapped_policy  = detail::merge_sort::MakeMergeSortPolicyWrapper(policy);
       const auto tile_size = VSMemHelperT::template ItemsPerTile<
         typename ActivePolicyT::MergeSortPolicy,
         KeyInputIteratorT,
@@ -269,7 +269,7 @@ struct DispatchMergeSort
       size_t allocation_sizes[4] = {
         merge_partitions_size, temporary_keys_storage_size, temporary_values_storage_size, virtual_shared_memory_size};
 
-      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -323,9 +323,9 @@ struct DispatchMergeSort
               keys_buffer,
               items_buffer,
               compare_op,
-              cub::internal::vsmem_t{allocations[3]});
+              cub::detail::vsmem_t{allocations[3]});
 
-      error = CubDebug(internal::DebugSyncStream(stream));
+      error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -342,7 +342,7 @@ struct DispatchMergeSort
       constexpr int threads_per_partition_block = 256;
       const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
 
-      error = CubDebug(internal::DebugSyncStream(stream));
+      error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -372,7 +372,7 @@ struct DispatchMergeSort
                 target_merged_tiles_number,
                 tile_size);
 
-        error = CubDebug(internal::DebugSyncStream(stream));
+        error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           break;
@@ -397,9 +397,9 @@ struct DispatchMergeSort
                 compare_op,
                 merge_partitions,
                 target_merged_tiles_number,
-                cub::internal::vsmem_t{allocations[3]});
+                cub::detail::vsmem_t{allocations[3]});
 
-        error = CubDebug(internal::DebugSyncStream(stream));
+        error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
           break;

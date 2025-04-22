@@ -30,7 +30,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 
 /**
@@ -91,6 +91,6 @@ public:
   }
 };
 
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

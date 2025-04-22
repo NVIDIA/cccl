@@ -49,7 +49,7 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace internal
+namespace detail
 {
 
 static _CCCL_DEVICE _CCCL_FORCEINLINE void store_relaxed(uint4* ptr, uint4 val)
@@ -213,7 +213,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char* ptr, unsigned c
        "h"((unsigned short) val) : "memory");));
 }
 
-} // namespace internal
+} // namespace detail
 
 #endif // _CCCL_DOXYGEN_INVOKED
 

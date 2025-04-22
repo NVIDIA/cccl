@@ -89,7 +89,7 @@ template <int _BLOCK_THREADS,
           BlockLoadAlgorithm _LOAD_ALGORITHM,
           CacheLoadModifier _LOAD_MODIFIER,
           BlockScanAlgorithm _SCAN_ALGORITHM,
-          typename DelayConstructorT = internal::fixed_delay_constructor_t<350, 450>>
+          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentSelectIfPolicy
 {
   enum
@@ -120,7 +120,7 @@ struct AgentSelectIfPolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace internal
+namespace detail
 {
 namespace select
 {
@@ -1027,6 +1027,6 @@ struct AgentSelectIf
 };
 
 } // namespace select
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

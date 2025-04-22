@@ -47,7 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal::unique_by_key
+namespace detail::unique_by_key
 {
 
 enum class primitive_key
@@ -786,7 +786,7 @@ struct UniqueByKeyPolicyWrapper<StaticPolicyT,
 
   CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::UniqueByKeyPolicyT> UniqueByKey()
   {
-    return cub::internal::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
+    return cub::detail::MakePolicyWrapper(typename StaticPolicyT::UniqueByKeyPolicyT());
   }
 };
 
@@ -809,7 +809,7 @@ struct policy_hub
                              BLOCK_LOAD_WARP_TRANSPOSE,
                              LOAD_LDG,
                              BLOCK_SCAN_WARP_SCANS,
-                             internal::default_delay_constructor_t<int>>;
+                             detail::default_delay_constructor_t<int>>;
   };
 
   struct Policy500
@@ -869,6 +869,6 @@ struct policy_hub
   using MaxPolicy = Policy1000;
 };
 
-} // namespace internal::unique_by_key
+} // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

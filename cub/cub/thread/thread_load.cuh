@@ -106,13 +106,13 @@ enum CacheLoadModifier
  *   <b>[inferred]</b> The input's iterator type \iterator
  */
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::internal::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr);
 
 //@}  end member group
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-namespace internal
+namespace detail
 {
 template <CacheLoadModifier MODIFIER, typename T, int... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE void
@@ -128,18 +128,18 @@ UnrolledCopyImpl(RandomAccessIterator src, T* dst, ::cuda::std::integer_sequence
   ((dst[Is] = src[Is]), ...);
 }
 
-} // namespace internal
+} // namespace detail
 
 template <int Count, CacheLoadModifier MODIFIER, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledThreadLoad(T const* src, T* dst)
 {
-  internal::UnrolledThreadLoadImpl<MODIFIER>(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+  detail::UnrolledThreadLoadImpl<MODIFIER>(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
 }
 
 template <int Count, typename RandomAccessIterator, typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* dst)
 {
-  internal::UnrolledCopyImpl(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
+  detail::UnrolledCopyImpl(src, dst, ::cuda::std::make_integer_sequence<int, Count>{});
 }
 
 /**
@@ -268,8 +268,8 @@ _CUB_LOAD_ALL(LOAD_LDG, global.nc)
  * ThreadLoad definition for LOAD_DEFAULT modifier on iterator types
  */
 template <typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::internal::it_value_t<RandomAccessIterator> ThreadLoad(
-  RandomAccessIterator itr, internal::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(
+  RandomAccessIterator itr, detail::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::false_type /*is_pointer*/)
 {
   return *itr;
 }
@@ -279,7 +279,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE cub::internal::it_value_t<RandomAccessIterator> T
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadLoad(const T* ptr, internal::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadLoad(const T* ptr, detail::constant_t<LOAD_DEFAULT> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   return *ptr;
 }
@@ -315,9 +315,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadLoadVolatilePointer(const T* ptr, ::cuda:
  */
 template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadLoad(const T* ptr, internal::constant_t<LOAD_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadLoad(const T* ptr, detail::constant_t<LOAD_VOLATILE> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
-  return ThreadLoadVolatilePointer(ptr, internal::bool_constant_v<internal::is_primitive_v<T>>);
+  return ThreadLoadVolatilePointer(ptr, detail::bool_constant_v<detail::is_primitive_v<T>>);
 }
 
 /**
@@ -325,7 +325,7 @@ ThreadLoad(const T* ptr, internal::constant_t<LOAD_VOLATILE> /*modifier*/, ::cud
  */
 template <typename T, CacheLoadModifier MODIFIER>
 _CCCL_DEVICE _CCCL_FORCEINLINE T
-ThreadLoad(T const* ptr, internal::constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
+ThreadLoad(T const* ptr, detail::constant_t<MODIFIER> /*modifier*/, ::cuda::std::true_type /*is_pointer*/)
 {
   using DeviceWord              = typename UnitWord<T>::DeviceWord;
   constexpr int DEVICE_MULTIPLE = sizeof(T) / sizeof(DeviceWord);
@@ -336,10 +336,10 @@ ThreadLoad(T const* ptr, internal::constant_t<MODIFIER> /*modifier*/, ::cuda::st
 }
 
 template <CacheLoadModifier MODIFIER, typename RandomAccessIterator>
-_CCCL_DEVICE _CCCL_FORCEINLINE cub::internal::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
+_CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::it_value_t<RandomAccessIterator> ThreadLoad(RandomAccessIterator itr)
 {
   return ThreadLoad(
-    itr, internal::constant_v<MODIFIER>, internal::bool_constant_v<::cuda::std::is_pointer_v<RandomAccessIterator>>);
+    itr, detail::constant_v<MODIFIER>, detail::bool_constant_v<::cuda::std::is_pointer_v<RandomAccessIterator>>);
 }
 
 #endif // _CCCL_DOXYGEN_INVOKED

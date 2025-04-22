@@ -42,7 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 
 #if defined(_NVHPC_CUDA)
@@ -67,6 +67,6 @@ _CCCL_HOST_DEVICE void uninitialized_copy_single(T* ptr, U&& val)
 }
 #endif
 
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

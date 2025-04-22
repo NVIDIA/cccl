@@ -27,7 +27,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal::reduce
+namespace detail::reduce
 {
 
 template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
@@ -151,7 +151,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT,
           typename PolicyChainT =
-            internal::reduce::policy_hub<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
+            detail::reduce::policy_hub<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
 struct dispatch_streaming_arg_reduce_t
 {
   // Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`
@@ -277,7 +277,7 @@ struct dispatch_streaming_arg_reduce_t
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
-    cudaError_t error = internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    cudaError_t error = detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (error != cudaSuccess)
     {
       return error;
@@ -335,7 +335,7 @@ struct dispatch_streaming_arg_reduce_t
   }
 };
 
-} // namespace internal::reduce
+} // namespace detail::reduce
 CUB_NAMESPACE_END
 
 #endif // !_CCCL_DOXYGEN_INVOKED

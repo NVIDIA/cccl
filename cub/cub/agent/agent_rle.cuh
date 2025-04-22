@@ -95,7 +95,7 @@ template <int _BLOCK_THREADS,
           CacheLoadModifier _LOAD_MODIFIER,
           bool _STORE_WARP_TIME_SLICING,
           BlockScanAlgorithm _SCAN_ALGORITHM,
-          typename DelayConstructorT = internal::fixed_delay_constructor_t<350, 450>>
+          typename DelayConstructorT = detail::fixed_delay_constructor_t<350, 450>>
 struct AgentRlePolicy
 {
   enum
@@ -131,7 +131,7 @@ struct AgentRlePolicy
  * Thread block abstractions
  ******************************************************************************/
 
-namespace internal
+namespace detail
 {
 namespace rle
 {
@@ -171,10 +171,10 @@ struct AgentRle
   //---------------------------------------------------------------------
 
   /// The input value type
-  using T = cub::internal::it_value_t<InputIteratorT>;
+  using T = cub::detail::it_value_t<InputIteratorT>;
 
   /// The lengths output value type
-  using LengthT = cub::internal::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
+  using LengthT = cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>;
 
   /// Tuple type for scanning (pairs run-length and run-index)
   using LengthOffsetPair = KeyValuePair<OffsetT, LengthT>;
@@ -992,6 +992,6 @@ struct AgentRle
 };
 
 } // namespace rle
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

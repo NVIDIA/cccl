@@ -53,7 +53,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 
 namespace for_each
@@ -121,7 +121,7 @@ struct op_wrapper_vectorized_t
 };
 
 } // namespace for_each
-} // namespace internal
+} // namespace detail
 
 struct DeviceFor
 {
@@ -143,8 +143,8 @@ private:
     cudaStream_t stream,
     ::cuda::std::false_type /* do_not_vectorize */)
   {
-    using wrapped_op_t = internal::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessIteratorT>;
-    return internal::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
+    using wrapped_op_t = detail::for_each::op_wrapper_t<OffsetT, OpT, RandomAccessIteratorT>;
+    return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(num_items, wrapped_op_t{first, op}, stream);
   }
 
   template <class ContiguousIteratorT, class OffsetT, class OpT>
@@ -153,13 +153,13 @@ private:
   {
     auto* unwrapped_first = THRUST_NS_QUALIFIER::unwrap_contiguous_iterator(first);
     using wrapped_op_t =
-      internal::for_each::op_wrapper_vectorized_t<OffsetT, OpT, internal::it_value_t<ContiguousIteratorT>>;
+      detail::for_each::op_wrapper_vectorized_t<OffsetT, OpT, detail::it_value_t<ContiguousIteratorT>>;
 
     if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
     { // Vectorize loads
       const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
 
-      return internal::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
+      return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
         num_vec_items,
         wrapped_op_t{
           unwrapped_first, op, num_items % wrapped_op_t::vec_size ? num_vec_items - 1 : num_vec_items, num_items},
@@ -580,7 +580,7 @@ public:
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
     using offset_t = ShapeT;
-    return internal::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
+    return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
   }
 
 private:
@@ -592,7 +592,7 @@ private:
     using offset_t = NumItemsT;
     // Disable auto-vectorization for now:
     // constexpr bool use_vectorization =
-    //   internal::for_each::can_regain_copy_freedom<internal::it_value_t<RandomAccessIteratorT>, OpT>::value
+    //   detail::for_each::can_regain_copy_freedom<detail::it_value_t<RandomAccessIteratorT>, OpT>::value
     //   && THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorT>::value;
     using use_vectorization_t = ::cuda::std::bool_constant<false>;
     return for_each_n<RandomAccessIteratorT, offset_t, OpT>(first, num_items, op, stream, use_vectorization_t{});
@@ -704,7 +704,7 @@ public:
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
 
-    using offset_t       = internal::it_difference_t<RandomAccessIteratorT>;
+    using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
@@ -831,7 +831,7 @@ public:
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
-    using offset_t       = internal::it_difference_t<RandomAccessIteratorT>;
+    using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
@@ -983,7 +983,7 @@ public:
     // TODO: check dimensions overflows
     // TODO: check tha arity of OpType is equal to sizeof...(extents_type)
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
-    return internal::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
+    return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
   }
 };
 

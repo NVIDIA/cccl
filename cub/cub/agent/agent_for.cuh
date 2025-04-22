@@ -42,7 +42,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace for_each
 {
@@ -79,6 +79,6 @@ struct agent_block_striped_t
 };
 
 } // namespace for_each
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -48,7 +48,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace for_each_in_extents
 {
@@ -72,7 +72,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModTy
 template <int Rank, typename ExtendType, typename FastDivModType>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
 {
-  if constexpr (cub::internal::is_sub_size_static<Rank + 1, ExtendType>())
+  if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
   {
     return sub_size<Rank + 1>(ext);
   }
@@ -107,7 +107,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void computation(
   using extent_index_type = typename ExtendType::index_type;
   if constexpr (ExtendType::rank() > 0)
   {
-    for (auto i = id; i < cub::internal::size(ext); i += stride)
+    for (auto i = id; i < cub::detail::size(ext); i += stride)
     {
       func(i, coordinate_at<Ranks>(i, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
     }
@@ -143,7 +143,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads)
   using offset_t               = implicit_prom_t<extent_index_type>;
   constexpr auto block_threads = offset_t{active_policy_t::block_threads};
   constexpr auto stride        = offset_t{block_threads * active_policy_t::items_per_thread};
-  auto stride1                 = (stride >= cub::internal::size(ext)) ? block_threads : stride;
+  auto stride1                 = (stride >= cub::detail::size(ext)) ? block_threads : stride;
   auto id                      = static_cast<offset_t>(threadIdx.x + blockIdx.x * block_threads);
   computation<offset_t, Func, ExtendType, FastDivModArrayType, Ranks...>(
     id, stride1, func, ext, sub_sizes_div_array, extents_mod_array);
@@ -165,13 +165,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   using offset_t          = implicit_prom_t<extent_index_type>;
   auto block_threads      = offset_t{blockDim.x};
   auto stride             = static_cast<offset_t>(blockDim.x * active_policy_t::items_per_thread);
-  auto stride1            = (stride >= cub::internal::size(ext)) ? block_threads : stride;
+  auto stride1            = (stride >= cub::detail::size(ext)) ? block_threads : stride;
   auto id                 = static_cast<offset_t>(threadIdx.x + blockIdx.x * blockDim.x);
   computation<offset_t, Func, ExtendType, FastDivModArrayType, Ranks...>(
     id, stride, func, ext, sub_sizes_div_array, extents_mod_array);
 }
 
 } // namespace for_each_in_extents
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

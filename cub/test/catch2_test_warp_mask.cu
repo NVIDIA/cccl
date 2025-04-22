@@ -35,7 +35,7 @@ struct total_warps_t
 {
 private:
   static constexpr unsigned int total_warps =
-    (cub::PowerOfTwo<logical_warp_threads>::VALUE) ? cub::internal::warp_threads / logical_warp_threads : 1;
+    (cub::PowerOfTwo<logical_warp_threads>::VALUE) ? cub::detail::warp_threads / logical_warp_threads : 1;
 
 public:
   static constexpr unsigned int value()
@@ -98,7 +98,7 @@ C2H_TEST("Warp mask ignores lanes after current logical warp", "[mask][warp]", l
     const unsigned int warp_begin = logical_warp_thread * warp_id;
     const unsigned int warp_end   = warp_begin + logical_warp_thread;
 
-    for (unsigned int post_warp_lane = warp_end; post_warp_lane < cub::internal::warp_threads; post_warp_lane++)
+    for (unsigned int post_warp_lane = warp_end; post_warp_lane < cub::detail::warp_threads; post_warp_lane++)
     {
       REQUIRE_FALSE(is_lane_involved(warp_mask, post_warp_lane));
     }

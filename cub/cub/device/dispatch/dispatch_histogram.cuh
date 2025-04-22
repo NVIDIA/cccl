@@ -98,7 +98,7 @@ CUB_NAMESPACE_BEGIN
  * @param tile_queue
  *   Drain queue descriptor for dynamically mapping tile data onto thread blocks
  */
-namespace internal::histogram
+namespace detail::histogram
 {
 
 template <int NUM_ACTIVE_CHANNELS, typename CounterT, typename OffsetT>
@@ -358,7 +358,7 @@ struct dispatch_histogram
 
       // Alias the temporary allocations from the single storage blob (or compute the
       // necessary size of the blob)
-      error = CubDebug(internal::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+      error = CubDebug(detail::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
       if (cudaSuccess != error)
       {
         break;
@@ -450,7 +450,7 @@ struct dispatch_histogram
       }
 
       // Sync the stream if specified to flush runtime errors
-      error = CubDebug(internal::DebugSyncStream(stream));
+      error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)
       {
         break;
@@ -464,8 +464,8 @@ struct dispatch_histogram
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     return Invoke<ActivePolicyT>(
-      internal::histogram::DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
-      internal::histogram::DeviceHistogramSweepKernel<
+      detail::histogram::DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
+      detail::histogram::DeviceHistogramSweepKernel<
         MaxPolicyT,
         PRIVATIZED_SMEM_BINS,
         NUM_CHANNELS,
@@ -478,7 +478,7 @@ struct dispatch_histogram
   }
 };
 
-} // namespace internal::histogram
+} // namespace detail::histogram
 
 /******************************************************************************
  * Dispatch
@@ -529,7 +529,7 @@ public:
   //---------------------------------------------------------------------
 
   /// The sample value type of the input iterator
-  using SampleT = cub::internal::it_value_t<SampleIteratorT>;
+  using SampleT = cub::detail::it_value_t<SampleIteratorT>;
 
   enum
   {
@@ -883,8 +883,8 @@ public:
   {
     // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
     static constexpr bool isEven = 0;
-    using fallback_policy_hub    = internal::histogram::
-      policy_hub<internal::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -926,7 +926,7 @@ public:
         // Too many bins to keep in shared memory.
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        internal::histogram::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -962,7 +962,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        internal::histogram::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1059,8 +1059,8 @@ public:
     ::cuda::std::true_type /*is_byte_sample*/)
   {
     static constexpr bool isEven = 0;
-    using fallback_policy_hub    = internal::histogram::
-      policy_hub<internal::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -1101,7 +1101,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      internal::histogram::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,
@@ -1199,8 +1199,8 @@ public:
     ::cuda::std::false_type /*is_byte_sample*/)
   {
     static constexpr bool isEven = 1;
-    using fallback_policy_hub    = internal::histogram::
-      policy_hub<internal::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -1254,7 +1254,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = 0;
 
-        internal::histogram::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1290,7 +1290,7 @@ public:
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
 
-        internal::histogram::dispatch_histogram<
+        detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
           NUM_ACTIVE_CHANNELS,
           PRIVATIZED_SMEM_BINS,
@@ -1390,8 +1390,8 @@ public:
     ::cuda::std::true_type /*is_byte_sample*/)
   {
     static constexpr bool isEven = 1;
-    using fallback_policy_hub    = internal::histogram::
-      policy_hub<internal::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
+    using fallback_policy_hub    = detail::histogram::
+      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
 
     using MaxPolicyT =
       typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
@@ -1433,7 +1433,7 @@ public:
 
       constexpr int PRIVATIZED_SMEM_BINS = 256;
 
-      internal::histogram::dispatch_histogram<
+      detail::histogram::dispatch_histogram<
         NUM_CHANNELS,
         NUM_ACTIVE_CHANNELS,
         PRIVATIZED_SMEM_BINS,

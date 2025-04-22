@@ -52,7 +52,7 @@
 #include <cuda/ptx>
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 /**
  * @brief WarpScanSmem provides smem-based variants of parallel prefix scan of items partitioned
@@ -432,6 +432,6 @@ struct WarpScanSmem
     }
   }
 };
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

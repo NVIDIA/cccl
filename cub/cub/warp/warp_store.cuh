@@ -226,12 +226,12 @@ enum WarpStoreAlgorithm
 template <typename T,
           int ITEMS_PER_THREAD,
           WarpStoreAlgorithm ALGORITHM = WARP_STORE_DIRECT,
-          int LOGICAL_WARP_THREADS     = internal::warp_threads>
+          int LOGICAL_WARP_THREADS     = detail::warp_threads>
 class WarpStore
 {
   static_assert(PowerOfTwo<LOGICAL_WARP_THREADS>::VALUE, "LOGICAL_WARP_THREADS must be a power of two");
 
-  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == internal::warp_threads;
+  static constexpr bool IS_ARCH_WARP = LOGICAL_WARP_THREADS == detail::warp_threads;
 
 private:
   /// Store helper

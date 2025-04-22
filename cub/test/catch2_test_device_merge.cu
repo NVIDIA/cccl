@@ -54,7 +54,7 @@ void test_keys(Offset size1 = 3623, Offset size2 = 6346, CompareOp compare_op = 
   std::merge(keys1_h.begin(), keys1_h.end(), keys2_h.begin(), keys2_h.end(), reference_h.begin(), compare_op);
 
   // FIXME(bgruber): comparing std::vectors (slower than thrust vectors) but compiles a lot faster
-  CHECK((internal::to_vec(reference_h) == internal::to_vec(c2h::host_vector<Key>(result_d))));
+  CHECK((detail::to_vec(reference_h) == detail::to_vec(c2h::host_vector<Key>(result_d))));
 }
 
 C2H_TEST("DeviceMerge::MergeKeys key types", "[merge][device]", types)
@@ -71,7 +71,7 @@ struct fallback_test_policy_hub
 {
   struct max_policy : cub::ChainedPolicy<100, max_policy, max_policy>
   {
-    using merge_policy = cub::internal::merge::
+    using merge_policy = cub::detail::merge::
       agent_policy_t<128, 7, cub::BLOCK_LOAD_WARP_TRANSPOSE, cub::LOAD_DEFAULT, cub::BLOCK_STORE_WARP_TRANSPOSE>;
   };
 };
@@ -84,10 +84,10 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
 
   constexpr auto agent_sm = sizeof(key_t) * 128 * 7;
   constexpr auto fallback_sm =
-    sizeof(key_t) * cub::internal::merge::fallback_BLOCK_THREADS * cub::internal::merge::fallback_ITEMS_PER_THREAD;
-  static_assert(agent_sm > cub::internal::max_smem_per_block,
+    sizeof(key_t) * cub::detail::merge::fallback_BLOCK_THREADS * cub::detail::merge::fallback_ITEMS_PER_THREAD;
+  static_assert(agent_sm > cub::detail::max_smem_per_block,
                 "key_t is not big enough to exceed SM and trigger fallback policy");
-  static_assert(::cuda::std::is_same_v<key_t, large_type_fallb> == (fallback_sm <= cub::internal::max_smem_per_block),
+  static_assert(::cuda::std::is_same_v<key_t, large_type_fallb> == (fallback_sm <= cub::detail::max_smem_per_block),
                 "SM consumption by fallback policy should fit into max_smem_per_block");
 
   test_keys<key_t, offset_t>(
@@ -95,7 +95,7 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
     6346,
     ::cuda::std::less<key_t>{},
     [](const key_t* k1, offset_t s1, const key_t* k2, offset_t s2, key_t* r, ::cuda::std::less<key_t> co) {
-      using dispatch_t = cub::internal::merge::dispatch_t<
+      using dispatch_t = cub::detail::merge::dispatch_t<
         const key_t*,
         const cub::NullType*,
         const key_t*,
@@ -276,8 +276,8 @@ void test_pairs(
   }
 
   // FIXME(bgruber): comparing std::vectors (slower than thrust vectors) but compiles a lot faster
-  CHECK((internal::to_vec(reference_keys_h) == internal::to_vec(c2h::host_vector<Key>(result_keys_d))));
-  CHECK((internal::to_vec(reference_values_h) == internal::to_vec(c2h::host_vector<Value>(result_values_d))));
+  CHECK((detail::to_vec(reference_keys_h) == detail::to_vec(c2h::host_vector<Key>(result_keys_d))));
+  CHECK((detail::to_vec(reference_values_h) == detail::to_vec(c2h::host_vector<Value>(result_values_d))));
 }
 
 C2H_TEST("DeviceMerge::MergePairs key types", "[merge][device]", types)

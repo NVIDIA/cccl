@@ -44,7 +44,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace internal
+namespace detail
 {
 namespace scan
 {
@@ -176,7 +176,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
   using ScanPolicyT = typename ChainedPolicyT::ActivePolicy::ScanPolicyT;
 
   // Thread block type for scanning input tiles
-  using AgentScanT = internal::scan::
+  using AgentScanT = detail::scan::
     AgentScan<ScanPolicyT, InputIteratorT, OutputIteratorT, ScanOpT, RealInitValueT, OffsetT, AccumT, ForceInclusive>;
 
   // Shared memory for AgentScan
@@ -189,6 +189,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
 }
 
 } // namespace scan
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

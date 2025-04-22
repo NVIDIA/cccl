@@ -105,10 +105,10 @@ void init_output_partition_buffer(
   OffsetT num_items,
   T* d_out,
   SelectOpT select_op,
-  cub::internal::select::partition_distinct_output_t<T*, T*>& d_partition_out_buffer)
+  cub::detail::select::partition_distinct_output_t<T*, T*>& d_partition_out_buffer)
 {
   const auto selected_elements = thrust::count_if(d_in, d_in + num_items, select_op);
-  d_partition_out_buffer = cub::internal::select::partition_distinct_output_t<T*, T*>{d_out, d_out + selected_elements};
+  d_partition_out_buffer = cub::detail::select::partition_distinct_output_t<T*, T*>{d_out, d_out + selected_elements};
 }
 
 template <typename InItT, typename T, typename OffsetT, typename SelectOpT>
@@ -128,7 +128,7 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
   using offset_t                             = OffsetT;
   constexpr bool use_distinct_out_partitions = UseDistinctPartitionT::value;
   using output_it_t                          = typename ::cuda::std::
-    conditional<use_distinct_out_partitions, cub::internal::select::partition_distinct_output_t<T*, T*>, T*>::type;
+    conditional<use_distinct_out_partitions, cub::detail::select::partition_distinct_output_t<T*, T*>, T*>::type;
 
   using dispatch_t = cub::DispatchSelectIf<
     input_it_t,

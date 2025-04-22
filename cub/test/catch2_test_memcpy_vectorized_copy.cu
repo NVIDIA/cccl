@@ -13,7 +13,7 @@
 template <int LocigalWarpSize, typename VectorT, typename ByteOffsetT>
 __global__ void test_vectorized_copy_kernel(const void* d_in, void* d_out, ByteOffsetT copy_size)
 {
-  cub::internal::batch_memcpy::vectorized_copy<LocigalWarpSize, VectorT>(threadIdx.x, d_out, copy_size, d_in);
+  cub::detail::batch_memcpy::vectorized_copy<LocigalWarpSize, VectorT>(threadIdx.x, d_out, copy_size, d_in);
 }
 
 using vector_type_list = c2h::type_list<uint32_t, uint4>;

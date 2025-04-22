@@ -22,7 +22,7 @@ CUB_NAMESPACE_BEGIN
  * Kernel entry points
  *****************************************************************************/
 
-namespace internal::unique_by_key
+namespace detail::unique_by_key
 {
 
 // TODO: this class should be templated on `typename... Ts` to avoid repetition,
@@ -32,7 +32,7 @@ struct VSMemHelper
 {
   template <typename ActivePolicyT, typename... Ts>
   using VSMemHelperDefaultFallbackPolicyT =
-    vsmem_helper_default_fallback_policy_t<ActivePolicyT, internal::unique_by_key::AgentUniqueByKey, Ts...>;
+    vsmem_helper_default_fallback_policy_t<ActivePolicyT, detail::unique_by_key::AgentUniqueByKey, Ts...>;
 
   template <typename ActivePolicyT, typename... Ts>
   _CCCL_HOST_DEVICE static constexpr int BlockThreads(ActivePolicyT /*policy*/)
@@ -171,6 +171,6 @@ __launch_bounds__(int(
   // If applicable, hints to discard modified cache lines for vsmem
   VsmemHelperT::discard_temp_storage(temp_storage);
 }
-} // namespace internal::unique_by_key
+} // namespace detail::unique_by_key
 
 CUB_NAMESPACE_END

@@ -29,7 +29,7 @@
 struct op_wrapper;
 struct device_unique_by_key_policy;
 using OffsetT = unsigned long long;
-static_assert(std::is_same_v<cub::internal::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
+static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be unsigned long long");
 
 struct num_selected_storage_t;
 
@@ -117,7 +117,7 @@ std::string get_compact_init_kernel_name(cccl_iterator_t output_num_selected_it)
     get_iterator_name(output_num_selected_it, unique_by_key_iterator_t::num_selected);
 
   return std::format(
-    "cub::internal::scan::DeviceCompactInitKernel<cub::ScanTileState<{0}>, {1}>", offset_t, num_selected_iterator_t);
+    "cub::detail::scan::DeviceCompactInitKernel<cub::ScanTileState<{0}>, {1}>", offset_t, num_selected_iterator_t);
 }
 
 std::string get_sweep_kernel_name(
@@ -148,7 +148,7 @@ std::string get_sweep_kernel_name(
   check(nvrtcGetTypeName<op_wrapper>(&equality_op_t));
 
   return std::format(
-    "cub::internal::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, "
+    "cub::detail::unique_by_key::DeviceUniqueByKeySweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, "
     "device_unique_by_key_vsmem_helper>",
     chained_policy_t,
     input_keys_iterator_t,
@@ -303,7 +303,7 @@ struct agent_policy_t {{
   static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_DEFAULT;
   static constexpr cub::BlockScanAlgorithm SCAN_ALGORITHM = cub::BLOCK_SCAN_WARP_SCANS;
   struct detail {{
-    using delay_constructor_t = cub::internal::default_delay_constructor_t<unsigned long long>;
+    using delay_constructor_t = cub::detail::default_delay_constructor_t<unsigned long long>;
   }};
 }};
 struct device_unique_by_key_policy {{
@@ -315,10 +315,10 @@ struct device_unique_by_key_vsmem_helper {{
   template<typename ActivePolicyT, typename... Ts>
   struct VSMemHelperDefaultFallbackPolicyT {{
     using agent_policy_t = agent_policy_t;
-    using agent_t = cub::internal::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
-    using static_temp_storage_t = typename cub::internal::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>::TempStorage;
+    using agent_t = cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>;
+    using static_temp_storage_t = typename cub::detail::unique_by_key::AgentUniqueByKey<agent_policy_t, Ts...>::TempStorage;
     static _CCCL_DEVICE _CCCL_FORCEINLINE static_temp_storage_t& get_temp_storage(
-      static_temp_storage_t& static_temp_storage, cub::internal::vsmem_t& vsmem, ::cuda::std::size_t linear_block_id)
+      static_temp_storage_t& static_temp_storage, cub::detail::vsmem_t& vsmem, ::cuda::std::size_t linear_block_id)
     {{
         return static_temp_storage;
     }}
@@ -450,7 +450,7 @@ CUresult cccl_device_unique_by_key(
       OffsetT,
       unique_by_key::dynamic_unique_by_key_policy_t<&unique_by_key::get_policy>,
       unique_by_key::unique_by_key_kernel_source,
-      cub::internal::CudaDriverLauncherFactory,
+      cub::detail::CudaDriverLauncherFactory,
       unique_by_key::dynamic_vsmem_helper_t,
       indirect_arg_t,
       indirect_arg_t>::Dispatch(d_temp_storage,
@@ -464,7 +464,7 @@ CUresult cccl_device_unique_by_key(
                                 num_items,
                                 stream,
                                 {build},
-                                cub::internal::CudaDriverLauncherFactory{cu_device, build.cc},
+                                cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_keys_in.value_type.size});
 
     error = static_cast<CUresult>(exec_status);
