@@ -226,7 +226,9 @@ using arithmetic_type_list = c2h::type_list<
 #  endif // TEST_HALF_T()
 #  if TEST_BF_T()
    , __nv_bfloat16
+#if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9)
    , __nv_bfloat162
+#endif
 #  if _CCCL_CUDACC_AT_LEAST(12, 2)
    , cuda::std::complex<__nv_bfloat16>
 #endif
