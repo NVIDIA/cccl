@@ -185,29 +185,6 @@ private:
   }
 
 public:
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const noexcept
-  {
-    return __get();
-  }
-
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const noexcept
-  {
-    _CCCL_ASSERT(__get() != nullptr, "dereference of null annotated_ptr");
-    return *__get();
-  }
-
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator[](difference_type __n) const noexcept
-  {
-    _CCCL_ASSERT(__offset(__n) != nullptr, "dereference of null annotated_ptr");
-    return *__offset(__n);
-  }
-
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type operator-(annotated_ptr __other) const noexcept
-  {
-    _CCCL_ASSERT(__repr >= __other.__repr, "underflow");
-    return __repr - __other.__repr;
-  }
-
   _CCCL_HIDE_FROM_ABI annotated_ptr() noexcept                                      = default;
   _CCCL_HIDE_FROM_ABI annotated_ptr(const annotated_ptr&) noexcept                  = default;
   _CCCL_HIDE_FROM_ABI annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
@@ -245,6 +222,29 @@ public:
                   "Both properties must have same address space, or current property is access_property and "
                   "OtherProperty is not shared");
     // note: precondition "__other.__rep must be compatible with _Property" currently always holds
+  }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const noexcept
+  {
+    return __get();
+  }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const noexcept
+  {
+    _CCCL_ASSERT(__get() != nullptr, "dereference of null annotated_ptr");
+    return *__get();
+  }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator[](difference_type __n) const noexcept
+  {
+    _CCCL_ASSERT(__offset(__n) != nullptr, "dereference of null annotated_ptr");
+    return *__offset(__n);
+  }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type operator-(annotated_ptr __other) const noexcept
+  {
+    _CCCL_ASSERT(__repr >= __other.__repr, "underflow");
+    return __repr - __other.__repr;
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
