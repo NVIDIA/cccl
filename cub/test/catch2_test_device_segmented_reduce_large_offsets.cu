@@ -270,8 +270,7 @@ struct dispatch_helper
     REQUIRE(error == cudaSuccess);
 
     dispatch_helper dispatch{};
-    typename PolicyHub::MaxPolicy max_policy{};
-    error = max_policy.Invoke(ptx_version, dispatch);
+    error = PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
     REQUIRE(error == cudaSuccess);
     return dispatch.thresholds;
   }
@@ -303,12 +302,14 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
 
     // Get small and medium segment size thresholds from dispatch helper
     const ::cuda::std::tuple<int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
-    const int small                               = ::cuda::std::get<0>(thresholds);
-    const int medium                              = ::cuda::std::get<1>(thresholds);
+    const int small_segment_size                  = ::cuda::std::get<0>(thresholds);
+    const int medium_segment_size                 = ::cuda::std::get<1>(thresholds);
 
     // Take one random segment size from each of the segment sizes
-    const segment_size_t segment_size =
-      GENERATE_COPY(take(1, random(1, small)), take(1, random(small, medium)), take(1, random(medium, medium * 2)));
+    const segment_size_t segment_size = GENERATE_COPY(
+      take(1, random(1, small_segment_size)),
+      take(1, random(small_segment_size, medium_segment_size)),
+      take(1, random(medium_segment_size, medium_segment_size * 2)));
 
     const ::cuda::std::int64_t num_items = num_segments * segment_size;
 
