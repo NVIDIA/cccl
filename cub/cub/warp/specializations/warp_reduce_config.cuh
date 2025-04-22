@@ -144,7 +144,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
     static_assert(valid_items.rank_dynamic() == 1, "valid_items must be dynamic with segmented reductions");
     static_assert(result_mode == first_lane_result, "result_mode must be first_lane_result with segmented reductions");
   }
-#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS) && defined(_CUB_ENABLE_MASK_ASSERTIONS)
   // Check last position
   auto last_pos_limit = (is_segmented && logical_mode == multiple_reductions) ? detail::warp_threads : logical_size;
   _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) <= last_pos_limit, "invalid last position");
@@ -162,7 +162,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
   {
     logical_mask = (logical_mode == single_reduction) ? ::cuda::bitmask(0, logical_size) : 0xFFFFFFFF;
   }
-  //_CCCL_ASSERT((::__activemask() & logical_mask) == logical_mask, "Invalid lane mask");
+  _CCCL_ASSERT((::__activemask() & logical_mask) == logical_mask, "Invalid lane mask");
 #endif
 }
 
