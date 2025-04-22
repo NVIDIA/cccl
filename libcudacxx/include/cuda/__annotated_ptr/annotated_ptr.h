@@ -233,7 +233,7 @@ public:
     NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
   }
 
-  template <class _OtherType, class _OtherProperty>
+  template <typename _OtherType, class _OtherProperty>
   _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
       : ::cuda::__detail_ap::__annotated_ptr_base<_Property>(__other.__property())
       , __repr{__other.get()}

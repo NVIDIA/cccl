@@ -335,7 +335,7 @@ template <typename _Tp, typename _Property>
   return ::cuda::__detail_ap::__associate(__ptr, __prop);
 }
 
-template <class _Shape>
+template <typename _Shape>
 _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
@@ -352,15 +352,14 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
      auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
      constexpr size_t __line_size = 128;
      auto __nbytes                = static_cast<size_t>(__shape);
-     auto __end                   = ::cuda::ceil_div(__nbytes, __line_size);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
-     for (size_t __i = 0; __i < __end; __i++) {
-       asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(__p + __i * __line_size) :);
+     for (size_t __i = 0; __i < __nbytes + __line_size; __i += __line_size) {
+       asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(__p + __i) :);
      }))
   // clang-format on
 }
 
-template <class _Shape>
+template <typename _Shape>
 _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
   [[maybe_unused]] const volatile void* __ptr,
   [[maybe_unused]] _Shape __shape,
@@ -377,9 +376,8 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
      constexpr size_t __line_size = 128;
      auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
      auto __nbytes                = static_cast<size_t>(__shape);
-     auto __end                   = ::cuda::ceil_div(__nbytes, __line_size);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
-     for (size_t __i = 0; __i < __end; __i++) {
+     for (size_t __i = 0; __i < __nbytes + __line_size; __i += __line_size) {
        asm volatile("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + __i * __line_size) :);
      }))
   // clang-format on
