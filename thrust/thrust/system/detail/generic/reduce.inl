@@ -55,7 +55,7 @@ _CCCL_HOST_DEVICE T
 reduce(thrust::execution_policy<ExecutionPolicy>& exec, InputIterator first, InputIterator last, T init)
 {
   // use plus<T> by default
-  return thrust::reduce(exec, first, last, init, thrust::plus<T>());
+  return thrust::reduce(exec, first, last, init, ::cuda::std::plus<T>());
 } // end reduce()
 
 template <typename ExecutionPolicy, typename RandomAccessIterator, typename OutputType, typename BinaryFunction>

@@ -24,9 +24,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <catch2/catch_template_test_macros.hpp>
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/generators/catch_generators_all.hpp>
+#include <c2h/catch2_test_helper.h>
 #include <cccl/c/reduce.h>
 #include <cccl/c/scan.h>
 #include <nvrtc.h>
@@ -335,6 +333,69 @@ static std::string get_unary_op(cccl_type_enum t)
   return "";
 }
 
+static std::string get_radix_sort_decomposer_op(cccl_type_enum t)
+{
+  switch (t)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "extern \"C\" __device__ char* op(char* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT8:
+      return "extern \"C\" __device__ unsigned char* op(unsigned char* key) { return key; };";
+    case cccl_type_enum::CCCL_INT16:
+      return "extern \"C\" __device__ short* op(short* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT16:
+      return "extern \"C\" __device__ unsigned short* op(unsigned short* key) { return key; };";
+    case cccl_type_enum::CCCL_INT32:
+      return "extern \"C\" __device__ int* op(int* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT32:
+      return "extern \"C\" __device__ unsigned int* op(unsigned int* key) { return key; };";
+    case cccl_type_enum::CCCL_INT64:
+      return "extern \"C\" __device__ long long* op(long long* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT64:
+      return "extern \"C\" __device__ unsigned long long* op(unsigned long long* key) { return key; };";
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "extern \"C\" __device__ float* op(float* key) { return key; };";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "extern \"C\" __device__ double* op(double* key) { return key; };";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+  return "";
+}
+
+std::string type_enum_to_name(cccl_type_enum type)
+{
+  switch (type)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "::cuda::std::int8_t";
+    case cccl_type_enum::CCCL_INT16:
+      return "::cuda::std::int16_t";
+    case cccl_type_enum::CCCL_INT32:
+      return "::cuda::std::int32_t";
+    case cccl_type_enum::CCCL_INT64:
+      return "::cuda::std::int64_t";
+    case cccl_type_enum::CCCL_UINT8:
+      return "::cuda::std::uint8_t";
+    case cccl_type_enum::CCCL_UINT16:
+      return "::cuda::std::uint16_t";
+    case cccl_type_enum::CCCL_UINT32:
+      return "::cuda::std::uint32_t";
+    case cccl_type_enum::CCCL_UINT64:
+      return "::cuda::std::uint64_t";
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "float";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "double";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+
+  return "";
+}
+
 template <class T>
 struct pointer_t
 {
@@ -584,6 +645,46 @@ make_constant_iterator(std::string value_type, std::string prefix = "")
                 value_type)};
 
   return make_iterator<ValueT, constant_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
+}
+
+template <class ValueT>
+iterator_t<ValueT, random_access_iterator_state_t<ValueT>>
+make_reverse_iterator(iterator_kind kind, std::string value_type, std::string prefix = "", std::string transform = "")
+{
+  std::string iterator_state = std::format("struct state_t {{ {0}* data; }};\n", value_type);
+
+  operation_t advance = {
+    std::format("{0}_advance", prefix),
+    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{\n"
+                "  state->data -= offset;\n"
+                "}}",
+                prefix)};
+
+  std::string dereference_method;
+  if (kind == iterator_kind::INPUT)
+  {
+    dereference_method = std::format(
+      "extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{\n"
+      "  return (*state->data){2};\n"
+      "}}",
+      prefix,
+      value_type,
+      transform);
+  }
+  else
+  {
+    dereference_method = std::format(
+      "extern \"C\" __device__ void {0}_dereference(state_t* state, {1} x) {{\n"
+      "  *state->data = x{2};\n"
+      "}}",
+      prefix,
+      value_type,
+      transform);
+  }
+
+  operation_t dereference = {std::format("{0}_dereference", prefix), dereference_method};
+
+  return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
 template <class T>

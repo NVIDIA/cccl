@@ -87,7 +87,7 @@ void TestConstantIteratorIncrementBig()
   thrust::constant_iterator<long long int> begin(1);
   thrust::constant_iterator<long long int> end = begin + n;
 
-  ASSERT_EQUAL(thrust::distance(begin, end), n);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), n);
 }
 DECLARE_UNITTEST(TestConstantIteratorIncrementBig);
 
@@ -133,6 +133,11 @@ void TestMakeConstantIterator()
 
   ASSERT_EQUAL(13, *iter1);
   ASSERT_EQUAL(7, iter1 - iter0);
+
+  // ensure CTAD words
+  constant_iterator deduced_iter{42};
+  static_assert(::cuda::std::is_same_v<decltype(deduced_iter), constant_iterator<int>>);
+  ASSERT_EQUAL(42, *deduced_iter);
 }
 DECLARE_UNITTEST(TestMakeConstantIterator);
 
@@ -169,12 +174,12 @@ void TestConstantIteratorTransform()
   ConstIter last1  = first1 + result.size();
   ConstIter first2 = make_constant_iterator<T>(3);
 
-  thrust::transform(first1, last1, result.begin(), thrust::negate<T>());
+  thrust::transform(first1, last1, result.begin(), ::cuda::std::negate<T>());
 
   Vector ref(4, -7);
   ASSERT_EQUAL(ref, result);
 
-  thrust::transform(first1, last1, first2, result.begin(), thrust::plus<T>());
+  thrust::transform(first1, last1, first2, result.begin(), ::cuda::std::plus<T>());
 
   ref = Vector(4, 10);
   ASSERT_EQUAL(ref, result);

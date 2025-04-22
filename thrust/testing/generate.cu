@@ -186,8 +186,8 @@ void TestGenerateZipIterator()
   Vector v1(3, T(0));
   Vector v2(3, T(0));
 
-  thrust::generate(thrust::make_zip_iterator(thrust::make_tuple(v1.begin(), v2.begin())),
-                   thrust::make_zip_iterator(thrust::make_tuple(v1.end(), v2.end())),
+  thrust::generate(thrust::make_zip_iterator(v1.begin(), v2.begin()),
+                   thrust::make_zip_iterator(v1.end(), v2.end()),
                    return_value<thrust::tuple<T, T>>(thrust::tuple<T, T>(4, 7)));
 
   Vector ref1(3, 4);

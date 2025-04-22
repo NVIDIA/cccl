@@ -36,17 +36,17 @@ void TestAddressStabilityThrust()
   using ::cuda::proclaims_copyable_arguments;
 
   // thrust function objects with known types
-  static_assert(proclaims_copyable_arguments<thrust::plus<int>>::value, "");
-  static_assert(!proclaims_copyable_arguments<thrust::plus<>>::value, "");
+  static_assert(proclaims_copyable_arguments<::cuda::std::plus<int>>::value, "");
+  static_assert(!proclaims_copyable_arguments<::cuda::std::plus<>>::value, "");
 
   // thrust function objects with unknown types
-  static_assert(!proclaims_copyable_arguments<thrust::plus<addable>>::value, "");
-  static_assert(!proclaims_copyable_arguments<thrust::plus<>>::value, "");
+  static_assert(!proclaims_copyable_arguments<::cuda::std::plus<addable>>::value, "");
+  static_assert(!proclaims_copyable_arguments<::cuda::std::plus<>>::value, "");
 
   // thrust function objects with unknown types and opt-in
-  static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(thrust::plus<addable>{}))>::value,
-                "");
-  static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(thrust::plus<>{}))>::value, "");
+  static_assert(
+    proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(::cuda::std::plus<addable>{}))>::value, "");
+  static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(::cuda::std::plus<>{}))>::value, "");
 }
 DECLARE_UNITTEST(TestAddressStabilityThrust);
 

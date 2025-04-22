@@ -42,9 +42,9 @@ int main()
 
   // launch a CUDA kernel with only 1 thread on our stream
 #ifdef THRUST_EXAMPLE_DEVICE_SIDE
-  reduce_kernel<<<1, 1, 0, s>>>(data.begin(), data.end(), 0, thrust::plus<int>(), result.data());
+  reduce_kernel<<<1, 1, 0, s>>>(data.begin(), data.end(), 0, ::cuda::std::plus<int>(), result.data());
 #else
-  result[0] = thrust::reduce(thrust::cuda::par, data.begin(), data.end(), 0, thrust::plus<int>());
+  result[0] = thrust::reduce(thrust::cuda::par, data.begin(), data.end(), 0, ::cuda::std::plus<int>());
 #endif
 
   // wait for the stream to finish
@@ -63,7 +63,7 @@ int main()
   auto begin        = data.begin();
   auto end          = data.end();
   unsigned int init = 0;
-  auto binary_op    = thrust::plus<unsigned int>();
+  auto binary_op    = ::cuda::std::plus<unsigned int>();
 
   // std::async captures the algorithm parameters by value
   // use std::launch::async to ensure the creation of a new thread
