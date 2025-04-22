@@ -3,7 +3,7 @@
 ``cuda::annotated_ptr``
 =======================
 
-Defined in header ``<cuda/annotated_ptr>``:
+Defined in header ``<cuda/annotated_ptr>``.
 
 ``cuda::annotated_ptr`` is a pointer annotated with an access property that *may* be applied to its memory operations.
 
@@ -34,11 +34,11 @@ Defined in header ``<cuda/annotated_ptr>``:
 
      __host__ __device__ constexpr explicit operator bool() const noexcept;
 
-     __host__ __device__ pointer   get() const noexcept;
-     __host__ __device__ reference operator*() const noexcept;
-     __host__ __device__ pointer   operator->() const noexcept;
-     __host__ __device__ reference operator[](ptrdiff_t) const noexcept;
-     __host__ __device__ constexpr difference_type operator-(annotated_ptr) const noexcept;
+     [[nodiscard]] __host__ __device__ pointer   get() const noexcept;
+     [[nodiscard]] __host__ __device__ reference operator*() const noexcept;
+     [[nodiscard]] __host__ __device__ pointer   operator->() const noexcept;
+     [[nodiscard]] __host__ __device__ reference operator[](ptrdiff_t) const noexcept;
+     [[nodiscard]] __host__ __device__ constexpr difference_type operator-(annotated_ptr) const noexcept;
 
    private:
      pointer  ptr;  // exposition only
@@ -288,7 +288,7 @@ the grid-strided kernel:
 
 .. code:: cuda
 
-    __global__ void update(const int* x, const int* const a, const int* const b, size_t N) {
+    __global__ void update(const int* x, const int* a, const int* b, size_t N) {
         auto g = cooperative_groups::this_grid();
         for (int i = g.thread_rank(); idx < N; idx += g.size()) {
             x[i] = a[i] * x[i] + b[i];
