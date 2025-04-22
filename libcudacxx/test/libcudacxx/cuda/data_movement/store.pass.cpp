@@ -34,11 +34,13 @@ template <typename T>
 __device__ void store_call(T& value, T* output)
 {
   store_call(value, output, cuda::device::eviction_none);
-  store_call(value, output, cuda::device::eviction_normal);
-  store_call(value, output, cuda::device::eviction_unchanged);
-  store_call(value, output, cuda::device::eviction_first);
-  store_call(value, output, cuda::device::eviction_last);
-  store_call(value, output, cuda::device::eviction_no_alloc);
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (store_call(value, output, cuda::device::eviction_normal);
+     store_call(value, output, cuda::device::eviction_unchanged);
+     store_call(value, output, cuda::device::eviction_first);
+     store_call(value, output, cuda::device::eviction_last);
+     store_call(value, output, cuda::device::eviction_no_alloc);))
 }
 
 __device__ uint8_t pointer[256];

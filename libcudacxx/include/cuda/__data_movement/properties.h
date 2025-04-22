@@ -115,19 +115,23 @@ inline constexpr auto prefetch_256B         = __prefetch_256B_t{};
 // inline constexpr auto __no_cache_hint = _CacheHint<false>{};
 
 template <typename _AccessProperty>
-struct _CacheHint : _CUDA_VSTD::bool_constant<_CUDA_VSTD::is_same_v<_AccessProperty, ::cuda::access_property::global>>
+struct _CacheHint : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_same_v<_AccessProperty, access_property::global>>
 {
   // TODO: remove comment after PR #4503
   // static_assert(::cuda::__ap_detail::is_global_access_property<_AccessProperty>, "invalid access property");
 
-  // static constexpr bool __enable = !_CUDA_VSTD::is_same_v<_AccessProperty, ::cuda::access_property::global>;
-
   uint64_t __property;
 
-  _CacheHint(_AccessProperty __property)
-      : __property(static_cast<uint64_t>(__property))
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE explicit _CacheHint(_AccessProperty __property)
+      : __property(static_cast<uint64_t>(access_property{__property}))
   {}
 };
+
+#if __cccl_ptx_isa >= 830
+inline constexpr size_t __max_ptx_access_size = 16;
+#else
+inline constexpr size_t __max_ptx_access_size = 8;
+#endif
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 

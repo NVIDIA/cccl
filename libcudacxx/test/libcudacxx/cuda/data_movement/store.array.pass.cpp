@@ -22,7 +22,7 @@ __device__ void update(cuda::std::array<T, N>& array)
   }
 }
 
-template <size_t Align, size_t N, typename T, typename Eviction>
+template <size_t Align, typename T, size_t N, typename Eviction>
 __device__ void store_call(cuda::std::array<T, N>& value, T* output, Eviction eviction)
 {
   update(value);
@@ -33,15 +33,18 @@ __device__ void store_call(cuda::std::array<T, N>& value, T* output, Eviction ev
   __threadfence();
 }
 
-template <size_t Align, size_t N, typename T>
+template <size_t Align, typename T, size_t N>
 __device__ void store_call(cuda::std::array<T, N>& value, T* output)
 {
-  store_call<N>(value, output, cuda::device::eviction_none);
-  store_call<N>(value, output, cuda::device::eviction_normal);
-  store_call<N>(value, output, cuda::device::eviction_unchanged);
-  store_call<N>(value, output, cuda::device::eviction_first);
-  store_call<N>(value, output, cuda::device::eviction_last);
-  store_call<N>(value, output, cuda::device::eviction_no_alloc);
+  store_call<Align>(value, output, cuda::device::eviction_none);
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    (store_call<Align>(value, output, cuda::device::eviction_normal);
+     store_call<Align>(value, output, cuda::device::eviction_normal);
+     store_call<Align>(value, output, cuda::device::eviction_unchanged);
+     store_call<Align>(value, output, cuda::device::eviction_first);
+     store_call<Align>(value, output, cuda::device::eviction_last);
+     store_call<Align>(value, output, cuda::device::eviction_no_alloc);))
 }
 
 __device__ uint32_t pointer[256];
