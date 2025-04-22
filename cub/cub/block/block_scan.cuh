@@ -1074,7 +1074,7 @@ public:
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    internal::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -1159,7 +1159,7 @@ public:
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    internal::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -1291,7 +1291,7 @@ public:
     ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
     // Exclusive scan in registers with prefix as seed
-    internal::ThreadScanExclusive(input, output, scan_op, thread_prefix);
+    detail::ThreadScanExclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @}  end member group
@@ -1401,7 +1401,7 @@ public:
     ExclusiveScan(thread_partial, thread_partial, scan_op);
 
     // Exclusive scan in registers with prefix
-    internal::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @rst
@@ -1445,7 +1445,7 @@ public:
     ExclusiveScan(thread_partial, thread_partial, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix
-    internal::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
+    detail::ThreadScanExclusive(input, output, scan_op, thread_partial, (linear_tid != 0));
   }
 
   //! @}  end member group
@@ -1723,7 +1723,7 @@ public:
       ExclusiveSum(thread_prefix, thread_prefix);
 
       // Inclusive scan in registers with prefix as seed
-      internal::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1800,7 +1800,7 @@ public:
       ExclusiveSum(thread_prefix, thread_prefix, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed
-      internal::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -1932,7 +1932,7 @@ public:
       ExclusiveSum(thread_prefix, thread_prefix, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 
@@ -2244,7 +2244,7 @@ public:
       ExclusiveScan(thread_prefix, thread_prefix, scan_op);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      internal::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -2301,7 +2301,7 @@ public:
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
 
     // Exclusive scan in registers with prefix as seed
-    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -2383,7 +2383,7 @@ public:
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_aggregate);
 
       // Inclusive scan in registers with prefix as seed (first thread does not seed)
-      internal::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
+      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix, (linear_tid != 0));
     }
   }
 
@@ -2448,7 +2448,7 @@ public:
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
 
     // Exclusive scan in registers with prefix as seed
-    internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+    detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
   }
 
   //! @rst
@@ -2584,7 +2584,7 @@ public:
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
 
       // Inclusive scan in registers with prefix as seed
-      internal::ThreadScanInclusive(input, output, scan_op, thread_prefix);
+      detail::ThreadScanInclusive(input, output, scan_op, thread_prefix);
     }
   }
 
