@@ -133,8 +133,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/__internal/namespaces.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -144,6 +142,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
