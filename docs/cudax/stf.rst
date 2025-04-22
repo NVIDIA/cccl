@@ -1622,6 +1622,7 @@ kernel), a grid description, the amount of dynamically allocated shared memory,
 and finally all the arguments that must be passed to the CUDA kernel.
 
 .. code:: cpp
+
   template <typename Fun, typename... Args>
   cuda_kernel_desc(Fun func,           // Pointer to the CUDA kernel function (__global__)
                    dim3 gridDim_,      // Dimensions of the grid (number of thread blocks)
