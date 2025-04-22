@@ -154,7 +154,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 class access_property
 {
 private:
-  uint64_t __descriptor = 0;
+  uint64_t __descriptor = __detail_ap::__sm_80::__interleave_normal;
 
 public:
   struct shared
@@ -183,16 +183,13 @@ public:
     }
   };
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept
-      : __descriptor{__detail_ap::__sm_80::__interleave_normal}
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property() noexcept
-      : __descriptor{__detail_ap::__sm_80::__interleave_normal}
-  {}
+  _CCCL_HIDE_FROM_ABI access_property() noexcept                                  = default;
   _CCCL_HIDE_FROM_ABI access_property(const access_property&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
       : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction)}

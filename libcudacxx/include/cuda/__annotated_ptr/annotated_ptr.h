@@ -208,9 +208,9 @@ public:
     return __repr - __other.__repr;
   }
 
-  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr() noexcept                                      = default;
-  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr(annotated_ptr const&) noexcept                  = default;
-  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr() noexcept                                      = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr(const annotated_ptr&) noexcept                  = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI explicit annotated_ptr(pointer __p) noexcept
       : __repr{__p}

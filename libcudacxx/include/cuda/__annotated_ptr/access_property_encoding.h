@@ -174,8 +174,8 @@ namespace __off
 {
 enum __l2_cop_off_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
 {
-  _L2_EVICT_NORMAL = 0,
-  _L2_EVICT_FIRST  = 1,
+  _L2_Evict_Normal = 0,
+  _L2_Evict_First  = 1,
 };
 } // namespace __off
 
@@ -183,41 +183,41 @@ namespace __on
 {
 enum __l2_cop_on_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
 {
-  _L2_EVICT_NORMAL        = 0,
-  _L2_EVICT_FIRST         = 1,
-  _L2_EVICT_LAST          = 2,
-  _L2_EVICT_NORMAL_DEMOTE = 3,
+  _L2_Evict_Normal        = 0,
+  _L2_Evict_First         = 1,
+  _L2_Evict_Last          = 2,
+  _L2_Evict_Normal_Demote = 3,
 };
 } // namespace __on
 
 enum __l2_descriptor_mode_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
 {
-  _DESC_IMPLICIT    = 0,
-  _DESC_INTERLEAVED = 2,
-  _DESC_BLOCK_TYPE  = 3,
+  _Desc_Implicit    = 0,
+  _Desc_Interleaved = 2,
+  _Desc_Block_Type  = 3,
 };
 
 enum __l2_eviction_max_way_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
 {
-  _CUDA_AMPERE_MAX_L2_WAYS = 16,
+  _CUDA_Ampere_Max_L2_Ways = 16,
 };
 
 enum __block_size_t _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
 {
-  _BLOCKSIZE_4K   = 0,
-  _BLOCKSIZE_8K   = 1,
-  _BLOCKSIZE_16K  = 2,
-  _BLOCKSIZE_32K  = 3,
-  _BLOCKSIZE_64K  = 4,
-  _BLOCKSIZE_128K = 5,
-  _BLOCKSIZE_256K = 6,
-  _BLOCKSIZE_512K = 7,
-  _BLOCKSIZE_1M   = 8,
-  _BLOCKSIZE_2M   = 9,
-  _BLOCKSIZE_4M   = 10,
-  _BLOCKSIZE_8M   = 11,
-  _BLOCKSIZE_16M  = 12,
-  _BLOCKSIZE_32M  = 13,
+  _BlockSize_4K   = 0,
+  _BlockSize_8K   = 1,
+  _BlockSize_16K  = 2,
+  _BlockSize_32K  = 3,
+  _BlockSize_64K  = 4,
+  _BlockSize_128K = 5,
+  _BlockSize_256K = 6,
+  _BlockSize_512K = 7,
+  _BlockSize_1M   = 8,
+  _BlockSize_2M   = 9,
+  _BlockSize_4M   = 10,
+  _BlockSize_8M   = 11,
+  _BlockSize_16M  = 12,
+  _BlockSize_32M  = 13,
 };
 
 struct __block_desc_t
@@ -269,10 +269,10 @@ static_assert(
     uint64_t{1},
     uint64_t{1},
     uint64_t{1},
-    __block_size_t::_BLOCKSIZE_8K,
-    __off::_L2_EVICT_FIRST,
-    __on::_L2_EVICT_FIRST,
-    __l2_descriptor_mode_t::_DESC_INTERLEAVED,
+    __block_size_t::_BlockSize_8K,
+    __off::_L2_Evict_First,
+    __on::_L2_Evict_First,
+    __l2_descriptor_mode_t::_Desc_Interleaved,
     uint64_t{1},
     uint64_t{1},
     uint64_t{1}}
@@ -324,7 +324,7 @@ struct __block_descriptor_builder
       , __block_count{__calc_end_hit(__ptr, __hit_bytes, __total_bytes) - __calc_block_start(__ptr, __total_bytes)}
       , __l2_cop_off{__miss_prop}
       , __l2_cop_on{__hit_prop}
-      , __l2_descriptor_mode{_DESC_BLOCK_TYPE}
+      , __l2_descriptor_mode{_Desc_Esc_Block_Type}
       , __l1_inv_dont_allocate{false}
       , __l2_sector_promote_256B{false}
   {}
@@ -339,7 +339,7 @@ struct __block_descriptor_builder
       __block_size,
       __l2_cop_off,
       __l2_cop_on,
-      _DESC_BLOCK_TYPE,
+      _Desc_Esc_Block_Type,
       uint64_t{false},
       uint64_t{false},
       uint64_t{0}};
@@ -364,7 +364,7 @@ struct __interleave_descriptor_t
       , __fraction{__hit_ratio}
       , __l2_cop_off{__miss_prop}
       , __l2_cop_on{__hit_prop}
-      , __l2_descriptor_mode{_DESC_INTERLEAVED}
+      , __l2_descriptor_mode{_Desc_Interleaved}
       , __l1_inv_dont_allocate{0}
       , __l2_sector_promote_256B{0}
       , __ap_reserved2{0}
@@ -412,11 +412,11 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
 {
   return __sm_80::__interleave_descriptor_t{
     (__hit_prop == cudaAccessPropertyNormal
-       ? __sm_80::__on::__l2_cop_on_t::_L2_EVICT_NORMAL_DEMOTE
+       ? __sm_80::__on::__l2_cop_on_t::_L2_Evict_Normal_Demote
        : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop)),
     _CUDA_VSTD::min(
-      (static_cast<uint32_t>(__hit_ratio * uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS})),
-      uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_AMPERE_MAX_L2_WAYS} - 1),
+      (static_cast<uint32_t>(__hit_ratio * uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_Ampere_Max_L2_Ways})),
+      uint32_t{__sm_80::__l2_eviction_max_way_t::_CUDA_Ampere_Max_L2_Ways} - 1),
     static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
     .__get_descriptor();
 }
@@ -433,7 +433,7 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
                                                __hit_bytes,
                                                __total_bytes,
                                                (__hit_prop == cudaAccessPropertyNormal)
-                                                 ? __sm_80::__on::_L2_EVICT_NORMAL_DEMOTE
+                                                 ? __sm_80::__on::_L2_Evict_Normal_Demote
                                                  : static_cast<__sm_80::__on::__l2_cop_on_t>(__hit_prop),
                                                static_cast<__sm_80::__off::__l2_cop_off_t>(__miss_prop)}
              .__get_block()
