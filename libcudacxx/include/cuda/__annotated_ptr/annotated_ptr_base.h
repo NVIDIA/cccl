@@ -319,11 +319,9 @@ protected:
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI access_property __get_property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST access_property __get_property() const noexcept
   {
-    access_property __access_prop;
-    ::memcpy(static_cast<void*>(&__access_prop), &__prop, sizeof(access_property));
-    return __access_prop;
+    return _CUDA_VSTD::bit_cast<access_property>(__prop);
   }
 };
 

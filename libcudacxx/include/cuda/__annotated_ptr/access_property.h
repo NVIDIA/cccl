@@ -217,24 +217,24 @@ public:
       : access_property{persisting{}, 1.0f}
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
-    void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
+  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{})}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
-    void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
+  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, streaming{})}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
-    void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
+  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{})}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
-    void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
+  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(
-    void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
+  access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming) noexcept
       : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})}
   {}
 
@@ -297,14 +297,13 @@ template <typename _Prop>
 }
 
 template <>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void*
-__associate_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
 {
   NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);), (return __ptr;))
 }
 
 template <>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
 {
   return __ptr;
 }

@@ -155,12 +155,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 namespace __detail_ap
 {
 
-// TODO: replace with ceil_ilog2 when available
-_LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __ap_ceil_log2(uint32_t __x) noexcept
-{
-  return ::cuda::ilog2(__x) + static_cast<int>(!_CUDA_VSTD::has_single_bit(__x));
-}
-
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
 // Specifically search for 8.4 and 9.3 and above to guarantee uint64_t enum.
 #if _CCCL_COMPILER(GCC, <, 9, 3)
@@ -295,7 +289,7 @@ struct __block_descriptor_builder
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t __calc_offset(size_t __total_bytes) noexcept
   {
-    return _CUDA_VSTD::max(uint32_t{12}, ::cuda::__detail_ap::__ap_ceil_log2(static_cast<uint32_t>(__total_bytes)) - 7);
+    return _CUDA_VSTD::max(uint32_t{12}, ::cuda::ceil_ilog2(__total_bytes) - 7u);
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t
@@ -424,7 +418,7 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
     .__get_descriptor();
 }
 
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI uint64_t constexpr __block(
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI uint64_t _LIBCUDACXX_CONSTEXPR_BIT_CAST __block(
   void* __ptr,
   size_t __hit_bytes,
   size_t __total_bytes,
