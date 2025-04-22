@@ -334,8 +334,8 @@ struct __block_descriptor_builder
   {
     return __block_desc_t{
       0,
-      _CUDA_VSTD::min(uint32_t{0x7f}, __block_count),
-      __block_start & uint32_t{0x7f},
+      _CUDA_VSTD::min(uint32_t{0x7F}, __block_count),
+      __block_start & uint32_t{0x7F},
       0,
       __block_size,
       __l2_cop_off,
