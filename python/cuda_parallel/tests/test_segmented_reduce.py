@@ -179,3 +179,64 @@ def test_large_num_segments():
     )
     i = cp.asarray(iota % 5, dtype=cp.int8) + cp.asarray(iota % 3, dtype=cp.int8)
     assert cp.all(res == cp.diff(i * (i + 1) % 7) % 7)
+
+
+def test_large_num_segments3():
+    input_it = iterators.ConstantIterator(np.int16(1))
+
+    def offset_functor(m0: np.int64, p: np.int64):
+        def offset_value(n: np.int64):
+            """
+            Offset value computes closed form for
+            :math:`sum(1 + (k % p), k=0..n)`.
+
+            So segment lengths are periodic linearly
+            increasing sequences, e.g,
+            [1, 2, ..., n - 2, n - 1, 1, 2, ....]
+            """
+            q = n // p
+            r = n - q * p
+            p2 = (p * (p - 1)) // 2
+            r2 = (r * (r + 1)) // 2
+
+            offset_val = (n + 1) * m0 + q * p2 + r2
+            return offset_val
+
+        return offset_value
+
+    m0, p = 265, 163
+    offsets_it = iterators.TransformIterator(
+        iterators.CountingIterator(np.int64(-1)), offset_functor(m0, p)
+    )
+    start_offsets = offsets_it
+    end_offsets = offsets_it + 1
+
+    def _plus(a, b):
+        return a + b
+
+    num_segments = (2**15 + 2**3) * 2**16
+    res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
+    assert res.size == num_segments
+
+    h_init = np.zeros(tuple(), dtype=np.int16)
+    alg = algorithms.segmented_reduce(
+        input_it, res, start_offsets, end_offsets, _plus, h_init
+    )
+
+    # band-aid solution for setting of host advance function
+    f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
+    alg.start_offsets_in_cccl.host_advance_fn = f1
+    f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
+    alg.end_offsets_in_cccl.host_advance_fn = f2
+
+    temp_storage_bytes = alg(
+        None, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+
+    d_temp_storage = cp.empty(temp_storage_bytes, dtype=np.uint8)
+    _ = alg(
+        d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
+    )
+
+    expected = cp.tile(cp.arange(m0, p + m0, dtype=cp.int16), (res.size + p - 1) // p)
+    assert cp.all(res == expected[: res.size])
