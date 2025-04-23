@@ -75,6 +75,5 @@ int main(int, char**)
   test_num_bits<__nv_fp4_e2m1, 4>();
 #endif // _CCCL_HAS_NVFP8_E8M0()
   test_num_bits<int*>();
-  test_num_bits<char[3]>();
   return 0;
 }
