@@ -15,7 +15,7 @@
 
 struct alloc_first
 {
-  STATIC_MEMBER_VAR(allocator_constructed, bool);
+  STATIC_MEMBER_VAR(allocator_constructed, bool)
 
   typedef A1<int> allocator_type;
 
