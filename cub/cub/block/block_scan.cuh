@@ -859,7 +859,9 @@ public:
   //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
   //! Furthermore the value ``126`` will be stored in ``block_aggregate`` for all threads.
   //!
-  //! \note ``initial_value`` is not applied to the block-wide aggregate.
+  //! .. note::
+  //!
+  //!    ``initial_value`` is not applied to the block-wide aggregate.
   //!
   //! @endrst
   //!
@@ -1121,7 +1123,9 @@ public:
   //! ``{ [INT_MIN,0,0,2], [2,4,4,6], ..., [506,508,508,510] }``.
   //! Furthermore the value ``510`` will be stored in ``block_aggregate`` for all threads.
   //!
-  //! \note ``initial_value`` is not applied to the block-wide aggregate.
+  //! .. note::
+  //!
+  //!    ``initial_value`` is not applied to the block-wide aggregate.
   //!
   //! @endrst
   //!
@@ -2412,7 +2416,9 @@ public:
   //!
   //! The value ``126`` will be stored in ``block_aggregate`` for all threads.
   //!
-  //! \note ``initial_value`` is not applied to the block-wide aggregate.
+  //! .. note::
+  //!
+  //!    ``initial_value`` is not applied to the block-wide aggregate.
   //!
   //! @endrst
   //!
