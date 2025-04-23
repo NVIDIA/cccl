@@ -1370,23 +1370,23 @@ private:
   }
 };
 
+template <class _Tp, class _Up>
+inline constexpr bool __cccl_variant_check_narrowing =
+#ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
+  true;
+#else
+  __cccl_internal::__cccl_is_non_narrowing_v<_Tp, _Up>;
+#endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
+
 template <class _Tp, size_t _Idx>
 struct __overload
 {
-  template <class _Up>
-  static constexpr bool __check_narrowing =
-#ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
-    true;
-#else
-    __cccl_internal::__cccl_is_non_narrowing_v<_Tp, _Up>;
-#endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
-
   _CCCL_TEMPLATE(class _Up)
   _CCCL_REQUIRES((!is_arithmetic_v<_Tp>) )
   _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> type_identity<_Tp>;
 
   _CCCL_TEMPLATE(class _Up)
-  _CCCL_REQUIRES(is_arithmetic_v<_Tp> _CCCL_AND __check_narrowing<_Up>)
+  _CCCL_REQUIRES(is_arithmetic_v<_Tp> _CCCL_AND __cccl_variant_check_narrowing<_Tp, _Up>)
   _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_Tp, _Up&&) const -> type_identity<_Tp>;
 };
 
