@@ -26,17 +26,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _CharT>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits;
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>;
+struct char_traits<char>;
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t>;
+struct char_traits<wchar_t>;
 #if _CCCL_HAS_CHAR8_T()
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t>;
+struct char_traits<char8_t>;
 #endif // _CCCL_HAS_CHAR8_T()
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char16_t>;
+struct char_traits<char16_t>;
 template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>;
+struct char_traits<char32_t>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
