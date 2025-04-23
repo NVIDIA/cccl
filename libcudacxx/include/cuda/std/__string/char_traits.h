@@ -68,32 +68,56 @@ struct __cccl_char_traits_impl
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr int
   compare(const char_type* __lhs, const char_type* __rhs, size_t __count) noexcept
   {
+    if (__count > 0)
+    {
+      _CCCL_ASSERT(__lhs != nullptr, "char_traits::compare: lhs pointer is null");
+      _CCCL_ASSERT(__rhs != nullptr, "char_traits::compare: rhs pointer is null");
+    }
     return _CUDA_VSTD::__cccl_memcmp(__lhs, __rhs, __count);
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static size_t constexpr length(const char_type* __s) noexcept
   {
+    _CCCL_ASSERT(__s != nullptr, "char_traits::length: nullptr passed as an argument");
     return _CUDA_VSTD::__cccl_strlen(__s);
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr const char_type*
   find(const char_type* __s, size_t __n, const char_type& __a) noexcept
   {
+    if (__n > 0)
+    {
+      _CCCL_ASSERT(__s != nullptr, "char_traits::find: nullptr passed as an argument");
+    }
     return _CUDA_VSTD::__cccl_memchr<const char_type>(__s, __a, __n);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
+    if (__n > 0)
+    {
+      _CCCL_ASSERT(__s1 != nullptr, "char_traits::move: destination pointer is null");
+      _CCCL_ASSERT(__s2 != nullptr, "char_traits::move: source pointer is null");
+    }
     return _CUDA_VSTD::__cccl_memmove(__s1, __s2, __n);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
+    if (__n > 0)
+    {
+      _CCCL_ASSERT(__s1 != nullptr, "char_traits::copy: destination pointer is null");
+      _CCCL_ASSERT(__s2 != nullptr, "char_traits::copy: source pointer is null");
+    }
     return _CUDA_VSTD::__cccl_memcpy(__s1, __s2, __n);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
   {
+    if (__n > 0)
+    {
+      _CCCL_ASSERT(__s != nullptr, "char_traits::assign: destination pointer is null");
+    }
     return _CUDA_VSTD::__cccl_memset(__s, __a, __n);
   }
 
