@@ -29,12 +29,14 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& min(const _Tp& __a, const _Tp& __b, _Compare __comp)
 {
   return __comp(__b, __a) ? __b : __a;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& min(const _Tp& __a, const _Tp& __b)
 {

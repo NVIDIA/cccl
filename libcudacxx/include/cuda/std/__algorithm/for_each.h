@@ -21,6 +21,7 @@
 #endif // no system header
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _Function>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Function for_each(_InputIterator __first, _InputIterator __last, _Function __f)
 {
