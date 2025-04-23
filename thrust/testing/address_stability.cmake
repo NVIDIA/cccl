@@ -1,5 +1,5 @@
 # There are extra ; in the extended lambda implementation
-target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: --extended-lambda -Wno-extra-semi>)
+target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>: --extended-lambda>)
 
 # this check is actually not correct, because we must check the host compiler, not the CXX compiler.
 # We rely on that those are usually the same ;)

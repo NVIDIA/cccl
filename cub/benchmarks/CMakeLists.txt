@@ -89,7 +89,7 @@ function(add_bench_dir bench_dir)
     add_bench(base_bench_target ${base_bench_name} "${bench_src}")
     add_dependencies(${benches_meta_target} ${base_bench_target})
     target_compile_definitions(${base_bench_target} PRIVATE TUNE_BASE=1)
-    target_compile_options(${base_bench_target} PRIVATE "--extended-lambda -Wno-extra-semi")
+    target_compile_options(${base_bench_target} PRIVATE "--extended-lambda")
 
     if (CUB_ENABLE_TUNING)
       # tuning

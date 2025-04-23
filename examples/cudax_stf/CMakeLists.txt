@@ -47,7 +47,7 @@ target_link_libraries(simple_stf PUBLIC cuda)
 
 if (CMAKE_CUDA_COMPILER)
     target_compile_options(simple_stf PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
-    target_compile_options(simple_stf PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda -Wno-extra-semi>)
+    target_compile_options(simple_stf PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)
 endif()
 
 target_link_libraries(simple_stf PRIVATE CCCL::CCCL CCCL::cudax)
