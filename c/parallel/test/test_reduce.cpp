@@ -79,8 +79,8 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
-    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
+    "extern \"C\" __device__ void op(pair* lhs, pair* rhs, pair* out) {\n"
+    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
     "}");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);

@@ -207,8 +207,8 @@ struct pair {{
   short a;
   size_t b;
 }};
-extern "C" __device__ pair {0}(pair lhs, pair rhs) {{
-  return pair{{ lhs.a + rhs.a, lhs.b + rhs.b }};
+extern "C" __device__ void {0}(pair* lhs, pair* rhs, pair* out) {{
+  *out = pair{{ lhs->a + rhs->a, lhs->b + rhs->b }};
 }}
 )XXX";
   std::string plus_pair_op_src                     = std::format(plus_pair_op_template, device_op_name);

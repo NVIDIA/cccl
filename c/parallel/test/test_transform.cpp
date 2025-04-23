@@ -107,8 +107,8 @@ C2H_TEST("Transform works with output of different type", "[transform]")
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ pair op(int x) {\n"
-    "  return pair{ short(x), size_t(x) };\n"
+    "extern \"C\" __device__ void op(int* x, pair* out) {\n"
+    "  *out = pair{ short(*x), size_t(*x) };\n"
     "}");
   const std::vector<int> input = generate<int>(num_items);
   std::vector<pair> expected(num_items);
@@ -134,8 +134,8 @@ C2H_TEST("Transform works with custom types", "[transform]")
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ pair op(pair x) {\n"
-    "  return pair{ x.a * 2, x.b * 2  };\n"
+    "extern \"C\" __device__ void op(pair* x, pair* out) {\n"
+    "  *out = pair{ x->a * 2, x->b * 2  };\n"
     "}");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
@@ -219,8 +219,8 @@ C2H_TEST("Transform with binary operator", "[transform]")
 
   operation_t op = make_operation(
     "op",
-    "extern \"C\" __device__ int op(int x, int y) {\n"
-    "  return (x > y) ? x : y;\n"
+    "extern \"C\" __device__ void op(int* x, int* y, int* out) {\n"
+    "  *out = (*x > *y) ? *x : *y;\n"
     "}");
 
   binary_transform(input1_ptr, input2_ptr, output_ptr, num_items, op);
@@ -250,8 +250,8 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
 
   operation_t op = make_operation(
     "op",
-    "extern \"C\" __device__ int op(int x, int y) {\n"
-    "  return (x > y) ? x : y;\n"
+    "extern \"C\" __device__ void op(int* x, int* y, int* out) {\n"
+    "  *out = (*x > *y) ? *x : *y;\n"
     "}");
 
   binary_transform(input1_ptr, input2_it, output_ptr, num_items, op);
