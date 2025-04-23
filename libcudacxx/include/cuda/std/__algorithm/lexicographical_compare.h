@@ -26,6 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Compare, class _InputIterator1, class _InputIterator2>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __lexicographical_compare(
   _InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2, _Compare __comp)
