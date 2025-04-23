@@ -154,9 +154,6 @@ TEST_CASE("Smoke", "[device]")
                             ::cudaDevAttrCanUseHostPointerForRegisteredMem,
                             bool>();
     ::test_device_attribute<device::attrs::cooperative_launch, ::cudaDevAttrCooperativeLaunch, bool>();
-    ::test_device_attribute<device::attrs::cooperative_multi_device_launch,
-                            ::cudaDevAttrCooperativeMultiDeviceLaunch,
-                            bool>();
     ::test_device_attribute<device::attrs::can_flush_remote_writes, ::cudaDevAttrCanFlushRemoteWrites, bool>();
     ::test_device_attribute<device::attrs::host_register_supported, ::cudaDevAttrHostRegisterSupported, bool>();
     ::test_device_attribute<device::attrs::pageable_memory_access_uses_host_page_tables,
