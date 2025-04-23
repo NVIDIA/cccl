@@ -433,18 +433,6 @@ inline constexpr bool __is_complex_v = false;
 template <class _Tp>
 inline constexpr bool __is_complex_v<complex<_Tp>> = true;
 
-template <typename _Tp>
-inline constexpr int __num_bits_v<complex<_Tp>> = __num_bits_impl<remove_cv_t<_Tp>>() * 2;
-
-template <typename _Tp>
-inline constexpr int __num_bits_v<const complex<_Tp>> = __num_bits_impl<remove_cv_t<_Tp>>() * 2;
-
-template <typename _Tp>
-inline constexpr int __num_bits_v<volatile complex<_Tp>> = __num_bits_impl<remove_cv_t<_Tp>>() * 2;
-
-template <typename _Tp>
-inline constexpr int __num_bits_v<const volatile complex<_Tp>> = __num_bits_impl<remove_cv_t<_Tp>>() * 2;
-
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX complex<_Tp>&
 operator*=(complex<_Tp>& __lhs, const complex<_Up>& __rhs)
