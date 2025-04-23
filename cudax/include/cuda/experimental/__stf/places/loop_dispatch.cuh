@@ -96,13 +96,15 @@ inline void loop_dispatch(
   {
     // Work that should be performed by thread "tid"
     auto tid_work = [=, &ctx, &func]() {
+
+      // TODO we should have a prologue and epilogue (per place)
       if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
       {
         ctx.set_head_offset(head);
         fprintf(stderr, "LOOP DISPATCH on stackable ctx SET head %d - tid %ld / nthreads %ld\n", head, tid, nthreads);
         if (!disable_stackable())
         {
-          ctx.push();
+          //      ctx.push();
         }
       }
 
@@ -116,6 +118,7 @@ inline void loop_dispatch(
 
       for (size_t i = start; i < end; i++)
       {
+        // TODO The mapping function should be passed as an option too
         if (reserved::customHash(i) % nthreads == tid)
         {
           func(i);
@@ -126,7 +129,7 @@ inline void loop_dispatch(
       {
         if (!disable_stackable())
         {
-          ctx.pop();
+          //    ctx.pop();
         }
       }
 
