@@ -152,7 +152,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 class access_property
 {
 private:
-  uint64_t __descriptor = __detail_ap::__sm_80::__interleave_normal;
+  uint64_t __descriptor = __sm_80::__interleave_normal;
 
 public:
   struct shared
@@ -190,19 +190,19 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction)}
+      : __descriptor{::cuda::__interleave(normal{}, __fraction)}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(streaming{}, __fraction)}
+      : __descriptor{::cuda::__interleave(streaming{}, __fraction)}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction)}
+      : __descriptor{::cuda::__interleave(persisting{}, __fraction)}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(normal{}, __fraction, streaming{})}
+      : __descriptor{::cuda::__interleave(normal{}, __fraction, streaming{})}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__interleave(persisting{}, __fraction, streaming{})}
+      : __descriptor{::cuda::__interleave(persisting{}, __fraction, streaming{})}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal) noexcept
@@ -217,23 +217,23 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
   access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{})}
+      : __descriptor{::cuda::__block(__ptr, __hit_bytes, __total_bytes, normal{})}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
   access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, streaming{})}
+      : __descriptor{::cuda::__block(__ptr, __hit_bytes, __total_bytes, streaming{})}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
   access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{})}
+      : __descriptor{::cuda::__block(__ptr, __hit_bytes, __total_bytes, persisting{})}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
   access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, normal, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})}
+      : __descriptor{::cuda::__block(__ptr, __hit_bytes, __total_bytes, normal{}, streaming{})}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST
   access_property(void* __ptr, size_t __hit_bytes, size_t __total_bytes, persisting, streaming) noexcept
-      : __descriptor{::cuda::__detail_ap::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})}
+      : __descriptor{::cuda::__block(__ptr, __hit_bytes, __total_bytes, persisting{}, streaming{})}
   {}
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator uint64_t() const noexcept

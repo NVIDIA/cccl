@@ -152,8 +152,6 @@
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-namespace __detail_ap
-{
 
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
 // Specifically search for 8.4 and 9.3 and above to guarantee uint64_t enum.
@@ -443,7 +441,6 @@ inline constexpr auto __interleave_normal_demote = uint64_t{0x16F0000000000000};
     .__get_descriptor();
 }
 
-} // namespace __detail_ap
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY_ENCODING

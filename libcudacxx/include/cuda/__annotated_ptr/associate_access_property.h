@@ -152,9 +152,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //----------------------------------------------------------------------------------------------------------------------
 // Private access property methods
 
-namespace __detail_ap
-{
-
 template <typename _Property>
 inline constexpr bool __is_access_property_v =
   _CUDA_VSTD::__is_one_of_v<_Property,
@@ -198,7 +195,7 @@ __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
 template <typename _Prop>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, _Prop __prop)
 {
-  return ::cuda::__detail_ap::__associate_descriptor(__ptr, static_cast<uint64_t>(access_property{__prop}));
+  return ::cuda::__associate_descriptor(__ptr, static_cast<uint64_t>(access_property{__prop}));
 }
 
 template <>
@@ -221,12 +218,10 @@ template <typename _Type, typename _Property>
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (auto __void_ptr       = const_cast<void*>(static_cast<const void*>(__ptr));
-     auto __associated_ptr = ::cuda::__detail_ap::__associate_address_space(__void_ptr, __prop);
-     return static_cast<_Type*>(::cuda::__detail_ap::__associate_descriptor(__associated_ptr, __prop));),
+     auto __associated_ptr = ::cuda::__associate_address_space(__void_ptr, __prop);
+     return static_cast<_Type*>(::cuda::__associate_descriptor(__associated_ptr, __prop));),
     (return __ptr;))
 }
-
-} // namespace __detail_ap
 
 //----------------------------------------------------------------------------------------------------------------------
 // Public access property methods
@@ -234,9 +229,8 @@ template <typename _Type, typename _Property>
 template <typename _Tp, typename _Property>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* associate_access_property(_Tp* __ptr, _Property __prop) noexcept
 {
-  static_assert(::cuda::__detail_ap::__is_access_property_v<_Property>,
-                "property is not convertible to cuda::access_property");
-  return ::cuda::__detail_ap::__associate(__ptr, __prop);
+  static_assert(::cuda::__is_access_property_v<_Property>, "property is not convertible to cuda::access_property");
+  return ::cuda::__associate(__ptr, __prop);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

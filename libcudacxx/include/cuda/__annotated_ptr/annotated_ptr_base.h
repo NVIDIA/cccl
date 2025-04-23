@@ -149,8 +149,6 @@
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-namespace __detail_ap
-{
 
 template <typename _Property>
 class __annotated_ptr_base
@@ -175,7 +173,7 @@ protected:
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
-    return ::cuda::__detail_ap::__associate(__p, access_property::shared{});
+    return ::cuda::__associate(__p, access_property::shared{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
@@ -202,7 +200,7 @@ protected:
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
-    return ::cuda::__detail_ap::__associate(__p, access_property::global{});
+    return ::cuda::__associate(__p, access_property::global{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
@@ -229,7 +227,7 @@ protected:
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
-    return ::cuda::__detail_ap::__associate(__p, access_property::normal{});
+    return ::cuda::__associate(__p, access_property::normal{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
@@ -256,7 +254,7 @@ protected:
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
-    return ::cuda::__detail_ap::__associate(__p, access_property::persisting{});
+    return ::cuda::__associate(__p, access_property::persisting{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
@@ -283,7 +281,7 @@ protected:
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
-    return ::cuda::__detail_ap::__associate(__p, access_property::streaming{});
+    return ::cuda::__associate(__p, access_property::streaming{});
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
@@ -317,7 +315,7 @@ protected:
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
-    return ::cuda::__detail_ap::__associate(__p, __prop);
+    return ::cuda::__associate(__p, __prop);
   }
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
@@ -333,7 +331,6 @@ protected:
   }
 };
 
-} // namespace __detail_ap
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR_BASE

@@ -151,7 +151,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp, typename _Property>
-class annotated_ptr : public ::cuda::__detail_ap::__annotated_ptr_base<_Property>
+class annotated_ptr : public ::cuda::__annotated_ptr_base<_Property>
 {
 public:
   using value_type      = _Tp;
@@ -200,19 +200,19 @@ public:
 
   template <typename _RuntimeProperty>
   _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(pointer __p, _RuntimeProperty __prop) noexcept
-      : ::cuda::__detail_ap::__annotated_ptr_base<_Property>{static_cast<uint64_t>(access_property{__prop})}
+      : ::cuda::__annotated_ptr_base<_Property>{static_cast<uint64_t>(access_property{__prop})}
       , __repr{__p}
   {
     static_assert(_CUDA_VSTD::is_same_v<_Property, access_property>,
                   "This method requires annotated_ptr<T, cuda::access_property>");
-    static_assert(__detail_ap::__is_global_access_property_v<_RuntimeProperty>,
+    static_assert(__is_global_access_property_v<_RuntimeProperty>,
                   "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
     NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
   }
 
   template <typename _OtherType, class _OtherProperty>
   _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
-      : ::cuda::__detail_ap::__annotated_ptr_base<_Property>(__other.__property())
+      : ::cuda::__annotated_ptr_base<_Property>(__other.__property())
       , __repr{__other.get()}
   {
     using namespace _CUDA_VSTD;
