@@ -42,7 +42,7 @@ __host__ __device__ constexpr bool test()
   test_memcmp<char>("abcde", "fghij", 0, 0);
   test_memcmp<char>(nullptr, nullptr, 0, 0);
 
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   // char8_t
   test_memcmp<char8_t>(u8"abcde", u8"abcde", 5, 0);
   test_memcmp<char8_t>(u8"abcd1", u8"abcd0", 5, 1);
@@ -52,7 +52,7 @@ __host__ __device__ constexpr bool test()
   test_memcmp<char8_t>(u8"abcde", u8"fghij", 5, -1);
   test_memcmp<char8_t>(u8"abcde", u8"fghij", 0, 0);
   test_memcmp<char8_t>(nullptr, nullptr, 0, 0);
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
 
   // char16_t
   test_memcmp<char16_t>(u"abcde", u"abcde", 5, 0);

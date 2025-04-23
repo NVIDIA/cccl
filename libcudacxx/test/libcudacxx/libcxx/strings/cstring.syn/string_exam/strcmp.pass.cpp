@@ -43,7 +43,7 @@ __host__ __device__ constexpr bool test()
   test_strcmp<char>("abcd0", "abcd1", -1);
   test_strcmp<char>("ab1de", "abcd0", -1);
 
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   // char8_t
   test_strcmp<char8_t>(u8"", u8"", 0);
   test_strcmp<char8_t>(u8"a", u8"", 1);
@@ -55,7 +55,7 @@ __host__ __device__ constexpr bool test()
   test_strcmp<char8_t>(u8"abcd1", u8"abcd0", 1);
   test_strcmp<char8_t>(u8"abcd0", u8"abcd1", -1);
   test_strcmp<char8_t>(u8"ab1de", u8"abcd0", -1);
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
 
   // char16_t
   test_strcmp<char16_t>(u"", u"", 0);

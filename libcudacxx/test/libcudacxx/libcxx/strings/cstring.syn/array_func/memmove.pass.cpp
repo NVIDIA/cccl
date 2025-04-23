@@ -88,25 +88,25 @@ __host__ __device__ constexpr bool test_in_place();
   }
 
 TEST_SPECIALIZATION(char, )
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
 TEST_SPECIALIZATION(char8_t, u8)
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
 TEST_SPECIALIZATION(char16_t, u)
 TEST_SPECIALIZATION(char32_t, U)
 
 __host__ __device__ bool test()
 {
   test_out_of_place<char>();
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   test_out_of_place<char8_t>();
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
   test_out_of_place<char16_t>();
   test_out_of_place<char32_t>();
 
   test_in_place<char>();
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   test_in_place<char8_t>();
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
   test_in_place<char16_t>();
   // test_in_place<char32_t>(); // crashing on device
 
