@@ -38,7 +38,7 @@ __host__ __device__ constexpr bool test()
   test_strcpy<char>("hello", "hello\0\0\0\0");
   test_strcpy<char>("hell\0o", "hell\0\0\0");
 
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   // char8_t
   test_strcpy<char8_t>(u8"", u8"\0\0\0");
   test_strcpy<char8_t>(u8"a", u8"a\0\0");
@@ -46,7 +46,7 @@ __host__ __device__ constexpr bool test()
   test_strcpy<char8_t>(u8"a\0sdf\0", u8"a\0\0\0\0\0");
   test_strcpy<char8_t>(u8"hello", u8"hello\0\0\0\0");
   test_strcpy<char8_t>(u8"hell\0o", u8"hell\0\0\0");
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
 
   // char16_t
   test_strcpy<char16_t>(u"", u"\0\0\0");

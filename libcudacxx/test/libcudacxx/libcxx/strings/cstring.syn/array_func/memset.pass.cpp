@@ -58,9 +58,9 @@ __host__ __device__ constexpr void test_type()
 __host__ __device__ constexpr bool test()
 {
   test_type<char>();
-#if _LIBCUDACXX_HAS_CHAR8_T()
+#if _CCCL_HAS_CHAR8_T()
   test_type<char8_t>();
-#endif // _LIBCUDACXX_HAS_CHAR8_T()
+#endif // _CCCL_HAS_CHAR8_T()
   test_type<char16_t>();
   test_type<char32_t>();
 
