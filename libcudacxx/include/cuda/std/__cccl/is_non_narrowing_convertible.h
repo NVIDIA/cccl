@@ -69,9 +69,12 @@ inline constexpr bool __cccl_accepts_conversion_v<
   __cccl_void_t<decltype(__cccl_internal::__cccl_accepts_implicit_conversion<_Dest>(
     __cccl_internal::__cccl_declval<_Source>()))>> = true;
 
+template <class _Dest, class _Source, bool = __cccl_is_non_narrowing_v<_Dest, _Source>>
+inline constexpr bool __is_non_narrowing_convertible_v = false;
+
 template <class _Dest, class _Source>
-inline constexpr bool __is_non_narrowing_convertible_v =
-  __cccl_is_non_narrowing_v<_Dest, _Source> && __cccl_accepts_conversion_v<_Dest, _Source>;
+inline constexpr bool __is_non_narrowing_convertible_v<_Dest, _Source, true> =
+  __cccl_accepts_conversion_v<_Dest, _Source>;
 
 } // namespace __cccl_internal
 
