@@ -24,6 +24,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class _Compare>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&
 clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi, _Compare __comp)

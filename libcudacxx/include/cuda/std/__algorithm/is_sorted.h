@@ -27,6 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Compare>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 is_sorted(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)

@@ -26,6 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator1, class _ForwardIterator2>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1 __find_end(
   _ForwardIterator1 __first1,
@@ -80,6 +81,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator1 __find_end
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _BidirectionalIterator1, class _BidirectionalIterator2>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator1 __find_end(
   _BidirectionalIterator1 __first1,
@@ -133,6 +135,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator1 __fi
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator1 __find_end(
   _RandomAccessIterator1 __first1,
