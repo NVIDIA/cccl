@@ -231,6 +231,15 @@
 #  define _CCCL_BUILTIN_CTZLL(...) __builtin_ctzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
 
+#if _CCCL_CHECK_BUILTIN(builtin_ctzg)
+#  define _CCCL_BUITLIN_CTZG(...) __builtin_ctzg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ctzg)
+
+// nvcc cannot handle __builtin_ctzg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUITLIN_CTZG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_bswap16) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
