@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__type_traits/remove_cv.h>
+#include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/climits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -36,67 +36,67 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __num_bits_impl() noexcept
 {
-  if constexpr (is_arithmetic_v<_Tp> || is_pointer_v<_Tp>)
+  if constexpr (is_arithmetic_v<_RawTp> || is_pointer_v<_RawTp>)
   {
-    return sizeof(_Tp) * CHAR_BIT;
+    return sizeof(_RawTp) * CHAR_BIT;
   }
 #if _CCCL_HAS_NVFP16()
-  else if constexpr (is_same_v<_Tp, __half> || is_same_v<_Tp, __half2>)
+  else if constexpr (is_same_v<_RawTp, __half> || is_same_v<_RawTp, __half2>)
   {
-    return sizeof(_Tp) * CHAR_BIT;
+    return sizeof(_RawTp) * CHAR_BIT;
   }
 #endif // _CCCL_HAS_NVFP16
 #if _CCCL_HAS_NVBF16()
-  else if constexpr (is_same_v<_Tp, __nv_bfloat16> || is_same_v<_Tp, __nv_bfloat162>)
+  else if constexpr (is_same_v<_RawTp, __nv_bfloat16> || is_same_v<_RawTp, __nv_bfloat162>)
   {
-    return sizeof(_Tp) * CHAR_BIT;
+    return sizeof(_RawTp) * CHAR_BIT;
   }
 #endif // _CCCL_HAS_NVBF16
 #if _CCCL_HAS_NVFP8_E4M3()
-  else if constexpr (is_same_v<_Tp, __nv_fp8_e4m3>)
+  else if constexpr (is_same_v<_RawTp, __nv_fp8_e4m3>)
   {
     return 8;
   }
 #endif // _CCCL_HAS_NVFP8_E4M3()
 #if _CCCL_HAS_NVFP8_E5M2()
-  else if constexpr (is_same_v<_Tp, __nv_fp8_e5m2>)
+  else if constexpr (is_same_v<_RawTp, __nv_fp8_e5m2>)
   {
     return 8;
   }
 #endif // _CCCL_HAS_NVFP8_E5M2()
 #if _CCCL_HAS_NVFP8_E8M0()
-  else if constexpr (is_same_v<_Tp, __nv_fp8_e8m0>)
+  else if constexpr (is_same_v<_RawTp, __nv_fp8_e8m0>)
   {
     return 8;
   }
 #endif // _CCCL_HAS_NVFP8_E8M0()
 #if _CCCL_HAS_NVFP6_E3M2()
-  else if constexpr (is_same_v<_Tp, __nv_fp6_e3m2>)
+  else if constexpr (is_same_v<_RawTp, __nv_fp6_e3m2>)
   {
     return 6;
   }
 #endif // _CCCL_HAS_NVFP6_E3M2()
 #if _CCCL_HAS_NVFP6_E2M3()
-  else if constexpr (is_same_v<_Tp, __nv_fp6_e2m3>)
+  else if constexpr (is_same_v<_RawTp, __nv_fp6_e2m3>)
   {
     return 6;
   }
 #endif // _CCCL_HAS_NVFP6_E2M3()
 #if _CCCL_HAS_NVFP4_E2M1()
-  else if constexpr (is_same_v<_Tp, __nv_fp4_e2m1>)
+  else if constexpr (is_same_v<_RawTp, __nv_fp4_e2m1>)
   {
     return 4;
   }
 #endif // _CCCL_HAS_NVFP4_E2M1()
 #if _CCCL_HAS_FLOAT128()
-  else if constexpr (is_same_v<_Tp, __float128>)
+  else if constexpr (is_same_v<_RawTp, __float128>)
   {
-    return sizeof(_Tp) * CHAR_BIT;
+    return sizeof(_RawTp) * CHAR_BIT;
   }
 #endif // _CCCL_HAS_FLOAT128()
-  else if (has_unique_object_representations_v<_Tp>)
+  else if (has_unique_object_representations_v<_RawTp>)
   {
-    return sizeof(_Tp) * CHAR_BIT;
+    return sizeof(_RawTp) * CHAR_BIT;
   }
   else
   {
@@ -106,13 +106,13 @@ template <typename _Tp, typename _RawTp = remove_cvref_t<_Tp>>
 }
 
 template <typename _Tp>
-inline constexpr int __num_bits_helper_v = __num_bits_impl<remove_cv_t<_Tp>>();
+inline constexpr int __num_bits_helper_v = __num_bits_impl<_Tp>();
 
 template <typename _Tp>
-inline constexpr int __num_bits_helper_v<complex<_Tp>> = __num_bits_impl<remove_cv_t<_Tp>>() * 2;
+inline constexpr int __num_bits_helper_v<complex<_Tp>> = __num_bits_impl<_Tp>() * 2;
 
 template <typename _Tp>
-inline constexpr int __num_bits_v = __num_bits_helper_v<remove_cv_t<_Tp>>;
+inline constexpr int __num_bits_v = __num_bits_helper_v<remove_cvref_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
