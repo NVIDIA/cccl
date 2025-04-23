@@ -71,6 +71,11 @@ class stream_adapter
 
     // stream used to allocate data
     cudaStream_t stream;
+
+#if 0
+    size_t allocated     = 0;
+    size_t to_free_total = 0;
+#endif
   };
 
   /**
@@ -127,17 +132,33 @@ class stream_adapter
         };
 
         cuda_safe_call(cudaMallocAsync(&result, s, state->stream));
+#if 0
+        fprintf(stderr,
+                "state->allocated %s += %s (to_free %s)\n",
+                pretty_print_bytes(state->allocated).c_str(),
+                pretty_print_bytes(s).c_str(),
+                pretty_print_bytes(state->to_free_total).c_str());
+        state->allocated += s;
+#endif
       }
 
       return result;
     }
 
     void deallocate(
-      backend_ctx_untyped&, const data_place& memory_node, event_list& /* prereqs */, void* ptr, size_t sz) override
+      backend_ctx_untyped&, const data_place& memory_node, event_list& /* prereqs */, void* ptr, [[maybe_unused]] size_t sz) override
     {
       // Do not deallocate buffers, this is done later when we call clear()
       state->to_free.emplace_back(ptr, sz, memory_node);
       // Prereqs are unchanged
+#if 0
+      fprintf(stderr,
+              "state->to_free_total %s += %s (allocated %s)\n",
+              pretty_print_bytes(state->to_free_total).c_str(),
+              pretty_print_bytes(sz).c_str(),
+              pretty_print_bytes(state->allocated).c_str());
+      state->to_free_total += sz;
+#endif
     }
 
     event_list deinit(backend_ctx_untyped&) override
