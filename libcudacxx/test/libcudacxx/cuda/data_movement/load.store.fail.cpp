@@ -23,8 +23,8 @@ __global__ void load_kernel()
 {
   unused(cuda::device::load(&pointer1, cuda::device::read_only));
   unused(cuda::device::load(&pointer1, cuda::device::read_write, cuda::device::eviction_unchanged));
-  unused(
-    cuda::device::load(&pointer1, cuda::device::read_write, cuda::device::eviction_none, cuda::device::prefetch_64B));
+  unused(cuda::device::load(
+    &pointer1, cuda::device::read_write, cuda::device::eviction_none, cuda::device::prefetch_L2_64B));
 }
 
 __global__ void store_kernel()

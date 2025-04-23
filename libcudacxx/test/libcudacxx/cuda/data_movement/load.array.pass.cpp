@@ -36,10 +36,10 @@ __device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access
 template <size_t Align, size_t N, typename T, typename Access, typename Eviction>
 __device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access, Eviction eviction)
 {
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_spatial_none);
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_64B);
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_128B);
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_256B);
+  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_none);
+  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_64B);
+  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_128B);
+  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_256B);
 }
 
 template <size_t Align, size_t N, typename T, typename Access>

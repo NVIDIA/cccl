@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/annotated_ptr>
+#include <cuda/annotated_ptr> // TODO: usae a more restrictive header after PR #4503
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
 
@@ -81,7 +81,7 @@ inline constexpr auto eviction_no_alloc  = __eviction_no_alloc_t{};
  * Prefetch Spatial Locality
  **********************************************************************************************************************/
 
-enum class _PrefetchSpatialEnum
+enum class _PrefetchL2Enum
 {
   _None,
   _Bytes64,
@@ -89,30 +89,22 @@ enum class _PrefetchSpatialEnum
   _Bytes256,
 };
 
-template <_PrefetchSpatialEnum _Value>
-using __prefetch_spatial_t = _CUDA_VSTD::integral_constant<_PrefetchSpatialEnum, _Value>;
+template <_PrefetchL2Enum _Value>
+using __prefetch_L2_t = _CUDA_VSTD::integral_constant<_PrefetchL2Enum, _Value>;
 
-using __prefetch_spatial_none_t = __prefetch_spatial_t<_PrefetchSpatialEnum::_None>;
-using __prefetch_64B_t          = __prefetch_spatial_t<_PrefetchSpatialEnum::_Bytes64>;
-using __prefetch_128B_t         = __prefetch_spatial_t<_PrefetchSpatialEnum::_Bytes128>;
-using __prefetch_256B_t         = __prefetch_spatial_t<_PrefetchSpatialEnum::_Bytes256>;
+using __prefetch_L2_none_t = __prefetch_L2_t<_PrefetchL2Enum::_None>;
+using __prefetch_L2_64B_t  = __prefetch_L2_t<_PrefetchL2Enum::_Bytes64>;
+using __prefetch_L2_128B_t = __prefetch_L2_t<_PrefetchL2Enum::_Bytes128>;
+using __prefetch_L2_256B_t = __prefetch_L2_t<_PrefetchL2Enum::_Bytes256>;
 
-inline constexpr auto prefetch_spatial_none = __prefetch_spatial_none_t{};
-inline constexpr auto prefetch_64B          = __prefetch_64B_t{};
-inline constexpr auto prefetch_128B         = __prefetch_128B_t{};
-inline constexpr auto prefetch_256B         = __prefetch_256B_t{};
+inline constexpr auto prefetch_L2_none = __prefetch_L2_none_t{};
+inline constexpr auto prefetch_L2_64B  = __prefetch_L2_64B_t{};
+inline constexpr auto prefetch_L2_128B = __prefetch_L2_128B_t{};
+inline constexpr auto prefetch_L2_256B = __prefetch_L2_256B_t{};
 
 /***********************************************************************************************************************
  * Cache Hint
  **********************************************************************************************************************/
-
-// template <bool _Enabled = true>
-// struct _CacheHint
-//{
-//   uint64_t __property;
-// };
-//
-// inline constexpr auto __no_cache_hint = _CacheHint<false>{};
 
 template <typename _AccessProperty>
 struct _CacheHint : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_same_v<_AccessProperty, access_property::global>>
