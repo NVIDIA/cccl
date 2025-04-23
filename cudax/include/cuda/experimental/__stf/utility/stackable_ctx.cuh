@@ -255,6 +255,14 @@ public:
         return children[offset];
       }
 
+      const size_t depth(int offset) const {
+        int p = get_parent(offset);
+        if (p == -1)
+           return 0;
+
+        return 1 + depth(p);
+      }
+
     private:
       // Offset of the node's parent : -1 if none. Only valid for entries not in free-list.
       ::std::vector<int> parent;
@@ -319,6 +327,13 @@ public:
       }
       else
       {
+        // Get parent depth
+        int parent_depth = node_tree.depth(head_offset);
+        if (parent_depth >= 1) {
+            fprintf(stderr, "stackable_ctx with depth > 2 is unimplemented yet\n");
+            abort();
+        }
+
         // Keep track of parenthood
         node_tree.set_parent(head_offset, node_offset);
 
