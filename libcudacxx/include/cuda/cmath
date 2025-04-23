@@ -23,6 +23,7 @@
 
 #include <cuda/__cmath/ceil_div.h>
 #include <cuda/__cmath/ilog.h>
+#include <cuda/__cmath/isqrt.h>
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>
 #include <cuda/__cmath/uabs.h>
