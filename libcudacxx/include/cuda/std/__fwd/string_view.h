@@ -1,12 +1,11 @@
-// -*- C++ -*-
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
-//===---------------------------------------------------------------------===//
+//===----------------------------------------------------------------------===//
 
 #ifndef _LIBCUDACXX___FWD_STRING_VIEW_H
 #define _LIBCUDACXX___FWD_STRING_VIEW_H
@@ -21,20 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__fwd/string.h>
+#include <cuda/std/__fwd/char_traits.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string_view;
 
-using string_view = basic_string_view<char>;
+using string_view  = basic_string_view<char>;
+using wstring_view = basic_string_view<wchar_t>;
 #if _CCCL_HAS_CHAR8_T()
 using u8string_view = basic_string_view<char8_t>;
 #endif // _CCCL_HAS_CHAR8_T()
 using u16string_view = basic_string_view<char16_t>;
 using u32string_view = basic_string_view<char32_t>;
-using wstring_view   = basic_string_view<wchar_t>;
 
 // clang-format off
 template <class _CharT, class _Traits>
