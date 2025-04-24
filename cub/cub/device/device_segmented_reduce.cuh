@@ -75,7 +75,7 @@ public:
 
   __host__ __device__ auto operator()(::cuda::std::int64_t idx) const
   {
-    return cub::KeyValuePair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
+    return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
   }
 };
 
@@ -1147,14 +1147,14 @@ public:
     using InputValueT = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<OffsetT, InputValueT>>;
 
     using AccumT = OutputTupleT;
 
     using InitT = detail::reduce::empty_problem_init_t<AccumT>;
 
     // The output value type
-    using OutputValueT = typename OutputTupleT::Value;
+    using OutputValueT = typename OutputTupleT::second_type;
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
@@ -1166,17 +1166,21 @@ public:
     // Initial value
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
-    return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::
-        Dispatch(d_temp_storage,
-                 temp_storage_bytes,
-                 d_indexed_in,
-                 d_out,
-                 num_segments,
-                 segment_size,
-                 cub::ArgMax(),
-                 initial_value,
-                 stream);
+    return detail::reduce::DispatchFixedSizeSegmentedReduce<
+      ArgIndexInputIteratorT,
+      OutputIteratorT,
+      OffsetT,
+      cub::detail::ArgMax,
+      InitT,
+      AccumT>::Dispatch(d_temp_storage,
+                        temp_storage_bytes,
+                        d_indexed_in,
+                        d_out,
+                        num_segments,
+                        segment_size,
+                        cub::detail::ArgMax(),
+                        initial_value,
+                        stream);
   }
 };
 

@@ -359,7 +359,7 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   SECTION("argmax")
   {
-    using result_t = cub::KeyValuePair<int, output_t>;
+    using result_t = ::cuda::std::pair<int, output_t>;
 
     // Prepare verification data
     c2h::host_vector<result_t> expected_result(num_segments);
@@ -369,7 +369,8 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     c2h::device_vector<result_t> out_result(num_segments);
     device_segmented_arg_max(d_in_it, thrust::raw_pointer_cast(out_result.data()), num_segments, segment_size);
 
+    c2h::host_vector<result_t> host_result(out_result);
     // Verify result
-    REQUIRE(expected_result == out_result);
+    REQUIRE(expected_result == host_result);
   }
 }
