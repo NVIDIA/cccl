@@ -32,6 +32,9 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail::reduce
+{
+
 /******************************************************************************
  * Dispatch
  ******************************************************************************/
@@ -429,5 +432,7 @@ struct DispatchStreamingReduceByKey
     return error;
   }
 };
+
+} // namespace detail::reduce
 
 CUB_NAMESPACE_END

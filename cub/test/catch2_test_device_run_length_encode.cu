@@ -298,15 +298,18 @@ try
 
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
 
-  constexpr std::size_t num_items =
-    (sizeof(offset_type) == 8) ? uint32_max + (1 << 22) : ::cuda::std::numeric_limits<offset_type>::max();
+  std::size_t random_range = GENERATE_COPY(take(1, random((1 << 20), (1 << 22))));
+  random_range += (random_range % 2);
+  const std::size_t num_items =
+    (sizeof(offset_type) == 8) ? uint32_max + random_range : ::cuda::std::numeric_limits<offset_type>::max();
 
   auto counting_it = thrust::make_counting_iterator(offset_type{0});
 
   // We repeat each number once for the first <num_small_runs> number of items and all subsequent numbers twice
-  constexpr std::size_t num_small_runs = ::cuda::std::min(uint32_max, num_items) - 4;
-  const auto num_uniques = static_cast<offset_type>(num_small_runs + (num_items - num_small_runs + 1) / 2);
-  auto input_item_it = thrust::make_transform_iterator(counting_it, repeat_item_gen_op<offset_type>{num_small_runs});
+  const std::size_t num_small_runs = ::cuda::std::min(uint32_max, num_items) - 4;
+  const auto num_uniques           = static_cast<offset_type>(num_small_runs + (num_items - num_small_runs + 1) / 2);
+  auto input_item_it               = thrust::make_transform_iterator(
+    counting_it, repeat_item_gen_op<offset_type>{static_cast<offset_type>(num_small_runs)});
 
   // Prepare helper to check the unique items being written: we expect the i-th item corresponding to value i
   auto check_unique_out_helper = detail::large_problem_test_helper(num_uniques);
@@ -315,8 +318,8 @@ try
   // Prepare helper to check the run-lengths being written: i-th item corresponding to value i
   // We repeat each number once for the first num_small_runs number of items and all subsequent numbers twice
   auto check_run_length_out_helper = detail::large_problem_test_helper(num_uniques);
-  auto expected_run_lengths_it =
-    thrust::make_transform_iterator(counting_it, run_to_run_length_op<offset_type, run_length_type>{num_small_runs});
+  auto expected_run_lengths_it     = thrust::make_transform_iterator(
+    counting_it, run_to_run_length_op<offset_type, run_length_type>{static_cast<offset_type>(num_small_runs)});
   auto check_run_length_out_it = check_run_length_out_helper.get_flagging_output_iterator(expected_run_lengths_it);
 
   // This is a requirement on the test to simplify test logic bit: if the last run is truncated and, hence, is not a

@@ -90,7 +90,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   using accum_t                    = run_length_t;
 
 #if !TUNE_BASE
-  using dispatch_t = cub::DispatchStreamingReduceByKey<
+  using dispatch_t = cub::detail::reduce::DispatchStreamingReduceByKey<
     keys_input_it_t,
     unique_output_it_t,
     run_length_input_it_t,
@@ -103,7 +103,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
     reduce_by_key_policy_hub>;
 #else
   using policy_t   = cub::detail::rle::encode::policy_hub<accum_t, T>;
-  using dispatch_t = cub::DispatchStreamingReduceByKey<
+  using dispatch_t = cub::detail::reduce::DispatchStreamingReduceByKey<
     keys_input_it_t,
     unique_output_it_t,
     run_length_input_it_t,
@@ -168,7 +168,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT, RunLengthT
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<T>(num_runs);
-  state.add_global_memory_writes<num_runs_t>(num_runs);
+  state.add_global_memory_writes<run_length_t>(num_runs);
   state.add_global_memory_writes<num_runs_t>(1);
 
   state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {

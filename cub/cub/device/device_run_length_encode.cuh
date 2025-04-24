@@ -214,7 +214,7 @@ struct DeviceRunLengthEncode
 
     using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 
-    return DispatchStreamingReduceByKey<
+    return detail::reduce::DispatchStreamingReduceByKey<
       InputIteratorT,
       UniqueOutputIteratorT,
       lengths_input_iterator_t,
