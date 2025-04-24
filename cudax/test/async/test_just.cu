@@ -14,5 +14,5 @@
 
 C2H_TEST("this is a dummy test", "[just]")
 {
-  CUDAX_REQUIRE(1 == 1);
+  REQUIRE(1 == 1);
 }
