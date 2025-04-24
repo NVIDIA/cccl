@@ -204,7 +204,7 @@ public:
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal, float __fraction, streaming) noexcept
       : __descriptor{
-          ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Unchanged, __l2_evict_t::_L2_Evict_First, __fraction)}
+          ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Normal_Demote, __l2_evict_t::_L2_Evict_First, __fraction)}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR
   access_property(persisting, float __fraction, streaming) noexcept

@@ -239,7 +239,7 @@ struct __interleaved_desc_t // 64 bits
   uint32_t                          : 1;
 };
 
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && _LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST()
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define _CCCL_L2_INTERLEAVE_CONSTEXPR constexpr
 #else
 #  define _CCCL_L2_INTERLEAVE_CONSTEXPR
@@ -248,7 +248,7 @@ struct __interleaved_desc_t // 64 bits
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR uint64_t
 __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
 {
-  if (!_CUDA_VSTD::is_constant_evaluated() || !_LIBCUDACXX_HAS_CONSTEXPR_BIT_CAST())
+  if (!_CUDA_VSTD::is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__createpolicy_fraction(__primary, __secondary, __fraction);))
   }
@@ -259,9 +259,14 @@ __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fracti
   auto __num                = static_cast<uint32_t>((__fraction - __epsilon) * 16.0f); // fraction = num / 16
   auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
   auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
-  auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
+  auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Interleaved);
   __interleaved_desc_t __interleaved_desc{__num, __l2_cop_off, __l2_cop_on, __l2_descriptor_mode, 0, 0};
-  return _CUDA_VSTD::bit_cast<uint64_t>(__interleaved_desc);
+  return static_cast<uint64_t>(__interleaved_desc.__fraction) << 52 //
+       | static_cast<uint64_t>(__interleaved_desc.__l2_cop_off) << 56 //
+       | static_cast<uint64_t>(__interleaved_desc.__l2_cop_on) << 57 //
+       | static_cast<uint64_t>(__interleaved_desc.__l2_descriptor_mode) << 59 //
+       | static_cast<uint64_t>(__interleaved_desc.__l1_inv_dont_allocate) << 61 //
+       | static_cast<uint64_t>(__interleaved_desc.__l2_sector_promote_256B) << 62;
 }
 
 inline constexpr auto __l2_interleave_normal = uint64_t{0x10F0000000000000};

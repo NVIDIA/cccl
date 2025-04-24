@@ -24,7 +24,7 @@ __device__ constexpr cuda::__l2_evict_t access_property_to_enum()
   }
   else if constexpr (cuda::std::is_same_v<Prop, cuda::access_property::streaming>)
   {
-    return cuda::__l2_evict_t::_L2_Evict_Unchanged;
+    return cuda::__l2_evict_t::_L2_Evict_First;
   }
   else if constexpr (cuda::std::is_same_v<Prop, cuda::access_property::persisting>)
   {
@@ -84,7 +84,7 @@ __global__ void test_range(void* ptr1, void* ptr2)
   // test_range<cuda::access_property::global>(ptr1, ptr2);
 }
 
-template <typename Primary, typename Secondary>
+template <typename Primary, typename Secondary = void>
 __device__ void test_fraction()
 {
   cuda::access_property property;
@@ -97,9 +97,12 @@ __device__ void test_fraction()
   }
   else
   {
-    for (float fraction = 0.0f; fraction <= 1.0f; fraction += 0.1f)
+    for (int i = 1; i < 10; i++)
     {
-      if constexpr (cuda::std::is_void_v<Secondary> || cuda::std::is_same_v<Primary, Secondary>)
+      auto fraction = static_cast<float>(i) * 0.1f;
+      auto policy   = cuda::__createpolicy_fraction(
+        access_property_to_enum<Primary>(), access_property_to_enum<Secondary>(), fraction);
+      if constexpr (cuda::std::is_void_v<Secondary>)
       {
         property = cuda::access_property{Primary{}, fraction};
       }
@@ -107,18 +110,36 @@ __device__ void test_fraction()
       {
         property = cuda::access_property{Primary{}, fraction, Secondary{}};
       }
-      auto policy = cuda::__createpolicy_fraction(
-        access_property_to_enum<Primary>(), access_property_to_enum<Secondary>(), fraction);
+      printf(" %f --> 0x%lX   0x%lX\n", fraction, policy, static_cast<uint64_t>(property));
       assert(static_cast<uint64_t>(property) == policy);
     }
   }
 }
 
-template <typename Primary>
-__device__ void test_fraction()
+template <typename Primary, typename Secondary = void, int I = 1>
+__device__ void test_fraction_constexpr()
 {
-  test_fraction<Primary, void>();
-  test_fraction<Primary, cuda::access_property::streaming>();
+  if constexpr (I > 16)
+  {
+    return;
+  }
+  else
+  {
+    constexpr auto fraction = static_cast<float>(I) * (1.0f / 16.0f);
+    auto policy =
+      cuda::__createpolicy_fraction(access_property_to_enum<Primary>(), access_property_to_enum<Secondary>(), fraction);
+    if constexpr (cuda::std::is_void_v<Secondary>)
+    {
+      constexpr cuda::access_property property{Primary{}, fraction};
+      assert(static_cast<uint64_t>(property) == policy);
+    }
+    else
+    {
+      constexpr cuda::access_property property{Primary{}, fraction, Secondary{}};
+      assert(static_cast<uint64_t>(property) == policy);
+    }
+    test_fraction_constexpr<Primary, Secondary, I + 1>();
+  }
 }
 
 __global__ void test_fraction()
@@ -127,6 +148,8 @@ __global__ void test_fraction()
   test_fraction<cuda::access_property::streaming>();
   test_fraction<cuda::access_property::persisting>();
   test_fraction<cuda::access_property::global>();
+  test_fraction<cuda::access_property::normal, cuda::access_property::streaming>();
+  test_fraction<cuda::access_property::persisting, cuda::access_property::streaming>();
 }
 
 struct __block_desc_t
@@ -185,6 +208,7 @@ void test_range()
 int main(int, char**)
 {
   // NV_IF_TARGET(NV_IS_HOST, (test_range(); test_fraction<<<1, 1>>>();))
-  NV_IF_TARGET(NV_IS_HOST, (test_range();))
+  // NV_IF_TARGET(NV_IS_HOST, (test_range();))
+  NV_IF_TARGET(NV_IS_HOST, (test_fraction<<<1, 1>>>();))
   return 0;
 }
