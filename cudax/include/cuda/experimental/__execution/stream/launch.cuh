@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_EXECUTION_THREAD_CONTEXT
-#define __CUDAX_EXECUTION_THREAD_CONTEXT
+#ifndef __CUDAX__EXECUTION_STREAM_LAUNCH
+#define __CUDAX__EXECUTION_STREAM_LAUNCH
 
 #include <cuda/std/detail/__config>
 
@@ -21,47 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__execution/run_loop.cuh>
+#include <cuda/experimental/__execution/stream/domain.cuh>
+#include <cuda/experimental/__launch/launch.cuh>
+#include <cuda/experimental/__stream/stream.cuh>
 
-#include <thread>
+#include <cuda_runtime_api.h>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
-{
-  thread_context() noexcept
-      : __thrd_{[this] {
-        __loop_.run();
-      }}
-  {}
-
-  ~thread_context() noexcept
-  {
-    join();
-  }
-
-  void join() noexcept
-  {
-    if (__thrd_.joinable())
-    {
-      __loop_.finish();
-      __thrd_.join();
-    }
-  }
-
-  auto get_scheduler()
-  {
-    return __loop_.get_scheduler();
-  }
-
-private:
-  run_loop __loop_;
-  ::std::thread __thrd_;
-};
+// TODO: not implemented yet
+template <>
+struct stream_domain::__apply_t<__kernel_t>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_EXECUTION_THREAD_CONTEXT
+#endif // __CUDAX__EXECUTION_STREAM_LAUNCH

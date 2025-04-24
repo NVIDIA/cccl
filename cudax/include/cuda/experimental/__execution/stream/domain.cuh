@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_EXECUTION_THREAD_CONTEXT
-#define __CUDAX_EXECUTION_THREAD_CONTEXT
+#ifndef __CUDAX__EXECUTION_STREAM_DOMAIN
+#define __CUDAX__EXECUTION_STREAM_DOMAIN
 
 #include <cuda/std/detail/__config>
 
@@ -21,47 +21,36 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__execution/run_loop.cuh>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_callable.h>
 
-#include <thread>
+#include <cuda/experimental/__execution/domain.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
+//////////////////////////////////////////////////////////////////////////////////////////
+// stream domain
+struct stream_domain : default_domain
 {
-  thread_context() noexcept
-      : __thrd_{[this] {
-        __loop_.run();
-      }}
-  {}
+  _CUDAX_SEMI_PRIVATE :
+  template <class _Tag>
+  struct __apply_t;
 
-  ~thread_context() noexcept
+public:
+  _CCCL_TEMPLATE(class _Tag, class _Sndr, class... _Args)
+  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
+  _CCCL_TRIVIAL_HOST_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(
+    _CUDA_VSTD::__is_nothrow_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
+    -> _CUDA_VSTD::__call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {
-    join();
+    return __apply_t<_Tag>()(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
   }
-
-  void join() noexcept
-  {
-    if (__thrd_.joinable())
-    {
-      __loop_.finish();
-      __thrd_.join();
-    }
-  }
-
-  auto get_scheduler()
-  {
-    return __loop_.get_scheduler();
-  }
-
-private:
-  run_loop __loop_;
-  ::std::thread __thrd_;
 };
+
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_EXECUTION_THREAD_CONTEXT
+#endif // __CUDAX__EXECUTION_STREAM_DOMAIN

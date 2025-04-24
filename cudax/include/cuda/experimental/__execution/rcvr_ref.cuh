@@ -64,7 +64,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
     static_cast<_Rcvr&&>(*__rcvr_).set_stopped();
   }
 
-  _CCCL_API auto get_env() const noexcept -> _Env
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> _Env
   {
     static_assert(_CUDA_VSTD::is_same_v<_Env, env_of_t<_Rcvr>>,
                   "get_env() must return the same type as env_of_t<_Rcvr>");
