@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__memory/addressof.h>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -40,7 +41,7 @@ namespace cuda::experimental::execution
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Rcvr, class _Sndr1, class _Sndr2>
   struct __args
   {
@@ -62,8 +63,8 @@ private:
 
     _CCCL_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
-        , __opstate1_(execution::connect(static_cast<__sndr1_t&&>(__sndr1), __rcvr_ref{*this}))
-        , __opstate2_(execution::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref{__rcvr_}))
+        , __opstate1_(execution::connect(static_cast<__sndr1_t&&>(__sndr1), __rcvr_ref{this}))
+        , __opstate2_(execution::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref{_CUDA_VSTD::addressof(__rcvr_)}))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);

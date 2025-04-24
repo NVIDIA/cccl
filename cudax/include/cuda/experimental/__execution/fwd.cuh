@@ -148,6 +148,23 @@ template <class _Sndr>
 using tag_of_t _CCCL_NODEBUG_ALIAS =
   decltype(visit(declval<__detail::__get_tag&>(), declval<_Sndr>(), declval<int&>()));
 
+struct just_t;
+struct just_error_t;
+struct just_stopped_t;
+struct just_from_t;
+struct just_from_error_t;
+struct just_from_stopped_t;
+struct then_t;
+struct upon_error_t;
+struct upon_stopped_t;
+struct let_value_t;
+struct let_error_t;
+struct let_stopped_t;
+struct when_all_t;
+struct conditional_t;
+struct continue_on_t;
+struct sequence_t;
+
 namespace __detail
 {
 template <__disposition_t, class _Void = void>
