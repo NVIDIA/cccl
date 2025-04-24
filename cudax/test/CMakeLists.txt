@@ -85,13 +85,20 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     execution/test_conditional.cu
     execution/test_continues_on.cu
     execution/test_just.cu
-    execution/test_sequence.cu
     execution/test_let_value.cu
+    execution/test_sequence.cu
+    execution/test_stream_context.cu
     execution/test_visit.cu
     execution/test_when_all.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
+
+  # The stream context needs atomic wait/notify, which is only available on sm70 and
+  # above.
+  get_target_property(cuda_arch_list ${test_target} CUDA_ARCHITECTURES)
+  list(REMOVE_ITEM cuda_arch_list "60" "61")
+  set_target_properties(${test_target} PROPERTIES CUDA_ARCHITECTURES "${cuda_arch_list}")
 
   cudax_add_catch2_test(test_target graph ${cn_target}
     graph/graph_smoke.cu

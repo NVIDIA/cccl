@@ -57,7 +57,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   template <class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-private:
+  _CUDAX_SEMI_PRIVATE :
   // Extract the first template parameter of the __state_t specialization.
   // The first template parameter is the receiver type.
   template <class _State>

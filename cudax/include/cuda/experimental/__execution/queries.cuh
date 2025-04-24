@@ -218,6 +218,29 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
   }
 } get_forward_progress_guarantee{};
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_launch_config: A sender can define this attribute to control the launch configuration
+// of the kernel it will launch when executed on a CUDA stream scheduler.
+_CCCL_GLOBAL_CONSTANT struct get_launch_config_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Env>
+  [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
+  {
+    if constexpr (__queryable_with<_Env, get_launch_config_t>)
+    {
+      static_assert(noexcept(__env.query(*this)), "The get_launch_config query must be noexcept.");
+      static_assert(__is_specialization_of_v<decltype(__env.query(*this)), kernel_config>,
+                    "The get_launch_config query must return a kernel_config type.");
+      return __env.query(*this);
+    }
+    else
+    {
+      return experimental::make_config(grid_dims<1>, block_dims<1>);
+    }
+  }
+} get_launch_config{};
+
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

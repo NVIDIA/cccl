@@ -39,3 +39,16 @@ _CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces around initializer
 #else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 #  define _CCCL_IMMOVABLE_OPSTATE(_XP) _XP(_XP&&) = delete
 #endif // !_CCCL_COMPILER(GCC)
+
+#if _CCCL_CUDA_COMPILER(NVHPC)
+_CCCL_NV_DIAG_SUPPRESS(cuda_compile)
+#endif // _CCCL_CUDA_COMPILER(NVHPC)
+
+// private and protected nested class types cannot be used as tparams to __global__
+// functions. _CUDAX_SEMI_PRIVATE expands to public when _CCCL_CUDA_COMPILATION() is true,
+// and private otherwise.
+#if _CCCL_CUDA_COMPILATION()
+#  define _CUDAX_SEMI_PRIVATE public
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
+#  define _CUDAX_SEMI_PRIVATE private
+#endif

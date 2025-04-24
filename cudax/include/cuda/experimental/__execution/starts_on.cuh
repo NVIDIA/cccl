@@ -55,7 +55,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 
 struct starts_on_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Rcvr, class _Sch, class _CvSndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>
   {

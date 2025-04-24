@@ -69,6 +69,9 @@ public:
 template <size_t... _Idx, class... _Ts>
 class __variant_impl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...>
 {
+  // static_assert(!_CUDA_VSTD::__is_included_in_v<::std::exception_ptr, _Ts...>,
+  //               "std::exception_ptr is not allowed in variant alternatives");
+
   static constexpr size_t __max_size = __maximum({sizeof(_Ts)...});
   static_assert(__max_size != 0);
   size_t __index_{__npos};
