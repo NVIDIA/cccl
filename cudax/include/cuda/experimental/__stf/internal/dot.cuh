@@ -1412,6 +1412,14 @@ inline ::std::shared_ptr<dot_section>& dot_get_section_by_id(int id)
 
 inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string symbol)
 {
+   // XXX the current code is not thread safe, we should still avoid paying
+   // some overhead when tracing is disabled, but the NVTX traces are still
+   // useful to have
+   if (!pc->is_tracing())
+   {
+      return;
+   }
+
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
   nvtxRangePushA(symbol.c_str());
 #endif
@@ -1438,6 +1446,11 @@ inline void dot_section::push(::std::shared_ptr<per_ctx_dot>& pc, ::std::string 
 
 inline void dot_section::pop(::std::shared_ptr<per_ctx_dot>& pc)
 {
+   if (!pc->is_tracing())
+   {
+      return;
+   }
+
   ::std::lock_guard<::std::mutex> guard(pc->mtx);
 
   pc->section_id_stack.pop_back();
