@@ -66,9 +66,9 @@ __host__ __device__ constexpr void test()
   static_assert(cuda::std::is_trivially_move_constructible<strided_slice>::value, "");
 
   // Ensure we properly do not store compile time sizes
-#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && !TEST_COMPILER(MSVC)
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && !TEST_COMPILER(MSVC)
   static_assert(sizeof(strided_slice) == sizeof(cuda::std::tuple<OffsetType, ExtentType, StrideType>), "");
-#endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && !TEST_COMPILER(MSVC)
+#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && !TEST_COMPILER(MSVC)
 
   // Ensure we have the right alias types
   static_assert(cuda::std::is_same<typename strided_slice::offset_type, OffsetType>::value, "");

@@ -57,14 +57,14 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
 
   using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
-  difference_type len = thrust::distance(first, last);
+  difference_type len = ::cuda::std::distance(first, last);
 
   while (len > 0)
   {
     difference_type half   = len >> 1;
     ForwardIterator middle = first;
 
-    thrust::advance(middle, half);
+    ::cuda::std::advance(middle, half);
 
     if (wrapped_comp(*middle, val))
     {
@@ -95,14 +95,14 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
 
   using difference_type = thrust::detail::it_difference_t<ForwardIterator>;
 
-  difference_type len = thrust::distance(first, last);
+  difference_type len = ::cuda::std::distance(first, last);
 
   while (len > 0)
   {
     difference_type half   = len >> 1;
     ForwardIterator middle = first;
 
-    thrust::advance(middle, half);
+    ::cuda::std::advance(middle, half);
 
     if (wrapped_comp(val, *middle))
     {

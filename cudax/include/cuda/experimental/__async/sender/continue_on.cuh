@@ -33,6 +33,7 @@
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -219,23 +220,23 @@ template <class _Sndr, class _Sch>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
 {
   using sender_concept = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS continue_on_t __tag;
-  _Sch __sch;
-  _Sndr __sndr;
+  _CCCL_NO_UNIQUE_ADDRESS continue_on_t __tag_;
+  _Sch __sch_;
+  _Sndr __sndr_;
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
   {
     template <class _SetTag>
     _CUDAX_API auto query(get_completion_scheduler_t<_SetTag>) const noexcept
     {
-      return __sndr_->__sch;
+      return __sndr_->__sch_;
     }
 
     template <class _Query>
     _CUDAX_API auto query(_Query) const //
       -> __query_result_t<_Query, env_of_t<_Sndr>>
     {
-      return __async::get_env(__sndr_->__sndr).query(_Query{});
+      return __async::get_env(__sndr_->__sndr_).query(_Query{});
     }
 
     const __sndr_t* __sndr_;
@@ -263,13 +264,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
   template <class _Rcvr>
   _CUDAX_API __opstate_t<_Rcvr, _Sndr, _Sch> connect(_Rcvr __rcvr) &&
   {
-    return {static_cast<_Sndr&&>(__sndr), __sch, static_cast<_Rcvr&&>(__rcvr)};
+    return {static_cast<_Sndr&&>(__sndr_), __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
   _CUDAX_API __opstate_t<_Rcvr, const _Sndr&, _Sch> connect(_Rcvr __rcvr) const&
   {
-    return {__sndr, __sch, static_cast<_Rcvr&&>(__rcvr)};
+    return {__sndr_, __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
   _CUDAX_API __attrs_t get_env() const noexcept
@@ -290,6 +291,9 @@ _CUDAX_TRIVIAL_API continue_on_t::__closure_t<_Sch> continue_on_t::operator()(_S
 {
   return __closure_t<_Sch>{__sch};
 }
+
+template <class _Sndr, class _Sch>
+inline constexpr size_t structured_binding_size<continue_on_t::__sndr_t<_Sndr, _Sch>> = 3;
 
 _CCCL_GLOBAL_CONSTANT continue_on_t continue_on{};
 } // namespace cuda::experimental::__async

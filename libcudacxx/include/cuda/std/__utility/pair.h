@@ -728,26 +728,25 @@ struct __get_pair<1>
 };
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_T1, _T2>& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_T1, _T2>& __p) noexcept
 {
   return __get_pair<_Ip>::get(__p);
 }
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, pair<_T1, _T2>>&&
-get(const pair<_T1, _T2>&& __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>&& get(const pair<_T1, _T2>&& __p) noexcept
 {
   return __get_pair<_Ip>::get(_CUDA_VSTD::move(__p));
 }

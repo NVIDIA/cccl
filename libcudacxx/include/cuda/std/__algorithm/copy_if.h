@@ -22,6 +22,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator, class _OutputIterator, class _Predicate>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator
 copy_if(_InputIterator __first, _InputIterator __last, _OutputIterator __result, _Predicate __pred)

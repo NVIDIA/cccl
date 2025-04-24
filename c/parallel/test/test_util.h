@@ -24,9 +24,7 @@
 #include <type_traits>
 #include <vector>
 
-#include <catch2/catch_template_test_macros.hpp>
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/generators/catch_generators_all.hpp>
+#include <c2h/catch2_test_helper.h>
 #include <cccl/c/reduce.h>
 #include <cccl/c/scan.h>
 #include <nvrtc.h>
@@ -332,6 +330,69 @@ static std::string get_unary_op(cccl_type_enum t)
     default:
       throw std::runtime_error("Unsupported type");
   }
+  return "";
+}
+
+static std::string get_radix_sort_decomposer_op(cccl_type_enum t)
+{
+  switch (t)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "extern \"C\" __device__ char* op(char* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT8:
+      return "extern \"C\" __device__ unsigned char* op(unsigned char* key) { return key; };";
+    case cccl_type_enum::CCCL_INT16:
+      return "extern \"C\" __device__ short* op(short* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT16:
+      return "extern \"C\" __device__ unsigned short* op(unsigned short* key) { return key; };";
+    case cccl_type_enum::CCCL_INT32:
+      return "extern \"C\" __device__ int* op(int* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT32:
+      return "extern \"C\" __device__ unsigned int* op(unsigned int* key) { return key; };";
+    case cccl_type_enum::CCCL_INT64:
+      return "extern \"C\" __device__ long long* op(long long* key) { return key; };";
+    case cccl_type_enum::CCCL_UINT64:
+      return "extern \"C\" __device__ unsigned long long* op(unsigned long long* key) { return key; };";
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "extern \"C\" __device__ float* op(float* key) { return key; };";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "extern \"C\" __device__ double* op(double* key) { return key; };";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+  return "";
+}
+
+std::string type_enum_to_name(cccl_type_enum type)
+{
+  switch (type)
+  {
+    case cccl_type_enum::CCCL_INT8:
+      return "::cuda::std::int8_t";
+    case cccl_type_enum::CCCL_INT16:
+      return "::cuda::std::int16_t";
+    case cccl_type_enum::CCCL_INT32:
+      return "::cuda::std::int32_t";
+    case cccl_type_enum::CCCL_INT64:
+      return "::cuda::std::int64_t";
+    case cccl_type_enum::CCCL_UINT8:
+      return "::cuda::std::uint8_t";
+    case cccl_type_enum::CCCL_UINT16:
+      return "::cuda::std::uint16_t";
+    case cccl_type_enum::CCCL_UINT32:
+      return "::cuda::std::uint32_t";
+    case cccl_type_enum::CCCL_UINT64:
+      return "::cuda::std::uint64_t";
+    case cccl_type_enum::CCCL_FLOAT32:
+      return "float";
+    case cccl_type_enum::CCCL_FLOAT64:
+      return "double";
+
+    default:
+      throw std::runtime_error("Unsupported type");
+  }
+
   return "";
 }
 

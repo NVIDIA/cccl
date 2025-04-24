@@ -288,7 +288,7 @@ public:
 
     // Implicitly converted to an optional
     return attributes.type;
-  };
+  }
 };
 
 template <typename T>

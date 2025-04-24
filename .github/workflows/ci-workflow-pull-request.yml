@@ -192,7 +192,7 @@ jobs:
 
   build-rapids:
     name: Build RAPIDS (optional)
-    if: ${{ !contains(github.event.head_commit.message, '[skip-rapids]') }}
+    if: ${{ contains(github.event.head_commit.message, '[test-rapids]') }}
     secrets: inherit
     permissions:
       actions: read

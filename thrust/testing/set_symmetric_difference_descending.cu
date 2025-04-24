@@ -16,7 +16,7 @@ void TestSetSymmetricDifferenceDescendingSimple()
   Vector result(5);
 
   Iterator end =
-    thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin(), thrust::greater<T>());
+    thrust::set_symmetric_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(result.end(), end);
   ASSERT_EQUAL(ref, result);
@@ -30,8 +30,8 @@ void TestSetSymmetricDifferenceDescending(const size_t n)
   thrust::host_vector<T> h_a(temp.begin(), temp.begin() + n);
   thrust::host_vector<T> h_b(temp.begin() + n, temp.end());
 
-  thrust::sort(h_a.begin(), h_a.end(), thrust::greater<T>());
-  thrust::sort(h_b.begin(), h_b.end(), thrust::greater<T>());
+  thrust::sort(h_a.begin(), h_a.end(), ::cuda::std::greater<T>());
+  thrust::sort(h_b.begin(), h_b.end(), ::cuda::std::greater<T>());
 
   thrust::device_vector<T> d_a = h_a;
   thrust::device_vector<T> d_b = h_b;
@@ -43,11 +43,11 @@ void TestSetSymmetricDifferenceDescending(const size_t n)
   typename thrust::device_vector<T>::iterator d_end;
 
   h_end = thrust::set_symmetric_difference(
-    h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), h_result.begin(), thrust::greater<T>());
+    h_a.begin(), h_a.end(), h_b.begin(), h_b.end(), h_result.begin(), ::cuda::std::greater<T>());
   h_result.erase(h_end, h_result.end());
 
   d_end = thrust::set_symmetric_difference(
-    d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), thrust::greater<T>());
+    d_a.begin(), d_a.end(), d_b.begin(), d_b.end(), d_result.begin(), ::cuda::std::greater<T>());
 
   d_result.erase(d_end, d_result.end());
 

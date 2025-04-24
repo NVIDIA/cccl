@@ -219,7 +219,7 @@ struct dynamic_vsmem_helper_t
 } // namespace unique_by_key
 
 CUresult cccl_device_unique_by_key_build(
-  cccl_device_unique_by_key_build_result_t* build,
+  cccl_device_unique_by_key_build_result_t* build_ptr,
   cccl_iterator_t input_keys_it,
   cccl_iterator_t input_values_it,
   cccl_iterator_t output_keys_it,
@@ -363,8 +363,9 @@ struct device_unique_by_key_vsmem_helper {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -392,18 +393,19 @@ struct device_unique_by_key_vsmem_helper {{
         .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
-    cuLibraryLoadData(&build->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->compact_init_kernel, build->library, compact_init_kernel_lowered_name.c_str()));
-    check(cuLibraryGetKernel(&build->sweep_kernel, build->library, sweep_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(
+      &build_ptr->compact_init_kernel, build_ptr->library, compact_init_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
     auto [description_bytes_per_tile,
           payload_bytes_per_tile] = get_tile_state_bytes_per_tile(offset_t, offset_cpp, args, num_args, arch);
 
-    build->cc                         = cc;
-    build->cubin                      = (void*) result.data.release();
-    build->cubin_size                 = result.size;
-    build->description_bytes_per_tile = description_bytes_per_tile;
-    build->payload_bytes_per_tile     = payload_bytes_per_tile;
+    build_ptr->cc                         = cc;
+    build_ptr->cubin                      = (void*) result.data.release();
+    build_ptr->cubin_size                 = result.size;
+    build_ptr->description_bytes_per_tile = description_bytes_per_tile;
+    build_ptr->payload_bytes_per_tile     = payload_bytes_per_tile;
   }
   catch (const std::exception& exc)
   {
@@ -438,7 +440,7 @@ CUresult cccl_device_unique_by_key(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchUniqueByKey<
+    auto exec_status = cub::DispatchUniqueByKey<
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
@@ -464,6 +466,8 @@ CUresult cccl_device_unique_by_key(
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_keys_in.value_type.size});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

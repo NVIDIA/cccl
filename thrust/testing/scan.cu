@@ -48,21 +48,21 @@ void TestScanSimple()
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with op
-  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), thrust::plus<T>());
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), ::cuda::std::plus<T>());
   result = {1, 4, 2, 6, 1};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
 
   // inclusive scan with init and op
-  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(-1), thrust::multiplies<T>());
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), output.begin(), T(-1), ::cuda::std::multiplies<T>());
   result = {-1, -3, 6, 24, -120};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
 
   // exclusive scan with init and op
-  iter   = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(3), thrust::plus<T>());
+  iter   = thrust::exclusive_scan(input.begin(), input.end(), output.begin(), T(3), ::cuda::std::plus<T>());
   result = {3, 4, 7, 5, 9};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
@@ -77,7 +77,7 @@ void TestScanSimple()
 
   // inplace inclusive scan with init and op
   input  = input_copy;
-  iter   = thrust::inclusive_scan(input.begin(), input.end(), input.begin(), T(3), thrust::plus<T>());
+  iter   = thrust::inclusive_scan(input.begin(), input.end(), input.begin(), T(3), ::cuda::std::plus<T>());
   result = {4, 7, 5, 9, 4};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
@@ -224,7 +224,7 @@ void TestScanMixedTypes()
   ASSERT_EQUAL(int_output[3], 12); // in: 4.5 accum: 12.f out: 12
 
   // float -> float with plus<int> operator (float accumulator)
-  thrust::inclusive_scan(float_input.begin(), float_input.end(), float_output.begin(), thrust::plus<int>());
+  thrust::inclusive_scan(float_input.begin(), float_input.end(), float_output.begin(), ::cuda::std::plus<int>());
   ASSERT_EQUAL(float_output[0], 1.5f); // in: 1.5 accum: 1.5f out: 1.5f
   ASSERT_EQUAL(float_output[1], 3.0f); // in: 2.5 accum: 3.0f out: 3.0f
   ASSERT_EQUAL(float_output[2], 6.0f); // in: 3.5 accum: 6.0f out: 6.0f
@@ -591,7 +591,7 @@ void TestInclusiveScanWithBigIndexesHelper(int magnitude)
 {
   thrust::constant_iterator<long long> begin(1);
   thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                         = false;
@@ -622,7 +622,7 @@ void TestExclusiveScanWithBigIndexesHelper(int magnitude)
 {
   thrust::constant_iterator<long long> begin(1);
   thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                         = false;

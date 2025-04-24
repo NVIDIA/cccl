@@ -32,6 +32,7 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent, class _Proj>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
 {
@@ -52,6 +53,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __l
   return __first;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Comp, class _Iter, class _Sent>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
 {
@@ -59,6 +61,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __min_element(_Iter __first, _Sent __l
   return _CUDA_VSTD::__min_element<_Comp>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __proj);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Compare>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)

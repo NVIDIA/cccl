@@ -28,6 +28,7 @@
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
@@ -153,6 +154,13 @@ _CUDAX_TRIVIAL_API auto __just_from_t<_Disposition>::operator()(_Fn __fn) const 
                 "completion_signatures<>.");
   return __sndr_t<_Fn>{{}, static_cast<_Fn&&>(__fn)};
 }
+
+template <class _Fn>
+inline constexpr size_t structured_binding_size<__just_from_t<__value>::__sndr_t<_Fn>> = 2;
+template <class _Fn>
+inline constexpr size_t structured_binding_size<__just_from_t<__error>::__sndr_t<_Fn>> = 2;
+template <class _Fn>
+inline constexpr size_t structured_binding_size<__just_from_t<__stopped>::__sndr_t<_Fn>> = 2;
 
 _CCCL_GLOBAL_CONSTANT struct just_from_t : __just_from_t<__value>
 {

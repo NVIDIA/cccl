@@ -607,7 +607,7 @@ template <typename Dimensions, typename... Options>
 
 // Needs to be a char casted to the appropriate type, if it would be a template
 //  different instantiations would clash the extern symbol
-_CCCL_DEVICE [[nodiscard]] static char* get_smem_ptr() noexcept
+[[nodiscard]] _CCCL_DEVICE static char* get_smem_ptr() noexcept
 {
   extern __shared__ char dynamic_smem[];
 

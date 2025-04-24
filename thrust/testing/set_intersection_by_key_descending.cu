@@ -24,7 +24,7 @@ void TestSetIntersectionByKeyDescendingSimple()
     a_val.begin(),
     result_key.begin(),
     result_val.begin(),
-    thrust::greater<T>());
+    ::cuda::std::greater<T>());
 
   ASSERT_EQUAL_QUIET(result_key.end(), end.first);
   ASSERT_EQUAL_QUIET(result_val.end(), end.second);
@@ -40,8 +40,8 @@ void TestSetIntersectionByKeyDescending(const size_t n)
   thrust::host_vector<T> h_a_key(temp.begin(), temp.begin() + n);
   thrust::host_vector<T> h_b_key(temp.begin() + n, temp.end());
 
-  thrust::sort(h_a_key.begin(), h_a_key.end(), thrust::greater<T>());
-  thrust::sort(h_b_key.begin(), h_b_key.end(), thrust::greater<T>());
+  thrust::sort(h_a_key.begin(), h_a_key.end(), ::cuda::std::greater<T>());
+  thrust::sort(h_b_key.begin(), h_b_key.end(), ::cuda::std::greater<T>());
 
   thrust::host_vector<T> h_a_val = unittest::random_integers<T>(h_a_key.size());
 
@@ -65,7 +65,7 @@ void TestSetIntersectionByKeyDescending(const size_t n)
     h_a_val.begin(),
     h_result_key.begin(),
     h_result_val.begin(),
-    thrust::greater<T>());
+    ::cuda::std::greater<T>());
   h_result_key.erase(h_end.first, h_result_key.end());
   h_result_val.erase(h_end.second, h_result_val.end());
 
@@ -77,7 +77,7 @@ void TestSetIntersectionByKeyDescending(const size_t n)
     d_a_val.begin(),
     d_result_key.begin(),
     d_result_val.begin(),
-    thrust::greater<T>());
+    ::cuda::std::greater<T>());
   d_result_key.erase(d_end.first, d_result_key.end());
   d_result_val.erase(d_end.second, d_result_val.end());
 

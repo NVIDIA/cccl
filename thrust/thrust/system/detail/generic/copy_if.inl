@@ -64,7 +64,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  const auto n = static_cast<IndexType>(thrust::distance(first, last));
+  const auto n = static_cast<IndexType>(::cuda::std::distance(first, last));
 
   // compute {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> predicates(exec, n);
@@ -79,7 +79,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
     predicates.end(),
     scatter_indices.begin(),
     static_cast<IndexType>(0),
-    thrust::plus<IndexType>());
+    ::cuda::std::plus<IndexType>());
 
   // scatter the true elements
   thrust::scatter_if(exec, first, last, scatter_indices.begin(), predicates.begin(), result);
@@ -128,7 +128,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
     return result;
   }
 
-  difference_type n = thrust::distance(first, last);
+  difference_type n = ::cuda::std::distance(first, last);
 
   // create an unsigned version of n (we know n is positive from the comparison above)
   // to avoid a warning in the compare below
