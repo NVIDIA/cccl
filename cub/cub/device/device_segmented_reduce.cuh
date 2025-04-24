@@ -48,11 +48,38 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+
+// @brief Functor to generate a key-value pair from an index and value
+template <typename Iterator, typename OutputValueT>
+struct generate_idx_value
+{
+private:
+  Iterator it;
+  int segment_size;
+
+public:
+  __host__ __device__ generate_idx_value(Iterator it, int segment_size)
+      : it(it)
+      , segment_size(segment_size)
+  {}
+
+  __host__ __device__ auto operator()(::cuda::std::int64_t idx) const
+  {
+    return cub::KeyValuePair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
+  }
+};
+
+} // namespace detail
 //! @rst
 //! DeviceSegmentedReduce provides device-wide, parallel operations for
 //! computing a reduction across multiple sequences of data items
@@ -1130,16 +1157,17 @@ public:
     using OutputValueT = typename OutputTupleT::Value;
 
     // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
+    auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
+      THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
+      detail::generate_idx_value<InputIteratorT, OutputValueT>(d_in, segment_size));
 
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    using ArgIndexInputIteratorT = decltype(d_indexed_in);
 
     // Initial value
     InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
 
     return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT,
-      AccumT>::
+      DispatchFixedSizeSegmentedReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::
         Dispatch(d_temp_storage,
                  temp_storage_bytes,
                  d_indexed_in,
