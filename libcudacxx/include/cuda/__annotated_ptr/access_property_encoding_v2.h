@@ -133,8 +133,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <sys/types.h>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -143,17 +141,103 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
+// #include <cuda_runtime_api.h>
 
+#include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/__cmath/ilog.h>
+#include <cuda/std/__algorithm/clamp.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
+#include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+enum class __l2_descriptor_mode_t : uint32_t
+{
+  _Desc_Implicit    = 0,
+  _Desc_Interleaved = 2,
+  _Desc_Block_Type  = 3
+};
+
+struct __block_desc_t // 64 bits
+{
+  uint64_t                   : 37;
+  uint32_t __block_count     : 7;
+  uint32_t __block_start     : 7;
+  uint32_t                   : 1;
+  uint32_t __block_size_enum : 4; // 56 bits
+
+  uint32_t __l2_cop_off             : 1;
+  uint32_t __l2_cop_on              : 2;
+  uint32_t __l2_descriptor_mode     : 2;
+  uint32_t __l1_inv_dont_allocate   : 1;
+  uint32_t __l2_sector_promote_256B : 1;
+  uint32_t                          : 1;
+};
+static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
+
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST uint64_t __block_encoding(
+  void* __ptr, uint32_t __primary_bytes, uint32_t __total_bytes, __l2_evict_t __primary, __l2_evict_t __secondary)
+{
+  if (!_CUDA_VSTD::is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal(__ptr), "ptr must be global");))
+  }
+  _CCCL_ASSERT(__primary_bytes > 0, "primary_size must be greater than 0");
+  _CCCL_ASSERT(__primary_bytes <= __total_bytes, "primary_size must be less than or equal to total_size");
+  _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
+               "secondary policy must be evict_first or evict_unchanged");
+  auto __raw_ptr         = _CUDA_VSTD::bit_cast<uintptr_t>(__ptr);
+  auto __log2_total_size = ::cuda::ceil_ilog2(__total_bytes);
+  // replace with _CUDA_VSTD::add_sat when available PR #3449
+  auto __block_size_enum = static_cast<uint32_t>(_CUDA_VSTD::max(__log2_total_size - 19, 0)); // min block size = 4K
+  auto __log2_block_size = 12u + __block_size_enum;
+  auto __block_size      = 1u << __log2_block_size;
+  auto __block_start     = static_cast<uint32_t>(__raw_ptr >> __log2_block_size); // ptr / block_size
+  // vvvv block_end = ceil_div(ptr + primary_size, block_size)
+  auto __block_end = static_cast<uint32_t>((__raw_ptr + __primary_bytes + __block_size - 1) >> __log2_block_size);
+  _CCCL_ASSERT(__block_end >= __block_start, "block_end < block_start");
+  auto __block_count        = _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
+  auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
+  auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
+  auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
+  __block_desc_t __block_desc{
+    __block_count, __block_start, __block_size_enum, __l2_cop_off, __l2_cop_on, __l2_descriptor_mode, 0, 0};
+  return __block_desc.__block_count << 23;
+}
+
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST uint64_t __l2_interleave(float __fraction)
+{
+  if (!_CUDA_VSTD::is_constant_evaluated())
+  {
+    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal(__ptr), "ptr must be global");))
+  }
+  _CCCL_ASSERT(__primary_bytes > 0, "primary_size must be greater than 0");
+  _CCCL_ASSERT(__primary_bytes <= __total_bytes, "primary_size must be less than or equal to total_size");
+  _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
+               "secondary policy must be evict_first or evict_unchanged");
+  auto __raw_ptr         = _CUDA_VSTD::bit_cast<uintptr_t>(__ptr);
+  auto __log2_total_size = ::cuda::ceil_ilog2(__total_bytes);
+  // replace with _CUDA_VSTD::add_sat when available PR #3449
+  auto __block_size_enum = static_cast<uint32_t>(_CUDA_VSTD::max(__log2_total_size - 19, 0)); // min block size = 4K
+  auto __log2_block_size = 12u + __block_size_enum;
+  auto __block_size      = 1u << __log2_block_size;
+  auto __block_start     = static_cast<uint32_t>(__raw_ptr >> __log2_block_size); // ptr / block_size
+  // vvvv block_end = ceil_div(ptr + primary_size, block_size)
+  auto __block_end = static_cast<uint32_t>((__raw_ptr + __primary_bytes + __block_size - 1) >> __log2_block_size);
+  _CCCL_ASSERT(__block_end >= __block_start, "block_end < block_start");
+  auto __block_count        = _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
+  auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
+  auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
+  auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
+  __block_desc_t __block_desc{
+    __block_count, __block_start, __block_size_enum, __l2_cop_off, __l2_cop_on, __l2_descriptor_mode, 0, 0};
+  return __block_desc.__block_count << 23;
+}
 
 // enum class __l2_cop_off_t
 //{
