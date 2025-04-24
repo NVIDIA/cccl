@@ -1,6 +1,6 @@
 .. _thrust-module-setup:
 
-Setup
+Developer Build
 ==================================================
 
 .. toctree::

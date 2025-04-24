@@ -3,16 +3,26 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-// XFAIL: libcpp-has-no-threads
 
-#ifdef _LIBCUDACXX_HAS_NO_THREADS
-#  error This should be XFAILed for the purpose of detecting that the LIT feature\
-   'libcpp-has-no-threads' is available iff _LIBCUDACXX_HAS_NO_THREADS is defined
-#endif
+#include <cuda/std/__cccl/attributes.h>
+
+#include "test_macros.h"
+
+_CCCL_PURE __host__ __device__ int f()
+{
+  return 0;
+}
+
+_CCCL_CONST __host__ __device__ int g()
+{
+  return 0;
+}
 
 int main(int, char**)
 {
+  unused(f());
   return 0;
 }

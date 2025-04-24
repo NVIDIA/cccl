@@ -71,7 +71,7 @@ CUB_NAMESPACE_BEGIN
  * SIMD operators
  **********************************************************************************************************************/
 
-namespace internal
+namespace detail
 {
 
 _CCCL_HOST_DEVICE uint32_t simd_operation_is_not_supported_before_sm90();
@@ -399,7 +399,7 @@ struct SimdType<__nv_bfloat16>
 template <typename T>
 using simd_type_t = typename SimdType<T>::type;
 
-} // namespace internal
+} // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 

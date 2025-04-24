@@ -534,11 +534,11 @@ private:
   impl& state()
   {
     return dynamic_cast<impl&>(get_state());
-  };
+  }
   const impl& state() const
   {
     return dynamic_cast<const impl&>(get_state());
-  };
+  }
 
   /// @brief Inserts an empty node that depends on all pending operations
   cudaStream_t task_fence_impl(backend_ctx_untyped& bctx)

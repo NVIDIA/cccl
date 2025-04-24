@@ -202,7 +202,7 @@ jobs:
           WORKFLOW_TYPE: ${{ github.workflow }}
           SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_RAPIDS_CI_ALERT }}
           slack-message: |
             RAPIDS build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
 

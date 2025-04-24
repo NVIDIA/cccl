@@ -60,7 +60,7 @@ function(cudax_build_compiler_targets)
   # Clang-cuda only:
   target_compile_options(cudax.compiler_interface INTERFACE
     $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Xclang=-fcuda-allow-variadic-functions>
-    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno_unknown-cuda-version>
+    $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno-unknown-cuda-version>
   )
 
   # Ensure that we test with assertions enabled
