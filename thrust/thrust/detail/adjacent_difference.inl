@@ -29,6 +29,8 @@
 #include <thrust/system/detail/generic/adjacent_difference.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -39,6 +41,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   InputIterator last,
   OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::adjacent_difference");
   using thrust::system::detail::generic::adjacent_difference;
 
   return adjacent_difference(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
@@ -53,6 +56,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
   OutputIterator result,
   BinaryFunction binary_op)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::adjacent_difference");
   using thrust::system::detail::generic::adjacent_difference;
 
   return adjacent_difference(
@@ -62,6 +66,7 @@ _CCCL_HOST_DEVICE OutputIterator adjacent_difference(
 template <typename InputIterator, typename OutputIterator>
 OutputIterator adjacent_difference(InputIterator first, InputIterator last, OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::adjacent_difference");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -77,6 +82,7 @@ template <typename InputIterator, typename OutputIterator, typename BinaryFuncti
 OutputIterator
 adjacent_difference(InputIterator first, InputIterator last, OutputIterator result, BinaryFunction binary_op)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::adjacent_difference");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
