@@ -1696,11 +1696,14 @@ public:
       _CCCL_ASSERT(current != -1, "");
     }
 
+    // use the affine data place for the current default place
+    auto where = sctx.get_ctx(ctx_offset).default_exec_place().affine_data_place();
+
     // push along the path
     while (!path.empty())
     {
       int offset = path.top();
-      pimpl->push(offset, push_mode, data_place::current_device());
+      pimpl->push(offset, push_mode, where);
       path.pop();
     }
 
