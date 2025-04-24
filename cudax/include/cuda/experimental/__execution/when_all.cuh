@@ -57,7 +57,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t
   template <class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-private:
+  _CUDAX_SEMI_PRIVATE :
   // Extract the first template parameter of the __state_t specialization.
   // The first template parameter is the receiver type.
   template <class _State>
@@ -96,7 +96,7 @@ private:
     [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>)
       -> __query_result_t<env_of_t<__rcvr_t>, _Query>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Query());
+      return execution::get_env(__state_.__rcvr_).query(_Query{});
     }
   };
 
@@ -490,12 +490,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
   {
     if constexpr (sizeof...(_Sndrs) == 0)
     {
-      return prop{get_domain<start_t>, default_domain{}};
+      return prop{get_domain, default_domain{}};
     }
     else
     {
       using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
-      return prop{get_domain<start_t>, __dom_t{}};
+      return prop{get_domain, __dom_t{}};
     }
     _CCCL_UNREACHABLE();
   }

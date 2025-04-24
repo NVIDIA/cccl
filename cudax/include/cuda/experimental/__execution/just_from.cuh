@@ -59,7 +59,7 @@ private:
   using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
   using __diag_t _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::conditional_t<_SetTag() == set_error,
+    _CUDA_VSTD::conditional_t<_SetTag{} == set_error,
                               _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
                               _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
@@ -84,7 +84,7 @@ private:
     template <class... _Ts>
     _CCCL_API auto operator()(_Ts&&... __ts) const noexcept
     {
-      _SetTag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
+      _SetTag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
   };
 

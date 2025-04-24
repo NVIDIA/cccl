@@ -148,6 +148,7 @@ struct write_env_t;
 struct starts_on_t;
 struct continues_on_t;
 struct schedule_from_t;
+struct bulk_t;
 
 // sender consumer algorithms:
 struct sync_wait_t;
@@ -161,7 +162,6 @@ struct get_delegation_scheduler_t;
 struct get_forward_progress_guarantee_t;
 template <class _Tag>
 struct get_completion_scheduler_t;
-template <class _Tag>
 struct get_domain_t;
 
 namespace __detail
@@ -169,17 +169,18 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const
-    -> _Tag
+  _CCCL_TRIVIAL_API constexpr auto operator()(int, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }
 };
+
+template <class _Sndr, class _Tag = decltype(visit(declval<__get_tag&>(), declval<_Sndr>(), declval<int&>()))>
+extern _Tag __tag_of_v;
 } // namespace __detail
 
 template <class _Sndr>
-using tag_of_t _CCCL_NODEBUG_ALIAS =
-  decltype(visit(declval<__detail::__get_tag&>(), declval<_Sndr>(), declval<int&>()));
+using tag_of_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__tag_of_v<_Sndr>);
 
 template <class _Sndr, class _Tag>
 _CCCL_CONCEPT __sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});

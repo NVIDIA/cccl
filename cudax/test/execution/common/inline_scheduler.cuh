@@ -21,7 +21,7 @@ namespace
 struct inline_scheduler
 {
 private:
-  struct env_t
+  struct _env_t
   {
     _CCCL_HOST_DEVICE auto query(cudax_async::get_completion_scheduler_t<cudax_async::set_value_t>) const noexcept
     {
@@ -30,7 +30,7 @@ private:
   };
 
   template <class Rcvr>
-  struct opstate_t : cudax::__immovable
+  struct _opstate_t : cudax::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 
@@ -42,7 +42,10 @@ private:
     }
   };
 
-  struct sndr_t
+public:
+  using scheduler_concept = cudax_async::scheduler_t;
+
+  struct _sndr_t
   {
     using sender_concept = cudax_async::sender_t;
 
@@ -53,16 +56,23 @@ private:
     }
 
     template <class Rcvr>
-    _CCCL_HOST_DEVICE opstate_t<Rcvr> connect(Rcvr rcvr) const
+    _CCCL_HOST_DEVICE _opstate_t<Rcvr> connect(Rcvr rcvr) const
     {
       return {{}, static_cast<Rcvr&&>(rcvr)};
     }
 
-    _CCCL_HOST_DEVICE env_t get_env() const noexcept
+    _CCCL_HOST_DEVICE _env_t get_env() const noexcept
     {
       return {};
     }
   };
+
+  inline_scheduler() = default;
+
+  _CCCL_HOST_DEVICE _sndr_t schedule() const noexcept
+  {
+    return {};
+  }
 
   _CCCL_HOST_DEVICE friend bool operator==(inline_scheduler, inline_scheduler) noexcept
   {
@@ -72,16 +82,6 @@ private:
   _CCCL_HOST_DEVICE friend bool operator!=(inline_scheduler, inline_scheduler) noexcept
   {
     return false;
-  }
-
-public:
-  using scheduler_concept = cudax_async::scheduler_t;
-
-  inline_scheduler() = default;
-
-  _CCCL_HOST_DEVICE sndr_t schedule() const noexcept
-  {
-    return {};
   }
 };
 } // namespace

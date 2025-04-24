@@ -66,13 +66,13 @@ private:
       {
         // This looks like a use after move, but `set_value` takes its
         // arguments by forwarding reference, so it's safe.
-        execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query()(execution::get_env(__rcvr_)));
+        execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query{}(execution::get_env(__rcvr_)));
       }
       else
       {
         _CUDAX_TRY( //
           ({ //
-            execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query()(execution::get_env(__rcvr_)));
+            execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query{}(execution::get_env(__rcvr_)));
           }),
           _CUDAX_CATCH(...) //
           ({ //

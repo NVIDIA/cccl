@@ -58,7 +58,7 @@ struct _FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE;
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Pred, class _Then, class _Else>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure;
 
