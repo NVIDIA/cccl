@@ -55,8 +55,8 @@ C2H_TEST("simple use of conditional runs exactly one of the two closures", "[ada
     auto op = cudax_async::connect(std::move(sndr1), checked_value_receiver<>{});
     cudax_async::start(op);
 
-    CUDAX_CHECK(even == (i % 2 == 0));
-    CUDAX_CHECK(odd == (i % 2 == 1));
+    CHECK(even == (i % 2 == 0));
+    CHECK(odd == (i % 2 == 1));
   }
 }
 
