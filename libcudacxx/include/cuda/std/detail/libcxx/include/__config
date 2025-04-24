@@ -256,7 +256,8 @@ extern "C++" {
 #  endif
 
 // We can only expose constexpr allocations if the compiler supports it
-#  if defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && _CCCL_STD_VER >= 2020 \
+// For now disable constexpr allocation suppport until we can actually use ::std::allocator
+#  if 0 // defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && _CCCL_STD_VER >= 2020 \
     && !_CCCL_COMPILER(NVRTC)
 #    define _CCCL_HAS_CONSTEXPR_ALLOCATION
 #    define _CCCL_CONSTEXPR_CXX20_ALLOCATION constexpr
