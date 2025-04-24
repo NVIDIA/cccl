@@ -33,13 +33,13 @@ subprojects=(
 )
 
 # ...and their dependencies.
-# Mapped as: key project is rebuild if any value project is dirty.
+# Mapped as: key project is rebuilt if any value project is dirty.
 declare -A dependencies=(
   [cccl]=""
   [libcudacxx]="cccl"
   [cub]="cccl libcudacxx thrust c2h"
   [thrust]="cccl libcudacxx cub"
-  [cudax]="cccl libcudacxx c2h"
+  [cudax]="cccl libcudacxx thrust cub c2h"
   [stdpar]="cccl libcudacxx cub thrust"
   [python]="cccl libcudacxx cub thrust cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust c2h"

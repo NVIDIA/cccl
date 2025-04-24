@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 import functools
+import os
+import subprocess
+import tempfile
 from typing import Callable, List
 
 import numba
@@ -175,7 +178,16 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def to_cccl_op(op: Callable, sig) -> Op:
+def to_cccl_op(op: Callable | None, sig) -> Op:
+    if op is None:
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=None,
+            ltoir=None,
+            state_alignment=1,
+            state=None,
+        )
+
     ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
     return Op(
         operator_type=OpKind.STATELESS,
@@ -220,6 +232,29 @@ def get_paths() -> List[str]:
     return paths
 
 
+def _check_compile_result(cubin: bytes):
+    # check compiled code for LDL/STL instructions
+    temp_cubin_file = tempfile.NamedTemporaryFile(delete=False)
+    try:
+        temp_cubin_file.write(cubin)
+        out = subprocess.run(
+            ["nvdisasm", "-gi", temp_cubin_file.name], capture_output=True
+        )
+        if out.returncode != 0:
+            raise RuntimeError("nvdisasm failed")
+        sass = out.stdout.decode("utf-8")
+    finally:
+        os.unlink(temp_cubin_file.name)
+
+    assert "LDL" not in sass, "LDL instruction found in SASS"
+    assert "STL" not in sass, "STL instruction found in SASS"
+
+
+# this global variable controls whether the compile result is checked
+# for LDL/STL instructions. Should be set to `True` for testing only.
+_check_sass: bool = False
+
+
 def call_build(build_impl_fn: Callable, *args, **kwargs):
     """Calls given build_impl_fn callable while providing compute capability and paths
 
@@ -230,9 +265,12 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
     common_data = CommonData(
         cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, cuda_include_path
     )
-    error = build_impl_fn(
+    result = build_impl_fn(
         *args,
         common_data,
         **kwargs,
     )
-    return error
+    if _check_sass:
+        cubin = result._get_cubin()
+        _check_compile_result(cubin)
+    return result

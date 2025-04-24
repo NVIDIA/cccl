@@ -249,12 +249,12 @@ struct pooled_allocator_config
   size_t get_max_entries_per_place() const
   {
     return max_entries_per_place.has_value() ? max_entries_per_place.value() : ::std::numeric_limits<size_t>::max();
-  };
+  }
 
   double get_max_ratio() const
   {
     return max_ratio.has_value() ? max_ratio.value() : 0.9;
-  };
+  }
 };
 
 namespace reserved
@@ -437,7 +437,7 @@ public:
   pooled_allocator(pooled_allocator_config config)
   {
     pool_set.set_config(mv(config));
-  };
+  }
 
   void*
   allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override

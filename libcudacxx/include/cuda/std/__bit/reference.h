@@ -108,7 +108,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
+    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::countr_zero(__mask_)));
   }
 
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
@@ -176,7 +176,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, true> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
+    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::countr_zero(__mask_)));
   }
 
 private:

@@ -147,8 +147,9 @@ CUresult cccl_device_for(
 
   try
   {
-    pushed = try_push_context();
-    Invoke(d_data, num_items, op, build.cc, (CUfunction) build.static_kernel, stream);
+    pushed           = try_push_context();
+    auto exec_status = Invoke(d_data, num_items, op, build.cc, (CUfunction) build.static_kernel, stream);
+    error            = static_cast<CUresult>(exec_status);
   }
   catch (...)
   {

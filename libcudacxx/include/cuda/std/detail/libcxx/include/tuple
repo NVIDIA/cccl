@@ -576,7 +576,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...
   {}
 
   template <class _Tuple, size_t _Indx2>
-  using __tuple_elem_at = __tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
+  using __tuple_elem_at = tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
 
   template <class _Tuple, enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_impl(_Tuple&& __t) noexcept(
@@ -736,30 +736,30 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
 
 public:
   template <size_t _Ip>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, tuple>& __get_impl() & noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, tuple>& __get_impl() & noexcept
   {
-    using type _CCCL_NODEBUG_ALIAS = __tuple_element_t<_Ip, tuple>;
+    using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
     return static_cast<__tuple_leaf<_Ip, type>&>(__base_).get();
   }
 
   template <size_t _Ip>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, tuple>& __get_impl() const& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, tuple>& __get_impl() const& noexcept
   {
-    using type _CCCL_NODEBUG_ALIAS = __tuple_element_t<_Ip, tuple>;
+    using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
     return static_cast<const __tuple_leaf<_Ip, type>&>(__base_).get();
   }
 
   template <size_t _Ip>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, tuple>&& __get_impl() && noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, tuple>&& __get_impl() && noexcept
   {
-    using type _CCCL_NODEBUG_ALIAS = __tuple_element_t<_Ip, tuple>;
+    using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
     return static_cast<type&&>(static_cast<__tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
   template <size_t _Ip>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, tuple>&& __get_impl() const&& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, tuple>&& __get_impl() const&& noexcept
   {
-    using type _CCCL_NODEBUG_ALIAS = __tuple_element_t<_Ip, tuple>;
+    using type _CCCL_NODEBUG_ALIAS = tuple_element_t<_Ip, tuple>;
     return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
@@ -1014,25 +1014,25 @@ swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<__is_nothrow_swappab
 
 // get
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, tuple<_Tp...>>& get(tuple<_Tp...>& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, tuple<_Tp...>>& get(tuple<_Tp...>& __t) noexcept
 {
   return __t.template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, tuple<_Tp...>>& get(const tuple<_Tp...>& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, tuple<_Tp...>>& get(const tuple<_Tp...>& __t) noexcept
 {
   return __t.template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, tuple<_Tp...>>&& get(tuple<_Tp...>&& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, tuple<_Tp...>>&& get(tuple<_Tp...>&& __t) noexcept
 {
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
 }
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, tuple<_Tp...>>&& get(const tuple<_Tp...>&& __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, tuple<_Tp...>>&& get(const tuple<_Tp...>&& __t) noexcept
 {
   return _CUDA_VSTD::move(__t).template __get_impl<_Ip>();
 }
@@ -1265,13 +1265,13 @@ template <class... _Types, size_t... _I0, class _Tuple0>
 struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0>
 {
   using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
-  using type                    = tuple<_Types..., __copy_cvref_t<_Tuple0, __tuple_element_t<_I0, _T0>>&&...>;
+  using type                    = tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_I0, _T0>>&&...>;
 };
 
 template <class... _Types, size_t... _I0, class _Tuple0, class _Tuple1, class... _Tuples>
 struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0, _Tuple1, _Tuples...>
     : public __tuple_cat_return_ref_imp<
-        tuple<_Types..., __copy_cvref_t<_Tuple0, __tuple_element_t<_I0, remove_reference_t<_Tuple0>>>&&...>,
+        tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_I0, remove_reference_t<_Tuple0>>>&&...>,
         __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuple1>>::value>,
         _Tuple1,
         _Tuples...>
@@ -1306,7 +1306,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
   {
     using _T0 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple0>;
     using _T1 _CCCL_NODEBUG_ALIAS = remove_reference_t<_Tuple1>;
-    return __tuple_cat<tuple<_Types..., __copy_cvref_t<_Tuple0, __tuple_element_t<_J0, _T0>>&&...>,
+    return __tuple_cat<tuple<_Types..., __copy_cvref_t<_Tuple0, tuple_element_t<_J0, _T0>>&&...>,
                        __make_tuple_indices_t<sizeof...(_Types) + tuple_size<_T0>::value>,
                        __make_tuple_indices_t<tuple_size<_T1>::value>>()(
       _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,

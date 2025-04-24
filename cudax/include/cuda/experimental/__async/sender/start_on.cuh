@@ -31,6 +31,7 @@
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -47,7 +48,7 @@ struct __sch_env_t
   }
 };
 
-_CCCL_GLOBAL_CONSTANT struct start_on_t
+struct start_on_t
 {
 private:
   template <class _Rcvr, class _Sch, class _CvSndr>
@@ -84,13 +85,13 @@ private:
     connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
   };
 
+public:
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-public:
   template <class _Sch, class _Sndr>
   _CUDAX_API auto operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>;
-} start_on{};
+};
 
 template <class _Sch, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
@@ -144,6 +145,11 @@ _CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept 
 {
   return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
 }
+
+template <class _Sch, class _Sndr>
+inline constexpr size_t structured_binding_size<start_on_t::__sndr_t<_Sch, _Sndr>> = 3;
+
+_CCCL_GLOBAL_CONSTANT start_on_t start_on{};
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>

@@ -529,7 +529,8 @@ CUresult cccl_device_binary_transform(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    auto cuda_error = cub::detail::transform::dispatch_t<
+
+    auto exec_status = cub::detail::transform::dispatch_t<
       cub::detail::transform::requires_stable_address::no, // TODO implement yes
       OffsetT,
       ::cuda::std::tuple<indirect_arg_t, indirect_arg_t>,
@@ -545,11 +546,8 @@ CUresult cccl_device_binary_transform(
                stream,
                {build},
                cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-    if (cuda_error != cudaSuccess)
-    {
-      const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
-      std::cerr << "CUDA error: " << errorString << std::endl;
-    }
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

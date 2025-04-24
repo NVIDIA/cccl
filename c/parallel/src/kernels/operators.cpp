@@ -117,14 +117,15 @@ struct op_wrapper {
 struct __align__(OP_ALIGNMENT) op_state {
   char data[OP_SIZE];
 };
-extern "C" __device__ OUPUT_T OP_NAME(op_state *state, INPUT_T val);
-struct op_wrapper {
+extern "C" __device__ OUTPUT_T OP_NAME(op_state* state, INPUT_T val);
+struct op_wrapper
+{
   op_state state;
-  __device__ OUTPUT_T operator()(INPUT_T val) {
+  __device__ OUTPUT_T operator()(INPUT_T val)
+  {
     return OP_NAME(&state, val);
   }
 };
-
 
 )XXX";
 
