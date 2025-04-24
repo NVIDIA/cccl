@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
@@ -42,7 +43,7 @@ namespace cuda::experimental::__async
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class... _As>
   using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = __tuple<set_value_t, __decay_t<_As>...>;
 
@@ -127,8 +128,8 @@ private:
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}, nullptr}
-        , __opstate1_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
-        , __opstate2_{__async::connect(schedule(__sch), __rcvr_ref{__rcvr_})}
+        , __opstate1_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{this})}
+        , __opstate2_{__async::connect(schedule(__sch), __rcvr_ref{_CUDA_VSTD::addressof(__rcvr_)})}
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);

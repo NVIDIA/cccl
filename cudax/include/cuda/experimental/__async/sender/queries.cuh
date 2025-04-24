@@ -115,7 +115,14 @@ struct get_completion_scheduler_t
 };
 
 template <class _Tag>
-_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<_Tag> get_completion_scheduler{};
+extern __undefined<_Tag> get_completion_scheduler;
+
+template <>
+_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_value_t> get_completion_scheduler<set_value_t>{};
+template <>
+_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_error_t> get_completion_scheduler<set_error_t>{};
+template <>
+_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_stopped_t> get_completion_scheduler<set_stopped_t>{};
 
 template <class _Env, class _Tag = set_value_t>
 using __completion_scheduler_of_t _CCCL_NODEBUG_ALIAS =

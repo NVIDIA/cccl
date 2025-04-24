@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/addressof.h>
+
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/env.cuh>
@@ -38,7 +40,7 @@ namespace cuda::experimental::__async
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Rcvr, class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
   {
@@ -46,7 +48,7 @@ private:
 
     _CUDAX_API explicit __opstate_t(_Sndr&& __sndr, _Env __env, _Rcvr __rcvr)
         : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), static_cast<_Env&&>(__env)}
-        , __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{__env_rcvr_}))
+        , __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{_CUDA_VSTD::addressof(__env_rcvr_)}))
     {}
 
     _CUDAX_API void start() noexcept

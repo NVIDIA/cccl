@@ -1,4 +1,6 @@
 AlignTrailingComments:
   Kind: Always
-
+Macros: [
+  _CUDAX_SEMI_PRIVATE=private
+]
 BasedOnStyle: InheritParentConfig

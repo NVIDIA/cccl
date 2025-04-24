@@ -73,7 +73,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
 };
 
 template <class _Query, class _Value>
-prop(_Query, _Value) -> prop<_Query, _Value>;
+_CCCL_HOST_DEVICE prop(_Query, _Value) -> prop<_Query, _Value>;
 
 template <class... _Envs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT env
@@ -141,7 +141,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 };
 
 template <class... _Envs>
-env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
+_CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 using empty_env CCCL_DEPRECATED_BECAUSE("please use env<> instead of empty_env") = env<>;
 

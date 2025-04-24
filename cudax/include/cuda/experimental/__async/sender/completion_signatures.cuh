@@ -220,7 +220,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   }
 };
 
-completion_signatures() -> completion_signatures<>;
+_CCCL_HOST_DEVICE completion_signatures() -> completion_signatures<>;
 
 template <class _Ty>
 _CCCL_CONCEPT __valid_completion_signatures = detail::__is_specialization_of<_Ty, completion_signatures>;

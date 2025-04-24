@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
@@ -66,7 +67,7 @@ extern __fn_t<let_stopped_t>* __let_tag<__stopped, _Void>;
 template <__disposition_t _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   using _LetTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__let_tag<_Disposition>());
   using _SetTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__set_tag<_Disposition>());
 
@@ -114,7 +115,7 @@ private:
       __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __fn_(static_cast<_Fn&&>(__fn))
-        , __opstate1_(__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this}))
+        , __opstate1_(__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{this}))
     {}
 
     _CUDAX_API void start() noexcept
@@ -135,7 +136,9 @@ private:
             // Call the function with the results and connect the resulting
             // sender, storing the operation state in __opstate2_.
             auto& __next_op = __opstate2_.__emplace_from(
-              __async::connect, __tupl.__apply(static_cast<_Fn&&>(__fn_), __tupl), __rcvr_ref{__rcvr_});
+              __async::connect,
+              __tupl.__apply(static_cast<_Fn&&>(__fn_), __tupl),
+              __rcvr_ref{_CUDA_VSTD::addressof(__rcvr_)});
             __async::start(__next_op);
           }),
           _CUDAX_CATCH(...) //

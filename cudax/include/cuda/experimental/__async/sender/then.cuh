@@ -100,7 +100,7 @@ using __completion _CCCL_NODEBUG_ALIAS = __completion_<__call_result_t<_Fn, _Ts.
 template <__disposition_t _Disposition>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   using _UponTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__upon_tag<_Disposition>());
   using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
@@ -112,8 +112,8 @@ private:
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
-        , __fn_{static_cast<_Fn&&>(__fn)}
-        , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
+        , __fn_{static_cast<_Fn&&>(__fn)} //
+        , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{this})}
     {}
 
     _CUDAX_API void start() & noexcept

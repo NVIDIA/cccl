@@ -130,8 +130,8 @@ _CUDAX_TRIVIAL_API constexpr auto __cget(_Tupl const& __tupl) noexcept -> declty
 }
 
 template <class... _Ts>
-__tupl(_Ts...) //
-  ->__tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+_CCCL_HOST_DEVICE __tupl(_Ts...) //
+  -> __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <class _Fn, class _Tupl, class... _Us>
 using __apply_result_t _CCCL_NODEBUG_ALIAS =
@@ -164,7 +164,7 @@ struct __pair
 };
 
 template <class _First, class _Second>
-__pair(_First, _Second) -> __pair<_First, _Second>;
+_CCCL_HOST_DEVICE __pair(_First, _Second) -> __pair<_First, _Second>;
 
 } // namespace cuda::experimental::__async
 

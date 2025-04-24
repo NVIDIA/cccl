@@ -39,6 +39,7 @@
 #include <cuda/experimental/__async/sender/start_detached.cuh> // IWYU pragma: export
 #include <cuda/experimental/__async/sender/start_on.cuh>       // IWYU pragma: export
 #include <cuda/experimental/__async/sender/stop_token.cuh>     // IWYU pragma: export
+#include <cuda/experimental/__async/sender/stream_context.cuh> // IWYU pragma: export
 #include <cuda/experimental/__async/sender/sync_wait.cuh>      // IWYU pragma: export
 #include <cuda/experimental/__async/sender/then.cuh>           // IWYU pragma: export
 #include <cuda/experimental/__async/sender/thread_context.cuh> // IWYU pragma: export

@@ -63,6 +63,15 @@
 #  define _CUDAX_CONSTEVAL consteval
 #endif
 
+// private and protected nested class types cannot be used as tparams to __global__
+// functions. _CUDAX_SEMI_PRIVATE expands to public when __CUDACC__ is defined and private
+// otherwise.
+#if defined(__CUDACC__)
+#  define _CUDAX_SEMI_PRIVATE public
+#else // ^^^ __CUDACC__ ^^^ / vvv !__CUDACC__ vvv
+#  define _CUDAX_SEMI_PRIVATE private
+#endif
+
 namespace cuda::experimental
 {
 namespace __cudax = ::cuda::experimental; // NOLINT: misc-unused-alias-decls
