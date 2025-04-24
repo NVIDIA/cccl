@@ -1169,6 +1169,7 @@ class stackable_logical_data
 
       void set_symbol(::std::string symbol_)
       {
+        auto ctx_lock = sctx.get_write_lock();
         symbol = mv(symbol_);
         traverse_data_nodes([this](int offset) {
           get_data_node(offset).ld.set_symbol(this->symbol);
@@ -1332,7 +1333,7 @@ class stackable_logical_data
       const auto& root_children = sctx.get_children_offsets(data_root_offset);
       for (auto c : root_children)
       {
-        if (impl_state->data_nodes[c].has_value())
+        if (c < impl_state->data_nodes.size() && impl_state->data_nodes[c].has_value())
         {
           // Save the shared_ptr into the children contexts using the data
           sctx.get_node(c).retain_data(impl_state);
