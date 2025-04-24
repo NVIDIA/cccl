@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -58,7 +59,7 @@ struct _FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE;
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Pred, class _Then, class _Else>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure;
 
@@ -121,7 +122,7 @@ private:
     _CCCL_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __params_t&& __params)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __params_{static_cast<__params_t&&>(__params)}
-        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{*this})}
+        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{this})}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
@@ -139,14 +140,14 @@ private:
         ({ //
           if (static_cast<_Pred&&>(__params_.pred)(__as...))
           {
-            auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __rcvr_ref{__rcvr_});
+            auto& __op = __ops_.__emplace_from(
+              connect, static_cast<_Then&&>(__params_.on_true)(__just), __rcvr_ref{_CUDA_VSTD::addressof(__rcvr_)});
             execution::start(__op);
           }
           else
           {
-            auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __rcvr_ref{__rcvr_});
+            auto& __op = __ops_.__emplace_from(
+              connect, static_cast<_Else&&>(__params_.on_false)(__just), __rcvr_ref{_CUDA_VSTD::addressof(__rcvr_)});
             execution::start(__op);
           }
         }),

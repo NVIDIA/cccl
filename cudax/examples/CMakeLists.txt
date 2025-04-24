@@ -27,6 +27,7 @@ function(cudax_add_example target_name_var example_src cudax_target)
   )
   target_compile_options(${example_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr --extended-lambda>
   )
 
   cudax_clone_target_properties(${example_target} ${cudax_target})
