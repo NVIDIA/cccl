@@ -23,13 +23,12 @@
 
 #include "test_macros.h"
 
-__device__ int arr[]                  = {1, 2, 3};
-__device__ const int carr[]           = {4, 5, 6};
-__device__ volatile int varr[]        = {7, 8, 9};
-__device__ const volatile int cvarr[] = {1, 3, 5};
-
 __host__ __device__ void checkCV()
 {
+  int arr[]                  = {1, 2, 3};
+  const int carr[]           = {4, 5, 6};
+  volatile int varr[]        = {7, 8, 9};
+  const volatile int cvarr[] = {1, 3, 5};
   //  Types the same (dynamic sized)
   {
     cuda::std::span<int> s1{arr}; // a cuda::std::span<               int> pointing at int.

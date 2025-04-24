@@ -31,7 +31,9 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   set(LIBCUDACXX_FORCE_INCLUDE "")
   set(LIBCUDACXX_TEST_COMPILER_FLAGS "-I'${CUDA_INCLUDE_DIR}'")
   # Use the NVRTCC utility to run the built test outputs
-  set(LIBCUDACXX_EXECUTOR "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())")
+  if (NOT DEFINED LIBCUDACXX_EXECUTOR)
+    set(LIBCUDACXX_EXECUTOR "PrefixExecutor(['${LIBCUDACXX_CUDA_COMPILER}'], LocalExecutor())")
+  endif()
 else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
   set(LIBCUDACXX_FORCE_INCLUDE "-include ${libcudacxx_SOURCE_DIR}/test/libcudacxx/force_include.h")
   set(LIBCUDACXX_CUDA_COMPILER "${CMAKE_CUDA_COMPILER}")

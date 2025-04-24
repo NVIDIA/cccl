@@ -426,6 +426,10 @@ def generate_dispatch_job_runner(matrix_job, job_type):
     if not job_info["gpu"]:
         return f"{runner_os}-{cpu}-cpu16"
 
+    # We currently do not have any windows GPU runners
+    if runner_os == "windows":
+        return f"{runner_os}-{cpu}-cpu16"
+
     gpu = get_gpu(matrix_job["gpu"])
     suffix = "-testing" if gpu["testing"] else ""
 
