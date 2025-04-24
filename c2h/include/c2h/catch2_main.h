@@ -38,13 +38,13 @@
 
 #include <catch2/catch_session.hpp>
 
-#ifdef CUB_CONFIG_MAIN
+#ifdef C2H_CONFIG_MAIN
 #  if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 #    include <c2h/catch2_runner_helper.h>
 
-#    ifndef CUB_EXCLUDE_CATCH2_HELPER_IMPL
+#    ifndef C2H_EXCLUDE_CATCH2_HELPER_IMPL
 #      include "catch2_runner_helper.inl"
-#    endif // !CUB_EXCLUDE_CATCH2_HELPER_IMPL
+#    endif // !C2H_EXCLUDE_CATCH2_HELPER_IMPL
 #  endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 int main(int argc, char* argv[])
@@ -69,4 +69,4 @@ int main(int argc, char* argv[])
 #  endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   return session.run();
 }
-#endif // CUB_CONFIG_MAIN
+#endif // C2H_CONFIG_MAIN
