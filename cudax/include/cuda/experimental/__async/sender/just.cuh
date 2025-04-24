@@ -114,7 +114,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class... _Ts>
-  _CUDAX_TRIVIAL_API auto operator()(_Ts... __ts) const;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
 };
 
 template <__disposition_t _Disposition>
@@ -150,7 +150,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
 
 template <__disposition_t _Disposition>
 template <class... _Ts>
-_CUDAX_TRIVIAL_API auto __just_t<_Disposition>::operator()(_Ts... __ts) const
+_CUDAX_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts) const
 {
   using _Values _CCCL_NODEBUG_ALIAS = decltype(__mk_values(__ts...));
   return __sndr_t<_Values>{{}, __mk_values(__ts...)};

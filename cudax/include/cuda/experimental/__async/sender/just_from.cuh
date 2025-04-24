@@ -112,7 +112,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Fn>
-  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>;
 };
 
 template <__disposition_t _Disposition>
@@ -147,7 +147,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
 
 template <__disposition_t _Disposition>
 template <class _Fn>
-_CUDAX_TRIVIAL_API auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
+_CUDAX_TRIVIAL_API constexpr auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
 {
   using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;
   static_assert(__valid_completion_signatures<__completions>,

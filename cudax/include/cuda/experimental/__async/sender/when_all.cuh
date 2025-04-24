@@ -24,6 +24,7 @@
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -374,9 +375,20 @@ private:
   template <class... _Ts>
   using __decay_all _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list<_CUDA_VSTD::decay_t<_Ts>...>;
 
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
+  {
+    template <class... _Sndrs>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  };
+
 public:
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   template <class... _Sndrs>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const -> __sndr_t<_Sndrs...>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
@@ -478,7 +490,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : __tuple<when_all_t, 
 };
 
 template <class... _Sndrs>
-_CUDAX_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const -> __sndr_t<_Sndrs...>
+_CUDAX_TRIVIAL_API constexpr auto when_all_t::__fn::operator()(_Sndrs... __sndrs) const
 {
   // If the incoming senders are non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -488,6 +500,25 @@ _CUDAX_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) cons
     static_assert(__valid_completion_signatures<__completions>);
   }
   return __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}};
+}
+
+template <class... _Sndrs>
+_CUDAX_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+{
+  if constexpr (sizeof...(_Sndrs) == 0)
+  {
+    return __sndr_t{};
+  }
+  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>)
+  {
+    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>,
+                  "when_all: all child senders must have the same domain");
+  }
+  else
+  {
+    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<early_domain_of_t<_Sndrs>...>;
+    return __dom_t::__apply(*this)(static_cast<_Sndrs&&>(__sndrs)...);
+  }
 }
 
 template <class... _Sndrs>
