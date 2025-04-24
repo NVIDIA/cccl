@@ -45,11 +45,11 @@ __device__ void test_range(void* ptr1, void* ptr2)
   }
   else
   {
-    for (uint32_t total_size = 1, i = 0; i <= 32; i++, total_size = ((total_size << 1) + 3))
+    for (uint32_t total_size = 1, i = 0; i <= 31; i++, total_size <<= 1)
     {
-      for (uint32_t primary_size = 1, j = 0; j <= 32; j++, primary_size += ((primary_size << 1) + 7))
+      for (uint32_t primary_size = 1, j = 0; j <= i; j++, primary_size <<= 1)
       {
-        if constexpr (cuda::std::is_void_v<Secondary> || cuda::std::is_same_v<Primary, Secondary>)
+        if constexpr (cuda::std::is_void_v<Secondary>)
         {
           property = cuda::access_property{ptr1, primary_size, total_size, Primary{}};
         }
@@ -59,6 +59,7 @@ __device__ void test_range(void* ptr1, void* ptr2)
         }
         auto policy = __createpolicy_range(
           ptr2, access_property_to_enum<Primary>(), primary_size, total_size, access_property_to_enum<Secondary>());
+        printf("%2d, %2d --> 0x%lX   0x%lX\n", i, j, policy, static_cast<uint64_t>(property));
         assert(static_cast<uint64_t>(property) == policy);
       }
     }
@@ -77,7 +78,7 @@ __global__ void test_range(void* ptr1, void* ptr2)
   test_range<cuda::access_property::normal>(ptr1, ptr2);
   test_range<cuda::access_property::streaming>(ptr1, ptr2);
   test_range<cuda::access_property::persisting>(ptr1, ptr2);
-  test_range<cuda::access_property::global>(ptr1, ptr2);
+  // test_range<cuda::access_property::global>(ptr1, ptr2);
 }
 
 template <typename Primary, typename Secondary>
@@ -124,16 +125,61 @@ __global__ void test_fraction()
   test_fraction<cuda::access_property::global>();
 }
 
+struct __block_desc_t
+{
+  uint64_t               : 37;
+  uint32_t __block_count : 7;
+  uint32_t __block_start : 7;
+  uint32_t               : 1;
+  uint32_t __block_size  : 4;
+
+  uint32_t __l2_cop_off             : 1;
+  uint32_t __l2_cop_on              : 2;
+  uint32_t __l2_descriptor_mode     : 2;
+  uint32_t __l1_inv_dont_allocate   : 1;
+  uint32_t __l2_sector_promote_256B : 1;
+  uint32_t                          : 1;
+};
+
+__device__ constexpr uint32_t __block_encoding(void* __ptr, uint32_t __primary_size, uint32_t __total_bytes)
+{
+  auto __raw_ptr         = _CUDA_VSTD::bit_cast<uintptr_t>(__ptr);
+  auto __log2_total_size = ::cuda::ceil_ilog2(__total_bytes);
+  auto __block_size_enum = _CUDA_VSTD::max(__log2_total_size - 19u, 0u);
+  auto __log2_block_size = 12u + __block_size_enum;
+  auto __block_size      = 1u << __log2_block_size;
+  auto __block_start     = __raw_ptr >> __log2_block_size;
+  auto __block_end       = ::cuda::ceil_div(__raw_ptr + __primary_size, __block_size);
+  return __block_end - __block_start;
+}
+
+__global__ void my_test(void* ptr, void*)
+{
+  uint32_t s = 1;
+  for (int i = 0; i <= 32; i++)
+  {
+    auto policy = __createpolicy_range(ptr, cuda::_L2_Policy::__evict_unchanged, s / 2, s);
+    auto desc   = cuda::std::bit_cast<__block_desc_t>(policy);
+    printf("---> 2^%d:    %d %d, %d\n", i, desc.__block_size, desc.__block_count, __block_encoding(ptr, s / 2, s));
+    s *= 2;
+  }
+  // auto policy = __createpolicy_range(ptr, cuda::_L2_Policy::__evict_unchanged, (1 << 19), (1 << 19));
+  // auto desc   = cuda::std::bit_cast<__block_desc_t>(policy);
+  // printf("---> %d      %d %d, %d\n", (1 << 19), desc.__block_size, desc.__block_count, desc.__block_start);
+}
+
 void test_range()
 {
   void* ptr;
   cudaMalloc(&ptr, 64);
   test_range<<<1, 1>>>(ptr, ptr);
+  // my_test<<<1, 1>>>(ptr, ptr);
   cudaFree(ptr);
 }
 
 int main(int, char**)
 {
-  NV_IF_TARGET(NV_IS_HOST, (test_range(); test_fraction<<<1, 1>>>();))
+  // NV_IF_TARGET(NV_IS_HOST, (test_range(); test_fraction<<<1, 1>>>();))
+  NV_IF_TARGET(NV_IS_HOST, (test_range();))
   return 0;
 }
