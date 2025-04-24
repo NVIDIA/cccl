@@ -34,6 +34,17 @@ struct MakeVoidPtrFuncPtr<cuda::std::index_sequence<Is...>>
   using type = void (*)(void_ptr_t<Is>..., void*); // Last void* is for result
 };
 
+// Helper to define the C function pointer type for stateful ops: void (*)(void* state, void*..., void*)
+template <typename Seq>
+struct MakeVoidPtrStatefulFuncPtr;
+template <cuda::std::size_t... Is>
+struct MakeVoidPtrStatefulFuncPtr<cuda::std::index_sequence<Is...>>
+{
+  template <cuda::std::size_t>
+  using void_ptr_t = void*;
+  using type       = void (*)(void*, void_ptr_t<Is>..., void*); // First void* is state, last is result
+};
+
 template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
 struct stateless_user_operation
 {
@@ -72,8 +83,24 @@ struct stateful_user_operation
   user_operation_state<Operation.size, Operation.alignment> state;
   __device__ typename decltype(RetT)::Type operator()(typename decltype(ArgTs)::Type... args)
   {
-    return reinterpret_cast<typename decltype(RetT)::Type (*)(void*, typename decltype(ArgTs)::Type...)>(
-      Operation.operation)(&state, std::move(args)...);
+    // Note: The user provided C function (Operation.operation) must match the signature:
+    // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
+    static constexpr cuda::std::size_t num_args = sizeof...(ArgTs);
+    using Indices                               = cuda::std::make_index_sequence<num_args>;
+    using TargetCFuncPtr                        = typename MakeVoidPtrStatefulFuncPtr<Indices>::type;
+
+    // Cast the stored operation pointer (assumed to be void* or compatible)
+    auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
+
+    // Prepare storage for the result
+    typename decltype(RetT)::Type result;
+    void* result_ptr = static_cast<void*>(&result);
+
+    // Call the C function, passing state address, casting argument addresses to void*, and result pointer
+    c_func_ptr(
+      &state, (static_cast<void*>(const_cast<cuda::std::remove_reference_t<decltype(args)>*>(&args)))..., result_ptr);
+
+    return result;
   }
 };
 

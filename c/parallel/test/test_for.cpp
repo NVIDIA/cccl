@@ -106,7 +106,7 @@ struct invocation_counter_state_t
   int* d_counter;
 };
 
-C2H_TEST("for works with stateful operators", "[for]")
+C2H_TEST("for_each works with stateful operators", "[for_each]")
 {
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
@@ -115,8 +115,9 @@ C2H_TEST("for works with stateful operators", "[for]")
     "op",
     R"XXX(
 struct invocation_counter_state_t { int* d_counter; };
-extern "C" __device__ void op(invocation_counter_state_t* state, int* a) {
-  atomicAdd(state->d_counter, *a);
+extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
+  invocation_counter_state_t* state = static_cast<invocation_counter_state_t*>(state_ptr);
+  atomicAdd(state->d_counter, *static_cast<int*>(a_ptr));
 }
 )XXX",
     op_state);
@@ -137,7 +138,7 @@ struct large_state_t
   int y, z, a;
 };
 
-C2H_TEST("for works with large stateful operators", "[for]")
+C2H_TEST("for_each works with large stateful operators", "[for_each]")
 {
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
@@ -151,8 +152,9 @@ struct large_state_t
   int* d_counter;
   int y, z, a;
 };
-extern "C" __device__ void op(large_state_t* state, int* a) {
-  atomicAdd(state->d_counter, *a);
+extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
+  large_state_t* state = static_cast<large_state_t*>(state_ptr);
+  atomicAdd(state->d_counter, *static_cast<int*>(a_ptr));
 }
 )XXX",
     op_state);

@@ -202,9 +202,12 @@ C2H_TEST("Reduce works with stateful operators", "[reduce]")
   stateful_operation_t<invocation_counter_state_t> op = make_operation(
     "op",
     "struct invocation_counter_state_t { int* d_counter; };\n"
-    "extern \"C\" __device__ int op(invocation_counter_state_t *state, int a, int b) {\n"
+    "extern \"C\" __device__ void op(void* state_ptr, void* a_ptr, void* b_ptr, void* out_ptr) {\n"
+    "  invocation_counter_state_t* state = static_cast<invocation_counter_state_t*>(state_ptr);\n"
     "  atomicAdd(state->d_counter, 1);\n"
-    "  return a + b;\n"
+    "  int a = *static_cast<int*>(a_ptr);\n"
+    "  int b = *static_cast<int*>(b_ptr);\n"
+    "  *static_cast<int*>(out_ptr) = a + b;\n"
     "}",
     invocation_counter_state_t{counter.ptr});
 
