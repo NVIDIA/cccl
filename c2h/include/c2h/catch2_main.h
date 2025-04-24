@@ -67,6 +67,6 @@ int main(int argc, char* argv[])
 
   set_device(device_id);
 #  endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-  return session.run(argc, argv);
+  return session.run();
 }
 #endif // CUB_CONFIG_MAIN
