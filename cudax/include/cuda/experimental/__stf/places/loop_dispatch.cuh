@@ -96,7 +96,6 @@ inline void loop_dispatch(
   {
     // Work that should be performed by thread "tid"
     auto tid_work = [=, &ctx, &func]() {
-
       // TODO we should have a prologue and epilogue (per place)
       if constexpr (::std::is_same_v<std::remove_reference_t<context_t>, stackable_ctx>)
       {

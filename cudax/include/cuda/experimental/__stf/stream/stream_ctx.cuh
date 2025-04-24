@@ -129,8 +129,11 @@ public:
     return result;
   }
 
-  void deallocate(
-    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, [[maybe_unused]] size_t sz) override
+  void deallocate(backend_ctx_untyped& ctx,
+                  const data_place& memory_node,
+                  event_list& prereqs,
+                  void* ptr,
+                  [[maybe_unused]] size_t sz) override
   {
     auto dstream = memory_node.getDataStream(ctx.async_resources());
     auto op      = stream_async_op(ctx, dstream, prereqs);

@@ -255,10 +255,13 @@ public:
         return children[offset];
       }
 
-      const size_t depth(int offset) const {
+      const size_t depth(int offset) const
+      {
         int p = get_parent(offset);
         if (p == -1)
-           return 0;
+        {
+          return 0;
+        }
 
         return 1 + depth(p);
       }
@@ -329,9 +332,10 @@ public:
       {
         // Get parent depth
         int parent_depth = node_tree.depth(head_offset);
-        if (parent_depth >= 1) {
-            fprintf(stderr, "stackable_ctx with depth > 2 is unimplemented yet\n");
-            abort();
+        if (parent_depth >= 1)
+        {
+          fprintf(stderr, "stackable_ctx with depth > 2 is unimplemented yet\n");
+          abort();
         }
 
         // Keep track of parenthood
@@ -1170,7 +1174,7 @@ class stackable_logical_data
       void set_symbol(::std::string symbol_)
       {
         auto ctx_lock = sctx.get_write_lock();
-        symbol = mv(symbol_);
+        symbol        = mv(symbol_);
         traverse_data_nodes([this](int offset) {
           get_data_node(offset).ld.set_symbol(this->symbol);
         });

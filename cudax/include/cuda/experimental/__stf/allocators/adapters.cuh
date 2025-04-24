@@ -145,8 +145,11 @@ class stream_adapter
       return result;
     }
 
-    void deallocate(
-      backend_ctx_untyped&, const data_place& memory_node, event_list& /* prereqs */, void* ptr, [[maybe_unused]] size_t sz) override
+    void deallocate(backend_ctx_untyped&,
+                    const data_place& memory_node,
+                    event_list& /* prereqs */,
+                    void* ptr,
+                    [[maybe_unused]] size_t sz) override
     {
       // Do not deallocate buffers, this is done later when we call clear()
       state->to_free.emplace_back(ptr, sz, memory_node);
