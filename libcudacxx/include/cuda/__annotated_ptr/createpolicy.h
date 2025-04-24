@@ -149,8 +149,6 @@ __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, fl
   return __policy;
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
 /***********************************************************************************************************************
  * C++ API
  **********************************************************************************************************************/
@@ -183,6 +181,8 @@ __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float 
                     (return ::cuda::__createpolicy_fraction_ptx(__primary, __secondary, __fraction);),
                     (__createpolicy_is_not_supported_before_SM_80(); return 0;))
 }
+
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

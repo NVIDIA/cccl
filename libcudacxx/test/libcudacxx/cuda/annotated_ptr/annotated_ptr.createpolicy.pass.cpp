@@ -10,26 +10,29 @@
 
 #include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/annotated_ptr>
+#include <cuda/cmath>
 #include <cuda/std/type_traits>
 
+#include <cstdio>
+
 template <typename Prop>
-__device__ constexpr cuda::_L2_Policy access_property_to_enum()
+__device__ constexpr cuda::__l2_evict_t access_property_to_enum()
 {
   if constexpr (cuda::std::is_same_v<Prop, cuda::access_property::normal>)
   {
-    return cuda::_L2_Policy::__evict_normal;
+    return cuda::__l2_evict_t::_L2_Evict_Normal_Demote;
   }
   else if constexpr (cuda::std::is_same_v<Prop, cuda::access_property::streaming>)
   {
-    return cuda::_L2_Policy::__evict_first;
+    return cuda::__l2_evict_t::_L2_Evict_Unchanged;
   }
   else if constexpr (cuda::std::is_same_v<Prop, cuda::access_property::persisting>)
   {
-    return cuda::_L2_Policy::__evict_last;
+    return cuda::__l2_evict_t::_L2_Evict_Last;
   }
   else // if constexpr (cuda::std::is_same_v<Prop, cuda::access_property::global>)
   {
-    return cuda::_L2_Policy::__evict_unchanged;
+    return cuda::__l2_evict_t::_L2_Evict_Unchanged;
   }
 }
 
@@ -58,7 +61,7 @@ __device__ void test_range(void* ptr1, void* ptr2)
           property = cuda::access_property{ptr1, primary_size, total_size, Primary{}, Secondary{}};
         }
         auto policy = __createpolicy_range(
-          ptr2, access_property_to_enum<Primary>(), primary_size, total_size, access_property_to_enum<Secondary>());
+          access_property_to_enum<Primary>(), access_property_to_enum<Secondary>(), ptr2, primary_size, total_size);
         printf("%2d, %2d --> 0x%lX   0x%lX\n", i, j, policy, static_cast<uint64_t>(property));
         assert(static_cast<uint64_t>(property) == policy);
       }
@@ -87,8 +90,9 @@ __device__ void test_fraction()
   cuda::access_property property;
   if constexpr (cuda::std::is_same_v<Primary, cuda::access_property::global>)
   {
-    property    = cuda::access_property{cuda::access_property::global{}};
-    auto policy = cuda::__createpolicy_fraction(access_property_to_enum<Primary>());
+    property = cuda::access_property{cuda::access_property::global{}};
+    auto policy =
+      cuda::__createpolicy_fraction(access_property_to_enum<Primary>(), cuda::__l2_evict_t::_L2_Evict_Unchanged);
     assert(static_cast<uint64_t>(property) == policy);
   }
   else
@@ -104,7 +108,7 @@ __device__ void test_fraction()
         property = cuda::access_property{Primary{}, fraction, Secondary{}};
       }
       auto policy = cuda::__createpolicy_fraction(
-        access_property_to_enum<Primary>(), fraction, access_property_to_enum<Secondary>());
+        access_property_to_enum<Primary>(), access_property_to_enum<Secondary>(), fraction);
       assert(static_cast<uint64_t>(property) == policy);
     }
   }
@@ -158,12 +162,13 @@ __global__ void my_test(void* ptr, void*)
   uint32_t s = 1;
   for (int i = 0; i <= 32; i++)
   {
-    auto policy = __createpolicy_range(ptr, cuda::_L2_Policy::__evict_unchanged, s / 2, s);
-    auto desc   = cuda::std::bit_cast<__block_desc_t>(policy);
+    auto policy = __createpolicy_range(
+      cuda::__l2_evict_t::_L2_Evict_Unchanged, cuda::__l2_evict_t::_L2_Evict_Unchanged, ptr, s / 2, s);
+    auto desc = cuda::std::bit_cast<__block_desc_t>(policy);
     printf("---> 2^%d:    %d %d, %d\n", i, desc.__block_size, desc.__block_count, __block_encoding(ptr, s / 2, s));
     s *= 2;
   }
-  // auto policy = __createpolicy_range(ptr, cuda::_L2_Policy::__evict_unchanged, (1 << 19), (1 << 19));
+  // auto policy = __createpolicy_range(ptr, cuda::__l2_evict_t::_L2_Evict_Unchanged, (1 << 19), (1 << 19));
   // auto desc   = cuda::std::bit_cast<__block_desc_t>(policy);
   // printf("---> %d      %d %d, %d\n", (1 << 19), desc.__block_size, desc.__block_count, desc.__block_start);
 }

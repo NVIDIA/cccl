@@ -142,9 +142,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda_runtime_api.h>
+
 #include <cuda/__annotated_ptr/access_property_encoding_v2.h>
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -153,7 +153,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 class access_property
 {
 private:
-  uint64_t __descriptor = __sm_80::__interleave_normal;
+  uint64_t __descriptor = __l2_interleave_normal;
 
 public:
   struct shared
@@ -190,34 +190,39 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
-      : __descriptor{::cuda::__interleave(normal{}, __fraction)}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal, float __fraction) noexcept
+      : __descriptor{
+          ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Normal_Demote, __l2_evict_t::_L2_Evict_Unchanged, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming, float __fraction) noexcept
-      : __descriptor{::cuda::__interleave(streaming{}, __fraction)}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(streaming, float __fraction) noexcept
+      : __descriptor{
+          ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_First, __l2_evict_t::_L2_Evict_Unchanged, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction) noexcept
-      : __descriptor{::cuda::__interleave(persisting{}, __fraction)}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(persisting, float __fraction) noexcept
+      : __descriptor{
+          ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_Unchanged, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__interleave(normal{}, __fraction, streaming{})}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal, float __fraction, streaming) noexcept
+      : __descriptor{
+          ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Unchanged, __l2_evict_t::_L2_Evict_First, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction, streaming) noexcept
-      : __descriptor{::cuda::__interleave(persisting{}, __fraction, streaming{})}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR
+  access_property(persisting, float __fraction, streaming) noexcept
+      : __descriptor{::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_First, __fraction)}
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal) noexcept
-      : access_property{normal{}, 1.0f}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal) noexcept
+      : __descriptor{__l2_interleave_normal_demote}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming) noexcept
-      : access_property{streaming{}, 1.0f}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(streaming) noexcept
+      : __descriptor{__l2_interleave_streaming}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting) noexcept
-      : access_property{persisting{}, 1.0f}
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(persisting) noexcept
+      : __descriptor{__l2_interleave_persisting}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, normal) noexcept
-      : __descriptor{::cuda::__createpolicy_range(
+      : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Normal_Demote,
           __l2_evict_t::_L2_Evict_Unchanged,
           __ptr,
@@ -227,37 +232,37 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI
   access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, streaming) noexcept
-      : __descriptor{::cuda::__createpolicy_range(
+      : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_First, __l2_evict_t::_L2_Evict_Unchanged, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI
   access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, persisting) noexcept
-      : __descriptor{::cuda::__createpolicy_range(
+      : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_Unchanged, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI
   access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, global, streaming) noexcept
-      : __descriptor{::cuda::__createpolicy_range(
+      : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Unchanged, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI
   access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, normal, streaming) noexcept
-      : __descriptor{::cuda::__createpolicy_range(
+      : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Normal_Demote, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI
   access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, streaming, streaming) noexcept
-      : __descriptor{::cuda::__createpolicy_range(
+      : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_First, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI
   access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, persisting, streaming) noexcept
-      : __descriptor{::cuda::__createpolicy_range(
+      : __descriptor{::cuda::__block_encoding(
           __l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_First, __ptr, __primary_bytes, __total_bytes)}
   {}
 

@@ -390,7 +390,7 @@ struct __interleave_descriptor_t
 static_assert(sizeof(__interleave_descriptor_t) == 8, "__interleave_descriptor_t should be 8 bytes");
 static_assert(sizeof(__interleave_descriptor_t) == sizeof(uint64_t));
 
-inline constexpr auto __interleave_normal = uint64_t{0x10F0000000000000};
+inline constexpr auto __l2_interleave_normal = uint64_t{0x10F0000000000000};
 
 inline constexpr auto __interleave_streaming = uint64_t{0x12F0000000000000};
 

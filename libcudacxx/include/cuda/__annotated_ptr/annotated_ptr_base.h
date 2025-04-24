@@ -144,8 +144,6 @@
 #include <cuda/__annotated_ptr/access_property.h>
 #include <cuda/__annotated_ptr/associate_access_property.h>
 #include <cuda/std/__bit/bit_cast.h>
-#include <cuda/std/__type_traits/is_one_of.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -187,7 +185,7 @@ template <>
 class __annotated_ptr_base<access_property::global>
 {
 protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_normal;
+  static constexpr uint64_t __prop = __l2_interleave_normal;
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                                       = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
@@ -214,7 +212,7 @@ template <>
 class __annotated_ptr_base<access_property::normal>
 {
 protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_normal_demote;
+  static constexpr uint64_t __prop = __l2_interleave_normal_demote;
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                                       = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base const&) noexcept            = default;
@@ -241,7 +239,7 @@ template <>
 class __annotated_ptr_base<access_property::persisting>
 {
 protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_persisting;
+  static constexpr uint64_t __prop = __l2_interleave_persisting;
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                              = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&)            = default;
@@ -268,7 +266,7 @@ template <>
 class __annotated_ptr_base<access_property::streaming>
 {
 protected:
-  static constexpr uint64_t __prop = __sm_80::__interleave_streaming;
+  static constexpr uint64_t __prop = __l2_interleave_streaming;
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                              = default;
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&)            = default;
