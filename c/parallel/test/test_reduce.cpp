@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "test_util.h"
+#include <cccl/c/reduce.h>
 
 void reduce(cccl_iterator_t input, cccl_iterator_t output, uint64_t num_items, cccl_op_t op, cccl_value_t init)
 {
