@@ -163,22 +163,27 @@ enum class __l2_descriptor_mode_t : uint32_t
   _Desc_Block_Type  = 3
 };
 
-struct __block_desc_t // 64 bits
-{
-  uint64_t __reserved1       : 37;
-  uint32_t __block_count     : 7;
-  uint32_t __block_start     : 7;
-  uint32_t __reserved2       : 1;
-  uint32_t __block_size_enum : 4; // 56 bits
+/***********************************************************************************************************************
+ * Range Block Descriptor
+ **********************************************************************************************************************/
 
-  uint32_t __l2_cop_off             : 1;
-  uint32_t __l2_cop_on              : 2;
-  uint32_t __l2_descriptor_mode     : 2;
-  uint32_t __l1_inv_dont_allocate   : 1;
-  uint32_t __l2_sector_promote_256B : 1;
-  uint32_t __reserved3              : 1;
-};
-static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
+// MemoryDescriptor:blockDesc_t  reference
+//
+// struct __block_desc_t // 64 bits
+// {
+//   uint64_t __reserved1       : 37;
+//   uint32_t __block_count     : 7;
+//   uint32_t __block_start     : 7;
+//   uint32_t __reserved2       : 1;
+//   uint32_t __block_size_enum : 4; // 56 bits
+//
+//   uint32_t __l2_cop_off             : 1;
+//   uint32_t __l2_cop_on              : 2;
+//   uint32_t __l2_descriptor_mode     : 2;
+//   uint32_t __l1_inv_dont_allocate   : 1;
+//   uint32_t __l2_sector_promote_256B : 1;
+//   uint32_t __reserved3              : 1;
+// };
 
 #if !_CCCL_CUDA_COMPILER(NVRTC)
 
@@ -219,9 +224,12 @@ static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
   auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
   auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
   auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
-  __block_desc_t __block_desc{
-    0, __block_count, __block_start, 0, __block_size_enum, __l2_cop_off, __l2_cop_on, __l2_descriptor_mode, 0, 0, 0};
-  return cuda::std::bit_cast<uint64_t>(__block_desc);
+  return static_cast<uint64_t>(__block_count) << 37 //
+       | static_cast<uint64_t>(__block_start) << 44 //
+       | static_cast<uint64_t>(__block_size_enum) << 52 //
+       | static_cast<uint64_t>(__l2_cop_off) << 56 //
+       | static_cast<uint64_t>(__l2_cop_on) << 57 //
+       | static_cast<uint64_t>(__l2_descriptor_mode) << 59;
 }
 
 #endif // !_CCCL_CUDA_COMPILER(NVRTC)
@@ -245,18 +253,24 @@ static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
     (return ::cuda::__block_encoding_device(__primary, __secondary, __ptr, __primary_bytes, __total_bytes);))
 }
 
-struct __interleaved_desc_t // 64 bits
-{
-  uint64_t            : 52;
-  uint32_t __fraction : 4; // 56 bits
+/***********************************************************************************************************************
+ * Interleaved Descriptor
+ **********************************************************************************************************************/
 
-  uint32_t __l2_cop_off             : 1;
-  uint32_t __l2_cop_on              : 2;
-  uint32_t __l2_descriptor_mode     : 2;
-  uint32_t __l1_inv_dont_allocate   : 1;
-  uint32_t __l2_sector_promote_256B : 1;
-  uint32_t                          : 1;
-};
+// MemoryDescriptor:interleaveDesc_t reference
+//
+// struct __interleaved_desc_t // 64 bits
+// {
+//   uint64_t            : 52;
+//   uint32_t __fraction : 4; // 56 bits
+//
+//   uint32_t __l2_cop_off             : 1;
+//   uint32_t __l2_cop_on              : 2;
+//   uint32_t __l2_descriptor_mode     : 2;
+//   uint32_t __l1_inv_dont_allocate   : 1;
+//   uint32_t __l2_sector_promote_256B : 1;
+//   uint32_t                          : 1;
+// };
 
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t
 __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
@@ -274,13 +288,10 @@ __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fracti
   auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
   auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
   auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Interleaved);
-  __interleaved_desc_t __interleaved_desc{__num, __l2_cop_off, __l2_cop_on, __l2_descriptor_mode, 0, 0};
-  return static_cast<uint64_t>(__interleaved_desc.__fraction) << 52 //
-       | static_cast<uint64_t>(__interleaved_desc.__l2_cop_off) << 56 //
-       | static_cast<uint64_t>(__interleaved_desc.__l2_cop_on) << 57 //
-       | static_cast<uint64_t>(__interleaved_desc.__l2_descriptor_mode) << 59 //
-       | static_cast<uint64_t>(__interleaved_desc.__l1_inv_dont_allocate) << 61 //
-       | static_cast<uint64_t>(__interleaved_desc.__l2_sector_promote_256B) << 62;
+  return static_cast<uint64_t>(__num) << 52 //
+       | static_cast<uint64_t>(__l2_cop_off) << 56 //
+       | static_cast<uint64_t>(__l2_cop_on) << 57 //
+       | static_cast<uint64_t>(__l2_descriptor_mode) << 59;
 }
 
 inline constexpr auto __l2_interleave_normal = uint64_t{0x10F0000000000000};
