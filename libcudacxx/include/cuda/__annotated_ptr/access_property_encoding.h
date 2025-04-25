@@ -263,7 +263,8 @@ __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fracti
 {
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__createpolicy_fraction(__primary, __secondary, __fraction);))
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_80, (return ::cuda::__createpolicy_fraction(__primary, __secondary, __fraction);), (return 0;))
   }
   _CCCL_ASSERT(__fraction > 0.0f && __fraction <= 1.0f, "fraction must be between 0.0f and 1.0f");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,

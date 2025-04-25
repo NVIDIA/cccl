@@ -8,6 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: pre-sm-70
+
 #include "utils.h"
 #include <cooperative_groups.h>
 

@@ -8,6 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
+// UNSUPPORTED: pre-sm-80
 
 #include <cuda/annotated_ptr>
 #include <cuda/cmath>
