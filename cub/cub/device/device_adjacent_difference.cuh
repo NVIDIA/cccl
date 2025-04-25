@@ -43,6 +43,8 @@
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
+
 #include <cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -255,7 +257,7 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeftCopy");
 
     return AdjacentDifference<MayAlias::No, ReadOption::Left>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
@@ -363,7 +365,7 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractLeft");
 
     return AdjacentDifference<MayAlias::Yes, ReadOption::Left>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);
@@ -490,7 +492,7 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRightCopy");
 
     return AdjacentDifference<MayAlias::No, ReadOption::Right>(
       d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
@@ -587,7 +589,7 @@ public:
     DifferenceOpT difference_op = {},
     cudaStream_t stream         = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceAdjacentDifference::SubtractRight");
 
     return AdjacentDifference<MayAlias::Yes, ReadOption::Right>(
       d_temp_storage, temp_storage_bytes, d_input, d_input, num_items, difference_op, stream);

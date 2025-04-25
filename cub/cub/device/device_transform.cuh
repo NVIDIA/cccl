@@ -18,6 +18,7 @@
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN
@@ -62,7 +63,7 @@ struct DeviceTransform
     TransformOp transform_op,
     cudaStream_t stream = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
 
     using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;
@@ -206,7 +207,7 @@ struct DeviceTransform
     TransformOp transform_op,
     cudaStream_t stream = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
 
     using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;

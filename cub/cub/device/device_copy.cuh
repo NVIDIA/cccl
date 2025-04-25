@@ -46,6 +46,8 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 #include <cstdint>
 
 CUB_NAMESPACE_BEGIN
@@ -173,7 +175,7 @@ struct DeviceCopy
     ::cuda::std::int64_t num_ranges,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceCopy::Batched");
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
     // upper bound on num_thread_blocks_launched can be assumed to be given by

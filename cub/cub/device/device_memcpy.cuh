@@ -43,6 +43,8 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
+
 #include <cstdint>
 #include <type_traits>
 
@@ -174,7 +176,7 @@ struct DeviceMemcpy
     ::cuda::std::int64_t num_buffers,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMemcpy::Batched");
     static_assert(::cuda::std::is_pointer_v<cub::detail::it_value_t<InputBufferIt>>,
                   "DeviceMemcpy::Batched only supports copying of memory buffers."
                   "Please consider using DeviceCopy::Batched instead.");

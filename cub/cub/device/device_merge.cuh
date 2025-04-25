@@ -17,6 +17,7 @@
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
+#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/functional>
 
 CUB_NAMESPACE_BEGIN
@@ -83,7 +84,7 @@ struct DeviceMerge
     CompareOp compare_op = {},
     cudaStream_t stream  = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
 
     using offset_t = ::cuda::std::int64_t;
 
@@ -173,7 +174,7 @@ struct DeviceMerge
     CompareOp compare_op = {},
     cudaStream_t stream  = nullptr)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
 
     using offset_t = ::cuda::std::int64_t;
 

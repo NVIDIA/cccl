@@ -53,6 +53,8 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 #include <iterator>
 
 #include <stdio.h>
@@ -194,7 +196,7 @@ struct DeviceRunLengthEncode
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
 
     using equality_op  = ::cuda::std::equal_to<>; // Default == operator
     using reduction_op = ::cuda::std::plus<>; // Value reduction operator
@@ -347,7 +349,7 @@ struct DeviceRunLengthEncode
     int num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
+    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
     using OffsetT    = int; // Signed integer type for global offsets
     using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
