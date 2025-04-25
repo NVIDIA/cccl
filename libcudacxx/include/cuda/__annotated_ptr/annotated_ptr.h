@@ -151,7 +151,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Tp, typename _Property>
-class annotated_ptr : public ::cuda::__annotated_ptr_base<_Property>
+class annotated_ptr : private ::cuda::__annotated_ptr_base<_Property>
 {
 public:
   using value_type      = _Tp;
@@ -162,57 +162,63 @@ public:
   using difference_type = ptrdiff_t;
 
 private:
-  // Converting from a 64-bit to 32-bit shared pointer and maybe back just for storage might or might not be profitable.
-  pointer __repr = reinterpret_cast<pointer>(size_type{0});
+  static_assert(__is_access_property_v<_Property>);
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer
-  __get([[maybe_unused]] bool __skip_prop = false, difference_type __n = 0) const noexcept
+  static constexpr bool __is_smem = _CUDA_VSTD::is_same_v<_Property, access_property::shared>;
+
+  // Converting from a 64-bit to 32-bit shared pointer and maybe back just for storage might or might not be profitable.
+  pointer __repr = nullptr;
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer __get(difference_type __n = 0) const noexcept
   {
-    // clang-format off
     NV_IF_TARGET(NV_IS_DEVICE,
-      (if (!__skip_prop)
-       {
-          auto __repr1 = const_cast<void*>(static_cast<const volatile void*>(this->__repr + __n));
-          return static_cast<pointer>(this->__apply_prop(__repr1));
-       }))
-    // clang-format on
+                 (auto __repr1 = const_cast<void*>(static_cast<const volatile void*>(__repr + __n));
+                  return static_cast<pointer>(this->__apply_prop(__repr1));))
     return __repr + __n;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer __offset(difference_type __n, bool __skip_prop = false) const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer __offset(difference_type __n) const noexcept
   {
-    return __get(__skip_prop, __n);
+    return __get(__n);
   }
 
 public:
-  _CCCL_HIDE_FROM_ABI annotated_ptr() noexcept                                      = default;
-  _CCCL_HIDE_FROM_ABI annotated_ptr(const annotated_ptr&) noexcept                  = default;
-  _CCCL_HIDE_FROM_ABI annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr() noexcept                                = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr(const annotated_ptr&) noexcept            = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr(annotated_ptr&&) noexcept                 = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr& operator=(const annotated_ptr&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr& operator=(annotated_ptr&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI ~annotated_ptr() noexcept                               = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit annotated_ptr(pointer __p) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr annotated_ptr(pointer __p) noexcept
       : __repr{__p}
   {
+    NV_IF_TARGET(NV_IS_HOST, (_CCCL_ASSERT(!__is_smem, "shared memory pointer is not supported on the host");))
+    if constexpr (!__is_smem)
+    {
+      _CCCL_ASSERT(__p != nullptr, "__p must not be null");
+    }
     NV_IF_TARGET(NV_IS_DEVICE,
-                 (_CCCL_ASSERT((_CUDA_VSTD::is_same_v<_Property, access_property::shared> && __isShared((void*) __p))
-                                 || __isGlobal((void*) __p),
+                 (_CCCL_ASSERT((__is_smem && __isShared((void*) __p)) || __isGlobal((void*) __p),
                                "__p must be shared or global");))
   }
 
   template <typename _RuntimeProperty>
   _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(pointer __p, _RuntimeProperty __prop) noexcept
-      : ::cuda::__annotated_ptr_base<_Property>{static_cast<uint64_t>(access_property{__prop})}
+      : ::cuda::__annotated_ptr_base<_Property>{access_property{__prop}}
       , __repr{__p}
   {
     static_assert(_CUDA_VSTD::is_same_v<_Property, access_property>,
                   "This method requires annotated_ptr<T, cuda::access_property>");
     static_assert(__is_global_access_property_v<_RuntimeProperty>,
                   "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
+    _CCCL_ASSERT(__p != nullptr, "__p must not be null");
     NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
   }
 
   template <typename _OtherType, class _OtherProperty>
-  _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
-      : ::cuda::__annotated_ptr_base<_Property>(__other.__property())
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
+      : ::cuda::__annotated_ptr_base<_Property>{__other.__property()}
       , __repr{__other.get()}
   {
     using namespace _CUDA_VSTD;
@@ -221,10 +227,9 @@ public:
                     || (is_same_v<_Property, access_property> && !is_same_v<_OtherProperty, access_property::shared>),
                   "Both properties must have same address space, or current property is access_property and "
                   "OtherProperty is not shared");
-    // note: precondition "__other.__rep must be compatible with _Property" currently always holds
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer operator->() const noexcept
   {
     return __get();
   }
@@ -249,20 +254,17 @@ public:
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
   {
-    return __repr != nullptr;
+    return (__repr != nullptr);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer get() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer get() const noexcept
   {
-    constexpr bool __is_shared = _CUDA_VSTD::is_same_v<_Property, access_property::shared>;
-    if (__is_shared || __repr == nullptr)
-    {
-      return __repr;
-    }
-    return annotated_ptr<value_type, access_property::global>{__repr}.operator->();
+    return (__is_smem || __repr == nullptr)
+           ? __repr
+           : annotated_ptr<value_type, access_property::global>{__repr}.operator->();
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Property __property() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Property __property() const noexcept
   {
     return this->__get_property();
   }

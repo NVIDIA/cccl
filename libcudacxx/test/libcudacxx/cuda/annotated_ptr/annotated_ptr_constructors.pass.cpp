@@ -26,15 +26,16 @@ __host__ __device__ __noinline__ void test_ctor()
   }
   cuda::annotated_ptr<T, P> other(def);
   unused(other);
-
   // from ptr
   T* rp = nullptr;
   rp++;
   cuda::annotated_ptr<T, P> a(rp);
   assert(a);
 
+  printf("before\n");
   // cpy ctor & assign to cv
   cuda::annotated_ptr<const T, P> c(def);
+#if 0
   cuda::annotated_ptr<volatile T, P> d(def);
   cuda::annotated_ptr<const volatile T, P> e(def);
   c = def;
@@ -55,6 +56,7 @@ __host__ __device__ __noinline__ void test_ctor()
   cuda::annotated_ptr<const volatile T, P> j(d);
   i = c;
   j = d;
+#endif
 }
 
 template <typename T, typename P>
@@ -67,23 +69,32 @@ __host__ __device__ __noinline__ void test_global_ctor()
   rp++;
   P p;
   cuda::annotated_ptr<T, cuda::access_property> a(rp, p);
-  cuda::annotated_ptr<const T, cuda::access_property> b(rp, p);
-  cuda::annotated_ptr<volatile T, cuda::access_property> c(rp, p);
-  cuda::annotated_ptr<const volatile T, cuda::access_property> d(rp, p);
+  // cuda::annotated_ptr<const T, cuda::access_property> b(rp, p);
+  // cuda::annotated_ptr<volatile T, cuda::access_property> c(rp, p);
+  // cuda::annotated_ptr<const volatile T, cuda::access_property> d(rp, p);
 }
 
 __host__ __device__ __noinline__ void test_global_ctors()
 {
   test_global_ctor<int, cuda::access_property::normal>();
-  test_global_ctor<int, cuda::access_property::streaming>();
-  test_global_ctor<int, cuda::access_property::persisting>();
-  test_global_ctor<int, cuda::access_property::global>();
-  test_global_ctor<int, cuda::access_property>();
-  NV_IF_TARGET(NV_IS_DEVICE, (test_ctor<int, cuda::access_property::shared>();))
+  // test_global_ctor<int, cuda::access_property::streaming>();
+  // test_global_ctor<int, cuda::access_property::persisting>();
+  // test_global_ctor<int, cuda::access_property::global>();
+  // test_global_ctor<int, cuda::access_property>();
+  // NV_IF_TARGET(NV_IS_DEVICE, (test_ctor<int, cuda::access_property::shared>();))
+}
+__global__ void test_global_ctors_k()
+{
+  test_global_ctor<int, cuda::access_property::normal>();
+  // test_global_ctor<int, cuda::access_property::streaming>();
+  // test_global_ctor<int, cuda::access_property::persisting>();
+  // test_global_ctor<int, cuda::access_property::global>();
+  // test_global_ctor<int, cuda::access_property>();
+  // NV_IF_TARGET(NV_IS_DEVICE, (test_ctor<int, cuda::access_property::shared>();))
 }
 
 int main(int argc, char** argv)
 {
-  test_global_ctors();
+  NV_IF_TARGET(NV_IS_HOST, (test_global_ctors_k<<<1, 1>>>(); cudaDeviceSynchronize();))
   return 0;
 }

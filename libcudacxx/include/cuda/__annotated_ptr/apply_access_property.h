@@ -191,7 +191,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
      auto __nbytes                = static_cast<size_t>(__shape);
      // Apply to all 128 bytes aligned cache lines inclusive of __p
      for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
-       asm volatile("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + __i * __line_size) :);
+       asm volatile("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + __i) :);
      }))
   // clang-format on
 }

@@ -144,16 +144,25 @@
 
 #include <cuda_runtime_api.h>
 
-#include <cuda/__annotated_ptr/access_property_encoding_v2.h>
+#include <cuda/__annotated_ptr/access_property_encoding.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+template <typename>
+class __annotated_ptr_base; // forward declaration
+
 class access_property
 {
 private:
   uint64_t __descriptor = __l2_interleave_normal;
+
+  friend class __annotated_ptr_base<access_property>;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(uint64_t __descriptor1) noexcept
+      : __descriptor{__descriptor1}
+  {}
 
 public:
   struct shared
@@ -187,6 +196,7 @@ public:
   _CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
   _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI ~access_property() noexcept                                 = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
 
@@ -212,13 +222,13 @@ public:
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal) noexcept
-      : __descriptor{__l2_interleave_normal_demote}
+      : access_property{normal{}, 1.0f}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(streaming) noexcept
-      : __descriptor{__l2_interleave_streaming}
+      : access_property{streaming{}, 1.0f}
   {}
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(persisting) noexcept
-      : __descriptor{__l2_interleave_persisting}
+      : access_property{persisting{}, 1.0f}
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI access_property(void* __ptr, size_t __primary_bytes, size_t __total_bytes, normal) noexcept

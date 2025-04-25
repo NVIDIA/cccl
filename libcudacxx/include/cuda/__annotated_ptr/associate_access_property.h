@@ -143,6 +143,7 @@
 #endif // no system header
 
 #include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_one_of.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
@@ -189,24 +190,28 @@ __associate_address_space(void* __ptr, [[maybe_unused]] _Property __prop)
     _CCCL_ASSERT(__b, "");
     _CCCL_ASSUME(__b);
   }
+  else
+  {
+    static_assert(_CUDA_VSTD::__always_false_v<_Property>, "invalid access_property");
+  }
   return __ptr;
 }
 
-template <typename _Prop>
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, _Prop __prop)
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_raw_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
 {
-  return ::cuda::__associate_descriptor(__ptr, static_cast<uint64_t>(access_property{__prop}));
+  NV_IF_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);))
+  return __ptr;
 }
 
-template <>
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, [[maybe_unused]] uint64_t __prop)
+template <typename _Property>
+[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, _Property __prop)
 {
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);), (return __ptr;))
-}
-
-template <>
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
-{
+  static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
+  if constexpr (!_CUDA_VSTD::is_same_v<_Property, access_property::shared>)
+  {
+    [[maybe_unused]] auto __raw_prop = static_cast<uint64_t>(access_property{__prop});
+    return __associate_raw_descriptor(__ptr, __raw_prop);
+  }
   return __ptr;
 }
 
@@ -215,6 +220,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __associate_descriptor(void* __ptr, acces
 template <typename _Type, typename _Property>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Type* __associate(_Type* __ptr, [[maybe_unused]] _Property __prop) noexcept
 {
+  static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (auto __void_ptr       = const_cast<void*>(static_cast<const void*>(__ptr));
@@ -229,7 +235,7 @@ template <typename _Type, typename _Property>
 template <typename _Tp, typename _Property>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _Tp* associate_access_property(_Tp* __ptr, _Property __prop) noexcept
 {
-  static_assert(::cuda::__is_access_property_v<_Property>, "property is not convertible to cuda::access_property");
+  static_assert(__is_access_property_v<_Property>, "invalid cuda::access_property");
   return ::cuda::__associate(__ptr, __prop);
 }
 

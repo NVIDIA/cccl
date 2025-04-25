@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -160,6 +159,7 @@ template <typename T = void>
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_size, uint32_t __total_size)
 {
   _CCCL_ASSERT(__isGlobal(__ptr), "ptr must be global");
+  _CCCL_ASSERT(__primary_size > 0, "primary_size  must be greater than zero");
   _CCCL_ASSERT(__primary_size <= __total_size, "primary_size must be less than or equal to total_size");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
                "secondary policy must be evict_first or evict_unchanged");
