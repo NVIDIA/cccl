@@ -145,6 +145,7 @@
 #include <cuda/__annotated_ptr/access_property.h>
 #include <cuda/__annotated_ptr/annotated_ptr_base.h>
 #include <cuda/__memcpy_async/memcpy_async.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -196,7 +197,7 @@ public:
     NV_IF_TARGET(NV_IS_HOST, (_CCCL_ASSERT(!__is_smem, "shared memory pointer is not supported on the host");))
     if constexpr (__is_smem)
     {
-      if (!_CUDA_VSTD::is_constant_evaluated())
+      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
       {
         NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isShared((void*) __p), "__p must be shared");))
       }
@@ -204,7 +205,7 @@ public:
     else
     {
       _CCCL_ASSERT(__p != nullptr, "__p must not be null");
-      if (!_CUDA_VSTD::is_constant_evaluated())
+      if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
       {
         NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
       }
@@ -224,8 +225,9 @@ public:
     NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
   }
 
+  // cannot be constexpr because of get()
   template <typename _OtherType, class _OtherProperty>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI annotated_ptr(const annotated_ptr<_OtherType, _OtherProperty>& __other) noexcept
       : ::cuda::__annotated_ptr_base<_Property>{__other.__property()}
       , __repr{__other.get()}
   {
@@ -237,9 +239,11 @@ public:
                   "OtherProperty is not shared");
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer operator->() const noexcept
+  // cannot be constexpr because is_constant_evaluated is not supported by clang-14, gcc-8.
+  // when the method is called in these platforms, it needs to be called at run-time.
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer operator->() const noexcept
   {
-    return _CUDA_VSTD::is_constant_evaluated() ? __repr : __get();
+    return __get();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const noexcept
@@ -265,7 +269,8 @@ public:
     return (__repr != nullptr);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer get() const noexcept
+  // cannot be constexpr because of operator->()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI pointer get() const noexcept
   {
     return (__is_smem || __repr == nullptr)
            ? __repr

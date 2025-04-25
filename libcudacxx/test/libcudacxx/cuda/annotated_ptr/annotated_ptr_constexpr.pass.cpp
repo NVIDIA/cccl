@@ -18,20 +18,16 @@ __host__ __device__ constexpr bool test_public_methods()
   using namespace cuda;
   using annotated_ptr                       = cuda::annotated_ptr<const int, access_property::persisting>;
   using annotated_smem_ptr [[maybe_unused]] = cuda::annotated_ptr<const int, access_property::shared>;
-  using annotated_ptr_b                     = cuda::annotated_ptr<int, access_property::persisting>;
   annotated_ptr a{}; // default constructor
   annotated_ptr b{a}; // copy constructor
   annotated_ptr c{cuda::std::move(a)}; // move constructor
   b = a; // copy assignment
   b = cuda::std::move(a); // move assignment
   NV_IF_TARGET(NV_IS_DEVICE, (annotated_smem_ptr d{nullptr};)) // pointer constructor
-  annotated_ptr e{annotated_ptr_b{}}; // constructor from another annotated_ptr
-  auto ptr  = e.operator->();
   auto diff = a - b;
   auto pred = static_cast<bool>(a);
   auto prop = a.__property();
   unused(c);
-  unused(ptr);
   unused(diff);
   unused(pred);
   unused(prop);
