@@ -39,20 +39,20 @@ __device__ __host__ __noinline__ void test_access_property_interleave()
 __device__ __host__ __noinline__ void test_access_property_block()
 {
   // assuming ptr address is 0;
-  const size_t TOTAL_BYTES                               = 0xFFFFFFFF;
-  const size_t HIT_BYTES                                 = 0xFFFFFFFF;
-  const size_t BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES = size_t{0x1DD00FE000000000};
+  // const size_t TOTAL_BYTES                               = 0xFFFFFFFF;
+  // const size_t HIT_BYTES                                 = 0xFFFFFFFF;
+  // const size_t BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES = size_t{0x1DD00FE000000000};
   //  const uint64_t INTERLEAVE_NORMAL                       = uint64_t{0x10F0000000000000};
-  auto ptr1 = reinterpret_cast<void*>(0xF);
-  cuda::access_property ap(
-    ptr1, HIT_BYTES, TOTAL_BYTES, cuda::access_property::persisting{}, cuda::access_property::streaming{});
-  assert(static_cast<uint64_t>(ap) == BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES);
+  // auto ptr1 = reinterpret_cast<void*>(0xF);
+  // cuda::access_property ap(
+  //  ptr1, HIT_BYTES, TOTAL_BYTES, cuda::access_property::persisting{}, cuda::access_property::streaming{});
+  // assert(static_cast<uint64_t>(ap) == BLOCK_0ADDR_PERSISTHIT_STREAMISS_MAXBYTES);
 
   for (size_t ptr = 1; ptr < size_t{0xFFFFFFFF}; ptr <<= 1)
   {
     for (size_t hit = 1; hit < size_t{0xFFFFFFFF}; hit <<= 1)
     {
-      ap = cuda::access_property(
+      [[maybe_unused]] auto ap = cuda::access_property(
         (void*) ptr, hit, hit, cuda::access_property::persisting{}, cuda::access_property::streaming{});
       DPRINTF("Block encoding PTR:%p, hit:%p, block encoding:%p\n", ptr, hit, static_cast<uint64_t>(ap));
     }

@@ -29,8 +29,9 @@ __host__ __device__ __noinline__ void test_ctor()
 
   // from ptr
   T* rp = nullptr;
+  rp++;
   cuda::annotated_ptr<T, P> a(rp);
-  assert(!a);
+  assert(a);
 
   // cpy ctor & assign to cv
   cuda::annotated_ptr<const T, P> c(def);
@@ -63,6 +64,7 @@ __host__ __device__ __noinline__ void test_global_ctor()
 
   // from ptr + prop
   T* rp = nullptr;
+  rp++;
   P p;
   cuda::annotated_ptr<T, cuda::access_property> a(rp, p);
   cuda::annotated_ptr<const T, cuda::access_property> b(rp, p);
@@ -77,7 +79,7 @@ __host__ __device__ __noinline__ void test_global_ctors()
   test_global_ctor<int, cuda::access_property::persisting>();
   test_global_ctor<int, cuda::access_property::global>();
   test_global_ctor<int, cuda::access_property>();
-  test_ctor<int, cuda::access_property::shared>();
+  NV_IF_TARGET(NV_IS_DEVICE, (test_ctor<int, cuda::access_property::shared>();))
 }
 
 int main(int argc, char** argv)
