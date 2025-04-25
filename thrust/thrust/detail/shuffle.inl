@@ -30,6 +30,8 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/shuffle.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -37,6 +39,7 @@ template <typename DerivedPolicy, typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, RandomIterator first, RandomIterator last, URBG&& g)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::shuffle");
   using thrust::system::detail::generic::shuffle;
   return shuffle(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, g);
 }
@@ -44,6 +47,7 @@ _CCCL_HOST_DEVICE void shuffle(
 template <typename RandomIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle(RandomIterator first, RandomIterator last, URBG&& g)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::shuffle");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<RandomIterator>::type;
@@ -61,6 +65,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
   OutputIterator result,
   URBG&& g)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::shuffle_copy");
   using thrust::system::detail::generic::shuffle_copy;
   return shuffle_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, g);
 }
@@ -68,6 +73,7 @@ _CCCL_HOST_DEVICE void shuffle_copy(
 template <typename RandomIterator, typename OutputIterator, typename URBG>
 _CCCL_HOST_DEVICE void shuffle_copy(RandomIterator first, RandomIterator last, OutputIterator result, URBG&& g)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::shuffle_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<RandomIterator>::type;

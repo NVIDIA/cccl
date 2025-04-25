@@ -30,6 +30,8 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/transform_reduce.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -46,6 +48,7 @@ _CCCL_HOST_DEVICE OutputType transform_reduce(
   OutputType init,
   BinaryFunction binary_op)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
   using thrust::system::detail::generic::transform_reduce;
   return transform_reduce(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, unary_op, init, binary_op);
@@ -55,6 +58,7 @@ template <typename InputIterator, typename UnaryFunction, typename OutputType, t
 OutputType transform_reduce(
   InputIterator first, InputIterator last, UnaryFunction unary_op, OutputType init, BinaryFunction binary_op)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_reduce");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;

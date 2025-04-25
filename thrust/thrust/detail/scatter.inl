@@ -32,6 +32,8 @@
 #include <thrust/system/detail/generic/scatter.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -43,6 +45,7 @@ scatter(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         InputIterator2 map,
         RandomAccessIterator output)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::scatter");
   using thrust::system::detail::generic::scatter;
   return scatter(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, map, output);
 } // end scatter()
@@ -61,6 +64,7 @@ _CCCL_HOST_DEVICE void scatter_if(
   InputIterator3 stencil,
   RandomAccessIterator output)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::scatter_if");
   using thrust::system::detail::generic::scatter_if;
   return scatter_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, map, stencil, output);
 } // end scatter_if()
@@ -81,6 +85,7 @@ _CCCL_HOST_DEVICE void scatter_if(
   RandomAccessIterator output,
   Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::scatter_if");
   using thrust::system::detail::generic::scatter_if;
   return scatter_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, map, stencil, output, pred);
@@ -89,6 +94,7 @@ _CCCL_HOST_DEVICE void scatter_if(
 template <typename InputIterator1, typename InputIterator2, typename RandomAccessIterator>
 void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map, RandomAccessIterator output)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::scatter");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -106,6 +112,7 @@ template <typename InputIterator1, typename InputIterator2, typename InputIterat
 void scatter_if(
   InputIterator1 first, InputIterator1 last, InputIterator2 map, InputIterator3 stencil, RandomAccessIterator output)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::scatter_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -133,6 +140,7 @@ void scatter_if(InputIterator1 first,
                 RandomAccessIterator output,
                 Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::scatter_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

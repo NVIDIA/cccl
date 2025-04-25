@@ -31,6 +31,8 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/sequence.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -38,6 +40,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE void
 sequence(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::sequence;
   return sequence(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end sequence()
@@ -47,6 +50,7 @@ template <typename DerivedPolicy, typename ForwardIterator, typename T>
 _CCCL_HOST_DEVICE void sequence(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last, T init)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::sequence;
   return sequence(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init);
 } // end sequence()
@@ -60,6 +64,7 @@ _CCCL_HOST_DEVICE void sequence(
   T init,
   T step)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::sequence;
   return sequence(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, init, step);
 } // end sequence()
@@ -67,6 +72,7 @@ _CCCL_HOST_DEVICE void sequence(
 template <typename ForwardIterator>
 void sequence(ForwardIterator first, ForwardIterator last)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -79,6 +85,7 @@ void sequence(ForwardIterator first, ForwardIterator last)
 template <typename ForwardIterator, typename T>
 void sequence(ForwardIterator first, ForwardIterator last, T init)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -91,6 +98,7 @@ void sequence(ForwardIterator first, ForwardIterator last, T init)
 template <typename ForwardIterator, typename T>
 void sequence(ForwardIterator first, ForwardIterator last, T init, T step)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::sequence");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
