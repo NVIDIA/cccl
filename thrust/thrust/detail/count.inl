@@ -31,6 +31,8 @@
 #include <thrust/system/detail/generic/count.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -41,6 +43,7 @@ count(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
       InputIterator last,
       const EqualityComparable& value)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::count");
   using thrust::system::detail::generic::count;
   return count(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 } // end count()
@@ -53,6 +56,7 @@ count_if(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator last,
          Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::count_if");
   using thrust::system::detail::generic::count_if;
   return count_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end count_if()
@@ -61,6 +65,7 @@ template <typename InputIterator, typename EqualityComparable>
 thrust::detail::it_difference_t<InputIterator>
 count(InputIterator first, InputIterator last, const EqualityComparable& value)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::count");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;
@@ -73,6 +78,7 @@ count(InputIterator first, InputIterator last, const EqualityComparable& value)
 template <typename InputIterator, typename Predicate>
 thrust::detail::it_difference_t<InputIterator> count_if(InputIterator first, InputIterator last, Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::count_if");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;

@@ -30,6 +30,8 @@
 #include <thrust/system/detail/generic/copy.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -40,6 +42,7 @@ copy(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
      InputIterator last,
      OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy");
   using thrust::system::detail::generic::copy;
   return copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end copy()
@@ -49,6 +52,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE OutputIterator copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy_n");
   using thrust::system::detail::generic::copy_n;
   return copy_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, result);
 } // end copy_n()
@@ -65,6 +69,7 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy(
   InputIterator last,
   OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::two_system_copy");
   using thrust::system::detail::generic::select_system;
 
   return thrust::copy(
@@ -84,6 +89,7 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
   Size n,
   OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::two_system_copy_n");
   using thrust::system::detail::generic::select_system;
 
   return thrust::copy_n(
@@ -99,6 +105,7 @@ _CCCL_HOST_DEVICE OutputIterator two_system_copy_n(
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy");
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;
 
@@ -111,6 +118,7 @@ OutputIterator copy(InputIterator first, InputIterator last, OutputIterator resu
 template <typename InputIterator, typename Size, typename OutputIterator>
 OutputIterator copy_n(InputIterator first, Size n, OutputIterator result)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy_n");
   using System1 = typename thrust::iterator_system<InputIterator>::type;
   using System2 = typename thrust::iterator_system<OutputIterator>::type;
 

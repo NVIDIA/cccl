@@ -31,6 +31,8 @@
 #include <thrust/system/detail/generic/remove.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -41,6 +43,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove(
   ForwardIterator last,
   const T& value)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove");
   using thrust::system::detail::generic::remove;
   return remove(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 } // end remove()
@@ -54,6 +57,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy(
   OutputIterator result,
   const T& value)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_copy");
   using thrust::system::detail::generic::remove_copy;
   return remove_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, value);
 } // end remove_copy()
@@ -66,6 +70,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
   ForwardIterator last,
   Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_if");
   using thrust::system::detail::generic::remove_if;
   return remove_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end remove_if()
@@ -79,6 +84,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   OutputIterator result,
   Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_copy_if");
   using thrust::system::detail::generic::remove_copy_if;
   return remove_copy_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, pred);
 } // end remove_copy_if()
@@ -92,6 +98,7 @@ _CCCL_HOST_DEVICE ForwardIterator remove_if(
   InputIterator stencil,
   Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_if");
   using thrust::system::detail::generic::remove_if;
   return remove_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, pred);
 } // end remove_if()
@@ -110,6 +117,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
   OutputIterator result,
   Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_copy_if");
   using thrust::system::detail::generic::remove_copy_if;
   return remove_copy_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, result, pred);
@@ -118,6 +126,7 @@ _CCCL_HOST_DEVICE OutputIterator remove_copy_if(
 template <typename ForwardIterator, typename T>
 ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& value)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -130,6 +139,7 @@ ForwardIterator remove(ForwardIterator first, ForwardIterator last, const T& val
 template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterator result, const T& value)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -144,6 +154,7 @@ OutputIterator remove_copy(InputIterator first, InputIterator last, OutputIterat
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_if");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -156,6 +167,7 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -170,6 +182,7 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, InputIter
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_copy_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -185,6 +198,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 remove_copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::remove_copy_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

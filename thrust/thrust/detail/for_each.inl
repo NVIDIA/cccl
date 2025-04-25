@@ -31,6 +31,8 @@
 #include <thrust/system/detail/generic/for_each.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -41,6 +43,7 @@ _CCCL_HOST_DEVICE InputIterator for_each(
   InputIterator last,
   UnaryFunction f)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::for_each");
   using thrust::system::detail::generic::for_each;
 
   return for_each(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, f);
@@ -49,6 +52,7 @@ _CCCL_HOST_DEVICE InputIterator for_each(
 template <typename InputIterator, typename UnaryFunction>
 InputIterator for_each(InputIterator first, InputIterator last, UnaryFunction f)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::for_each");
   using thrust::system::detail::generic::select_system;
   using System = typename thrust::iterator_system<InputIterator>::type;
 
@@ -61,6 +65,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE InputIterator for_each_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, UnaryFunction f)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::for_each_n");
   using thrust::system::detail::generic::for_each_n;
 
   return for_each_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, f);
@@ -69,6 +74,7 @@ _CCCL_HOST_DEVICE InputIterator for_each_n(
 template <typename InputIterator, typename Size, typename UnaryFunction>
 InputIterator for_each_n(InputIterator first, Size n, UnaryFunction f)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::for_each_n");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;

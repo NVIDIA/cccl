@@ -31,6 +31,8 @@
 #include <thrust/system/detail/generic/copy_if.h>
 #include <thrust/system/detail/generic/select_system.h>
 
+#include <cuda/__nvtx/nvtx.h>
+
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -42,6 +44,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy_if");
   using thrust::system::detail::generic::copy_if;
   return copy_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, pred);
 } // end copy_if()
@@ -60,6 +63,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy_if");
   using thrust::system::detail::generic::copy_if;
   return copy_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, result, pred);
 } // end copy_if()
@@ -67,6 +71,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 template <typename InputIterator, typename OutputIterator, typename Predicate>
 OutputIterator copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -82,6 +87,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 copy_if(InputIterator1 first, InputIterator1 last, InputIterator2 stencil, OutputIterator result, Predicate pred)
 {
+  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::copy_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
