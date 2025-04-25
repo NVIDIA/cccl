@@ -334,6 +334,23 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
     REQUIRE(expected_result == out_result);
   }
 
+  SECTION("argmin")
+  {
+    using result_t = ::cuda::std::pair<int, output_t>;
+
+    // Prepare verification data
+    c2h::host_vector<result_t> expected_result(num_segments);
+    compute_fixed_size_segmented_argmin_reference(in_items, num_segments, segment_size, expected_result.begin());
+
+    // Run test
+    c2h::device_vector<result_t> out_result(num_segments);
+    device_segmented_arg_min(d_in_it, thrust::raw_pointer_cast(out_result.data()), num_segments, segment_size);
+
+    c2h::host_vector<result_t> host_result(out_result);
+    // Verify result
+    REQUIRE(expected_result == host_result);
+  }
+
   SECTION("max")
   {
     using op_t = ::cuda::maximum<>;

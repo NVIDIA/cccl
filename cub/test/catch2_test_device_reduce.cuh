@@ -471,6 +471,35 @@ void compute_fixed_size_segmented_argmax_reference(
     }
   }
 }
+
+/**
+ * @brief Helper function to compute the reference solution for result verification, taking a
+ * c2h::device_vector of input items, num_segments and segment_size.
+ */
+template <typename ItemT, typename ResultItT>
+void compute_fixed_size_segmented_argmin_reference(
+  const c2h::device_vector<ItemT>& d_in, const int num_segments, const int segment_size, ResultItT h_results)
+{
+  c2h::host_vector<ItemT> h_items(d_in);
+  auto h_begin = h_items.begin();
+
+  for (int seg = 0; seg < num_segments; seg++)
+  {
+    if (segment_size == 0)
+    {
+      h_results[seg] = {1, ::cuda::std::numeric_limits<ItemT>::lowest()};
+    }
+    else
+    {
+      auto seg_begin          = h_begin + seg * segment_size;
+      auto seg_end            = seg_begin + segment_size;
+      auto expected_result_it = std::min_element(seg_begin, seg_end);
+      int result_offset       = static_cast<int>(thrust::distance((seg_begin), expected_result_it));
+      h_results[seg]          = {result_offset, *expected_result_it};
+    }
+  }
+}
+
 /**
  * @brief Helper function to compute the reference solution for unique keys (i.e., collapsing each
  * run of equal keys into a single key).
