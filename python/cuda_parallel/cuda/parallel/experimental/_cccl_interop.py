@@ -192,7 +192,7 @@ def _create_void_ptr_wrapper(op, sig):
     # Generate argument names for both inputs and output
     input_args = [f"arg_{i}" for i in range(len(sig.args))]
     all_args = input_args + ["ret"]  # ret is the output pointer
-    void_sig = types.void(*(types.CPointer(types.int8) for _ in all_args))
+    void_sig = types.void(*(types.voidptr for _ in all_args))
 
     # Create the wrapper function source code
     wrapper_src = textwrap.dedent(f"""
