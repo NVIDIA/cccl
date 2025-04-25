@@ -404,7 +404,7 @@ CUresult cccl_device_segmented_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchSegmentedReduce<
+    auto exec_status = cub::DispatchSegmentedReduce<
       indirect_arg_t, // InputIteratorT
       indirect_arg_t, // OutputIteratorT
       indirect_arg_t, // BeginSegmentIteratorT
@@ -430,6 +430,8 @@ CUresult cccl_device_segmented_reduce(
         /* kernel_source */ {build},
         /* launcher_factory &*/ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         /* policy */ {segmented_reduce::get_accumulator_type(op, d_in, init)});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

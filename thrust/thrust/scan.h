@@ -192,7 +192,7 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \code
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *
- *  thrust::maximum<int> binary_op;
+ *  ::cuda::maximum<int> binary_op;
  *
  *  thrust::inclusive_scan(thrust::host, data, data + 10, data, binary_op); // in-place scan
  *
@@ -244,7 +244,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \code
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *
- *  thrust::maximum<int> binary_op;
+ *  ::cuda::maximum<int> binary_op;
  *
  *  thrust::inclusive_scan(data, data + 10, data, binary_op); // in-place scan
  *
@@ -295,7 +295,7 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *
  *  \code
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
- *  thrust::inclusive_scan(thrust::host, data, data + 10, data, 1, thrust::maximum<>{}); // in-place scan
+ *  thrust::inclusive_scan(thrust::host, data, data + 10, data, 1, ::cuda::maximum<>{}); // in-place scan
  *  // data is now {1, 1, 2, 2, 2, 4, 4, 4, 4, 8}
  *  \endcode
  *
@@ -343,8 +343,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *
  *  \code
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
- *  thrust::maximum<int> binary_op;
- *  thrust::inclusive_scan(data, data + 10, data, 1, thrust::maximum<>{}); // in-place scan
+ *  ::cuda::maximum<int> binary_op;
+ *  thrust::inclusive_scan(data, data + 10, data, 1, ::cuda::maximum<>{}); // in-place scan
  *  // data is now {1, 1, 2, 2, 2, 4, 4, 4, 4, 8}
  *  \endcode
  *
@@ -600,7 +600,7 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  *
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *
- *  thrust::maximum<int> binary_op;
+ *  ::cuda::maximum<int> binary_op;
  *
  *  thrust::exclusive_scan(thrust::host, data, data + 10, data, 1, binary_op); // in-place scan
  *
@@ -657,7 +657,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *
  *  int data[10] = {-5, 0, 2, -3, 2, 4, 0, -1, 2, 8};
  *
- *  thrust::maximum<int> binary_op;
+ *  ::cuda::maximum<int> binary_op;
  *
  *  thrust::exclusive_scan(data, data + 10, data, 1, binary_op); // in-place scan
  *
@@ -863,7 +863,7 @@ inclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1, InputIterator
  *  int data[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
  *  int keys[10] = {0, 0, 0, 1, 1, 2, 3, 3, 3, 3};
  *
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *
  *  thrust::inclusive_scan_by_key(thrust::host, keys, keys + 10, data, data, binary_pred); // in-place scan
  *
@@ -937,7 +937,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *  int data[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
  *  int keys[10] = {0, 0, 0, 1, 1, 2, 3, 3, 3, 3};
  *
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *
  *  thrust::inclusive_scan_by_key(keys, keys + 10, data, data, binary_pred); // in-place scan
  *
@@ -1015,8 +1015,8 @@ OutputIterator inclusive_scan_by_key(
  *  int data[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
  *  int keys[10] = {0, 0, 0, 1, 1, 2, 3, 3, 3, 3};
  *
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int>     binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int>     binary_op;
  *
  *  thrust::inclusive_scan_by_key(thrust::host, keys, keys + 10, data, data, binary_pred, binary_op); // in-place scan
  *
@@ -1094,8 +1094,8 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *  int data[10] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
  *  int keys[10] = {0, 0, 0, 1, 1, 2, 3, 3, 3, 3};
  *
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int>     binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int>     binary_op;
  *
  *  thrust::inclusive_scan_by_key(keys, keys + 10, data, data, binary_pred, binary_op); // in-place scan
  *
@@ -1391,7 +1391,7 @@ OutputIterator exclusive_scan_by_key(
  *
  *  int init = 5;
  *
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *
  *  thrust::exclusive_scan_by_key(thrust::host, key, key + 10, vals, vals, init, binary_pred); // in-place scan
  *
@@ -1460,7 +1460,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  int init = 5;
  *
- *  thrust::equal_to<int> binary_pred;
+ *  ::cuda::std::equal_to<int> binary_pred;
  *
  *  thrust::exclusive_scan_by_key(key, key + 10, vals, vals, init, binary_pred); // in-place scan
  *
@@ -1545,8 +1545,8 @@ OutputIterator exclusive_scan_by_key(
  *
  *  int init = 5;
  *
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int>     binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int>     binary_op;
  *
  *  thrust::exclusive_scan_by_key(thrust::host, key, key + 10, vals, vals, init, binary_pred, binary_op); // in-place
  * scan
@@ -1633,8 +1633,8 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *
  *  int init = 5;
  *
- *  thrust::equal_to<int> binary_pred;
- *  thrust::plus<int>     binary_op;
+ *  ::cuda::std::equal_to<int> binary_pred;
+ *  ::cuda::std::plus<int>     binary_op;
  *
  *  thrust::exclusive_scan_by_key(key, key + 10, vals, vals, init, binary_pred, binary_op); // in-place scan
  *

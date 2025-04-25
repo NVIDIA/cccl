@@ -29,6 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InIter1, class _InIter2, class _OutIter>
 struct __set_intersection_result
 {
@@ -45,6 +46,7 @@ struct __set_intersection_result
   {}
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _Compare, class _InIter1, class _Sent1, class _InIter2, class _Sent2, class _OutIter>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __set_intersection_result<_InIter1, _InIter2, _OutIter> __set_intersection(
   _InIter1 __first1, _Sent1 __last1, _InIter2 __first2, _Sent2 __last2, _OutIter __result, _Compare&& __comp)
@@ -73,6 +75,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __set_intersection_result<_InIter1, _InIter2
     _CUDA_VSTD::move(__result));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_intersection(
   _InputIterator1 __first1,
@@ -92,6 +95,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_intersection(
     .__out_;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_intersection(
   _InputIterator1 __first1,

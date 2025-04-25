@@ -217,15 +217,15 @@ void TestCountingIteratorDistance()
   thrust::counting_iterator<int> iter1(0);
   thrust::counting_iterator<int> iter2(5);
 
-  ASSERT_EQUAL(thrust::distance(iter1, iter2), 5);
+  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 5);
 
   iter1++;
 
-  ASSERT_EQUAL(thrust::distance(iter1, iter2), 4);
+  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 4);
 
   iter2 += 100;
 
-  ASSERT_EQUAL(thrust::distance(iter1, iter2), 104);
+  ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 104);
 }
 DECLARE_UNITTEST(TestCountingIteratorDistance);
 

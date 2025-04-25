@@ -96,7 +96,7 @@ void merge_sort(execution_policy<DerivedPolicy>& exec,
 {
   using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
-  difference_type n = thrust::distance(first1, last1);
+  difference_type n = ::cuda::std::distance(first1, last1);
 
   if (n < threshold)
   {
@@ -214,7 +214,7 @@ void merge_sort_by_key(
 {
   using difference_type = thrust::detail::it_difference_t<Iterator1>;
 
-  difference_type n = thrust::distance(first1, last1);
+  difference_type n = ::cuda::std::distance(first1, last1);
 
   Iterator1 mid1  = first1 + (n / 2);
   Iterator2 mid2  = first2 + (n / 2);
@@ -281,7 +281,7 @@ void stable_sort_by_key(
   using key_type = thrust::detail::it_value_t<RandomAccessIterator1>;
   using val_type = thrust::detail::it_value_t<RandomAccessIterator2>;
 
-  RandomAccessIterator2 last2 = first2 + thrust::distance(first1, last1);
+  RandomAccessIterator2 last2 = first2 + ::cuda::std::distance(first1, last1);
 
   thrust::detail::temporary_array<key_type, DerivedPolicy> temp1(exec, first1, last1);
   thrust::detail::temporary_array<val_type, DerivedPolicy> temp2(exec, first2, last2);

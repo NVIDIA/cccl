@@ -66,7 +66,8 @@ void TestInnerProductWithOperator()
 
   // compute (v1 - v2) and perform a multiplies reduction
   T init   = 3;
-  T result = thrust::inner_product(v1.begin(), v1.end(), v2.begin(), init, thrust::multiplies<T>(), thrust::minus<T>());
+  T result = thrust::inner_product(
+    v1.begin(), v1.end(), v2.begin(), init, ::cuda::std::multiplies<T>(), ::cuda::std::minus<T>());
   ASSERT_EQUAL(result, 90);
 }
 DECLARE_VECTOR_UNITTEST(TestInnerProductWithOperator);
@@ -112,14 +113,14 @@ void TestInnerProductWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(1);
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   thrust::device_ptr<bool> has_executed = thrust::device_malloc<bool>(1);
   *has_executed                         = false;
 
   only_set_when_both_expected fn = {(1ll << magnitude) - 1, thrust::raw_pointer_cast(has_executed)};
 
-  ASSERT_EQUAL(thrust::inner_product(thrust::device, begin, end, begin, 0ll, thrust::plus<long long>(), fn),
+  ASSERT_EQUAL(thrust::inner_product(thrust::device, begin, end, begin, 0ll, ::cuda::std::plus<long long>(), fn),
                (1ll << magnitude));
 
   bool has_executed_h = *has_executed;
@@ -146,7 +147,8 @@ void TestInnerProductPlaceholders()
   thrust::device_vector<float> v1(100, 1.f);
   thrust::device_vector<float> v2(100, 1.f);
 
-  auto result = thrust::inner_product(v1.begin(), v1.end(), v2.begin(), 0.0f, thrust::plus<float>{}, _1 * _2 + 1.0f);
+  auto result =
+    thrust::inner_product(v1.begin(), v1.end(), v2.begin(), 0.0f, ::cuda::std::plus<float>{}, _1 * _2 + 1.0f);
 
   ASSERT_ALMOST_EQUAL(result, 200.f);
 }

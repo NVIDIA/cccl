@@ -27,7 +27,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnarySimple()
   Vector output(3);
   Vector result{-1, 2, -3};
 
-  iter = thrust::transform(input.begin(), input.end(), output.begin(), thrust::negate<T>());
+  iter = thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>());
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(output, result);
@@ -81,7 +81,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencilSimple()
   Vector output{-1, -2, -3};
   Vector result{-1, 2, -3};
 
-  iter = thrust::transform_if(input.begin(), input.end(), output.begin(), thrust::negate<T>(), ::cuda::std::identity{});
+  iter =
+    thrust::transform_if(input.begin(), input.end(), output.begin(), ::cuda::std::negate<T>(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(output, result);
@@ -142,7 +143,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnarySimple()
   Vector result{-1, 2, -3};
 
   iter = thrust::transform_if(
-    input.begin(), input.end(), stencil.begin(), output.begin(), thrust::negate<T>(), ::cuda::std::identity{});
+    input.begin(), input.end(), stencil.begin(), output.begin(), ::cuda::std::negate<T>(), ::cuda::std::identity{});
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(output, result);
@@ -209,7 +210,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinarySimple()
   Vector output(3);
   Vector result{5, -7, -3};
 
-  iter = thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minus<T>());
+  iter = thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::minus<T>());
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
   ASSERT_EQUAL(output, result);
@@ -278,8 +279,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple()
     input2.begin(),
     stencil.begin(),
     output.begin(),
-    thrust::minus<T>(),
-    thrust::not_fn(identity));
+    ::cuda::std::minus<T>(),
+    ::cuda::std::not_fn(identity));
 
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input1.size());
   ASSERT_EQUAL(output, result);
@@ -363,8 +364,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnary(const size_t n)
   thrust::host_vector<T> h_output(n);
   thrust::device_vector<T> d_output(n);
 
-  thrust::transform(h_input.begin(), h_input.end(), h_output.begin(), thrust::negate<T>());
-  thrust::transform(d_input.begin(), d_input.end(), d_output.begin(), thrust::negate<T>());
+  thrust::transform(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>());
+  thrust::transform(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>());
 
   ASSERT_EQUAL(h_output, d_output);
 }
@@ -377,10 +378,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnaryToDiscardIterator(co
   thrust::device_vector<T> d_input = h_input;
 
   thrust::discard_iterator<> h_result =
-    thrust::transform(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), thrust::negate<T>());
+    thrust::transform(h_input.begin(), h_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>());
 
   thrust::discard_iterator<> d_result =
-    thrust::transform(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), thrust::negate<T>());
+    thrust::transform(d_input.begin(), d_input.end(), thrust::make_discard_iterator(), ::cuda::std::negate<T>());
 
   thrust::discard_iterator<> reference(n);
 
@@ -450,9 +451,9 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencil(const si
   thrust::device_vector<T> d_input  = h_input;
   thrust::device_vector<T> d_output = h_output;
 
-  thrust::transform_if(h_input.begin(), h_input.end(), h_output.begin(), thrust::negate<T>(), is_positive());
+  thrust::transform_if(h_input.begin(), h_input.end(), h_output.begin(), ::cuda::std::negate<T>(), is_positive());
 
-  thrust::transform_if(d_input.begin(), d_input.end(), d_output.begin(), thrust::negate<T>(), is_positive());
+  thrust::transform_if(d_input.begin(), d_input.end(), d_output.begin(), ::cuda::std::negate<T>(), is_positive());
 
   ASSERT_EQUAL(h_output, d_output);
 }
@@ -470,10 +471,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnary(const size_t n)
   thrust::device_vector<T> d_output  = h_output;
 
   thrust::transform_if(
-    h_input.begin(), h_input.end(), h_stencil.begin(), h_output.begin(), thrust::negate<T>(), is_positive());
+    h_input.begin(), h_input.end(), h_stencil.begin(), h_output.begin(), ::cuda::std::negate<T>(), is_positive());
 
   thrust::transform_if(
-    d_input.begin(), d_input.end(), d_stencil.begin(), d_output.begin(), thrust::negate<T>(), is_positive());
+    d_input.begin(), d_input.end(), d_stencil.begin(), d_output.begin(), ::cuda::std::negate<T>(), is_positive());
 
   ASSERT_EQUAL(h_output, d_output);
 }
@@ -493,7 +494,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryToDiscardIterator(
     h_input.end(),
     h_stencil.begin(),
     thrust::make_discard_iterator(),
-    thrust::negate<T>(),
+    ::cuda::std::negate<T>(),
     is_positive());
 
   thrust::discard_iterator<> d_result = thrust::transform_if(
@@ -501,7 +502,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryToDiscardIterator(
     d_input.end(),
     d_stencil.begin(),
     thrust::make_discard_iterator(),
-    thrust::negate<T>(),
+    ::cuda::std::negate<T>(),
     is_positive());
 
   thrust::discard_iterator<> reference(n);
@@ -522,13 +523,13 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinary(const size_t n)
   thrust::host_vector<T> h_output(n);
   thrust::device_vector<T> d_output(n);
 
-  thrust::transform(h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), thrust::minus<T>());
-  thrust::transform(d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), thrust::minus<T>());
+  thrust::transform(h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), ::cuda::std::minus<T>());
+  thrust::transform(d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), ::cuda::std::minus<T>());
 
   ASSERT_EQUAL(h_output, d_output);
 
-  thrust::transform(h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), thrust::multiplies<T>());
-  thrust::transform(d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), thrust::multiplies<T>());
+  thrust::transform(h_input1.begin(), h_input1.end(), h_input2.begin(), h_output.begin(), ::cuda::std::multiplies<T>());
+  thrust::transform(d_input1.begin(), d_input1.end(), d_input2.begin(), d_output.begin(), ::cuda::std::multiplies<T>());
 
   ASSERT_EQUAL(h_output, d_output);
 }
@@ -543,9 +544,9 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinaryToDiscardIterator(c
   thrust::device_vector<T> d_input2 = h_input2;
 
   thrust::discard_iterator<> h_result = thrust::transform(
-    h_input1.begin(), h_input1.end(), h_input2.begin(), thrust::make_discard_iterator(), thrust::minus<T>());
+    h_input1.begin(), h_input1.end(), h_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
   thrust::discard_iterator<> d_result = thrust::transform(
-    d_input1.begin(), d_input1.end(), d_input2.begin(), thrust::make_discard_iterator(), thrust::minus<T>());
+    d_input1.begin(), d_input1.end(), d_input2.begin(), thrust::make_discard_iterator(), ::cuda::std::minus<T>());
 
   thrust::discard_iterator<> reference(n);
 
@@ -573,7 +574,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinary(const size_t n)
     h_input2.begin(),
     h_stencil.begin(),
     h_output.begin(),
-    thrust::minus<T>(),
+    ::cuda::std::minus<T>(),
     is_positive());
 
   thrust::transform_if(
@@ -582,7 +583,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinary(const size_t n)
     d_input2.begin(),
     d_stencil.begin(),
     d_output.begin(),
-    thrust::minus<T>(),
+    ::cuda::std::minus<T>(),
     is_positive());
 
   ASSERT_EQUAL(h_output, d_output);
@@ -596,7 +597,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinary(const size_t n)
     h_input2.begin(),
     h_stencil.begin(),
     h_output.begin(),
-    thrust::multiplies<T>(),
+    ::cuda::std::multiplies<T>(),
     is_positive());
 
   thrust::transform_if(
@@ -605,7 +606,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinary(const size_t n)
     d_input2.begin(),
     d_stencil.begin(),
     d_output.begin(),
-    thrust::multiplies<T>(),
+    ::cuda::std::multiplies<T>(),
     is_positive());
 
   ASSERT_EQUAL(h_output, d_output);
@@ -629,7 +630,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinaryToDiscardIterator
     h_input2.begin(),
     h_stencil.begin(),
     thrust::make_discard_iterator(),
-    thrust::minus<T>(),
+    ::cuda::std::minus<T>(),
     is_positive());
 
   thrust::discard_iterator<> d_result = thrust::transform_if(
@@ -638,7 +639,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinaryToDiscardIterator
     d_input2.begin(),
     d_stencil.begin(),
     thrust::make_discard_iterator(),
-    thrust::minus<T>(),
+    ::cuda::std::minus<T>(),
     is_positive());
 
   thrust::discard_iterator<> reference(n);
@@ -706,8 +707,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinaryCountingIterator()
   thrust::host_vector<T> h_result(n);
   thrust::device_vector<T> d_result(n);
 
-  thrust::transform(h_first, h_first + n, h_first, h_result.begin(), thrust::plus<T>());
-  thrust::transform(d_first, d_first + n, d_first, d_result.begin(), thrust::plus<T>());
+  thrust::transform(h_first, h_first + n, h_first, h_result.begin(), ::cuda::std::plus<T>());
+  thrust::transform(d_first, d_first + n, d_first, d_result.begin(), ::cuda::std::plus<T>());
 
   ASSERT_EQUAL(h_result, d_result);
 }

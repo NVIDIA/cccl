@@ -186,7 +186,7 @@ C2H_TEST_LIST(
       uninitialized_async_buffer buf{resource, stream, 42};
       stream.sync();
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
-      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
+      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
       CUDAX_CHECK(res == TestType{84});
     }
   }

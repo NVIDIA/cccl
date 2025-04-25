@@ -67,8 +67,8 @@ void TestSortAscendingKey(const size_t n)
   thrust::host_vector<T> h_data   = unittest::random_integers<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  thrust::sort(h_data.begin(), h_data.end(), thrust::less<T>());
-  thrust::sort(d_data.begin(), d_data.end(), thrust::less<T>());
+  thrust::sort(h_data.begin(), h_data.end(), ::cuda::std::less<T>());
+  thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::less<T>());
 
   ASSERT_EQUAL(h_data, d_data);
 }
@@ -81,8 +81,8 @@ void TestSortDescendingKey()
   thrust::host_vector<int> h_data   = unittest::random_integers<int>(n);
   thrust::device_vector<int> d_data = h_data;
 
-  thrust::sort(h_data.begin(), h_data.end(), thrust::greater<int>());
-  thrust::sort(d_data.begin(), d_data.end(), thrust::greater<int>());
+  thrust::sort(h_data.begin(), h_data.end(), ::cuda::std::greater<int>());
+  thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::greater<int>());
 
   ASSERT_EQUAL(h_data, d_data);
 }
@@ -109,8 +109,8 @@ void TestSortBoolDescending()
   thrust::host_vector<bool> h_data   = unittest::random_integers<bool>(n);
   thrust::device_vector<bool> d_data = h_data;
 
-  thrust::sort(h_data.begin(), h_data.end(), thrust::greater<bool>());
-  thrust::sort(d_data.begin(), d_data.end(), thrust::greater<bool>());
+  thrust::sort(h_data.begin(), h_data.end(), ::cuda::std::greater<bool>());
+  thrust::sort(d_data.begin(), d_data.end(), ::cuda::std::greater<bool>());
 
   ASSERT_EQUAL(h_data, d_data);
 }

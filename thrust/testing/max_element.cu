@@ -15,8 +15,8 @@ void TestMaxElementSimple()
   ASSERT_EQUAL(*thrust::max_element(data.begin(), data.end()), 5);
   ASSERT_EQUAL(thrust::max_element(data.begin(), data.end()) - data.begin(), 1);
 
-  ASSERT_EQUAL(*thrust::max_element(data.begin(), data.end(), thrust::greater<T>()), 1);
-  ASSERT_EQUAL(thrust::max_element(data.begin(), data.end(), thrust::greater<T>()) - data.begin(), 2);
+  ASSERT_EQUAL(*thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()), 1);
+  ASSERT_EQUAL(thrust::max_element(data.begin(), data.end(), ::cuda::std::greater<T>()) - data.begin(), 2);
 }
 DECLARE_VECTOR_UNITTEST(TestMaxElementSimple);
 
@@ -27,12 +27,12 @@ void TestMaxElementWithTransform()
 
   Vector data{3, 5, 1, 2, 5, 1};
 
-  ASSERT_EQUAL(*thrust::max_element(thrust::make_transform_iterator(data.begin(), thrust::negate<T>()),
-                                    thrust::make_transform_iterator(data.end(), thrust::negate<T>())),
+  ASSERT_EQUAL(*thrust::max_element(thrust::make_transform_iterator(data.begin(), ::cuda::std::negate<T>()),
+                                    thrust::make_transform_iterator(data.end(), ::cuda::std::negate<T>())),
                -1);
-  ASSERT_EQUAL(*thrust::max_element(thrust::make_transform_iterator(data.begin(), thrust::negate<T>()),
-                                    thrust::make_transform_iterator(data.end(), thrust::negate<T>()),
-                                    thrust::greater<T>()),
+  ASSERT_EQUAL(*thrust::max_element(thrust::make_transform_iterator(data.begin(), ::cuda::std::negate<T>()),
+                                    thrust::make_transform_iterator(data.end(), ::cuda::std::negate<T>()),
+                                    ::cuda::std::greater<T>()),
                -5);
 }
 DECLARE_VECTOR_UNITTEST(TestMaxElementWithTransform);
@@ -49,9 +49,9 @@ void TestMaxElement(const size_t n)
   ASSERT_EQUAL(h_max - h_data.begin(), d_max - d_data.begin());
 
   typename thrust::host_vector<T>::iterator h_min =
-    thrust::max_element(h_data.begin(), h_data.end(), thrust::greater<T>());
+    thrust::max_element(h_data.begin(), h_data.end(), ::cuda::std::greater<T>());
   typename thrust::device_vector<T>::iterator d_min =
-    thrust::max_element(d_data.begin(), d_data.end(), thrust::greater<T>());
+    thrust::max_element(d_data.begin(), d_data.end(), ::cuda::std::greater<T>());
 
   ASSERT_EQUAL(h_min - h_data.begin(), d_min - d_data.begin());
 }
@@ -96,7 +96,7 @@ void TestMaxElementWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin(1);
   thrust::counting_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   ASSERT_EQUAL(*thrust::max_element(thrust::device, begin, end), (1ll << magnitude));
 }

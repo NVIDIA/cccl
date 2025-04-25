@@ -126,6 +126,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     async/test_continue_on.cu
     async/test_just.cu
     async/test_sequence.cu
+    async/test_visit.cu
     async/test_when_all.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)

@@ -56,7 +56,7 @@ template <class Derived, class InputIt1, class InputIt2>
 bool _CCCL_HOST_DEVICE equal(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, InputIt2 first2)
 {
   using InputType1 = thrust::detail::it_value_t<InputIt1>;
-  return cuda_cub::equal(policy, first1, last1, first2, equal_to<InputType1>());
+  return cuda_cub::equal(policy, first1, last1, first2, ::cuda::std::equal_to<InputType1>());
 }
 
 } // namespace cuda_cub

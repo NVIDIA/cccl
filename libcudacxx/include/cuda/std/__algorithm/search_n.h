@@ -27,6 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _ForwardIterator, class _Size, class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __search_n(
   _ForwardIterator __first,
@@ -78,6 +79,7 @@ template <class _BinaryPredicate, class _ForwardIterator, class _Size, class _Tp
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _RandomAccessIterator, class _Size, class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _RandomAccessIterator __search_n(
   _RandomAccessIterator __first,

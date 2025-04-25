@@ -29,6 +29,7 @@
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/rcvr_with_env.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
@@ -109,8 +110,10 @@ _CUDAX_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __e
   return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
 }
 
-_CCCL_GLOBAL_CONSTANT write_env_t write_env{};
+template <class _Sndr, class _Env>
+inline constexpr size_t structured_binding_size<write_env_t::__sndr_t<_Sndr, _Env>> = 3;
 
+_CCCL_GLOBAL_CONSTANT write_env_t write_env{};
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>
