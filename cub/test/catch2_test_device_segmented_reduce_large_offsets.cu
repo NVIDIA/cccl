@@ -11,6 +11,8 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
 
+#include <cuda/std/tuple>
+
 #include "catch2_large_problem_helper.cuh"
 #include "catch2_segmented_sort_helper.cuh"
 #include "catch2_test_launch_helper.h"
@@ -242,5 +244,103 @@ C2H_TEST("Device reduce works with a very large number of segments", "[reduce][d
 
     // Verify all results were written as expected
     check_result_helper.check_all_results_correct();
+  }
+}
+
+// Helper to get the small and medium segment size thresholds
+// for the fixed size segmented reduce
+template <typename PolicyHub>
+struct dispatch_helper
+{
+  using tuple_t = ::cuda::std::tuple<int, int>;
+  tuple_t thresholds{};
+
+  template <typename ActivePolicyT>
+  CUB_RUNTIME_FUNCTION cudaError_t Invoke()
+  {
+    thresholds = {ActivePolicyT::SmallReducePolicy::ITEMS_PER_TILE, ActivePolicyT::MediumReducePolicy::ITEMS_PER_TILE};
+    return cudaSuccess;
+  }
+
+  static _CCCL_HOST tuple_t get_thresholds()
+  {
+    // Get PTX version
+    int ptx_version = 0;
+    cudaError error = cub::PtxVersion(ptx_version);
+    REQUIRE(error == cudaSuccess);
+
+    dispatch_helper dispatch{};
+    error = PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch);
+    REQUIRE(error == cudaSuccess);
+    return dispatch.thresholds;
+  }
+};
+
+C2H_TEST("Device fixed size segmented reduce works with a very large number of segments", "[reduce][device]")
+{
+  using offset_t        = ::cuda::std::int64_t;
+  using segment_index_t = ::cuda::std::int64_t;
+  using segment_size_t  = int; // fixed size segmented reduce supports only `int` as segment size
+
+  // To test atlest 2 invocations of the kernel
+  const auto num_segments = static_cast<segment_index_t>(::cuda::std::numeric_limits<std::int32_t>::max()) + 1;
+
+  SECTION("segmented reduce")
+  {
+    using sum_t = ::cuda::std::int64_t;
+
+    // Use a custom operator to increase test coverage
+    using op_t = custom_sum_op;
+
+    // Initial value of reduction
+    const auto init_val = sum_t{0};
+
+    // Binary reduction operator
+    const auto reduction_op = op_t{};
+
+    using policy_hub_t = cub::detail::fixed_size_segmented_reduce::policy_hub<sum_t, offset_t, op_t>;
+
+    // Get small and medium segment size thresholds from dispatch helper
+    const ::cuda::std::tuple<int, int> thresholds = dispatch_helper<policy_hub_t>::get_thresholds();
+    const int small_segment_size                  = ::cuda::std::get<0>(thresholds);
+    const int medium_segment_size                 = ::cuda::std::get<1>(thresholds);
+
+    // Take one random segment size from each of the segment sizes
+    const segment_size_t segment_size = GENERATE_COPY(
+      take(1, random(1, small_segment_size)),
+      take(1, random(small_segment_size, medium_segment_size)),
+      take(1, random(medium_segment_size, medium_segment_size * 2)));
+
+    const ::cuda::std::int64_t num_items = num_segments * segment_size;
+
+    // Input data
+    const auto segment_index_it = thrust::make_counting_iterator(segment_index_t{});
+
+    // Segment offsets
+    segment_index_to_offset_op<offset_t, segment_index_t> index_to_offset_op{0, num_segments, segment_size, num_items};
+    auto offsets_it = thrust::make_transform_iterator(segment_index_it, index_to_offset_op);
+
+    CAPTURE(c2h::type_name<offset_t>(), c2h::type_name<segment_index_t>(), num_segments, segment_size, num_items);
+
+    try
+    {
+      // Prepare helper to check results
+      auto get_sum_from_offset_pair_op = thrust::make_zip_function(get_gaussian_sum_from_offset_op{});
+      auto offset_pair_it              = thrust::make_zip_iterator(thrust::make_tuple(offsets_it, offsets_it + 1));
+      auto expected_result_it          = thrust::make_transform_iterator(offset_pair_it, get_sum_from_offset_pair_op);
+      auto check_result_helper         = detail::large_problem_test_helper(num_segments);
+      auto check_result_it             = check_result_helper.get_flagging_output_iterator(expected_result_it);
+
+      // Run test
+      const auto input_it = thrust::make_counting_iterator(sum_t{});
+      device_segmented_reduce(input_it, check_result_it, num_segments, segment_size, reduction_op, init_val);
+
+      // Verify all results were written as expected
+      check_result_helper.check_all_results_correct();
+    }
+    catch (std::bad_alloc& e)
+    {
+      std::cerr << "Skipping large num_segments fixed size segmented reduce test " << e.what() << "\n";
+    }
   }
 }

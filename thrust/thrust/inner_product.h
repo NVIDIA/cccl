@@ -170,8 +170,8 @@ OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputItera
  *  float vec2[3] = {4.0f, 1.0f, 5.0f};
  *
  *  float init = 0.0f;
- *  thrust::plus<float>       binary_op1;
- *  thrust::multiplies<float> binary_op2;
+ *  ::cuda::std::plus<float>       binary_op1;
+ *  ::cuda::std::multiplies<float> binary_op2;
  *
  *  float result = thrust::inner_product(thrust::host, vec1, vec1 + 3, vec2, init, binary_op1, binary_op2);
  *
@@ -232,8 +232,8 @@ _CCCL_HOST_DEVICE OutputType inner_product(
  *  float vec2[3] = {4.0f, 1.0f, 5.0f};
  *
  *  float init = 0.0f;
- *  thrust::plus<float>       binary_op1;
- *  thrust::multiplies<float> binary_op2;
+ *  ::cuda::std::plus<float>       binary_op1;
+ *  ::cuda::std::multiplies<float> binary_op2;
  *
  *  float result = thrust::inner_product(vec1, vec1 + 3, vec2, init, binary_op1, binary_op2);
  *

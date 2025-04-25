@@ -72,8 +72,8 @@ struct MoveAssignOnly
 
 struct MoveAssign
 {
-  STATIC_MEMBER_VAR(move_construct, int);
-  STATIC_MEMBER_VAR(move_assign, int);
+  STATIC_MEMBER_VAR(move_construct, int)
+  STATIC_MEMBER_VAR(move_assign, int)
   __host__ __device__ static void reset()
   {
     move_construct() = move_assign() = 0;

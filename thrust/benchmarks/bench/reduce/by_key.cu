@@ -44,7 +44,8 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
   thrust::device_vector<KeyT> out_keys = in_keys;
   thrust::device_vector<ValueT> in_vals(elements);
 
-  const std::size_t unique_keys = thrust::distance(out_keys.begin(), thrust::unique(out_keys.begin(), out_keys.end()));
+  const std::size_t unique_keys =
+    ::cuda::std::distance(out_keys.begin(), thrust::unique(out_keys.begin(), out_keys.end()));
 
   thrust::device_vector<ValueT> out_vals(unique_keys);
 

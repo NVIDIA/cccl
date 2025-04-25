@@ -137,7 +137,7 @@ void TestTabulateOutputIterator()
   static constexpr std::size_t select_every_nth = 3;
   auto selected_it_end =
     thrust::copy_if(zipped_in, zipped_in + num_items, tabulate_out_it, select_op{select_every_nth});
-  const auto num_selected = static_cast<std::size_t>(thrust::distance(tabulate_out_it, selected_it_end));
+  const auto num_selected = static_cast<std::size_t>(::cuda::std::distance(tabulate_out_it, selected_it_end));
 
   // Prepare expected data
   Vector expected_output(num_items, T{42});

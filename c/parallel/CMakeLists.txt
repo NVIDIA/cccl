@@ -28,6 +28,8 @@ if (CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY)
   )
 endif()
 
+add_subdirectory(src/jit_templates)
+
 find_package(CUDAToolkit REQUIRED)
 
 # TODO Use static versions of cudart, nvrtc, and nvJitLink
@@ -37,11 +39,12 @@ target_link_libraries(cccl.c.parallel PRIVATE
   CUDA::nvJitLink
   CUDA::cuda_driver
   cccl.compiler_interface_cpp20
+  cccl.c.parallel.jit_template
   CUB::CUB
   Thrust::Thrust
 )
 target_compile_definitions(cccl.c.parallel PUBLIC CCCL_C_EXPERIMENTAL=1 _CUB_HAS_TRANSFORM_UBLKCP=0)
-target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1)
+target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1 CUB_DISABLE_CDP=1)
 target_compile_options(cccl.c.parallel PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
 target_include_directories(cccl.c.parallel PUBLIC "include")

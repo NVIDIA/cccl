@@ -332,8 +332,9 @@ struct device_segmented_reduce_policy {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -403,7 +404,7 @@ CUresult cccl_device_segmented_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchSegmentedReduce<
+    auto exec_status = cub::DispatchSegmentedReduce<
       indirect_arg_t, // InputIteratorT
       indirect_arg_t, // OutputIteratorT
       indirect_arg_t, // BeginSegmentIteratorT
@@ -429,6 +430,8 @@ CUresult cccl_device_segmented_reduce(
         /* kernel_source */ {build},
         /* launcher_factory &*/ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         /* policy */ {segmented_reduce::get_accumulator_type(op, d_in, init)});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

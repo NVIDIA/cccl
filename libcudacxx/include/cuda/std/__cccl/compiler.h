@@ -181,4 +181,10 @@
 
 #define _CCCL_PRAGMA_NOUNROLL() _CCCL_PRAGMA_UNROLL(1)
 
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_WARNING(_MSG) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " _MSG))
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_WARNING(_MSG) _CCCL_PRAGMA(GCC warning _MSG)
+#endif // !_CCCL_COMPILER(MSVC)
+
 #endif // __CCCL_COMPILER_H

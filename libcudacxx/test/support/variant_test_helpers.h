@@ -192,8 +192,8 @@ struct ForwardingCallObject
     return 0;
   }
 
-  STATIC_MEMBER_VAR(last_call_type, CallType);
-  STATIC_MEMBER_VAR(last_call_args, const TypeID*);
+  STATIC_MEMBER_VAR(last_call_type, CallType)
+  STATIC_MEMBER_VAR(last_call_args, const TypeID*)
 };
 
 struct ReturnFirst

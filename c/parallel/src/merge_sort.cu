@@ -408,8 +408,9 @@ struct device_merge_sort_vsmem_helper {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -492,7 +493,7 @@ CUresult cccl_device_merge_sort(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchMergeSort<
+    auto exec_status = cub::DispatchMergeSort<
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
@@ -516,6 +517,8 @@ CUresult cccl_device_merge_sort(
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_out_keys.value_type.size});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

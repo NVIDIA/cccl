@@ -47,8 +47,8 @@ _CCCL_HOST_DEVICE OutputType inner_product(
   InputIterator2 first2,
   OutputType init)
 {
-  thrust::plus<OutputType> binary_op1;
-  thrust::multiplies<OutputType> binary_op2;
+  ::cuda::std::plus<OutputType> binary_op1;
+  ::cuda::std::multiplies<OutputType> binary_op2;
   return thrust::inner_product(exec, first1, last1, first2, init, binary_op1, binary_op2);
 } // end inner_product()
 

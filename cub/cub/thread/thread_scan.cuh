@@ -48,7 +48,7 @@
 CUB_NAMESPACE_BEGIN
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace internal
+namespace detail
 {
 
 /**
@@ -336,5 +336,5 @@ ThreadScanInclusive(T (&input)[LENGTH], T (&output)[LENGTH], ScanOp scan_op, T p
 
 //@}  end member group
 
-} // namespace internal
+} // namespace detail
 CUB_NAMESPACE_END
