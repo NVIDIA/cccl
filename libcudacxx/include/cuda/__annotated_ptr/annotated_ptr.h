@@ -196,12 +196,18 @@ public:
     NV_IF_TARGET(NV_IS_HOST, (_CCCL_ASSERT(!__is_smem, "shared memory pointer is not supported on the host");))
     if constexpr (__is_smem)
     {
-      NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isShared((void*) __p), "__p must be shared");))
+      if (!_CUDA_VSTD::is_constant_evaluated())
+      {
+        NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isShared((void*) __p), "__p must be shared");))
+      }
     }
     else
     {
       _CCCL_ASSERT(__p != nullptr, "__p must not be null");
-      NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
+      if (!_CUDA_VSTD::is_constant_evaluated())
+      {
+        NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
+      }
     }
   }
 
@@ -233,7 +239,7 @@ public:
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer operator->() const noexcept
   {
-    return __get();
+    return _CUDA_VSTD::is_constant_evaluated() ? __repr : __get();
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI reference operator*() const noexcept

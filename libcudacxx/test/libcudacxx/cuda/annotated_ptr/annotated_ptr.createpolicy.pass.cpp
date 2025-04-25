@@ -9,7 +9,6 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
 
-#include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/annotated_ptr>
 #include <cuda/cmath>
 #include <cuda/std/type_traits>
