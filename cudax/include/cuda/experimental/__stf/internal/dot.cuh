@@ -259,7 +259,7 @@ public:
     int id         = sec->get_id();
     sec->parent_id = 0; // until we call set_parent_ctx, this is a root node
 
-    fprintf(stderr, "Creating per_ctx_dot section id %d ctx id %d\n", id, get_unique_id());
+    // fprintf(stderr, "Creating per_ctx_dot section id %d ctx id %d\n", id, get_unique_id());
 
     // Save the section in the map
     dot_get_section_by_id(id) = sec;
@@ -591,7 +591,7 @@ public:
     dot_get_section_by_id(parent_section_id)->children_ids.push_back(child_ctx_section_id);
     dot_get_section_by_id(child_ctx_section_id)->parent_id = parent_section_id;
 
-    fprintf(stderr, "set_parent_ctx sec %d is parent of sec %d\n", parent_section_id, child_ctx_section_id);
+    // fprintf(stderr, "set_parent_ctx sec %d is parent of sec %d\n", parent_section_id, child_ctx_section_id);
   }
 
   const ::std::string& get_ctx_symbol() const
