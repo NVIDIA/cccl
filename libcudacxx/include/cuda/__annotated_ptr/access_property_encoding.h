@@ -165,10 +165,10 @@ enum class __l2_descriptor_mode_t : uint32_t
 
 struct __block_desc_t // 64 bits
 {
-  uint64_t                   : 37;
+  uint64_t __reserved1       : 37;
   uint32_t __block_count     : 7;
   uint32_t __block_start     : 7;
-  uint32_t                   : 1;
+  uint32_t __reserved2       : 1;
   uint32_t __block_size_enum : 4; // 56 bits
 
   uint32_t __l2_cop_off             : 1;
@@ -176,9 +176,11 @@ struct __block_desc_t // 64 bits
   uint32_t __l2_descriptor_mode     : 2;
   uint32_t __l1_inv_dont_allocate   : 1;
   uint32_t __l2_sector_promote_256B : 1;
-  uint32_t                          : 1;
+  uint32_t __reserved3              : 1;
 };
 static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
+
+#if !_CCCL_CUDA_COMPILER(NVRTC)
 
 [[nodiscard]] _CCCL_HIDE_FROM_ABI uint64_t __block_encoding_host(
   __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_bytes, uint32_t __total_bytes)
@@ -200,6 +202,8 @@ static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
   auto __block_count = (__block_size_enum == 13)
                        ? ((__block_end - __block_start <= 127u) ? (__block_end - __block_start) : 1)
                        : _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
+  // NOTE: this comment is to verify the behavior compared to PTX createpolicy.
+  // It will be removed when PTX behavior is clarified
   // auto __block_count = (__block_end - __block_start <= 127u) ? (__block_end - __block_start) : 1; //
   // _CUDA_VSTD::clamp(__block_end
   //  - __block_start,
@@ -216,9 +220,11 @@ static_assert(sizeof(__block_desc_t) == 8, "__block_desc_t should be 8 bytes");
   auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
   auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
   __block_desc_t __block_desc{
-    __block_count, __block_start, __block_size_enum, __l2_cop_off, __l2_cop_on, __l2_descriptor_mode, 0, 0};
+    0, __block_count, __block_start, 0, __block_size_enum, __l2_cop_off, __l2_cop_on, __l2_descriptor_mode, 0, 0, 0};
   return cuda::std::bit_cast<uint64_t>(__block_desc);
 }
+
+#endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
@@ -252,16 +258,10 @@ struct __interleaved_desc_t // 64 bits
   uint32_t                          : 1;
 };
 
-#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#  define _CCCL_L2_INTERLEAVE_CONSTEXPR constexpr
-#else
-#  define _CCCL_L2_INTERLEAVE_CONSTEXPR
-#endif
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR uint64_t
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t
 __l2_interleave(__l2_evict_t __primary, __l2_evict_t __secondary, float __fraction)
 {
-  if (!_CUDA_VSTD::is_constant_evaluated())
+  if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_DEVICE, (return ::cuda::__createpolicy_fraction(__primary, __secondary, __fraction);))
   }
