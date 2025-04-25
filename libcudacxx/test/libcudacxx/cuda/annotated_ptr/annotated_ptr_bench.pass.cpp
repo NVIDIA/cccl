@@ -8,10 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
-
 #include "utils.h"
 
 __device__ void annotated_ptr_timing_dev(int* in, int* out)

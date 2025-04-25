@@ -8,10 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-// UNSUPPORTED: nvrtc
-
 #include "utils.h"
 
 __device__ __host__ __noinline__ void test_access_property_interleave()
@@ -72,15 +68,15 @@ __host__ __device__ __noinline__ void test_global_implicit_property(T ap, cudaAc
   d = ap;
 
   // Test explicit conversion to i64
-  std::uint64_t x = (std::uint64_t) o;
-  std::uint64_t y = (std::uint64_t) d;
+  uint64_t x = (uint64_t) o;
+  uint64_t y = (uint64_t) d;
   assert(x == y);
 }
 
 __host__ __device__ __noinline__ void test_global()
 {
   cuda::access_property o(cuda::access_property::global{});
-  std::uint64_t x = (std::uint64_t) o;
+  uint64_t x = (uint64_t) o;
   unused(x);
 }
 

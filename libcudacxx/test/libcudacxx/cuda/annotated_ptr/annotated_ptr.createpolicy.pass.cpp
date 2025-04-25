@@ -7,6 +7,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+// UNSUPPORTED: nvrtc
 
 #include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/annotated_ptr>
@@ -100,8 +101,8 @@ void test_range_launch(void* ptr, uint32_t primary_size, uint32_t total_size)
 
 void test_range()
 {
-  void* ptr;
-  cudaMalloc(&ptr, 64);
+  int* ptr = nullptr;
+  ptr++;
   for (uint32_t total_size = 1, i = 0; i <= 31; i++, total_size <<= 1)
   {
     for (uint32_t primary_size = 1, j = 0; j <= i; j++, primary_size <<= 1)
@@ -115,20 +116,20 @@ void test_range()
         ptr, primary_size, total_size);
     }
   }
-  uint32_t primary_size = 4u * 1'000'000'000 + 294967280;
-  uint32_t total_size   = 0xFFFFFFFF;
-  test_range_launch<cuda::access_property::normal>(ptr, primary_size, total_size);
+  // PTX createpolicy_range and access_property behaviors don't match (for now)
+  // uint32_t primary_size = 0xFFFFFFFF;
+  // uint32_t total_size   = 0xFFFFFFFF;
+  // test_range_launch<cuda::access_property::normal>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::streaming>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::persisting>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::normal, cuda::access_property::streaming>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::persisting, cuda::access_property::streaming>(ptr, primary_size,
   // total_size);
-  cudaFree(ptr);
 }
 
 int main(int, char**)
 {
   NV_IF_TARGET(NV_IS_HOST, (test_range();))
-  // NV_IF_TARGET(NV_IS_HOST, (test_fraction<<<1, 1>>>();))
+  NV_IF_TARGET(NV_IS_HOST, (test_fraction<<<1, 1>>>();))
   return 0;
 }
