@@ -194,13 +194,15 @@ public:
       : __repr{__p}
   {
     NV_IF_TARGET(NV_IS_HOST, (_CCCL_ASSERT(!__is_smem, "shared memory pointer is not supported on the host");))
-    if constexpr (!__is_smem)
+    if constexpr (__is_smem)
+    {
+      NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isShared((void*) __p), "__p must be shared");))
+    }
+    else
     {
       _CCCL_ASSERT(__p != nullptr, "__p must not be null");
+      NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT(__isGlobal((void*) __p), "__p must be global");))
     }
-    NV_IF_TARGET(NV_IS_DEVICE,
-                 (_CCCL_ASSERT((__is_smem && __isShared((void*) __p)) || __isGlobal((void*) __p),
-                               "__p must be shared or global");))
   }
 
   template <typename _RuntimeProperty>

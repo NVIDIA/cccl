@@ -200,34 +200,33 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal, float __fraction) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
       : __descriptor{
           ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Normal_Demote, __l2_evict_t::_L2_Evict_Unchanged, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(streaming, float __fraction) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming, float __fraction) noexcept
       : __descriptor{
           ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_First, __l2_evict_t::_L2_Evict_Unchanged, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(persisting, float __fraction) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction) noexcept
       : __descriptor{
           ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_Unchanged, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal, float __fraction, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction, streaming) noexcept
       : __descriptor{
           ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Normal_Demote, __l2_evict_t::_L2_Evict_First, __fraction)}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR
-  access_property(persisting, float __fraction, streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction, streaming) noexcept
       : __descriptor{::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_First, __fraction)}
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(normal) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal) noexcept
       : access_property{normal{}, 1.0f}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(streaming) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(streaming) noexcept
       : access_property{streaming{}, 1.0f}
   {}
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_L2_INTERLEAVE_CONSTEXPR access_property(persisting) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting) noexcept
       : access_property{persisting{}, 1.0f}
   {}
 
