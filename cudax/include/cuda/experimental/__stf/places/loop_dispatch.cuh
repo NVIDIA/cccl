@@ -163,8 +163,8 @@ inline void loop_dispatch(
  * Overload of loop_dispatch which automatically selects the partitioning scope
  */
 template <typename context_t, typename exec_place_t, bool use_threads = true>
-inline void
-loop_dispatch(context_t ctx, exec_place_t root_exec_place, size_t start, size_t end, ::std::function<void(size_t)> func)
+inline void loop_dispatch(
+  context_t& ctx, exec_place_t root_exec_place, size_t start, size_t end, ::std::function<void(size_t)> func)
 {
   // Partition among devices by default
   place_partition_scope scope = place_partition_scope::cuda_device;
@@ -174,7 +174,7 @@ loop_dispatch(context_t ctx, exec_place_t root_exec_place, size_t start, size_t 
     scope = place_partition_scope::green_context;
   }
 
-  loop_dispatch<context_t, exec_place_t, use_threads>(mv(ctx), mv(root_exec_place), scope, start, end, mv(func));
+  loop_dispatch<context_t, exec_place_t, use_threads>(ctx, mv(root_exec_place), scope, start, end, mv(func));
 }
 
 /*
@@ -182,7 +182,7 @@ loop_dispatch(context_t ctx, exec_place_t root_exec_place, size_t start, size_t 
  * based on the ctx (or takes all devices) and selects the scope
  */
 template <typename context_t, bool use_threads = true>
-inline void loop_dispatch(context_t ctx, size_t start, size_t end, ::std::function<void(size_t)> func)
+inline void loop_dispatch(context_t& ctx, size_t start, size_t end, ::std::function<void(size_t)> func)
 {
   // Partition among devices by default
   place_partition_scope scope = place_partition_scope::cuda_device;
@@ -198,12 +198,11 @@ inline void loop_dispatch(context_t ctx, size_t start, size_t end, ::std::functi
   if (ctx.has_affinity())
   {
     loop_dispatch<context_t, ::std::vector<::std::shared_ptr<exec_place>>, use_threads>(
-      mv(ctx), ctx.current_affinity(), scope, start, end, mv(func));
+      ctx, ctx.current_affinity(), scope, start, end, mv(func));
   }
   else
   {
-    loop_dispatch<context_t, exec_place_grid, use_threads>(
-      mv(ctx), exec_place::all_devices(), scope, start, end, mv(func));
+    loop_dispatch<context_t, exec_place_grid, use_threads>(ctx, exec_place::all_devices(), scope, start, end, mv(func));
   }
 }
 
