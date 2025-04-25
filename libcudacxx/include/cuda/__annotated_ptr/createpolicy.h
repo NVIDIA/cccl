@@ -71,7 +71,10 @@ template <typename = void>
           : "=l"(__policy)
           : "l"(__gmem_ptr), "r"(__primary_size), "r"(__total_size));
     }
-    _CCCL_UNREACHABLE();
+    else
+    {
+      _CCCL_UNREACHABLE();
+    }
   }
   else // __secondary == _L2_Evict_First
   {
@@ -99,7 +102,10 @@ template <typename = void>
           : "=l"(__policy)
           : "l"(__gmem_ptr), "r"(__primary_size), "r"(__total_size));
     }
-    _CCCL_UNREACHABLE();
+    else
+    {
+      _CCCL_UNREACHABLE();
+    }
   }
   return __policy;
 }
@@ -127,7 +133,10 @@ __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, fl
     {
       asm("createpolicy.fractional.L2::evict_unchanged.b64 %0, %1;" : "=l"(__policy) : "f"(__fraction));
     }
-    _CCCL_UNREACHABLE();
+    else
+    {
+      _CCCL_UNREACHABLE();
+    }
   }
   else // __secondary == _L2_Evict_First
   {
@@ -147,7 +156,10 @@ __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, fl
     {
       asm("createpolicy.fractional.L2::evict_unchanged.L2::evict_first.b64 %0, %1;" : "=l"(__policy) : "f"(__fraction));
     }
-    _CCCL_UNREACHABLE();
+    else
+    {
+      _CCCL_UNREACHABLE();
+    }
   }
   return __policy;
 }
