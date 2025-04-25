@@ -71,6 +71,7 @@ template <typename = void>
           : "=l"(__policy)
           : "l"(__gmem_ptr), "r"(__primary_size), "r"(__total_size));
     }
+    _CCCL_UNREACHABLE();
   }
   else // __secondary == _L2_Evict_First
   {
@@ -98,6 +99,7 @@ template <typename = void>
           : "=l"(__policy)
           : "l"(__gmem_ptr), "r"(__primary_size), "r"(__total_size));
     }
+    _CCCL_UNREACHABLE();
   }
   return __policy;
 }
@@ -125,6 +127,7 @@ __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, fl
     {
       asm("createpolicy.fractional.L2::evict_unchanged.b64 %0, %1;" : "=l"(__policy) : "f"(__fraction));
     }
+    _CCCL_UNREACHABLE();
   }
   else // __secondary == _L2_Evict_First
   {
@@ -144,6 +147,7 @@ __createpolicy_fraction_ptx(__l2_evict_t __primary, __l2_evict_t __secondary, fl
     {
       asm("createpolicy.fractional.L2::evict_unchanged.L2::evict_first.b64 %0, %1;" : "=l"(__policy) : "f"(__fraction));
     }
+    _CCCL_UNREACHABLE();
   }
   return __policy;
 }
@@ -163,7 +167,7 @@ template <typename T = void>
   _CCCL_ASSERT(__primary_size <= __total_size, "primary_size must be less than or equal to total_size");
   _CCCL_ASSERT(__secondary == __l2_evict_t::_L2_Evict_First || __secondary == __l2_evict_t::_L2_Evict_Unchanged,
                "secondary policy must be evict_first or evict_unchanged");
-  auto __gmem_ptr = __cvta_generic_to_global(__ptr);
+  [[maybe_unused]] auto __gmem_ptr = __cvta_generic_to_global(__ptr);
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
     (return ::cuda::__createpolicy_range_ptx(__primary, __secondary, __gmem_ptr, __primary_size, __total_size);),
