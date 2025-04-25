@@ -128,7 +128,6 @@ C2H_TEST("DeviceMerge::MergeKeys large key types", "[merge][device]", c2h::type_
 }
 
 C2H_TEST("DeviceMerge::MergeKeys works for large number of items", "[merge][device]")
-
 try
 {
   using key_t    = char;
