@@ -29,7 +29,7 @@ struct NestedNVTXRangeGuard
   }
 };
 
-#  define CUB_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name)                              \
+#  define CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name)                             \
     ::cuda::std::optional<::NestedNVTXRangeGuard> __cub_nvtx3_reentrency_guard; \
     NV_IF_TARGET(NV_IS_HOST, __cub_nvtx3_reentrency_guard.emplace(name););
 #endif // defined(__cpp_inline_variables)
