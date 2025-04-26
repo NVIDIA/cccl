@@ -213,14 +213,23 @@ enum class __l2_descriptor_mode_t : uint32_t
   // _CUDA_VSTD::clamp(__block_end
   //  - __block_start,
   //  1u, 127u);
-  // printf("%d  |   %u  |   %u  |   %u || %u ___ %u   %u\n",
-  //       __log2_total_size,
-  //       __block_size_enum,
-  //       __log2_block_size,
-  //       __block_size,
-  //       __block_end,
-  //       __block_start,
-  //       __block_count);
+  // printf(
+  //  "__total_bytes:     %u\n"
+  //  "__log2_total_size: %u\n"
+  //  "__block_size_enum: %u\n"
+  //  "__log2_block_size: %u\n"
+  //  "__block_size:      %u\n"
+  //  "__block_end:       %u\n"
+  //  "__block_start:     %u\n"
+  //  "__block_count:     %u\n",
+  //  __total_bytes,
+  //  __log2_total_size,
+  //  __block_size_enum,
+  //  __log2_block_size,
+  //  __block_size,
+  //  __block_end,
+  //  __block_start,
+  //  __block_count);
   auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
   auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
   auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
@@ -234,23 +243,17 @@ enum class __l2_descriptor_mode_t : uint32_t
 
 #endif // !_CCCL_CUDA_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER()
-
-[[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __block_encoding_device(
-  __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_bytes, uint32_t __total_bytes)
-{
-  return ::cuda::__createpolicy_range(__primary, __secondary, __ptr, __primary_bytes, __total_bytes);
-}
-
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI uint64_t __block_encoding(
-  __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, uint32_t __primary_bytes, uint32_t __total_bytes)
+  __l2_evict_t __primary, __l2_evict_t __secondary, const void* __ptr, size_t __primary_bytes, size_t __total_bytes)
 {
+  _CCCL_ASSERT(__primary_bytes <= size_t{0xFFFFFFFF}, "primary size must be less than 4GB");
+  _CCCL_ASSERT(__total_bytes <= size_t{0xFFFFFFFF}, "total size must be less than 4GB");
+  auto __primary_bytes1 = static_cast<uint32_t>(__primary_bytes);
+  auto __total_bytes1   = static_cast<uint32_t>(__total_bytes);
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
-    (return ::cuda::__block_encoding_host(__primary, __secondary, __ptr, __primary_bytes, __total_bytes);),
-    (return ::cuda::__block_encoding_device(__primary, __secondary, __ptr, __primary_bytes, __total_bytes);))
+    (return ::cuda::__block_encoding_host(__primary, __secondary, __ptr, __primary_bytes1, __total_bytes1);),
+    (return ::cuda::__createpolicy_range(__primary, __secondary, __ptr, __primary_bytes1, __total_bytes1);))
 }
 
 /***********************************************************************************************************************
