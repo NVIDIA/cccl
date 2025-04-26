@@ -115,6 +115,9 @@ public:
           , alloc_adapters(mv(alloc_adapters))
       {}
 
+      ctx_node(ctx_node&&) noexcept            = default;
+      ctx_node& operator=(ctx_node&&) noexcept = default;
+
       // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
       //
       // This happens for example in this case where we want to defer the release
@@ -365,7 +368,24 @@ public:
       _CCCL_ASSERT(nodes.size() > 0, "Calling pop while no context was pushed");
       _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid state");
 
+      // We move the content of the node to a temporary so that we can clean
+      // the tree and release the offset early without holding locks while
+      // instantiating graphs.
       auto& current_node = nodes[head_offset].value();
+
+      int parent_offset = node_tree.get_parent(head_offset);
+      _CCCL_ASSERT(parent_offset != -1, "");
+
+      auto& parent_node = nodes[parent_offset].value();
+
+#if 0
+      // Since we have destroyed the node in the tree of contexts, we can put
+      // it offsets back in the list of available offsets so that it can be
+      // reused.
+      node_tree.discard_node(head_offset);
+#endif
+
+      // XXX we still need to access the parent node ... but not modify the tree
 
       const char* display_mem_stats_env = getenv("CUDASTF_DISPLAY_MEM_STATS");
       if (display_mem_stats_env && atoi(display_mem_stats_env) != 0)
@@ -381,48 +401,51 @@ public:
         d_impl->pop_before_finalize(head_offset);
       }
 
-      // Ensure everything is finished in the context
-      current_node.ctx.finalize();
-
-      if (display_graph_stats)
-      {
-        executable_graph_cache_stat* stat = current_node.ctx.graph_get_cache_stat();
-        _CCCL_ASSERT(stat, "");
-
-        const auto& loc = current_node.callsite;
-        stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
-      }
-
-      // To create prereqs that depend on this finalize() stage, we get the
-      // stream used in this context, and insert events in it.
-      cudaStream_t stream = current_node.support_stream;
-
-      int parent_offset = node_tree.get_parent(head_offset);
-      _CCCL_ASSERT(parent_offset != -1, "");
-
-      auto& parent_node = nodes[parent_offset].value();
-
-      event_list finalize_prereqs = parent_node.ctx.stream_to_event_list(stream, "finalized");
-
-      for (auto& d_impl : current_node.pushed_data)
-      {
-        _CCCL_ASSERT(d_impl, "invalid value");
-        d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
-      }
-
-      // Destroy the resources used in the wrapper allocator (if any)
-      if (current_node.alloc_adapters)
-      {
-        current_node.alloc_adapters->clear();
-      }
+      // We move the content of the node to a temporary so that we can clean
+      // the tree and release the offset early without holding locks while
+      // instantiating graphs.
+      auto moved_current_node = mv(nodes[head_offset].value());
 
       // Destroy the current node
       nodes[head_offset].reset();
 
       // Since we have destroyed the node in the tree of contexts, we can put
       // it offsets back in the list of available offsets so that it can be
-      // reused.
+      // reused. Data are also not linked to that offset anymore.
       node_tree.discard_node(head_offset);
+
+      // Ensure everything is finished in the context
+      moved_current_node.ctx.finalize();
+
+      // Maybe we can move the node to a disconnected state here, and reset the
+      // position in the tree now to release the spot, then act without a lock
+      // on the whole tree
+      if (display_graph_stats)
+      {
+        executable_graph_cache_stat* stat = moved_current_node.ctx.graph_get_cache_stat();
+        _CCCL_ASSERT(stat, "");
+
+        const auto& loc = moved_current_node.callsite;
+        stats_map[loc][::std::make_pair(stat->nnodes, stat->nedges)] += *stat;
+      }
+
+      // To create prereqs that depend on this finalize() stage, we get the
+      // stream used in this context, and insert events in it.
+      cudaStream_t stream = moved_current_node.support_stream;
+
+      event_list finalize_prereqs = parent_node.ctx.stream_to_event_list(stream, "finalized");
+
+      for (auto& d_impl : moved_current_node.pushed_data)
+      {
+        _CCCL_ASSERT(d_impl, "invalid value");
+        d_impl->pop_after_finalize(parent_offset, finalize_prereqs);
+      }
+
+      // Destroy the resources used in the wrapper allocator (if any)
+      if (moved_current_node.alloc_adapters)
+      {
+        moved_current_node.alloc_adapters->clear();
+      }
 
       return parent_offset;
     }
