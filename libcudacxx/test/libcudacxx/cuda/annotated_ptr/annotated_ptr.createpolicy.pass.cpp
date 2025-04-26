@@ -68,7 +68,6 @@ __global__ void test_fraction()
   test_fraction_constexpr<cuda::access_property::normal>();
   test_fraction_constexpr<cuda::access_property::streaming>();
   test_fraction_constexpr<cuda::access_property::persisting>();
-  // test_fraction_constexpr<cuda::access_property::global>();
   test_fraction_constexpr<cuda::access_property::normal, cuda::access_property::streaming>();
   test_fraction_constexpr<cuda::access_property::persisting, cuda::access_property::streaming>();
 }
@@ -80,7 +79,12 @@ template <typename Primary, typename Secondary>
 __global__ void test_range_kernel(void* ptr, uint64_t property, uint32_t primary_size, uint32_t total_size)
 {
   auto policy = __createpolicy_range(to_enum<Primary>(), to_enum<Secondary>(), ptr, primary_size, total_size);
-  printf("%lX vs %lX\n", policy, static_cast<uint64_t>(property));
+  if (static_cast<uint64_t>(property) != policy)
+  {
+    printf("  primary_size = %u, total_size = %u\n", primary_size, total_size);
+    printf("  primary = %u, secondary = %u\n", (int) to_enum<Primary>(), (int) to_enum<Secondary>());
+    printf("  0x%lX vs 0x%lX\n", policy, static_cast<uint64_t>(property));
+  }
   assert(static_cast<uint64_t>(property) == policy);
 }
 
@@ -110,8 +114,10 @@ void test_range()
       test_range_launch<cuda::access_property::normal>(ptr, primary_size, total_size);
       test_range_launch<cuda::access_property::streaming>(ptr, primary_size, total_size);
       test_range_launch<cuda::access_property::persisting>(ptr, primary_size, total_size);
-      // test_range_launch<cuda::access_property::global>(ptr, primary_size, total_size);
+      test_range_launch<cuda::access_property::global, cuda::access_property::streaming>(ptr, primary_size, total_size);
       test_range_launch<cuda::access_property::normal, cuda::access_property::streaming>(ptr, primary_size, total_size);
+      test_range_launch<cuda::access_property::streaming, cuda::access_property::streaming>(
+        ptr, primary_size, total_size);
       test_range_launch<cuda::access_property::persisting, cuda::access_property::streaming>(
         ptr, primary_size, total_size);
     }
@@ -122,6 +128,7 @@ void test_range()
   // test_range_launch<cuda::access_property::normal>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::streaming>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::persisting>(ptr, primary_size, total_size);
+  // test_range_launch<cuda::access_property::global, cuda::access_property::streaming>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::normal, cuda::access_property::streaming>(ptr, primary_size, total_size);
   // test_range_launch<cuda::access_property::persisting, cuda::access_property::streaming>(ptr, primary_size,
   // total_size);
