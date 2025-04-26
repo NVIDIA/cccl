@@ -72,7 +72,9 @@ class _MergeSort:
         d_out_items: DeviceArrayLike | None,
         op: Callable,
     ):
-        assert (d_in_items is None) == (d_out_items is None)
+        present_in_values = d_in_items is not None
+        present_out_values = d_out_items is not None
+        assert present_in_values == present_out_values
 
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)

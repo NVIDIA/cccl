@@ -59,10 +59,10 @@ class D : public B
 template <class T>
 struct AssignableFrom
 {
-  STATIC_MEMBER_VAR(type_constructed, int);
-  STATIC_MEMBER_VAR(type_assigned, int);
-  STATIC_MEMBER_VAR(int_constructed, int);
-  STATIC_MEMBER_VAR(int_assigned, int);
+  STATIC_MEMBER_VAR(type_constructed, int)
+  STATIC_MEMBER_VAR(type_assigned, int)
+  STATIC_MEMBER_VAR(int_constructed, int)
+  STATIC_MEMBER_VAR(int_assigned, int)
 
   __host__ __device__ static void reset()
   {
@@ -342,7 +342,7 @@ __host__ __device__ constexpr bool test()
 #if TEST_HAS_EXCEPTIONS()
 struct X
 {
-  STATIC_MEMBER_VAR(throw_now, bool);
+  STATIC_MEMBER_VAR(throw_now, bool)
 
   X() = default;
   X(int&&)
