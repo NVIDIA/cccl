@@ -160,6 +160,7 @@ private:
 
   friend class __annotated_ptr_base<access_property>;
 
+  // needed by __annotated_ptr_base
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(uint64_t __descriptor1) noexcept
       : __descriptor{__descriptor1}
   {}
@@ -198,8 +199,6 @@ public:
   _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
   _CCCL_HIDE_FROM_ABI ~access_property() noexcept                                 = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
-
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
       : __descriptor{
           ::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Normal_Demote, __l2_evict_t::_L2_Evict_Unchanged, __fraction)}
@@ -219,6 +218,8 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(persisting, float __fraction, streaming) noexcept
       : __descriptor{::cuda::__l2_interleave(__l2_evict_t::_L2_Evict_Last, __l2_evict_t::_L2_Evict_First, __fraction)}
   {}
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(global) noexcept {}
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal) noexcept
       : access_property{normal{}, 1.0f}
