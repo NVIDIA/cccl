@@ -94,10 +94,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void SerialMerge(
   const int keys1_end = keys1_beg + keys1_count;
   const int keys2_end = keys2_beg + keys2_count;
 
-  // Either range may be empty. If so, load a valid key from the other range
+  // Either range may be empty. If it is, load a valid key from the other range
   // to avoid out-of-bounds access:
-  KeyT key1 = keys1_count ? keys_shared[keys1_beg] : keys_shared[keys2_beg];
-  KeyT key2 = keys2_count ? keys_shared[keys2_beg] : keys_shared[keys1_beg];
+  const int key1_initial_load_offset = (keys1_count != 0) ? keys1_beg : keys2_beg;
+  const int key2_initial_load_offset = (keys2_count != 0) ? keys2_beg : keys1_beg;
+
+  KeyT key1 = keys_shared[key1_initial_load_offset];
+  KeyT key2 = keys_shared[key2_initial_load_offset];
 
   _CCCL_SORT_MAYBE_UNROLL()
   for (int item = 0; item < ITEMS_PER_THREAD; ++item)
