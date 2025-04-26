@@ -28,14 +28,12 @@ The class ``cuda::access_property`` provides an opaque encoding for *L2 cache me
            __host__ __device__ constexpr operator cudaAccessProperty() const noexcept;
        };
 
-       // Default constructor:
-       access_property() noexcept = default;
-
-       // Copy constructor:
-       access_property(const access_property&) noexcept = default;
-
-       // Copy assignment:
-       access_property& operator=(const access_property&) noexcept = default;
+       access_property() noexcept                                  = default
+       access_property(const access_property&) noexcept            = default
+       access_property(access_property&&) noexcept                 = default
+       access_property& operator=(const access_property&) noexcept = default
+       access_property& operator=(access_property&&) noexcept      = default
+       ~access_property() noexcept                                 = default
 
        // Constructors from static global memory residence control properties:
        __host__ __device__ constexpr access_property(global)     noexcept;
@@ -44,18 +42,20 @@ The class ``cuda::access_property`` provides an opaque encoding for *L2 cache me
        __host__ __device__ constexpr access_property(persisting) noexcept;
 
        // Dynamic interleaved global memory residence control property constructors:
-       __host__ __device__ constexpr access_property(normal,     float probability);
-       __host__ __device__ constexpr access_property(streaming,  float probability);
-       __host__ __device__ constexpr access_property(persisting, float probability);
-       __host__ __device__ constexpr access_property(normal,     float probability, streaming);
-       __host__ __device__ constexpr access_property(persisting, float probability, streaming);
+       __host__ __device__ constexpr access_property(normal,     float probability) noexcept;
+       __host__ __device__ constexpr access_property(streaming,  float probability) noexcept;
+       __host__ __device__ constexpr access_property(persisting, float probability) noexcept;
+       __host__ __device__ constexpr access_property(normal,     float probability, streaming) noexcept;
+       __host__ __device__ constexpr access_property(persisting, float probability, streaming) noexcept;
 
        // Dynamic range global memory residence control property constructors:
-       __host__ __device__ constexpr access_property(void* ptr, size_t partition_bytes, size_t total_bytes, normal);
-       __host__ __device__ constexpr access_property(void* ptr, size_t partition_bytes, size_t total_bytes, streaming);
-       __host__ __device__ constexpr access_property(void* ptr, size_t partition_bytes, size_t total_bytes, persisting);
-       __host__ __device__ constexpr access_property(void* ptr, size_t partition_bytes, size_t total_bytes, normal,     streaming);
-       __host__ __device__ constexpr access_property(void* ptr, size_t partition_bytes, size_t total_bytes, persisting, streaming);
+       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, normal);
+       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, streaming);
+       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, persisting);
+       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, global,     streaming);
+       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, normal,     streaming);
+       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, persisting, streaming);
+       __host__ __device__ access_property(void* ptr, size_t partition_bytes, size_t total_bytes, streaming,  streaming);
    };
 
    } // namespace cuda

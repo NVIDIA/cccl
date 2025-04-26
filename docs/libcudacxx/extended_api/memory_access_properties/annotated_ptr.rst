@@ -21,10 +21,14 @@ Defined in header ``<cuda/annotated_ptr>``.
      using const_pointer   = const value_type*;
      using difference_type = ptrdiff_t;
 
-     __host__ __device__ annotated_ptr() noexcept                                = default;
-     __host__ __device__ annotated_ptr(const annotated_ptr&) noexcept            = default;
-     __host__ __device__ annotated_ptr& operator=(const annotated_ptr&) noexcept = default;
-     __host__ __device__ explicit annotated_ptr(pointer) noexcept;
+     annotated_ptr() noexcept                                = default;
+     annotated_ptr(const annotated_ptr&) noexcept            = default;
+     access_property(access_property&&) noexcept             = default;
+     annotated_ptr& operator=(const annotated_ptr&) noexcept = default;
+     annotated_ptr& operator=(annotated_ptr&&) noexcept      = default;
+     ~annotated_ptr() noexcept                               = default;
+
+     __host__ __device__ explicit constexpr annotated_ptr(pointer) noexcept;
 
      template <typename RuntimeProperty>
      __host__ __device__ annotated_ptr(pointer, RuntimeProperty) noexcept;
