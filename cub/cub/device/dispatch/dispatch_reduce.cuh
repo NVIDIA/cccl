@@ -1053,7 +1053,7 @@ struct DispatchFixedSizeSegmentedReduce
   OutputIteratorT d_out;
 
   /// The number of segments that comprise the segmented reduction data
-  int num_segments;
+  ::cuda::std::int64_t num_segments;
 
   /// The fixed segment size for each segment
   OffsetT segment_size;
@@ -1083,7 +1083,7 @@ struct DispatchFixedSizeSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT init,
@@ -1140,27 +1140,65 @@ struct DispatchFixedSizeSegmentedReduce
       return cudaSuccess;
     }
 
-    int blocks = num_segments; // assume large segment size problem
-    if (segment_size <= small_items_per_tile)
-    {
-      blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK);
-    }
-    else if (segment_size <= medium_items_per_tile)
-    {
-      blocks = ::cuda::ceil_div(num_segments, ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK);
-    }
+    // assume large segment size problem
+    int segments_per_block = 1;
 
-    launcher_factory(blocks, ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
-      .doit(fixed_size_segmented_reduce_kernel, d_in, d_out, segment_size, num_segments, reduction_op, init);
-
-    cudaError error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
+    if (segment_size <= small_items_per_tile) // small segment size problem
     {
-      return error;
+      segments_per_block = ActivePolicyT::SmallReducePolicy::SEGMENTS_PER_BLOCK;
+    }
+    else if (segment_size <= medium_items_per_tile) // medium segment size problem
+    {
+      segments_per_block = ActivePolicyT::MediumReducePolicy::SEGMENTS_PER_BLOCK;
     }
 
-    // Sync the stream if specified to flush runtime errors
-    error = CubDebug(detail::DebugSyncStream(stream));
+    const auto num_segments_per_invocation =
+      static_cast<::cuda::std::int64_t>(::cuda::std::numeric_limits<::cuda::std::int32_t>::max());
+
+    const ::cuda::std::int64_t num_invocations = ::cuda::ceil_div(num_segments, num_segments_per_invocation);
+
+    // If we need multiple passes over the segments but the iterators do not support the + operator, we cannot use the
+    // streaming approach and have to fail, returning cudaErrorInvalidValue. This is because c.parallel passes
+    // indirect_arg_t as the iterator type, which does not support the + operator.
+    // TODO (srinivas/elstehle): Remove this check once https://github.com/NVIDIA/cccl/issues/4148 is resolved.
+    if (num_invocations > 1 && !detail::all_iterators_support_plus_operator(::cuda::std::int64_t{}, d_in, d_out))
+    {
+      return cudaErrorInvalidValue;
+    }
+
+    cudaError error = cudaSuccess;
+    for (::cuda::std::int64_t invocation_index = 0; invocation_index < num_invocations; invocation_index++)
+    {
+      const auto current_seg_offset = invocation_index * num_segments_per_invocation;
+
+      const auto num_current_segments =
+        ::cuda::std::min(num_segments_per_invocation, num_segments - current_seg_offset);
+
+      const auto num_current_blocks = ::cuda::ceil_div(num_current_segments, segments_per_block);
+
+      launcher_factory(
+        static_cast<::cuda::std::int32_t>(num_current_blocks), ActivePolicyT::ReducePolicy::BLOCK_THREADS, 0, stream)
+        .doit(fixed_size_segmented_reduce_kernel,
+              detail::advance_iterators_if_supported(d_in, current_seg_offset * segment_size),
+              detail::advance_iterators_if_supported(d_out, current_seg_offset),
+              segment_size,
+              static_cast<::cuda::std::int32_t>(num_current_segments),
+              reduction_op,
+              init);
+
+      error = CubDebug(cudaPeekAtLastError());
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+
+      // Sync the stream if specified to flush runtime errors
+      error = CubDebug(detail::DebugSyncStream(stream));
+      if (cudaSuccess != error)
+      {
+        break;
+      }
+    }
     return error;
   }
 
@@ -1214,7 +1252,7 @@ struct DispatchFixedSizeSegmentedReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_segments,
+    ::cuda::std::int64_t num_segments,
     OffsetT segment_size,
     ReductionOpT reduction_op,
     InitT init,

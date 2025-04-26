@@ -110,4 +110,17 @@
 #  define _CCCL_HAS_FLOAT128_LITERAL() 0
 #endif // ^^^ no __float128 literal ^^^
 
+/***********************************************************************************************************************
+ * char8_t
+ **********************************************************************************************************************/
+
+#if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+#  define _CCCL_HAS_CHAR8_T() 0
+#else
+#  define _CCCL_HAS_CHAR8_T() 1
+#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+
+// We currently do not support any of the STL wchar facilities
+#define _CCCL_HAS_WCHAR_T() 0
+
 #endif // __CCCL_EXTENDED_DATA_TYPES_H

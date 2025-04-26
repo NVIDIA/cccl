@@ -803,7 +803,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_num_runs2[ITEMS_PER_THREAD];
 
       // Downsweep scan through lengths_and_num_runs
-      internal::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -910,7 +910,7 @@ struct AgentRle
       LengthOffsetPair lengths_and_offsets[ITEMS_PER_THREAD];
       OffsetT thread_num_runs_exclusive_in_warp[ITEMS_PER_THREAD];
 
-      internal::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
+      detail::ThreadScanExclusive(lengths_and_num_runs, lengths_and_num_runs2, scan_op, thread_exclusive_in_warp);
 
       // Zip
       _CCCL_PRAGMA_UNROLL_FULL()

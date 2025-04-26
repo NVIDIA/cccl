@@ -724,14 +724,15 @@ CUresult cccl_device_radix_sort_impl(
     cub::DoubleBuffer<indirect_arg_t> d_values_buffer(
       *static_cast<indirect_arg_t**>(&val_arg_in), *static_cast<indirect_arg_t**>(&val_arg_out));
 
-    cub::DispatchRadixSort<Order,
-                           indirect_arg_t,
-                           indirect_arg_t,
-                           OffsetT,
-                           indirect_arg_t,
-                           radix_sort::dynamic_radix_sort_policy_t<&radix_sort::get_policy>,
-                           radix_sort::radix_sort_kernel_source,
-                           cub::detail::CudaDriverLauncherFactory>::
+    auto exec_status = cub::DispatchRadixSort<
+      Order,
+      indirect_arg_t,
+      indirect_arg_t,
+      OffsetT,
+      indirect_arg_t,
+      radix_sort::dynamic_radix_sort_policy_t<&radix_sort::get_policy>,
+      radix_sort::radix_sort_kernel_source,
+      cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
@@ -748,6 +749,7 @@ CUresult cccl_device_radix_sort_impl(
         {d_keys_in.value_type.size});
 
     *selector = d_keys_buffer.selector;
+    error     = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {
