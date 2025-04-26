@@ -367,12 +367,12 @@ auto all_convertible(P&&... p)
   auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
   size_t i     = 0; // marks the already-constructed portion of the array
 
-  auto rollback = [&result, &i]() {
-    for (size_t j = 0; j < i; ++j)
-    {
-      result[j].~T();
-    }
-  };
+  // auto rollback = [&result, &i]() {
+  //   for (size_t j = 0; j < i; ++j)
+  //   {
+  //     result[j].~T();
+  //   }
+  // };
 
   // auto __guard = _CUDA_VSTD::__make_exception_guard(rollback);
   each_in_pack(
