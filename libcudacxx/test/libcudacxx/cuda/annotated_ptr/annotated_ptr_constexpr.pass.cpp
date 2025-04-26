@@ -9,6 +9,9 @@
 //===----------------------------------------------------------------------===//
 // UNSUPPORTED: nvrtc
 
+// error: expression must have a constant value annotated_ptr.h: note #2701-D: attempt to access run-time storage
+// UNSUPPORTED: clang-14, gcc-9, gcc-8, gcc-7
+
 #include <cuda/annotated_ptr>
 
 #include "test_macros.h"
@@ -21,9 +24,9 @@ __host__ __device__ constexpr bool test_public_methods()
   annotated_ptr a{}; // default constructor
   annotated_ptr b{a}; // copy constructor
   annotated_ptr c{cuda::std::move(a)}; // move constructor
-  b = a; // copy assignment
-  b = cuda::std::move(a); // move assignment
   NV_IF_TARGET(NV_IS_DEVICE, (annotated_smem_ptr d{nullptr};)) // pointer constructor
+  b         = a; // copy assignment
+  b         = cuda::std::move(a); // move assignment
   auto diff = a - b;
   auto pred = static_cast<bool>(a);
   auto prop = a.__property();
