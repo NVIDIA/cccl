@@ -33,6 +33,8 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 
+#include <cuda/std/utility>
+
 #include <climits>
 #include <cstddef>
 

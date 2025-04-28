@@ -31,6 +31,7 @@
 #include <cub/device/device_segmented_reduce.cuh>
 
 #include <cuda/std/limits>
+#include <cuda/std/utility>
 
 #include <numeric>
 
