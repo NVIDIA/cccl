@@ -192,12 +192,7 @@ public:
     }
   };
 
-  _CCCL_HIDE_FROM_ABI access_property() noexcept                                  = default;
-  _CCCL_HIDE_FROM_ABI access_property(const access_property&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI access_property(access_property&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI access_property& operator=(access_property&&) noexcept      = default;
-  _CCCL_HIDE_FROM_ABI ~access_property() noexcept                                 = default;
+  _CCCL_HIDE_FROM_ABI access_property() noexcept = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property(normal, float __fraction) noexcept
       : __descriptor{

@@ -164,12 +164,7 @@ protected:
 
   static constexpr uint64_t __prop = __default_property();
 
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&)            = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&)                 = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&)      = default;
-  _CCCL_HIDE_FROM_ABI ~__annotated_ptr_base() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(_AccessProperty) noexcept {}
 
@@ -201,12 +196,7 @@ protected:
       : __prop{static_cast<uint64_t>(__property)}
   {}
 
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept                                       = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(const __annotated_ptr_base&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base(__annotated_ptr_base&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(const __annotated_ptr_base&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI __annotated_ptr_base& operator=(__annotated_ptr_base&&) noexcept      = default;
-  _CCCL_HIDE_FROM_ABI ~__annotated_ptr_base() noexcept                                      = default;
+  _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept = default;
 
 #if _CCCL_HAS_CUDA_COMPILER()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const

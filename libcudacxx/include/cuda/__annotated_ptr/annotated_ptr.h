@@ -184,12 +184,7 @@ private:
   }
 
 public:
-  _CCCL_HIDE_FROM_ABI annotated_ptr() noexcept                                = default;
-  _CCCL_HIDE_FROM_ABI annotated_ptr(const annotated_ptr&) noexcept            = default;
-  _CCCL_HIDE_FROM_ABI annotated_ptr(annotated_ptr&&) noexcept                 = default;
-  _CCCL_HIDE_FROM_ABI annotated_ptr& operator=(const annotated_ptr&) noexcept = default;
-  _CCCL_HIDE_FROM_ABI annotated_ptr& operator=(annotated_ptr&&) noexcept      = default;
-  _CCCL_HIDE_FROM_ABI ~annotated_ptr() noexcept                               = default;
+  _CCCL_HIDE_FROM_ABI annotated_ptr() noexcept = default;
 
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr annotated_ptr(pointer __p) noexcept
       : __repr{__p}
