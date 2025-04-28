@@ -22,8 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/is_base_of.h>
+#include <cuda/std/__type_traits/is_member_function_pointer.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
+#include <cuda/std/__type_traits/is_pointer.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/maybe_const.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__utility/typeid.h>
