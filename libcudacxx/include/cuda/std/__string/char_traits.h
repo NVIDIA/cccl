@@ -160,12 +160,6 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char> : __cccl_char_traits_impl<char, int /*, EOF*/>
 {};
 
-#if 0 // todo: add wchar_t support
-template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t> : __cccl_char_traits_impl<wchar_t, wint_t /*, WEOF*/>
-{};
-#endif
-
 #if _CCCL_HAS_CHAR8_T()
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t> : __cccl_char_traits_impl<char8_t, unsigned /*, ??? */>
@@ -181,6 +175,12 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char32_t>
     : __cccl_char_traits_impl<char32_t, uint_least32_t /*, ??? */>
 {};
+
+#if _CCCL_HAS_WCHAR_T()
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t> : __cccl_char_traits_impl<wchar_t, wint_t /*, WEOF*/>
+{};
+#endif // _CCCL_HAS_WCHAR_T()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

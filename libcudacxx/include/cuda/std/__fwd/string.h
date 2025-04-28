@@ -20,13 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if 0
-#  include <cuda/std/__fwd/allocator.h>
-#  include <cuda/std/__fwd/char_traits.h>
-#  include <cuda/std/__fwd/memory_resource.h>
+#include <cuda/std/__fwd/allocator.h>
+#include <cuda/std/__fwd/char_traits.h>
+#include <cuda/std/__fwd/memory_resource.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if 0 // we don't support these features
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string;
 
@@ -72,8 +72,8 @@ class _LIBCUDACXX_PREFERRED_NAME(string)
       _LIBCUDACXX_PREFERRED_NAME(pmr::u32string)
       basic_string;
 // clang-format on
+#endif // 0
 
 _LIBCUDACXX_END_NAMESPACE_STD
-#endif // 0
 
 #endif // _LIBCUDACXX___FWD_STRING_H

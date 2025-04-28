@@ -187,23 +187,24 @@ template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_last_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
-  if (__n != 0)
+  if (__n == 0)
   {
-    if (__pos < __sz)
+    return __npos;
+  }
+  if (__pos < __sz)
+  {
+    ++__pos;
+  }
+  else
+  {
+    __pos = __sz;
+  }
+  for (const _CharT* __ps = __p + __pos; __ps != __p;)
+  {
+    const _CharT* __r = _Traits::find(__s, __n, *--__ps);
+    if (__r)
     {
-      ++__pos;
-    }
-    else
-    {
-      __pos = __sz;
-    }
-    for (const _CharT* __ps = __p + __pos; __ps != __p;)
-    {
-      const _CharT* __r = _Traits::find(__s, __n, *--__ps);
-      if (__r)
-      {
-        return static_cast<_SizeT>(__ps - __p);
-      }
+      return static_cast<_SizeT>(__ps - __p);
     }
   }
   return __npos;
@@ -213,15 +214,16 @@ template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
 {
-  if (__pos < __sz)
+  if (__pos >= __sz)
   {
-    const _CharT* __pe = __p + __sz;
-    for (const _CharT* __ps = __p + __pos; __ps != __pe; ++__ps)
+    return __npos;
+  }
+  const _CharT* __pe = __p + __sz;
+  for (const _CharT* __ps = __p + __pos; __ps != __pe; ++__ps)
+  {
+    if (_Traits::find(__s, __n, *__ps) == 0)
     {
-      if (_Traits::find(__s, __n, *__ps) == 0)
-      {
-        return static_cast<_SizeT>(__ps - __p);
-      }
+      return static_cast<_SizeT>(__ps - __p);
     }
   }
   return __npos;
