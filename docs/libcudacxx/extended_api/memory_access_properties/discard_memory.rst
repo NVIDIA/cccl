@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-memory-access-properties-discard-memory:
 
 ``cuda::discard_memory``
-====================
+========================
 
 Defined in header ``<cuda/discard_memory>``.
 

@@ -28,12 +28,7 @@ The class ``cuda::access_property`` provides an opaque encoding for *L2 cache me
            __host__ __device__ constexpr operator cudaAccessProperty() const noexcept;
        };
 
-       access_property() noexcept                                  = default
-       access_property(const access_property&) noexcept            = default
-       access_property(access_property&&) noexcept                 = default
-       access_property& operator=(const access_property&) noexcept = default
-       access_property& operator=(access_property&&) noexcept      = default
-       ~access_property() noexcept                                 = default
+       access_property() noexcept = default;
 
        // Constructors from static global memory residence control properties:
        __host__ __device__ constexpr access_property(global)     noexcept;
