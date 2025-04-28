@@ -43,7 +43,7 @@ equal(const thrust::detail::execution_policy_base<System>& system,
       InputIterator1 last1,
       InputIterator2 first2)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::equal");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::equal;
   return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2);
 } // end equal()
@@ -57,7 +57,7 @@ equal(const thrust::detail::execution_policy_base<System>& system,
       InputIterator2 first2,
       BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::equal");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::equal;
   return equal(thrust::detail::derived_cast(thrust::detail::strip_const(system)), first1, last1, first2, binary_pred);
 } // end equal()
@@ -65,7 +65,7 @@ equal(const thrust::detail::execution_policy_base<System>& system,
 template <typename InputIterator1, typename InputIterator2>
 bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::equal");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -80,7 +80,7 @@ bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 template <typename InputIterator1, typename InputIterator2, typename BinaryPredicate>
 bool equal(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::equal");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

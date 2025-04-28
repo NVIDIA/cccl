@@ -62,7 +62,7 @@ struct DeviceTransform
     TransformOp transform_op,
     cudaStream_t stream = nullptr)
   {
-    CCCL_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
 
     using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;
@@ -206,7 +206,7 @@ struct DeviceTransform
     TransformOp transform_op,
     cudaStream_t stream = nullptr)
   {
-    CCCL_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
 
     using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
     using offset_t        = typename choose_offset_t::type;

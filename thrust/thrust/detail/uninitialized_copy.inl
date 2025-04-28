@@ -44,7 +44,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy(
   InputIterator last,
   ForwardIterator result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("uninitialized_copy");
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_copy");
   using thrust::system::detail::generic::uninitialized_copy;
   return uninitialized_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result);
 } // end uninitialized_copy()
@@ -54,7 +54,7 @@ template <typename DerivedPolicy, typename InputIterator, typename Size, typenam
 _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, InputIterator first, Size n, ForwardIterator result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("uninitialized_copy_n");
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_copy_n");
   using thrust::system::detail::generic::uninitialized_copy_n;
   return uninitialized_copy_n(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, n, result);
 } // end uninitialized_copy_n()
@@ -62,7 +62,7 @@ _CCCL_HOST_DEVICE ForwardIterator uninitialized_copy_n(
 template <typename InputIterator, typename ForwardIterator>
 ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("uninitialized_copy");
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -77,7 +77,7 @@ ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, Forw
 template <typename InputIterator, typename Size, typename ForwardIterator>
 ForwardIterator uninitialized_copy_n(InputIterator first, Size n, ForwardIterator result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("uninitialized_copy_n");
+  _CCCL_NVTX_RANGE_SCOPE("uninitialized_copy_n");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;

@@ -43,7 +43,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE ForwardIterator
 unique(const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique");
+  _CCCL_NVTX_RANGE_SCOPE("unique");
   using thrust::system::detail::generic::unique;
   return unique(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end unique()
@@ -56,7 +56,7 @@ _CCCL_HOST_DEVICE ForwardIterator unique(
   ForwardIterator last,
   BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique");
+  _CCCL_NVTX_RANGE_SCOPE("unique");
   using thrust::system::detail::generic::unique;
   return unique(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, binary_pred);
 } // end unique()
@@ -69,7 +69,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   InputIterator last,
   OutputIterator output)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::unique_copy;
   return unique_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, output);
 } // end unique_copy()
@@ -83,7 +83,7 @@ _CCCL_HOST_DEVICE OutputIterator unique_copy(
   OutputIterator output,
   BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::unique_copy;
   return unique_copy(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, output, binary_pred);
 } // end unique_copy()
@@ -96,7 +96,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
   ForwardIterator1 keys_last,
   ForwardIterator2 values_first)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key");
   using thrust::system::detail::generic::unique_by_key;
   return unique_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), keys_first, keys_last, values_first);
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key
   ForwardIterator2 values_first,
   BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key");
   using thrust::system::detail::generic::unique_by_key;
   return unique_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), keys_first, keys_last, values_first, binary_pred);
@@ -131,7 +131,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
   OutputIterator1 keys_output,
   OutputIterator2 values_output)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
   using thrust::system::detail::generic::unique_by_key_copy;
   return unique_by_key_copy(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -158,7 +158,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
   using thrust::system::detail::generic::unique_by_key_copy;
   return unique_by_key_copy(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -173,7 +173,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
 template <typename ForwardIterator>
 ForwardIterator unique(ForwardIterator first, ForwardIterator last)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique");
+  _CCCL_NVTX_RANGE_SCOPE("unique");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -186,7 +186,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last)
 template <typename ForwardIterator, typename BinaryPredicate>
 ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique");
+  _CCCL_NVTX_RANGE_SCOPE("unique");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -199,7 +199,7 @@ ForwardIterator unique(ForwardIterator first, ForwardIterator last, BinaryPredic
 template <typename InputIterator, typename OutputIterator>
 OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator output)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -214,7 +214,7 @@ OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterat
 template <typename InputIterator, typename OutputIterator, typename BinaryPredicate>
 OutputIterator unique_copy(InputIterator first, InputIterator last, OutputIterator output, BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -230,7 +230,7 @@ template <typename ForwardIterator1, typename ForwardIterator2>
 thrust::pair<ForwardIterator1, ForwardIterator2>
 unique_by_key(ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator1>::type;
@@ -246,7 +246,7 @@ template <typename ForwardIterator1, typename ForwardIterator2, typename BinaryP
 thrust::pair<ForwardIterator1, ForwardIterator2> unique_by_key(
   ForwardIterator1 keys_first, ForwardIterator1 keys_last, ForwardIterator2 values_first, BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator1>::type;
@@ -266,7 +266,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   OutputIterator1 keys_output,
   OutputIterator2 values_output)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -296,7 +296,7 @@ thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_copy(
   OutputIterator2 values_output,
   BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_by_key_copy");
+  _CCCL_NVTX_RANGE_SCOPE("unique_by_key_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -327,7 +327,7 @@ _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   ForwardIterator last,
   BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_count");
+  _CCCL_NVTX_RANGE_SCOPE("unique_count");
   using thrust::system::detail::generic::unique_count;
   return unique_count(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, binary_pred);
 } // end unique_count()
@@ -337,7 +337,7 @@ template <typename DerivedPolicy, typename ForwardIterator>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator> unique_count(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec, ForwardIterator first, ForwardIterator last)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_count");
+  _CCCL_NVTX_RANGE_SCOPE("unique_count");
   using thrust::system::detail::generic::unique_count;
   return unique_count(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last);
 } // end unique_count()
@@ -347,7 +347,7 @@ template <typename ForwardIterator, typename BinaryPredicate>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
 unique_count(ForwardIterator first, ForwardIterator last, BinaryPredicate binary_pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_count");
+  _CCCL_NVTX_RANGE_SCOPE("unique_count");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -362,7 +362,7 @@ template <typename ForwardIterator>
 _CCCL_HOST_DEVICE thrust::detail::it_difference_t<ForwardIterator>
 unique_count(ForwardIterator first, ForwardIterator last)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("unique_count");
+  _CCCL_NVTX_RANGE_SCOPE("unique_count");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;

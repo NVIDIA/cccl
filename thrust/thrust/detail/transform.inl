@@ -45,7 +45,7 @@ _CCCL_HOST_DEVICE OutputIterator transform(
   OutputIterator result,
   UnaryFunction op)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
   using thrust::system::detail::generic::transform;
   return transform(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, op);
 } // end transform()
@@ -64,7 +64,7 @@ _CCCL_HOST_DEVICE OutputIterator transform(
   OutputIterator result,
   BinaryFunction op)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
   using thrust::system::detail::generic::transform;
   return transform(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, result, op);
 } // end transform()
@@ -83,7 +83,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   UnaryFunction op,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
   using thrust::system::detail::generic::transform_if;
   return transform_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, op, pred);
 } // end transform_if()
@@ -104,7 +104,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   UnaryFunction op,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
   using thrust::system::detail::generic::transform_if;
   return transform_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, result, op, pred);
@@ -128,7 +128,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
   BinaryFunction binary_op,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
   using thrust::system::detail::generic::transform_if;
   return transform_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -144,7 +144,7 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
 OutputIterator transform(InputIterator first, InputIterator last, OutputIterator result, UnaryFunction op)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -160,7 +160,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputIterator result, BinaryFunction op)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -178,7 +178,7 @@ template <typename InputIterator, typename ForwardIterator, typename UnaryFuncti
 ForwardIterator
 transform_if(InputIterator first, InputIterator last, ForwardIterator result, UnaryFunction unary_op, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -203,7 +203,7 @@ ForwardIterator transform_if(
   UnaryFunction unary_op,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -232,7 +232,7 @@ ForwardIterator transform_if(
   BinaryFunction binary_op,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::transform_if");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

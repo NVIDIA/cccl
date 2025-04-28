@@ -43,7 +43,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
   ForwardIterator last,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition");
   using thrust::system::detail::generic::partition;
   return partition(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end partition()
@@ -57,7 +57,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition(
   InputIterator stencil,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition");
   using thrust::system::detail::generic::partition;
   return partition(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, pred);
 } // end partition()
@@ -76,7 +76,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   OutputIterator2 out_false,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition_copy");
   using thrust::system::detail::generic::partition_copy;
   return partition_copy(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, out_true, out_false, pred);
@@ -98,7 +98,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   OutputIterator2 out_false,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition_copy");
   using thrust::system::detail::generic::partition_copy;
   return partition_copy(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, out_true, out_false, pred);
@@ -112,7 +112,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   ForwardIterator last,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition");
   using thrust::system::detail::generic::stable_partition;
   return stable_partition(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end stable_partition()
@@ -126,7 +126,7 @@ _CCCL_HOST_DEVICE ForwardIterator stable_partition(
   InputIterator stencil,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition");
   using thrust::system::detail::generic::stable_partition;
   return stable_partition(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, pred);
 } // end stable_partition()
@@ -145,7 +145,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   OutputIterator2 out_false,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
   using thrust::system::detail::generic::stable_partition_copy;
   return stable_partition_copy(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, out_true, out_false, pred);
@@ -167,7 +167,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> stable_partitio
   OutputIterator2 out_false,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
   using thrust::system::detail::generic::stable_partition_copy;
   return stable_partition_copy(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, out_true, out_false, pred);
@@ -181,7 +181,7 @@ _CCCL_HOST_DEVICE ForwardIterator partition_point(
   ForwardIterator last,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition_point");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition_point");
   using thrust::system::detail::generic::partition_point;
   return partition_point(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end partition_point()
@@ -194,7 +194,7 @@ _CCCL_HOST_DEVICE bool is_partitioned(
   InputIterator last,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::is_partitioned");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::is_partitioned");
   using thrust::system::detail::generic::is_partitioned;
   return is_partitioned(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred);
 } // end is_partitioned()
@@ -202,7 +202,7 @@ _CCCL_HOST_DEVICE bool is_partitioned(
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -215,7 +215,7 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, Predicate
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -230,7 +230,7 @@ ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIter
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -243,7 +243,7 @@ ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, Pr
 template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator stable_partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -259,7 +259,7 @@ template <typename InputIterator, typename OutputIterator1, typename OutputItera
 thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -286,7 +286,7 @@ thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   OutputIterator2 out_false,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -307,7 +307,7 @@ template <typename InputIterator, typename OutputIterator1, typename OutputItera
 thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -334,7 +334,7 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
   OutputIterator2 out_false,
   Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::stable_partition_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -354,7 +354,7 @@ thrust::pair<OutputIterator1, OutputIterator2> stable_partition_copy(
 template <typename ForwardIterator, typename Predicate>
 ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::partition_point");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::partition_point");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -367,7 +367,7 @@ ForwardIterator partition_point(ForwardIterator first, ForwardIterator last, Pre
 template <typename InputIterator, typename Predicate>
 bool is_partitioned(InputIterator first, InputIterator last, Predicate pred)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::is_partitioned");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::is_partitioned");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<InputIterator>::type;

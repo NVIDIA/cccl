@@ -44,7 +44,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
   ForwardIterator1 last1,
   ForwardIterator2 first2)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::swap_ranges");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::swap_ranges");
   using thrust::system::detail::generic::swap_ranges;
   return swap_ranges(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2);
 } // end swap_ranges()
@@ -52,7 +52,7 @@ _CCCL_HOST_DEVICE ForwardIterator2 swap_ranges(
 template <typename ForwardIterator1, typename ForwardIterator2>
 ForwardIterator2 swap_ranges(ForwardIterator1 first1, ForwardIterator1 last1, ForwardIterator2 first2)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::swap_ranges");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::swap_ranges");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator1>::type;

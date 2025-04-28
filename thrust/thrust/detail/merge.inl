@@ -46,7 +46,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   InputIterator2 last2,
   OutputIterator result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge");
   using thrust::system::detail::generic::merge;
   return merge(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result);
 } // end merge()
@@ -66,7 +66,7 @@ _CCCL_HOST_DEVICE OutputIterator merge(
   OutputIterator result,
   StrictWeakCompare comp)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge");
   using thrust::system::detail::generic::merge;
   return merge(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, last2, result, comp);
@@ -91,7 +91,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
   using thrust::system::detail::generic::merge_by_key;
   return merge_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -126,7 +126,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result,
   Compare comp)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
   using thrust::system::detail::generic::merge_by_key;
   return merge_by_key(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -150,7 +150,7 @@ merge(InputIterator1 first1,
       OutputIterator result,
       StrictWeakOrdering comp)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -168,7 +168,7 @@ template <typename InputIterator1, typename InputIterator2, typename OutputItera
 OutputIterator
 merge(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, InputIterator2 last2, OutputIterator result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -200,7 +200,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator2 values_result,
   StrictWeakOrdering comp)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -246,7 +246,7 @@ thrust::pair<OutputIterator1, OutputIterator2> merge_by_key(
   OutputIterator1 keys_result,
   OutputIterator2 values_result)
 {
-  CCCL_DETAIL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
+  _CCCL_NVTX_RANGE_SCOPE("thrust::merge_by_key");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

@@ -83,7 +83,7 @@ struct DeviceMerge
     CompareOp compare_op = {},
     cudaStream_t stream  = nullptr)
   {
-    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergeKeys");
 
     using offset_t = ::cuda::std::int64_t;
 
@@ -173,7 +173,7 @@ struct DeviceMerge
     CompareOp compare_op = {},
     cudaStream_t stream  = nullptr)
   {
-    CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceMerge::MergePairs");
 
     using offset_t = ::cuda::std::int64_t;
 
