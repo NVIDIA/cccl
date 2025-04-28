@@ -100,8 +100,33 @@ struct ArgMax
   }
 };
 
+/// @brief Arg min functor (keeps the value and offset of the first occurrence
+///        of the smallest item)
+struct ArgMin
+{
+  /// Boolean min operator, preferring the item having the smaller offset in
+  /// case of ties
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
+  operator()(const KeyValuePair<OffsetT, T>& a, const KeyValuePair<OffsetT, T>& b) const
+  {
+    // Mooch BUG (device reduce argmax gk110 3.2 million random fp32)
+    // return ((b.value < a.value) ||
+    //         ((a.value == b.value) && (b.key < a.key)))
+    //      ? b : a;
+
+    if ((b.value < a.value) || ((a.value == b.value) && (b.key < a.key)))
+    {
+      return b;
+    }
+
+    return a;
+  }
+};
+
 namespace detail
 {
+
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
 struct ArgMax
@@ -140,34 +165,6 @@ struct ArgMin
   }
 };
 
-} // namespace detail
-
-/// @brief Arg min functor (keeps the value and offset of the first occurrence
-///        of the smallest item)
-struct ArgMin
-{
-  /// Boolean min operator, preferring the item having the smaller offset in
-  /// case of ties
-  template <typename T, typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, T>
-  operator()(const KeyValuePair<OffsetT, T>& a, const KeyValuePair<OffsetT, T>& b) const
-  {
-    // Mooch BUG (device reduce argmax gk110 3.2 million random fp32)
-    // return ((b.value < a.value) ||
-    //         ((a.value == b.value) && (b.key < a.key)))
-    //      ? b : a;
-
-    if ((b.value < a.value) || ((a.value == b.value) && (b.key < a.key)))
-    {
-      return b;
-    }
-
-    return a;
-  }
-};
-
-namespace detail
-{
 template <typename ScanOpT>
 struct ScanBySegmentOp
 {
