@@ -185,7 +185,10 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]"
   operation_t op         = make_operation(
     "op",
     "struct key_pair { short a; size_t b; };\n"
-            "extern \"C\" __device__ void op(key_pair* lhs, key_pair* rhs, bool* out) {\n"
+            "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, bool* out_ptr) {\n"
+            "  key_pair* lhs = static_cast<key_pair*>(lhs_ptr);\n"
+            "  key_pair* rhs = static_cast<key_pair*>(rhs_ptr);\n"
+            "  bool* out = static_cast<bool*>(out_ptr);\n"
             "  *out = lhs->a == rhs->a ? lhs->b < rhs->b : lhs->a < rhs->a;\n"
             "}");
   const std::vector<short> a  = generate<short>(num_items);

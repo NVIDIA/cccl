@@ -207,7 +207,10 @@ struct pair {{
   short a;
   size_t b;
 }};
-extern "C" __device__ void {0}(pair* lhs, pair* rhs, pair* out) {{
+extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
   *out = pair{{ lhs->a + rhs->a, lhs->b + rhs->b }};
 }}
 )XXX";

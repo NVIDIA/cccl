@@ -80,7 +80,11 @@ C2H_TEST("for works with custom types", "[for]")
   operation_t op = make_operation("op",
                                   R"XXX(
 struct pair { short a; size_t b; };
-extern "C" __device__ void op(pair* a) {a->a++; a->b++;}
+extern "C" __device__ void op(void* a_ptr) {
+  pair* a = static_cast<pair*>(a_ptr);
+  a->a++;
+  a->b++;
+}
 )XXX");
 
   std::vector<pair> input(num_items, pair{short(1), size_t(1)});

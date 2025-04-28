@@ -107,7 +107,9 @@ C2H_TEST("Transform works with output of different type", "[transform]")
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(int* x, pair* out) {\n"
+    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
+    "  pair* x = static_cast<pair*>(x_ptr);\n"
+    "  pair* out = static_cast<pair*>(out_ptr);\n"
     "  *out = pair{ short(*x), size_t(*x) };\n"
     "}");
   const std::vector<int> input = generate<int>(num_items);
@@ -134,7 +136,9 @@ C2H_TEST("Transform works with custom types", "[transform]")
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ void op(pair* x, pair* out) {\n"
+    "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
+    "  pair* x = static_cast<pair*>(x_ptr);\n"
+    "  pair* out = static_cast<pair*>(out_ptr);\n"
     "  *out = pair{ x->a * 2, x->b * 2  };\n"
     "}");
   const std::vector<short> a  = generate<short>(num_items);
