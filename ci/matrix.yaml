@@ -110,6 +110,9 @@ workflows:
     # NVHPC stdpar smoke tests
     - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.8', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
+  weekly:
+    - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
+
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
     # GPU runners are not available on Windows.
