@@ -43,7 +43,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
 #include <cuda/__nvtx/nvtx.h>

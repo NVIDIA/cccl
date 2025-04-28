@@ -42,7 +42,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
 #include <cuda/__nvtx/nvtx.h>

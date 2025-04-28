@@ -13,7 +13,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
