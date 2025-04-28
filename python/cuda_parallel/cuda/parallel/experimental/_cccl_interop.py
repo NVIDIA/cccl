@@ -192,12 +192,13 @@ def _create_void_ptr_wrapper(op, sig):
     # Generate argument names for both inputs and output
     input_args = [f"arg_{i}" for i in range(len(sig.args))]
     all_args = input_args + ["ret"]  # ret is the output pointer
+    arg_str = ", ".join(all_args)
     void_sig = types.void(*(types.voidptr for _ in all_args))
 
     # Create the wrapper function source code
     wrapper_src = textwrap.dedent(f"""
     @intrinsic
-    def impl(typingctx, {', '.join(all_args)}):
+    def impl(typingctx, {arg_str}):
         def codegen(context, builder, impl_sig, args):
             # Get LLVM types for all arguments
             arg_types = [context.get_value_type(t) for t in sig.args]
@@ -220,8 +221,8 @@ def _create_void_ptr_wrapper(op, sig):
         return void_sig, codegen
 
     # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
-    def wrapped_{op.__name__}({', '.join(all_args)}):
-        return impl({', '.join(all_args)})
+    def wrapped_{op.__name__}({arg_str}):
+        return impl({arg_str})
     """)
 
     # Create namespace and compile the wrapper
@@ -314,7 +315,6 @@ def _check_compile_result(cubin: bytes):
 
 # this global variable controls whether the compile result is checked
 # for LDL/STL instructions. Should be set to `True` for testing only.
-global _check_sass
 _check_sass: bool = False
 
 
