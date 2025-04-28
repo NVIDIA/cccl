@@ -15,13 +15,13 @@
 
 template <class CharT>
 [[nodiscard]] __host__ __device__ constexpr CharT _test_charlit_impl(
-  char char_val,
-  wchar_t wchar_val,
+  [[maybe_unused]] char char_val,
+  [[maybe_unused]] wchar_t wchar_val,
 #if _CCCL_HAS_CHAR8_T()
-  char8_t char8_val,
+  [[maybe_unused]] char8_t char8_val,
 #endif // _CCCL_HAS_CHAR8_T()
-  char16_t char16_val,
-  char32_t char32_val) noexcept
+  [[maybe_unused]] char16_t char16_val,
+  [[maybe_unused]] char32_t char32_val) noexcept
 {
   if constexpr (cuda::std::is_same_v<CharT, char>)
   {
@@ -60,13 +60,13 @@ template <class CharT>
 
 template <class CharT>
 [[nodiscard]] __host__ __device__ constexpr const CharT* _test_strlit_impl(
-  const char* char_ptr,
-  const wchar_t* wchar_ptr,
+  [[maybe_unused]] const char* char_ptr,
+  [[maybe_unused]] const wchar_t* wchar_ptr,
 #if _CCCL_HAS_CHAR8_T()
-  const char8_t* char8_ptr,
+  [[maybe_unused]] const char8_t* char8_ptr,
 #endif // _CCCL_HAS_CHAR8_T()
-  const char16_t* char16_ptr,
-  const char32_t* char32_ptr) noexcept
+  [[maybe_unused]] const char16_t* char16_ptr,
+  [[maybe_unused]] const char32_t* char32_ptr) noexcept
 {
   if constexpr (cuda::std::is_same_v<CharT, char>)
   {
