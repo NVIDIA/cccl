@@ -29,7 +29,7 @@ struct MakeVoidPtrFuncPtr<cuda::std::index_sequence<Is...>>
 {
   // Helper type that is always void*
   template <cuda::std::size_t>
-  using void_ptr_t = void*;
+  using void_ptr_t = const void*;
   // Define the function pointer type
   using type = void (*)(void_ptr_t<Is>..., void*); // Last void* is for result
 };
@@ -41,14 +41,14 @@ template <cuda::std::size_t... Is>
 struct MakeVoidPtrStatefulFuncPtr<cuda::std::index_sequence<Is...>>
 {
   template <cuda::std::size_t>
-  using void_ptr_t = void*;
+  using void_ptr_t = const void*;
   using type       = void (*)(void*, void_ptr_t<Is>..., void*); // First void* is state, last is result
 };
 
 template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
 struct stateless_user_operation
 {
-  // Note: The user provided C function (Operation.operation) must match the signature:
+  // Note: The user provided C f  unction (Operation.operation) must match the signature:
   // void (void* arg1, ..., void* argN, void* result_ptr)
   __device__ typename decltype(RetT)::Type operator()(typename decltype(ArgTs)::Type... args) const
   {
