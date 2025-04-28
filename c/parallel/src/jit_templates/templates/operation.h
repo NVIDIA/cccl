@@ -52,9 +52,8 @@ struct stateless_user_operation
   // void (void* arg1, ..., void* argN, void* result_ptr)
   __device__ typename decltype(RetT)::Type operator()(typename decltype(ArgTs)::Type... args) const
   {
-    static constexpr cuda::std::size_t num_args = sizeof...(ArgTs);
-    using Indices                               = cuda::std::make_index_sequence<num_args>;
-    using TargetCFuncPtr                        = typename MakeVoidPtrFuncPtr<Indices>::type;
+    using Indices        = cuda::std::make_index_sequence<sizeof...(ArgTs)>;
+    using TargetCFuncPtr = typename MakeVoidPtrFuncPtr<Indices>::type;
 
     // Cast the stored operation pointer (assumed to be void* or compatible)
     auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
@@ -85,9 +84,8 @@ struct stateful_user_operation
   {
     // Note: The user provided C function (Operation.operation) must match the signature:
     // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
-    static constexpr cuda::std::size_t num_args = sizeof...(ArgTs);
-    using Indices                               = cuda::std::make_index_sequence<num_args>;
-    using TargetCFuncPtr                        = typename MakeVoidPtrStatefulFuncPtr<Indices>::type;
+    using Indices        = cuda::std::make_index_sequence<sizeof...(ArgTs)>;
+    using TargetCFuncPtr = typename MakeVoidPtrStatefulFuncPtr<Indices>::type;
 
     // Cast the stored operation pointer (assumed to be void* or compatible)
     auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
