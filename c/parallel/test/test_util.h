@@ -200,6 +200,8 @@ cccl_type_info get_type_info()
   return info;
 }
 
+// TOOD: using more than than one `op` in the same TU will fail because
+// of the lack of name mangling. Ditto for all `get_*_op` functions.
 static std::string get_reduce_op(cccl_type_enum t)
 {
   switch (t)
