@@ -503,6 +503,54 @@ public:
       stream);
   }
 
+  //! @rst
+  //! Computes a device-wide segmented sum using the addition (``+``) operator.
+  //!
+  //! - Uses ``0`` as the initial value of the reduction for each segment.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the sum reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-sum
+  //!     :end-before: example-end segmented-reduce-sum
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
@@ -650,6 +698,59 @@ public:
       stream);
   }
 
+  //! @rst
+  //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
+  //!
+  //! - Uses ``::cuda::std::numeric_limits<T>::max()`` as the initial value of the reduction for each segment.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the min-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-custommin
+  //!     :end-before: example-end segmented-reduce-custommin
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-min
+  //!     :end-before: example-end segmented-reduce-min
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void* d_temp_storage,
@@ -1053,6 +1154,53 @@ public:
       stream);
   }
 
+  //! @rst
+  //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
+  //!
+  //! - Uses ``::cuda::std::numeric_limits<T>::lowest()`` as the initial value of the reduction.
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the max-reduction of a device vector of ``int`` data elements.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_segmented_reduce_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin segmented-reduce-max
+  //!     :end-before: example-end segmented-reduce-max
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items @iterator
+  //!
+  //! @tparam OutputIteratorT
+  //!   **[inferred]** Output iterator type for recording the reduced aggregate @iterator
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_out
+  //!   Pointer to the output aggregate
+  //!
+  //! @param[in] num_segments
+  //!   The number of segments that comprise the segmented reduction data
+  //!
+  //! @param[in] segment_size
+  //!   The fixed segment size of each segment
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void* d_temp_storage,
