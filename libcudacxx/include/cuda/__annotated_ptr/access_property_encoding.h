@@ -141,8 +141,6 @@
 #  pragma system_header
 #endif // no system header
 
-// #include <cuda_runtime_api.h>
-
 #include <cuda/__annotated_ptr/createpolicy.h>
 #include <cuda/__cmath/ilog.h>
 #include <cuda/std/__algorithm/clamp.h>
@@ -204,32 +202,12 @@ enum class __l2_descriptor_mode_t : uint32_t
   // vvvv block_end = ceil_div(ptr + primary_size, block_size)
   auto __block_end = static_cast<uint32_t>((__raw_ptr + __primary_bytes + __block_size - 1) >> __log2_block_size);
   _CCCL_ASSERT(__block_end >= __block_start, "block_end < block_start");
-  auto __block_count = (__block_size_enum == 13)
-                       ? ((__block_end - __block_start <= 127u) ? (__block_end - __block_start) : 1)
-                       : _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
-  // NOTE: this comment is to verify the behavior compared to PTX createpolicy.
-  // It will be removed when PTX behavior is clarified
-  // auto __block_count = (__block_end - __block_start <= 127u) ? (__block_end - __block_start) : 1; //
-  // _CUDA_VSTD::clamp(__block_end
-  //  - __block_start,
-  //  1u, 127u);
-  // printf(
-  //  "__total_bytes:     %u\n"
-  //  "__log2_total_size: %u\n"
-  //  "__block_size_enum: %u\n"
-  //  "__log2_block_size: %u\n"
-  //  "__block_size:      %u\n"
-  //  "__block_end:       %u\n"
-  //  "__block_start:     %u\n"
-  //  "__block_count:     %u\n",
-  //  __total_bytes,
-  //  __log2_total_size,
-  //  __block_size_enum,
-  //  __log2_block_size,
-  //  __block_size,
-  //  __block_end,
-  //  __block_start,
-  //  __block_count);
+  // NOTE: there is a bug in PTX createpolicy when __block_size_enum == 13. The *incorrect* behavior matches the
+  //       following code:
+  // auto __block_count        = (__block_size_enum == 13)
+  //                            ? ((__block_end - __block_start <= 127u) ? (__block_end - __block_start) : 1)
+  //                            : _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
+  auto __block_count        = _CUDA_VSTD::clamp(__block_end - __block_start, 1u, 127u);
   auto __l2_cop_off         = _CUDA_VSTD::to_underlying(__secondary);
   auto __l2_cop_on          = _CUDA_VSTD::to_underlying(__primary);
   auto __l2_descriptor_mode = _CUDA_VSTD::to_underlying(__l2_descriptor_mode_t::_Desc_Block_Type);
