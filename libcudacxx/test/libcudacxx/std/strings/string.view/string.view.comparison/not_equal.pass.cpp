@@ -38,6 +38,9 @@ __host__ __device__ constexpr void test_equal()
   using CharT  = typename SV::value_type;
   using Traits = typename SV::traits_type;
 
+  static_assert(cuda::std::is_same_v<bool, decltype(operator!=(SV{}, SV{}))>);
+  static_assert(noexcept(operator!=(SV{}, SV{})));
+
   // Test the behavior of the operator, both with and without implicit conversions.
 
   {
