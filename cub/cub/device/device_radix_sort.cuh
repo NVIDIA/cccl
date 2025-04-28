@@ -45,7 +45,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN

@@ -42,8 +42,6 @@
 
 #include <cub/device/dispatch/dispatch_batch_memcpy.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
-
 #include <cstdint>
 #include <type_traits>
 

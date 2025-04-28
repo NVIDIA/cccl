@@ -32,8 +32,6 @@
 #include <thrust/system/detail/generic/uninitialized_copy.h>
 #include <thrust/uninitialized_copy.h>
 
-#include <cuda/__nvtx/nvtx.h>
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

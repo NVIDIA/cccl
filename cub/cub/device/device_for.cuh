@@ -46,7 +46,6 @@
 #include <thrust/type_traits/is_contiguous_iterator.h>
 #include <thrust/type_traits/unwrap_contiguous_iterator.h>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>

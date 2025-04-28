@@ -52,8 +52,6 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
-#include <cuda/__nvtx/nvtx.h>
-
 #include <iterator>
 
 #include <stdio.h>

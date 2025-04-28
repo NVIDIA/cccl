@@ -45,8 +45,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
-
 #include <iterator>
 
 #include <stdio.h>

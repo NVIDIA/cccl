@@ -41,7 +41,6 @@
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 CUB_NAMESPACE_BEGIN
 
 /**

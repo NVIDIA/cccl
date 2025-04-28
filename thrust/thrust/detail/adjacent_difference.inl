@@ -29,8 +29,6 @@
 #include <thrust/system/detail/generic/adjacent_difference.h>
 #include <thrust/system/detail/generic/select_system.h>
 
-#include <cuda/__nvtx/nvtx.h>
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

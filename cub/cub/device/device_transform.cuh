@@ -17,7 +17,6 @@
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/tuple>
 
 CUB_NAMESPACE_BEGIN

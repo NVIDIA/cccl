@@ -47,7 +47,6 @@
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/__functional/invoke.h>
 
 CUB_NAMESPACE_BEGIN

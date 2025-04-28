@@ -50,7 +50,6 @@
 
 #include <thrust/iterator/tabulate_output_iterator.h>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/limits>
 
 #include <iterator>

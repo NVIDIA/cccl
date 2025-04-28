@@ -46,7 +46,6 @@
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/type_traits>
 
 #include <iterator>

@@ -22,6 +22,8 @@
 #include <thrust/detail/config/config.h> // IWYU pragma: export
 #include <thrust/version.h> // IWYU pragma: export
 
+#include <cuda/__nvtx/nvtx.h>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)

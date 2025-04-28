@@ -16,7 +16,6 @@
 #include <cub/device/dispatch/dispatch_merge.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/functional>
 
 CUB_NAMESPACE_BEGIN

@@ -48,7 +48,6 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 

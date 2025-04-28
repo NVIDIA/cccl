@@ -45,7 +45,6 @@
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN

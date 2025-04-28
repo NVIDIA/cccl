@@ -32,8 +32,6 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/system/detail/generic/transform_scan.h>
 
-#include <cuda/__nvtx/nvtx.h>
-
 THRUST_NAMESPACE_BEGIN
 
 _CCCL_EXEC_CHECK_DISABLE

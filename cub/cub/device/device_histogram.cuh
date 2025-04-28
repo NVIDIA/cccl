@@ -44,7 +44,6 @@
 
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
 #include <cuda/std/array>
 
 #include <iterator>

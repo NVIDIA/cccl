@@ -46,8 +46,6 @@
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
-#include <cuda/__nvtx/nvtx.h>
-
 #include <iterator>
 
 #include <stdio.h>
