@@ -50,7 +50,7 @@ struct [[deprecated]] __deprecated
 struct __nil
 {};
 
-_CUDAX_API constexpr size_t __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept
+_CUDAX_API constexpr auto __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept -> size_t
 {
   size_t __max = 0;
   for (auto i : __il)
@@ -63,7 +63,7 @@ _CUDAX_API constexpr size_t __maximum(_CUDA_VSTD::initializer_list<size_t> __il)
   return __max;
 }
 
-_CUDAX_API constexpr size_t __find_pos(bool const* const __begin, bool const* const __end) noexcept
+_CUDAX_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
 {
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
@@ -76,14 +76,14 @@ _CUDAX_API constexpr size_t __find_pos(bool const* const __begin, bool const* co
 }
 
 template <class _Ty, class... _Ts>
-_CUDAX_API constexpr size_t __index_of() noexcept
+_CUDAX_API constexpr auto __index_of() noexcept -> size_t
 {
   constexpr bool __same[] = {_CUDA_VSTD::is_same_v<_Ty, _Ts>...};
   return __async::__find_pos(__same, __same + sizeof...(_Ts));
 }
 
 template <class _Ty, class _Uy = _Ty>
-_CUDAX_API constexpr _Ty __exchange(_Ty& __obj, _Uy&& __new_value) noexcept
+_CUDAX_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
 {
   constexpr bool __is_nothrow =                        //
     noexcept(_Ty(static_cast<_Ty&&>(__obj))) &&        //
@@ -109,7 +109,7 @@ _CUDAX_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 }
 
 template <class _Ty>
-_CUDAX_API constexpr _CUDA_VSTD::decay_t<_Ty> __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
+_CUDAX_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
 }
@@ -141,7 +141,7 @@ struct __allocate_slot
 };
 
 template <class _Type, size_t _Id = 0, size_t _Pow2 = 0>
-constexpr size_t __next(long);
+constexpr auto __next(long) -> size_t;
 
 // If __slot_allocated(__slot<_Id>) has NOT been defined, then SFINAE will keep
 // this function out of the overload set...
@@ -149,13 +149,13 @@ template <class _Type, //
           size_t _Id   = 0,
           size_t _Pow2 = 0,
           bool         = !__slot_allocated(__slot<_Id + (1 << _Pow2) - 1>())>
-constexpr size_t __next(int)
+constexpr auto __next(int) -> size_t
 {
   return __async::__next<_Type, _Id, _Pow2 + 1>(0);
 }
 
 template <class _Type, size_t _Id, size_t _Pow2>
-constexpr size_t __next(long)
+constexpr auto __next(long) -> size_t
 {
   if constexpr (_Pow2 == 0)
   {

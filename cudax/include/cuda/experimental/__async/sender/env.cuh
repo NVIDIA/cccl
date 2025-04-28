@@ -73,7 +73,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
     return __value;
   }
 
-  prop& operator=(const prop&) = delete;
+  auto operator=(const prop&) -> prop& = delete;
 };
 
 template <class _Query, class _Value>
@@ -107,7 +107,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     return env::__get_1st<_Query>(*this).query(__query);
   }
 
-  env& operator=(const env&) = delete;
+  auto operator=(const env&) -> env& = delete;
 };
 
 // partial specialization for two environments
@@ -141,7 +141,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
     return env::__get_1st<_Query>(*this).query(__query);
   }
 
-  env& operator=(const env&) = delete;
+  auto operator=(const env&) -> env& = delete;
 };
 
 template <class... _Envs>

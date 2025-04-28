@@ -108,7 +108,7 @@ private:
         __state_->__loop_.finish();
       }
 
-      __env_t get_env() const noexcept
+      auto get_env() const noexcept -> __env_t
       {
         return __env_t{&__state_->__loop_};
       }
@@ -124,10 +124,10 @@ private:
   {
     static_assert(_CUDA_VSTD::__always_false_v<_Diagnostic>(),
                   "sync_wait cannot compute the completions of the sender passed to it.");
-    static __bad_sync_wait __result();
+    static auto __result() -> __bad_sync_wait;
 
-    const __bad_sync_wait& value() const;
-    const __bad_sync_wait& operator*() const;
+    auto value() const -> const __bad_sync_wait&;
+    auto operator*() const -> const __bad_sync_wait&;
 
     int i{}; // so that structured bindings kinda work
   };

@@ -232,7 +232,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
-  _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
+  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return __async::get_env(__sndr_);
   }

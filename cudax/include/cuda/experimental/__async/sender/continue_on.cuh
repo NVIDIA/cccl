@@ -109,7 +109,7 @@ private:
       __async::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    _CUDAX_API env_of_t<_Rcvr> get_env() const noexcept
+    _CUDAX_API auto get_env() const noexcept -> env_of_t<_Rcvr>
     {
       return __async::get_env(__rcvr_);
     }
@@ -262,18 +262,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API __opstate_t<_Rcvr, _Sndr, _Sch> connect(_Rcvr __rcvr) &&
+  _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
   {
     return {static_cast<_Sndr&&>(__sndr_), __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
-  _CUDAX_API __opstate_t<_Rcvr, const _Sndr&, _Sch> connect(_Rcvr __rcvr) const&
+  _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
   {
     return {__sndr_, __sch_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CUDAX_API __attrs_t get_env() const noexcept
+  _CUDAX_API auto get_env() const noexcept -> __attrs_t
   {
     return __attrs_t{this};
   }

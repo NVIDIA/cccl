@@ -228,7 +228,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __compile_time_error // : ::std::exception
 {
   _CUDAX_DEFAULTED_API __compile_time_error() = default;
 
-  const char* what() const noexcept // override
+  auto what() const noexcept -> const char* // override
   {
     return _CCCL_TYPEID(_Derived*).name();
   }
@@ -265,13 +265,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender
                                "environment before it can know how it will complete."}
   {}
 
-  _CCCL_HOST_DEVICE __dependent_sender_error operator+();
+  _CCCL_HOST_DEVICE auto operator+() -> __dependent_sender_error;
 
   template <class _Ty>
-  _CCCL_HOST_DEVICE __dependent_sender_error& operator,(_Ty&);
+  _CCCL_HOST_DEVICE auto operator,(_Ty&) -> __dependent_sender_error&;
 
   template <class... _What>
-  _CCCL_HOST_DEVICE _ERROR<_What...>&operator,(_ERROR<_What...>&);
+  _CCCL_HOST_DEVICE auto operator,(_ERROR<_What...>&) -> _ERROR<_What...>&;
 };
 
 // Below is the definition of the _CUDAX_LET_COMPLETIONS portability macro. It
@@ -875,7 +875,7 @@ catch (...)
 }
 #else
 template <class _Sndr>
-_CUDAX_API constexpr bool __is_dependent_sender() noexcept
+_CUDAX_API constexpr auto __is_dependent_sender() noexcept -> bool
 {
   using _Completions _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr>());
   return _CUDA_VSTD::is_base_of_v<dependent_sender_error, _Completions>;

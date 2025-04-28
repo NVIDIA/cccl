@@ -96,8 +96,8 @@ public:
   }
 
   template <class _Ty, class... _As>
-  _CUDAX_API _Ty& __emplace(_As&&... __as) //
-    noexcept(__nothrow_constructible<_Ty, _As...>)
+  _CUDAX_API auto __emplace(_As&&... __as) //
+    noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
     constexpr size_t __new_index = __async::__index_of<_Ty, _Ts...>();
     static_assert(__new_index != __npos, "Type not in variant");
@@ -109,8 +109,8 @@ public:
   }
 
   template <size_t _Ny, class... _As>
-  _CUDAX_API __at<_Ny>& __emplace_at(_As&&... __as) //
-    noexcept(__nothrow_constructible<__at<_Ny>, _As...>)
+  _CUDAX_API auto __emplace_at(_As&&... __as) //
+    noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
 
@@ -148,21 +148,21 @@ public:
   }
 
   template <size_t _Ny>
-  _CUDAX_API __at<_Ny>&& __get() && noexcept
+  _CUDAX_API auto __get() && noexcept -> __at<_Ny>&&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
   template <size_t _Ny>
-  _CUDAX_API __at<_Ny>& __get() & noexcept
+  _CUDAX_API auto __get() & noexcept -> __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<__at<_Ny>*>(__ptr());
   }
 
   template <size_t _Ny>
-  _CUDAX_API const __at<_Ny>& __get() const& noexcept
+  _CUDAX_API auto __get() const& noexcept -> const __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<const __at<_Ny>*>(__ptr());

@@ -70,7 +70,7 @@ struct __thread_id
 using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
 #endif
 
-inline _CUDAX_API __thread_id __this_thread_id() noexcept
+inline _CUDAX_API auto __this_thread_id() noexcept -> __thread_id
 {
   _CUDAX_FOR_HOST_OR_DEVICE((return ::std::this_thread::get_id();),
                             (return static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);))
