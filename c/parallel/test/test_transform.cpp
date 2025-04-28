@@ -110,7 +110,7 @@ C2H_TEST("Transform works with output of different type", "[transform]")
     "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
     "  pair* x = static_cast<pair*>(x_ptr);\n"
     "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ short(*x), size_t(*x) };\n"
+    "  *out = pair{ short(x->a), size_t(x->b) };\n"
     "}");
   const std::vector<int> input = generate<int>(num_items);
   std::vector<pair> expected(num_items);
