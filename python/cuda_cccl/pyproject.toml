@@ -52,3 +52,6 @@ input = "cuda/cccl/_version.py"
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-xdist"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cuda.cccl"]
