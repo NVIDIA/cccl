@@ -27,13 +27,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _CharT, class _Traits = char_traits<_CharT>>
 class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string_view;
 
-using string_view  = basic_string_view<char>;
-using wstring_view = basic_string_view<wchar_t>;
+using string_view = basic_string_view<char>;
 #if _CCCL_HAS_CHAR8_T()
 using u8string_view = basic_string_view<char8_t>;
 #endif // _CCCL_HAS_CHAR8_T()
 using u16string_view = basic_string_view<char16_t>;
 using u32string_view = basic_string_view<char32_t>;
+#if _CCCL_HAS_WCHAR_T()
+using wstring_view = basic_string_view<wchar_t>;
+#endif // _CCCL_HAS_WCHAR_T()
 
 // clang-format off
 template <class _CharT, class _Traits>
