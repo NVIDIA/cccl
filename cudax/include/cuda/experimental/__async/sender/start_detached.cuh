@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__detail/config.cuh>
+#include <cuda/experimental/__detail/utility.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -33,12 +34,12 @@ namespace cuda::experimental::__async
 struct start_detached_t
 {
 private:
-  struct __opstate_base_t : __immovable
+  struct __opstate_base_t : private __immovable
   {};
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept = receiver_t;
+    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
 
     __opstate_base_t* __opstate_;
     void (*__destroy)(__opstate_base_t*) noexcept;
@@ -64,7 +65,7 @@ private:
   template <class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __opstate_base_t
   {
-    using operation_state_concept = operation_state_t;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     connect_result_t<_Sndr, __rcvr_t> __opstate_;
 
     static void __destroy(__opstate_base_t* __ptr) noexcept

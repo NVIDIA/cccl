@@ -35,7 +35,7 @@
 namespace cuda::experimental::__async
 {
 #if defined(__CUDA_ARCH__)
-using __thread_id = int;
+using __thread_id _CCCL_NODEBUG_ALIAS = int;
 #elif _CCCL_COMPILER(NVHPC)
 struct __thread_id
 {
@@ -67,7 +67,7 @@ struct __thread_id
   }
 };
 #else
-using __thread_id = ::std::thread::id;
+using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
 #endif
 
 inline _CUDAX_API __thread_id __this_thread_id() noexcept

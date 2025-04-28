@@ -39,11 +39,11 @@
 
 namespace cuda::experimental::__async
 {
-class run_loop;
+class _CCCL_TYPE_VISIBILITY_DEFAULT run_loop;
 
-struct __task : __immovable
+struct __task : private __immovable
 {
-  using __execute_fn_t = void(__task*) noexcept;
+  using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
 
   _CUDAX_DEFAULTED_API __task() = default;
 
@@ -72,7 +72,7 @@ struct __task : __immovable
 };
 
 template <class _Rcvr>
-struct __operation : __task
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __operation : __task
 {
   run_loop* __loop_;
   _CCCL_NO_UNIQUE_ADDRESS _Rcvr __rcvr_;
@@ -111,10 +111,10 @@ struct __operation : __task
   _CUDAX_API void start() & noexcept;
 };
 
-class run_loop
+class _CCCL_TYPE_VISIBILITY_DEFAULT run_loop
 {
   template <class... _Ts>
-  using __completion_signatures = completion_signatures<_Ts...>;
+  using __completion_signatures _CCCL_NODEBUG_ALIAS = completion_signatures<_Ts...>;
 
   template <class>
   friend struct __operation;
@@ -125,13 +125,11 @@ public:
     __head.__next_ = __head.__tail_ = &__head;
   }
 
-  class __scheduler
+  class _CCCL_TYPE_VISIBILITY_DEFAULT __scheduler
   {
-    struct __schedule_task
+    struct _CCCL_TYPE_VISIBILITY_DEFAULT __schedule_task
     {
-      using __t            = __schedule_task;
-      using __id           = __schedule_task;
-      using sender_concept = sender_t;
+      using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
       template <class _Rcvr>
       _CUDAX_API auto connect(_Rcvr __rcvr) const noexcept -> __operation<_Rcvr>
@@ -142,13 +140,17 @@ public:
       template <class _Self>
       _CUDAX_API static constexpr auto get_completion_signatures() noexcept
       {
+#  if _CCCL_HAS_EXCEPTIONS()
         return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>();
+#  else  // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
+        return completion_signatures<set_value_t(), set_stopped_t()>();
+#  endif // !_CCCL_HAS_EXCEPTIONS()
       }
 
     private:
       friend __scheduler;
 
-      struct __env
+      struct _CCCL_TYPE_VISIBILITY_DEFAULT __env
       {
         run_loop* __loop_;
 
@@ -185,7 +187,7 @@ public:
     run_loop* __loop_;
 
   public:
-    using scheduler_concept = scheduler_t;
+    using scheduler_concept _CCCL_NODEBUG_ALIAS = scheduler_t;
 
     [[nodiscard]] _CUDAX_API auto schedule() const noexcept -> __schedule_task
     {

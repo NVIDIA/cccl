@@ -29,9 +29,9 @@
 namespace cuda::experimental::__async
 {
 template <class _Rcvr, class _Env>
-struct __rcvr_with_env_t : _Rcvr
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 {
-  struct __env_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     template <class _Query>
     _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const __env_t& __self) noexcept
@@ -47,7 +47,7 @@ struct __rcvr_with_env_t : _Rcvr
     }
 
     template <class _Query>
-    using __1st_env_t = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
+    using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
 
     template <class _Query>
     _CUDAX_TRIVIAL_API constexpr auto query(_Query) const

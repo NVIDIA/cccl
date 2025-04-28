@@ -47,7 +47,7 @@ namespace cuda::experimental::__async
 struct sync_wait_t
 {
 private:
-  struct __env_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     run_loop* __loop_;
 
@@ -63,11 +63,11 @@ private:
   };
 
   template <class _Values>
-  struct __state_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
     struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     {
-      using receiver_concept = receiver_t;
+      using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
       __state_t* __state_;
 
       template <class... _As>
@@ -161,7 +161,7 @@ public:
   template <class _Sndr>
   auto operator()(_Sndr&& __sndr) const
   {
-    using __completions = completion_signatures_of_t<_Sndr, __env_t>;
+    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t>;
 
     if constexpr (!__valid_completion_signatures<__completions>)
     {
@@ -169,13 +169,13 @@ public:
     }
     else
     {
-      using __values = __value_types<__completions, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+      using __values _CCCL_NODEBUG_ALIAS = __value_types<__completions, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
       _CUDA_VSTD::optional<__values> __result{};
       __state_t<__values> __state{&__result, {}, {}};
 
       // Launch the sender with a continuation that will fill in a variant
-      using __rcvr   = typename __state_t<__values>::__rcvr_t;
-      auto __opstate = __async::connect(static_cast<_Sndr&&>(__sndr), __rcvr{&__state});
+      using __rcvr _CCCL_NODEBUG_ALIAS = typename __state_t<__values>::__rcvr_t;
+      auto __opstate                   = __async::connect(static_cast<_Sndr&&>(__sndr), __rcvr{&__state});
       __async::start(__opstate);
 
       // Wait for the variant to be filled in, and process any work that
