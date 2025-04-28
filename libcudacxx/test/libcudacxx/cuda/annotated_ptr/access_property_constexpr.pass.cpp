@@ -19,8 +19,6 @@
 __host__ __device__ constexpr bool test_constexpr()
 {
   using namespace cuda;
-  using annotated_ptr                       = cuda::annotated_ptr<const int, access_property::persisting>;
-  using annotated_smem_ptr [[maybe_unused]] = cuda::annotated_ptr<const int, access_property::shared>;
   access_property a{}; // default constructor
   access_property b{a}; // copy constructor
   access_property c{cuda::std::move(a)}; // move constructor
