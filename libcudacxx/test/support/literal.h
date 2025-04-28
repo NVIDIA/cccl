@@ -50,6 +50,7 @@ template <class CharT>
     static_assert(cuda::std::__always_false_v<CharT>,
                   "Unsupported character type. Supported types are char, wchar_t, char8_t, char16_t, and char32_t.");
   }
+  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CHAR8_T()
@@ -95,6 +96,7 @@ template <class CharT>
     static_assert(cuda::std::__always_false_v<CharT>,
                   "Unsupported character type. Supported types are char, wchar_t, char8_t, char16_t, and char32_t.");
   }
+  _CCCL_UNREACHABLE();
 }
 
 #if _CCCL_HAS_CHAR8_T()
