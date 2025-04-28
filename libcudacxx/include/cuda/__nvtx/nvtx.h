@@ -58,16 +58,18 @@ struct NVTXCCCLDomain
 } // namespace detail
 
 // Hook for the NestedNVTXRangeGuard from the unit tests
-#    ifndef CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE
-#      define CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name)
+// todo(giannis): This hook serves no purpose currently since removed.
+// See TODO in cub/test/insert_nested_NVTX_range_guard.h
+#    ifndef _CCCL_BEFORE_NVTX_RANGE_SCOPE
+#      define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)
 #    endif // !CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE
 
 // Conditionally inserts a NVTX range starting here until the end of the current function scope in host code. Does
 // nothing in device code.
 // The optional is needed to defer the construction of an NVTX range (host-only code) and message string registration
 // into a dispatch region running only on the host, while preserving the semantic scope where the range is declared.
-#    define CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)                                                         \
-      CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                      \
+#    define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)                                                               \
+      _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                                                            \
       _CUDA_VSTD::optional<::nvtx3::v1::scoped_range_in<::cuda::detail::NVTXCCCLDomain>> __cuda_nvtx3_range;         \
       NV_IF_TARGET(                                                                                                  \
         NV_IS_HOST,                                                                                                  \
@@ -76,7 +78,7 @@ struct NVTXCCCLDomain
         if (condition) __cuda_nvtx3_range.emplace(__cuda_nvtx3_func_attr);                                           \
         (void) __cuda_nvtx3_range;)
 
-#    define CCCL_DETAIL_NVTX_RANGE_SCOPE(name) CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(true, name)
+#    define _CCCL_NVTX_RANGE_SCOPE(name) _CCCL_NVTX_RANGE_SCOPE_IF(true, name)
 #  else // NVTX3_CPP_DEFINITIONS_V1_0
 #    if _CCCL_COMPILER(MSVC)
 #      pragma message( \
@@ -84,15 +86,15 @@ struct NVTXCCCLDomain
 #    else
 #      warning nvtx3.h is available but does not define the V1 API. This is odd. Please open a GitHub issue at: https://github.com/NVIDIA/cccl/issues.
 #    endif
-#    define CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
-#    define CCCL_DETAIL_NVTX_RANGE_SCOPE(name)
+#    define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)
+#    define _CCCL_NVTX_RANGE_SCOPE(name)
 #  endif // NVTX3_CPP_DEFINITIONS_V1_0
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #else // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE)
-#  define CCCL_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
-#  define CCCL_DETAIL_NVTX_RANGE_SCOPE(name)
+#  define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)
+#  define _CCCL_NVTX_RANGE_SCOPE(name)
 #endif // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE)
 
 #endif // _CUDA__NVTX_NVTX_H

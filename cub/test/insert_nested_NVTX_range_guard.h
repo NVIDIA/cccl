@@ -34,7 +34,7 @@ struct NestedNVTXRangeGuard
 // uses another CUB primitive it calls it from the dispatch layer. We can disable the guard
 // just for thrust conditionally in the future, since thrust neting is more often and very
 // frequent on the high API level.
-#  define CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE(name) \
+#  define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name) \
     // ::cuda::std::optional<::NestedNVTXRangeGuard> __cub_nvtx3_reentrency_guard; \
     // NV_IF_TARGET(NV_IS_HOST, __cub_nvtx3_reentrency_guard.emplace(name););
 #endif // defined(__cpp_inline_variables)
