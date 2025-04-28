@@ -52,6 +52,7 @@
 #include <cuda/functional> // cuda::maximum, cuda::minimum
 #include <cuda/std/cstdint> // cuda::std::uint32_t
 #include <cuda/std/functional> // cuda::std::plus
+#include <cuda/std/utility> // cuda::std::pair
 
 CUB_NAMESPACE_BEGIN
 
