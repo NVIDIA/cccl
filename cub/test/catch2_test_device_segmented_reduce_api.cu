@@ -302,10 +302,10 @@ C2H_TEST("cub::DeviceSegmentedReduce::Sum Fixed Segment Size works with int data
   cub::DeviceSegmentedReduce::Sum(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
 
-  c2h::device_vector<int> expected{14, 12, 3};
+  c2h::device_vector<int> d_expected{14, 12, 3};
   // example-end fixed-size-segmented-reduce-sum
 
-  REQUIRE(d_out == expected);
+  REQUIRE(d_expected == d_out);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data elements",
@@ -330,10 +330,10 @@ C2H_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data
   cub::DeviceSegmentedReduce::Min(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
 
-  c2h::device_vector<int> expected{6, 5, 0};
+  c2h::device_vector<int> d_expected{6, 5, 0};
   // example-end fixed-size-segmented-reduce-min
 
-  REQUIRE(d_out == expected);
+  REQUIRE(d_expected == d_out);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int data elements",
@@ -389,10 +389,10 @@ C2H_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data
   cub::DeviceSegmentedReduce::Max(
     d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
 
-  c2h::device_vector<int> expected{8, 7, 3};
+  c2h::device_vector<int> d_expected{8, 7, 3};
   // example-end fixed-size-segmented-reduce-max
 
-  REQUIRE(d_out == expected);
+  REQUIRE(d_expected == d_out);
 }
 
 C2H_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int data elements",
