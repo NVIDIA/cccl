@@ -63,7 +63,7 @@ class __variant_impl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...>
   alignas(_Ts...) unsigned char __storage_[__max_size];
 
   template <size_t _Ny>
-  using __at = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
+  using __at _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
 
   _CUDAX_API void __destroy() noexcept
   {
@@ -124,8 +124,8 @@ public:
   _CUDAX_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
-    using __result_t             = __call_result_t<_Fn, _As...>;
-    constexpr size_t __new_index = __async::__index_of<__result_t, _Ts...>();
+    using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
+    constexpr size_t __new_index         = __async::__index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
     __destroy();
@@ -173,19 +173,19 @@ public:
 template <class... _Ts>
 struct __mk_variant_
 {
-  using __indices_t = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
-  using type        = __variant_impl<__indices_t, _Ts...>;
+  using __indices_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
+  using type _CCCL_NODEBUG_ALIAS        = __variant_impl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __variant = typename __mk_variant_<_Ts...>::type;
+using __variant _CCCL_NODEBUG_ALIAS = typename __mk_variant_<_Ts...>::type;
 #else
 template <class... _Ts>
-using __variant = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+using __variant _CCCL_NODEBUG_ALIAS = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif
 
 template <class... _Ts>
-using __decayed_variant = __variant<__decay_t<_Ts>...>;
+using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__decay_t<_Ts>...>;
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>

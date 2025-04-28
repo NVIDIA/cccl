@@ -53,13 +53,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT scheduler_t
 {};
 
 template <class _Ty>
-using __sender_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::sender_concept;
+using __sender_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::sender_concept;
 
 template <class _Ty>
-using __receiver_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::receiver_concept;
+using __receiver_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::receiver_concept;
 
 template <class _Ty>
-using __scheduler_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
+using __scheduler_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
 inline constexpr bool __is_sender = __type_valid_v<__sender_concept_t, _Ty>;
@@ -174,13 +174,13 @@ _CCCL_GLOBAL_CONSTANT struct schedule_t
 } schedule{};
 
 template <class _Sndr, class _Rcvr>
-using connect_result_t = decltype(connect(declval<_Sndr>(), declval<_Rcvr>()));
+using connect_result_t _CCCL_NODEBUG_ALIAS = decltype(connect(declval<_Sndr>(), declval<_Rcvr>()));
 
 template <class _Sndr, class... _Env>
-using completion_signatures_of_t = decltype(get_completion_signatures<_Sndr, _Env...>());
+using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr, _Env...>());
 
 template <class _Sch>
-using schedule_result_t = decltype(schedule(declval<_Sch>()));
+using schedule_result_t _CCCL_NODEBUG_ALIAS = decltype(schedule(declval<_Sch>()));
 
 template <class _Sndr, class _Rcvr>
 inline constexpr bool __nothrow_connectable = noexcept(connect(declval<_Sndr>(), declval<_Rcvr>()));

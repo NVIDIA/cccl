@@ -29,6 +29,7 @@
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__detail/config.cuh>
+#include <cuda/experimental/__detail/utility.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -37,8 +38,8 @@ namespace cuda::experimental::__async
 _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 
 using __ignore _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // NOLINT: misc-unused-using-decls
-
-using _CUDA_VSTD::__undefined; // NOLINT: misc-unused-using-decls
+using __cudax::detail::__immovable;                          // NOLINT: misc-unused-using-decls
+using _CUDA_VSTD::__undefined;                               // NOLINT: misc-unused-using-decls
 
 struct __empty
 {};
@@ -48,12 +49,6 @@ struct [[deprecated]] __deprecated
 
 struct __nil
 {};
-
-struct __immovable
-{
-  _CUDAX_DEFAULTED_API __immovable() = default;
-  _CUDAX_IMMOVABLE(__immovable);
-};
 
 _CUDAX_API constexpr size_t __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept
 {
@@ -177,18 +172,18 @@ constexpr size_t __next(long)
 #if _CCCL_COMPILER(CLANG, <, 12)
 
 template <class _Type>
-using __zip = _Type;
+using __zip _CCCL_NODEBUG_ALIAS = _Type;
 
 template <class _Id>
-using __unzip = _Id;
+using __unzip _CCCL_NODEBUG_ALIAS = _Id;
 
 #else
 
 template <class _Type, size_t _Val = __async::__next<_Type>(0)>
-using __zip = __slot<_Val>;
+using __zip _CCCL_NODEBUG_ALIAS = __slot<_Val>;
 
 template <class _Id>
-using __unzip = decltype(__slot_allocated(_Id())());
+using __unzip _CCCL_NODEBUG_ALIAS = decltype(__slot_allocated(_Id())());
 
 #endif
 

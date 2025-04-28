@@ -36,28 +36,26 @@
 
 namespace cuda::experimental::__async
 {
-struct write_env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
 {
 private:
   template <class _Rcvr, class _Sndr, class _Env>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
   {
-    using operation_state_concept = operation_state_t;
-
-    __rcvr_with_env_t<_Rcvr, _Env> __env_rcvr_;
-    connect_result_t<_Sndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, _Env>>> __opstate_;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
     _CUDAX_API explicit __opstate_t(_Sndr&& __sndr, _Env __env, _Rcvr __rcvr)
         : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), static_cast<_Env&&>(__env)}
         , __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{__env_rcvr_}))
     {}
 
-    _CUDAX_IMMOVABLE(__opstate_t);
-
     _CUDAX_API void start() noexcept
     {
       __async::start(__opstate_);
     }
+
+    __rcvr_with_env_t<_Rcvr, _Env> __env_rcvr_;
+    connect_result_t<_Sndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, _Env>>> __opstate_;
   };
 
 public:
@@ -73,15 +71,12 @@ public:
 template <class _Sndr, class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
 {
-  using sender_concept = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
-  _Env __env_;
-  _Sndr __sndr_;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   template <class _Self, class... _Env2>
   _CUDAX_API static constexpr auto get_completion_signatures()
   {
-    using _Child = __copy_cvref_t<_Self, _Sndr>;
+    using _Child _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
     return __async::get_completion_signatures<_Child, env<const _Env&, _FWD_ENV_T<_Env2>>...>();
   }
 
@@ -102,6 +97,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   {
     return __async::get_env(__sndr_);
   }
+
+  _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
+  _Env __env_;
+  _Sndr __sndr_;
 };
 
 template <class _Sndr, class _Env>

@@ -60,7 +60,7 @@ template <class _Ty>
 extern _Ty& __unwrap_ref<_CUDA_VSTD::reference_wrapper<_Ty>>;
 
 template <class _Ty>
-using __unwrap_reference_t = decltype(__unwrap_ref<_Ty>);
+using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(__unwrap_ref<_Ty>);
 
 template <class _Query, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
@@ -97,7 +97,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   }
 
   template <class _Query>
-  using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const env&>()));
+  using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query>(declval<const env&>()));
 
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
@@ -130,8 +130,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
     }
   }
 
-  template <class _Query, class _Env = env>
-  using __1st_env_t = decltype(env::__get_1st<_Query>(declval<const _Env&>()));
+  template <class _Query>
+  using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query>(declval<const env&>()));
 
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
@@ -152,7 +152,7 @@ using empty_env CCCL_DEPRECATED_BECAUSE("please use env<> instead of empty_env")
 struct get_env_t
 {
   template <class _Ty>
-  using __env_of = decltype(declval<_Ty>().get_env());
+  using __env_of _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty>().get_env());
 
   template <class _Ty>
   _CUDAX_TRIVIAL_API auto operator()(_Ty&& __ty) const noexcept -> __env_of<_Ty&>
@@ -175,7 +175,7 @@ _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 using namespace __region;
 
 template <class _Ty>
-using env_of_t = decltype(__async::get_env(declval<_Ty>()));
+using env_of_t _CCCL_NODEBUG_ALIAS = decltype(__async::get_env(declval<_Ty>()));
 } // namespace cuda::experimental::__async
 
 _CCCL_NV_DIAG_DEFAULT(20012)

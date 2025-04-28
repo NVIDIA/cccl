@@ -39,23 +39,23 @@
 
 namespace cuda::experimental::__async
 {
-struct continue_on_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t
 {
 private:
   template <class... _As>
-  using __set_value_tuple_t = __tuple<set_value_t, __decay_t<_As>...>;
+  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = __tuple<set_value_t, __decay_t<_As>...>;
 
   template <class _Error>
-  using __set_error_tuple_t = __tuple<set_error_t, __decay_t<_Error>>;
+  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = __tuple<set_error_t, __decay_t<_Error>>;
 
-  using __set_stopped_tuple_t = __tuple<set_stopped_t>;
+  using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = __tuple<set_stopped_t>;
 
-  using __complete_fn = void (*)(void*) noexcept;
+  using __complete_fn _CCCL_NODEBUG_ALIAS = void (*)(void*) noexcept;
 
   template <class _Rcvr, class _Result>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept = receiver_t;
+    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
     _Rcvr __rcvr_;
     _Result __result_;
     __complete_fn __complete_;
@@ -69,7 +69,7 @@ private:
     template <class _Tag, class... _As>
     _CUDAX_API void __set_result(_Tag, _As&&... __as) noexcept
     {
-      using __tupl_t = __tuple<_Tag, __decay_t<_As>...>;
+      using __tupl_t _CCCL_NODEBUG_ALIAS = __tuple<_Tag, __decay_t<_As>...>;
       if constexpr (__nothrow_decay_copyable<_As...>)
       {
         __result_.template __emplace<__tupl_t>(_Tag(), static_cast<_As&&>(__as)...);
@@ -116,12 +116,12 @@ private:
   };
 
   template <class _Rcvr, class _CvSndr, class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
   {
-    using operation_state_concept = operation_state_t;
-    using __env_t                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
 
-    using __result_t =
+    using __result_t _CCCL_NODEBUG_ALIAS =
       typename completion_signatures_of_t<_CvSndr, __env_t>::template __transform_q<__decayed_tuple, __variant>;
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
@@ -172,13 +172,13 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sch>
-  struct __closure_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 
   template <class _Sndr, class _Sch>
-  _CUDAX_API __sndr_t<_Sndr, _Sch> operator()(_Sndr __sndr, _Sch __sch) const noexcept;
+  _CUDAX_TRIVIAL_API constexpr __sndr_t<_Sndr, _Sch> operator()(_Sndr __sndr, _Sch __sch) const noexcept;
 
   template <class _Sch>
-  _CUDAX_TRIVIAL_API __closure_t<_Sch> operator()(_Sch __sch) const noexcept;
+  _CUDAX_TRIVIAL_API constexpr __closure_t<_Sch> operator()(_Sch __sch) const noexcept;
 };
 
 template <class _Sch>
@@ -187,7 +187,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__closure_t
   _Sch __sch;
 
   template <class _Sndr>
-  _CUDAX_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_t&& __self)
+  _CUDAX_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
   {
     return continue_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
   }
@@ -219,7 +219,7 @@ struct __decay_args
 template <class _Sndr, class _Sch>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
 {
-  using sender_concept = sender_t;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
   _CCCL_NO_UNIQUE_ADDRESS continue_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
@@ -280,14 +280,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
 };
 
 template <class _Sndr, class _Sch>
-_CUDAX_API auto continue_on_t::operator()(_Sndr __sndr, _Sch __sch) const noexcept
+_CUDAX_TRIVIAL_API constexpr auto continue_on_t::operator()(_Sndr __sndr, _Sch __sch) const noexcept
   -> continue_on_t::__sndr_t<_Sndr, _Sch>
 {
   return __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)};
 }
 
 template <class _Sch>
-_CUDAX_TRIVIAL_API continue_on_t::__closure_t<_Sch> continue_on_t::operator()(_Sch __sch) const noexcept
+_CUDAX_TRIVIAL_API constexpr continue_on_t::__closure_t<_Sch> continue_on_t::operator()(_Sch __sch) const noexcept
 {
   return __closure_t<_Sch>{__sch};
 }
