@@ -32,7 +32,7 @@ struct NestedNVTXRangeGuard
 // TODO(giannis): Thrust algorithms lead to NVTX nesting, we still want to avoid nested ranges
 // on the CUB Device level side. This guard makes sure that when a newly added CUB primitive
 // uses another CUB primitive it calls it from the dispatch layer. We can disable the guard
-// just for thrust conditionally in the future, since thrust neting is more often and very
+// just for thrust conditionally in the future, since thrust nesting is more often and very
 // frequent on the high API level.
 #  define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)
 // ::cuda::std::optional<::NestedNVTXRangeGuard> __cub_nvtx3_reentrency_guard;
