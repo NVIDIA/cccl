@@ -194,12 +194,12 @@ public:
       return __schedule_task{__loop_};
     }
 
-    _CUDAX_API friend bool operator==(const __scheduler& __a, const __scheduler& __b) noexcept
+    _CUDAX_API friend auto operator==(const __scheduler& __a, const __scheduler& __b) noexcept -> bool
     {
       return __a.__loop_ == __b.__loop_;
     }
 
-    _CUDAX_API friend bool operator!=(const __scheduler& __a, const __scheduler& __b) noexcept
+    _CUDAX_API friend auto operator!=(const __scheduler& __a, const __scheduler& __b) noexcept -> bool
     {
       return __a.__loop_ != __b.__loop_;
     }

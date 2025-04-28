@@ -43,14 +43,14 @@ struct __lazy
   _CUDAX_API ~__lazy() {}
 
   template <class... _Ts>
-  _CUDAX_API _Ty& construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>)
+  _CUDAX_API auto construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>) -> _Ty&
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_))) _Ty{static_cast<_Ts&&>(__ts)...};
     return *_CUDA_VSTD::launder(__value_);
   }
 
   template <class _Fn, class... _Ts>
-  _CUDAX_API _Ty& construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>)
+  _CUDAX_API auto construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>) -> _Ty&
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_)))
       _Ty{static_cast<_Fn&&>(__fn)(static_cast<_Ts&&>(__ts)...)};

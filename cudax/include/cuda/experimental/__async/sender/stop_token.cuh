@@ -127,12 +127,12 @@ public:
     return false;
   }
 
-  _CUDAX_API friend constexpr bool operator==(const never_stop_token&, const never_stop_token&) noexcept
+  _CUDAX_API friend constexpr auto operator==(const never_stop_token&, const never_stop_token&) noexcept -> bool
   {
     return true;
   }
 
-  _CUDAX_API friend constexpr bool operator!=(const never_stop_token&, const never_stop_token&) noexcept
+  _CUDAX_API friend constexpr auto operator!=(const never_stop_token&, const never_stop_token&) noexcept -> bool
   {
     return false;
   }
@@ -221,12 +221,12 @@ public:
     __async::__swap(__source_, __other.__source_);
   }
 
-  _CUDAX_API friend bool operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+  _CUDAX_API friend auto operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
   {
     return __a.__source_ == __b.__source_;
   }
 
-  _CUDAX_API friend bool operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+  _CUDAX_API friend auto operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
   {
     return __a.__source_ != __b.__source_;
   }

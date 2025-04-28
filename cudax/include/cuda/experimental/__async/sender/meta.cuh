@@ -44,7 +44,7 @@ template <class _Ret, class... _Args>
 using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
 
 template <class _Ty>
-_Ty&& declval() noexcept;
+auto declval() noexcept -> _Ty&&;
 
 template <size_t... _Vals>
 struct __moffsets;
@@ -92,7 +92,7 @@ struct __merror_base
 {
   // _CUDAX_DEFAULTED_API virtual ~__merror_base() = default;
 
-  _CCCL_HOST_DEVICE constexpr friend bool __ustdex_unhandled_error(void*) noexcept
+  _CCCL_HOST_DEVICE constexpr friend auto __ustdex_unhandled_error(void*) noexcept -> bool
   {
     return true;
   }
@@ -117,16 +117,16 @@ struct _ERROR : __merror_base
   using __sends_stopped _CCCL_NODEBUG_ALIAS = _ERROR;
 
   // The following operator overloads also simplify error propagation.
-  _CCCL_HOST_DEVICE _ERROR operator+();
+  _CCCL_HOST_DEVICE auto operator+() -> _ERROR;
 
   template <class _Ty>
-  _CCCL_HOST_DEVICE _ERROR& operator,(_Ty&);
+  _CCCL_HOST_DEVICE auto operator,(_Ty&) -> _ERROR&;
 
   template <class... _With>
-  _CCCL_HOST_DEVICE _ERROR<_What..., _With...>& with(_ERROR<_With...>&);
+  _CCCL_HOST_DEVICE auto with(_ERROR<_With...>&) -> _ERROR<_What..., _With...>&;
 };
 
-_CCCL_HOST_DEVICE constexpr bool __ustdex_unhandled_error(...) noexcept
+_CCCL_HOST_DEVICE constexpr auto __ustdex_unhandled_error(...) noexcept -> bool
 {
   return false;
 }

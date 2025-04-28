@@ -84,7 +84,7 @@ private:
 
     __state_t& __state_;
 
-    _CUDAX_API inplace_stop_token query(get_stop_token_t) const noexcept
+    _CUDAX_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }

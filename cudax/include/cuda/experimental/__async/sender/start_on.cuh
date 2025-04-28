@@ -42,7 +42,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 {
   _Sch __sch_;
 
-  _Sch query(get_scheduler_t) const noexcept
+  auto query(get_scheduler_t) const noexcept -> _Sch
   {
     return __sch_;
   }
@@ -134,7 +134,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
     return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
   }
 
-  _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
+  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return __async::get_env(__sndr_);
   }

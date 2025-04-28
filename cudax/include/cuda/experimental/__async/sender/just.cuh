@@ -134,15 +134,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API __opstate_t<_Rcvr, _Values> connect(_Rcvr __rcvr) && //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Values>)
+  _CUDAX_API auto connect(_Rcvr __rcvr) && //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Values>) -> __opstate_t<_Rcvr, _Values>
   {
     return __opstate_t<_Rcvr, _Values>{{}, static_cast<_Rcvr&&>(__rcvr), static_cast<_Values&&>(__values_)};
   }
 
   template <class _Rcvr>
-  _CUDAX_API __opstate_t<_Rcvr, _Values> connect(_Rcvr __rcvr) const& //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Values const&>)
+  _CUDAX_API auto connect(_Rcvr __rcvr) const& //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Values const&>) -> __opstate_t<_Rcvr, _Values>
   {
     return __opstate_t<_Rcvr, _Values>{{}, static_cast<_Rcvr&&>(__rcvr), __values_};
   }
