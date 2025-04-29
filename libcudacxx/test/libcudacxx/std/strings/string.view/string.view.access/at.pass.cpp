@@ -24,6 +24,41 @@
 #  include <stdexcept>
 #endif // TEST_HAS_EXCEPTIONS()
 
+template <class SV>
+__host__ __device__ constexpr void test_at()
+{
+  using CharT    = typename SV::value_type;
+  using SizeT    = typename SV::size_type;
+  using ConstRef = typename SV::const_reference;
+
+  static_assert(cuda::std::is_same_v<ConstRef, decltype(SV{}.at(SizeT{}))>);
+  static_assert(!noexcept(SV{}.at(SizeT{})));
+
+  const CharT* str = TEST_STRLIT(CharT, "Hello world!");
+
+  SV sv{str};
+  assert(sv.at(0) == str[0]);
+  assert(sv.at(1) == str[1]);
+  assert(sv.at(4) == str[4]);
+  assert(sv.at(8) == str[8]);
+  assert(sv.at(11) == str[11]);
+}
+
+__host__ __device__ constexpr bool test()
+{
+  test_at<cuda::std::string_view>();
+#if _CCCL_HAS_CHAR8_T()
+  test_at<cuda::std::u8string_view>();
+#endif // _CCCL_HAS_CHAR8_T()
+  test_at<cuda::std::u16string_view>();
+  test_at<cuda::std::u32string_view>();
+#if _CCCL_HAS_WCHAR_T()
+  test_at<cuda::std::wstring_view>();
+#endif // _CCCL_HAS_WCHAR_T()
+
+  return true;
+}
+
 #if TEST_HAS_EXCEPTIONS()
 template <class SV>
 void test_at_throw()
@@ -47,53 +82,29 @@ void test_at_throw()
     assert(false);
   }
 }
-#endif // TEST_HAS_EXCEPTIONS()
 
-template <class SV>
-__host__ __device__ constexpr void test_at()
+bool test_exceptions()
 {
-  using CharT    = typename SV::value_type;
-  using SizeT    = typename SV::size_type;
-  using ConstRef = typename SV::const_reference;
-
-  static_assert(cuda::std::is_same_v<ConstRef, decltype(SV{}.at(SizeT{}))>);
-  static_assert(!noexcept(SV{}.at(SizeT{})));
-
-  const CharT* str = TEST_STRLIT(CharT, "Hello world!");
-
-  SV sv{str};
-  assert(sv.at(0) == str[0]);
-  assert(sv.at(1) == str[1]);
-  assert(sv.at(4) == str[4]);
-  assert(sv.at(8) == str[8]);
-  assert(sv.at(11) == str[11]);
-
-#if TEST_HAS_EXCEPTIONS()
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (test_at_throw<SV>();))
-  }
-#endif // TEST_HAS_EXCEPTIONS()
-}
-
-__host__ __device__ constexpr bool test()
-{
-  test_at<cuda::std::string_view>();
-#if _CCCL_HAS_CHAR8_T()
-  test_at<cuda::std::u8string_view>();
-#endif // _CCCL_HAS_CHAR8_T()
-  test_at<cuda::std::u16string_view>();
-  test_at<cuda::std::u32string_view>();
-#if _CCCL_HAS_WCHAR_T()
-  test_at<cuda::std::wstring_view>();
-#endif // _CCCL_HAS_WCHAR_T()
+  test_at_throw<cuda::std::string_view>();
+#  if _CCCL_HAS_CHAR8_T()
+  test_at_throw<cuda::std::u8string_view>();
+#  endif // _CCCL_HAS_CHAR8_T()
+  test_at_throw<cuda::std::u16string_view>();
+  test_at_throw<cuda::std::u32string_view>();
+#  if _CCCL_HAS_WCHAR_T()
+  test_at_throw<cuda::std::wstring_view>();
+#  endif // _CCCL_HAS_WCHAR_T()
 
   return true;
 }
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
   test();
   static_assert(test());
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

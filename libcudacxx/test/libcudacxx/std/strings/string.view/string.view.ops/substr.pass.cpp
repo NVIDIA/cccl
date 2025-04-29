@@ -25,31 +25,6 @@
 #  include <stdexcept>
 #endif // TEST_HAS_EXCEPTIONS()
 
-#if TEST_HAS_EXCEPTIONS()
-template <class SV>
-void test_substr_throw()
-{
-  using CharT = typename SV::value_type;
-
-  const CharT* str = TEST_STRLIT(CharT, "12345");
-  SV sv{str};
-
-  try
-  {
-    (void) sv.substr(123098);
-    assert(false);
-  }
-  catch (const ::std::out_of_range&)
-  {
-    assert(true);
-  }
-  catch (...)
-  {
-    assert(false);
-  }
-}
-#endif // TEST_HAS_EXCEPTIONS()
-
 template <class SV>
 __host__ __device__ constexpr void test_substr()
 {
@@ -99,13 +74,6 @@ __host__ __device__ constexpr void test_substr()
     assert(sub_sv.data() == sv.data() + 5);
     assert(sub_sv.size() == 0);
   }
-
-#if TEST_HAS_EXCEPTIONS()
-  if (!cuda::std::__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_TARGET(NV_IS_HOST, (test_substr_throw<SV>();))
-  }
-#endif // TEST_HAS_EXCEPTIONS()
 }
 
 __host__ __device__ constexpr bool test()
@@ -123,9 +91,52 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
+#if TEST_HAS_EXCEPTIONS()
+template <class SV>
+void test_substr_throw()
+{
+  using CharT = typename SV::value_type;
+
+  const CharT* str = TEST_STRLIT(CharT, "12345");
+  SV sv{str};
+
+  try
+  {
+    (void) sv.substr(123098);
+    assert(false);
+  }
+  catch (const ::std::out_of_range&)
+  {
+    assert(true);
+  }
+  catch (...)
+  {
+    assert(false);
+  }
+}
+
+bool test_exceptions()
+{
+  test_substr_throw<cuda::std::string_view>();
+#  if _CCCL_HAS_CHAR8_T()
+  test_substr_throw<cuda::std::u8string_view>();
+#  endif // _CCCL_HAS_CHAR8_T()
+  test_substr_throw<cuda::std::u16string_view>();
+  test_substr_throw<cuda::std::u32string_view>();
+#  if _CCCL_HAS_WCHAR_T()
+  test_substr_throw<cuda::std::wstring_view>();
+#  endif // _CCCL_HAS_WCHAR_T()
+
+  return true;
+}
+#endif // TEST_HAS_EXCEPTIONS()
+
 int main(int, char**)
 {
   test();
   static_assert(test());
+#if TEST_HAS_EXCEPTIONS()
+  NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }
