@@ -13,6 +13,13 @@
 
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_GCC("-Wassume")
+TEST_DIAG_SUPPRESS_CLANG("-Wassume")
+TEST_DIAG_SUPPRESS_NVHPC(assume_expression_discarded)
+TEST_DIAG_SUPPRESS_MSVC(4702)
+
 __host__ __device__ inline bool failed_on_device()
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, return false;, return true;)
