@@ -25,13 +25,24 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_EXEC_CHECK_DISABLE
-template <class _ForwardIterator1, class _ForwardIterator2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void iter_swap(_ForwardIterator1 __a, _ForwardIterator2 __b) noexcept(
-  noexcept(swap(*_CUDA_VSTD::declval<_ForwardIterator1>(), *_CUDA_VSTD::declval<_ForwardIterator2>())))
+//! Intentionally not an algorithm to avoid breaking types that pull in `::std::iter_swap` via ADL
+namespace __iter_swap
 {
-  swap(*__a, *__b);
-}
+
+struct __fn
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _ForwardIterator1, class _ForwardIterator2>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_ForwardIterator1 __a, _ForwardIterator2 __b) const
+    noexcept(noexcept(swap(*_CUDA_VSTD::declval<_ForwardIterator1>(), *_CUDA_VSTD::declval<_ForwardIterator2>())))
+  {
+    swap(*__a, *__b);
+  }
+};
+
+} // namespace __iter_swap
+
+_CCCL_GLOBAL_CONSTANT __iter_swap::__fn iter_swap{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
