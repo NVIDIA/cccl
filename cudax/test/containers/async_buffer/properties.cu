@@ -21,15 +21,16 @@
 #include "helper.h"
 #include "types.h"
 
-TEMPLATE_TEST_CASE("cudax::async_buffer properties",
-                   "[container][async_buffer]",
-                   cuda::std::tuple<cuda::mr::host_accessible>,
-                   cuda::std::tuple<cuda::mr::device_accessible>,
-                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
+C2H_TEST("cudax::async_buffer properties",
+         "[container][async_buffer]",
+         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                        cuda::std::tuple<cuda::mr::device_accessible>,
+                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
 {
-  using Buffer                 = typename extract_properties<TestType>::async_buffer;
-  using iterator               = typename extract_properties<TestType>::iterator;
-  using const_iterator         = typename extract_properties<TestType>::const_iterator;
+  using TestT                  = c2h::get<0, TestType>;
+  using Buffer                 = typename extract_properties<TestT>::async_buffer;
+  using iterator               = typename extract_properties<TestT>::iterator;
+  using const_iterator         = typename extract_properties<TestT>::const_iterator;
   using reverse_iterator       = cuda::std::reverse_iterator<iterator>;
   using const_reverse_iterator = cuda::std::reverse_iterator<const_iterator>;
 

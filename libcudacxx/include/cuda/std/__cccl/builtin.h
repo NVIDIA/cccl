@@ -145,11 +145,9 @@
 #if _CCCL_CHECK_BUILTIN(builtin_assume) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #elif _CCCL_COMPILER(GCC, >=, 13)
-#  define _CCCL_BUILTIN_ASSUME(...) \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__attribute__((__assume__(__VA_ARGS__)));))
+#  define _CCCL_BUILTIN_ASSUME(...) __attribute__((__assume__(__VA_ARGS__)))
 #elif _CCCL_COMPILER(MSVC)
-#  define _CCCL_BUILTIN_ASSUME(...) \
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (__assume(__VA_ARGS__);))
+#  define _CCCL_BUILTIN_ASSUME(...) __assume(__VA_ARGS__)
 #else
 #  define _CCCL_BUILTIN_ASSUME(...)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
@@ -205,15 +203,42 @@
 #  define _CCCL_BUILTIN_POPCOUNTLL(...) __builtin_popcountll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_popcount)
 
+#if _CCCL_CHECK_BUILTIN(builtin_popcountg)
+#  define _CCCL_BUILTIN_POPCOUNTG(...) __builtin_popcountg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_popcountg)
+
+// nvcc cannot handle __builtin_popcountg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_POPCOUNTG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_clz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_CLZ(...)   __builtin_clz(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CLZLL(...) __builtin_clzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_clz)
 
+#if _CCCL_CHECK_BUILTIN(builtin_clzg)
+#  define _CCCL_BUILTIN_CLZG(...) __builtin_clzg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_clzg)
+
+// nvcc cannot handle __builtin_clzg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_CLZG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
+
 #if _CCCL_CHECK_BUILTIN(builtin_ctz) || _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_CTZ(...)   __builtin_ctz(__VA_ARGS__)
 #  define _CCCL_BUILTIN_CTZLL(...) __builtin_ctzll(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_ctz)
+
+#if _CCCL_CHECK_BUILTIN(builtin_ctzg)
+#  define _CCCL_BUITLIN_CTZG(...) __builtin_ctzg(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_ctzg)
+
+// nvcc cannot handle __builtin_ctzg
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUITLIN_CTZG
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_bswap16) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
@@ -455,6 +480,26 @@
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) || _CCCL_COMPILER(MSVC, >, 19, 24)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
+
+#if _CCCL_CHECK_BUILTIN(builtin_is_corresponding_member)
+#  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) \
+    __builtin_is_corresponding_member(_MPtr1, _MPtr2)
+#elif _CCCL_COMPILER(MSVC, >=, 19, 29)
+// using __is_corresponding_member with msvc outside of constexpr context causes linker errors, see
+// https://developercommunity.visualstudio.com/t/Using-compiler-builtins-causes-linking-n/10888080
+// #  define _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER(_C1, _C2, _MPtr1, _MPtr2) __is_corresponding_member(_C1, _C2, _MPtr1,
+// _MPtr2)
+#endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
+
+#if _CCCL_CHECK_BUILTIN(builtin_is_pointer_interconvertible_with_class)
+#  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr) \
+    __builtin_is_pointer_interconvertible_with_class(_MPtr)
+#elif _CCCL_COMPILER(MSVC, >=, 19, 29)
+// using __is_pointer_interconvertible_with_class with msvc outside of constexpr context causes linker errors, see
+// https://developercommunity.visualstudio.com/t/Using-compiler-builtins-causes-linking-n/10888080
+// #  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS(_S, _MPtr)
+// __is_pointer_interconvertible_with_class(_S, _MPtr)
+#endif // ^^^ _CCCL_COMPILER(MSVC, >=, 19, 29) ^^^
 
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC, >, 12, 2)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
@@ -903,7 +948,7 @@
 #  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_trivial_destructor) && gcc >= 4.3
 
-#if _CCCL_CHECK_BUILTIN(has_unique_object_representations) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_CHECK_BUILTIN(has_unique_object_representations) || _CCCL_COMPILER(GCC, >=, 7) || _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS(...) __has_unique_object_representations(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_unique_object_representations) && gcc >= 7.0
 
@@ -997,6 +1042,10 @@
 #  define _CCCL_BUILTIN_IS_INTEGRAL(...) __is_integral(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_integral)
 
+#if _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
+#  define _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE(...) __is_layout_compatible(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_layout_compatible) || _CCCL_COMPILER(MSVC, >=, 19, 29)
+
 #if _CCCL_CHECK_BUILTIN(is_literal_type) || _CCCL_COMPILER(GCC, >=, 4, 6) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
@@ -1042,6 +1091,10 @@
 #if 0 // _CCCL_HAS_BUILTIN(__is_pointer)
 #  define _CCCL_BUILTIN_IS_POINTER(...) __is_pointer(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_pointer)
+
+#if _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
+#  define _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_BASE_OF(...) __is_pointer_interconvertible_base_of(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(is_pointer_interconvertible_base_of) || _CCCL_COMPILER(MSVC, >=, 19, 29)
 
 #if _CCCL_CHECK_BUILTIN(is_polymorphic) || _CCCL_COMPILER(GCC, >=, 4, 3) || _CCCL_COMPILER(MSVC) \
   || _CCCL_COMPILER(NVRTC)

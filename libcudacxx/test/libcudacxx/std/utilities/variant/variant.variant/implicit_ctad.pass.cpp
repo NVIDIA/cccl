@@ -18,7 +18,7 @@
 // We make sure that it is not ill-formed, however we still produce a warning for
 // this one because explicit construction from a variant using CTAD is ambiguous
 // (in the sense that the programer intent is not clear).
-// ADDITIONAL_COMPILE_FLAGS: -Wno-ctad-maybe-unsupported
+// ADDITIONAL_COMPILE_OPTIONS_HOST: -Wno-ctad-maybe-unsupported
 
 #include <cuda/std/variant>
 

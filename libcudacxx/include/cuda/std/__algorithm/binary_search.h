@@ -27,6 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Tp, class _Compare>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
 binary_search(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __value, _Compare __comp)

@@ -1,4 +1,4 @@
-cccl_get_catch2()
+cccl_get_c2h()
 
 find_package(cudax) # already found, bring in version info.
 
@@ -24,7 +24,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_include_directories(${test_target} PRIVATE "common")
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
-    Catch2::Catch2WithMain
+    cccl.c2h.main
   )
   target_compile_options(${test_target} PRIVATE
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
@@ -126,6 +126,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     async/test_continue_on.cu
     async/test_just.cu
     async/test_sequence.cu
+    async/test_visit.cu
     async/test_when_all.cu
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)

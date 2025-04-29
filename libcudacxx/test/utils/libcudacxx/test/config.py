@@ -400,11 +400,11 @@ class Configuration(object):
                     else:
                         nvcc_host_compiler = "gcc"
 
-                self.host_cxx = CXXCompiler(nvcc_host_compiler, None)
-                self.host_cxx_type = self.host_cxx.type
+                self.cxx.host_cxx = CXXCompiler(nvcc_host_compiler, None)
+                self.host_cxx_type = self.cxx.host_cxx.type
                 if self.host_cxx_type is not None:
-                    assert self.host_cxx.version is not None
-                    maj_v, min_v, _ = self.host_cxx.version
+                    assert self.cxx.host_cxx.version is not None
+                    maj_v, min_v, _ = self.cxx.host_cxx.version
                     self.config.available_features.add(self.host_cxx_type)
                     self.config.available_features.add(
                         "%s-%s" % (self.host_cxx_type, maj_v)
@@ -413,14 +413,14 @@ class Configuration(object):
                         "%s-%s.%s" % (self.host_cxx_type, maj_v, min_v)
                     )
                 self.lit_config.note(
-                    "detected host_cxx.type as: {}".format(self.host_cxx.type)
+                    "detected host_cxx.type as: {}".format(self.cxx.host_cxx.type)
                 )
                 self.lit_config.note(
-                    "detected host_cxx.version as: {}".format(self.host_cxx.version)
+                    "detected host_cxx.version as: {}".format(self.cxx.host_cxx.version)
                 )
                 self.lit_config.note(
                     "detected host_cxx.default_dialect as: {}".format(
-                        self.host_cxx.default_dialect
+                        self.cxx.host_cxx.default_dialect
                     )
                 )
 
@@ -840,7 +840,7 @@ class Configuration(object):
 
                     # ... then we need to check if host compiler supports the
                     # dialect.
-                    cxx = self.host_cxx
+                    cxx = self.cxx.host_cxx
 
                 if cxx.type == "msvc":
                     if not cxx.hasCompileFlag("/std:%s" % s):
@@ -875,7 +875,7 @@ class Configuration(object):
         if not std:
             # There is no dialect flag. This happens with older MSVC.
             if self.cxx.type == "nvcc":
-                std = self.host_cxx.default_dialect
+                std = self.cxx.host_cxx.default_dialect
             else:
                 std = self.cxx.default_dialect
             self.lit_config.note("using default language dialect: %s" % std)
@@ -1330,7 +1330,9 @@ class Configuration(object):
             else:
                 # TODO: Re-enable soon.
                 def addIfHostSupports(flag):
-                    if hasattr(self, "host_cxx") and self.host_cxx.hasWarningFlag(flag):
+                    if hasattr(
+                        self.cxx, "host_cxx"
+                    ) and self.cxx.host_cxx.hasWarningFlag(flag):
                         self.cxx.warning_flags += ["-Xcompiler", flag]
 
                 addIfHostSupports("-Wall")
@@ -1588,7 +1590,7 @@ class Configuration(object):
         # under test.
         if not self.config.target_triple:
             target_triple = (
-                self.cxx if self.cxx.type != "nvcc" else self.host_cxx
+                self.cxx if self.cxx.type != "nvcc" else self.cxx.host_cxx
             ).getTriple()
             # Drop sub-major version components from the triple, because the
             # current XFAIL handling expects exact matches for feature checks.
@@ -1631,7 +1633,7 @@ class Configuration(object):
         arch = self.get_lit_conf("arch")
         if not arch:
             arch = (
-                (self.cxx if self.cxx.type != "nvcc" else self.host_cxx)
+                (self.cxx if self.cxx.type != "nvcc" else self.cxx.host_cxx)
                 .getTriple()
                 .split("-", 1)[0]
             )

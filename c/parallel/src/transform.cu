@@ -222,8 +222,8 @@ CUresult cccl_device_unary_transform_build(
 struct __align__({1}) input_storage_t {{
   char data[{0}];
 }};
-struct __align__({2}) output_storage_t {{
-  char data[{3}];
+struct __align__({3}) output_storage_t {{
+  char data[{2}];
 }};
 {8}
 {9}
@@ -270,9 +270,17 @@ struct device_transform_policy {{
     // Note: `-default-device` is needed because of the use of lambdas
     // in the transform kernel code. Qualifying those explicitly with
     // `__device__` seems not to be supported by NVRTC.
-    constexpr size_t num_args  = 8;
+    constexpr size_t num_args  = 9;
     const char* args[num_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-default-device"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-default-device",
+      "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -318,7 +326,7 @@ CUresult cccl_device_unary_transform(
   cccl_device_transform_build_result_t build,
   cccl_iterator_t d_in,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   CUstream stream)
 {
@@ -509,7 +517,7 @@ CUresult cccl_device_binary_transform(
   cccl_iterator_t d_in1,
   cccl_iterator_t d_in2,
   cccl_iterator_t d_out,
-  unsigned long long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   CUstream stream)
 {
@@ -521,7 +529,8 @@ CUresult cccl_device_binary_transform(
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
-    auto cuda_error = cub::detail::transform::dispatch_t<
+
+    auto exec_status = cub::detail::transform::dispatch_t<
       cub::detail::transform::requires_stable_address::no, // TODO implement yes
       OffsetT,
       ::cuda::std::tuple<indirect_arg_t, indirect_arg_t>,
@@ -537,11 +546,8 @@ CUresult cccl_device_binary_transform(
                stream,
                {build},
                cub::detail::CudaDriverLauncherFactory{cu_device, build.cc});
-    if (cuda_error != cudaSuccess)
-    {
-      const char* errorString = cudaGetErrorString(cuda_error); // Get the error string
-      std::cerr << "CUDA error: " << errorString << std::endl;
-    }
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

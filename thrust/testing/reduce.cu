@@ -16,15 +16,6 @@ struct plus_mod_10
   }
 };
 
-template <typename T>
-struct is_equal_div_10_reduce
-{
-  _CCCL_HOST_DEVICE bool operator()(const T x, const T& y) const
-  {
-    return ((int) x / 10) == ((int) y / 10);
-  }
-};
-
 template <class Vector>
 void TestReduceSimple()
 {
@@ -190,7 +181,7 @@ void TestReduceWithBigIndexesHelper(int magnitude)
 {
   thrust::constant_iterator<long long> begin(1);
   thrust::constant_iterator<long long> end = begin + (1ll << magnitude);
-  ASSERT_EQUAL(thrust::distance(begin, end), 1ll << magnitude);
+  ASSERT_EQUAL(::cuda::std::distance(begin, end), 1ll << magnitude);
 
   long long result = thrust::reduce(thrust::device, begin, end);
 

@@ -84,28 +84,28 @@ Macro(vector_type, operator_name, unittest::uint64_t)
 #define INSTANTIATE_UNARY_ARITHMETIC_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
   TestUnaryFunctional<thrust::vector_type<data_type>,                                       \
                       thrust::vector_type<data_type>,                                       \
-                      thrust::operator_name<data_type>,                                     \
-                      std::operator_name<data_type>>();
+                      ::cuda::std::operator_name<data_type>,                                \
+                      ::std::operator_name<data_type>>();
 // XXX revert OutputVector<T> back to bool
 // op(T) -> bool
 #define INSTANTIATE_UNARY_LOGICAL_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
   TestUnaryFunctional<thrust::vector_type<data_type>,                                    \
                       thrust::vector_type<data_type>,                                    \
-                      thrust::operator_name<data_type>,                                  \
-                      std::operator_name<data_type>>();
+                      ::cuda::std::operator_name<data_type>,                             \
+                      ::std::operator_name<data_type>>();
 // op(T,T) -> T
 #define INSTANTIATE_BINARY_ARITHMETIC_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
   TestBinaryFunctional<thrust::vector_type<data_type>,                                       \
                        thrust::vector_type<data_type>,                                       \
-                       thrust::operator_name<data_type>,                                     \
-                       std::operator_name<data_type>>();
+                       ::cuda::std::operator_name<data_type>,                                \
+                       ::std::operator_name<data_type>>();
 // XXX revert OutputVector<T> back to bool
 // op(T,T) -> bool
 #define INSTANTIATE_BINARY_LOGICAL_FUNCTIONAL_TEST(vector_type, operator_name, data_type) \
   TestBinaryFunctional<thrust::vector_type<data_type>,                                    \
                        thrust::vector_type<data_type>,                                    \
-                       thrust::operator_name<data_type>,                                  \
-                       std::operator_name<data_type>>();
+                       ::cuda::std::operator_name<data_type>,                             \
+                       ::std::operator_name<data_type>>();
 
 // op(T) -> T
 #define DECLARE_UNARY_ARITHMETIC_FUNCTIONAL_UNITTEST(operator_name, OperatorName)                      \
@@ -239,7 +239,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMaximumFunctional()
 
   Vector output(4);
 
-  thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::maximum<T>());
+  thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::maximum<T>());
 
   Vector ref{8, 6, 9, 7};
   ASSERT_EQUAL(output, ref);
@@ -256,7 +256,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMinimumFunctional()
 
   Vector output(4);
 
-  thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minimum<T>());
+  thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::minimum<T>());
 
   Vector ref{5, 3, 7, 3};
   ASSERT_EQUAL(output, ref);
@@ -270,7 +270,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot1()
 
   Vector output(5);
 
-  thrust::transform(input.begin(), input.end(), output.begin(), thrust::not_fn(::cuda::std::identity{}));
+  thrust::transform(input.begin(), input.end(), output.begin(), ::cuda::std::not_fn(::cuda::std::identity{}));
 
   Vector ref{0, 1, 0, 0, 1};
   ASSERT_EQUAL(output, ref);
@@ -287,7 +287,8 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
 
   Vector output(5);
 
-  thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::not_fn(thrust::equal_to<T>()));
+  thrust::transform(
+    input1.begin(), input1.end(), input2.begin(), output.begin(), ::cuda::std::not_fn(::cuda::std::equal_to<T>()));
 
   Vector ref{0, 1, 1, 0, 1};
   ASSERT_EQUAL(output, ref);

@@ -64,20 +64,21 @@
 
 #if _CCCL_COMPILER(MSVC) || _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address) < 201803L
 // MSVC implementation has lead to multiple issues with silent runtime corruption when passing data into kernels
-#  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address)
-#  define _CCCL_NO_UNIQUE_ADDRESS [[no_unique_address]]
+#  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 1
+#  define _CCCL_NO_UNIQUE_ADDRESS                 [[no_unique_address]]
 #else
-#  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #endif
 
 // Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
-// This happens up to clang18
-#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && _CCCL_COMPILER(CLANG)
-#  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
+#  undef _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
+#endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
 
 // It always fails with clang
 #if _CCCL_COMPILER(CLANG)
@@ -94,8 +95,45 @@
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(assume)
 #  define _CCCL_ASSUME(...) [[assume(__VA_ARGS__)]]
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#elif _CCCL_CUDA_COMPILER(NVCC) && _CCCL_COMPILER(NVHPC)
+#  define _CCCL_ASSUME(...) \
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);), (_CCCL_BUILTIN_ASSUME(__VA_ARGS__);))
+#else
 #  define _CCCL_ASSUME(...) _CCCL_BUILTIN_ASSUME(__VA_ARGS__)
-#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+#endif
+
+#if _CCCL_CUDA_COMPILER(NVCC, >=, 12, 5)
+#  define _CCCL_PURE __nv_pure__
+#elif _CCCL_HAS_CPP_ATTRIBUTE(gnu::pure)
+#  define _CCCL_PURE [[gnu::pure]]
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_PURE __declspec(noalias)
+#else
+#  define _CCCL_PURE
+#endif
+
+#if !_CCCL_COMPILER(MSVC) // _CCCL_HAS_CPP_ATTRIBUTE(const) doesn't work with MSVC
+#  if _CCCL_HAS_CPP_ATTRIBUTE(gnu::const)
+#    define _CCCL_CONST [[gnu::const]]
+#  else
+#    define _CCCL_CONST _CCCL_PURE
+#  endif
+#else
+#  define _CCCL_CONST _CCCL_PURE
+#endif
+
+#if _CCCL_HAS_CPP_ATTRIBUTE(clang::no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[clang::no_specializations(_MSG)]]
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
+#elif _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_specializations)
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)   [[msvc::no_specializations(_MSG)]]
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 1
+#else // ^^^ has attribute no_specializations ^^^ / vvv hasn't attribute no_specializations vvv
+#  define _CCCL_NO_SPECIALIZATIONS_BECAUSE(_MSG)
+#  define _CCCL_HAS_ATTRIBUTE_NO_SPECIALIZATIONS() 0
+#endif // ^^^ hasn't attribute no_specializations ^^^
+
+#define _CCCL_NO_SPECIALIZATIONS \
+  _CCCL_NO_SPECIALIZATIONS_BECAUSE("Users are not allowed to specialize this cccl entity")
 
 #endif // __CCCL_ATTRIBUTES_H

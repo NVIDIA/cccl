@@ -42,8 +42,8 @@ struct MoveAssignable
 
 struct CountAssign
 {
-  STATIC_MEMBER_VAR(copied, int);
-  STATIC_MEMBER_VAR(moved, int);
+  STATIC_MEMBER_VAR(copied, int)
+  STATIC_MEMBER_VAR(moved, int)
   __host__ __device__ static void reset()
   {
     copied() = moved() = 0;

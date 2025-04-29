@@ -48,6 +48,7 @@ public:
   }
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Iter, class _Sent, class _Proj, class _Comp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_Iter, _Iter>
 __minmax_element_impl(_Iter __first, _Sent __last, _Comp& __comp, _Proj& __proj)

@@ -13,7 +13,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
-from ..iterators._iterators import IteratorBase
+from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike
 
 
@@ -24,6 +24,10 @@ def make_cache_key(
     d_out_items: DeviceArrayLike | None,
     op: Callable,
 ):
+    d_in_keys, d_in_items, d_out_keys, d_out_items = scrub_duplicate_ltoirs(
+        d_in_keys, d_in_items, d_out_keys, d_out_items
+    )
+
     d_in_keys_key = (
         d_in_keys.kind
         if isinstance(d_in_keys, IteratorBase)
@@ -68,19 +72,17 @@ class _MergeSort:
         d_out_items: DeviceArrayLike | None,
         op: Callable,
     ):
-        assert (d_in_items is None) == (d_out_items is None)
+        present_in_values = d_in_items is not None
+        present_out_values = d_out_items is not None
+        assert present_in_values == present_out_values
 
         self.d_in_keys_cccl = cccl.to_cccl_iter(d_in_keys)
         self.d_in_items_cccl = cccl.to_cccl_iter(d_in_items)
         self.d_out_keys_cccl = cccl.to_cccl_iter(d_out_keys)
         self.d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
 
-        if isinstance(d_in_keys, IteratorBase):
-            value_type = d_in_keys.value_type
-        else:
-            value_type = numba.from_dtype(protocols.get_dtype(d_in_keys))
-
-        sig = (value_type, value_type)
+        value_type = cccl.get_value_type(d_in_keys)
+        sig = numba.types.int8(value_type, value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig)
 
         self.build_result = call_build(

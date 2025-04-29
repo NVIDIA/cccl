@@ -472,15 +472,15 @@ void TestRemoveCopyToDiscardIteratorZipped(const size_t n)
   using ZipIterator2 = thrust::zip_iterator<Tuple2>;
 
   ZipIterator1 h_result = thrust::remove_copy(
-    thrust::make_zip_iterator(thrust::make_tuple(h_data.begin(), h_data.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(h_data.end(), h_data.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(h_output.begin(), thrust::make_discard_iterator())),
+    thrust::make_zip_iterator(h_data.begin(), h_data.begin()),
+    thrust::make_zip_iterator(h_data.end(), h_data.end()),
+    thrust::make_zip_iterator(h_output.begin(), thrust::make_discard_iterator()),
     thrust::make_tuple(T(0), T(0)));
 
   ZipIterator2 d_result = thrust::remove_copy(
-    thrust::make_zip_iterator(thrust::make_tuple(d_data.begin(), d_data.begin())),
-    thrust::make_zip_iterator(thrust::make_tuple(d_data.end(), d_data.end())),
-    thrust::make_zip_iterator(thrust::make_tuple(d_output.begin(), thrust::make_discard_iterator())),
+    thrust::make_zip_iterator(d_data.begin(), d_data.begin()),
+    thrust::make_zip_iterator(d_data.end(), d_data.end()),
+    thrust::make_zip_iterator(d_output.begin(), thrust::make_discard_iterator()),
     thrust::make_tuple(T(0), T(0)));
 
   thrust::discard_iterator<> reference(num_nonzeros);
@@ -520,7 +520,7 @@ void TestRemoveCopyIfToDiscardIterator(const size_t n)
   thrust::host_vector<T> h_data   = unittest::random_samples<T>(n);
   thrust::device_vector<T> d_data = h_data;
 
-  size_t num_false = thrust::count_if(h_data.begin(), h_data.end(), thrust::not_fn(is_true<T>()));
+  size_t num_false = thrust::count_if(h_data.begin(), h_data.end(), ::cuda::std::not_fn(is_true<T>()));
 
   thrust::discard_iterator<> h_result =
     thrust::remove_copy_if(h_data.begin(), h_data.end(), thrust::make_discard_iterator(), is_true<T>());
@@ -572,7 +572,7 @@ void TestRemoveCopyIfStencilToDiscardIterator(const size_t n)
   thrust::host_vector<bool> h_stencil   = unittest::random_integers<bool>(n);
   thrust::device_vector<bool> d_stencil = h_stencil;
 
-  size_t num_false = thrust::count_if(h_stencil.begin(), h_stencil.end(), thrust::not_fn(is_true<T>()));
+  size_t num_false = thrust::count_if(h_stencil.begin(), h_stencil.end(), ::cuda::std::not_fn(is_true<T>()));
 
   thrust::discard_iterator<> h_result = thrust::remove_copy_if(
     h_data.begin(), h_data.end(), h_stencil.begin(), thrust::make_discard_iterator(), is_true<T>());

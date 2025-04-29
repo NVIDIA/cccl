@@ -108,7 +108,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
+    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::countr_zero(__mask_)));
   }
 
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(__bit_reference<_Cp> __x, __bit_reference<_Cp> __y) noexcept
@@ -176,7 +176,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, true> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
+    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::countr_zero(__mask_)));
   }
 
 private:
@@ -478,6 +478,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_a
   return __result;
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
+
 template <class _Cp, bool _IsConst>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_unaligned(
   __bit_iterator<_Cp, _IsConst> __first, __bit_iterator<_Cp, _IsConst> __last, __bit_iterator<_Cp, false> __result)
@@ -512,11 +515,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_u
         {
           *__result.__seg_ |= __b >> (__last.__ctz_ - __result.__ctz_);
         }
-        _CCCL_DIAG_PUSH
-        _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
         __result.__ctz_ =
           static_cast<unsigned>((((-__ddn & (__bits_per_word - 1)) + __result.__ctz_) % __bits_per_word).__data);
-        _CCCL_DIAG_POP
         __dn -= __ddn.__data;
       }
       if (__dn > 0)
@@ -570,11 +570,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_u
       __m                 = (~__storage_type(0) << (__result.__ctz_ - __dn)) & (~__storage_type(0) >> __clz_r);
       *__result.__seg_ &= ~__m;
       *__result.__seg_ |= __b >> (__bits_per_word - __result.__ctz_);
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus applied to unsigned type
       __result.__ctz_ =
         static_cast<unsigned>((((-__dn & (__bits_per_word - 1)) + __result.__ctz_) % __bits_per_word).__data);
-      _CCCL_DIAG_POP
       __n -= __dn.__data;
       if (__n > 0)
       {
@@ -589,6 +586,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> __copy_backward_u
   }
   return __result;
 }
+
+_CCCL_DIAG_POP
 
 template <class _Cp, bool _IsConst>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __bit_iterator<_Cp, false> copy_backward(

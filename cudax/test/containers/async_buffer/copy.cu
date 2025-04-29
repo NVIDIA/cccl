@@ -23,22 +23,23 @@
 #include "types.h"
 
 // TODO: only device accessible resource
-TEMPLATE_TEST_CASE("cudax::async_buffer make_async_buffer",
-                   "[container][async_buffer]",
-                   cuda::std::tuple<cuda::mr::host_accessible>,
-                   cuda::std::tuple<cuda::mr::device_accessible>,
-                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
+C2H_TEST("cudax::async_buffer make_async_buffer",
+         "[container][async_buffer]",
+         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                        cuda::std::tuple<cuda::mr::device_accessible>,
+                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
 {
-  using Env      = typename extract_properties<TestType>::env;
-  using Resource = typename extract_properties<TestType>::resource;
-  using Buffer   = typename extract_properties<TestType>::async_buffer;
+  using TestT    = c2h::get<0, TestType>;
+  using Env      = typename extract_properties<TestT>::env;
+  using Resource = typename extract_properties<TestT>::resource;
+  using Buffer   = typename extract_properties<TestT>::async_buffer;
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{};
   Resource resource{};
   Env env{resource, stream};
 
-  using MatchingResource = typename extract_properties<TestType>::matching_resource;
+  using MatchingResource = typename extract_properties<TestT>::matching_resource;
   Env matching_env{MatchingResource{resource}, stream};
 
   SECTION("Same resource and stream")

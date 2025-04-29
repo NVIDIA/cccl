@@ -5,11 +5,15 @@
 from __future__ import annotations
 
 import functools
+import os
+import subprocess
+import tempfile
 from typing import Callable, List
 
 import numba
 import numpy as np
 from numba import cuda, types
+from numba.core.extending import as_numba_type
 
 from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
 
@@ -174,7 +178,16 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def to_cccl_op(op: Callable, sig) -> Op:
+def to_cccl_op(op: Callable | None, sig) -> Op:
+    if op is None:
+        return Op(
+            operator_type=OpKind.STATELESS,
+            name=None,
+            ltoir=None,
+            state_alignment=1,
+            state=None,
+        )
+
     ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
     return Op(
         operator_type=OpKind.STATELESS,
@@ -183,6 +196,21 @@ def to_cccl_op(op: Callable, sig) -> Op:
         state_alignment=1,
         state=None,
     )
+
+
+def get_value_type(d_in: IteratorBase | DeviceArrayLike):
+    from .struct import gpu_struct_from_numpy_dtype
+
+    if isinstance(d_in, IteratorBase):
+        return d_in.value_type
+    dtype = get_dtype(d_in)
+    if dtype.type == np.void:
+        # we can't use the numba type corresponding to numpy struct
+        # types directly, as those are passed by pointer to device
+        # functions. Instead, we create an anonymous struct type
+        # which has the appropriate pass-by-value semantics.
+        return as_numba_type(gpu_struct_from_numpy_dtype("anonymous", dtype))
+    return numba.from_dtype(dtype)
 
 
 def set_cccl_iterator_state(cccl_it: Iterator, input_it):
@@ -204,6 +232,29 @@ def get_paths() -> List[str]:
     return paths
 
 
+def _check_compile_result(cubin: bytes):
+    # check compiled code for LDL/STL instructions
+    temp_cubin_file = tempfile.NamedTemporaryFile(delete=False)
+    try:
+        temp_cubin_file.write(cubin)
+        out = subprocess.run(
+            ["nvdisasm", "-gi", temp_cubin_file.name], capture_output=True
+        )
+        if out.returncode != 0:
+            raise RuntimeError("nvdisasm failed")
+        sass = out.stdout.decode("utf-8")
+    finally:
+        os.unlink(temp_cubin_file.name)
+
+    assert "LDL" not in sass, "LDL instruction found in SASS"
+    assert "STL" not in sass, "STL instruction found in SASS"
+
+
+# this global variable controls whether the compile result is checked
+# for LDL/STL instructions. Should be set to `True` for testing only.
+_check_sass: bool = False
+
+
 def call_build(build_impl_fn: Callable, *args, **kwargs):
     """Calls given build_impl_fn callable while providing compute capability and paths
 
@@ -214,9 +265,12 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
     common_data = CommonData(
         cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, cuda_include_path
     )
-    error = build_impl_fn(
+    result = build_impl_fn(
         *args,
         common_data,
         **kwargs,
     )
-    return error
+    if _check_sass:
+        cubin = result._get_cubin()
+        _check_compile_result(cubin)
+    return result

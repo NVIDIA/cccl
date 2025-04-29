@@ -342,7 +342,7 @@ thrust::pair<Iterator3, Iterator4> reduce_by_key(
     tail_flags.end(),
     interval_size,
     interval_output_offsets.begin() + 1,
-    thrust::plus<size_t>());
+    ::cuda::std::plus<size_t>());
   interval_output_offsets[0] = 0;
 
   // scan the counts to get each body's output offset

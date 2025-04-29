@@ -36,6 +36,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Compare,
           class _InputIterator,

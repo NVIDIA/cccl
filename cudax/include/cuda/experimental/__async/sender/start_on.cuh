@@ -31,31 +31,32 @@
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
 template <class _Sch>
-struct __sch_env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
 {
   _Sch __sch_;
 
-  _Sch query(get_scheduler_t) const noexcept
+  auto query(get_scheduler_t) const noexcept -> _Sch
   {
     return __sch_;
   }
 };
 
-_CCCL_GLOBAL_CONSTANT struct start_on_t
+struct start_on_t
 {
 private:
   template <class _Rcvr, class _Sch, class _CvSndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>
   {
-    using operation_state_concept = operation_state_t;
-    using __env_t                 = env_of_t<_Rcvr>;
-    using __rcvr_with_sch_t       = __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
+    using __rcvr_with_sch_t _CCCL_NODEBUG_ALIAS       = __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>;
 
     _CUDAX_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
         : __rcvr_with_sch_t{static_cast<_Rcvr&&>(__rcvr), {__sch}}
@@ -84,30 +85,30 @@ private:
     connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
   };
 
+public:
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
-public:
   template <class _Sch, class _Sndr>
-  _CUDAX_API auto operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>;
-} start_on{};
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>;
+};
 
 template <class _Sch, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
 {
-  using sender_concept = sender_t;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
   _CCCL_NO_UNIQUE_ADDRESS start_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
 
   template <class _Env>
-  using __env_t = env<__sch_env_t<_Sch>, _FWD_ENV_T<_Env>>;
+  using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, _FWD_ENV_T<_Env>>;
 
   template <class _Self, class... _Env>
   _CUDAX_API static constexpr auto get_completion_signatures()
   {
-    using __sch_sndr   = schedule_result_t<_Sch>;
-    using __child_sndr = __copy_cvref_t<_Self, _Sndr>;
+    using __sch_sndr _CCCL_NODEBUG_ALIAS   = schedule_result_t<_Sch>;
+    using __child_sndr _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
     _CUDAX_LET_COMPLETIONS(
       auto(__sndr_completions) = __async::get_completion_signatures<__child_sndr, __env_t<_Env>...>())
     {
@@ -133,17 +134,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
     return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
   }
 
-  _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
+  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return __async::get_env(__sndr_);
   }
 };
 
 template <class _Sch, class _Sndr>
-_CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>
+_CUDAX_TRIVIAL_API constexpr auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept
+  -> __sndr_t<_Sch, _Sndr>
 {
   return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
 }
+
+template <class _Sch, class _Sndr>
+inline constexpr size_t structured_binding_size<start_on_t::__sndr_t<_Sch, _Sndr>> = 3;
+
+_CCCL_GLOBAL_CONSTANT start_on_t start_on{};
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>

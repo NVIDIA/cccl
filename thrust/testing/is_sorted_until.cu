@@ -35,24 +35,24 @@ void TestIsSortedUntilSimple()
 
   last = v.begin() + 3;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, thrust::less<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::less<T>()));
 
   last = v.begin() + 4;
   ref  = v.begin() + 3;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, thrust::less<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::less<T>()));
 
   last = v.begin() + 1;
   ref  = v.begin() + 1;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, thrust::greater<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
 
   last = v.begin() + 4;
   ref  = v.begin() + 1;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, thrust::greater<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
 
   first = v.begin() + 2;
   last  = v.begin() + 4;
   ref   = v.begin() + 4;
-  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, thrust::greater<T>()));
+  ASSERT_EQUAL_QUIET(ref, thrust::is_sorted_until(first, last, ::cuda::std::greater<T>()));
 }
 DECLARE_VECTOR_UNITTEST(TestIsSortedUntilSimple);
 
