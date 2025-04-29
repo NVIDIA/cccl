@@ -38,6 +38,11 @@ dtype_size_pairs = [
 ]
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_reduce_cache():
+    algorithms.reduce_into.cache_clear()
+
+
 @pytest.mark.parametrize("dtype,num_items", dtype_size_pairs)
 def test_device_reduce(dtype, num_items):
     def op(a, b):

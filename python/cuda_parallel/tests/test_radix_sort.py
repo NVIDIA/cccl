@@ -30,6 +30,11 @@ PROBLEM_SIZES = [2, 10, 20]
 DTYPE_SIZE = [(dt, 2**log_size) for dt in DTYPE_LIST for log_size in PROBLEM_SIZES]
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_radix_sort_cache():
+    algorithms.radix_sort.cache_clear()
+
+
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
     rng = np.random.default_rng()
     if np.isdtype(dtype, "integral"):

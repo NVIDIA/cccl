@@ -80,6 +80,11 @@ dtype_size_pairs = [
 ]
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_merge_sort_cache():
+    algorithms.merge_sort.cache_clear()
+
+
 @pytest.mark.parametrize("dtype,num_items", dtype_size_pairs)
 def test_merge_sort_keys(dtype, num_items):
     h_in_keys = random_array(num_items, dtype)

@@ -29,6 +29,12 @@ def binary_transform_device(d_input1, d_input2, d_output, num_items, op, stream=
     transform(d_input1, d_input2, d_output, num_items, stream=stream)
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_transform_cache():
+    algorithms.unary_transform.cache_clear()
+    algorithms.binary_transform.cache_clear()
+
+
 def test_unary_transform(input_array):
     # example-begin transform-unary
     import numpy as np

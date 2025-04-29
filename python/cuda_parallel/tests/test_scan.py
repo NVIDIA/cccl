@@ -41,6 +41,12 @@ def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, strea
     scan(d_temp_storage, d_input, d_output, num_items, h_init, stream=stream)
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_scan_cache():
+    algorithms.inclusive_scan.cache_clear()
+    algorithms.exclusive_scan.cache_clear()
+
+
 @pytest.mark.parametrize(
     "force_inclusive",
     [True, False],

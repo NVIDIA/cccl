@@ -32,6 +32,11 @@ DTYPE_SIZE_PAIRS = [
 ]
 
 
+@pytest.fixture(scope="function", autouse=True)
+def clear_unique_by_key_cache():
+    algorithms.unique_by_key.cache_clear()
+
+
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
     rng = np.random.default_rng()
     if np.isdtype(dtype, "integral"):
