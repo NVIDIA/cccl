@@ -29,3 +29,19 @@ function run_tests {
 
   print_time_summary
 }
+
+function run_tests_from_wheel {
+  module=$1
+  wheel_path=$2
+  TEMP_VENV_DIR="/tmp/${module}_venv"
+  rm -rf "${TEMP_VENV_DIR}"
+  python -m venv "${TEMP_VENV_DIR}"
+  . "${TEMP_VENV_DIR}/bin/activate"
+  pip install ${wheel_path}.[test]
+  begin_group "⚙️ ${module} site-packages"
+  pip freeze
+  end_group "⚙️ ${module} site-packages"
+  run_command "🚀  Pytest ${module}" pytest -n ${PARALLEL_LEVEL} -v ./tests
+  deactivate
+  print_time_summary
+}
