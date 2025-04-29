@@ -8,6 +8,9 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+# Only run python build and test jobs for testing
+    - {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python'}
+    - {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtx2080'}
 
   pull_request:
     # Old CTK/compiler
