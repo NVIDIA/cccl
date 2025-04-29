@@ -50,4 +50,4 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cuda/__nvtx/nvtx.h>
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
