@@ -154,8 +154,12 @@ public:
 
     // If i < n Iterating a bijection like this will always terminate.
     // If i >= n, then this may loop forever.
-    // TODO Do we need a runtime check apart from this assert?
-    assert(upcast_i < upcast_n && "IndexType out of range");
+    if (upcast_i >= upcast_n)
+    { // Avoid infinite loop.
+      _CCCL_ASSERT(false, "index out of range");
+      return upcast_i;
+    }
+
     do
     {
       upcast_i = bijection(upcast_i);

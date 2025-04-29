@@ -588,6 +588,37 @@ void TestShuffleIteratorConstructibleFromBijection()
 }
 DECLARE_UNITTEST(TestShuffleIteratorConstructibleFromBijection);
 
+void TestShuffleAndPermutationIterator()
+{
+  thrust::default_random_engine g(0xD5);
+
+  auto it = thrust::make_shuffle_iterator(32, g);
+
+  thrust::device_vector<uint64_t> data(32);
+  thrust::sequence(data.begin(), data.end(), 0);
+
+  auto permute_it = thrust::make_permutation_iterator(data.begin(), it);
+
+  thrust::device_vector<uint64_t> premute_vec(32);
+  thrust::gather(it, it + 32, data.begin(), premute_vec.begin());
+
+  ASSERT_EQUAL(true, thrust::equal(permute_it, permute_it + 32, premute_vec.begin()));
+}
+DECLARE_UNITTEST(TestShuffleAndPermutationIterator);
+
+void TestShuffleIteratorStateless()
+{
+  thrust::default_random_engine g(0xD5);
+
+  auto it = thrust::make_shuffle_iterator(32, g);
+
+  ASSERT_EQUAL(*it, *it);
+  ASSERT_EQUAL(*(it + 1), *(it + 1));
+  ++it;
+  ASSERT_EQUAL(*(it - 1), *(it - 1));
+}
+DECLARE_UNITTEST(TestShuffleIteratorStateless);
+
 // Individual input keys should be permuted to output locations with uniform
 // probability. Perform chi-squared test with confidence 99.9%.
 template <typename ShuffleFunc, typename Vector>

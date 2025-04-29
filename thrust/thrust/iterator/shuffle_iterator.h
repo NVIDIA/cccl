@@ -65,8 +65,7 @@ struct make_shuffle_iterator_base
 //! \p shuffle_iterator is an iterator which generates a sequence of values representing a random permutation.
 //! \tparam IndexType The type of the index to shuffle.
 //! \tparam BijectionFunc The bijection to use. This should be a bijective function that maps [0..n) -> [0..n). It must
-//! be deterministic and stateless. The function will be constructed with parameters (n, g) where n is the number of
-//! elements in the permutation and g is a \c URBG that can be used to seed the bijection.
+//! be deterministic and stateless.
 //!
 //! \addtogroup iterators
 //! \{
@@ -76,7 +75,7 @@ struct make_shuffle_iterator_base
 //! \{
 
 //! \p shuffle_iterator is an iterator which generates a sequence of values representing a random permutation. This
-//! iterator is useful for working with random permutations of a range without explicitly storing it in memory. The
+//! iterator is useful for working with random permutations of a range without explicitly storing them in memory. The
 //! shuffle iterator is also useful for sampling from a range by selecting only a subset of the elements in the
 //! permutation.
 //!
@@ -88,15 +87,15 @@ struct make_shuffle_iterator_base
 //! ...
 //! // create a shuffle iterator
 //! thrust::shuffle_iterator<int> iterator(4, thrust::default_random_engine(0xDEADBEEF));
-//! iterator[0] // returns 1
-//! iterator[1] // returns 3
-//! iterator[2] // returns 2
-//! iterator[3] // returns 0
+//! // iterator[0] returns 1
+//! // iterator[1] returns 3
+//! // iterator[2] returns 2
+//! // iterator[3] returns 0
 //!
 //! thrust::device_vector<int> vec = {0, 10, 20, 30};
 //! thrust::device_vector<int> shuffled(4);
 //! thrust::gather(iterator, iterator + 4, vec.begin(), shuffled.begin());
-//! shuffled // returns {10, 30, 20, 0}
+//! // shuffled returns {10, 30, 20, 0}
 //! \endcode
 //!
 //! This next example demonstrates how to use a \p shuffle_iterator to randomly sample from a vector.
@@ -107,10 +106,10 @@ struct make_shuffle_iterator_base
 //! // create a shuffle iterator
 //! thrust::shuffle_iterator<int> iterator(100, thrust::default_random_engine(0xDEADBEEF));
 //!
-//! iterator[0] // returns 38
-//! iterator[1] // returns 50
-//! iterator[2] // returns 18
-//! iterator[3] // returns 12
+//! // iterator[0] returns 38
+//! // iterator[1] returns 50
+//! // iterator[2] returns 18
+//! // iterator[3] returns 12
 //!
 //! // create a vector of size 100
 //! thrust::device_vector<int> vec(100);
@@ -121,7 +120,7 @@ struct make_shuffle_iterator_base
 //!
 //! // sample 4 random values from vec
 //! thrust::gather(iterator, iterator + 4, vec.begin(), sample.begin());
-//! sample // returns {138, 150, 118, 112}
+//! // sample returns {138, 150, 118, 112}
 //! \endcode
 //!
 //! \see make_shuffle_iterator
@@ -134,7 +133,8 @@ class shuffle_iterator : public detail::make_shuffle_iterator_base<IndexType, Bi
   //! \endcond
 
 public:
-  //! \brief Constructs a \p shuffle_iterator with a given number of elements and a \c URBG.
+  //! \brief Constructs a \p shuffle_iterator with a given number of elements and a \c URBG. The parameters will be
+  //! forwarded to the bijection constructor.
   //! \param n The number of elements in the permutation.
   //! \param g The \c URBG used to generate the random permutation. This is only invoked during construction of the \p
   //! shuffle_iterator.
@@ -145,7 +145,7 @@ public:
       , bijection(n, ::cuda::std::forward<URBG>(g))
   {}
 
-  //! \brief Constructs a \p shuffle_iterator with a given number of elements and a \c URBG.
+  //! \brief Constructs a \p shuffle_iterator with a given bijection.
   //! \param bijection The bijection to use.
   _CCCL_HOST_DEVICE shuffle_iterator(BijectionFunc bijection)
       : super_t(IndexType{0})
