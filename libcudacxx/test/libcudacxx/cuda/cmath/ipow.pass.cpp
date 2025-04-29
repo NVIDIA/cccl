@@ -16,7 +16,7 @@
 template <class B, class E, class In1, class In2, class Ref>
 __host__ __device__ constexpr void test_ipow(In1 base, In2 exp, Ref ref)
 {
-  if (cuda::std::in_range<B>(base) && cuda::std::in_range<E>(exp))
+  if (cuda::std::in_range<B>(base) && cuda::std::in_range<E>(exp) && cuda::std::in_range<B>(ref))
   {
     assert(cuda::ipow(static_cast<B>(base), static_cast<E>(exp)) == static_cast<B>(ref));
   }

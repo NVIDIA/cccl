@@ -49,7 +49,7 @@ Math
      - CCCL 3.0.0
      - CUDA 13.0
 
-  * - :ref:`ipow <libcudacxx-extended-api-math-ipow>`
+   * - :ref:`ipow <libcudacxx-extended-api-math-ipow>`
      - Integer power
      - CCCL 3.1.0
      - CUDA 13.1
