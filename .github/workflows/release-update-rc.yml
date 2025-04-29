@@ -115,7 +115,7 @@ jobs:
 
   notify-success:
     if: ${{ success() }}
-    needs: 
+    needs:
       - tag
       - prepare
     runs-on: ubuntu-latest

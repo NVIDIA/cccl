@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-
 #include "utils.h"
 
 int main(int argc, char** argv)

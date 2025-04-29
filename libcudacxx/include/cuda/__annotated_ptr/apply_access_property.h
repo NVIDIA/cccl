@@ -129,195 +129,73 @@
  * (v. August 20, 2021)
  */
 
+#ifndef _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
+#define _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#include <cuda/__annotated_ptr/access_property.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-namespace __detail_ap
+template <typename _Shape>
+_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+  [[maybe_unused]] const volatile void* __ptr,
+  [[maybe_unused]] _Shape __shape,
+  [[maybe_unused]] access_property::persisting __prop) noexcept
 {
-
-template <typename _Property>
-_CCCL_DEVICE void* __associate_address_space(void* __ptr, _Property __prop)
-{
-#if _CCCL_HAS_CUDA_COMPILER()
-  if (std::is_same<_Property, access_property::shared>::value == true)
-  {
-    [[maybe_unused]] bool __b = __isShared(__ptr);
-    _CCCL_ASSERT(__b, "");
-    _CCCL_ASSUME(__b);
-  }
-  else if (std::is_same<_Property, access_property::global>::value == true
-           || std::is_same<_Property, access_property::normal>::value == true
-           || std::is_same<_Property, access_property::persisting>::value == true
-           || std::is_same<_Property, access_property::streaming>::value == true
-           || std::is_same<_Property, access_property>::value)
-  {
-    [[maybe_unused]] bool __b = __isGlobal(__ptr);
-    _CCCL_ASSERT(__b, "");
-    _CCCL_ASSUME(__b);
-  }
-#endif // _CCCL_HAS_CUDA_COMPILER()
-
-  return __ptr;
+  // clang-format off
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
+     auto __ptr1 = const_cast<void*>(__ptr);
+     if (!__isGlobal(__ptr1))
+     {
+       return;
+     }
+     constexpr size_t __line_size = 128;
+     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     auto __nbytes                = static_cast<size_t>(__shape);
+     // Apply to all 128 bytes aligned cache lines inclusive of __p
+     for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
+       asm volatile("prefetch.global.L2::evict_last [%0];" ::"l"(__p + __i) :);
+     }))
+  // clang-format on
 }
 
-template <typename __Prop>
-_CCCL_DEVICE void* __associate_descriptor(void* __ptr, __Prop __prop)
+template <typename _Shape>
+_LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
+  [[maybe_unused]] const volatile void* __ptr,
+  [[maybe_unused]] _Shape __shape,
+  [[maybe_unused]] access_property::normal __prop) noexcept
 {
-  return __associate_descriptor(__ptr, static_cast<std::uint64_t>(access_property(__prop)));
+  // clang-format off
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_80,
+    (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
+     auto __ptr1 = const_cast<void*>(__ptr);
+     if (!__isGlobal(__ptr1))
+     {
+       return;
+     }
+     constexpr size_t __line_size = 128;
+     auto __p                     = reinterpret_cast<uint8_t*>(__ptr1);
+     auto __nbytes                = static_cast<size_t>(__shape);
+     // Apply to all 128 bytes aligned cache lines inclusive of __p
+     for (size_t __i = 0; __i < __nbytes; __i += __line_size) {
+       asm volatile("prefetch.global.L2::evict_normal [%0];" ::"l"(__p + __i) :);
+     }))
+  // clang-format on
 }
-
-template <>
-inline _CCCL_DEVICE void* __associate_descriptor(void* __ptr, std::uint64_t __prop)
-{
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80, (return __nv_associate_access_property(__ptr, __prop);), (return __ptr;))
-}
-
-template <>
-inline _CCCL_DEVICE void* __associate_descriptor(void* __ptr, access_property::shared)
-{
-  return __ptr;
-}
-
-template <typename _Type, typename _Property>
-_CCCL_HOST_DEVICE _Type* __associate(_Type* __ptr, _Property __prop)
-{
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return static_cast<_Type*>(__associate_descriptor(
-                      __associate_address_space(const_cast<void*>(static_cast<const void*>(__ptr)), __prop), __prop));),
-                    (return __ptr;))
-}
-
-template <typename _Property>
-class __annotated_ptr_base
-{
-  using __error = typename _Property::__unknown_access_property_type;
-};
-
-template <>
-class __annotated_ptr_base<access_property::shared>
-{
-protected:
-  static constexpr std::uint64_t __prop = 0;
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::shared) noexcept {}
-  inline _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return __associate(__p, access_property::shared{});
-  }
-  _CCCL_HOST_DEVICE constexpr access_property::shared __get_property() const noexcept
-  {
-    return access_property::shared{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::global>
-{
-protected:
-  static constexpr std::uint64_t __prop = __sm_80::__interleave_normal();
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::global) noexcept {}
-  inline _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return __associate(__p, access_property::global{});
-  }
-  _CCCL_HOST_DEVICE constexpr access_property::global __get_property() const noexcept
-  {
-    return access_property::global{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::normal>
-{
-protected:
-  static constexpr std::uint64_t __prop = __sm_80::__interleave_normal_demote();
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::normal) noexcept {}
-  inline _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return __associate(__p, access_property::normal{});
-  }
-  _CCCL_HOST_DEVICE constexpr access_property::normal __get_property() const noexcept
-  {
-    return access_property::normal{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::persisting>
-{
-protected:
-  static constexpr std::uint64_t __prop = __sm_80::__interleave_persisting();
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::persisting) noexcept {}
-  inline _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return __associate(__p, access_property::persisting{});
-  }
-  _CCCL_HOST_DEVICE constexpr access_property::persisting __get_property() const noexcept
-  {
-    return access_property::persisting{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property::streaming>
-{
-protected:
-  static constexpr std::uint64_t __prop = __sm_80::__interleave_streaming();
-
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base() noexcept                              = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property::streaming) noexcept {}
-  inline _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return __associate(__p, access_property::streaming{});
-  }
-  _CCCL_HOST_DEVICE constexpr access_property::streaming __get_property() const noexcept
-  {
-    return access_property::streaming{};
-  }
-};
-
-template <>
-class __annotated_ptr_base<access_property>
-{
-protected:
-  std::uint64_t __prop;
-
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base() noexcept
-      : __prop(access_property())
-  {}
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(std::uint64_t __property) noexcept
-      : __prop(__property)
-  {}
-  _CCCL_HOST_DEVICE constexpr __annotated_ptr_base(access_property __property) noexcept
-      : __annotated_ptr_base(static_cast<std::uint64_t>(__property))
-  {}
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base(__annotated_ptr_base const&)            = default;
-  _CCCL_HIDE_FROM_ABI constexpr __annotated_ptr_base& operator=(const __annotated_ptr_base&) = default;
-  inline _CCCL_DEVICE void* __apply_prop(void* __p) const
-  {
-    return __associate(__p, __prop);
-  }
-  _CCCL_HOST_DEVICE access_property __get_property() const noexcept
-  {
-    return reinterpret_cast<access_property&>(const_cast<std::uint64_t&>(__prop));
-  }
-};
-} // namespace __detail_ap
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY

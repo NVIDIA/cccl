@@ -25,8 +25,7 @@
 #include <vector>
 
 #include <c2h/catch2_test_helper.h>
-#include <cccl/c/reduce.h>
-#include <cccl/c/scan.h>
+#include <cccl/c/types.h>
 #include <nvrtc.h>
 
 static std::string inspect_sass(const void* cubin, size_t cubin_size)
@@ -402,7 +401,7 @@ struct pointer_t
   T* ptr{};
   size_t size{};
 
-  pointer_t(int num_items)
+  pointer_t(std::size_t num_items)
   {
     REQUIRE(cudaSuccess == cudaMalloc(&ptr, num_items * sizeof(T)));
     size = num_items;
