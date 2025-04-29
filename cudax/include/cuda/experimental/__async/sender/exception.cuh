@@ -33,7 +33,7 @@
       NV_IS_HOST, (try { _CCCL_PP_EXPAND _TRY } catch (...){_CCCL_PP_EXPAND _CATCH}), ({_CCCL_PP_EXPAND _TRY}))
 #else
 #  define _CUDAX_CATCH(...)
-#  define _CUDAX_TRY(_TRY, _CATCH) _NV_EVAL(try { _CCCL_PP_EXPAND _TRY } catch (...){_CCCL_PP_EXPAND _CATCH})
+#  define _CUDAX_TRY(_TRY, _CATCH) _CCCL_PP_EXPAND(try { _CCCL_PP_EXPAND _TRY } catch (...){_CCCL_PP_EXPAND _CATCH})
 #endif
 
 #if defined(__CUDA_ARCH__)
