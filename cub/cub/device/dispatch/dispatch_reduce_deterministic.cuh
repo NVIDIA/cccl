@@ -28,7 +28,7 @@
 /**
  * @file cub::DeterministicDeviceReduce provides device-wide, parallel operations for
  *       computing a reduction across a sequence of data items residing within
- *       device-accessible memory. Current reduction operator supported is cub::Sum
+ *       device-accessible memory. Current reduction operator supported is ::cuda::std::plus
  */
 
 #pragma once
@@ -55,13 +55,10 @@
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
+#include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include "thrust/iterator/transform_output_iterator.h"
-
-_CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <stdio.h>
 
@@ -192,7 +189,6 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
   constexpr int BinLength         = AccumT::MAXINDEX + AccumT::MAXFOLD;
   constexpr auto ITEMS_PER_THREAD = ChainedPolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
   constexpr auto BLOCK_THREADS    = ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS;
-  constexpr auto TILE_SIZE        = BLOCK_THREADS * ITEMS_PER_THREAD;
   const int GRID_DIM              = reduce_grid_size;
   const int tid                   = BLOCK_THREADS * blockIdx.x + threadIdx.x;
 
@@ -490,7 +486,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
 
   using AcumFloatTransformT = detail::rfa_detail::rfa_float_transform_t<AccumT>;
 
-  using OutputIteratorTransformT = thrust::transform_output_iterator<AcumFloatTransformT, OutputIteratorT>;
+  using OutputIteratorTransformT = THRUST_NS_QUALIFIER::transform_output_iterator<AcumFloatTransformT, OutputIteratorT>;
   //---------------------------------------------------------------------------
   // Problem state
   //---------------------------------------------------------------------------
@@ -982,7 +978,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
     cudaStream_t stream                                     = {},
     TransformOpT transform_op                               = {})
   {
-    OutputIteratorTransformT d_out_transformed = thrust::make_transform_output_iterator(d_out, AcumFloatTransformT{});
+    OutputIteratorTransformT d_out_transformed = THRUST_NS_QUALIFIER::make_transform_output_iterator(d_out, AcumFloatTransformT{});
 
     return DispatchHelper(
       d_temp_storage,
