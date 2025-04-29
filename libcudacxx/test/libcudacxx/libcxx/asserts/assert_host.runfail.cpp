@@ -18,6 +18,10 @@
 
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_CLANG("-Wassume")
+
 __host__ __device__ inline bool failed_on_host()
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, return true;, return false;)

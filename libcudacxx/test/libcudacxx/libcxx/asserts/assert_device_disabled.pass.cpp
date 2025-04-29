@@ -15,7 +15,6 @@
 
 #include "test_macros.h"
 
-TEST_DIAG_SUPPRESS_GCC("-Wassume")
 TEST_DIAG_SUPPRESS_CLANG("-Wassume")
 TEST_DIAG_SUPPRESS_NVHPC(assume_expression_discarded)
 TEST_DIAG_SUPPRESS_MSVC(4702)
