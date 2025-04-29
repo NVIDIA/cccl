@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CMATH_UABS_H
-#define _CUDA___CMATH_UABS_H
+#ifndef _CUDA___CMATH_UNEGATE_H
+#define _CUDA___CMATH_UNEGATE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,33 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/neg.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
-#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! @brief Returns the *unsigned* absolute value of the given number.
+//! @brief Returns the negative value of the input number
 //! @param __v The input number
-//! @pre \p __v must be an integer type
-//! @return The unsigned absolute value of \p __v
+//! @return The signed negative value of \p __v
+//! @note This function doesn't cause undefined behavior when negating the minimum value of a signed integer type.
 _CCCL_TEMPLATE(class _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::make_unsigned_t<_Tp> uabs(_Tp __v) noexcept
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp neg(_Tp __v) noexcept
 {
-  if constexpr (_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp))
-  {
-    using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
-    return (__v < _Tp(0)) ? static_cast<_Up>(::cuda::neg(__v)) : static_cast<_Up>(__v);
-  }
-  else
-  {
-    return __v;
-  }
+  return static_cast<_Tp>(~_CUDA_VSTD::__to_unsigned_like(__v) + 1);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA___CMATH_UABS_H
+#endif // _CUDA___CMATH_UNEGATE_H
