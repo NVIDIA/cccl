@@ -74,32 +74,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // This is possible because we are calling ::new ignoring any user defined overloads of operator placement new
 namespace __detail
 {
-// We cannot allow narrowing conversions between arithmetic types as the assignment will give errors
-template <class _To, class...>
-struct __is_narrowing_impl : false_type
-{};
-
-template <class _To, class _From>
-struct __is_narrowing_impl<_To, _From> : true_type
-{};
-
-// This is a bit hacky, but we rely on the fact that arithmetic types cannot have more than one argument to their
-// constructor
-template <class _To, class _From>
-struct __is_narrowing_impl<_To, _From, void_t<decltype(_To{_CUDA_VSTD::declval<_From>()})>> : false_type
-{};
+// We cannot allow narrowing conversions between arithmetic types as the assignment will generate an error
+template <class _Tp, class... _Args>
+using __check_narrowing =
+  conditional_t<sizeof...(_Args) == 1, __cccl_internal::__is_non_narrowing_convertible<_Tp, _Args...>, true_type>;
 
 template <class _Tp, class... _Args>
-using __is_narrowing = _If<_CCCL_TRAIT(is_arithmetic, _Tp), __is_narrowing_impl<_Tp, _Args...>, false_type>;
-
-// The destination type must be trivially constructible from the arguments and also trivially assignable, because we
-// technically move assign in the optimization
-template <class _Tp, class... _Args>
-struct __can_optimize_construct_at
-    : integral_constant<bool,
-                        _CCCL_TRAIT(is_trivially_constructible, _Tp, _Args...)
-                          && _CCCL_TRAIT(is_trivially_move_assignable, _Tp) && !__is_narrowing<_Tp, _Args...>::value>
-{};
+_CCCL_CONCEPT __can_optimize_construct_at = _CCCL_REQUIRES_EXPR((_Tp, variadic _Args))(
+  requires(is_trivially_constructible_v<_Tp, _Args...>),
+  requires(is_trivially_move_assignable_v<_Tp>),
+  requires(__check_narrowing<_Tp, _Args...>::value));
 } // namespace __detail
 
 // construct_at
@@ -109,8 +93,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>, _Tp*>
 construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
@@ -126,8 +109,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>, _Tp*>
 construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
@@ -144,8 +126,7 @@ construct_at(_Tp* __location, _Args&&... __args)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>, _Tp*>
 __construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
@@ -161,8 +142,7 @@ __construct_at(_Tp* __location, _Args&&... __args)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>, _Tp*>
 __construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
