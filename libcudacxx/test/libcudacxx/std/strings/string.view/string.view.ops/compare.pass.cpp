@@ -32,14 +32,15 @@
 template <class SV>
 __host__ __device__ constexpr void test_compare()
 {
-  using CharT  = typename SV::value_type;
-  using SizeT  = typename SV::size_type;
-  using Traits = typename SV::traits_type;
+  using CharT = typename SV::value_type;
+  using SizeT = typename SV::size_type;
 
   // constexpr int compare(basic_string_view str) const noexcept;
 
   static_assert(cuda::std::is_same_v<int, decltype(SV{}.compare(SV{}))>);
+#if !_CCCL_COMPILER(GCC, <, 9)
   static_assert(noexcept(SV{}.compare(SV{})));
+#endif // !_CCCL_COMPILER(GCC, <, 9)
 
   {
     SV sv1{TEST_STRLIT(CharT, "12345")};

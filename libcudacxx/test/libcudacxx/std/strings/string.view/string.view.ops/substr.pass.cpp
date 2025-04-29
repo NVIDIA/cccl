@@ -17,8 +17,13 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <stdexcept>
+#endif //_CCCL_COMPILER(NVRTC)
+
 #include "literal.h"
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class SV>
 __host__ void test_substr_throw()
 {
@@ -41,21 +46,23 @@ __host__ void test_substr_throw()
     assert(false);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class SV>
 __host__ __device__ constexpr void test_substr()
 {
-  using CharT  = typename SV::value_type;
-  using SizeT  = typename SV::size_type;
-  using Traits = typename SV::traits_type;
+  using CharT = typename SV::value_type;
+  using SizeT = typename SV::size_type;
 
   static_assert(cuda::std::is_same_v<SV, decltype(SV{}.substr())>);
   static_assert(cuda::std::is_same_v<SV, decltype(SV{}.substr(SizeT{}))>);
   static_assert(cuda::std::is_same_v<SV, decltype(SV{}.substr(SizeT{}, SizeT{}))>);
 
+#if !_CCCL_COMPILER(GCC, <, 9)
   static_assert(!noexcept(SV{}.substr()));
   static_assert(!noexcept(SV{}.substr(SizeT{})));
   static_assert(!noexcept(SV{}.substr(SizeT{}, SizeT{})));
+#endif // !_CCCL_COMPILER(GCC, <, 9)
 
   const CharT* str = TEST_STRLIT(CharT, "12345");
   SV sv{str};

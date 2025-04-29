@@ -25,7 +25,9 @@ __host__ __device__ constexpr void test_remove_suffix()
   using SizeT = typename SV::size_type;
 
   static_assert(cuda::std::is_same_v<void, decltype(SV{}.remove_suffix(SizeT{}))>);
+#if !_CCCL_COMPILER(GCC, <, 9)
   static_assert(!noexcept(SV{}.remove_suffix(SizeT{})));
+#endif // !_CCCL_COMPILER(GCC, <, 9)
 
   {
     const CharT* null_str = nullptr;

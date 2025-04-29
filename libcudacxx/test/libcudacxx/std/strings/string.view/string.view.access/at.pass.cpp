@@ -16,7 +16,9 @@
 #include <cuda/std/string_view>
 #include <cuda/std/type_traits>
 
-#include <stdexcept>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <stdexcept>
+#endif //_CCCL_COMPILER(NVRTC)
 
 #include "literal.h"
 #include <nv/target>

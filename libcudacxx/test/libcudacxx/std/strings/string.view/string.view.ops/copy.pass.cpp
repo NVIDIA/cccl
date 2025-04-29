@@ -17,8 +17,13 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <stdexcept>
+#endif //_CCCL_COMPILER(NVRTC)
+
 #include "literal.h"
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class SV>
 __host__ void test_copy_throw()
 {
@@ -42,13 +47,13 @@ __host__ void test_copy_throw()
     assert(false);
   }
 }
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class SV>
 __host__ __device__ constexpr void test_copy()
 {
-  using CharT  = typename SV::value_type;
-  using SizeT  = typename SV::size_type;
-  using Traits = typename SV::traits_type;
+  using CharT = typename SV::value_type;
+  using SizeT = typename SV::size_type;
 
   static_assert(cuda::std::is_same_v<SizeT, decltype(SV{}.copy(cuda::std::declval<CharT*>(), SizeT{}))>);
   static_assert(cuda::std::is_same_v<SizeT, decltype(SV{}.copy(cuda::std::declval<CharT*>(), SizeT{}, SizeT{}))>);

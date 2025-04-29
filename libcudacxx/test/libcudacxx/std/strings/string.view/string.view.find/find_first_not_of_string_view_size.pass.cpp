@@ -46,7 +46,6 @@ test_find_first_not_of(const SV& sv, const SV& str, typename SV::size_type pos, 
 template <class SV>
 __host__ __device__ constexpr void test_find_first_not_of()
 {
-  using CharT = typename SV::value_type;
   using SizeT = typename SV::size_type;
 
   static_assert(cuda::std::is_same_v<SizeT, decltype(SV{}.find_first_not_of(SV{}))>);

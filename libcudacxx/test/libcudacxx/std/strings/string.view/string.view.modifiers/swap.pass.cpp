@@ -23,7 +23,6 @@ template <class SV>
 __host__ __device__ constexpr void test_swap()
 {
   using CharT  = typename SV::value_type;
-  using SizeT  = typename SV::size_type;
   using Traits = typename SV::traits_type;
 
   static_assert(cuda::std::is_same_v<void, decltype(SV{}.swap(cuda::std::declval<SV&>()))>);
