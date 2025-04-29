@@ -26,6 +26,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
@@ -70,8 +71,9 @@ public:
   //! properties we need
   template <class _Env>
   static constexpr bool __is_compatible_env =
-    __async::__queryable_with<_Env, get_memory_resource_t> && __async::__queryable_with<_Env, get_stream_t>
-    && __async::__queryable_with<_Env, execution::get_execution_policy_t>;
+    _CUDA_VSTD::__queryable_with<_Env, get_memory_resource_t> //
+    && _CUDA_VSTD::__queryable_with<_Env, get_stream_t>
+    && _CUDA_VSTD::__queryable_with<_Env, execution::get_execution_policy_t>;
 
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
