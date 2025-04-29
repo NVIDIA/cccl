@@ -286,7 +286,7 @@ inline std::size_t get_override_seed_count()
 
 inline std::size_t adjust_seed_count(std::size_t requested)
 {
-  static int override_seeds = get_override_seed_count();
+  static std::size_t override_seeds = get_override_seed_count();
   return override_seeds != 0 ? override_seeds : requested;
 }
 } // namespace c2h
