@@ -66,6 +66,25 @@ C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
   REQUIRE(output == expected);
 }
 
+using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+C2H_TEST("Reduce works with integral types with well-known operations", "[reduce][well_known]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  cccl_op_t op                = make_well_known_binary_operation();
+  const std::vector<T> input  = generate<T>(num_items);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(1);
+  value_t<T> init{T{42}};
+
+  reduce(input_ptr, output_ptr, num_items, op, init);
+
+  const T output   = output_ptr[0];
+  const T expected = std::accumulate(input.begin(), input.end(), init.value);
+  REQUIRE(output == expected);
+}
+
 struct pair
 {
   short a;
@@ -82,6 +101,39 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
     "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
     "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
     "}");
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<pair> input(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input[i] = pair{a[i], b[i]};
+  }
+  pointer_t<pair> input_ptr(input);
+  pointer_t<pair> output_ptr(1);
+  value_t<pair> init{pair{4, 2}};
+
+  reduce(input_ptr, output_ptr, num_items, op, init);
+
+  const pair output   = output_ptr[0];
+  const pair expected = std::accumulate(input.begin(), input.end(), init.value, [](const pair& lhs, const pair& rhs) {
+    return pair{short(lhs.a + rhs.a), lhs.b + rhs.b};
+  });
+  REQUIRE(output.a == expected.a);
+  REQUIRE(output.b == expected.b);
+}
+
+C2H_TEST("Reduce works with custom types with well-known operations", "[reduce][well_known]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+
+  operation_t op_state = make_operation(
+    "op",
+    "struct pair { short a; size_t b; };\n"
+    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
+    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
+    "}");
+  cccl_op_t op                = op_state;
+  op.type                     = cccl_op_kind_t::CCCL_PLUS;
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);

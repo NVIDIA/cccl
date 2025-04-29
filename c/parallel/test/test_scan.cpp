@@ -89,6 +89,29 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
   }
 }
 
+using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+C2H_TEST("Scan works with integral types with well-known operations", "[scan][well_known]", integral_types)
+{
+  using T = c2h::get<0, TestType>;
+
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 16)));
+  cccl_op_t op                = make_well_known_binary_operation();
+  const std::vector<T> input  = generate<T>(num_items);
+  const std::vector<T> output(num_items, 0);
+  pointer_t<T> input_ptr(input);
+  pointer_t<T> output_ptr(output);
+  value_t<T> init{T{42}};
+
+  scan(input_ptr, output_ptr, num_items, op, init, false);
+
+  std::vector<T> expected(num_items, 0);
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<T>(output_ptr));
+  }
+}
+
 C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
 {
   using T = c2h::get<0, TestType>;
@@ -132,6 +155,42 @@ C2H_TEST("Scan works with custom types", "[scan]")
     "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
     "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
     "}");
+  const std::vector<short> a  = generate<short>(num_items);
+  const std::vector<size_t> b = generate<size_t>(num_items);
+  std::vector<pair> input(num_items);
+  std::vector<pair> output(num_items);
+  for (std::size_t i = 0; i < num_items; ++i)
+  {
+    input[i] = pair{a[i], b[i]};
+  }
+  pointer_t<pair> input_ptr(input);
+  pointer_t<pair> output_ptr(output);
+  value_t<pair> init{pair{4, 2}};
+
+  scan(input_ptr, output_ptr, num_items, op, init, false);
+
+  std::vector<pair> expected(num_items, {0, 0});
+  std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value, [](const pair& lhs, const pair& rhs) {
+    return pair{short(lhs.a + rhs.a), lhs.b + rhs.b};
+  });
+  if (num_items > 0)
+  {
+    REQUIRE(expected == std::vector<pair>(output_ptr));
+  }
+}
+
+C2H_TEST("Scan works with custom types with well-known operations", "[scan][well_known]")
+{
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+
+  operation_t op_state = make_operation(
+    "op",
+    "struct pair { short a; size_t b; };\n"
+    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
+    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
+    "}");
+  cccl_op_t op                = op_state;
+  op.type                     = cccl_op_kind_t::CCCL_PLUS;
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
   std::vector<pair> input(num_items);
