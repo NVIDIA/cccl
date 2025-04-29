@@ -50,21 +50,18 @@ struct stateless_user_operation
 {
   // Note: The user provided C f  unction (Operation.operation) must match the signature:
   // void (void* arg1, ..., void* argN, void* result_ptr)
-  __device__ typename decltype(RetT)::Type operator()(typename decltype(ArgTs)::Type... args) const
+  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args) const
   {
-    using Indices        = cuda::std::make_index_sequence<sizeof...(ArgTs)>;
-    using TargetCFuncPtr = typename MakeVoidPtrFuncPtr<Indices>::type;
+    using TargetCFuncPtr = void (*)(decltype(args, void())*..., void*);
 
     // Cast the stored operation pointer (assumed to be void* or compatible)
     auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
 
     // Prepare storage for the result
     typename decltype(RetT)::Type result;
-    // Get a void pointer to the result storage
-    void* result_ptr = static_cast<void*>(&result);
 
     // Call the C function, casting argument addresses to void*
-    c_func_ptr((static_cast<void*>(const_cast<cuda::std::remove_reference_t<decltype(args)>*>(&args)))..., result_ptr);
+    c_func_ptr((const_cast<void*>(static_cast<const void*>(&args)))..., &result);
 
     return result;
   }
@@ -80,23 +77,20 @@ template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT
 struct stateful_user_operation
 {
   user_operation_state<Operation.size, Operation.alignment> state;
-  __device__ typename decltype(RetT)::Type operator()(typename decltype(ArgTs)::Type... args)
+  __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args)
   {
     // Note: The user provided C function (Operation.operation) must match the signature:
     // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
-    using Indices        = cuda::std::make_index_sequence<sizeof...(ArgTs)>;
-    using TargetCFuncPtr = typename MakeVoidPtrStatefulFuncPtr<Indices>::type;
+    using TargetCFuncPtr = void (*)(decltype(args, void())*..., void*);
 
     // Cast the stored operation pointer (assumed to be void* or compatible)
     auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
 
     // Prepare storage for the result
     typename decltype(RetT)::Type result;
-    void* result_ptr = static_cast<void*>(&result);
 
     // Call the C function, passing state address, casting argument addresses to void*, and result pointer
-    c_func_ptr(
-      &state, (static_cast<void*>(const_cast<cuda::std::remove_reference_t<decltype(args)>*>(&args)))..., result_ptr);
+    c_func_ptr(&state, (const_cast<void*>(static_cast<const void*>(&args)))..., &result);
 
     return result;
   }
