@@ -70,11 +70,14 @@ def cuda_stream() -> Stream:
 
 
 @pytest.fixture(scope="function", autouse=True)
-def verify_sass(monkeypatch):
+def verify_sass(request, monkeypatch):
+    if request.node.get_closest_marker("no_verify_sass"):
+        return
+
     import cuda.parallel.experimental._cccl_interop
 
     monkeypatch.setattr(
         cuda.parallel.experimental._cccl_interop,
         "_check_sass",
-        False,  # todo: change to True
+        True,
     )
