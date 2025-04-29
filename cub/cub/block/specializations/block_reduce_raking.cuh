@@ -111,7 +111,7 @@ struct BlockReduceRaking
   union _TempStorage
   {
     /// Storage for warp-synchronous reduction
-    typename WarpReduce::TempStorage;
+    typename WarpReduce::TempStorage warp_storage;
 
     /// Padded thread block raking grid
     typename BlockRakingLayout::TempStorage raking_grid;
