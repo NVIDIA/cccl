@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "test_util.h"
+#include <cccl/c/scan.h>
 
 void scan(cccl_iterator_t input,
           cccl_iterator_t output,
