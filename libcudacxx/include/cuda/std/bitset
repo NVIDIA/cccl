@@ -28,10 +28,10 @@
 #include <cuda/std/__bit/reference.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_char_like_type.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__string>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #  include <cuda/std/string_view>

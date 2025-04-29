@@ -31,6 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy, class _InputIterator, class _OutputIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr pair<_InputIterator, _OutputIterator>
 __move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
@@ -42,6 +43,7 @@ __move(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
   return {__last, __result};
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _AlgPolicy,
           class _Tp,
           class _Up,

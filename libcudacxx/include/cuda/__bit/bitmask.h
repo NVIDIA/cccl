@@ -61,7 +61,7 @@ template <typename _Tp>
   return (__shift >= _CUDA_VSTD::numeric_limits<_Tp>::digits) ? _Tp{0} : __value >> __shift;
 }
 
-template <typename _Tp>
+template <typename _Tp = uint32_t>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bitmask(int __start, int __width) noexcept
 {
   static_assert(_CUDA_VSTD::__cccl_is_unsigned_integer_v<_Tp>, "bitmask() requires unsigned integer types");

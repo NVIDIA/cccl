@@ -30,17 +30,17 @@ protected:
 template <class Derived, bool Explicit = false>
 struct TestBase
 {
-  STATIC_MEMBER_VAR(alive, int);
-  STATIC_MEMBER_VAR(constructed, int);
-  STATIC_MEMBER_VAR(value_constructed, int);
-  STATIC_MEMBER_VAR(default_constructed, int);
-  STATIC_MEMBER_VAR(copy_constructed, int);
-  STATIC_MEMBER_VAR(move_constructed, int);
-  STATIC_MEMBER_VAR(assigned, int);
-  STATIC_MEMBER_VAR(value_assigned, int);
-  STATIC_MEMBER_VAR(copy_assigned, int);
-  STATIC_MEMBER_VAR(move_assigned, int);
-  STATIC_MEMBER_VAR(destroyed, int);
+  STATIC_MEMBER_VAR(alive, int)
+  STATIC_MEMBER_VAR(constructed, int)
+  STATIC_MEMBER_VAR(value_constructed, int)
+  STATIC_MEMBER_VAR(default_constructed, int)
+  STATIC_MEMBER_VAR(copy_constructed, int)
+  STATIC_MEMBER_VAR(move_constructed, int)
+  STATIC_MEMBER_VAR(assigned, int)
+  STATIC_MEMBER_VAR(value_assigned, int)
+  STATIC_MEMBER_VAR(copy_assigned, int)
+  STATIC_MEMBER_VAR(move_assigned, int)
+  STATIC_MEMBER_VAR(destroyed, int)
 
   __host__ __device__ static void reset()
   {

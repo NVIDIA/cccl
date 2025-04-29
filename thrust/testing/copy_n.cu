@@ -189,9 +189,8 @@ void TestCopyNZipIterator()
   Vector v3(4, T(0));
   Vector v4(4, T(0));
 
-  thrust::copy_n(thrust::make_zip_iterator(thrust::make_tuple(v1.begin(), v2.begin())),
-                 4,
-                 thrust::make_zip_iterator(thrust::make_tuple(v3.begin(), v4.begin())));
+  thrust::copy_n(
+    thrust::make_zip_iterator(v1.begin(), v2.begin()), 4, thrust::make_zip_iterator(v3.begin(), v4.begin()));
 
   ASSERT_EQUAL(v1, v3);
   ASSERT_EQUAL(v2, v4);
@@ -208,7 +207,7 @@ void TestCopyNConstantIteratorToZipIterator()
 
   thrust::copy_n(thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)),
                  v1.size(),
-                 thrust::make_zip_iterator(thrust::make_tuple(v1.begin(), v2.begin())));
+                 thrust::make_zip_iterator(v1.begin(), v2.begin()));
 
   Vector ref1(4, 4);
   Vector ref2(4, 7);

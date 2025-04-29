@@ -211,8 +211,8 @@ struct ReduceByKeyAgent
 
     // Whether or not the scan operation has a zero-valued identity value
     // (true if we're performing addition on a primitive type)
-    HAS_IDENTITY_ZERO =
-      ::cuda::std::is_same<ReductionOp, plus<value_type>>::value && ::cuda::std::is_arithmetic<value_type>::value
+    HAS_IDENTITY_ZERO = ::cuda::std::is_same<ReductionOp, ::cuda::std::plus<value_type>>::value
+                     && ::cuda::std::is_arithmetic<value_type>::value
   };
 
   struct impl
@@ -894,7 +894,7 @@ THRUST_RUNTIME_FUNCTION pair<KeysOutputIt, ValuesOutputIt> reduce_by_key(
 {
   using size_type = thrust::detail::it_difference_t<KeysInputIt>;
 
-  size_type num_items = thrust::distance(keys_first, keys_last);
+  size_type num_items = ::cuda::std::distance(keys_first, keys_last);
 
   pair<KeysOutputIt, ValuesOutputIt> result = thrust::make_pair(keys_output, values_output);
 
@@ -966,7 +966,14 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
                                       thrust::detail::it_value_t<ValInputIt>,
                                       thrust::detail::it_value_t<ValOutputIt>>;
   return cuda_cub::reduce_by_key(
-    policy, keys_first, keys_last, values_first, keys_output, values_output, binary_pred, plus<value_type>());
+    policy,
+    keys_first,
+    keys_last,
+    values_first,
+    keys_output,
+    values_output,
+    binary_pred,
+    ::cuda::std::plus<value_type>());
 }
 
 template <class Derived, class KeyInputIt, class ValInputIt, class KeyOutputIt, class ValOutputIt>
@@ -980,7 +987,7 @@ pair<KeyOutputIt, ValOutputIt> _CCCL_HOST_DEVICE reduce_by_key(
 {
   using KeyT = thrust::detail::it_value_t<KeyInputIt>;
   return cuda_cub::reduce_by_key(
-    policy, keys_first, keys_last, values_first, keys_output, values_output, equal_to<KeyT>());
+    policy, keys_first, keys_last, values_first, keys_output, values_output, ::cuda::std::equal_to<KeyT>());
 }
 
 } // namespace cuda_cub

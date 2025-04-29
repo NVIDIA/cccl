@@ -34,35 +34,35 @@ namespace detail
 {
 
 template <typename BinaryFunction>
-struct is_commutative : public thrust::detail::false_type
+struct is_commutative : public ::cuda::std::false_type
 {};
 
 template <typename T>
-struct is_commutative<typename thrust::plus<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::std::plus<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::multiplies<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::std::multiplies<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::minimum<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::minimum<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::maximum<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::maximum<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::logical_or<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::std::logical_or<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::logical_and<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::std::logical_and<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::bit_or<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::std::bit_or<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::bit_and<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::std::bit_and<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 template <typename T>
-struct is_commutative<typename thrust::bit_xor<T>> : public ::cuda::std::is_arithmetic<T>
+struct is_commutative<typename ::cuda::std::bit_xor<T>> : public ::cuda::std::is_arithmetic<T>
 {};
 
 } // end namespace detail

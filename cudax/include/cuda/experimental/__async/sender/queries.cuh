@@ -40,7 +40,7 @@ template <class _Ty, class _Query>
 auto __query_result_() -> decltype(declval<_Ty>().query(_Query()));
 
 template <class _Ty, class _Query>
-using __query_result_t = decltype(__async::__query_result_<_Ty, _Query>());
+using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(__async::__query_result_<_Ty, _Query>());
 
 template <class _Ty, class _Query>
 inline constexpr bool __queryable_with = __type_valid_v<__query_result_t, _Ty, _Query>;
@@ -50,7 +50,7 @@ template <class _Ty, class _Query>
 inline constexpr bool __nothrow_queryable_with = true;
 #else
 template <class _Ty, class _Query>
-using __nothrow_queryable_with_ = _CUDA_VSTD::enable_if_t<noexcept(declval<_Ty>().query(_Query{}))>;
+using __nothrow_queryable_with_ _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::enable_if_t<noexcept(declval<_Ty>().query(_Query{}))>;
 
 template <class _Ty, class _Query>
 inline constexpr bool __nothrow_queryable_with = __type_valid_v<__nothrow_queryable_with_, _Ty, _Query>;
@@ -89,7 +89,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 } get_stop_token{};
 
 template <class _Ty>
-using stop_token_of_t = __decay_t<__call_result_t<get_stop_token_t, _Ty>>;
+using stop_token_of_t _CCCL_NODEBUG_ALIAS = __decay_t<__call_result_t<get_stop_token_t, _Ty>>;
 
 template <class _Tag>
 struct get_completion_scheduler_t
@@ -162,7 +162,7 @@ _CCCL_GLOBAL_CONSTANT struct get_domain_t
 } get_domain{};
 
 template <class _Sch>
-using domain_of_t = __call_result_t<get_domain_t, _Sch>;
+using domain_of_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_domain_t, _Sch>;
 
 } // namespace cuda::experimental::__async
 

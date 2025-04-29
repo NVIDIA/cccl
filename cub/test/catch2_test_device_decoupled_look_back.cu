@@ -63,6 +63,8 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
   // "Compute" tile aggregate
   MessageT tile_aggregate = tile_data[tile_idx];
 
+  __syncthreads();
+
   if (tile_idx == 0)
   {
     // There are no blocks to look back to, immediately set the inclusive state
