@@ -17,13 +17,15 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <stdexcept>
-#endif //_CCCL_COMPILER(NVRTC)
-
 #include "literal.h"
+#include "test_macros.h"
+#include <nv/target>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if TEST_HAS_EXCEPTIONS()
+#  include <stdexcept>
+#endif // TEST_HAS_EXCEPTIONS()
+
+#if TEST_HAS_EXCEPTIONS()
 template <class SV>
 __host__ void test_substr_throw()
 {
@@ -46,7 +48,7 @@ __host__ void test_substr_throw()
     assert(false);
   }
 }
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <class SV>
 __host__ __device__ constexpr void test_substr()
@@ -98,10 +100,12 @@ __host__ __device__ constexpr void test_substr()
     assert(sub_sv.size() == 0);
   }
 
+#if TEST_HAS_EXCEPTIONS()
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (test_substr_throw<SV>();))
   }
+#endif // TEST_HAS_EXCEPTIONS()
 }
 
 __host__ __device__ constexpr bool test()

@@ -16,14 +16,15 @@
 #include <cuda/std/string_view>
 #include <cuda/std/type_traits>
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <stdexcept>
-#endif //_CCCL_COMPILER(NVRTC)
-
 #include "literal.h"
+#include "test_macros.h"
 #include <nv/target>
 
-#if !_CCCL_COMPILER(NVRTC)
+#if TEST_HAS_EXCEPTIONS()
+#  include <stdexcept>
+#endif // TEST_HAS_EXCEPTIONS()
+
+#if TEST_HAS_EXCEPTIONS()
 template <class SV>
 __host__ void test_at_throw()
 {
@@ -46,7 +47,7 @@ __host__ void test_at_throw()
     assert(false);
   }
 }
-#endif //_CCCL_COMPILER(NVRTC)
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <class SV>
 __host__ __device__ constexpr void test_at()
@@ -67,10 +68,12 @@ __host__ __device__ constexpr void test_at()
   assert(sv.at(8) == str[8]);
   assert(sv.at(11) == str[11]);
 
+#if TEST_HAS_EXCEPTIONS()
   if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     NV_IF_TARGET(NV_IS_HOST, (test_at_throw<SV>();))
   }
+#endif // TEST_HAS_EXCEPTIONS()
 }
 
 __host__ __device__ constexpr bool test()
