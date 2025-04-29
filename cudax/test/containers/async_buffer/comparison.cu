@@ -27,9 +27,7 @@ using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>
 #endif
 
 // TODO: only device accessible resource
-C2H_TEST("cudax::async_buffer comparison",
-         "[container][async_buffer]",
-         test_types)
+C2H_TEST("cudax::async_buffer comparison", "[container][async_buffer]", test_types)
 {
   using TestT    = c2h::get<0, TestType>;
   using Env      = typename extract_properties<TestT>::env;
