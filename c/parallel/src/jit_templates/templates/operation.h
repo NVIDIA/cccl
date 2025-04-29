@@ -21,30 +21,6 @@
 #include "../mappings/operation.h"
 #include "../mappings/type_info.h"
 
-// Helper to define the C function pointer type: void (*)(void*..., void*)
-template <typename Seq>
-struct MakeVoidPtrFuncPtr;
-template <cuda::std::size_t... Is>
-struct MakeVoidPtrFuncPtr<cuda::std::index_sequence<Is...>>
-{
-  // Helper type that is always void*
-  template <cuda::std::size_t>
-  using void_ptr_t = const void*;
-  // Define the function pointer type
-  using type = void (*)(void_ptr_t<Is>..., void*); // Last void* is for result
-};
-
-// Helper to define the C function pointer type for stateful ops: void (*)(void* state, void*..., void*)
-template <typename Seq>
-struct MakeVoidPtrStatefulFuncPtr;
-template <cuda::std::size_t... Is>
-struct MakeVoidPtrStatefulFuncPtr<cuda::std::index_sequence<Is...>>
-{
-  template <cuda::std::size_t>
-  using void_ptr_t = const void*;
-  using type       = void (*)(void*, void_ptr_t<Is>..., void*); // First void* is state, last is result
-};
-
 template <typename Tag, cccl_op_t_mapping Operation, cccl_type_info_mapping RetT, cccl_type_info_mapping... ArgTs>
 struct stateless_user_operation
 {
