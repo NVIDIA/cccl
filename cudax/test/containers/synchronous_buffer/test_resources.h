@@ -13,7 +13,6 @@
 
 #include <cuda/memory_resource>
 #include <cuda/std/type_traits>
-#include <cuda/stream_ref>
 
 #include <cuda/experimental/memory_resource.cuh>
 
@@ -39,9 +38,7 @@ inline void get_property(const cuda::experimental::pinned_memory_resource&, othe
 template <class... Properties>
 struct memory_resource_wrapper
 {
-  // Not a resource_ref, because it can't be used to create any_async_resource (yet)
-  // https://github.com/NVIDIA/cccl/issues/4166
-  cudax::any_async_resource<Properties...> resource_;
+  cudax::any_resource<Properties...> resource_;
 
   void* allocate(std::size_t size, std::size_t alignment)
   {
@@ -50,14 +47,6 @@ struct memory_resource_wrapper
   void deallocate(void* ptr, std::size_t size, std::size_t alignment)
   {
     resource_.deallocate(ptr, size, alignment);
-  }
-  void* allocate_async(std::size_t size, std::size_t alignment, cuda::stream_ref stream)
-  {
-    return resource_.allocate_async(size, alignment, stream);
-  }
-  void deallocate_async(void* ptr, std::size_t size, std::size_t alignment, cuda::stream_ref stream)
-  {
-    resource_.deallocate_async(ptr, size, alignment, stream);
   }
 
   bool operator==(const memory_resource_wrapper&) const
@@ -75,6 +64,9 @@ struct memory_resource_wrapper
 
   friend void get_property(const memory_resource_wrapper&, other_property) noexcept {}
 };
+static_assert(cuda::mr::resource<memory_resource_wrapper<cuda::mr::host_accessible>>, "");
+static_assert(cuda::mr::resource_with<memory_resource_wrapper<cuda::mr::host_accessible>, cuda::mr::host_accessible>,
+              "");
 
 //! @brief Memory resource that allocates host accessible memory via operator new
 template <class T>
@@ -85,14 +77,6 @@ struct host_memory_resource
     return new T[size];
   }
   void deallocate(void* ptr, std::size_t, std::size_t)
-  {
-    delete[] reinterpret_cast<T*>(ptr);
-  }
-  void* allocate_async(std::size_t size, std::size_t, cuda::stream_ref)
-  {
-    return new T[size];
-  }
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
   {
     delete[] reinterpret_cast<T*>(ptr);
   }
@@ -111,7 +95,39 @@ struct host_memory_resource
   // just add another property
   friend void get_property(const host_memory_resource&, other_property) noexcept {}
 };
-static_assert(cuda::mr::async_resource<host_memory_resource<int>>, "");
-static_assert(cuda::mr::async_resource_with<host_memory_resource<int>, cuda::mr::host_accessible>, "");
+static_assert(cuda::mr::resource<host_memory_resource<int>>, "");
+static_assert(cuda::mr::resource_with<host_memory_resource<int>, cuda::mr::host_accessible>, "");
+
+//! @brief Memory resource that allocates device accessible memory via cudaMalloc
+template <class T>
+struct device_memory_resource
+{
+  void* allocate(std::size_t size, std::size_t)
+  {
+    void* ptr;
+    ::cudaMalloc(&ptr, size);
+    return ptr;
+  }
+  void deallocate(void* ptr, std::size_t, std::size_t)
+  {
+    ::cudaFree(ptr);
+  }
+
+  bool operator==(const device_memory_resource&) const
+  {
+    return true;
+  }
+  bool operator!=(const device_memory_resource&) const
+  {
+    return false;
+  }
+
+  friend void get_property(const device_memory_resource&, cuda::mr::device_accessible) {}
+
+  // just add another property
+  friend void get_property(const device_memory_resource&, other_property) noexcept {}
+};
+static_assert(cuda::mr::resource<device_memory_resource<int>>, "");
+static_assert(cuda::mr::resource_with<device_memory_resource<int>, cuda::mr::device_accessible>, "");
 
 #endif // CUDAX_TEST_CONTAINER_VECTOR_TEST_RESOURCES_H
