@@ -83,16 +83,16 @@ struct make_shuffle_iterator_base
 //! #include <thrust/iterator/shuffle_iterator.h>
 //! ...
 //! // create a shuffle iterator
-//! thrust::shuffle_iterator<int> iterator(4, thrust::default_random_engine());
+//! thrust::shuffle_iterator<int> iterator(4, thrust::default_random_engine(0xDEADBEEF));
 //! iterator[0] // returns 1
-//! iterator[1] // returns 0
-//! iterator[2] // returns 3
-//! iterator[3] // returns 2
+//! iterator[1] // returns 3
+//! iterator[2] // returns 2
+//! iterator[3] // returns 0
 //!
 //! thrust::device_vector<int> vec = {0, 10, 20, 30};
 //! thrust::device_vector<int> shuffled(4);
 //! thrust::gather(iterator, iterator + 4, vec.begin(), shuffled.begin());
-//! shuffled // returns {10, 0, 30, 20}
+//! shuffled // returns {10, 30, 20, 0}
 //! \endcode
 //!
 //! This next example demonstrates how to use a \p shuffle_iterator to randomly sample from a vector.
@@ -101,12 +101,12 @@ struct make_shuffle_iterator_base
 //! #include <thrust/iterator/shuffle_iterator.h>
 //! ...
 //! // create a shuffle iterator
-//! thrust::shuffle_iterator<int> iterator(100, thrust::default_random_engine());
+//! thrust::shuffle_iterator<int> iterator(100, thrust::default_random_engine(0xDEADBEEF));
 //!
-//! iterator[0] // returns 93
-//! iterator[1] // returns 12
-//! iterator[2] // returns 77
-//! iterator[3] // returns 49
+//! iterator[0] // returns 38
+//! iterator[1] // returns 50
+//! iterator[2] // returns 18
+//! iterator[3] // returns 12
 //!
 //! // create a vector of size 100
 //! thrust::device_vector<int> vec(100);
@@ -117,7 +117,7 @@ struct make_shuffle_iterator_base
 //!
 //! // sample 4 random values from vec
 //! thrust::gather(iterator, iterator + 4, vec.begin(), sample.begin());
-//! sample // returns {193, 112, 177, 149}
+//! sample // returns {138, 150, 118, 112}
 //! \endcode
 //!
 //! \see make_shuffle_iterator

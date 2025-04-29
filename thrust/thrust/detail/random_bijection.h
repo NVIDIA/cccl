@@ -21,13 +21,7 @@
 
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/temporary_array.h>
-#include <thrust/iterator/discard_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/iterator/transform_output_iterator.h>
 #include <thrust/random.h>
-#include <thrust/scan.h>
-#include <thrust/system/detail/generic/shuffle.h>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -153,12 +147,13 @@ public:
   _CCCL_HOST_DEVICE IndexType operator()(IndexType i) const
   {
     auto upcast_i = static_cast<typename Bijection::index_type>(i);
-    assert(upcast_i < static_cast<typename Bijection::index_type>(n) && "IndexType out of range");
+    auto upcast_n = static_cast<typename Bijection::index_type>(n);
+    assert(upcast_i < upcast_n && "IndexType out of range");
 
     do
     {
       upcast_i = bijection(upcast_i);
-    } while (upcast_i >= n);
+    } while (upcast_i >= upcast_n);
     return static_cast<IndexType>(upcast_i);
   }
 
