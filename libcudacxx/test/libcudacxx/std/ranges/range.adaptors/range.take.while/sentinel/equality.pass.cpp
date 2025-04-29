@@ -271,7 +271,7 @@ __host__ __device__ constexpr void testOne()
   }
 
   // empty range
-  if (!TEST_IS_CONSTANT_EVALUATED())
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     testarray<R, ConstIter, ConstSent>();
   }

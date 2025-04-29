@@ -84,7 +84,7 @@ __host__ __device__ constexpr bool test()
 
   {
     // operator-(x, n) and operator-=
-    cuda::std::ranges::zip_view v(a, cuda::std::span{b});
+    cuda::std::ranges::zip_view v(a, cuda::std::span<double, 5>{b});
     auto it1 = v.end();
 
     auto it2      = it1 - 3;
@@ -104,7 +104,7 @@ __host__ __device__ constexpr bool test()
 
   {
     // operator-(x, y)
-    cuda::std::ranges::zip_view v(a, cuda::std::span{b});
+    cuda::std::ranges::zip_view v(a, cuda::std::span<double, 5>{b});
     assert((v.end() - v.begin()) == 5);
 
     auto it1 = v.begin() + 2;
@@ -130,7 +130,7 @@ __host__ __device__ constexpr bool test()
 
   {
     // One of the ranges is not random access
-    cuda::std::ranges::zip_view v(a, cuda::std::span{b}, ForwardSizedView{buffer1});
+    cuda::std::ranges::zip_view v(a, cuda::std::span<double, 5>{b}, ForwardSizedView{buffer1});
     using Iter = decltype(v.begin());
     static_assert(!cuda::std::invocable<cuda::std::plus<>, Iter, intptr_t>);
     static_assert(!cuda::std::invocable<cuda::std::plus<>, intptr_t, Iter>);
@@ -142,7 +142,7 @@ __host__ __device__ constexpr bool test()
 
   {
     // One of the ranges does not have sized sentinel
-    cuda::std::ranges::zip_view v(a, cuda::std::span{b}, InputCommonView{buffer1});
+    cuda::std::ranges::zip_view v(a, cuda::std::span<double, 5>{b}, InputCommonView{buffer1});
     using Iter = decltype(v.begin());
     static_assert(!cuda::std::invocable<cuda::std::minus<>, Iter, Iter>);
   }

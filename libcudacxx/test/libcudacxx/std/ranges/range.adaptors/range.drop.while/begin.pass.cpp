@@ -105,7 +105,7 @@ __host__ __device__ constexpr void testOne()
   using Range = cuda::std::ranges::subrange<Iter, Sent>;
 
   // empty
-  if (!TEST_IS_CONSTANT_EVALUATED())
+  if (!cuda::std::__cccl_default_is_constant_evaluated())
   {
     cuda::std::array<int, 0> a;
     Range range{Iter{a.data()}, Sent{Iter{a.data() + a.size()}}};

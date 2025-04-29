@@ -118,6 +118,11 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr common_iterator() noexcept(is_nothrow_default_constructible_v<_I2>) {}
 #endif // _CCCL_NO_CONCEPTS
 
+  _CCCL_HIDE_FROM_ABI constexpr common_iterator(const common_iterator&)            = default;
+  _CCCL_HIDE_FROM_ABI constexpr common_iterator& operator=(const common_iterator&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr common_iterator(common_iterator&&)                 = default;
+  _CCCL_HIDE_FROM_ABI constexpr common_iterator& operator=(common_iterator&&)      = default;
+
   _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr common_iterator(_Iter __i) noexcept(is_nothrow_move_constructible_v<_Iter>)
       : __hold_(__construct_first{}, _CUDA_VSTD::move(__i))

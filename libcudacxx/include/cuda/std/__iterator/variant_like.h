@@ -355,15 +355,13 @@ public:
       {
         case __variant_like_state::__holds_first:
           this->__first_ = __other.__first_;
-          break;
+          return *this;
         case __variant_like_state::__holds_second:
           this->__second_ = __other.__second_;
-          break;
+          return *this;
         case __variant_like_state::__nothing:
-          break;
+          return *this;
       }
-
-      return *this;
     }
 
     __clear();
@@ -381,7 +379,6 @@ public:
     }
 
     this->__contains_ = __other.__contains_;
-
     return *this;
   }
 
