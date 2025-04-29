@@ -61,21 +61,21 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 
 **CUDA identification/version macros**:
 
-+----------------------------------+---------------------------------------------------------------------------------------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                              |
-+----------------------------------+---------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CUDA_COMPILATION()``     | CUDA source file is being compiled (equivalent to ``defined(__CUDACC__)``)                              |
-+----------------------------------+---------------------------------------------------------------------------------------------------------+
-| ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA ``__host__`` pass or compiling a C++ source files |
-+----------------------------------+---------------------------------------------------------------------------------------------------------+
-| ``_CCCL_DEVICE_COMPILATION()``   | Compiling device code, ``true`` when executing the CUDA ``__device__`` pass                             |
-+----------------------------------+---------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7 when compiling a CUDA source file                                               |
-+----------------------------------+---------------------------------------------------------------------------------------------------------+
-| ``_CCCL_CUDACC_AT_LEAST(12, 7)`` | CUDA version at least 12.7 when compiling a CUDA source file                                            |
-+----------------------------------+---------------------------------------------------------------------------------------------------------+
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                     |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDA_COMPILATION()``     | CUDA code is being compiled                                                                    |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA host pass or compiling a C++ source file |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_DEVICE_COMPILATION()``   | Compiling device code, ``true`` when executing the CUDA device pass                            |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7 when compiling a CUDA source file                                      |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDACC_AT_LEAST(12, 7)`` | CUDA version at least 12.7 when compiling a CUDA source file                                   |
++----------------------------------+------------------------------------------------------------------------------------------------+
 
-*Note*: When compiling with ``nvc++ -cuda`` both ``_CCCL_HOST_COMPILATION()`` and ``_CCCL_DEVICE_COMPILATION()`` result in a ``true`` value.
+*Note*: When compiling CUDA code with ``nvc++`` both ``_CCCL_HOST_COMPILATION()`` and ``_CCCL_DEVICE_COMPILATION()`` result in a ``true`` value.
 
 **PTX macros**:
 
@@ -84,6 +84,8 @@ file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA so
 +----------------------+-------------------------------------------------------------------------------------------------------------------+
 | ``__cccl_ptx_isa``   | PTX ISA version available with the current CUDA compiler, e.g. PTX ISA 8.4 (``840``) is available from CUDA 12.4  |
 +----------------------+-------------------------------------------------------------------------------------------------------------------+
+
+*Note*: When compiling CUDA code with ``nvc++`` the ``_CCCL_PTX_ARCH()`` macro expands to ``0``.
 
 ----
 

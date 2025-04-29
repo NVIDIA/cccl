@@ -121,15 +121,15 @@
 #elif _CCCL_COMPILER(NVRTC)
 #  undef _CCCL_CUDA_COMPILER_NVRTC
 #  define _CCCL_CUDA_COMPILER_NVRTC() _CCCL_COMPILER_NVRTC()
+#endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
+
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG) || _CCCL_CUDA_COMPILER(NVHPC) || _CCCL_CUDA_COMPILER(NVRTC)
+#  define _CCCL_HAS_CUDA_COMPILER() 1
 #else // ^^^ has cuda compiler ^^^ / vvv no cuda compiler vvv
 #  define _CCCL_HAS_CUDA_COMPILER() 0
 #endif // ^^^ no cuda compiler ^^^
 
-#ifndef _CCCL_HAS_CUDA_COMPILER
-#  define _CCCL_HAS_CUDA_COMPILER() 1
-#endif // _CCCL_HAS_CUDA_COMPILER
-
-#if defined(__CUDACC__)
+#if defined(__CUDACC__) || _CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_CUDA_COMPILATION() 1
 #else // ^^^ compiling .cu file ^^^ / vvv not compiling .cu file vvv
 #  define _CCCL_CUDA_COMPILATION() 0
@@ -186,7 +186,10 @@
 #  endif // !__ELF__
 #endif // _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC)
 
-#if _CCCL_DEVICE_COMPILATION() || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(CLANG)
+#if _CCCL_DEVICE_COMPILATION()
+#  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_PRAGMA(unroll _N)
+#  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA(unroll)
+#elif _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(CLANG)
 #  define _CCCL_PRAGMA_UNROLL(_N)    _CCCL_PRAGMA(unroll _N)
 #  define _CCCL_PRAGMA_UNROLL_FULL() _CCCL_PRAGMA(unroll)
 #elif _CCCL_COMPILER(GCC, >=, 8)
