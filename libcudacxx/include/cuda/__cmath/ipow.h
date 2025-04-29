@@ -67,6 +67,13 @@ template <class _Tp, class _Ep>
   return __x * __y;
 }
 
+//! @brief Computes the integer power of a base to an exponent.
+//! @param __b The base
+//! @param __e The exponent
+//! @pre \p __b must be an integer type
+//! @pre \p __e must be an integer type
+//! @return The result of raising \p __b to the power of \p __e
+//! @note The result is undefined if \p __b is 0 and \p __e is negative.
 _CCCL_TEMPLATE(class _Tp, class _Ep)
 _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND _CUDA_VSTD::__cccl_is_integer_v<_Ep>)
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp ipow(_Tp __b, _Ep __e) noexcept
