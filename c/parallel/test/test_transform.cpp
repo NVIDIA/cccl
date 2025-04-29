@@ -108,9 +108,9 @@ C2H_TEST("Transform works with output of different type", "[transform]")
     "op",
     "struct pair { short a; size_t b; };\n"
     "extern \"C\" __device__ void op(void* x_ptr, void* out_ptr) {\n"
-    "  pair* x = static_cast<pair*>(x_ptr);\n"
+    "  int* x = static_cast<int*>(x_ptr);\n"
     "  pair* out = static_cast<pair*>(out_ptr);\n"
-    "  *out = pair{ short(x->a), size_t(x->b) };\n"
+    "  *out = pair{ short(*x), size_t(*x) };\n"
     "}");
   const std::vector<int> input = generate<int>(num_items);
   std::vector<pair> expected(num_items);
@@ -223,7 +223,10 @@ C2H_TEST("Transform with binary operator", "[transform]")
 
   operation_t op = make_operation(
     "op",
-    "extern \"C\" __device__ void op(int* x, int* y, int* out) {\n"
+    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr  ) {\n"
+    "  int* x = static_cast<int*>(x_ptr);\n"
+    "  int* y = static_cast<int*>(y_ptr);\n"
+    "  int* out = static_cast<int*>(out_ptr);\n"
     "  *out = (*x > *y) ? *x : *y;\n"
     "}");
 
@@ -254,7 +257,10 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
 
   operation_t op = make_operation(
     "op",
-    "extern \"C\" __device__ void op(int* x, int* y, int* out) {\n"
+    "extern \"C\" __device__ void op(void* x_ptr, void* y_ptr, void* out_ptr) {\n"
+    "  int* x = static_cast<int*>(x_ptr);\n"
+    "  int* y = static_cast<int*>(y_ptr);\n"
+    "  int* out = static_cast<int*>(out_ptr);\n"
     "  *out = (*x > *y) ? *x : *y;\n"
     "}");
 
