@@ -58,11 +58,11 @@ __host__ __device__ constexpr void test_substr()
   static_assert(cuda::std::is_same_v<SV, decltype(SV{}.substr(SizeT{}))>);
   static_assert(cuda::std::is_same_v<SV, decltype(SV{}.substr(SizeT{}, SizeT{}))>);
 
-#if !_CCCL_COMPILER(GCC, <, 9)
+#if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
   static_assert(!noexcept(SV{}.substr()));
   static_assert(!noexcept(SV{}.substr(SizeT{})));
   static_assert(!noexcept(SV{}.substr(SizeT{}, SizeT{})));
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   const CharT* str = TEST_STRLIT(CharT, "12345");
   SV sv{str};

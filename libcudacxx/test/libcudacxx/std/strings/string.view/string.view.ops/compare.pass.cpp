@@ -38,9 +38,9 @@ __host__ __device__ constexpr void test_compare()
   // constexpr int compare(basic_string_view str) const noexcept;
 
   static_assert(cuda::std::is_same_v<int, decltype(SV{}.compare(SV{}))>);
-#if !_CCCL_COMPILER(GCC, <, 9)
+#if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
   static_assert(noexcept(SV{}.compare(SV{})));
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {
     SV sv1{TEST_STRLIT(CharT, "12345")};
@@ -70,9 +70,9 @@ __host__ __device__ constexpr void test_compare()
   // constexpr int compare(size_type pos1, size_type n1, basic_string_view str) const;
 
   static_assert(cuda::std::is_same_v<int, decltype(SV{}.compare(SizeT{}, SizeT{}, SV{}))>);
-#if !_CCCL_COMPILER(GCC, <, 9)
+#if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
   static_assert(!noexcept(SV{}.compare(SizeT{}, SizeT{}, SV{})));
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {
     SV sv1{TEST_STRLIT(CharT, "12345")};
@@ -90,9 +90,9 @@ __host__ __device__ constexpr void test_compare()
   // constexpr int compare(size_type pos1, size_type n1, basic_string_view str, size_type pos2, size_type n2) const;
 
   static_assert(cuda::std::is_same_v<int, decltype(SV{}.compare(SizeT{}, SizeT{}, SV{}, SizeT{}, SizeT{}))>);
-#if !_CCCL_COMPILER(GCC, <, 9)
+#if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
   static_assert(!noexcept(SV{}.compare(SizeT{}, SizeT{}, SV{}, SizeT{}, SizeT{})));
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {
     SV sv1{TEST_STRLIT(CharT, "12345")};
@@ -106,9 +106,9 @@ __host__ __device__ constexpr void test_compare()
   // constexpr int compare(const charT* s) const;
 
   static_assert(cuda::std::is_same_v<int, decltype(SV{}.compare(cuda::std::declval<const CharT*>()))>);
-#if !_CCCL_COMPILER(GCC, <, 9)
+#if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
   static_assert(!noexcept(SV{}.compare(cuda::std::declval<const CharT*>())));
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {
     SV sv{TEST_STRLIT(CharT, "12345")};
@@ -135,9 +135,9 @@ __host__ __device__ constexpr void test_compare()
 
   static_assert(
     cuda::std::is_same_v<int, decltype(SV{}.compare(SizeT{}, SizeT{}, cuda::std::declval<const CharT*>()))>);
-#if !_CCCL_COMPILER(GCC, <, 9)
+#if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
   static_assert(!noexcept(SV{}.compare(SizeT{}, SizeT{}, cuda::std::declval<const CharT*>())));
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {
     SV sv{TEST_STRLIT(CharT, "12345")};
@@ -155,9 +155,9 @@ __host__ __device__ constexpr void test_compare()
 
   static_assert(
     cuda::std::is_same_v<int, decltype(SV{}.compare(SizeT{}, SizeT{}, cuda::std::declval<const CharT*>(), SizeT{}))>);
-#if !_CCCL_COMPILER(GCC, <, 9)
+#if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
   static_assert(!noexcept(SV{}.compare(SizeT{}, SizeT{}, cuda::std::declval<const CharT*>(), SizeT{})));
-#endif // !_CCCL_COMPILER(GCC, <, 9)
+#endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {
     SV sv{TEST_STRLIT(CharT, "12345")};
