@@ -28,6 +28,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -43,15 +44,15 @@ template <class _Tp, class _Ep>
 template <class _Tp, class _Ep>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __cccl_ipow_impl(_Tp __b, _Ep __e) noexcept
 {
-  static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_unsigned, _Tp));
+  static_assert(_CUDA_VSTD::is_unsigned_v<_Tp>);
 
   if (_CUDA_VSTD::has_single_bit(__b))
   {
     return ::cuda::__cccl_ipow_impl_base_pow2(__b, __e);
   }
 
-  _Tp __x = __b;
-  _Tp __y = 1;
+  auto __x = __b;
+  auto __y = _Tp{1};
 
   while (__e > 1)
   {
@@ -67,8 +68,7 @@ template <class _Tp, class _Ep>
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Ep)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp)
-                 _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Ep))
+_CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND _CUDA_VSTD::__cccl_is_integer_v<_Ep>)
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp ipow(_Tp __b, _Ep __e) noexcept
 {
   _CCCL_ASSERT(__b != _Tp{0} || _CUDA_VSTD::cmp_greater_equal(__e, _Ep{0}),
@@ -82,16 +82,13 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp)
   {
     return _Tp{0};
   }
-  else
+  auto __res = ::cuda::__cccl_ipow_impl(::cuda::uabs(__b), _CUDA_VSTD::__to_unsigned_like(__e));
+  if (_CUDA_VSTD::cmp_less(__b, _Tp{0}) && (__e % 2u == 1))
   {
-    auto __res = ::cuda::__cccl_ipow_impl(::cuda::uabs(__b), __e);
-    if (_CUDA_VSTD::cmp_less(__b, _Tp{0}) && (__e % 2 == 1))
-    {
-      // todo: replace with ::cuda::__neg(__res) when available
-      __res = (~__res + 1);
-    }
-    return static_cast<_Tp>(__res);
+    // todo: replace with ::cuda::__neg(__res) when available
+    __res = (~__res + 1);
   }
+  return static_cast<_Tp>(__res);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
