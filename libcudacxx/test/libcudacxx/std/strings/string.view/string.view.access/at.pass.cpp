@@ -26,7 +26,7 @@
 
 #if TEST_HAS_EXCEPTIONS()
 template <class SV>
-__host__ void test_at_throw()
+void test_at_throw()
 {
   using CharT = typename SV::value_type;
 
