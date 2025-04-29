@@ -1,5 +1,5 @@
 /*
- *  Copyright 2008-20120 NVIDIA Corporation
+ *  Copyright 2008-2025 NVIDIA Corporation
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -13,6 +13,10 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
+
+//! \file random_bijection.h
+//! \brief An implementation of a bijective function for use in shuffling
+
 #pragma once
 
 #include <thrust/detail/config.h>
@@ -32,7 +36,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-// An implementation of a Feistel cipher for operating on 64 bit keys
+//! \brief A Feistel cipher for operating on power of two sized problems
 class feistel_bijection
 {
   struct round_state
@@ -123,6 +127,9 @@ private:
   std::uint32_t key[num_rounds];
 };
 
+//! \brief Adaptor for a bijection to work with any size problem
+//! \tparam IndexType The type of the index to shuffle
+//! \tparam Bijection The bijection to use
 template <class IndexType, class Bijection = feistel_bijection>
 class random_bijection
 {
@@ -135,6 +142,8 @@ private:
   IndexType n;
 
 public:
+  using index_type = IndexType;
+
   template <class URBG>
   _CCCL_HOST_DEVICE random_bijection(IndexType n, URBG&& g)
       : bijection(n, ::cuda::std::forward<URBG>(g))
