@@ -23,6 +23,7 @@
 #include "literal.h"
 #include <nv/target>
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class SV>
 __host__ void test_at_throw()
 {
@@ -45,6 +46,7 @@ __host__ void test_at_throw()
     assert(false);
   }
 }
+#endif //_CCCL_COMPILER(NVRTC)
 
 template <class SV>
 __host__ __device__ constexpr void test_at()
