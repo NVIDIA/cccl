@@ -63,6 +63,10 @@ struct make_shuffle_iterator_base
 } // namespace detail
 
 //! \p shuffle_iterator is an iterator which generates a sequence of values representing a random permutation.
+//! \tparam IndexType The type of the index to shuffle.
+//! \tparam BijectionFunc The bijection to use. This should be a bijective function that maps [0..n) -> [0..n). It must
+//! be deterministic and stateless. The function will be constructed with parameters (n, g) where n is the number of
+//! elements in the permutation and g is a \c URBG that can be used to seed the bijection.
 //!
 //! \addtogroup iterators
 //! \{
@@ -134,10 +138,18 @@ public:
   //! \param n The number of elements in the permutation.
   //! \param g The \c URBG used to generate the random permutation. This is only invoked during construction of the \p
   //! shuffle_iterator.
-  template <class URBG>
+  template <class URBG,
+            class Enable = ::cuda::std::enable_if_t<::cuda::std::is_constructible_v<BijectionFunc, IndexType, URBG&&>>>
   _CCCL_HOST_DEVICE shuffle_iterator(IndexType n, URBG&& g)
       : super_t(IndexType{0})
       , bijection(n, ::cuda::std::forward<URBG>(g))
+  {}
+
+  //! \brief Constructs a \p shuffle_iterator with a given number of elements and a \c URBG.
+  //! \param bijection The bijection to use.
+  _CCCL_HOST_DEVICE shuffle_iterator(BijectionFunc bijection)
+      : super_t(IndexType{0})
+      , bijection(std::move(bijection))
   {}
 
   //! \cond
@@ -145,6 +157,7 @@ public:
 private:
   _CCCL_HOST_DEVICE IndexType dereference() const
   {
+    assert(this->base() < bijection.size());
     return bijection(this->base());
   }
 

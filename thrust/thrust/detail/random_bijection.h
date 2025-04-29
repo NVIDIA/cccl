@@ -121,9 +121,12 @@ private:
   std::uint32_t key[num_rounds];
 };
 
-//! \brief Adaptor for a bijection to work with any size problem
-//! \tparam IndexType The type of the index to shuffle
-//! \tparam Bijection The bijection to use
+//! \brief Adaptor for a bijection to work with any size problem. It achieves this by iterating the bijection until
+//! the result is less than n. For feistel_bijection, the worst case number of iterations required for one call to
+//! operator() is O(n) with low probability. It has amortised O(1) complexity.
+//! \tparam IndexType The type of the index to shuffle.
+//! \tparam Bijection The bijection to use. A low quality random bijection may lead to poor work balancing between calls
+//! to the operator().
 template <class IndexType, class Bijection = feistel_bijection>
 class random_bijection
 {
@@ -148,8 +151,11 @@ public:
   {
     auto upcast_i = static_cast<typename Bijection::index_type>(i);
     auto upcast_n = static_cast<typename Bijection::index_type>(n);
-    assert(upcast_i < upcast_n && "IndexType out of range");
 
+    // If i < n Iterating a bijection like this will always terminate.
+    // If i >= n, then this may loop forever.
+    // TODO Do we need a runtime check apart from this assert?
+    assert(upcast_i < upcast_n && "IndexType out of range");
     do
     {
       upcast_i = bijection(upcast_i);

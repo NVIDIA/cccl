@@ -550,7 +550,7 @@ void TestFunctionIsBijectionIterator(size_t m)
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijection);
 DECLARE_INTEGRAL_VARIABLE_UNITTEST(TestFunctionIsBijectionIterator);
 
-void TestBijectionLength()
+void TestFeistelBijectionLength()
 {
   thrust::default_random_engine g(0xD5);
 
@@ -566,7 +566,27 @@ void TestBijectionLength()
   f = thrust::detail::feistel_bijection(m, g);
   ASSERT_EQUAL(f.nearest_power_of_two(), uint64_t(16));
 }
-DECLARE_UNITTEST(TestBijectionLength);
+DECLARE_UNITTEST(TestFeistelBijectionLength);
+
+void TestShuffleIteratorConstructibleFromBijection()
+{
+  thrust::default_random_engine g(0xD5);
+
+  thrust::detail::feistel_bijection f(32, g);
+  thrust::shuffle_iterator<uint64_t, decltype(f)> it(f);
+
+  g.seed(0xD5);
+  thrust::detail::random_bijection<uint64_t> f2(32, g);
+  thrust::shuffle_iterator<uint64_t, decltype(f2)> it2(f2);
+
+  g.seed(0xD5);
+  thrust::shuffle_iterator<uint64_t> it3(32, g);
+
+  ASSERT_EQUAL(f.size(), f2.size());
+  ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it2));
+  ASSERT_EQUAL(true, thrust::equal(thrust::device, it, it + f.size(), it3));
+}
+DECLARE_UNITTEST(TestShuffleIteratorConstructibleFromBijection);
 
 // Individual input keys should be permuted to output locations with uniform
 // probability. Perform chi-squared test with confidence 99.9%.
