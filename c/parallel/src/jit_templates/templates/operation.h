@@ -28,7 +28,7 @@ struct stateless_user_operation
   // void (void* arg1, ..., void* argN, void* result_ptr)
   __device__ decltype(RetT)::Type operator()(decltype(ArgTs)::Type... args) const
   {
-    using TargetCFuncPtr = void (*)(decltype(args, void())*..., void*);
+    using TargetCFuncPtr = void (*)(const decltype(args, void())*..., void*);
 
     // Cast the stored operation pointer (assumed to be void* or compatible)
     auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
@@ -57,7 +57,7 @@ struct stateful_user_operation
   {
     // Note: The user provided C function (Operation.operation) must match the signature:
     // void (void* state, void* arg1, ..., void* argN, void* result_ptr)
-    using TargetCFuncPtr = void (*)(decltype(args, void())*..., void*);
+    using TargetCFuncPtr = void (*)(void*, decltype(args, void())*..., void*);
 
     // Cast the stored operation pointer (assumed to be void* or compatible)
     auto c_func_ptr = reinterpret_cast<TargetCFuncPtr>(Operation.operation);
