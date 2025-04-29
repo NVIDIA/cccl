@@ -94,7 +94,7 @@ __host__ __device__ constexpr void test_ends_with()
   // constexpr bool ends_with(const charT* x) const;
 
   static_assert(cuda::std::is_same_v<bool, decltype(SV{}.ends_with(cuda::std::declval<const CharT*>()))>);
-  static_assert(!noexcept(SV{}.ends_with(cuda::std::declval<const CharT*>())));
+  static_assert(noexcept(SV{}.ends_with(cuda::std::declval<const CharT*>())));
 
   {
     const CharT* str = TEST_STRLIT(CharT, "abcde");

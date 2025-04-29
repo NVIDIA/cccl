@@ -107,7 +107,7 @@ __host__ __device__ constexpr void test_compare()
 
   static_assert(cuda::std::is_same_v<int, decltype(SV{}.compare(cuda::std::declval<const CharT*>()))>);
 #if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
-  static_assert(!noexcept(SV{}.compare(cuda::std::declval<const CharT*>())));
+  static_assert(noexcept(SV{}.compare(cuda::std::declval<const CharT*>())));
 #endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {

@@ -45,7 +45,7 @@ __host__ __device__ constexpr void test_find_first_of()
 
   static_assert(
     cuda::std::is_same_v<SizeT, decltype(SV{}.find_first_of(cuda::std::declval<const CharT*>(), SizeT{}, SizeT{}))>);
-  static_assert(!noexcept(SV{}.find_first_of(cuda::std::declval<const CharT*>(), SizeT{}, SizeT{})));
+  static_assert(noexcept(SV{}.find_first_of(cuda::std::declval<const CharT*>(), SizeT{}, SizeT{})));
 
   TEST_FIND_FIRST_OF(SV, "", "", 0, 0, SV::npos);
   TEST_FIND_FIRST_OF(SV, "", "irkhs", 0, 0, SV::npos);

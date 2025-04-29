@@ -53,8 +53,8 @@ __host__ __device__ constexpr void test_find_last_of()
   static_assert(cuda::std::is_same_v<SizeT, decltype(SV{}.find_last_of(cuda::std::declval<const CharT*>()))>);
   static_assert(cuda::std::is_same_v<SizeT, decltype(SV{}.find_last_of(cuda::std::declval<const CharT*>(), SizeT{}))>);
 
-  static_assert(!noexcept(SV{}.find_last_of(cuda::std::declval<const CharT*>())));
-  static_assert(!noexcept(SV{}.find_last_of(cuda::std::declval<const CharT*>(), SizeT{})));
+  static_assert(noexcept(SV{}.find_last_of(cuda::std::declval<const CharT*>())));
+  static_assert(noexcept(SV{}.find_last_of(cuda::std::declval<const CharT*>(), SizeT{})));
 
   TEST_FIND_LAST_OF(SV, "", "", SV::npos);
   TEST_FIND_LAST_OF(SV, "", "laenf", SV::npos);

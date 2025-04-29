@@ -99,14 +99,14 @@ public:
 
   _CCCL_HIDE_FROM_ABI basic_string_view& operator=(const basic_string_view&) noexcept = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr basic_string_view(const _CharT* __s)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr basic_string_view(const _CharT* __s) noexcept
       : __data_{__s}
       , __size_{_Traits::length(__s)}
   {}
 
   basic_string_view(nullptr_t) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr basic_string_view(const _CharT* __s, size_type __len)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr basic_string_view(const _CharT* __s, size_type __len) noexcept
       : __data_{__s}
       , __size_{__len}
   {
@@ -199,7 +199,7 @@ public:
     return __size_ == 0;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](size_type __pos) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference operator[](size_type __pos) const noexcept
   {
     _CCCL_ASSERT(__pos < __size_, "string_view[] index out of bounds");
     return __data_[__pos];
@@ -214,13 +214,13 @@ public:
     return __data_[__pos];
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference front() const noexcept
   {
     _CCCL_ASSERT(__size_ > 0, "string_view::front(): string is empty");
     return __data_[0];
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_reference back() const noexcept
   {
     _CCCL_ASSERT(__size_ > 0, "string_view::back(): string is empty");
     return __data_[__size_ - 1];
@@ -231,14 +231,14 @@ public:
     return __data_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void remove_prefix(size_type __n)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void remove_prefix(size_type __n) noexcept
   {
     _CCCL_ASSERT(__n <= __size_, "remove_prefix() can't remove more than size()");
     __data_ += __n;
     __size_ -= __n;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr void remove_suffix(size_type __n)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void remove_suffix(size_type __n) noexcept
   {
     _CCCL_ASSERT(__n <= __size_, "remove_suffix() can't remove more than size()");
     __size_ -= __n;
@@ -304,7 +304,7 @@ public:
     return substr(__pos1, __n1).compare(__sv.substr(__pos2, __n2));
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(const _CharT* __s) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(const _CharT* __s) const noexcept
   {
     return compare(basic_string_view{__s});
   }
@@ -337,13 +337,13 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find(const _CharT* __s, size_type __pos, size_type __n) const
+  find(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type find(const _CharT* __s, size_type __pos = 0) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type find(const _CharT* __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find<value_type, size_type, traits_type, npos>(
@@ -366,13 +366,14 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  rfind(const _CharT* __s, size_type __pos, size_type __n) const
+  rfind(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::rfind(): received nullptr");
     return _CUDA_VSTD::__cccl_str_rfind<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type rfind(const _CharT* __s, size_type __pos = npos) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
+  rfind(const _CharT* __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::rfind(): received nullptr");
     return _CUDA_VSTD::__cccl_str_rfind<value_type, size_type, traits_type, npos>(
@@ -396,14 +397,15 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find_first_of(const _CharT* __s, size_type __pos, size_type __n) const
+  find_first_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_first_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
       __data_, __size_, __s, __pos, __n);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type find_first_of(const _CharT* __s, size_type __pos = 0) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
+  find_first_of(const _CharT* __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_first_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_first_of<value_type, size_type, traits_type, npos>(
@@ -427,7 +429,7 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find_last_of(const _CharT* __s, size_type __pos, size_type __n) const
+  find_last_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_last_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
@@ -435,7 +437,7 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find_last_of(const _CharT* __s, size_type __pos = npos) const
+  find_last_of(const _CharT* __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_last_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_last_of<value_type, size_type, traits_type, npos>(
@@ -460,7 +462,7 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find_first_not_of(const _CharT* __s, size_type __pos, size_type __n) const
+  find_first_not_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_first_not_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
@@ -468,7 +470,7 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find_first_not_of(const _CharT* __s, size_type __pos = 0) const
+  find_first_not_of(const _CharT* __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_first_not_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_first_not_of<value_type, size_type, traits_type, npos>(
@@ -493,7 +495,7 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find_last_not_of(const _CharT* __s, size_type __pos, size_type __n) const
+  find_last_not_of(const _CharT* __s, size_type __pos, size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n == 0 || __s != nullptr, "string_view::find_last_not_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
@@ -501,7 +503,7 @@ public:
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
-  find_last_not_of(const _CharT* __s, size_type __pos = npos) const
+  find_last_not_of(const _CharT* __s, size_type __pos = npos) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find_last_not_of(): received nullptr");
     return _CUDA_VSTD::__cccl_str_find_last_not_of<value_type, size_type, traits_type, npos>(
@@ -520,7 +522,7 @@ public:
     return (__size_ > 0) && _Traits::eq(front(), __c);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool starts_with(const value_type* __s) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool starts_with(const value_type* __s) const noexcept
   {
     return starts_with(basic_string_view{__s});
   }
@@ -537,7 +539,7 @@ public:
     return (__size_ > 0) && _Traits::eq(back(), __c);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ends_with(const value_type* __s) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ends_with(const value_type* __s) const noexcept
   {
     return ends_with(basic_string_view{__s});
   }
@@ -554,7 +556,7 @@ public:
     return find(__c) != npos;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool contains(const value_type* __s) const
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool contains(const value_type* __s) const noexcept
   {
     return find(__s) != npos;
   }

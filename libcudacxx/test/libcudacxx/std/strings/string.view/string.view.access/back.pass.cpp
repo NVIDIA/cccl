@@ -25,7 +25,7 @@ __host__ __device__ constexpr void test_back()
   using ConstRef = typename SV::const_reference;
 
   static_assert(cuda::std::is_same_v<ConstRef, decltype(SV{}.back())>);
-  static_assert(!noexcept(SV{}.back()));
+  static_assert(noexcept(SV{}.back()));
 
   {
     const CharT* str = TEST_STRLIT(CharT, "a");

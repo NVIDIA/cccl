@@ -26,7 +26,7 @@ __host__ __device__ constexpr void test_index_operator()
   using ConstRef = typename SV::const_reference;
 
   static_assert(cuda::std::is_same_v<ConstRef, decltype(SV{}.operator[](SizeT{}))>);
-  static_assert(!noexcept(SV{}.operator[](SizeT{})));
+  static_assert(noexcept(SV{}.operator[](SizeT{})));
 
   const CharT* str = TEST_STRLIT(CharT, "Hello world!");
 

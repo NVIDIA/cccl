@@ -95,7 +95,7 @@ __host__ __device__ constexpr void test_starts_with()
   // constexpr bool starts_with(const charT* x) const;
 
   static_assert(cuda::std::is_same_v<bool, decltype(SV{}.starts_with(cuda::std::declval<const CharT*>()))>);
-  static_assert(!noexcept(SV{}.starts_with(cuda::std::declval<const CharT*>())));
+  static_assert(noexcept(SV{}.starts_with(cuda::std::declval<const CharT*>())));
 
   {
     const CharT* str = TEST_STRLIT(CharT, "abcde");

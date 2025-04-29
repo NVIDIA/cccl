@@ -115,7 +115,7 @@ __host__ __device__ constexpr void test_contains()
   // constexpr bool contains(const charT* x) const;
 
   static_assert(cuda::std::is_same_v<bool, decltype(SV{}.contains(cuda::std::declval<const CharT*>()))>);
-  static_assert(!noexcept(SV{}.contains(cuda::std::declval<const CharT*>())));
+  static_assert(noexcept(SV{}.contains(cuda::std::declval<const CharT*>())));
 
   {
     const CharT* str = TEST_STRLIT(CharT, "abcde");

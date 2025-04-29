@@ -26,7 +26,7 @@ __host__ __device__ constexpr void test_remove_prefix()
 
   static_assert(cuda::std::is_same_v<void, decltype(SV{}.remove_prefix(SizeT{}))>);
 #if !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
-  static_assert(!noexcept(SV{}.remove_prefix(SizeT{})));
+  static_assert(noexcept(SV{}.remove_prefix(SizeT{})));
 #endif // !(_CCCL_COMPILER(GCC, <, 9) || _CCCL_COMPILER(MSVC))
 
   {

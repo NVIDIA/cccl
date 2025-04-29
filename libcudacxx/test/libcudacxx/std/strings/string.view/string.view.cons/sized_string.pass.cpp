@@ -26,7 +26,7 @@ __host__ __device__ constexpr void test_sized_str_constructor()
   using SizeT = typename SV::size_type;
 
   static_assert(cuda::std::is_constructible_v<SV, const CharT*, SizeT>);
-  static_assert(!noexcept(SV{cuda::std::declval<const CharT*>(), cuda::std::declval<SizeT>()}));
+  static_assert(noexcept(SV{cuda::std::declval<const CharT*>(), cuda::std::declval<SizeT>()}));
 
   const CharT* str = TEST_STRLIT(CharT, "Hello world!");
   {

@@ -40,7 +40,7 @@ __host__ __device__ constexpr void test_find()
   using SizeT = typename SV::size_type;
 
   static_assert(cuda::std::is_same_v<SizeT, decltype(SV{}.find(cuda::std::declval<const CharT*>(), SizeT{}, SizeT{}))>);
-  static_assert(!noexcept(SV{}.find(cuda::std::declval<const CharT*>(), SizeT{}, SizeT{})));
+  static_assert(noexcept(SV{}.find(cuda::std::declval<const CharT*>(), SizeT{}, SizeT{})));
 
   const auto str1 = TEST_STRLIT(CharT, "");
   const auto str2 = TEST_STRLIT(CharT, "abcde");
