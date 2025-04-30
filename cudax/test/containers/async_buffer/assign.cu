@@ -180,7 +180,6 @@ C2H_TEST("cudax::async_buffer assign", "[container][async_buffer]", test_types)
     CUDAX_CHECK(!buf1.empty());
     CUDAX_CHECK(equal_range(buf1));
 
-    // TODO should this be just buf2.assign?
     buf2 = Buffer{env, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)}};
     CUDAX_CHECK(!buf2.empty());
     CUDAX_CHECK(equal_range(buf2));
@@ -195,7 +194,7 @@ C2H_TEST("cudax::async_buffer assign", "[container][async_buffer]", test_types)
     buf.destroy();
     CUDAX_CHECK(buf.empty());
     CUDAX_CHECK(buf.data() == nullptr);
-    // TODO should this be just buf.assign?
+
     buf = Buffer{env, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)}};
     CUDAX_CHECK(!buf.empty());
     CUDAX_CHECK(equal_range(buf));

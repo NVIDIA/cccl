@@ -78,7 +78,7 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
   SECTION("Construction from iterators")
   {
     const cuda::std::array<T, 6> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
-    { // can be constructed from two equal forward iterators
+    { // can be constructed from two equal input iterators
       Buffer buf(env, input.begin(), input.begin());
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
@@ -93,7 +93,6 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
 
   SECTION("Construction from range")
   {
-
     { // can be constructed from an empty random access range
       Buffer buf(env, cuda::std::array<T, 0>{});
       CUDAX_CHECK(buf.empty());
