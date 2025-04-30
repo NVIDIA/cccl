@@ -25,12 +25,12 @@
 
 #include <thread>
 
-#if defined(__CUDACC__)
+#if _CCCL_CUDA_COMPILATION()
 #  include <nv/target>
 #  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) NV_IF_TARGET(NV_IS_HOST, _FOR_HOST, _FOR_DEVICE)
-#else
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) {_CCCL_PP_EXPAND _FOR_HOST}
-#endif
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 
 namespace cuda::experimental::__async
 {

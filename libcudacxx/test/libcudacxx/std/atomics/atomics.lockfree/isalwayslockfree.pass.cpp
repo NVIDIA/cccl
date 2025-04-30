@@ -106,7 +106,7 @@ __host__ __device__ void run()
   CHECK_ALWAYS_LOCK_FREE(float);
   CHECK_ALWAYS_LOCK_FREE(double);
   // CHECK_ALWAYS_LOCK_FREE(long double); // long double is not supported
-#if _CCCL_HAS_ATTRIBUTE(vector_size) && defined(_LIBCUDACXX_VERSION) && !defined(__CUDACC__)
+#if _CCCL_HAS_ATTRIBUTE(vector_size) && defined(_LIBCUDACXX_VERSION) && !_CCCL_CUDA_COMPILATION()
   // NOTE: NVCC doesn't support the vector_size attribute in device code.
   CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(1 * sizeof(int)))));
   CHECK_ALWAYS_LOCK_FREE(int __attribute__((vector_size(2 * sizeof(int)))));
