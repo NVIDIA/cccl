@@ -189,7 +189,7 @@ private:
       return;
     }
 
-    static_assert(_CUDA_VSTD::contiguous_iterator<_Iter>, "Non contigious iterators are not supported");
+    static_assert(_CUDA_VSTD::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
     _CCCL_TRY_CUDA_API(
       ::cudaMemcpyAsync,
