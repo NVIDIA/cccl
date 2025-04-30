@@ -37,6 +37,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+#if _CCCL_HAS_EXCEPTIONS()
+
 namespace __detail
 {
 
@@ -70,11 +72,11 @@ static char* __format_cuda_error(
     "%s%s%s(%d): %s",
     __msg_buffer.__location,
     __msg_buffer.__api,
-#if _CCCL_HAS_CUDA_COMPILER()
+#  if _CCCL_HAS_CUDA_COMPILER()
     ::cudaGetErrorString(::cudaError_t(__status)),
-#else
+#  else
     "cudaError",
-#endif
+#  endif
     __status,
     __msg);
   return __msg_buffer.__buffer;
@@ -84,7 +86,6 @@ static char* __format_cuda_error(
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-#if _CCCL_HAS_EXCEPTIONS()
 class cuda_error : public ::std::runtime_error
 {
 public:
