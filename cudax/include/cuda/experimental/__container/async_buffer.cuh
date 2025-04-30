@@ -132,7 +132,6 @@ public:
 
 private:
   __buffer_t __buf_;
-  // TODO size is redundant with the buffer's count
   size_type __size_    = 0; // initialized to 0 in case initialization of the elements might throw
   __policy_t __policy_ = __policy_t::invalid_execution_policy;
 
@@ -192,14 +191,14 @@ private:
 
     static_assert(_CUDA_VSTD::contiguous_iterator<_Iter>, "Non contigious iterators are not supported");
     // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
-      _CCCL_TRY_CUDA_API(
-        ::cudaMemcpyAsync,
-        "cudax::async_buffer::__copy_cross: failed to copy data",
-        __dest,
-        _CUDA_VSTD::to_address(__first),
-        sizeof(_Tp) * __count,
-        ::cudaMemcpyDefault,
-        __buf_.get_stream().get());
+    _CCCL_TRY_CUDA_API(
+      ::cudaMemcpyAsync,
+      "cudax::async_buffer::__copy_cross: failed to copy data",
+      __dest,
+      _CUDA_VSTD::to_address(__first),
+      sizeof(_Tp) * __count,
+      ::cudaMemcpyDefault,
+      __buf_.get_stream().get());
   }
 
   //! @brief Value-initializes elements in the range `[__first, __first + __count)`.
@@ -262,7 +261,8 @@ public:
   }
 
   //! @brief Move-constructs from a async_buffer
-  //! @param __other The other async_buffer.
+  //! @param __other The other async_buffer. After move construction, the other buffer can only be assigned to or
+  //! destroyed.
   _CCCL_HIDE_FROM_ABI async_buffer(async_buffer&& __other) noexcept
       : __buf_(_CUDA_VSTD::move(__other.__buf_))
       , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
@@ -283,7 +283,8 @@ public:
   }
 
   //! @brief Move-constructs from a async_buffer with matching properties
-  //! @param __other The other async_buffer.
+  //! @param __other The other async_buffer. After move construction, the other buffer can only be assigned to or
+  //! destroyed.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_buffer(async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
@@ -679,12 +680,13 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Move assignment operator
-  //! @param __other The other async_buffer.
+  //! @param __other The other async_buffer. After move assignment, the other buffer can only be assigned to or
+  //! destroyed.
   _CCCL_HIDE_FROM_ABI void operator=(async_buffer&& __other)
   {
-    __buf_   = ::std::move(__other.__buf_);
-    __size_  = _CUDA_VSTD::exchange(__other.__size_, 0);
-    __policy_ = __other.__policy_;
+    __buf_    = _CUDA_VSTD::move(__other.__buf_);
+    __size_   = _CUDA_VSTD::exchange(__other.__size_, 0);
+    __policy_ = _CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy);
   }
   //! @}
 
@@ -694,6 +696,7 @@ public:
   {
     _CUDA_VSTD::swap(__buf_, __other.__buf_);
     _CUDA_VSTD::swap(__size_, __other.__size_);
+    _CUDA_VSTD::swap(__policy_, __other.__policy_);
   }
 
   //! @brief Swaps the contents of two async_buffers
@@ -705,12 +708,13 @@ public:
   }
   //! @}
 
-  //! @brief Destroys the async_buffer and deallocates the buffer in stream order on the stream that was used to create
-  //! the buffer.
+  //! @brief Destroys the async_buffer, deallocates the buffer and destroys the memory resource
+  //! @warning After this explicit destroy call, the buffer can only be assigned to or destroyed.
   _CCCL_HIDE_FROM_ABI void destroy()
   {
     __buf_.destroy();
-    __size_ = 0;
+    __size_   = 0;
+    __policy_ = __policy_t::invalid_execution_policy;
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken
