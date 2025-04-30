@@ -104,7 +104,7 @@ private:
   /// @tparam _Rcvr The receiver connected to the `let_(value|error|stopped)`
   /// sender.
   template <class _Rcvr, class _CvSndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
@@ -118,6 +118,8 @@ private:
         , __fn_(static_cast<_Fn&&>(__fn))
         , __opstate1_(__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this}))
     {}
+
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CUDAX_API void start() noexcept
     {

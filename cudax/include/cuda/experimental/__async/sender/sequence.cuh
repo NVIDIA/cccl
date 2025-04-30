@@ -47,7 +47,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t
   };
 
   template <class _Zip>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
@@ -62,6 +62,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t
         , __opstate1_(__async::connect(static_cast<__sndr1_t&&>(__sndr1), __rcvr_ref{*this}))
         , __opstate2_(__async::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref{__rcvr_}))
     {}
+
+    _CUDAX_IMMOVABLE(__opstate);
 
     _CUDAX_API void start() noexcept
     {

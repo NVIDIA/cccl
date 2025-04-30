@@ -94,7 +94,7 @@ private:
   };
 
   template <class _Rcvr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate : __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
@@ -134,14 +134,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
   _CUDAX_API auto connect(_Rcvr __rcvr) && //
     noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>) -> __opstate<_Rcvr, _Fn>
   {
-    return __opstate<_Rcvr, _Fn>{{}, static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
+    return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
   }
 
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) const& //
     noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>) -> __opstate<_Rcvr, _Fn>
   {
-    return __opstate<_Rcvr, _Fn>{{}, static_cast<_Rcvr&&>(__rcvr), __fn_};
+    return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 };
 

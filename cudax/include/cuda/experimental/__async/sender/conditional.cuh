@@ -106,7 +106,7 @@ private:
   };
 
   template <class _Sndr, class _Rcvr, class _Pred, class _Then, class _Else>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __params_t _CCCL_NODEBUG_ALIAS              = params<_Pred, _Then, _Else>;
@@ -126,6 +126,8 @@ private:
         , __params_{static_cast<__params_t&&>(__params)}
         , __op_{__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{*this})}
     {}
+
+    _CUDAX_IMMOVABLE(__opstate);
 
     _CUDAX_API void start() noexcept
     {

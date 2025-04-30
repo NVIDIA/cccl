@@ -40,7 +40,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
 {
 private:
   template <class _Rcvr, class _Sndr, class _Env>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
@@ -48,6 +48,8 @@ private:
         : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), static_cast<_Env&&>(__env)}
         , __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{__env_rcvr_}))
     {}
+
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CUDAX_API void start() noexcept
     {

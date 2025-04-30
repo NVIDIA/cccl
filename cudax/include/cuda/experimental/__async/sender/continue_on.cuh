@@ -116,7 +116,7 @@ private:
   };
 
   template <class _Rcvr, class _CvSndr, class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;

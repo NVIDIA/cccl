@@ -45,7 +45,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t
 {
 private:
   template <class _Rcvr, class _Query>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
@@ -54,6 +54,8 @@ private:
     _CUDAX_API explicit __opstate_t(_Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
+
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CUDAX_API void start() noexcept
     {

@@ -43,9 +43,13 @@
 // the ABI.
 #define _CUDAX_DEFAULTED_API _CCCL_HIDE_FROM_ABI
 
-// GCC struggles with guaranteed copy elision of immovable types.
+// BUG (gcc#98995): copy elision fails when initializing a [[no_unique_address]] field
+// from a function returning an object of class type by value.
+// See: https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
 #if _CCCL_COMPILER(GCC)
-#  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&)
+// By declaring the move constructor but not defining it, any TU that ODR-uses the move
+// constructor will cause a linker error.
+#  define _CUDAX_IMMOVABLE(_XP) _CUDAX_API _XP(_XP&&) noexcept
 #else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&) = delete
 #endif // !_CCCL_COMPILER(GCC)

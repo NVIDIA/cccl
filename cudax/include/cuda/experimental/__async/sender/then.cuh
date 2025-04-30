@@ -104,7 +104,7 @@ private:
   using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
   template <class _Rcvr, class _CvSndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
@@ -114,6 +114,8 @@ private:
         , __fn_{static_cast<_Fn&&>(__fn)}
         , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
     {}
+
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CUDAX_API void start() & noexcept
     {

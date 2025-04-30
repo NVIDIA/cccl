@@ -34,7 +34,7 @@ namespace cuda::experimental::__async
 struct start_detached_t
 {
 private:
-  struct __opstate_base_t : private __immovable
+  struct __opstate_base_t
   {};
 
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
@@ -76,6 +76,8 @@ private:
     _CUDAX_API explicit __opstate_t(_Sndr&& __sndr)
         : __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
+
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CUDAX_API void start() & noexcept
     {

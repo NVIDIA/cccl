@@ -301,7 +301,6 @@ private:
   template <class _Rcvr, class _CvFn, size_t... _Idx, class _Ign0, class _Ign1, class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT
   __opstate_t<_Rcvr, _CvFn, _CUDA_VSTD::__tupl<_CUDA_VSTD::index_sequence<0, 1, _Idx...>, _Ign0, _Ign1, _Sndrs...>>
-      : private __immovable
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __sndrs_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<_CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>>;
@@ -341,6 +340,8 @@ private:
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
         , __sub_ops_{__sndrs_.__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
+
+    _CUDAX_IMMOVABLE(__opstate_t);
 
     /// Start all the sub-operations.
     _CUDAX_API void start() & noexcept

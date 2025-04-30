@@ -42,11 +42,10 @@
  * for accessing tuple elements and applying callable objects to tuple contents.
  *
  * Key features:
- * - Lightweight tuple implementation for POD types.
+ * - Lightweight tuple implementation that can be aggregate initialized.
  * - Compile-time optimizations for small tuples (sizes 1-8).
  * - Support for callable application via `__apply`.
  * - Utilities for accessing tuple elements using `__cget`.
- * - Compatibility with CUDA device and host code.
  */
 
 #define _CCCL_API         _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
