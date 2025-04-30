@@ -635,7 +635,7 @@ void TestVectorResizing()
     // reset the CUDA error
     cudaGetLastError();
   } // end catch
-#endif _CCCL_CUDA_COMPILATION() && CUDART_VERSION == 3000
+#endif // _CCCL_CUDA_COMPILATION() && CUDART_VERSION == 3000
 
   ASSERT_EQUAL(v.size(), 0lu);
 }
