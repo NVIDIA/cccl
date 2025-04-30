@@ -107,6 +107,7 @@ runs:
         compression-level: 0
 
     - name: Debug wheelhouse contents
+      shell: bash --noprofile --norc -euo pipefail {0}
       run: |
         pwd
         ls -l wheelhouse || echo "No wheelhouse directory"
