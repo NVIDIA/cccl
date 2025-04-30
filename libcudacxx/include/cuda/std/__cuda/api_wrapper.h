@@ -46,4 +46,17 @@
     _CCCL_ASSERT(__status == cudaSuccess, _MSG);                        \
   }
 
+#define _CCCL_LOG_CUDA_API(_NAME, _MSG, ...)                                                           \
+  [&]() {                                                                                              \
+    const ::cudaError_t __status = _NAME(__VA_ARGS__);                                                 \
+    if (__status != ::cudaSuccess)                                                                     \
+    {                                                                                                  \
+      ::cuda::__detail::__msg_storage __msg_buffer;                                                    \
+      ::cuda::__detail::__format_cuda_error(__msg_buffer, __status, _MSG, #_NAME, __FILE__, __LINE__); \
+      ::fprintf(stderr, "%s\n", __msg_buffer.__buffer);                                                \
+      ::fflush(stderr);                                                                                \
+    }                                                                                                  \
+    return __status;                                                                                   \
+  }()
+
 #endif //_CUDA__STD__CUDA_API_WRAPPER_H
