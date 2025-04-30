@@ -187,6 +187,7 @@ runs:
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
           --volume "${{github.workspace}}/artifacts:/artifacts" \
+          --volume "${{github.workspace}}/wheelhouse:/wheelhouse" \
           --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
           --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
           -- /ci.sh
