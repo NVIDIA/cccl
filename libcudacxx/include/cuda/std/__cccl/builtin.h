@@ -1273,7 +1273,7 @@
 #endif
 
 // Some compilers provide std::move/std::forward/etc as builtins
-#if defined(__cplusplus) // && !defined(__CUDA_ARCH__)
+#if defined(__cplusplus)
 // Bring in the feature test macros (needed for std::forward_like)
 #  if _CCCL_HAS_INCLUDE(<version>) // <version> should be the smallest include possible
 #    include <version>
@@ -1290,37 +1290,16 @@
 #    include <__utility/forward.h>
 #    include <__utility/forward_like.h>
 #    include <__utility/move.h>
-#  elif defined(_MSVC_STL_VERSION)
-namespace std
-{
-template <class _Ty>
-struct remove_reference;
-
-template <class _Ty>
-using remove_reference_t = typename remove_reference<_Ty>::type;
-
-template <class _Ty>
-[[nodiscard]] _CCCL_INTRINSIC constexpr _Ty&& forward(remove_reference_t<_Ty>& _Arg) noexcept;
-
-template <class _Ty>
-[[nodiscard]] _CCCL_INTRINSIC constexpr _Ty&& forward(remove_reference_t<_Ty>&& _Arg) noexcept;
-
-template <class _Ty>
-[[nodiscard]] _CCCL_INTRINSIC constexpr remove_reference_t<_Ty>&& move(_Ty&& _Arg) noexcept;
-
-template <class _Ty>
-[[nodiscard]] constexpr _Ty* addressof(_Ty& _Val) noexcept;
-} // namespace std
 #  endif
 
-#  if defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
+#  if defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION)
 // std::move builtin
-#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
 #      define _CCCL_HAS_BUILTIN_STD_MOVE() 1
 #    endif
 
 // std::forward builtin
-#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15) || _CCCL_COMPILER(MSVC, >=, 19, 36)
+#    if _CCCL_COMPILER(CLANG, >=, 15) || _CCCL_COMPILER(GCC, >=, 15)
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD() 1
 #    endif
 
@@ -1336,8 +1315,8 @@ template <class _Ty>
 
 // std::forward_like builtin
 // Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
-#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15) /*|| _CCCL_COMPILER(MSVC, >=, 19, 36)*/) \
-      && defined(__cpp_lib_forward_like) && (__cpp_lib_forward_like >= 202217L)
+#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && defined(__cpp_lib_forward_like) \
+      && (__cpp_lib_forward_like >= 202217L)
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #    endif
 #  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)

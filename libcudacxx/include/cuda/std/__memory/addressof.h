@@ -32,8 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // instantiated and will be compiled away even at -O0.
 using ::std::addressof;
 
-#elif defined(_CCCL_BUILTIN_ADDRESSOF) // ^^^ _CCCL_HAS_BUILTIN_STD_ADDRESSOF() ^^^ /
-                                       // vvv _CCCL_BUILTIN_ADDRESSOF vvv
+#elif defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
