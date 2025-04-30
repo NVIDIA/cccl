@@ -717,6 +717,30 @@ public:
     __policy_ = __policy_t::invalid_execution_policy;
   }
 
+  //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
+  template <class _Tp2 = _Tp>
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
+  __cudax_launch_transform(::cuda::stream_ref, async_buffer& __self) noexcept
+    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  {
+    // TODO add auto synchronization
+    return {__self.__unwrapped_begin(), __self.size()};
+  }
+
+  //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
+  template <class _Tp2 = _Tp>
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
+  __cudax_launch_transform(::cuda::stream_ref, const async_buffer& __self) noexcept
+    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
+  {
+    // TODO add auto synchronization
+    return {__self.__unwrapped_begin(), __self.size()};
+  }
+
 #ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken
   //! @brief Forwards the passed properties
   _CCCL_TEMPLATE(class _Property)
