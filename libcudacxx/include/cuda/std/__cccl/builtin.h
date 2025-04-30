@@ -12,6 +12,7 @@
 #define __CCCL_BUILTIN_H
 
 #include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__cccl/system_header.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -1272,13 +1273,13 @@
 #endif
 
 // Some compilers provide std::move/std::forward/etc as builtins
-#if defined(__cplusplus) && !defined(__CUDA_ARCH__)
+#if defined(__cplusplus) // && !defined(__CUDA_ARCH__)
 // Bring in the feature test macros (needed for std::forward_like)
-#  if __has_include(<version>)
+#  if _CCCL_HAS_INCLUDE(<version>) // <version> should be the smallest include possible
 #    include <version>
-#  else
-#    include <ciso646>
-#  endif
+#  elif !_CCCL_COMPILER(NVRTC)
+#    include <ciso646> // otherwise go for the smallest possible header
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 // Bring in the bits of the STL we need
 #  if defined(_GLIBCXX_VERSION)
