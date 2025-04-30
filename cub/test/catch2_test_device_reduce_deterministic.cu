@@ -197,7 +197,7 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   deterministic_reduce_gpu<type>(num_items);
 }
 
-// The followsing tests require RFA to be compiled on host. Currently, RFA on host with clang compiler
+// The following tests require RFA to be compiled on host. Currently, RFA on host with clang compiler
 // produces compilation error complaining, optimizer cannot unroll loops.
 // These tests are disabled for now, and will be enabled when we would like to support RFA on host.
 #if 0
