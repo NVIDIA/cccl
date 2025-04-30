@@ -365,5 +365,5 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_ptr));
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_err));
   REQUIRE(CUDA_SUCCESS == cuModuleUnload(module));
-  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRelease(context));
+  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRelease(device));
 }
