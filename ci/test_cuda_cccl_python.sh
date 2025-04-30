@@ -20,5 +20,5 @@ ls ../
 ls /
 
 # Install the wheel from the artifact location
-WHEEL_PATH="../../wheelhouse/cuda_cccl-*.whl"
+WHEEL_PATH="/wheelhouse/cuda_cccl-*.whl"
 run_tests_from_wheel "cuda_cccl" "$WHEEL_PATH"
