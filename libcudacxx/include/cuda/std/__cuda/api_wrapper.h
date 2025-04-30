@@ -27,17 +27,17 @@
 
 #include <cuda/std/__exception/cuda_error.h>
 
-#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)           \
-  {                                                    \
-    const ::cudaError_t __status = _NAME(__VA_ARGS__); \
-    switch (__status)                                  \
-    {                                                  \
-      case ::cudaSuccess:                              \
-        break;                                         \
-      default:                                         \
-        ::cudaGetLastError();                          \
-        ::cuda::__throw_cuda_error(__status, _MSG);    \
-    }                                                  \
+#define _CCCL_TRY_CUDA_API(_NAME, _MSG, ...)                                    \
+  {                                                                             \
+    const ::cudaError_t __status = _NAME(__VA_ARGS__);                          \
+    switch (__status)                                                           \
+    {                                                                           \
+      case ::cudaSuccess:                                                       \
+        break;                                                                  \
+      default:                                                                  \
+        ::cudaGetLastError();                                                   \
+        ::cuda::__throw_cuda_error(__status, _MSG, #_NAME, __FILE__, __LINE__); \
+    }                                                                           \
   }
 
 #define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)                         \
