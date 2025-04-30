@@ -323,6 +323,7 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuInit(0));
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
   REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRetain(&context, device));
+  REQUIRE(CUDA_SUCCESS == cuCtxSetCurrent(context));
   REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, 0, 0));
   REQUIRE(CUDA_SUCCESS == cuModuleGetFunction(&kernel, module, "kernel"));
 
