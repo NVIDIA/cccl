@@ -49,11 +49,6 @@
  * - Compatibility with CUDA device and host code.
  */
 
-#if _CCCL_COMPILER(CLANG, <, 19)
-// See https://github.com/llvm/llvm-project/issues/88077
-#  define _CCCL_BROKEN_NO_UNIQUE_ADDRESS
-#endif
-
 #define _CCCL_API         _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #define _CCCL_TRIVIAL_API _CCCL_API _CCCL_FORCEINLINE _CCCL_ARTIFICIAL _CCCL_NODEBUG
 
@@ -62,27 +57,22 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <size_t _Idx, class _Ty>
 struct __box
 {
-  // Too many compiler bugs with [[no_unique_address]] to use it here.
-  // E.g., https://github.com/llvm/llvm-project/issues/88077
-#if !defined(_CCCL_BROKEN_NO_UNIQUE_ADDRESS)
-  _CCCL_NO_UNIQUE_ADDRESS
-#endif
-  _Ty __value_;
+  _CCCL_NO_UNIQUE_ADDRESS _Ty __value_;
 };
 
 template <auto _Value>
-using __c _CCCL_NODEBUG_ALIAS = integral_constant<decltype(_Value), _Value>;
+using __mbr _CCCL_NODEBUG_ALIAS = integral_constant<decltype(_Value), _Value>;
 
 template <class _Idx, class... _Ts>
 struct __tupl;
 
 template <size_t... _Idx, class... _Ts>
-struct __tupl<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
+struct _CCCL_DECLSPEC_EMPTY_BASES __tupl<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 {
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
-    noexcept(__is_nothrow_callable_v<_Fn, __copy_cvref_t<_Self, _Ts>..., _Us...>)
-      -> __call_result_t<_Fn, __copy_cvref_t<_Self, _Ts>..., _Us...>
+  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+    __is_nothrow_callable_v<_Fn, __copy_cvref_t<_Self, _Ts>..., _Us...>)
+    -> __call_result_t<_Fn, __copy_cvref_t<_Self, _Ts>..., _Us...>
   {
     return static_cast<_Fn&&>(__fn)( //
       static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...,
@@ -98,17 +88,17 @@ struct __tupl<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_T, _Idx)
 #define _CCCL_TUPLE_INDEX_SEQUENCE(_Idx) , _Idx
 #define _CCCL_TUPLE_TPARAM(_Idx)         , _CCCL_PP_CAT(_T, _Idx)
-#define _CCCL_TUPLE_DEFINE_ELEMENT(_Idx) _CCCL_PP_CAT(_T, _Idx) _CCCL_PP_CAT(__t, _Idx);
+#define _CCCL_TUPLE_DEFINE_ELEMENT(_Idx) _CCCL_NO_UNIQUE_ADDRESS _CCCL_PP_CAT(_T, _Idx) _CCCL_PP_CAT(__t, _Idx);
 #define _CCCL_TUPLE_CVREF_TPARAM(_Idx)   , __copy_cvref_t<_Self, _CCCL_PP_CAT(_T, _Idx)>
 #define _CCCL_TUPLE_ELEMENT(_Idx)        , static_cast<_Self&&>(__self)._CCCL_PP_CAT(__t, _Idx)
-#define _CCCL_TUPLE_MBR_PTR(_Idx)        , __c<&__tupl::_CCCL_PP_CAT(__t, _Idx)>
+#define _CCCL_TUPLE_MBR_PTR(_Idx)        , __mbr<&__tupl::_CCCL_PP_CAT(__t, _Idx)>
 
 #define _CCCL_DEFINE_TUPLE(_SizeSub1)                                                                           \
   template <class _T0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_TPARAM, 1)>                                 \
   struct __tupl<index_sequence<0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_INDEX_SEQUENCE, 1)>,                    \
                 _T0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_TPARAM, 1)>                                          \
   {                                                                                                             \
-    _T0 __t0;                                                                                                   \
+    _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;                                                                           \
     _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                                   \
                                                                                                                 \
     template <class _Fn, class _Self, class... _Us>                                                             \
@@ -125,10 +115,10 @@ struct __tupl<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
     }                                                                                                           \
                                                                                                                 \
     template <size_t _Idx>                                                                                      \
-    _CCCL_API static constexpr auto __get_mbr_ptr() noexcept                                                    \
+    [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept                                      \
     {                                                                                                           \
       using __result_t _CCCL_NODEBUG_ALIAS =                                                                    \
-        __type_index_c<_Idx, __c<&__tupl::__t0> _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>;            \
+        __type_index_c<_Idx, __mbr<&__tupl::__t0> _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>;          \
       return __result_t::value;                                                                                 \
     }                                                                                                           \
   }
@@ -146,7 +136,7 @@ _CCCL_DEFINE_TUPLE(7);
 template <class _T0>
 struct __tupl<index_sequence<0>, _T0>
 {
-  _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -157,9 +147,9 @@ struct __tupl<index_sequence<0>, _T0>
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
-    using __result_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __c<&__tupl::__t0>>;
+    using __result_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __mbr<&__tupl::__t0>>;
     return __result_t::value;
   }
 };
@@ -167,8 +157,8 @@ struct __tupl<index_sequence<0>, _T0>
 template <class _T0, class _T1>
 struct __tupl<index_sequence<0, 1>, _T0, _T1>
 {
-  _T0 __t0;
-  _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -180,9 +170,9 @@ struct __tupl<index_sequence<0, 1>, _T0, _T1>
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
-    using __result_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __c<&__tupl::__t0>, __c<&__tupl::__t1>>;
+    using __result_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>>;
     return __result_t::value;
   }
 };
@@ -190,9 +180,9 @@ struct __tupl<index_sequence<0, 1>, _T0, _T1>
 template <class _T0, class _T1, class _T2>
 struct __tupl<index_sequence<0, 1, 2>, _T0, _T1, _T2>
 {
-  _T0 __t0;
-  _T1 __t1;
-  _T2 __t2;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -211,10 +201,10 @@ struct __tupl<index_sequence<0, 1, 2>, _T0, _T1, _T2>
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
     using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx, __c<&__tupl::__t0>, __c<&__tupl::__t1>, __c<&__tupl::__t2>>;
+      __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>, __mbr<&__tupl::__t2>>;
     return __result_t::value;
   }
 };
@@ -222,10 +212,10 @@ struct __tupl<index_sequence<0, 1, 2>, _T0, _T1, _T2>
 template <class _T0, class _T1, class _T2, class _T3>
 struct __tupl<index_sequence<0, 1, 2, 3>, _T0, _T1, _T2, _T3>
 {
-  _T0 __t0;
-  _T1 __t1;
-  _T2 __t2;
-  _T3 __t3;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
+  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -251,10 +241,10 @@ struct __tupl<index_sequence<0, 1, 2, 3>, _T0, _T1, _T2, _T3>
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
     using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx, __c<&__tupl::__t0>, __c<&__tupl::__t1>, __c<&__tupl::__t2>, __c<&__tupl::__t3>>;
+      __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>, __mbr<&__tupl::__t2>, __mbr<&__tupl::__t3>>;
     return __result_t::value;
   }
 };
@@ -262,11 +252,11 @@ struct __tupl<index_sequence<0, 1, 2, 3>, _T0, _T1, _T2, _T3>
 template <class _T0, class _T1, class _T2, class _T3, class _T4>
 struct __tupl<index_sequence<0, 1, 2, 3, 4>, _T0, _T1, _T2, _T3, _T4>
 {
-  _T0 __t0;
-  _T1 __t1;
-  _T2 __t2;
-  _T3 __t3;
-  _T4 __t4;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
+  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
+  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -295,15 +285,15 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4>, _T0, _T1, _T2, _T3, _T4>
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
     using __result_t _CCCL_NODEBUG_ALIAS =
       __type_index_c<_Idx,
-                     __c<&__tupl::__t0>,
-                     __c<&__tupl::__t1>,
-                     __c<&__tupl::__t2>,
-                     __c<&__tupl::__t3>,
-                     __c<&__tupl::__t4>>;
+                     __mbr<&__tupl::__t0>,
+                     __mbr<&__tupl::__t1>,
+                     __mbr<&__tupl::__t2>,
+                     __mbr<&__tupl::__t3>,
+                     __mbr<&__tupl::__t4>>;
     return __result_t::value;
   }
 };
@@ -311,12 +301,12 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4>, _T0, _T1, _T2, _T3, _T4>
 template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5>
 struct __tupl<index_sequence<0, 1, 2, 3, 4, 5>, _T0, _T1, _T2, _T3, _T4, _T5>
 {
-  _T0 __t0;
-  _T1 __t1;
-  _T2 __t2;
-  _T3 __t3;
-  _T4 __t4;
-  _T5 __t5;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
+  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
+  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
+  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -348,16 +338,16 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5>, _T0, _T1, _T2, _T3, _T4, _T5>
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
     using __result_t _CCCL_NODEBUG_ALIAS =
       __type_index_c<_Idx,
-                     __c<&__tupl::__t0>,
-                     __c<&__tupl::__t1>,
-                     __c<&__tupl::__t2>,
-                     __c<&__tupl::__t3>,
-                     __c<&__tupl::__t4>,
-                     __c<&__tupl::__t5>>;
+                     __mbr<&__tupl::__t0>,
+                     __mbr<&__tupl::__t1>,
+                     __mbr<&__tupl::__t2>,
+                     __mbr<&__tupl::__t3>,
+                     __mbr<&__tupl::__t4>,
+                     __mbr<&__tupl::__t5>>;
     return __result_t::value;
   }
 };
@@ -365,13 +355,13 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5>, _T0, _T1, _T2, _T3, _T4, _T5>
 template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6>
 struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6>, _T0, _T1, _T2, _T3, _T4, _T5, _T6>
 {
-  _T0 __t0;
-  _T1 __t1;
-  _T2 __t2;
-  _T3 __t3;
-  _T4 __t4;
-  _T5 __t5;
-  _T6 __t6;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
+  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
+  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
+  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
+  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -406,17 +396,17 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6>, _T0, _T1, _T2, _T3, _T4, _T5,
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
     using __result_t _CCCL_NODEBUG_ALIAS =
       __type_index_c<_Idx,
-                     __c<&__tupl::__t0>,
-                     __c<&__tupl::__t1>,
-                     __c<&__tupl::__t2>,
-                     __c<&__tupl::__t3>,
-                     __c<&__tupl::__t4>,
-                     __c<&__tupl::__t5>,
-                     __c<&__tupl::__t6>>;
+                     __mbr<&__tupl::__t0>,
+                     __mbr<&__tupl::__t1>,
+                     __mbr<&__tupl::__t2>,
+                     __mbr<&__tupl::__t3>,
+                     __mbr<&__tupl::__t4>,
+                     __mbr<&__tupl::__t5>,
+                     __mbr<&__tupl::__t6>>;
     return __result_t::value;
   }
 };
@@ -424,14 +414,14 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6>, _T0, _T1, _T2, _T3, _T4, _T5,
 template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6, class _T7>
 struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7>
 {
-  _T0 __t0;
-  _T1 __t1;
-  _T2 __t2;
-  _T3 __t3;
-  _T4 __t4;
-  _T5 __t5;
-  _T6 __t6;
-  _T7 __t7;
+  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
+  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
+  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
+  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
+  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
+  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
+  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
@@ -469,37 +459,37 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _
   }
 
   template <size_t _Idx>
-  _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
+  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
   {
     using __result_t _CCCL_NODEBUG_ALIAS =
       __type_index_c<_Idx,
-                     __c<&__tupl::__t0>,
-                     __c<&__tupl::__t1>,
-                     __c<&__tupl::__t2>,
-                     __c<&__tupl::__t3>,
-                     __c<&__tupl::__t4>,
-                     __c<&__tupl::__t5>,
-                     __c<&__tupl::__t6>,
-                     __c<&__tupl::__t7>>;
+                     __mbr<&__tupl::__t0>,
+                     __mbr<&__tupl::__t1>,
+                     __mbr<&__tupl::__t2>,
+                     __mbr<&__tupl::__t3>,
+                     __mbr<&__tupl::__t4>,
+                     __mbr<&__tupl::__t5>,
+                     __mbr<&__tupl::__t6>,
+                     __mbr<&__tupl::__t7>>;
     return __result_t::value;
   }
 };
 
 template <size_t _Idx, class _Ty>
-_CCCL_TRIVIAL_API constexpr auto __cget(__box<_Idx, _Ty> const& __box) noexcept -> _Ty const&
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __cget(__box<_Idx, _Ty> const& __box) noexcept -> _Ty const&
 {
   return __box.__value_;
 }
 
 template <size_t _Idx, class _Tupl, auto _MbrPtr = _Tupl::template __get_mbr_ptr<_Idx>()>
-_CCCL_TRIVIAL_API constexpr auto __cget(_Tupl const& __tupl) noexcept -> decltype(auto)
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __cget(_Tupl const& __tupl) noexcept -> decltype(auto)
 {
   return __tupl.*_MbrPtr;
 }
 
 template <class... _Ts>
-__tupl(_Ts...) //
-  ->__tupl<make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+_CCCL_HOST_DEVICE __tupl(_Ts...) //
+  -> __tupl<make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <class _Fn, class _Tupl, class... _Us>
 using __apply_result_t _CCCL_NODEBUG_ALIAS =
@@ -526,12 +516,12 @@ using __decayed_tuple _CCCL_NODEBUG_ALIAS = __tuple<decay_t<_Ts>...>;
 template <class _First, class _Second>
 struct __pair
 {
-  _First first;
-  _Second second;
+  _CCCL_NO_UNIQUE_ADDRESS _First first;
+  _CCCL_NO_UNIQUE_ADDRESS _Second second;
 };
 
 template <class _First, class _Second>
-__pair(_First, _Second) -> __pair<_First, _Second>;
+_CCCL_HOST_DEVICE __pair(_First, _Second) -> __pair<_First, _Second>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

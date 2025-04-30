@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/experimental/__async/sender/queries.cuh"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -41,6 +39,7 @@
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/lazy.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__async/sender/stop_token.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>

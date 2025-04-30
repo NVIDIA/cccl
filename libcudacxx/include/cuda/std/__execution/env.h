@@ -29,7 +29,9 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
-#include <functional> // IWYU pragma: keep for ::std::reference_wrapper
+#if !_CCCL_COMPILER(NVRTC)
+#  include <functional> // IWYU pragma: keep for ::std::reference_wrapper
+#endif // !_CCCL_COMPILER(NVRTC)
 
 /**
  * @file env.h
@@ -74,7 +76,7 @@
  * @tparam _Query The type of the property to be queried.
  *
  * @struct prop
- * @tparam _Query The type of the .
+ * @tparam _Query The type of the property to be queried.
  * @tparam _Value The type of the value associated with the query.
  * A simple environment with a single value associated with a query.
  *
@@ -99,8 +101,8 @@ auto __query_result_() -> decltype(declval<_Ty>().query(_Query()));
 
 #if _CCCL_HAS_EXCEPTIONS()
 template <class _Ty, class _Query>
-using __nothrow_queryable_with_ _CCCL_NODEBUG_ALIAS = enable_if_t<noexcept(declval<_Ty>().query(_Query{}))>;
-#endif
+using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS = enable_if_t<noexcept(declval<_Ty>().query(_Query{}))>;
+#endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
 extern _Ty __unwrap_ref;
@@ -113,7 +115,7 @@ extern _Ty& __unwrap_ref<reference_wrapper<_Ty>>;
 
 inline constexpr size_t __npos = static_cast<size_t>(-1);
 
-_CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
+[[nodiscard]] _CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
 {
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
@@ -136,11 +138,11 @@ _CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Ty, _Query
 
 #if _CCCL_HAS_EXCEPTIONS()
 template <class _Ty, class _Query>
-_CCCL_CONCEPT __nothrow_queryable_with = _IsValidExpansion<detail::__nothrow_queryable_with_, _Ty, _Query>::value;
-#else
+_CCCL_CONCEPT __nothrow_queryable_with = _IsValidExpansion<detail::__nothrow_queryable_with_t, _Ty, _Query>::value;
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 template <class _Ty, class _Query>
 _CCCL_CONCEPT __nothrow_queryable_with = true;
-#endif
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
 using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(detail::__unwrap_ref<_Ty>);
@@ -170,7 +172,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
   _CCCL_NO_UNIQUE_ADDRESS _Value __value;
 
-  _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept -> const _Value&
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept -> const _Value&
   {
     return __value;
   }
@@ -204,7 +206,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
    * @note If no environment satisfies the query, the behavior is undefined.
    */
   template <class _Query>
-  _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__queryable_with<_Envs, _Query>..., false};
@@ -239,13 +241,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
    */
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
-  _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
     noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
     return env::__get_1st<_Query>(*this).query(__query);
   }
 
-  __tuple<_Envs...> __envs_;
+  _CCCL_NO_UNIQUE_ADDRESS __tuple<_Envs...> __envs_;
 };
 
 template <class... _Envs>
@@ -261,7 +263,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;
 
   template <class _Query>
-  _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
     if constexpr (__queryable_with<_Env0, _Query>)
     {
@@ -278,7 +280,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
-  _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
     noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
     return env::__get_1st<_Query>(*this).query(__query);
@@ -292,13 +294,13 @@ struct get_env_t
   using __env_of _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty>().get_env());
 
   template <class _Ty>
-  _CCCL_TRIVIAL_API auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
+  [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
   {
     static_assert(noexcept(__ty.get_env()));
     return __ty.get_env();
   }
 
-  _CCCL_TRIVIAL_API auto operator()(__ignore_t) const noexcept -> env<>
+  [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(__ignore_t) const noexcept -> env<>
   {
     return {};
   }
