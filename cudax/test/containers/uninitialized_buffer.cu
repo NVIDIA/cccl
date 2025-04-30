@@ -227,7 +227,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     buf.destroy();
     CUDAX_CHECK(buf.data() == nullptr);
     CUDAX_CHECK(buf.size() == 0);
-    //buf.__replace_allocation(42);
+
     buf = uninitialized_buffer{resource, 42};
     CUDAX_CHECK(buf.data() != nullptr);
     CUDAX_CHECK(buf.size() == 42);

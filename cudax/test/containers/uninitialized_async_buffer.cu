@@ -216,7 +216,7 @@ C2H_TEST_LIST(
     CUDAX_CHECK(buf.data() == nullptr);
     CUDAX_CHECK(buf.size() == 0);
     CUDAX_CHECK(buf.get_stream() == stream);
-    //buf.__replace_allocation(42);
+
     buf = uninitialized_async_buffer{resource, stream, 42};
     CUDAX_CHECK(buf.data() != nullptr);
     CUDAX_CHECK(buf.size() == 42);
