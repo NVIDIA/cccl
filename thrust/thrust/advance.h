@@ -30,8 +30,30 @@
 
 THRUST_NAMESPACE_BEGIN
 
-using ::cuda::std::advance;
-using ::cuda::std::next;
-using ::cuda::std::prev;
+//! deprecated [since 3.1]
+template <typename InputIterator, typename Distance>
+CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::advance instead")
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(InputIterator& i, Distance n)
+{
+  ::cuda::std::advance(i, n);
+}
+
+//! deprecated [since 3.1]
+template <typename InputIterator>
+CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::next instead")
+_LIBCUDACXX_HIDE_FROM_ABI constexpr InputIterator
+  next(InputIterator i, typename ::cuda::std::iterator_traits<InputIterator>::difference_type n = 1)
+{
+  return ::cuda::std::next(i, n);
+}
+
+//! deprecated [since 3.1]
+template <typename InputIterator>
+CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::prev instead")
+_LIBCUDACXX_HIDE_FROM_ABI constexpr InputIterator
+  prev(InputIterator i, typename ::cuda::std::iterator_traits<InputIterator>::difference_type n = 1)
+{
+  return ::cuda::std::prev(i, n);
+}
 
 THRUST_NAMESPACE_END

@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "test_util.h"
+#include <cccl/c/scan.h>
 
 void scan(cccl_iterator_t input,
           cccl_iterator_t output,
@@ -129,8 +130,11 @@ C2H_TEST("Scan works with custom types", "[scan]")
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
-    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
+    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
+    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
+    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
+    "  pair* out = static_cast<pair*>(out_ptr);\n"
+    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
     "}");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);

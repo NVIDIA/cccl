@@ -23,9 +23,9 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/compare>
 #endif
+#include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__string>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

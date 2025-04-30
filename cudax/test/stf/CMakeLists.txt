@@ -32,6 +32,7 @@ set(stf_test_sources
   graph/graph_ctx_low_level.cu
   graph/static_graph_ctx.cu
   hashtable/test.cu
+  interface/cuda_kernel_chain-add_deps.cu
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu

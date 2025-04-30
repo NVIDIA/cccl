@@ -131,11 +131,11 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
 {
   thrust::for_each(
     exec,
-    thrust::make_zip_iterator(thrust::make_tuple(values_begin, output)),
-    thrust::make_zip_iterator(thrust::make_tuple(values_end, output + thrust::distance(values_begin, values_end))),
+    thrust::make_zip_iterator(values_begin, output),
+    thrust::make_zip_iterator(values_end, output + ::cuda::std::distance(values_begin, values_end)),
     detail::binary_search_functor<ForwardIterator, StrictWeakOrdering, BinarySearchFunction>(begin, end, comp, func));
 
-  return output + thrust::distance(values_begin, values_end);
+  return output + ::cuda::std::distance(values_begin, values_end);
 }
 
 // Scalar Implementation
@@ -189,10 +189,10 @@ _CCCL_HOST_DEVICE OutputType binary_search(
   return output;
 }
 
-// this functor differs from thrust::less<T>
+// this functor differs from ::cuda::std::less<T>
 // because it allows the types of lhs & rhs to differ
 // which is required by the binary search functions
-// XXX use C++14 thrust::less<> when it's ready
+// XXX use C++14 ::cuda::std::less<> when it's ready
 struct binary_search_less
 {
   template <typename T1, typename T2>

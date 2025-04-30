@@ -186,7 +186,7 @@ C2H_TEST_LIST(
       uninitialized_async_buffer buf{resource, stream, 42};
       stream.sync();
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
-      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
+      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
       CUDAX_CHECK(res == TestType{84});
     }
   }
@@ -207,6 +207,20 @@ C2H_TEST_LIST(
 
       CUDAX_CHECK(buf.get_stream() == old_buf.get_stream());
     }
+  }
+
+  SECTION("destroy")
+  {
+    uninitialized_async_buffer buf{resource, stream, 42};
+    buf.destroy();
+    CUDAX_CHECK(buf.data() == nullptr);
+    CUDAX_CHECK(buf.size() == 0);
+    CUDAX_CHECK(buf.get_stream() == stream);
+
+    buf = uninitialized_async_buffer{resource, stream, 42};
+    CUDAX_CHECK(buf.data() != nullptr);
+    CUDAX_CHECK(buf.size() == 42);
+    CUDAX_CHECK(buf.get_stream() == stream);
   }
 }
 

@@ -27,7 +27,7 @@ class X
   int i_;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   __host__ __device__ X(int i)
       : i_(i)
   {}
@@ -49,7 +49,7 @@ class Y
   int i_;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   __host__ __device__ Y(int i)
       : i_(i)
   {}

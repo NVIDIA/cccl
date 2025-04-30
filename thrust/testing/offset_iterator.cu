@@ -165,28 +165,28 @@ void TestOffsetIteratorComparisonAndDistance()
   auto test = [](auto iter1, auto iter2) {
     ASSERT_EQUAL(iter1 == iter2, true);
     ASSERT_EQUAL(iter1 - iter2, 0);
-    ASSERT_EQUAL(thrust::distance(iter1, iter2), 0);
+    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
 
     iter1++;
     ASSERT_EQUAL(iter1 == iter2, false);
     ASSERT_EQUAL(iter1 - iter2, 1);
-    ASSERT_EQUAL(thrust::distance(iter1, iter2), -1);
+    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), -1);
 
     iter2++;
     ASSERT_EQUAL(iter1 == iter2, true);
     ASSERT_EQUAL(iter1 - iter2, 0);
-    ASSERT_EQUAL(thrust::distance(iter1, iter2), 0);
+    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
 
     iter1 += 100;
     iter2 += 100;
     ASSERT_EQUAL(iter1 == iter2, true);
     ASSERT_EQUAL(iter1 - iter2, 0);
-    ASSERT_EQUAL(thrust::distance(iter1, iter2), 0);
+    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 0);
 
     iter1 -= 5;
     ASSERT_EQUAL(iter1 == iter2, false);
     ASSERT_EQUAL(iter1 - iter2, -5);
-    ASSERT_EQUAL(thrust::distance(iter1, iter2), 5);
+    ASSERT_EQUAL(::cuda::std::distance(iter1, iter2), 5);
   };
 
   Vector v(101);

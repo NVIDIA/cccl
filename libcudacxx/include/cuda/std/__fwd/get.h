@@ -32,28 +32,28 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, tuple<_Tp...>>& get(tuple<_Tp...>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, tuple<_Tp...>>& get(tuple<_Tp...>&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, tuple<_Tp...>>& get(const tuple<_Tp...>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, tuple<_Tp...>>& get(const tuple<_Tp...>&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, tuple<_Tp...>>&& get(tuple<_Tp...>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, tuple<_Tp...>>&& get(tuple<_Tp...>&&) noexcept;
 
 template <size_t _Ip, class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, tuple<_Tp...>>&& get(const tuple<_Tp...>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, tuple<_Tp...>>&& get(const tuple<_Tp...>&&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, pair<_T1, _T2>>& get(pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_T1, _T2>&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>& get(const pair<_T1, _T2>&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple_element_t<_Ip, pair<_T1, _T2>>&& get(pair<_T1, _T2>&&) noexcept;
 
 template <size_t _Ip, class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr const __tuple_element_t<_Ip, pair<_T1, _T2>>&& get(const pair<_T1, _T2>&&) noexcept;
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const tuple_element_t<_Ip, pair<_T1, _T2>>&& get(const pair<_T1, _T2>&&) noexcept;
 
 template <size_t _Ip, class _Tp, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(array<_Tp, _Size>&) noexcept;

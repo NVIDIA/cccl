@@ -30,9 +30,9 @@
 namespace cuda::experimental::__async
 {
 template <class _Rcvr, class _Env = env_of_t<_Rcvr>>
-struct __rcvr_ref
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
 {
-  using receiver_concept = receiver_t;
+  using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
   _Rcvr& __rcvr_;
 
   template <class... _As>

@@ -13,6 +13,7 @@
 #include <thrust/reduce.h>
 
 #include <cuda/std/cstdint>
+#include <cuda/std/functional>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
@@ -199,7 +200,7 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
     {
       uninitialized_buffer buf{resource, 42};
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
-      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
+      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
       CUDAX_CHECK(res == TestType{84});
     }
   }
@@ -218,6 +219,18 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
       CUDAX_CHECK(old_buf.data() == old_ptr);
       CUDAX_CHECK(old_buf.size() == old_size);
     }
+  }
+
+  SECTION("destroy")
+  {
+    uninitialized_buffer buf{resource, 42};
+    buf.destroy();
+    CUDAX_CHECK(buf.data() == nullptr);
+    CUDAX_CHECK(buf.size() == 0);
+
+    buf = uninitialized_buffer{resource, 42};
+    CUDAX_CHECK(buf.data() != nullptr);
+    CUDAX_CHECK(buf.size() == 42);
   }
 }
 
