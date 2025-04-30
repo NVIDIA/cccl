@@ -37,7 +37,7 @@ function run_tests_from_wheel {
   rm -rf "${TEMP_VENV_DIR}"
   python -m venv "${TEMP_VENV_DIR}"
   . "${TEMP_VENV_DIR}/bin/activate"
-  pip install ${wheel_path}.[test]
+  pip install "${wheel_path}[test]"
   begin_group "⚙️ ${module} site-packages"
   pip freeze
   end_group "⚙️ ${module} site-packages"
