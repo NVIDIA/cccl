@@ -105,3 +105,9 @@ runs:
         name: wheelhouse-${{inputs.id}}
         path: wheelhouse/
         compression-level: 0
+
+    - name: Debug wheelhouse contents
+      run: |
+        pwd
+        ls -l wheelhouse || echo "No wheelhouse directory"
+        find . -name '*.whl' || echo "No wheels found"
