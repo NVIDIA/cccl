@@ -51,7 +51,6 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
@@ -217,15 +216,15 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
         items[j] = transform_op(d_in[idx]);
       }
     }
-    FloatType abs_max = fabs(items[0]);
+    FloatType abs_max_val = fabs(items[0]);
 
 #pragma unroll
     for (auto j = 1; j < ITEMS_PER_THREAD; j++)
     {
-      abs_max = fmax(fabs(items[j]), abs_max);
+      abs_max_val = fmax(fabs(items[j]), abs_max_val);
     }
 
-    thread_aggregate.set_max_val(abs_max);
+    thread_aggregate.set_max_val(abs_max_val);
 #pragma unroll
     for (auto j = 0; j < ITEMS_PER_THREAD; j++)
     {
@@ -549,7 +548,6 @@ struct DeterministicDispatchReduce : SelectedPolicy
       , transform_op(transform_op)
   {}
 
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeterministicDispatchReduce(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -570,9 +568,8 @@ struct DeterministicDispatchReduce : SelectedPolicy
       , init(init)
       , stream(stream)
       , ptx_version(ptx_version)
-  {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-  }
+  {}
+
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
   //---------------------------------------------------------------------------
@@ -921,7 +918,6 @@ struct DeterministicDispatchReduce : SelectedPolicy
     return error;
   }
 
-  CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchHelper(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -933,8 +929,6 @@ struct DeterministicDispatchReduce : SelectedPolicy
     cudaStream_t stream,
     bool debug_synchronous)
   {
-    CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
-
     return DispatchHelper(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
   }
 
@@ -978,7 +972,8 @@ struct DeterministicDispatchReduce : SelectedPolicy
     cudaStream_t stream                                     = {},
     TransformOpT transform_op                               = {})
   {
-    OutputIteratorTransformT d_out_transformed = THRUST_NS_QUALIFIER::make_transform_output_iterator(d_out, AcumFloatTransformT{});
+    OutputIteratorTransformT d_out_transformed =
+      THRUST_NS_QUALIFIER::make_transform_output_iterator(d_out, AcumFloatTransformT{});
 
     return DispatchHelper(
       d_temp_storage,

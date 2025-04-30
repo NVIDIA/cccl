@@ -132,7 +132,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[red
   deterministic_sum(d_input_ptr, d_output.begin(), num_items);
 
   c2h::host_vector<type> h_input  = d_input;
-  const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), type{}, thrust::plus<type>());
+  const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
   c2h::host_vector<type> h_output = d_output;
 
   REQUIRE(approx_eq(h_expected, h_output[0]));
@@ -215,7 +215,7 @@ C2H_TEST("Deterministic Device reduce works with float and double on cpu", "[red
   cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> h_res = std::accumulate(
     h_input.begin(), h_input.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
 
-  auto h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, thrust::plus<type>());
+  auto h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
   REQUIRE(approx_eq(h_expected, h_res.conv()));
 }
 

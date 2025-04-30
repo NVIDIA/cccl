@@ -81,6 +81,8 @@ static _CCCL_DEVICE Float* get_shared_bin_array()
   return bin_computed_array;
 }
 
+// vector types with RFA are not supported currently
+#if 0
 template <class T>
 struct get_vector_type
 {};
@@ -130,6 +132,7 @@ _CCCL_HOST _CCCL_DEVICE double abs_max(const float2& x)
 {
   return fmax(fabs(x.x), fabs(x.y));
 }
+#endif
 
 template <class ftype>
 struct RFA_bins
