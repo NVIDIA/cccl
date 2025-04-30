@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THREAD_CONTEXT
-#define __CUDAX_ASYNC_DETAIL_THREAD_CONTEXT
+#ifndef __CUDAX_ASYNC_DETAIL_DOMAIN
+#define __CUDAX_ASYNC_DETAIL_DOMAIN
 
 #include <cuda/std/detail/__config>
 
@@ -21,53 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__async/sender/fwd.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#if !defined(__CUDA_ARCH__)
-
-#  include <cuda/experimental/__async/sender/run_loop.cuh>
-
-#  include <thread>
-
-#  include <cuda/experimental/__async/sender/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
+template <class _Tag>
+_CUDAX_API constexpr auto default_domain::__apply(_Tag) noexcept
 {
-  thread_context() noexcept
-      : __thrd_{[this] {
-        __loop_.run();
-      }}
-  {}
-
-  ~thread_context() noexcept
-  {
-    join();
-  }
-
-  void join() noexcept
-  {
-    if (__thrd_.joinable())
-    {
-      __loop_.finish();
-      __thrd_.join();
-    }
-  }
-
-  auto get_scheduler()
-  {
-    return __loop_.get_scheduler();
-  }
-
-private:
-  run_loop __loop_;
-  ::std::thread __thrd_;
-};
+  return _Tag::__apply();
+}
 } // namespace cuda::experimental::__async
 
-#  include <cuda/experimental/__async/sender/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
-#endif // !defined(__CUDA_ARCH__)
-
-#endif
+#endif // __CUDAX_ASYNC_DETAIL_DOMAIN
