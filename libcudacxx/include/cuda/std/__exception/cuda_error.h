@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_HAS_CUDA_COMPILER()
 #  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 #include <cuda/std/__exception/terminate.h>
 
@@ -70,7 +70,11 @@ static char* __format_cuda_error(
     "%s%s%s(%d): %s",
     __msg_buffer.__location,
     __msg_buffer.__api,
+#if _CCCL_HAS_CUDA_COMPILER()
     ::cudaGetErrorString(::cudaError_t(__status)),
+#else
+    "cudaError",
+#endif
     __status,
     __msg);
   return __msg_buffer.__buffer;
