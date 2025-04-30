@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "test_util.h"
+#include <cccl/c/reduce.h>
 
 void reduce(cccl_iterator_t input, cccl_iterator_t output, uint64_t num_items, cccl_op_t op, cccl_value_t init)
 {
@@ -79,8 +80,11 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
   operation_t op = make_operation(
     "op",
     "struct pair { short a; size_t b; };\n"
-    "extern \"C\" __device__ pair op(pair lhs, pair rhs) {\n"
-    "  return pair{ lhs.a + rhs.a, lhs.b + rhs.b };\n"
+    "extern \"C\" __device__ void op(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {\n"
+    "  pair* lhs = static_cast<pair*>(lhs_ptr);\n"
+    "  pair* rhs = static_cast<pair*>(rhs_ptr);\n"
+    "  pair* out = static_cast<pair*>(out_ptr);\n"
+    "  *out = pair{ lhs->a + rhs->a, lhs->b + rhs->b };\n"
     "}");
   const std::vector<short> a  = generate<short>(num_items);
   const std::vector<size_t> b = generate<size_t>(num_items);
@@ -202,9 +206,12 @@ C2H_TEST("Reduce works with stateful operators", "[reduce]")
   stateful_operation_t<invocation_counter_state_t> op = make_operation(
     "op",
     "struct invocation_counter_state_t { int* d_counter; };\n"
-    "extern \"C\" __device__ int op(invocation_counter_state_t *state, int a, int b) {\n"
+    "extern \"C\" __device__ void op(void* state_ptr, void* a_ptr, void* b_ptr, void* out_ptr) {\n"
+    "  invocation_counter_state_t* state = static_cast<invocation_counter_state_t*>(state_ptr);\n"
     "  atomicAdd(state->d_counter, 1);\n"
-    "  return a + b;\n"
+    "  int a = *static_cast<int*>(a_ptr);\n"
+    "  int b = *static_cast<int*>(b_ptr);\n"
+    "  *static_cast<int*>(out_ptr) = a + b;\n"
     "}",
     invocation_counter_state_t{counter.ptr});
 
