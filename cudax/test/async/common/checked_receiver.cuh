@@ -63,7 +63,7 @@ struct checked_value_receiver
     CUDAX_FAIL("expected a value completion; got stopped");
   }
 
-  cudax_async::__tuple<Values...> _values;
+  _CUDA_VSTD::__tuple<Values...> _values;
 };
 
 template <class... Values>

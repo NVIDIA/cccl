@@ -23,6 +23,7 @@
 
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
@@ -30,7 +31,6 @@
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
@@ -43,12 +43,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t
 {
 private:
   template <class... _As>
-  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = __tuple<set_value_t, __decay_t<_As>...>;
+  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_value_t, __decay_t<_As>...>;
 
   template <class _Error>
-  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = __tuple<set_error_t, __decay_t<_Error>>;
+  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_error_t, __decay_t<_Error>>;
 
-  using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = __tuple<set_stopped_t>;
+  using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_stopped_t>;
 
   using __complete_fn _CCCL_NODEBUG_ALIAS = void (*)(void*) noexcept;
 
@@ -69,7 +69,7 @@ private:
     template <class _Tag, class... _As>
     _CUDAX_API void __set_result(_Tag, _As&&... __as) noexcept
     {
-      using __tupl_t _CCCL_NODEBUG_ALIAS = __tuple<_Tag, __decay_t<_As>...>;
+      using __tupl_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<_Tag, __decay_t<_As>...>;
       if constexpr (__nothrow_decay_copyable<_As...>)
       {
         __result_.template __emplace<__tupl_t>(_Tag(), static_cast<_As&&>(__as)...);
@@ -122,7 +122,8 @@ private:
     using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
 
     using __result_t _CCCL_NODEBUG_ALIAS =
-      typename completion_signatures_of_t<_CvSndr, __env_t>::template __transform_q<__decayed_tuple, __variant>;
+      typename completion_signatures_of_t<_CvSndr,
+                                          __env_t>::template __transform_q<_CUDA_VSTD::__decayed_tuple, __variant>;
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}, nullptr}

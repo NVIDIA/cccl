@@ -21,9 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/pod_tuple.h>
+
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
 #include <cuda/experimental/__detail/config.cuh>
@@ -101,10 +102,10 @@ private:
     };
 #else
     // In C++17 we need to use a tuple to move-capture a variadic pack of arguments:
-    return [__ts = __tupl{static_cast<_Ts&&>(__ts)...}](auto fn) mutable noexcept {
+    return [__ts = _CUDA_VSTD::__tupl{static_cast<_Ts&&>(__ts)...}](auto fn) mutable noexcept {
       using _Fn _CCCL_NODEBUG_ALIAS = decltype(fn);
       static_assert(__nothrow_callable<_Fn, _Ts...>);
-      return __ts.__apply(static_cast<_Fn&&>(fn), static_cast<__tuple<_Ts...>&&>(__ts));
+      return __ts.__apply(static_cast<_Fn&&>(fn), static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__ts));
     };
 #endif
   }

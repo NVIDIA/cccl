@@ -99,8 +99,8 @@ struct __tupl<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 #define _CCCL_TUPLE_INDEX_SEQUENCE(_Idx) , _Idx
 #define _CCCL_TUPLE_TPARAM(_Idx)         , _CCCL_PP_CAT(_T, _Idx)
 #define _CCCL_TUPLE_DEFINE_ELEMENT(_Idx) _CCCL_PP_CAT(_T, _Idx) _CCCL_PP_CAT(__t, _Idx);
-#define _CCCL_TUPLE_CVREF_TPARAM(_Idx)   __copy_cvref_t<_Self, _CCCL_PP_CAT(_T, _Idx)>,
-#define _CCCL_TUPLE_ELEMENT(_Idx)        static_cast<_Self&&>(__self)._CCCL_PP_CAT(__t, _Idx),
+#define _CCCL_TUPLE_CVREF_TPARAM(_Idx)   , __copy_cvref_t<_Self, _CCCL_PP_CAT(_T, _Idx)>
+#define _CCCL_TUPLE_ELEMENT(_Idx)        , static_cast<_Self&&>(__self)._CCCL_PP_CAT(__t, _Idx)
 #define _CCCL_TUPLE_MBR_PTR(_Idx)        , __c<&__tupl::_CCCL_PP_CAT(__t, _Idx)>
 
 #define _CCCL_DEFINE_TUPLE(_SizeSub1)                                                                           \
@@ -114,14 +114,14 @@ struct __tupl<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
     template <class _Fn, class _Self, class... _Us>                                                             \
     _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(                  \
       __is_nothrow_callable_v<_Fn,                                                                              \
-                         _CCCL_TUPLE_CVREF_TPARAM(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_CVREF_TPARAM, 1)    \
-                         _Us...>)                                                                               \
+                         _Us...                                                                                 \
+                         _CCCL_TUPLE_CVREF_TPARAM(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_CVREF_TPARAM, 1)>)  \
       -> __call_result_t<_Fn,                                                                                   \
-                         _CCCL_TUPLE_CVREF_TPARAM(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_CVREF_TPARAM, 1)    \
-                         _Us...>                                                                                \
+                         _Us...                                                                                 \
+                         _CCCL_TUPLE_CVREF_TPARAM(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_CVREF_TPARAM, 1)>   \
     {                                                                                                           \
       return static_cast<_Fn&&>(__fn)(                                                                          \
-        _CCCL_TUPLE_ELEMENT(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_ELEMENT, 1) static_cast<_Us&&>(__us)...); \
+        static_cast<_Us&&>(__us)... _CCCL_TUPLE_ELEMENT(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_ELEMENT, 1)); \
     }                                                                                                           \
                                                                                                                 \
     template <size_t _Idx>                                                                                      \
@@ -150,10 +150,10 @@ struct __tupl<index_sequence<0>, _T0>
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
-    __is_nothrow_callable_v<_Fn, __copy_cvref_t<_Self, _T0>, _Us...>)
-    -> __call_result_t<_Fn, __copy_cvref_t<_Self, _T0>, _Us...>
+    __is_nothrow_callable_v<_Fn, _Us..., __copy_cvref_t<_Self, _T0>>)
+    -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _T0>>
   {
-    return static_cast<_Fn&&>(__fn)(static_cast<_Self&&>(__self).__t0, static_cast<_Us&&>(__us)...);
+    return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__t0);
   }
 
   template <size_t _Idx>
@@ -172,11 +172,11 @@ struct __tupl<index_sequence<0, 1>, _T0, _T1>
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
-    __is_nothrow_callable_v<_Fn, __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>, _Us...>)
-    -> __call_result_t<_Fn, __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>, _Us...>
+    __is_nothrow_callable_v<_Fn, _Us..., __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>>)
+    -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>>
   {
     return static_cast<_Fn&&>(
-      __fn)(static_cast<_Self&&>(__self).__t0, static_cast<_Self&&>(__self).__t1, static_cast<_Us&&>(__us)...);
+      __fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__t0, static_cast<_Self&&>(__self).__t1);
   }
 
   template <size_t _Idx>
@@ -196,14 +196,18 @@ struct __tupl<index_sequence<0, 1, 2>, _T0, _T1, _T2>
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
-    __is_nothrow_callable_v<_Fn, __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>, __copy_cvref_t<_Self, _T2>, _Us...>)
-    -> __call_result_t<_Fn, __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>, __copy_cvref_t<_Self, _T2>, _Us...>
+    __is_nothrow_callable_v<_Fn,
+                            _Us...,
+                            __copy_cvref_t<_Self, _T0>,
+                            __copy_cvref_t<_Self, _T1>,
+                            __copy_cvref_t<_Self, _T2>>)
+    -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>, __copy_cvref_t<_Self, _T2>>
   {
     return static_cast<_Fn&&>(__fn)(
+      static_cast<_Us&&>(__us)...,
       static_cast<_Self&&>(__self).__t0,
       static_cast<_Self&&>(__self).__t1,
-      static_cast<_Self&&>(__self).__t2,
-      static_cast<_Us&&>(__us)...);
+      static_cast<_Self&&>(__self).__t2);
   }
 
   template <size_t _Idx>
@@ -226,24 +230,24 @@ struct __tupl<index_sequence<0, 1, 2, 3>, _T0, _T1, _T2, _T3>
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
+                            _Us...,
                             __copy_cvref_t<_Self, _T0>,
                             __copy_cvref_t<_Self, _T1>,
                             __copy_cvref_t<_Self, _T2>,
-                            __copy_cvref_t<_Self, _T3>,
-                            _Us...>)
+                            __copy_cvref_t<_Self, _T3>>)
     -> __call_result_t<_Fn,
+                       _Us...,
                        __copy_cvref_t<_Self, _T0>,
                        __copy_cvref_t<_Self, _T1>,
                        __copy_cvref_t<_Self, _T2>,
-                       __copy_cvref_t<_Self, _T3>,
-                       _Us...>
+                       __copy_cvref_t<_Self, _T3>>
   {
     return static_cast<_Fn&&>(__fn)(
+      static_cast<_Us&&>(__us)...,
       static_cast<_Self&&>(__self).__t0,
       static_cast<_Self&&>(__self).__t1,
       static_cast<_Self&&>(__self).__t2,
-      static_cast<_Self&&>(__self).__t3,
-      static_cast<_Us&&>(__us)...);
+      static_cast<_Self&&>(__self).__t3);
   }
 
   template <size_t _Idx>
@@ -267,27 +271,27 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4>, _T0, _T1, _T2, _T3, _T4>
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
+                            _Us...,
                             __copy_cvref_t<_Self, _T0>,
                             __copy_cvref_t<_Self, _T1>,
                             __copy_cvref_t<_Self, _T2>,
                             __copy_cvref_t<_Self, _T3>,
-                            __copy_cvref_t<_Self, _T4>,
-                            _Us...>)
+                            __copy_cvref_t<_Self, _T4>>)
     -> __call_result_t<_Fn,
+                       _Us...,
                        __copy_cvref_t<_Self, _T0>,
                        __copy_cvref_t<_Self, _T1>,
                        __copy_cvref_t<_Self, _T2>,
                        __copy_cvref_t<_Self, _T3>,
-                       __copy_cvref_t<_Self, _T4>,
-                       _Us...>
+                       __copy_cvref_t<_Self, _T4>>
   {
     return static_cast<_Fn&&>(__fn)(
+      static_cast<_Us&&>(__us)...,
       static_cast<_Self&&>(__self).__t0,
       static_cast<_Self&&>(__self).__t1,
       static_cast<_Self&&>(__self).__t2,
       static_cast<_Self&&>(__self).__t3,
-      static_cast<_Self&&>(__self).__t4,
-      static_cast<_Us&&>(__us)...);
+      static_cast<_Self&&>(__self).__t4);
   }
 
   template <size_t _Idx>
@@ -317,30 +321,30 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5>, _T0, _T1, _T2, _T3, _T4, _T5>
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
+                            _Us...,
                             __copy_cvref_t<_Self, _T0>,
                             __copy_cvref_t<_Self, _T1>,
                             __copy_cvref_t<_Self, _T2>,
                             __copy_cvref_t<_Self, _T3>,
                             __copy_cvref_t<_Self, _T4>,
-                            __copy_cvref_t<_Self, _T5>,
-                            _Us...>)
+                            __copy_cvref_t<_Self, _T5>>)
     -> __call_result_t<_Fn,
+                       _Us...,
                        __copy_cvref_t<_Self, _T0>,
                        __copy_cvref_t<_Self, _T1>,
                        __copy_cvref_t<_Self, _T2>,
                        __copy_cvref_t<_Self, _T3>,
                        __copy_cvref_t<_Self, _T4>,
-                       __copy_cvref_t<_Self, _T5>,
-                       _Us...>
+                       __copy_cvref_t<_Self, _T5>>
   {
     return static_cast<_Fn&&>(__fn)(
+      static_cast<_Us&&>(__us)...,
       static_cast<_Self&&>(__self).__t0,
       static_cast<_Self&&>(__self).__t1,
       static_cast<_Self&&>(__self).__t2,
       static_cast<_Self&&>(__self).__t3,
       static_cast<_Self&&>(__self).__t4,
-      static_cast<_Self&&>(__self).__t5,
-      static_cast<_Us&&>(__us)...);
+      static_cast<_Self&&>(__self).__t5);
   }
 
   template <size_t _Idx>
@@ -372,33 +376,33 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6>, _T0, _T1, _T2, _T3, _T4, _T5,
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
+                            _Us...,
                             __copy_cvref_t<_Self, _T0>,
                             __copy_cvref_t<_Self, _T1>,
                             __copy_cvref_t<_Self, _T2>,
                             __copy_cvref_t<_Self, _T3>,
                             __copy_cvref_t<_Self, _T4>,
                             __copy_cvref_t<_Self, _T5>,
-                            __copy_cvref_t<_Self, _T6>,
-                            _Us...>)
+                            __copy_cvref_t<_Self, _T6>>)
     -> __call_result_t<_Fn,
+                       _Us...,
                        __copy_cvref_t<_Self, _T0>,
                        __copy_cvref_t<_Self, _T1>,
                        __copy_cvref_t<_Self, _T2>,
                        __copy_cvref_t<_Self, _T3>,
                        __copy_cvref_t<_Self, _T4>,
                        __copy_cvref_t<_Self, _T5>,
-                       __copy_cvref_t<_Self, _T6>,
-                       _Us...>
+                       __copy_cvref_t<_Self, _T6>>
   {
     return static_cast<_Fn&&>(__fn)(
+      static_cast<_Us&&>(__us)...,
       static_cast<_Self&&>(__self).__t0,
       static_cast<_Self&&>(__self).__t1,
       static_cast<_Self&&>(__self).__t2,
       static_cast<_Self&&>(__self).__t3,
       static_cast<_Self&&>(__self).__t4,
       static_cast<_Self&&>(__self).__t5,
-      static_cast<_Self&&>(__self).__t6,
-      static_cast<_Us&&>(__us)...);
+      static_cast<_Self&&>(__self).__t6);
   }
 
   template <size_t _Idx>
@@ -432,6 +436,7 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
+                            _Us...,
                             __copy_cvref_t<_Self, _T0>,
                             __copy_cvref_t<_Self, _T1>,
                             __copy_cvref_t<_Self, _T2>,
@@ -439,9 +444,9 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _
                             __copy_cvref_t<_Self, _T4>,
                             __copy_cvref_t<_Self, _T5>,
                             __copy_cvref_t<_Self, _T6>,
-                            __copy_cvref_t<_Self, _T7>,
-                            _Us...>)
+                            __copy_cvref_t<_Self, _T7>>)
     -> __call_result_t<_Fn,
+                       _Us...,
                        __copy_cvref_t<_Self, _T0>,
                        __copy_cvref_t<_Self, _T1>,
                        __copy_cvref_t<_Self, _T2>,
@@ -449,10 +454,10 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _
                        __copy_cvref_t<_Self, _T4>,
                        __copy_cvref_t<_Self, _T5>,
                        __copy_cvref_t<_Self, _T6>,
-                       __copy_cvref_t<_Self, _T7>,
-                       _Us...>
+                       __copy_cvref_t<_Self, _T7>>
   {
     return static_cast<_Fn&&>(__fn)(
+      static_cast<_Us&&>(__us)...,
       static_cast<_Self&&>(__self).__t0,
       static_cast<_Self&&>(__self).__t1,
       static_cast<_Self&&>(__self).__t2,
@@ -460,8 +465,7 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _
       static_cast<_Self&&>(__self).__t4,
       static_cast<_Self&&>(__self).__t5,
       static_cast<_Self&&>(__self).__t6,
-      static_cast<_Self&&>(__self).__t7,
-      static_cast<_Us&&>(__us)...);
+      static_cast<_Self&&>(__self).__t7);
   }
 
   template <size_t _Idx>
@@ -518,6 +522,16 @@ using __tuple _CCCL_NODEBUG_ALIAS = __tupl<make_index_sequence<sizeof...(_Ts)>, 
 
 template <class... _Ts>
 using __decayed_tuple _CCCL_NODEBUG_ALIAS = __tuple<decay_t<_Ts>...>;
+
+template <class _First, class _Second>
+struct __pair
+{
+  _First first;
+  _Second second;
+};
+
+template <class _First, class _Second>
+__pair(_First, _Second) -> __pair<_First, _Second>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -27,12 +27,12 @@
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/tuple>
 
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
@@ -317,7 +317,7 @@ template <class... What, class... Values>
   }
   else
   {
-    throw __sender_type_check_failure<__tuple<Values...>, What...>(__tupl{values...});
+    throw __sender_type_check_failure<_CUDA_VSTD::__tuple<Values...>, What...>(_CUDA_VSTD::__tupl{values...});
   }
 }
 

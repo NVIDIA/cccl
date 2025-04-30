@@ -23,10 +23,10 @@
 
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
 #include <cuda/experimental/__detail/config.cuh>

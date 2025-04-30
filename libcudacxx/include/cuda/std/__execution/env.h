@@ -33,7 +33,8 @@
 
 /**
  * @file env.h
- * @brief Provides utilities for querying and managing environments in CUDA.
+ * @brief Provides utilities for querying and managing environments, an unordered
+ * collection of key/value pairs.
  *
  * This header defines templates and structures for querying properties of environments
  * and managing them in a composable way. It includes support for querying properties of

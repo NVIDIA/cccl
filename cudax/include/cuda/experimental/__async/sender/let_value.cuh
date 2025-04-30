@@ -24,13 +24,13 @@
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/concepts.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
@@ -70,13 +70,16 @@ private:
   using _SetTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__set_tag<_Disposition>());
 
   template <class...>
-  using __empty_tuple _CCCL_NODEBUG_ALIAS = __tuple<>;
+  using __empty_tuple _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<>;
 
   /// @brief Computes the type of a variant of tuples to hold the results of
   /// the predecessor sender.
   template <class _CvSndr, class _Env>
   using __results _CCCL_NODEBUG_ALIAS =
-    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Env>, _SetTag, __decayed_tuple, __variant>;
+    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Env>,
+                                   _SetTag,
+                                   _CUDA_VSTD::__decayed_tuple,
+                                   __variant>;
 
   template <class _Fn, class _Rcvr>
   struct __opstate_fn
@@ -130,7 +133,8 @@ private:
           ({        //
             // Store the results so the lvalue refs we pass to the function
             // will be valid for the duration of the async op.
-            auto& __tupl = __result_.template __emplace<__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
+            auto& __tupl =
+              __result_.template __emplace<_CUDA_VSTD::__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
             // Call the function with the results and connect the resulting
             // sender, storing the operation state in __opstate2_.
             auto& __next_op = __opstate2_.__emplace_from(
