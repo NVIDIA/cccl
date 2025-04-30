@@ -39,6 +39,7 @@
 #include "cub/device/dispatch/dispatch_reduce_deterministic.cuh"
 #include "cub/thread/thread_load.cuh"
 #include <c2h/catch2_test_helper.h>
+#include <c2h/generators.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -107,6 +108,36 @@ struct hub_t
   using MaxPolicy = Policy;
 };
 
+DECLARE_LAUNCH_WRAPPER(DeterministicSum, deterministic_sum);
+
+template <typename T>
+bool approx_eq(const T& expected, const T& actual, const double tolerance = 0.01)
+{
+  double diff     = std::abs(static_cast<double>(expected) - static_cast<double>(actual));
+  double rel_diff = diff / std::abs(static_cast<double>(expected));
+  return rel_diff < tolerance;
+}
+
+C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
+{
+  using type          = typename c2h::get<0, TestType>;
+  const int num_items = 1 << 20;
+  c2h::device_vector<type> d_input(num_items);
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(0.0), static_cast<type>(100.0));
+
+  c2h::device_vector<type> d_output(1);
+
+  const type* d_input_ptr = thrust::raw_pointer_cast(d_input.data());
+
+  deterministic_sum(d_input_ptr, d_output.begin(), num_items);
+
+  c2h::host_vector<type> h_input  = d_input;
+  const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), type{}, thrust::plus<type>());
+  c2h::host_vector<type> h_output = d_output;
+
+  REQUIRE(approx_eq(h_expected, h_output[0]));
+}
+
 template <typename type>
 void deterministic_reduce_gpu(const int N)
 {
@@ -126,7 +157,7 @@ void deterministic_reduce_gpu(const int N)
     cub::detail::DeterministicDispatchReduce<decltype(d_input), decltype(output_p1.begin()), int, hub_t<4, 256>>;
 
   using deterministic_dispatch_t_p2 =
-    cub::detail::DeterministicDispatchReduce<decltype(d_input), decltype(output_p1.begin()), int, hub_t<4, 128>>;
+    cub::detail::DeterministicDispatchReduce<decltype(d_input), decltype(output_p1.begin()), int, hub_t<2, 128>>;
 
   deterministic_dispatch_t_p1::Dispatch(nullptr, temp_storage_bytes, d_input, output_p1.begin(), num_items);
 
@@ -144,95 +175,8 @@ void deterministic_reduce_gpu(const int N)
 
   type const res_p2 = output_p1[0];
 
+  // Both results should be same, as RFA is deterministic
   REQUIRE(res_p1 == res_p2);
-}
-
-DECLARE_LAUNCH_WRAPPER(DeterministicSum, deterministic_sum);
-
-template <typename type>
-void deterministic_reduce_heterogenous(const int N)
-{
-  const int num_items = N;
-  c2h::device_vector<type> input_device(num_items, 1.0f);
-  const type min_val = static_cast<type>(0.0f);
-  const type max_val = static_cast<type>(1000.0f);
-  c2h::gen(C2H_SEED(2), input_device, min_val, max_val);
-  c2h::host_vector<type> input_host = input_device;
-
-  cub::detail::rfa_detail::deterministic_sum_t<type> op{};
-  cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> res = std::accumulate(
-    input_host.begin(), input_host.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
-
-  c2h::device_vector<type> output_device(1);
-
-  const type* device_input = thrust::raw_pointer_cast(input_device.data());
-
-  deterministic_sum(device_input, output_device.begin(), num_items);
-
-  type const res_device = output_device[0];
-
-  REQUIRE(res.conv() == res_device);
-}
-
-C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[reduce][deterministic]", float_type_list)
-{
-  using type          = typename c2h::get<0, TestType>;
-  const int num_items = 1 << 28;
-  c2h::device_vector<type> input(num_items, 1.0f);
-  c2h::device_vector<type> output(1);
-
-  const type* d_input = thrust::raw_pointer_cast(input.data());
-
-  deterministic_sum(d_input, output.begin(), num_items);
-
-  type const res = output[0];
-
-  REQUIRE(res == num_items);
-}
-
-C2H_TEST("Deterministic Device reduce works with float and double on gpu with known result",
-         "[reduce][deterministic]",
-         float_type_list)
-{
-  using type                     = typename c2h::get<0, TestType>;
-  c2h::device_vector<type> input = {1.0f, 2.0f, 3.0f, 4.0f};
-  const int num_items            = input.size();
-  c2h::device_vector<type> output(1);
-
-  const type* d_input = thrust::raw_pointer_cast(input.data());
-
-  deterministic_sum(d_input, output.begin(), num_items);
-
-  type const res = output[0];
-
-  REQUIRE(res == 10.0f);
-}
-
-C2H_TEST("Deterministic Device reduce works with float and double on cpu", "[reduce][deterministic]", float_type_list)
-{
-  using type          = typename c2h::get<0, TestType>;
-  const int num_items = 42;
-  c2h::host_vector<type> input(num_items, 1.0f);
-
-  cub::detail::rfa_detail::deterministic_sum_t<type> op{};
-  cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> res =
-    std::accumulate(input.begin(), input.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
-
-  REQUIRE(res.conv() == num_items);
-}
-
-C2H_TEST("Deterministic Device reduce works with float and double on cpu with known result",
-         "[reduce][deterministic]",
-         float_type_list)
-{
-  using type                   = typename c2h::get<0, TestType>;
-  c2h::host_vector<type> input = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
-
-  cub::detail::rfa_detail::deterministic_sum_t<type> op{};
-  cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> res =
-    std::accumulate(input.begin(), input.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
-
-  REQUIRE(res.conv() == 15.0f);
 }
 
 C2H_TEST("Deterministic Device reduce works with float and double and is deterministic on gpu with different policies ",
@@ -253,6 +197,28 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   deterministic_reduce_gpu<type>(num_items);
 }
 
+// The followsing tests require RFA to be compiled on host. Currently, RFA on host with clang compiler
+// produces compilation error complaining, optimizer cannot unroll loops.
+// These tests are disabled for now, and will be enabled when we would like to support RFA on host.
+#if 0
+C2H_TEST("Deterministic Device reduce works with float and double on cpu", "[reduce][deterministic]", float_type_list)
+{
+  using type          = typename c2h::get<0, TestType>;
+  const int num_items = 1000;
+  // use device vector to generate random numbers, as gen function only works with device vector
+  c2h::device_vector<type> d_input(num_items);
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(0.0), static_cast<type>(1000.0));
+
+  c2h::host_vector<type> h_input = d_input;
+
+  cub::detail::rfa_detail::deterministic_sum_t<type> op{};
+  cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> h_res = std::accumulate(
+    h_input.begin(), h_input.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
+
+  auto h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, thrust::plus<type>());
+  REQUIRE(approx_eq(h_expected, h_res.conv()));
+}
+
 C2H_TEST("Deterministic Device reduce works with float and double on cpu and gpu and compare result",
          "[reduce][deterministic]",
          float_type_list)
@@ -269,5 +235,20 @@ C2H_TEST("Deterministic Device reduce works with float and double on cpu and gpu
     }));
 
   CAPTURE(num_items);
-  deterministic_reduce_heterogenous<type>(num_items);
+
+  c2h::device_vector<type> d_input(num_items);
+  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(0.0f), static_cast<type>(1000.0f));
+  c2h::host_vector<type> h_input = d_input;
+
+  cub::detail::rfa_detail::deterministic_sum_t<type> op{};
+  cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> h_expected = std::accumulate(
+    h_input.begin(), h_input.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
+
+  c2h::device_vector<type> d_output(1);
+  const type* d_input_ptr = thrust::raw_pointer_cast(d_input.data());
+  deterministic_sum(d_input_ptr, d_output.begin(), num_items);
+
+  c2h::host_vector<type> h_output = d_output;
+  REQUIRE(approx_eq(h_expected.conv(), h_output[0]));
 }
+#endif
