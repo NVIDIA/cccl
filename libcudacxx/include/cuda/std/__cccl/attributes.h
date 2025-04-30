@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/dialect.h>
 
 #ifdef __has_attribute
@@ -166,6 +167,7 @@
 #if _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_unique_address)
 #  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 1
 #  define _CCCL_NO_UNIQUE_ADDRESS                 [[msvc::no_unique_address]]
+_CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
 #elif _CCCL_HAS_CPP_ATTRIBUTE(no_unique_address)
 #  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 1
 #  define _CCCL_NO_UNIQUE_ADDRESS                 [[no_unique_address]]
