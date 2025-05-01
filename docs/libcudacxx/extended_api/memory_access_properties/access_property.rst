@@ -71,7 +71,7 @@ of a memory access are provided:
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-global:
 
-- ``cuda::access_property::global``: memory access to the global memory space *without* indicating an expected    frequency of access to that memory, namely the access behavior is not modified.
+- ``cuda::access_property::global``: memory access to the global memory space *without* indicating an expected frequency of access to that memory, namely the access behavior is not modified.
 
    .. _libcudacxx-extended-api-memory-access-properties-access-property-normal:
 
