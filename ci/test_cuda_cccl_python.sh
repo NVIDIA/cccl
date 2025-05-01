@@ -12,13 +12,6 @@ source "test_python_common.sh"
 
 list_environment
 
-echo "Listing directory contents from test script"
-ls ../../
-
-echo "Listing directory contents of root from test script"
-ls ../
-ls /
-
 # Install the wheel from the artifact location
-WHEEL_PATH="/wheelhouse/cuda_cccl-*.whl"
+WHEEL_PATH="$(ls /wheelhouse/cuda_cccl-*.whl)[test]"
 run_tests_from_wheel "cuda_cccl" "$WHEEL_PATH"
