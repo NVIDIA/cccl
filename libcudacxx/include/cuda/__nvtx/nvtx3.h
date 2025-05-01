@@ -659,7 +659,7 @@
 #  include <type_traits>
 #  include <utility>
 
-#  include "nvToolsExt.h"
+#  include <nvtx3/nvToolsExt.h>
 
 namespace nvtx3
 {
