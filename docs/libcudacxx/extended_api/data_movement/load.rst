@@ -1,7 +1,7 @@
 .. _libcudacxx-extended-api-data-movement-load:
 
-``load``: Load data from global memory
-======================================
+``cuda::device::load``: Load data from global memory
+====================================================
 
 Defined in the header ``<cuda/data_movement>``.
 
@@ -10,99 +10,114 @@ Defined in the header ``<cuda/data_movement>``.
     template <typename T>
     [[nodiscard]] __device__ inline
     T load(const T*                  ptr,
-           /*memory_access_type*/    memory_access   = read_write,
-           /*eviction_policy_type*/  eviction_policy = L1_unchanged_reuse,
-           /*prefetch_L2_type*/      prefetch_L2     = L2_prefetch_none,
-           /*cuda::access_property*/ access_property = access_property::global{})
+           /*Memory access kind*/    memory_access = read_write,
+           /*L1 reuse policy*/       l1_reuse      = L1_unchanged_reuse,
+           /*cuda::access_property*/ l2_hint       = access_property::global{},
+           /*L2 prefetch policy*/    l2_prefetch   = L2_prefetch_none)
 
     template <size_t N, typename T, size_t Align>
     [[nodiscard]] __device__ inline
     cuda::std::array<T, N> load(const T*                    ptr,
                                 cuda::aligned_size_t<Align> align,
-                                /*memory_access_type*/      memory_access   = read_write,
-                                /*eviction_policy_type*/    eviction_policy = L1_unchanged_reuse,
-                                /*prefetch_L2_type*/        prefetch_L2     = L2_prefetch_none,
-                                /*cuda::access_property*/   access_property = access_property::global{})
+                                /*Memory access kind*/      memory_access = read_write,
+                                /*L1 reuse policy*/         l1_reuse      = L1_unchanged_reuse,
+                                /*cuda::access_property*/   l2_hint       = access_property::global{},
+                                /*L2 prefetch policy*/      l2_prefetch   = L2_prefetch_none)
 
     template <typename T, typename Prop>
     [[nodiscard]] __device__ inline
     T load(cuda::annotated_ptr<T, Prop> ptr,
-           /*memory_access_type*/       memory_access   = read_write,
-           /*eviction_policy_type*/     eviction_policy = L1_unchanged_reuse,
-           /*prefetch_L2_type*/         prefetch_L2     = L2_prefetch_none)
+           /*Memory access kind*/       memory_access = read_write,
+           /*L1 reuse policy*/          l1_reuse      = L1_unchanged_reuse,
+           /*L2 prefetch policy*/       l2_prefetch   = L2_prefetch_none)
 
     template <size_t N, typename T, typename Prop, size_t Align>
     [[nodiscard]] __device__ inline
     cuda::std::array<T, N> load(cuda::annotated_ptr<T, Prop> ptr,
-                                cuda::aligned_size_t<Align> align,
-                                /*memory_access_type*/       memory_access   = read_write,
-                                /*eviction_policy_type*/     eviction_policy = L1_unchanged_reuse,
-                                /*prefetch_L2_type*/         prefetch_L2     = L2_prefetch_none)
+                                cuda::aligned_size_t<Align>  align,
+                                /*Memory access kind*/       memory_access = read_write,
+                                /*L1 reuse policy*/          l1_reuse      = L1_unchanged_reuse,
+                                /*L2 prefetch policy*/       l2_prefetch   = L2_prefetch_none)
 
 The function loads data from global memory and allows to specify memory access properties.
 
 **Parameters**
 
 - ``ptr``: Pointer to the data to be loaded.
-- ``memory_access``:  The memory access property.
+- ``memory_access``:  The memory access property. See `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`_ and `ld.global.nc <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc>`_  sections of the PTX Language Reference.
 
     - ``read_write``: Read and write access (default).
-    - ``read_only``: Read-only access (non-coherent L1/Tex cache).. Requires ``sizeof(T) = {1, 2, 4, 8, 16}``.
+    - ``read_only``: Read-only access (non-coherent L1/Tex cache). Loading a value from a memory location that is not read-only for the entire lifetime of kernel is undefined behavior.
 
-- ``eviction_policy``: The eviction policy. Requires ``SM >= 70`` and ``sizeof(T) = {1, 2, 4, 8, 16}``. See `"Cache Eviction Priority Hints" <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#id150>`_
+- ``l1_reuse``: L1 cache reuse policy. Requires ``SM >= 70``. See also `"Cache Eviction Priority Hints" <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#id150>`_ section of the PTX Language Reference.
 
-    - ``L1_unchanged_reuse``: Do not specify the eviction policy (default).
-    - ``L1_normal_reuse``: Normal eviction policy.
     - ``L1_unchanged_reuse``: Unchanged evict policy.
-    - ``L1_low_reuse``: First evict policy (streaming).
-    - ``L1_high_reuse``: Last evict policy (persisting).
-    - ``L1_no_reuse``: No allocation evict policy (streaming).
+    - ``L1_normal_reuse``: Normal reuse eviction policy.
+    - ``L1_low_reuse``: Low reuse eviction policy (streaming).
+    - ``L1_high_reuse``: High reuse eviction policy (persisting).
+    - ``L1_no_reuse``: No reuse eviction policy (streaming).
 
-- ``prefetch``: The prefetch property. Requires ``SM >= 75`` and ``sizeof(T) = {1, 2, 4, 8, 16}``. See `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`_ and `ld.global.nc <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc>`_ documentation
+- ``access_property``: L2 cache residency control property. Requires ``SM >= 80``. See also `cuda::access_property <https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_access_properties/access_property.html>`_ documentation.
+
+    - ``access_property::global``: Unchanged evict policy.
+    - ``access_property::normal``: Normal reuse eviction policy.
+    - ``access_property::streaming``: Low reuse eviction policy (streaming).
+    - ``access_property::persisting``: High reuse eviction policy (persisting).
+    - ``access_property`` also allows to specify custom properties, namely *fractional* and *address range*.
+
+- ``prefetch``: L2 prefetch property. Requires ``SM >= 75``.
 
     - ``L2_prefetch_none``: No prefetch (default).
     - ``L2_prefetch_64B``: Prefetch 64 bytes.
     - ``L2_prefetch_128B``: Prefetch 128 bytes.
     - ``L2_prefetch_256B``: Prefetch 256 bytes. Requires ``SM >= 80``.
 
-- ``access_property``: The L2 cache residency control property. See `cuda::access_property <https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_access_properties/access_property.html>`_ documentation
+**NOTE**: if a feature is not available for a given GPU architecture, the function behavior falls back to the closest available feature. For example, if ``L2_prefetch_256B`` is not available, it will be replaced by ``L2_prefetch_128B``.
 
 **Return value**
 
-- The loaded value.
+- The loaded value from the specified global memory address.
 
-**Constraints**
+**Preconditions**
 
-Load of a *single element*:
+- If a non-default property is specified, ``sizeof(load_data)`` must be ``{1, 2, 4, 8}`` or a multiple of ``16`` bytes.
 
-- The pointer must be not a null pointer and a valid address in the global memory space.
-- The pointer must be aligned to ``alignof(T)``.
-- If a non-default property is specified, ``sizeof(T)`` must be ``{1, 2, 4, 8}`` or a multiple of ``16`` bytes.
+Addition constraints for loading *multiple elements* (``cuda::device::load<N>``):
 
-Load of *multiple elements*:
-
-- The pointer must be not a null pointer and a valid address in the global memory space.
-- The pointer must be aligned to ``Align``.
 - ``Align`` is a power of 2 (implicit for ``cuda::aligned_size_t``).
 - ``N > 0``
 - ``Align >= alignof(T)``
 - ``(sizeof(T) * N) % Align == 0``
+
+**Constraints**
+
+- The pointer must not be a null pointer and a valid address in the global memory space.
+
+- The pointer must be aligned to ``alignof(T)`` when loading a *single element*, or to ``Align`` when loading *multiple elements* (``cuda::device::load<N>``).
 
 Example
 -------
 
 .. code:: cuda
 
+    #include <cuda/annotated_ptr>
     #include <cuda/data_movement>
 
-    __device__ unsigned input;
-    __device__ unsigned output;
+    __device__ int input;
+    __device__ int output;
+
+    __device__ int input2[8];
 
     __global__ void load_kernel() {
         auto ptr = &input;
         output   = cuda::device::load(ptr);
         output   = cuda::device::load(ptr, read_only, L1_low_reuse);
-        output   = cuda::device::load(ptr, read_write, L1_high_reuse, L2_prefetch_256B);
+        output   = cuda::device::load(ptr, read_write, L1_high_reuse, access_property::persisting);
+        output   = cuda::device::load(ptr, read_write, L1_high_reuse, access_property::persisting, L2_prefetch_256B);
+        output   = cuda::device::load<4>(input2, read_only, L1_high_reuse)[0];
+
+        auto ptr2 = cuda::std::annotated_ptr<int, cuda::access_property::normal>(&input);
+        output    = cuda::device::load(ptr2);
     }
 
     int main() {
