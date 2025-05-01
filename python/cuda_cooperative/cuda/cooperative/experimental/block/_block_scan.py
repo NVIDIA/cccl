@@ -2,13 +2,79 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from typing import TYPE_CHECKING, Any, Callable, Literal, Union
+"""
+cuda.cooperative.block_scan
+===========================
+
+This module provides a set of :ref:`collective <collective-primitives>`
+for computing parallel prefix scans of items partitioned across CUDA
+thread blocks.  It is based on the :class:`cub.BlockScan` C++ class in
+the CUB library.
+
+Supported C++ APIs
+++++++++++++++++++
+
+The following :class:`cub.BlockScan` C++ APIs are supported:
+
+
+    ExclusiveSum(T input, T &output)
+    ExclusiveSum(T input, T &output, BlockPrefixCallbackOp &prefix_op)
+    ExclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output)
+    ExclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, BlockPrefixCallbackOp &prefix_op)
+
+    InclusiveSum(T input, T &output)
+    InclusiveSum(T input, T &output, BlockPrefixCallbackOp &prefix_op)
+    InclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output)
+    InclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, BlockPrefixCallbackOp &prefix_op)
+
+    ExclusiveScan(T input, T &output, ScanOp scan_op)
+    ExclusiveScan(T input, T &output, ScanOp scan_op, BlockPrefixCallbackOp &prefix_op)
+    ExclusiveScan(T input, T &output, T initial_value, ScanOp scan_op)
+    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op)
+    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op, BlockPrefixCallbackOp &prefix_op)
+    ExclusiveScanT(&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op)
+
+    InclusiveScan(T input, T &output, ScanOp scan_op)
+    InclusiveScan(T input, T &output, ScanOp scan_op, BlockPrefixCallbackOp &prefix_op)
+    InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op)
+    InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op, BlockPrefixCallbackOp &prefix_op)
+    InclusiveScanT(&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op)
+
+Unsupported C++ APIs
+++++++++++++++++++++
+
+This module does not support any of the :class:`cub.BlockScan` C++ APIs
+that take a block aggregate reference as an argument.  These APIs are
+as follows:
+
+    ExclusiveSum(T input, T &output, T &block_aggregate)
+    ExclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T &block_aggregate)
+
+    InclusiveSum(T input, T &output, T &block_aggregate)
+    InclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T &block_aggregate)
+
+    ExclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
+    ExclusiveScan(T input, T &output, T initial_value, ScanOp scan_op, T &block_aggregate)
+    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, ScanOp scan_op, T &block_aggregate)
+    ExclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
+
+    InclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
+    InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
+
+TODO: 1. Link these APIs to the appropriate C++ APIs in the documentation.
+      2. Show Python examples for each C++ counterpart.
+
+"""
+
+import operator
+from enum import Enum
+from typing import Any, Callable, Literal
 
 import numba
+import numpy as np
 
 from cuda.cooperative.experimental._common import (
     CUB_BLOCK_SCAN_ALGOS,
-    ScanOp,
     make_binary_tempfile,
     normalize_dim_param,
     normalize_dtype_param,
@@ -17,8 +83,8 @@ from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
     DependentArray,
-    DependentFunction,
-    DependentOperator,
+    DependentCxxOperator,
+    DependentPythonOperator,
     DependentReference,
     Invocable,
     Pointer,
@@ -27,15 +93,167 @@ from cuda.cooperative.experimental._types import (
 )
 from cuda.cooperative.experimental._typing import (
     DimType,
+    DtypeType,
     ScanOpType,
 )
 
-if TYPE_CHECKING:
-    import numpy as np
+
+class ScanOpCategory(Enum):
+    """
+    Represents the category of a scan operator.  This is used to guide
+    specialization of the C++ API.
+    """
+
+    Sum = "Sum"
+    """
+    Represents a sum operator.
+    """
+
+    Known = "Known"
+    """
+    Represents one of the known, non-sum associative operators: multiply,
+    minimum, maximum, bitwise AND, bitwise OR, and bitwise XOR.
+    """
+
+    Callable = "Callable"
+    """
+    Represents a user-defined callable operator.
+    """
+
+
+CUDA_STD_PLUS = "::cuda::std::plus<T>"
+CUDA_STD_MULTIPLIES = "::cuda::std::multiplies<T>"
+# These two don't exist (yet?).
+# CUDA_STD_MIN = "::cuda::std::min<T>"
+# CUDA_STD_MAX = "::cuda::std::max<T>"
+CUDA_STD_BIT_AND = "::cuda::std::bit_and<T>"
+CUDA_STD_BIT_OR = "::cuda::std::bit_or<T>"
+CUDA_STD_BIT_XOR = "::cuda::std::bit_xor<T>"
+
+
+class ScanOp:
+    """
+    Represents an associative binary operator for a prefix scan operation.
+    """
+
+    # Set of all ops interpreted as sum (for (inclusive|exclusive)_sum).
+    SUM_OPS = {
+        "+",
+        "add",
+        "plus",
+        np.add,
+        operator.add,
+    }
+    """
+    Set of all ops interpreted as sum (for (inclusive|exclusive)_sum).
+    """
+
+    # Map of all known (non-sum) operators to their C++ type representations.
+    KNOWN_OPS = {
+        # String names
+        "mul": CUDA_STD_MULTIPLIES,
+        "multiplies": CUDA_STD_MULTIPLIES,
+        # "min": CUDA_STD_MIN,
+        # "minimum": CUDA_STD_MIN,
+        # "max": CUDA_STD_MAX,
+        # "maximum": CUDA_STD_MAX,
+        "bit_and": CUDA_STD_BIT_AND,
+        "bit_or": CUDA_STD_BIT_OR,
+        "bit_xor": CUDA_STD_BIT_XOR,
+        # String operators
+        "*": CUDA_STD_MULTIPLIES,
+        "&": CUDA_STD_BIT_AND,
+        "|": CUDA_STD_BIT_OR,
+        "^": CUDA_STD_BIT_XOR,
+        # NumPy functions
+        np.multiply: CUDA_STD_MULTIPLIES,
+        # np.minimum: CUDA_STD_MIN,
+        # np.maximum: CUDA_STD_MAX,
+        np.bitwise_and: CUDA_STD_BIT_AND,
+        np.bitwise_or: CUDA_STD_BIT_OR,
+        np.bitwise_xor: CUDA_STD_BIT_XOR,
+        # Python operator module functions.
+        operator.mul: CUDA_STD_MULTIPLIES,
+    }
+    """
+    Map of all known (non-sum) operators to their C++ type representations.
+    """
+
+    def __init__(self, op: ScanOpType):
+        """
+        Initializes the ScanOp instance.
+
+        :param op: Supplies the :ref:`ScanOpType` scan operator to use
+            for the block-wide scan.
+        :type op: ScanOpType
+
+        :raises ValueError: If the provided operator is not supported.
+
+        """
+        if isinstance(op, ScanOp):
+            # If op is already a ScanOp instance, just return it.
+            self.op = op.op
+            self.op_category = op.op_category
+            self.op_cpp = op.op_cpp
+            return
+
+        self.op = op
+        self.op_category = None
+        self.op_cpp = None
+
+        # Handle string names and operators.
+        if isinstance(op, str):
+            if op in self.SUM_OPS:
+                self.op_category = ScanOpCategory.Sum
+                self.op_cpp = CUDA_STD_PLUS
+            elif op in self.KNOWN_OPS:
+                self.op_category = ScanOpCategory.Known
+                self.op_cpp = self.KNOWN_OPS[op]
+            else:
+                raise ValueError(f"Unsupported scan operator: {op}")
+
+        # Handle NumPy functions or other callables
+        elif callable(op):
+            # Check if it's a known function in our KNOWN_OPS dictionary
+            if op in self.SUM_OPS:
+                self.op_category = ScanOpCategory.Sum
+                self.op_cpp = CUDA_STD_PLUS
+            elif op in self.KNOWN_OPS:
+                self.op_category = ScanOpCategory.Known
+                self.op_cpp = self.KNOWN_OPS[op]
+            else:
+                # Custom callable; no op_cpp representation.
+                self.op_category = ScanOpCategory.Callable
+        else:
+            raise ValueError(f"Unsupported scan op type: {type(op)}")
+
+    def __repr__(self):
+        return f"ScanOp({self.op})"
+
+    @property
+    def is_sum(self):
+        """
+        Returns ``True`` if the scan operator is a sum operator.
+        """
+        return self.op_category == ScanOpCategory.Sum
+
+    @property
+    def is_known(self):
+        """
+        Returns ``True`` if the scan operator is a known operator.
+        """
+        return self.op_category == ScanOpCategory.Known
+
+    @property
+    def is_callable(self):
+        """
+        Returns ``True`` if the scan operator is a callable.
+        """
+        return self.op_category == ScanOpCategory.Callable
 
 
 def _scan(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int = 1,
     initial_value: Any = None,
@@ -61,10 +279,26 @@ def _scan(
             raise ValueError(f"Unsupported mode: {mode}")
         cpp_func_prefix = "Inclusive"
 
+    # This will raise an error if scan_op is invalid.
+    scan_op = ScanOp(scan_op)
+    if scan_op.is_sum:
+        # Make sure we specialize the correct CUB API for exclusive sum.
+        cpp_function_name = f"{cpp_func_prefix}Sum"
+    else:
+        cpp_function_name = f"{cpp_func_prefix}Scan"
+
+    # An initial value is not supported for inclusive and exclusive sums.
+    if initial_value is not None and scan_op.is_sum:
+        raise ValueError(
+            "initial_value is not supported for inclusive and exclusive sums"
+        )
+
     # An initial value is not supported for inclusive scans with a single
     # item per thread.
-    initial_value_not_supported = items_per_thread == 1 and mode == "inclusive"
-    if initial_value is not None and initial_value_not_supported:
+    invalid_initial_value = (
+        initial_value is not None and items_per_thread == 1 and mode == "inclusive"
+    )
+    if invalid_initial_value:
         raise ValueError(
             "initial_value is not supported for inclusive scans with "
             "items_per_thread == 1"
@@ -72,13 +306,13 @@ def _scan(
 
     # An initial value is not supported for exclusive scans with a
     # single item per thread and a block prefix callback operator.
-    initial_value_not_supported = (
+    invalid_initial_value = (
         items_per_thread == 1
         and initial_value is not None
         and mode == "exclusive"
         and block_prefix_callback_op is not None
     )
-    if initial_value_not_supported:
+    if invalid_initial_value:
         raise ValueError(
             "initial_value is not supported for exclusive scans with "
             "items_per_thread == 1 and a block prefix callback operator"
@@ -89,19 +323,22 @@ def _scan(
     # not supplied by the caller.
     initial_value_required = items_per_thread > 1 and block_prefix_callback_op is None
     if initial_value_required and initial_value is None:
-        raise ValueError(
-            "initial_value is required for both inclusive and exclusive scans "
-            "when items_per_thread > 1 and no block prefix callback operator "
-            "has been supplied"
-        )
-
-    # This will raise an error if scan_op is invalid.
-    scan_op = ScanOp(scan_op)
-    if scan_op.is_sum:
-        # Make sure we specialize the correct CUB API for exclusive sum.
-        cpp_function_name = f"{cpp_func_prefix}Sum"
-    else:
-        cpp_function_name = f"{cpp_func_prefix}Scan"
+        # We require an initial value, but one was not supplied.
+        # Attempt to create a default value for the given dtype.
+        # If we can't, raise an error.
+        try:
+            initial_value = dtype.cast_python_value(0)
+        except (TypeError, NotImplementedError) as e:
+            # We can't create a default value for the given dtype.
+            # Raise an error.
+            msg = (
+                "initial_value is required for both inclusive and "
+                "exclusive scans when items_per_thread > 1 and no "
+                "block prefix callback operator has been supplied; "
+                "attempted to create a default value for the given "
+                f"dtype, but failed: {e}"
+            )
+            raise ValueError(msg) from e
 
     specialization_kwds = {
         "T": dtype,
@@ -132,23 +369,27 @@ def _scan(
     if scan_op.is_known:
 
         def make_dependent_scan_op():
-            return DependentFunction(Dependency("ScanOp"), op=scan_op.op_cpp)
+            return DependentCxxOperator(
+                dep=Dependency("T"),
+                cpp=scan_op.op_cpp,
+            )
+
     elif scan_op.is_callable:
 
         def make_dependent_scan_op():
-            return DependentOperator(
-                Dependency("T"),
-                [Dependency("T"), Dependency("T")],
-                Dependency("ScanOp"),
+            return DependentPythonOperator(
+                ret_dtype=Dependency("T"),
+                arg_dtypes=[Dependency("T"), Dependency("T")],
+                op=Dependency("ScanOp"),
             )
 
     if block_prefix_callback_op is not None:
 
         def make_dependent_block_prefix_callback_op():
-            return DependentOperator(
-                Dependency("T"),
-                [Dependency("T")],
-                Dependency("BlockPrefixCallbackOp"),
+            return DependentPythonOperator(
+                ret_dtype=Dependency("T"),
+                arg_dtypes=[Dependency("T")],
+                op=Dependency("BlockPrefixCallbackOp"),
             )
 
     if scan_op.is_sum:
@@ -297,9 +538,27 @@ def _scan(
                         ],
                     ]
                 else:
-                    # We shouldn't ever hit this; if we do, our prior invariant
-                    # checks have failed.
-                    raise RuntimeError("Unreachable code")
+                    parameters = [
+                        # Signature:
+                        # void BlockScan<T, BLOCK_DIM_X, ALGORITHM,
+                        #                   BLOCK_DIM_Y, BLOCK_DIM_Z>(
+                        #     temp_storage
+                        # )<ScanOp>ExclusiveScan(
+                        #     T,     # input
+                        #     T&,    # output
+                        #     ScanOp # scan_op
+                        # )
+                        [
+                            # temp_storage
+                            Pointer(numba.uint8),
+                            # T input
+                            DependentReference(Dependency("T")),
+                            # T& output
+                            DependentReference(Dependency("T"), is_output=True),
+                            # ScanOp scan_op
+                            make_dependent_scan_op(),
+                        ],
+                    ]
 
             else:
                 assert mode == "inclusive" or initial_value is None
@@ -376,6 +635,8 @@ def _scan(
                         DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
                         # T (&)[ITEMS_PER_THREAD] output
                         DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                        # T initial_value
+                        DependentReference(Dependency("T")),
                         # ScanOp scan_op
                         make_dependent_scan_op(),
                     ],
@@ -429,7 +690,12 @@ def _scan(
                 ]
 
     else:
+        # We shouldn't ever hit this; there are only three types of scan ops
+        # supported: sum, known, and callable.
         raise RuntimeError("Unreachable code")
+
+    # Invariant check: if we get here, parameters shouldn't be empty.
+    assert parameters, "parameters should not be empty"
 
     template = Algorithm(
         "BlockScan",
@@ -460,7 +726,7 @@ def _scan(
 
 
 def exclusive_sum(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
@@ -540,7 +806,7 @@ def exclusive_sum(
 
 
 def inclusive_sum(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int = 1,
     prefix_op: Callable = None,
@@ -592,7 +858,7 @@ def inclusive_sum(
 
 
 def exclusive_scan(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    dtype: DtypeType,
     threads_per_block: DimType,
     scan_op: ScanOpType,
     initial_value: Any = None,
@@ -654,7 +920,7 @@ def exclusive_scan(
 
 
 def inclusive_scan(
-    dtype: Union[str, type, "np.dtype", "numba.types.Type"],
+    dtype: DtypeType,
     threads_per_block: DimType,
     scan_op: ScanOpType,
     initial_value: Any = None,
@@ -700,6 +966,8 @@ def inclusive_scan(
     Returns:
         A callable that can be linked to a CUDA kernel and invoked to perform
         the block-wide exclusive prefix scan.
+
+    TODO: convert to Sphinx.
 
     """
     return _scan(
