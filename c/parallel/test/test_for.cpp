@@ -11,12 +11,42 @@
 #include <cuda_runtime.h>
 
 #include <algorithm>
+#include <iostream> // std::cerr
+#include <optional> // std::optional
+#include <string>
 
+#include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/for.h>
 #include <stdint.h>
 
-void for_each(cccl_iterator_t input, uint64_t num_items, cccl_op_t op)
+struct for_build_cleaner
+{
+  void operator()(cccl_device_for_build_result_t* build_data) noexcept
+  {
+    auto command_status = cccl_device_for_cleanup(build_data);
+    if (CUDA_SUCCESS != command_status)
+    {
+      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
+                << static_cast<void*>(build_data) << std::endl;
+      if (build_data)
+      {
+        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
+                  << ", build->cubin_size: " << build_data->cubin_size << std::endl;
+      }
+    };
+  }
+};
+
+using for_build_cache_t =
+  build_cache_t<std::string, result_wrapper_t<cccl_device_for_build_result_t, for_build_cleaner>>;
+
+template <typename BuildCache = for_build_cache_t, typename KeyT = std::string>
+void for_each(cccl_iterator_t input,
+              uint64_t num_items,
+              cccl_op_t op,
+              std::optional<BuildCache>& cache,
+              const std::optional<KeyT>& lookup_key)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
@@ -30,18 +60,62 @@ void for_each(cccl_iterator_t input, uint64_t num_items, cccl_op_t op)
   const char* ctk_path        = TEST_CTK_PATH;
 
   cccl_device_for_build_result_t build;
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_for_build(&build, input, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
+  bool found = false;
+
+  const bool cache_and_key = bool(cache) && bool(lookup_key);
+
+  if (cache_and_key)
+  {
+    auto& cache_v     = cache.value();
+    const auto& key_v = lookup_key.value();
+    if (cache_v.contains(key_v))
+    {
+      build = cache_v.get(key_v).get();
+      found = true;
+    }
+  }
+
+  if (!found)
+  {
+    REQUIRE(CUDA_SUCCESS
+            == cccl_device_for_build(
+              &build, input, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
+
+    if (cache_and_key)
+    {
+      auto& cache_v     = cache.value();
+      const auto& key_v = lookup_key.value();
+      cache_v.insert(key_v, build);
+    }
+  }
+
   const std::string sass = inspect_sass(build.cubin, build.cubin_size);
   REQUIRE(sass.find("LDL") == std::string::npos);
   REQUIRE(sass.find("STL") == std::string::npos);
 
   REQUIRE(CUDA_SUCCESS == cccl_device_for(build, input, num_items, op, 0));
-  REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
+  if (cache_and_key)
+  {
+    // if cache and lookup_key were provided, the ownership of resources
+    // allocated for build is transferred to the cache
+  }
+  else
+  {
+    // release build data resources
+    REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
+  }
+}
+
+void for_each(cccl_iterator_t input, uint64_t num_items, cccl_op_t op)
+{
+  std::optional<for_build_cache_t> no_build_cache = std::nullopt;
+  std::optional<std::string> no_test_key          = std::nullopt;
+
+  return for_each(input, num_items, op, no_build_cache, no_test_key);
 }
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+struct DeviceFor_Pointer_Fixture_Tag;
 C2H_TEST("for works with integral types", "[for]", integral_types)
 {
   using T = c2h::get<0, TestType>;
@@ -52,7 +126,12 @@ C2H_TEST("for works with integral types", "[for]", integral_types)
   std::vector<T> input(num_items, T(1));
   pointer_t<T> input_ptr(input);
 
-  for_each(input_ptr, num_items, op);
+  auto& build_cache = fixture<for_build_cache_t, DeviceFor_Pointer_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<T>();
+  std::optional<std::string> test_key{key_string};
+
+  for_each(input_ptr, num_items, op, build_cache, test_key);
 
   // Copy back input array
   input          = input_ptr;
@@ -90,7 +169,12 @@ extern "C" __device__ void op(void* a_ptr) {
   std::vector<pair> input(num_items, pair{short(1), size_t(1)});
   pointer_t<pair> input_ptr(input);
 
-  for_each(input_ptr, num_items, op);
+  auto& build_cache = fixture<for_build_cache_t, DeviceFor_Pointer_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<pair>();
+  std::optional<std::string> test_key{key_string};
+
+  for_each(input_ptr, num_items, op, build_cache, test_key);
 
   // Copy back input array
   input          = input_ptr;
@@ -129,6 +213,7 @@ extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
   std::vector<int> input(num_items, 1);
   pointer_t<int> input_ptr(input);
 
+  // no build caching
   for_each(input_ptr, num_items, op);
 
   const int invocation_count = counter[0];
@@ -166,6 +251,7 @@ extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
   std::vector<int> input(num_items, 1);
   pointer_t<int> input_ptr(input);
 
+  // no build caching
   for_each(input_ptr, num_items, op);
 
   const int invocation_count = counter[0];

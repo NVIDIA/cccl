@@ -11,16 +11,44 @@
 #include <cuda_runtime.h>
 
 #include <cstdint>
+#include <iostream> // std::cerr
+#include <optional> // std::optional
+#include <string>
 
+#include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/scan.h>
 
+struct scan_build_cleaner
+{
+  void operator()(cccl_device_scan_build_result_t* build_data) noexcept
+  {
+    auto command_status = cccl_device_scan_cleanup(build_data);
+    if (CUDA_SUCCESS != command_status)
+    {
+      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
+                << static_cast<void*>(build_data) << std::endl;
+      if (build_data)
+      {
+        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
+                  << ", build->cubin_size: " << build_data->cubin_size << std::endl;
+      }
+    };
+  }
+};
+
+using scan_build_cache_t =
+  build_cache_t<std::string, result_wrapper_t<cccl_device_scan_build_result_t, scan_build_cleaner>>;
+
+template <typename BuildCache = scan_build_cache_t, typename KeyT = std::string>
 void scan(cccl_iterator_t input,
           cccl_iterator_t output,
           uint64_t num_items,
           cccl_op_t op,
           cccl_value_t init,
-          bool force_inclusive)
+          bool force_inclusive,
+          std::optional<BuildCache>& cache,
+          const std::optional<KeyT>& lookup_key)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
@@ -34,21 +62,45 @@ void scan(cccl_iterator_t input,
   const char* ctk_path        = TEST_CTK_PATH;
 
   cccl_device_scan_build_result_t build;
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_scan_build(
-      &build,
-      input,
-      output,
-      op,
-      init,
-      force_inclusive,
-      cc_major,
-      cc_minor,
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path));
+  const bool cache_and_key = bool(cache) && bool(lookup_key);
+  bool found               = false;
+
+  if (cache_and_key)
+  {
+    auto& cache_v     = cache.value();
+    const auto& key_v = lookup_key.value();
+    if (cache_v.contains(key_v))
+    {
+      build = cache_v.get(key_v).get();
+      found = true;
+    }
+  }
+
+  if (!found)
+  {
+    REQUIRE(
+      CUDA_SUCCESS
+      == cccl_device_scan_build(
+        &build,
+        input,
+        output,
+        op,
+        init,
+        force_inclusive,
+        cc_major,
+        cc_minor,
+        cub_path,
+        thrust_path,
+        libcudacxx_path,
+        ctk_path));
+
+    if (cache_and_key)
+    {
+      auto& cache_v     = cache.value();
+      const auto& key_v = lookup_key.value();
+      cache_v.insert(key_v, build);
+    }
+  }
 
   const std::string sass = inspect_sass(build.cubin, build.cubin_size);
 
@@ -64,10 +116,21 @@ void scan(cccl_iterator_t input,
 
   REQUIRE(
     CUDA_SUCCESS == scan_function(build, temp_storage.ptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
-  REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+
+  if (cache_and_key)
+  {
+    // if cache and lookup_key were provided, the ownership of resources
+    // allocated for build is transferred to the cache
+  }
+  else
+  {
+    // release build data resources
+    REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
+  }
 }
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+struct Scan_IntegralTypes_Fixture_Tag;
 C2H_TEST("Scan works with integral types", "[scan]", integral_types)
 {
   using T = c2h::get<0, TestType>;
@@ -80,7 +143,12 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
   pointer_t<T> output_ptr(output);
   value_t<T> init{T{42}};
 
-  scan(input_ptr, output_ptr, num_items, op, init, false);
+  auto& build_cache = fixture<scan_build_cache_t, Scan_IntegralTypes_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<T>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
   std::vector<T> expected(num_items, 0);
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
@@ -90,6 +158,7 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
   }
 }
 
+struct InclusiveScan_IntegralTypes_Fixture_Tag;
 C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
 {
   using T = c2h::get<0, TestType>;
@@ -102,7 +171,12 @@ C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
   pointer_t<T> output_ptr(output);
   value_t<T> init{T{42}};
 
-  scan(input_ptr, output_ptr, num_items, op, init, true);
+  auto& build_cache = fixture<scan_build_cache_t, InclusiveScan_IntegralTypes_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<T>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_ptr, output_ptr, num_items, op, init, true, build_cache, test_key);
 
   std::vector<T> expected(num_items, 0);
   std::inclusive_scan(input.begin(), input.end(), expected.begin(), std::plus<>{}, init.value);
@@ -123,6 +197,7 @@ struct pair
   }
 };
 
+struct Scan_CustomTypes_Fixture_Tag;
 C2H_TEST("Scan works with custom types", "[scan]")
 {
   const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
@@ -148,7 +223,12 @@ C2H_TEST("Scan works with custom types", "[scan]")
   pointer_t<pair> output_ptr(output);
   value_t<pair> init{pair{4, 2}};
 
-  scan(input_ptr, output_ptr, num_items, op, init, false);
+  auto& build_cache = fixture<scan_build_cache_t, Scan_CustomTypes_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<pair>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
   std::vector<pair> expected(num_items, {0, 0});
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value, [](const pair& lhs, const pair& rhs) {
@@ -160,6 +240,7 @@ C2H_TEST("Scan works with custom types", "[scan]")
   }
 }
 
+struct Scan_InputIterators_Fixture_Tag;
 C2H_TEST("Scan works with input iterators", "[scan]")
 {
   const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
@@ -169,7 +250,12 @@ C2H_TEST("Scan works with input iterators", "[scan]")
   pointer_t<int> output_it(num_items);
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init, false);
+  auto& build_cache = fixture<scan_build_cache_t, Scan_InputIterators_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<int>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
   // vector storing a sequence of values 0, 1, 2, ..., num_items - 1
   std::vector<int> input(num_items);
@@ -183,6 +269,7 @@ C2H_TEST("Scan works with input iterators", "[scan]")
   }
 }
 
+struct Scan_OutputIterators_Fixture_Tag;
 C2H_TEST("Scan works with output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
@@ -195,7 +282,12 @@ C2H_TEST("Scan works with output iterators", "[scan]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init, false);
+  auto& build_cache = fixture<scan_build_cache_t, Scan_OutputIterators_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<int>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
   std::vector<int> expected(num_items);
   std::exclusive_scan(input.begin(), input.end(), expected.begin(), init.value);
@@ -209,6 +301,7 @@ C2H_TEST("Scan works with output iterators", "[scan]")
   }
 }
 
+struct Scan_ReverseInputIterators_Fixture_Tag;
 C2H_TEST("Scan works with reverse input iterators", "[scan]")
 {
   const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
@@ -221,7 +314,12 @@ C2H_TEST("Scan works with reverse input iterators", "[scan]")
   pointer_t<int> output_it(num_items);
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init, false);
+  auto& build_cache = fixture<scan_build_cache_t, Scan_ReverseInputIterators_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<int>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
   std::vector<int> expected(num_items);
   std::exclusive_scan(input.rbegin(), input.rend(), expected.begin(), init.value);
@@ -231,28 +329,7 @@ C2H_TEST("Scan works with reverse input iterators", "[scan]")
   }
 }
 
-C2H_TEST("Scan works with reverse input iterators", "[scan]")
-{
-  const std::size_t num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op              = make_operation("op", get_reduce_op(get_type_info<int>().type));
-  iterator_t<int, random_access_iterator_state_t<int>> input_it =
-    make_reverse_iterator<int>(iterator_kind::INPUT, "int");
-  std::vector<int> input = generate<int>(num_items);
-  pointer_t<int> input_ptr(input);
-  input_it.state.data = input_ptr.ptr + num_items - 1;
-  pointer_t<int> output_it(num_items);
-  value_t<int> init{42};
-
-  scan(input_it, output_it, num_items, op, init, false);
-
-  std::vector<int> expected(num_items);
-  std::exclusive_scan(input.rbegin(), input.rend(), expected.begin(), init.value);
-  if (num_items > 0)
-  {
-    REQUIRE(expected == std::vector<int>(output_it));
-  }
-}
-
+struct Scan_ReverseOutputIterators_Fixture_Tag;
 C2H_TEST("Scan works with reverse output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
@@ -265,7 +342,12 @@ C2H_TEST("Scan works with reverse output iterators", "[scan]")
   output_it.state.data = inner_output_it.ptr + num_items - 1;
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init, false);
+  auto& build_cache = fixture<scan_build_cache_t, Scan_ReverseOutputIterators_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<int>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
   std::vector<int> expected(num_items);
   std::exclusive_scan(input.begin(), input.end(), expected.rbegin(), init.value);
@@ -276,6 +358,7 @@ C2H_TEST("Scan works with reverse output iterators", "[scan]")
   }
 }
 
+struct Scan_InputOutputIterators_Fixture_Tag;
 C2H_TEST("Scan works with input and output iterators", "[scan]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
@@ -288,7 +371,12 @@ C2H_TEST("Scan works with input and output iterators", "[scan]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  scan(input_it, output_it, num_items, op, init, false);
+  auto& build_cache = fixture<scan_build_cache_t, Scan_InputOutputIterators_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<int>();
+  std::optional<std::string> test_key{key_string};
+
+  scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
   std::vector<int> expected(num_items, 1);
   std::exclusive_scan(expected.begin(), expected.end(), expected.begin(), init.value);

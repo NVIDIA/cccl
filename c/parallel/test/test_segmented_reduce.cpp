@@ -3,12 +3,39 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <iostream> // std::cerr
 #include <numeric>
+#include <optional> // std::optional
+#include <string>
 
-#include "cccl/c/types.h"
+#include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/segmented_reduce.h>
+#include <cccl/c/types.h>
 
+struct segmented_reduce_build_cleaner
+{
+  void operator()(cccl_device_segmented_reduce_build_result_t* build_data) noexcept
+  {
+    auto command_status = cccl_device_segmented_reduce_cleanup(build_data);
+    if (CUDA_SUCCESS != command_status)
+    {
+      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
+                << static_cast<void*>(build_data) << std::endl;
+      if (build_data)
+      {
+        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
+                  << ", build->cubin_size: " << build_data->cubin_size << std::endl;
+      }
+    };
+  }
+};
+
+using segmented_reduce_build_cache_t =
+  build_cache_t<std::string,
+                result_wrapper_t<cccl_device_segmented_reduce_build_result_t, segmented_reduce_build_cleaner>>;
+
+template <typename BuildCache = segmented_reduce_build_cache_t, typename KeyT = std::string>
 void segmented_reduce(
   cccl_iterator_t input,
   cccl_iterator_t output,
@@ -16,7 +43,9 @@ void segmented_reduce(
   cccl_iterator_t start_offsets,
   cccl_iterator_t end_offsets,
   cccl_op_t op,
-  cccl_value_t init)
+  cccl_value_t init,
+  std::optional<BuildCache>& cache,
+  const std::optional<KeyT>& lookup_key)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
@@ -30,22 +59,47 @@ void segmented_reduce(
   const char* ctk_path        = TEST_CTK_PATH;
 
   cccl_device_segmented_reduce_build_result_t build;
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_segmented_reduce_build(
-      &build,
-      input,
-      output,
-      start_offsets,
-      end_offsets,
-      op,
-      init,
-      cc_major,
-      cc_minor,
-      cub_path,
-      thrust_path,
-      libcudacxx_path,
-      ctk_path));
+  bool found = false;
+
+  const bool cache_and_key = bool(cache) && bool(lookup_key);
+
+  if (cache_and_key)
+  {
+    auto& cache_v     = cache.value();
+    const auto& key_v = lookup_key.value();
+    if (cache_v.contains(key_v))
+    {
+      build = cache_v.get(key_v).get();
+      found = true;
+    }
+  }
+
+  if (!found)
+  {
+    REQUIRE(
+      CUDA_SUCCESS
+      == cccl_device_segmented_reduce_build(
+        &build,
+        input,
+        output,
+        start_offsets,
+        end_offsets,
+        op,
+        init,
+        cc_major,
+        cc_minor,
+        cub_path,
+        thrust_path,
+        libcudacxx_path,
+        ctk_path));
+
+    if (cache_and_key)
+    {
+      auto& cache_v     = cache.value();
+      const auto& key_v = lookup_key.value();
+      cache_v.insert(key_v, build);
+    }
+  }
 
   const std::string sass = inspect_sass(build.cubin, build.cubin_size);
 
@@ -64,7 +118,16 @@ void segmented_reduce(
     == cccl_device_segmented_reduce(
       build, temp_storage.ptr, &temp_storage_bytes, input, output, num_segments, start_offsets, end_offsets, op, init, 0));
 
-  REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
+  if (cache_and_key)
+  {
+    // if cache and lookup_key were provided, the ownership of resources
+    // allocated for build is transferred to the cache
+  }
+  else
+  {
+    // release build data resources
+    REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
+  }
 }
 
 using SizeT = unsigned long long;
@@ -75,7 +138,7 @@ struct row_offset_iterator_state_t
   SizeT row_size;
 };
 
-// FIXME: can we cache compiled code for the same TesType and reuse it for different n_rows, n_cols
+struct SegmentedReduce_SumOverRows_Fixture_Tag;
 C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
               "[segmented_reduce]",
               std::int32_t,
@@ -148,7 +211,13 @@ extern "C" __device__ unsigned long long {0}(
   operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   value_t<TestType> init{0};
 
-  segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init);
+  auto& build_cache =
+    fixture<segmented_reduce_build_cache_t, SegmentedReduce_SumOverRows_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<TestType>();
+  std::optional<std::string> test_key{key_string};
+
+  segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
   auto host_input_it  = host_input.begin();
   auto host_output_it = host_output.begin();
@@ -172,6 +241,7 @@ struct pair
   }
 };
 
+struct SegmentedReduce_CustomTypes_Fixture_Tag;
 C2H_TEST("SegmentedReduce works with custom types", "[segmented_reduce]")
 {
   const std::size_t n_segments = 50;
@@ -220,7 +290,13 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
   pair v0        = pair{4, 2};
   value_t<pair> init{v0};
 
-  segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init);
+  auto& build_cache =
+    fixture<segmented_reduce_build_cache_t, SegmentedReduce_CustomTypes_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<pair>();
+  std::optional<std::string> test_key{key_string};
+
+  segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
   for (std::size_t i = 0; i < n_segments; ++i)
   {
@@ -249,6 +325,7 @@ struct input_transposed_iterator_state_t
   SizeT n_cols;
 };
 
+struct SegmentedReduce_InputIterators_Fixture_Tag;
 C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
 {
   // Sum over columns of matrix
@@ -359,7 +436,14 @@ extern "C" __device__ {1} {0}({2} *state) {{
   operation_t op = make_operation("op", get_reduce_op(get_type_info<ValueT>().type));
   value_t<ValueT> init{0};
 
-  segmented_reduce(input_transposed_iterator_it, output_ptr, n_cols, start_offset_it, end_offset_it, op, init);
+  auto& build_cache =
+    fixture<segmented_reduce_build_cache_t, SegmentedReduce_InputIterators_Fixture_Tag>::get_or_create().get_value();
+
+  std::string key_string = KeyBuilder::type_as_key<ValueT>();
+  std::optional<std::string> test_key{key_string};
+
+  segmented_reduce(
+    input_transposed_iterator_it, output_ptr, n_cols, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
   for (size_t col_id = 0; col_id < n_cols; ++col_id)
   {
