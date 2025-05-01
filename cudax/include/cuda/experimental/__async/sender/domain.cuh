@@ -1,6 +1,6 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_ACCESS_PROPERTY
-#define _CUDA_ACCESS_PROPERTY
+#ifndef __CUDAX_ASYNC_DETAIL_DOMAIN
+#define __CUDAX_ASYNC_DETAIL_DOMAIN
 
 #include <cuda/std/detail/__config>
 
@@ -21,6 +21,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/experimental/__async/sender/fwd.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
-#endif // _CUDA_ACCESS_PROPERTY
+#include <cuda/experimental/__async/sender/prologue.cuh>
+
+namespace cuda::experimental::__async
+{
+template <class _Tag>
+_CUDAX_API constexpr auto default_domain::__apply(_Tag) noexcept
+{
+  return _Tag::__apply();
+}
+} // namespace cuda::experimental::__async
+
+#include <cuda/experimental/__async/sender/epilogue.cuh>
+
+#endif // __CUDAX_ASYNC_DETAIL_DOMAIN

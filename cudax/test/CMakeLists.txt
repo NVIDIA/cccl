@@ -99,7 +99,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_buffer/access.cu
     containers/async_buffer/assign.cu
     containers/async_buffer/capacity.cu
-    containers/async_buffer/comparison.cu
     containers/async_buffer/constructor.cu
     containers/async_buffer/conversion.cu
     containers/async_buffer/copy.cu

@@ -644,8 +644,7 @@ struct DispatchRadixSort
       int histo_blocks_per_sm       = 1;
       auto histogram_kernel         = kernel_source.RadixSortHistogramKernel();
 
-      error = CubDebug(
-        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
+      error = CubDebug(launcher_factory.MaxSmOccupancy(histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
       if (cudaSuccess != error)
       {
         break;

@@ -24,7 +24,7 @@
 namespace __cccl_internal
 {
 
-#if _CCCL_HAS_CUDA_COMPILER() && (defined(__CUDACC__) || defined(_NVHPC_CUDA) || _CCCL_COMPILER(NVRTC))
+#if _CCCL_CUDA_COMPILATION()
 template <class _Tp>
 __host__ __device__ _Tp&& __cccl_declval(int);
 template <class _Tp>
