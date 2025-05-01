@@ -46,7 +46,7 @@ using namespace cuda::experimental::stf;
  * Epochs are useful for expressing barriers, task phases, or staged execution pipelines in
  * a way that naturally fits into asynchronous task graphs.
  */
-class epoch
+class epoch : public task_dep<void_interface, ::std::monostate, false>
 {
 public:
   /**
@@ -57,31 +57,21 @@ public:
    * @param ctx Reference to the task execution context.
    */
   epoch(context& ctx)
-      : ctx(ctx)
-      , dep(ctx.token().read())
+      : task_dep<void_interface, ::std::monostate, false>(ctx.token().read())
+      , ctx(ctx)
   {}
-
-  /**
-   * @brief Returns the current dependency token associated with this epoch.
-   *
-   * @return The current `task_dep` representing the epoch state.
-   */
-  auto& get()
-  {
-    return dep;
-  }
 
   /**
    * @brief Prefix increment operator.
    *
-   * Schedules a no-op task that updates the epoch dependency to a new task
-   * that depends on the previous one, effectively advancing the epoch.
+   * Advances the epoch. New tasks depending on this epoch will wait for the completion
+   * of existing tasks that depend on this epoch.
    *
    * @return Reference to the updated `epoch` object.
    */
   epoch& operator++()
   {
-    ctx.task(dep.as_mode(access_mode::rw))->*[](cudaStream_t, auto) {};
+    ctx.task(this->as_mode(access_mode::rw))->*[](cudaStream_t, auto) {};
     return *this;
   }
 
@@ -99,7 +89,6 @@ public:
 
 private:
   context& ctx; ///< Reference to the context that manages task tokens.
-  task_dep<void_interface, ::std::monostate> dep; ///< The internal task dependency token.
 };
 
 double X0(size_t i)
@@ -134,18 +123,18 @@ int main()
 
   auto e = epoch(ctx);
 
-  ctx.parallel_for(box(N), e.get())->*[alpha, X, Y] __device__(size_t i) {
+  ctx.parallel_for(box(N), e)->*[alpha, X, Y] __device__(size_t i) {
     Y[i] += alpha * X[i];
   };
 
-  ctx.parallel_for(box(N), e.get())->*[beta, X, Z] __device__(size_t i) {
+  ctx.parallel_for(box(N), e)->*[beta, X, Z] __device__(size_t i) {
     Z[i] += beta * X[i];
   };
 
   // ctx.task_fence();
   ++e;
 
-  ctx.parallel_for(box(N), e.get())->*[Y, Z] __device__(size_t i) {
+  ctx.parallel_for(box(N), e)->*[Y, Z] __device__(size_t i) {
     Z[i] += Y[i];
   };
 
