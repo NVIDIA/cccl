@@ -13,5 +13,8 @@ source "test_python_common.sh"
 list_environment
 
 # Install the wheel from the artifact location
+ls /wheelhouse
+ls ../
+ls ../../
 WHEEL_PATH="$(ls /wheelhouse/cuda_cccl-*.whl)[test]"
 run_tests_from_wheel "cuda_cccl" "$WHEEL_PATH"
