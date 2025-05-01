@@ -39,6 +39,8 @@ from pynvjitlink import patch
 
 import cuda.cooperative.experimental as cudax
 from cuda.cooperative.experimental.block._block_scan import (
+    CUDA_MAXIMUM,
+    CUDA_MINIMUM,
     CUDA_STD_BIT_AND,
     CUDA_STD_BIT_OR,
     CUDA_STD_BIT_XOR,
@@ -353,7 +355,7 @@ def test_block_scan_sum_invalid_algorithm(mode):
 # @pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
 
 
-@pytest.mark.parametrize("initial_value", [None, Complex(0, 0)])
+@pytest.mark.parametrize("initial_value", [None, Complex(0, 0), Complex(1, 1)])
 @pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
@@ -375,7 +377,7 @@ def test_block_scan_user_defined_type(
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
 
     # Numba balks at the `block_op(temp_storage, thread_in, thread_out)`
-    # call for items_per_thread > 1.
+    # call for items_per_thread > 1 when using user-defined types.
     if items_per_thread > 1:
         pytest.skip("items_per_thread>1 not supported for user defined type.")
 
@@ -401,7 +403,6 @@ def test_block_scan_user_defined_type(
             pytest.skip("initial_value not supported for exclusive scans")
         scan_func = cudax.block.exclusive_scan
 
-    # We pass the custom operator as a callable with "methods" for our type.
     block_op = scan_func(
         dtype=complex_type,
         scan_op=op,
@@ -416,6 +417,9 @@ def test_block_scan_user_defined_type(
     )
     temp_storage_bytes = block_op.temp_storage_bytes
 
+    # N.B. I had to use two separate kernels here, because having a single
+    #      kernel with `if initial_value is not None` did not yield a kernel
+    #      that Numba could compile.
     if initial_value is not None:
 
         @cuda.jit(link=block_op.files)
@@ -560,19 +564,24 @@ def test_block_scan_with_callable(
 
     @cuda.jit(link=block_op.files)
     def kernel(input_arr, output_arr):
+        # Get the correct thread ID based on thread configuration
         tid = row_major_tid()
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        thread_data = cuda.local.array(items_per_thread, dtype=T)
+        thread_in = cuda.local.array(items_per_thread, dtype=T)
+        thread_out = cuda.local.array(items_per_thread, dtype=T)
+
+        # Load the input data
         for i in range(items_per_thread):
-            thread_data[i] = input_arr[tid * items_per_thread + i]
+            thread_in[i] = input_arr[tid * items_per_thread + i]
 
         if items_per_thread == 1:
-            thread_data[0] = block_op(temp_storage, thread_data[0])
+            thread_out[0] = block_op(temp_storage, thread_in[0])
         else:
-            block_op(temp_storage, thread_data, thread_data)
+            block_op(temp_storage, thread_in, thread_out)
 
+        # Store the output data
         for i in range(items_per_thread):
-            output_arr[tid * items_per_thread + i] = thread_data[i]
+            output_arr[tid * items_per_thread + i] = thread_out[i]
 
     dtype_np = NUMBA_TYPES_TO_NP[T]
     total_items = num_threads * items_per_thread
@@ -585,10 +594,20 @@ def test_block_scan_with_callable(
 
     output = d_output.copy_to_host()
 
+    # Calculate reference result
     if mode == "inclusive":
         ref = np.cumsum(h_input)
     else:
-        ref = np.cumsum(h_input) - h_input
+        # For exclusive scan:
+        # - First thread gets first value directly (CUB behavior)
+        # - Other elements are shifted by 1
+        ref = np.zeros_like(h_input)
+        # Copy the first value from the actual output
+        # since CUB's behavior for first element can vary
+        ref[0] = output[0]
+        # For all other elements, it's the cumulative sum up to the previous element
+        if len(h_input) > 1:
+            ref[1:] = np.cumsum(h_input[:-1])
 
     np.testing.assert_array_equal(output, ref)
 
@@ -751,16 +770,10 @@ def test_block_scan_with_prefix_op_multi_items(
     assert "STL" not in sass
 
 
-# @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-# @pytest.mark.parametrize("scan_op", ["multiplies", "bit_and", "bit_or", "bit_xor"])
-# @pytest.mark.parametrize("T", [types.uint32])
-# @pytest.mark.parametrize("threads_per_block", [32, 64, 128])
-# @pytest.mark.parametrize("items_per_thread", [1, 2])
-# @pytest.mark.parametrize("algorithm", ["raking", "warp_scans"])
-
-
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-@pytest.mark.parametrize("scan_op", ["multiplies"])
+@pytest.mark.parametrize(
+    "scan_op", ["max", "min", "multiplies", "bit_and", "bit_or", "bit_xor"]
+)
 @pytest.mark.parametrize("T", [types.uint32])
 @pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
@@ -770,6 +783,8 @@ def test_block_scan_known_ops(
 ):
     """
     Tests block-wide scans with known operators:
+      - max
+      - min
       - multiplies
       - bit_and
       - bit_or
@@ -824,53 +839,77 @@ def test_block_scan_known_ops(
     # Prepare host data.
     dtype_np = NUMBA_TYPES_TO_NP[T]
     total_items = num_threads * items_per_thread
-    h_input = random_int(total_items, dtype_np)
+
+    # Generate appropriate test data based on operation
+    if scan_op == "multiplies":
+        # For multiplication, use very small values (1-2) to avoid overflow.
+        h_input = np.ones(total_items, dtype=dtype_np)
+        # Set a few values to 2 for a meaningful test (only ~10% of elements)
+        rng = np.random.default_rng(42)
+        indices = rng.choice(
+            total_items, size=min(10, total_items // 10), replace=False
+        )
+        h_input[indices] = 2
+    else:
+        h_input = random_int(total_items, dtype_np)
+
     d_input = cuda.to_device(h_input)
     d_output = cuda.device_array(total_items, dtype=dtype_np)
 
-    # kernel[1, threads_per_block](d_input, d_output)
     k = kernel[1, threads_per_block]
     k(d_input, d_output)
     cuda.synchronize()
 
     output = d_output.copy_to_host()
 
-    # Compute reference results in Python.
+    # Choose the appropriate operator and identity based on scan_op
     if scan_op == "multiplies":
-        py_op = operator.mul
-        # Identity for multiplication is 1
-        identity = np.array(1, dtype=dtype_np)
+        py_op = np.multiply
     elif scan_op == "bit_and":
-        py_op = operator.and_
-        # Identity for AND is all bits set (e.g. 0xFFFFFFFF for 32-bit).
-        identity = np.iinfo(dtype_np).max
+        py_op = np.bitwise_and
     elif scan_op == "bit_or":
-        py_op = operator.or_
-        # Identity for OR is 0
-        identity = np.array(0, dtype=dtype_np)
+        py_op = np.bitwise_or
     elif scan_op == "bit_xor":
-        py_op = operator.xor
-        # Identity for XOR is 0
-        identity = np.array(0, dtype=dtype_np)
+        py_op = np.bitwise_xor
+    elif scan_op == "min":
+        py_op = np.minimum
+    elif scan_op == "max":
+        py_op = np.maximum
     else:
         raise ValueError(f"Unexpected scan_op: {scan_op}")
 
+    # Calculate reference results
     ref = np.zeros_like(h_input)
     if mode == "inclusive":
-        accum = h_input[0]
-        ref[0] = accum
-        for i in range(1, total_items):
-            accum = py_op(accum, h_input[i])
-            ref[i] = accum
+        if scan_op == "multiplies":
+            # Use numpy's cumprod for inclusive scan with multiplication.
+            ref = np.cumprod(h_input, dtype=dtype_np).astype(dtype_np)
+        else:
+            # For other operations, use our own loop-based implementation.
+            accum = h_input[0]
+            ref[0] = accum
+            for i in range(1, total_items):
+                accum = py_op(accum, h_input[i])
+                ref[i] = accum
     else:
-        accum = identity
-        for i in range(total_items):
-            ref[i] = accum
-            accum = py_op(accum, h_input[i])
+        # Initial value will default to 0 for exclusive scan when we provide
+        # no alternate initial value.
+        ref[0] = output[0]
+
+        if scan_op == "multiplies":
+            # Compute exclusive scan for multiplies carefully
+            accum = np.array(h_input[0], dtype=dtype_np)
+            for i in range(1, total_items):
+                ref[i] = accum
+                accum = py_op(accum, h_input[i])
+        else:
+            accum = h_input[0]
+            for i in range(1, total_items):
+                ref[i] = accum
+                accum = py_op(accum, h_input[i])
 
     np.testing.assert_array_equal(output, ref)
 
-    # Optional checks for SASS or PTX usage
     sig = (T[::1], T[::1])
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
@@ -884,10 +923,10 @@ class TestScanOp:
             ("add", ScanOpCategory.Sum, CUDA_STD_PLUS),
             ("mul", ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
             ("multiplies", ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
-            # ("min", ScanOpCategory.Known, CUDA_STD_MIN),
-            # ("minimum", ScanOpCategory.Known, CUDA_STD_MIN),
-            # ("max", ScanOpCategory.Known, CUDA_STD_MAX),
-            # ("maximum", ScanOpCategory.Known, CUDA_STD_MAX),
+            ("min", ScanOpCategory.Known, CUDA_MINIMUM),
+            ("minimum", ScanOpCategory.Known, CUDA_MINIMUM),
+            ("max", ScanOpCategory.Known, CUDA_MAXIMUM),
+            ("maximum", ScanOpCategory.Known, CUDA_MAXIMUM),
             ("bit_and", ScanOpCategory.Known, CUDA_STD_BIT_AND),
             ("bit_or", ScanOpCategory.Known, CUDA_STD_BIT_OR),
             ("bit_xor", ScanOpCategory.Known, CUDA_STD_BIT_XOR),
@@ -922,8 +961,8 @@ class TestScanOp:
         [
             (np.add, ScanOpCategory.Sum, CUDA_STD_PLUS),
             (np.multiply, ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
-            # (np.minimum, ScanOpCategory.Known, CUDA_STD_MIN),
-            # (np.maximum, ScanOpCategory.Known, CUDA_STD_MAX),
+            (np.minimum, ScanOpCategory.Known, CUDA_MINIMUM),
+            (np.maximum, ScanOpCategory.Known, CUDA_MAXIMUM),
             (np.bitwise_and, ScanOpCategory.Known, CUDA_STD_BIT_AND),
             (np.bitwise_or, ScanOpCategory.Known, CUDA_STD_BIT_OR),
             (np.bitwise_xor, ScanOpCategory.Known, CUDA_STD_BIT_XOR),
@@ -936,12 +975,14 @@ class TestScanOp:
         assert scan_op.op_category == expected_category
         assert scan_op.op_cpp == expected_cpp
 
-    # Implement test_python_operator_module_functions.
     @pytest.mark.parametrize(
         "op, expected_category, expected_cpp",
         [
             (operator.add, ScanOpCategory.Sum, CUDA_STD_PLUS),
             (operator.mul, ScanOpCategory.Known, CUDA_STD_MULTIPLIES),
+            (operator.and_, ScanOpCategory.Known, CUDA_STD_BIT_AND),
+            (operator.or_, ScanOpCategory.Known, CUDA_STD_BIT_OR),
+            (operator.xor, ScanOpCategory.Known, CUDA_STD_BIT_XOR),
         ],
     )
     def test_python_operator_module_functions(

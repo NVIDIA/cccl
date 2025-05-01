@@ -823,7 +823,7 @@ class Algorithm:
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
-        print(src)
+        # print(src)
         _, lto_fn = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="lto")
         lto_irs.append(lto_fn)
         return lto_irs
