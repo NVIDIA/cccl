@@ -32,6 +32,9 @@ function run_tests {
 
 function run_tests_from_wheel {
   module=$1
+
+  pushd "../python/${module}" >/dev/null
+
   wheel_path=$2
   TEMP_VENV_DIR="/tmp/${module}_venv"
   rm -rf "${TEMP_VENV_DIR}"
