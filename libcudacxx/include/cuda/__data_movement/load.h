@@ -293,16 +293,16 @@ template <size_t _Np,
 template <typename _Tp,
           _MemoryAccess _Bp        = _MemoryAccess::_ReadWrite,
           _L1_ReuseEnum _Ep        = _L1_ReuseEnum::_Unchanged,
-          _L2_PrefetchEnum _Pp     = _L2_PrefetchEnum::_None,
-          typename _AccessProperty = access_property::global>
+          typename _AccessProperty = access_property::global,
+          _L2_PrefetchEnum _Pp     = _L2_PrefetchEnum::_None>
 [[nodiscard]] _CCCL_PURE _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp
 load(const _Tp* __ptr,
      __memory_access_t<_Bp> __memory_access = read_write,
      __l1_reuse_t<_Ep> __l1_reuse           = L1_unchanged_reuse,
-     __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none,
-     _AccessProperty __access_property      = access_property::global{}) noexcept
+     _AccessProperty __l2_hint              = access_property::global{},
+     __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none) noexcept
 {
-  return _CUDA_VDEV::__load_element(__ptr, __memory_access, __l1_reuse, __l2_hint_t{__access_property}, __l2_prefetch);
+  return _CUDA_VDEV::__load_element(__ptr, __memory_access, __l1_reuse, __l2_hint_t{__l2_hint}, __l2_prefetch);
 }
 
 template <typename _Tp,
@@ -325,18 +325,18 @@ template <size_t _Np,
           size_t _Align            = alignof(_Tp),
           _MemoryAccess _Bp        = _MemoryAccess::_ReadWrite,
           _L1_ReuseEnum _Ep        = _L1_ReuseEnum::_Unchanged,
-          _L2_PrefetchEnum _Pp     = _L2_PrefetchEnum::_None,
-          typename _AccessProperty = ::cuda::access_property::global>
+          typename _AccessProperty = ::cuda::access_property::global,
+          _L2_PrefetchEnum _Pp     = _L2_PrefetchEnum::_None>
 [[nodiscard]] _CCCL_PURE _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CUDA_VSTD::array<_Tp, _Np>
 load(const _Tp* __ptr,
      aligned_size_t<_Align> __align         = aligned_size_t<_Align>{alignof(_Tp)},
      __memory_access_t<_Bp> __memory_access = read_write,
      __l1_reuse_t<_Ep> __l1_reuse           = L1_unchanged_reuse,
-     __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none,
-     _AccessProperty __access_property      = ::cuda::access_property::global{}) noexcept
+     _AccessProperty __l2_hint              = ::cuda::access_property::global{},
+     __l2_prefetch_t<_Pp> __l2_prefetch     = L2_prefetch_none) noexcept
 {
   return _CUDA_VDEV::__load_array<_Np>(
-    __ptr, __align, __memory_access, __l1_reuse, __l2_hint_t{__access_property}, __l2_prefetch);
+    __ptr, __align, __memory_access, __l1_reuse, __l2_hint_t{__l2_hint}, __l2_prefetch);
 }
 
 template <size_t _Np,

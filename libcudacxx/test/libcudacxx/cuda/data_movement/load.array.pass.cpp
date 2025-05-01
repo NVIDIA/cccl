@@ -22,24 +22,35 @@ __device__ void update(cuda::std::array<T, N>& array)
   }
 }
 
-template <size_t Align, size_t N, typename T, typename Access, typename Eviction, typename Prefetch>
-__device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access, Eviction eviction, Prefetch prefetch)
+template <size_t Align, size_t N, typename T, typename Access, typename L1Reuse, typename L2Hint, typename Prefetch>
+__device__ void
+load_call(T* input, cuda::std::array<T, N>& value, Access access, L1Reuse l1_reuse, L2Hint l2_hint, Prefetch prefetch)
 {
   update(value);
   *reinterpret_cast<cuda::std::array<T, N>*>(input) = value;
   __threadfence();
-  auto result = cuda::device::load<N>(input, cuda::aligned_size_t<Align>{Align}, access, eviction, prefetch);
+  [[maybe_unused]] auto result =
+    cuda::device::load<N>(input, cuda::aligned_size_t<Align>{Align}, access, l1_reuse, l2_hint, prefetch);
   assert(result == value);
   __threadfence();
 }
 
-template <size_t Align, size_t N, typename T, typename Access, typename Eviction>
-__device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access, Eviction eviction)
+template <size_t Align, size_t N, typename T, typename Access, typename L1Reuse, typename L2Hint>
+__device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access, L1Reuse l1_reuse, L2Hint l2_hint)
 {
-  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_none);
-  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_64B);
-  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_128B);
-  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_256B);
+  load_call<Align>(input, value, access, l1_reuse, l2_hint, cuda::device::L2_prefetch_none);
+  load_call<Align>(input, value, access, l1_reuse, l2_hint, cuda::device::L2_prefetch_64B);
+  load_call<Align>(input, value, access, l1_reuse, l2_hint, cuda::device::L2_prefetch_128B);
+  load_call<Align>(input, value, access, l1_reuse, l2_hint, cuda::device::L2_prefetch_256B);
+}
+
+template <size_t Align, size_t N, typename T, typename L1Reuse, typename Access>
+__device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access, L1Reuse l1_reuse)
+{
+  load_call<Align>(input, value, access, l1_reuse, cuda::access_property::global{});
+  load_call<Align>(input, value, access, l1_reuse, cuda::access_property::normal{});
+  load_call<Align>(input, value, access, l1_reuse, cuda::access_property::streaming{});
+  load_call<Align>(input, value, access, l1_reuse, cuda::access_property::persisting{});
 }
 
 template <size_t Align, size_t N, typename T, typename Access>

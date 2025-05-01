@@ -194,10 +194,10 @@ template <typename _Tp, _L1_ReuseEnum _Ep = _L1_ReuseEnum::_Unchanged, typename 
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(_Tp __data,
       _Tp* __ptr,
-      __l1_reuse_t<_Ep> __l1_reuse         = L1_unchanged_reuse,
-      _AccessProperty __l2_access_property = access_property::global{}) noexcept
+      __l1_reuse_t<_Ep> __l1_reuse = L1_unchanged_reuse,
+      _AccessProperty __l2_hint    = access_property::global{}) noexcept
 {
-  _CUDA_VDEV::__store_element(__data, __ptr, __l1_reuse, __l2_hint_t{__l2_access_property});
+  _CUDA_VDEV::__store_element(__data, __ptr, __l1_reuse, __l2_hint_t{__l2_hint});
 }
 
 template <typename _Tp, typename _Prop, _L1_ReuseEnum _Ep = _L1_ReuseEnum::_Unchanged>
@@ -215,11 +215,11 @@ template <size_t _Np,
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
 store(const _CUDA_VSTD::array<_Tp, _Np>& __data,
       _Tp* __ptr,
-      aligned_size_t<_Align> __align       = aligned_size_t<_Align>{alignof(_Tp)},
-      __l1_reuse_t<_Ep> __l1_reuse         = L1_unchanged_reuse,
-      _AccessProperty __l2_access_property = access_property::global{}) noexcept
+      aligned_size_t<_Align> __align = aligned_size_t<_Align>{alignof(_Tp)},
+      __l1_reuse_t<_Ep> __l1_reuse   = L1_unchanged_reuse,
+      _AccessProperty __l2_hint      = access_property::global{}) noexcept
 {
-  _CUDA_VDEV::__store_array<_Np>(__data, __ptr, __align, __l1_reuse, __l2_hint_t{__l2_access_property});
+  _CUDA_VDEV::__store_array<_Np>(__data, __ptr, __align, __l1_reuse, __l2_hint_t{__l2_hint});
 }
 
 template <size_t _Np,
