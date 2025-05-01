@@ -371,6 +371,22 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
   }
 }
 
+template <typename Tuple, typename F>
+constexpr auto tuple_transform(Tuple&& t, F&& f)
+{
+  constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
+  return make_tuple_indexwise<n>([&](auto j) {
+    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    {
+      return f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+    }
+    else
+    {
+      return f(::std::get<j>(::std::forward<Tuple>(t)));
+    }
+  });
+}
+
 /**
  * @brief Iterates over the elements of a tuple, applying a given function object to each element.
  *

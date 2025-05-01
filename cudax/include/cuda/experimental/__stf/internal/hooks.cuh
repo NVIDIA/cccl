@@ -133,7 +133,7 @@ static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, const 
       auto dep_ld = dep.get_data();
       if (dep.get_access_mode() != access_mode::read && dep_ld.get_auto_dump())
       {
-        const auto ro_dep = dep.as_read_mode();
+        const auto ro_dep = dep.as_mode(access_mode::read);
 
         /* We either make sure the directory exists or lazily create it if
          * we need to add content when dumping data */
