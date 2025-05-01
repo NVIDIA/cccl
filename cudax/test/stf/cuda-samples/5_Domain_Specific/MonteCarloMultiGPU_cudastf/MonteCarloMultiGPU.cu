@@ -289,7 +289,7 @@ int main(int argc, char** argv)
   int gpuBase, gpuIndex;
   int i;
 
-  double delta, ref, sumDelta, sumRef, sumReserve;
+  double delta, sumReserve;
 
   // printf("MonteCarloMultiGPU\n");
   // printf("==================\n");
@@ -369,17 +369,17 @@ int main(int argc, char** argv)
     }
 
     // printf("main(): comparing Monte Carlo and Black-Scholes results...\n");
-    sumDelta   = 0;
-    sumRef     = 0;
+    // sumDelta   = 0;
+    // sumRef     = 0;
     sumReserve = 0;
 
     for (i = 0; i < OPT_N; i++)
     {
       BlackScholesCall(callValueBS[i], optionData[i]);
       delta = fabs(callValueBS[i] - callValueGPU[i].Expected);
-      ref   = callValueBS[i];
-      sumDelta += delta;
-      sumRef += fabs(ref);
+      // ref   = callValueBS[i];
+      // sumDelta += delta;
+      // sumRef += fabs(ref);
 
       if (delta > 1e-6)
       {
@@ -415,17 +415,17 @@ int main(int argc, char** argv)
     //    printf("Options per sec.: %f\n", OPT_N / (time * 0.001));
 
     // printf("main(): comparing Monte Carlo and Black-Scholes results...\n");
-    sumDelta   = 0;
-    sumRef     = 0;
+    // sumDelta   = 0;
+    // sumRef     = 0;
     sumReserve = 0;
 
     for (i = 0; i < OPT_N; i++)
     {
       BlackScholesCall(callValueBS[i], optionData[i]);
       delta = fabs(callValueBS[i] - callValueGPU[i].Expected);
-      ref   = callValueBS[i];
-      sumDelta += delta;
-      sumRef += fabs(ref);
+      // ref   = callValueBS[i];
+      // sumDelta += delta;
+      // sumRef += fabs(ref);
 
       if (delta > 1e-6)
       {
@@ -444,15 +444,15 @@ int main(int argc, char** argv)
   // printf("main(): running CPU MonteCarlo...\n");
   TOptionValue callValueCPU;
   sumDelta = 0;
-  sumRef   = 0;
+  // sumRef   = 0;
 
   for (i = 0; i < OPT_N; i++)
   {
     MonteCarloCPU(callValueCPU, optionData[i], NULL, PATH_N);
     delta = fabs(callValueCPU.Expected - callValueGPU[i].Expected);
-    ref   = callValueCPU.Expected;
-    sumDelta += delta;
-    sumRef += fabs(ref);
+    // ref   = callValueCPU.Expected;
+    // sumDelta += delta;
+    // sumRef += fabs(ref);
     // printf("Exp : %f | %f\t", callValueCPU.Expected, callValueGPU[i].Expected);
     // printf("Conf: %f | %f\n", callValueCPU.Confidence, callValueGPU[i].Confidence);
   }
