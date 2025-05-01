@@ -18,6 +18,7 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/launch.cuh>
 
@@ -144,7 +145,7 @@ struct add_kernel
 C2H_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
 {
   cudax::stream stream{};
-  cudax::env_t<cuda::mr::device_accessible> env{cudax::pinned_memory_resource{}, stream};
+  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
 
   const std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -153,10 +154,13 @@ C2H_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
 
   cudax::launch(stream, cudax::make_config(cudax::grid_dims<1>, cudax::block_dims<32>), add_kernel{}, a, b);
 
+  std::vector<int> host_result(a.size());
+  cudax::copy_bytes(stream, a, host_result);
+
   stream.sync();
 
   for (size_t i = 0; i < array.size(); ++i)
   {
-    REQUIRE(a.get_unsynchronized(i) == array[i] + 1);
+    REQUIRE(host_result[i] == array[i] + 1);
   }
 }
