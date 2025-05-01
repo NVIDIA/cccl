@@ -49,7 +49,7 @@ CUB_NAMESPACE_BEGIN
  * Integer Utils
  **********************************************************************************************************************/
 
-namespace internal
+namespace detail
 {
 
 template <typename Input>
@@ -97,9 +97,9 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(ReductionOp
   constexpr auto is_max = is_cuda_maximum_v<ReductionOp, T>;
   const auto nan        = is_max ? -numeric_limits<T>::quiet_NaN() : numeric_limits<T>::quiet_NaN();
   auto value1           = _CUDA_VSTD::isnan(value) ? nan : value;
-  auto value_int        = cub::internal::unsafe_bitcast<signed_t>(value1);
+  auto value_int        = cub::detail::unsafe_bitcast<signed_t>(value1);
   return static_cast<signed_t>(value_int < 0 ? lowest - value_int : value_int);
 }
 
-} // namespace internal
+} // namespace detail
 CUB_NAMESPACE_END

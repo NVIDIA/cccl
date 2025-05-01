@@ -192,7 +192,7 @@ struct BlockReduceRaking
   template <bool IS_FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
   {
-    using namespace cub::internal;
+    using namespace cub::detail;
     if (WARP_SYNCHRONOUS)
     {
       // Short-circuit directly to warp synchronous reduction (unguarded if active threads is a power-of-two)

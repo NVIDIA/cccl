@@ -317,7 +317,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = static_size_v<Input>;
-  auto array            = cub::internal::to_array<AccumT>(input);
+  auto array            = cub::detail::to_array<AccumT>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 2)
   {
@@ -334,7 +334,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 {
   constexpr auto length = static_size_v<Input>;
-  auto array            = cub::internal::to_array<AccumT>(input);
+  auto array            = cub::detail::to_array<AccumT>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = 1; i < length; i *= 3)
   {
@@ -398,7 +398,7 @@ inline constexpr bool enable_min_max_promotion_v =
 template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
-  using namespace cub::internal;
+  using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,
@@ -483,7 +483,7 @@ template <typename Input,
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
 {
-  using namespace cub::internal;
+  using namespace cub::detail;
   static_assert(is_fixed_size_random_access_range_v<Input>,
                 "Input must support the subscript operator[] and have a compile-time size");
   static_assert(has_binary_call_operator<ReductionOp, ValueT>::value,

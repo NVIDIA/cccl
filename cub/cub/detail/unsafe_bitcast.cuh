@@ -36,7 +36,7 @@
 #endif // no system header
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -53,5 +53,5 @@ template <typename Output, typename Input>
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 
-} // namespace internal
+} // namespace detail
 CUB_NAMESPACE_END

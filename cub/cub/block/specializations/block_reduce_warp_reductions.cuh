@@ -204,7 +204,7 @@ struct BlockReduceWarpReductions
   template <bool FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int num_valid)
   {
-    using namespace cub::internal;
+    using namespace cub::detail;
     ::cuda::std::plus<> reduction_op;
     int warp_offset    = (warp_id * LogicalWarpSize);
     int warp_num_valid = ((FULL_TILE && EvenWarpSize) || (warp_offset + LogicalWarpSize <= num_valid))
@@ -242,7 +242,7 @@ struct BlockReduceWarpReductions
     int warp_num_valid = ((FULL_TILE && EvenWarpSize) || (warp_offset + LogicalWarpSize <= num_valid))
                          ? LogicalWarpSize
                          : num_valid - warp_offset;
-    using namespace cub::internal;
+    using namespace cub::detail;
     // Warp reduction in every warp
     constexpr auto logical_mode =
       (EvenWarpSize && FULL_TILE && IsPowerOfTwo)

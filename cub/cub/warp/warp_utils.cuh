@@ -37,7 +37,7 @@
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 
 template <int LogicalWarpSize>
@@ -74,8 +74,8 @@ template <int LogicalWarpSize>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int
 logical_warp_base_id(_CUDA_VSTD::integral_constant<int, LogicalWarpSize> logical_warp_size = {})
 {
-  return cub::internal::logical_warp_id(logical_warp_size) * LogicalWarpSize;
+  return cub::detail::logical_warp_id(logical_warp_size) * LogicalWarpSize;
 }
 
-} // namespace internal
+} // namespace detail
 CUB_NAMESPACE_END

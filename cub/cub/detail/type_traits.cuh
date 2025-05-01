@@ -54,7 +54,7 @@
 #include <cuda/std/type_traits> // is_same_v
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 
 template <typename T, typename... TArgs>
@@ -191,6 +191,6 @@ using normalize_integer_t = _CUDA_VSTD::_If<
   int,
   _CUDA_VSTD::_If<_CUDA_VSTD::__cccl_is_unsigned_integer_v<T> && sizeof(T) <= sizeof(uint32_t), uint32_t, T>>;
 
-} // namespace internal
+} // namespace detail
 
 CUB_NAMESPACE_END

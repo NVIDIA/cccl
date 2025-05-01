@@ -40,7 +40,7 @@
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
 {
-  using namespace cub::internal;
+  using namespace cub::detail;
   int device_id                = 0;
   int compute_capability_major = 0;
   int compute_capability_minor = 0;

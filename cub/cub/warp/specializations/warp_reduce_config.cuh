@@ -46,7 +46,7 @@
  **********************************************************************************************************************/
 
 CUB_NAMESPACE_BEGIN
-namespace internal
+namespace detail
 {
 
 enum class ReduceLogicalMode
@@ -105,25 +105,24 @@ struct WarpReduceConfig
   int first_pos = 0;
 };
 
-} // namespace internal
+} // namespace detail
 
 /***********************************************************************************************************************
  * WarpReduce Configuration Interface
  **********************************************************************************************************************/
 
-inline constexpr auto single_reduction =
-  internal::reduce_logical_mode_t<internal::ReduceLogicalMode::SingleReduction>{};
+inline constexpr auto single_reduction = detail::reduce_logical_mode_t<detail::ReduceLogicalMode::SingleReduction>{};
 inline constexpr auto multiple_reductions =
-  internal::reduce_logical_mode_t<internal::ReduceLogicalMode::MultipleReductions>{};
+  detail::reduce_logical_mode_t<detail::ReduceLogicalMode::MultipleReductions>{};
 
-inline constexpr auto all_lanes_result  = internal::reduce_result_mode_t<internal::ReduceResultMode::AllLanes>{};
-inline constexpr auto first_lane_result = internal::reduce_result_mode_t<internal::ReduceResultMode::SingleLane>{};
+inline constexpr auto all_lanes_result  = detail::reduce_result_mode_t<detail::ReduceResultMode::AllLanes>{};
+inline constexpr auto first_lane_result = detail::reduce_result_mode_t<detail::ReduceResultMode::SingleLane>{};
 
 /***********************************************************************************************************************
  * WarpReduce Check Configuration
  **********************************************************************************************************************/
 
-namespace internal
+namespace detail
 {
 
 template <typename WarpReduceConfig>
@@ -131,7 +130,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
 {
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
   // Check logical_size
-  static_assert(logical_size > 0 && logical_size <= detail::warp_threads, "invalid logical warp size");
+  static_assert(logical_size > 0 && logical_size <= warp_threads, "invalid logical warp size");
   // Check logical mode
   if constexpr (logical_mode == multiple_reductions)
   {
@@ -146,13 +145,13 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
   }
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS) && defined(_CUB_ENABLE_MASK_ASSERTIONS)
   // Check last position
-  auto last_pos_limit = (is_segmented && logical_mode == multiple_reductions) ? detail::warp_threads : logical_size;
+  auto last_pos_limit = (is_segmented && logical_mode == multiple_reductions) ? warp_threads : logical_size;
   _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) <= last_pos_limit, "invalid last position");
   // Check which lanes are active
   uint32_t logical_mask = 0;
   if constexpr (!is_segmented)
   {
-    constexpr int num_logical_warps = (logical_mode == single_reduction) ? 1 : detail::warp_threads / logical_size;
+    constexpr int num_logical_warps = (logical_mode == single_reduction) ? 1 : warp_threads / logical_size;
     for (int i = 0; i < num_logical_warps; i++)
     {
       logical_mask |= ::cuda::bitmask(i * logical_size, valid_items.extent(0));
@@ -166,5 +165,5 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
 #endif
 }
 
-} // namespace internal
+} // namespace detail
 CUB_NAMESPACE_END

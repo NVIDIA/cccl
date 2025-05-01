@@ -59,7 +59,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModTy
   if constexpr (ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)
   {
     using extent_index_type   = typename ExtendType::index_type;
-    using index_type          = internal::implicit_prom_t<extent_index_type>;
+    using index_type          = implicit_prom_t<extent_index_type>;
     using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
     return static_cast<unsigned_index_type>(ext.static_extent(Rank));
   }
@@ -140,7 +140,7 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads)
 {
   using active_policy_t        = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type      = typename ExtendType::index_type;
-  using offset_t               = internal::implicit_prom_t<extent_index_type>;
+  using offset_t               = implicit_prom_t<extent_index_type>;
   constexpr auto block_threads = offset_t{active_policy_t::block_threads};
   constexpr auto stride        = offset_t{block_threads * active_policy_t::items_per_thread};
   auto stride1                 = (stride >= cub::detail::size(ext)) ? block_threads : stride;
@@ -162,7 +162,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
 {
   using active_policy_t   = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type = typename ExtendType::index_type;
-  using offset_t          = internal::implicit_prom_t<extent_index_type>;
+  using offset_t          = implicit_prom_t<extent_index_type>;
   auto block_threads      = offset_t{blockDim.x};
   auto stride             = static_cast<offset_t>(blockDim.x * active_policy_t::items_per_thread);
   auto stride1            = (stride >= cub::detail::size(ext)) ? block_threads : stride;
