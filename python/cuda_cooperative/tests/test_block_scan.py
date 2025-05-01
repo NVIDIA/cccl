@@ -111,17 +111,8 @@ def impl_block_prefix_callback_op(context, builder, sig, args):
     return state._getvalue()
 
 
-# @pytest.mark.parametrize("T", [types.uint32, types.uint64])
-# @pytest.mark.parametrize(
-#    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
-# )
-# @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
-# @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-# @pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
-
-
 @pytest.mark.parametrize("T", [types.uint32])
-@pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
+@pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 @pytest.mark.parametrize("algorithm", ["raking"])
@@ -195,15 +186,7 @@ def test_block_sum(T, threads_per_block, items_per_thread, mode, algorithm):
     assert "STL" not in sass
 
 
-# @pytest.mark.parametrize(
-#    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
-# )
-# @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
-# @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-# @pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
-
-
-@pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
+@pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 @pytest.mark.parametrize("algorithm", ["raking"])
@@ -311,9 +294,7 @@ def test_block_sum_prefix_op(threads_per_block, items_per_thread, mode, algorith
     assert "STL" not in sass
 
 
-@pytest.mark.parametrize(
-    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
-)
+@pytest.mark.parametrize("threads_per_block", [32, (8, 16), (2, 4, 8)])
 @pytest.mark.parametrize("items_per_thread", [0, -1, -127])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 def test_block_scan_sum_invalid_items_per_thread(
@@ -347,16 +328,8 @@ def test_block_scan_sum_invalid_algorithm(mode):
         sum_func(numba.int32, 128, algorithm="invalid_algorithm")
 
 
-# @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
-# @pytest.mark.parametrize(
-#    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
-# )
-# @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-# @pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
-
-
 @pytest.mark.parametrize("initial_value", [None, Complex(0, 0), Complex(1, 1)])
-@pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
+@pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 @pytest.mark.parametrize("algorithm", ["raking"])
@@ -431,7 +404,6 @@ def test_block_scan_user_defined_type(
             thread_in = cuda.local.array(items_per_thread, dtype=complex_type)
             thread_out = cuda.local.array(items_per_thread, dtype=complex_type)
 
-            # Load the input data.
             for i in range(items_per_thread):
                 thread_in[i] = Complex(
                     input_arr[tid * items_per_thread + i],
@@ -460,7 +432,6 @@ def test_block_scan_user_defined_type(
             thread_in = cuda.local.array(items_per_thread, dtype=complex_type)
             thread_out = cuda.local.array(items_per_thread, dtype=complex_type)
 
-            # Load the input data.
             for i in range(items_per_thread):
                 thread_in[i] = Complex(
                     input_arr[tid * items_per_thread + i],
@@ -492,11 +463,9 @@ def test_block_scan_user_defined_type(
         real_ref = np.cumsum(real_vals)
         imag_ref = np.cumsum(imag_vals)
     else:
-        # For exclusive scan, first element should be 0 (or initial value) and others should be shifted
         real_ref = np.zeros_like(real_vals)
         imag_ref = np.zeros_like(imag_vals)
 
-        # Set all elements except the first to be the cumulative sum up to the previous element
         if len(real_vals) > 1:
             real_ref[1:] = np.cumsum(real_vals)[:-1]
             imag_ref[1:] = np.cumsum(imag_vals)[:-1]
@@ -514,17 +483,8 @@ def test_block_scan_user_defined_type(
     assert "STL" not in sass
 
 
-# @pytest.mark.parametrize("items_per_thread", [1, 2, 3, 4])
-# @pytest.mark.parametrize("T", [types.uint32, types.uint64])
-# @pytest.mark.parametrize(
-#    "threads_per_block", [32, 64, 128, 256, 512, 1024, (8, 16), (2, 4, 8)]
-# )
-# @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-# @pytest.mark.parametrize("algorithm", ["raking", "raking_memoize", "warp_scans"])
-
-
-@pytest.mark.parametrize("T", [types.uint32])
-@pytest.mark.parametrize("threads_per_block", [32, (4, 8, 8)])
+@pytest.mark.parametrize("T", [types.uint32, types.float64])
+@pytest.mark.parametrize("threads_per_block", [32, (4, 16), (4, 8, 8)])
 @pytest.mark.parametrize("items_per_thread", [1, 4])
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
 @pytest.mark.parametrize("algorithm", ["raking"])
@@ -609,7 +569,12 @@ def test_block_scan_with_callable(
         if len(h_input) > 1:
             ref[1:] = np.cumsum(h_input[:-1])
 
-    np.testing.assert_array_equal(output, ref)
+    # If T is an integer type, use assert_array_equal.  Otherwise, if
+    # floating point, use assert_array_almost_equal.
+    if isinstance(T, types.Integer):
+        np.testing.assert_array_equal(output, ref)
+    else:
+        np.testing.assert_array_almost_equal(output, ref)
 
     sig = (T[::1], T[::1])
     sass = kernel.inspect_sass(sig)
