@@ -88,7 +88,7 @@ private:
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b
                      : __a <= __b;
-  };
+  }
 
 public:
   // Preconditions: If `I` does not model `bidirectional_iterator`, `n` is not negative.
