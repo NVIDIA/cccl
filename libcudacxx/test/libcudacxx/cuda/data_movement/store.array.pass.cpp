@@ -36,12 +36,12 @@ __device__ void store_call(cuda::std::array<T, N>& value, T* output, Eviction ev
 template <size_t Align, typename T, size_t N>
 __device__ void store_call(cuda::std::array<T, N>& value, T* output)
 {
-  store_call<Align>(value, output, cuda::device::eviction_none);
-  store_call<Align>(value, output, cuda::device::eviction_normal);
-  store_call<Align>(value, output, cuda::device::eviction_unchanged);
-  store_call<Align>(value, output, cuda::device::eviction_first);
-  store_call<Align>(value, output, cuda::device::eviction_last);
-  store_call<Align>(value, output, cuda::device::eviction_no_alloc);
+  store_call<Align>(value, output, cuda::device::L1_unchanged_reuse);
+  store_call<Align>(value, output, cuda::device::L1_normal_reuse);
+  store_call<Align>(value, output, cuda::device::L1_unchanged_reuse);
+  store_call<Align>(value, output, cuda::device::L1_low_reuse);
+  store_call<Align>(value, output, cuda::device::L1_high_reuse);
+  store_call<Align>(value, output, cuda::device::L1_no_reuse);
 }
 
 __device__ uint32_t pointer[256];

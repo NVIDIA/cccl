@@ -11,8 +11,8 @@ Defined in the header ``<cuda/data_movement>``.
     [[nodiscard]] __device__ inline
     T load(const T*                  ptr,
            /*memory_access_type*/    memory_access   = read_write,
-           /*eviction_policy_type*/  eviction_policy = eviction_none,
-           /*prefetch_L2_type*/      prefetch_L2     = prefetch_L2_none,
+           /*eviction_policy_type*/  eviction_policy = L1_unchanged_reuse,
+           /*prefetch_L2_type*/      prefetch_L2     = L2_prefetch_none,
            /*cuda::access_property*/ access_property = access_property::global{})
 
     template <size_t N, typename T, size_t Align>
@@ -20,24 +20,24 @@ Defined in the header ``<cuda/data_movement>``.
     cuda::std::array<T, N> load(const T*                    ptr,
                                 cuda::aligned_size_t<Align> align,
                                 /*memory_access_type*/      memory_access   = read_write,
-                                /*eviction_policy_type*/    eviction_policy = eviction_none,
-                                /*prefetch_L2_type*/        prefetch_L2     = prefetch_L2_none,
+                                /*eviction_policy_type*/    eviction_policy = L1_unchanged_reuse,
+                                /*prefetch_L2_type*/        prefetch_L2     = L2_prefetch_none,
                                 /*cuda::access_property*/   access_property = access_property::global{})
 
     template <typename T, typename Prop>
     [[nodiscard]] __device__ inline
     T load(cuda::annotated_ptr<T, Prop> ptr,
            /*memory_access_type*/       memory_access   = read_write,
-           /*eviction_policy_type*/     eviction_policy = eviction_none,
-           /*prefetch_L2_type*/         prefetch_L2     = prefetch_L2_none)
+           /*eviction_policy_type*/     eviction_policy = L1_unchanged_reuse,
+           /*prefetch_L2_type*/         prefetch_L2     = L2_prefetch_none)
 
     template <size_t N, typename T, typename Prop, size_t Align>
     [[nodiscard]] __device__ inline
     cuda::std::array<T, N> load(cuda::annotated_ptr<T, Prop> ptr,
                                 cuda::aligned_size_t<Align> align,
                                 /*memory_access_type*/       memory_access   = read_write,
-                                /*eviction_policy_type*/     eviction_policy = eviction_none,
-                                /*prefetch_L2_type*/         prefetch_L2     = prefetch_L2_none)
+                                /*eviction_policy_type*/     eviction_policy = L1_unchanged_reuse,
+                                /*prefetch_L2_type*/         prefetch_L2     = L2_prefetch_none)
 
 The function loads data from global memory and allows to specify memory access properties.
 
@@ -51,19 +51,19 @@ The function loads data from global memory and allows to specify memory access p
 
 - ``eviction_policy``: The eviction policy. Requires ``SM >= 70`` and ``sizeof(T) = {1, 2, 4, 8, 16}``. See `"Cache Eviction Priority Hints" <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#id150>`_
 
-    - ``eviction_none``: Do not specify the eviction policy (default).
-    - ``eviction_normal``: Normal eviction policy.
-    - ``eviction_unchanged``: Unchanged evict policy.
-    - ``eviction_first``: First evict policy (streaming).
-    - ``eviction_last``: Last evict policy (persisting).
-    - ``eviction_no_alloc``: No allocation evict policy (streaming).
+    - ``L1_unchanged_reuse``: Do not specify the eviction policy (default).
+    - ``L1_normal_reuse``: Normal eviction policy.
+    - ``L1_unchanged_reuse``: Unchanged evict policy.
+    - ``L1_low_reuse``: First evict policy (streaming).
+    - ``L1_high_reuse``: Last evict policy (persisting).
+    - ``L1_no_reuse``: No allocation evict policy (streaming).
 
 - ``prefetch``: The prefetch property. Requires ``SM >= 75`` and ``sizeof(T) = {1, 2, 4, 8, 16}``. See `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`_ and `ld.global.nc <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld-global-nc>`_ documentation
 
-    - ``prefetch_L2_none``: No prefetch (default).
-    - ``prefetch_L2_64B``: Prefetch 64 bytes.
-    - ``prefetch_L2_128B``: Prefetch 128 bytes.
-    - ``prefetch_L2_256B``: Prefetch 256 bytes. Requires ``SM >= 80``.
+    - ``L2_prefetch_none``: No prefetch (default).
+    - ``L2_prefetch_64B``: Prefetch 64 bytes.
+    - ``L2_prefetch_128B``: Prefetch 128 bytes.
+    - ``L2_prefetch_256B``: Prefetch 256 bytes. Requires ``SM >= 80``.
 
 - ``access_property``: The L2 cache residency control property. See `cuda::access_property <https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_access_properties/access_property.html>`_ documentation
 
@@ -101,8 +101,8 @@ Example
     __global__ void load_kernel() {
         auto ptr = &input;
         output   = cuda::device::load(ptr);
-        output   = cuda::device::load(ptr, read_only, eviction_first);
-        output   = cuda::device::load(ptr, read_write, eviction_last, prefetch_L2_256B);
+        output   = cuda::device::load(ptr, read_only, L1_low_reuse);
+        output   = cuda::device::load(ptr, read_write, L1_high_reuse, L2_prefetch_256B);
     }
 
     int main() {

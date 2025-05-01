@@ -36,21 +36,21 @@ __device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access
 template <size_t Align, size_t N, typename T, typename Access, typename Eviction>
 __device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access, Eviction eviction)
 {
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_none);
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_64B);
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_128B);
-  load_call<Align>(input, value, access, eviction, cuda::device::prefetch_L2_256B);
+  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_none);
+  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_64B);
+  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_128B);
+  load_call<Align>(input, value, access, eviction, cuda::device::L2_prefetch_256B);
 }
 
 template <size_t Align, size_t N, typename T, typename Access>
 __device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access)
 {
-  load_call<Align>(input, value, access, cuda::device::eviction_none);
-  load_call<Align>(input, value, access, cuda::device::eviction_normal);
-  load_call<Align>(input, value, access, cuda::device::eviction_unchanged);
-  load_call<Align>(input, value, access, cuda::device::eviction_first);
-  load_call<Align>(input, value, access, cuda::device::eviction_last);
-  load_call<Align>(input, value, access, cuda::device::eviction_no_alloc);
+  load_call<Align>(input, value, access, cuda::device::L1_unchanged_reuse);
+  load_call<Align>(input, value, access, cuda::device::L1_normal_reuse);
+  load_call<Align>(input, value, access, cuda::device::L1_unchanged_reuse);
+  load_call<Align>(input, value, access, cuda::device::L1_low_reuse);
+  load_call<Align>(input, value, access, cuda::device::L1_high_reuse);
+  load_call<Align>(input, value, access, cuda::device::L1_no_reuse);
 }
 
 template <size_t Align, size_t N, typename T>

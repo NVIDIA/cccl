@@ -41,12 +41,12 @@ __device__ void store_call(T& value, T* output, Prefetch prefetch)
 template <typename T>
 __device__ void store_call(T& value, T* output)
 {
-  store_call(value, output, cuda::device::eviction_none);
-  store_call(value, output, cuda::device::eviction_normal);
-  store_call(value, output, cuda::device::eviction_unchanged);
-  store_call(value, output, cuda::device::eviction_first);
-  store_call(value, output, cuda::device::eviction_last);
-  store_call(value, output, cuda::device::eviction_no_alloc);
+  store_call(value, output, cuda::device::L1_unchanged_reuse);
+  store_call(value, output, cuda::device::L1_normal_reuse);
+  store_call(value, output, cuda::device::L1_unchanged_reuse);
+  store_call(value, output, cuda::device::L1_low_reuse);
+  store_call(value, output, cuda::device::L1_high_reuse);
+  store_call(value, output, cuda::device::L1_no_reuse);
 }
 
 __device__ uint8_t pointer[256];

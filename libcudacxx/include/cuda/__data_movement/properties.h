@@ -21,7 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/annotated_ptr> // TODO: usae a more restrictive header after PR #4503
+#include <cuda/__annotated_ptr/access_property.h>
+#include <cuda/__annotated_ptr/associate_access_property.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstdint>
 
@@ -47,41 +48,39 @@ inline constexpr auto read_only  = __read_only_t{};
 inline constexpr auto read_write = __read_write_t{};
 
 /***********************************************************************************************************************
- * Eviction Policies
+ * L1 Eviction Policies
  **********************************************************************************************************************/
 
-enum class _EvictionPolicyEnum
+enum class _L1_ReuseEnum
 {
-  _None,
   _Normal,
   _Unchanged,
-  _First,
-  _Last,
-  _NoAllocation,
+  _Low,
+  _High,
+  _NoReuse,
 };
 
-template <_EvictionPolicyEnum _Value>
-using __eviction_policy_t = _CUDA_VSTD::integral_constant<_EvictionPolicyEnum, _Value>;
+template <_L1_ReuseEnum _Value>
+using __l1_reuse_t = _CUDA_VSTD::integral_constant<_L1_ReuseEnum, _Value>;
 
-using __eviction_none_t      = __eviction_policy_t<_EvictionPolicyEnum::_None>;
-using __eviction_normal_t    = __eviction_policy_t<_EvictionPolicyEnum::_Normal>;
-using __eviction_unchanged_t = __eviction_policy_t<_EvictionPolicyEnum::_Unchanged>;
-using __eviction_first_t     = __eviction_policy_t<_EvictionPolicyEnum::_First>;
-using __eviction_last_t      = __eviction_policy_t<_EvictionPolicyEnum::_Last>;
-using __eviction_no_alloc_t  = __eviction_policy_t<_EvictionPolicyEnum::_NoAllocation>;
+using __l1_normal_reuse_t    = __l1_reuse_t<_L1_ReuseEnum::_Normal>;
+using __l1_unchanged_reuse_t = __l1_reuse_t<_L1_ReuseEnum::_Unchanged>;
+using __l1_low_reuse_t       = __l1_reuse_t<_L1_ReuseEnum::_Low>;
+using __l1_high_reuse_t      = __l1_reuse_t<_L1_ReuseEnum::_High>;
+using __l1_no_reuse_t        = __l1_reuse_t<_L1_ReuseEnum::_NoReuse>;
 
-inline constexpr auto eviction_none      = __eviction_none_t{};
-inline constexpr auto eviction_normal    = __eviction_normal_t{};
-inline constexpr auto eviction_unchanged = __eviction_unchanged_t{};
-inline constexpr auto eviction_first     = __eviction_first_t{};
-inline constexpr auto eviction_last      = __eviction_last_t{};
-inline constexpr auto eviction_no_alloc  = __eviction_no_alloc_t{};
+// inline constexpr auto L1_unchanged_reuse      = __eviction_none_t{};
+inline constexpr auto L1_normal_reuse    = __l1_normal_reuse_t{};
+inline constexpr auto L1_unchanged_reuse = __l1_unchanged_reuse_t{};
+inline constexpr auto L1_low_reuse       = __l1_low_reuse_t{};
+inline constexpr auto L1_high_reuse      = __l1_high_reuse_t{};
+inline constexpr auto L1_no_reuse        = __l1_no_reuse_t{};
 
 /***********************************************************************************************************************
  * Prefetch Spatial Locality
  **********************************************************************************************************************/
 
-enum class _PrefetchL2Enum
+enum class _L2_PrefetchEnum
 {
   _None,
   _Bytes64,
@@ -89,32 +88,31 @@ enum class _PrefetchL2Enum
   _Bytes256,
 };
 
-template <_PrefetchL2Enum _Value>
-using __prefetch_L2_t = _CUDA_VSTD::integral_constant<_PrefetchL2Enum, _Value>;
+template <_L2_PrefetchEnum _Value>
+using __l2_prefetch_t = _CUDA_VSTD::integral_constant<_L2_PrefetchEnum, _Value>;
 
-using __prefetch_L2_none_t = __prefetch_L2_t<_PrefetchL2Enum::_None>;
-using __prefetch_L2_64B_t  = __prefetch_L2_t<_PrefetchL2Enum::_Bytes64>;
-using __prefetch_L2_128B_t = __prefetch_L2_t<_PrefetchL2Enum::_Bytes128>;
-using __prefetch_L2_256B_t = __prefetch_L2_t<_PrefetchL2Enum::_Bytes256>;
+using __L2_prefetch_none_t = __l2_prefetch_t<_L2_PrefetchEnum::_None>;
+using __L2_prefetch_64B_t  = __l2_prefetch_t<_L2_PrefetchEnum::_Bytes64>;
+using __L2_prefetch_128B_t = __l2_prefetch_t<_L2_PrefetchEnum::_Bytes128>;
+using __L2_prefetch_256B_t = __l2_prefetch_t<_L2_PrefetchEnum::_Bytes256>;
 
-inline constexpr auto prefetch_L2_none = __prefetch_L2_none_t{};
-inline constexpr auto prefetch_L2_64B  = __prefetch_L2_64B_t{};
-inline constexpr auto prefetch_L2_128B = __prefetch_L2_128B_t{};
-inline constexpr auto prefetch_L2_256B = __prefetch_L2_256B_t{};
+inline constexpr auto L2_prefetch_none = __L2_prefetch_none_t{};
+inline constexpr auto L2_prefetch_64B  = __L2_prefetch_64B_t{};
+inline constexpr auto L2_prefetch_128B = __L2_prefetch_128B_t{};
+inline constexpr auto L2_prefetch_256B = __L2_prefetch_256B_t{};
 
 /***********************************************************************************************************************
  * Cache Hint
  **********************************************************************************************************************/
 
 template <typename _AccessProperty>
-struct _CacheHint : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_same_v<_AccessProperty, access_property::global>>
+struct __l2_hint_t : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_same_v<_AccessProperty, access_property::global>>
 {
-  // TODO: remove comment after PR #4503
-  // static_assert(::cuda::__ap_detail::is_global_access_property<_AccessProperty>, "invalid access property");
+  static_assert(::cuda::__is_global_access_property_v<_AccessProperty>, "invalid access property");
 
   uint64_t __property;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE explicit _CacheHint(_AccessProperty __property)
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE explicit __l2_hint_t(_AccessProperty __property)
       : __property(static_cast<uint64_t>(access_property{__property}))
   {}
 };
