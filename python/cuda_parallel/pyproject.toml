@@ -77,3 +77,6 @@ extend = "../../pyproject.toml"
 
 [tool.ruff.lint.isort]
 known-first-party = ["cuda.parallel"]
+
+[tool.pytest.ini_options]
+markers = ["no_verify_sass: skip SASS verification check"]

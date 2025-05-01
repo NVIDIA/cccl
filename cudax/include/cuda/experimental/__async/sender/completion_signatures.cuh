@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,7 +34,9 @@
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
+#include <cuda/experimental/__detail/utility.cuh>
 
 #include <nv/target>
 
@@ -79,7 +81,7 @@ using __partition_completion_signatures_t _CCCL_NODEBUG_ALIAS = //
 struct __concat_completion_signatures_helper;
 
 template <class... _Sigs>
-using __concat_completion_signatures_t =
+using __concat_completion_signatures_t _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::__call_result_t<_CUDA_VSTD::__call_result_t<__concat_completion_signatures_helper, const _Sigs&...>>;
 
 struct __concat_completion_signatures_fn
@@ -107,7 +109,7 @@ struct _IN_COMPLETION_SIGNATURES_TRANSFORM_REDUCE;
 struct _FUNCTION_IS_NOT_CALLABLE_WITH_THESE_SIGNATURES;
 
 template <class _Fn, class _Sig>
-using __completion_if =
+using __completion_if _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::_If<_CUDA_VSTD::__is_callable_v<_Fn, _Sig*>, completion_signatures<_Sig>, completion_signatures<>>;
 
 template <class _Fn, class _Sig>
@@ -228,14 +230,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __compile_time_error // : ::std::exception
 {
   _CUDAX_DEFAULTED_API __compile_time_error() = default;
 
-  const char* what() const noexcept // override
+  auto what() const noexcept -> const char* // override
   {
     return _CCCL_TYPEID(_Derived*).name();
   }
 };
 
 template <class _Data, class... _What>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __sender_type_check_failure
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __sender_type_check_failure //
     : __compile_time_error<__sender_type_check_failure<_Data, _What...>>
 {
   _CUDAX_DEFAULTED_API __sender_type_check_failure() = default;
@@ -265,13 +267,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender
                                "environment before it can know how it will complete."}
   {}
 
-  _CCCL_HOST_DEVICE __dependent_sender_error operator+();
+  _CCCL_HOST_DEVICE auto operator+() -> __dependent_sender_error;
 
   template <class _Ty>
-  _CCCL_HOST_DEVICE __dependent_sender_error& operator,(_Ty&);
+  _CCCL_HOST_DEVICE auto operator,(_Ty&) -> __dependent_sender_error&;
 
   template <class... _What>
-  _CCCL_HOST_DEVICE _ERROR<_What...>&operator,(_ERROR<_What...>&);
+  _CCCL_HOST_DEVICE auto operator,(_ERROR<_What...>&) -> _ERROR<_What...>&;
 };
 
 // Below is the definition of the _CUDAX_LET_COMPLETIONS portability macro. It
@@ -422,7 +424,7 @@ _CUDAX_TRIVIAL_API _CUDAX_CONSTEVAL auto __get_completion_signatures_helper()
   }
   // else if constexpr (__is_awaitable<_Sndr, __env_promise<_Env>...>)
   // {
-  //   using Result = __await_result_t<_Sndr, __env_promise<_Env>...>;
+  //   using Result _CCCL_NODEBUG_ALIAS = __await_result_t<_Sndr, __env_promise<_Env>...>;
   //   return completion_signatures{__set_value_v<Result>, __set_error_v<>, __set_stopped_v};
   // }
   else if constexpr (sizeof...(_Env) == 0)
@@ -449,18 +451,18 @@ _CUDAX_TRIVIAL_API _CUDAX_CONSTEVAL auto get_completion_signatures()
   {
     // BUGBUG TODO:
     // Apply a lazy sender transform if one exists before computing the completion signatures:
-    // using _NewSndr = __transform_sender_result_t<__late_domain_of_t<_Sndr, _Env>, _Sndr, _Env>;
-    using _NewSndr = _Sndr;
+    // using _NewSndr _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__late_domain_of_t<_Sndr, _Env>, _Sndr, _Env>;
+    using _NewSndr _CCCL_NODEBUG_ALIAS = _Sndr;
     return __get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }
 
 // BUGBUG TODO
 template <class _Env>
-using _FWD_ENV_T = _Env;
+using _FWD_ENV_T _CCCL_NODEBUG_ALIAS = _Env;
 
 template <class _Parent, class _Child, class... _Env>
-constexpr auto get_child_completion_signatures()
+_CUDAX_TRIVIAL_API _CUDAX_CONSTEVAL auto get_child_completion_signatures()
 {
   return get_completion_signatures<__copy_cvref_t<_Parent, _Child>, _FWD_ENV_T<_Env>...>();
 }
@@ -470,7 +472,7 @@ constexpr auto get_child_completion_signatures()
 _CCCL_DIAG_POP
 
 template <class _Completions>
-using __partitioned_completions_of = typename _Completions::__partitioned;
+using __partitioned_completions_of _CCCL_NODEBUG_ALIAS = typename _Completions::__partitioned;
 
 constexpr int __invalid_disposition = -1;
 
@@ -495,25 +497,28 @@ template <>
 struct __gather_sigs_fn<set_value_t>
 {
   template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-  using __call = typename __partitioned_completions_of<_Sigs>::template __value_types<_Tuple, _Variant>;
+  using __call _CCCL_NODEBUG_ALIAS =
+    typename __partitioned_completions_of<_Sigs>::template __value_types<_Tuple, _Variant>;
 };
 
 template <>
 struct __gather_sigs_fn<set_error_t>
 {
   template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-  using __call = typename __partitioned_completions_of<_Sigs>::template __error_types<_Variant, _Tuple>;
+  using __call _CCCL_NODEBUG_ALIAS =
+    typename __partitioned_completions_of<_Sigs>::template __error_types<_Variant, _Tuple>;
 };
 
 template <>
 struct __gather_sigs_fn<set_stopped_t>
 {
   template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-  using __call = typename __partitioned_completions_of<_Sigs>::template __stopped_types<_Variant, _Tuple<>>;
+  using __call _CCCL_NODEBUG_ALIAS =
+    typename __partitioned_completions_of<_Sigs>::template __stopped_types<_Variant, _Tuple<>>;
 };
 
 template <class _Sigs, class _WantedTag, template <class...> class _TaggedTuple, template <class...> class _Variant>
-using __gather_completion_signatures =
+using __gather_completion_signatures _CCCL_NODEBUG_ALIAS =
   typename __gather_sigs_fn<_WantedTag>::template __call<_Sigs, _TaggedTuple, _Variant>;
 
 // __partitioned_completions is a cache of completion signatures for fast
@@ -524,28 +529,30 @@ template <class... _ValueTuples, class... _Errors, __stop_kind _StopKind>
 struct __partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>, _CUDA_VSTD::__type_list<_Errors...>, _StopKind>
 {
   template <template <class...> class _Tuple, template <class...> class _Variant>
-  using __value_types = _Variant<_CUDA_VSTD::__type_call1<_ValueTuples, _CUDA_VSTD::__type_quote<_Tuple>>...>;
+  using __value_types _CCCL_NODEBUG_ALIAS =
+    _Variant<_CUDA_VSTD::__type_call1<_ValueTuples, _CUDA_VSTD::__type_quote<_Tuple>>...>;
 
   template <template <class...> class _Variant, template <class> class _Transform = _CUDA_VSTD::__type_self_t>
-  using __error_types = _Variant<_Transform<_Errors>...>;
+  using __error_types _CCCL_NODEBUG_ALIAS = _Variant<_Transform<_Errors>...>;
 
   template <template <class...> class _Variant, class _Type = set_stopped_t()>
-  using __stopped_types = _CUDA_VSTD::__type_call1<
+  using __stopped_types _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call1<
     _CUDA_VSTD::_If<_StopKind == __stop_kind::__stoppable, _CUDA_VSTD::__type_list<_Type>, _CUDA_VSTD::__type_list<>>,
     _CUDA_VSTD::__type_quote<_Variant>>;
 
-  using __count_values  = _CUDA_VSTD::integral_constant<size_t, sizeof...(_ValueTuples)>;
-  using __count_errors  = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Errors)>;
-  using __count_stopped = _CUDA_VSTD::integral_constant<size_t, _StopKind == __stop_kind::__stoppable ? 1 : 0>;
+  using __count_values _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<size_t, sizeof...(_ValueTuples)>;
+  using __count_errors _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Errors)>;
+  using __count_stopped _CCCL_NODEBUG_ALIAS =
+    _CUDA_VSTD::integral_constant<size_t, _StopKind == __stop_kind::__stoppable ? 1 : 0>;
 
   struct __nothrow_decay_copyable
   {
     // These aliases are placed in a separate struct to avoid computing them
     // if they are not needed.
-    using __fn     = _CUDA_VSTD::__type_quote<__nothrow_decay_copyable_t>;
-    using __values = _CUDA_VSTD::_And<_CUDA_VSTD::__type_call1<_ValueTuples, __fn>...>;
-    using __errors = __nothrow_decay_copyable_t<_Errors...>;
-    using __all    = _CUDA_VSTD::_And<__values, __errors>;
+    using __fn _CCCL_NODEBUG_ALIAS     = _CUDA_VSTD::__type_quote<__nothrow_decay_copyable_t>;
+    using __values _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::_And<_CUDA_VSTD::__type_call1<_ValueTuples, __fn>...>;
+    using __errors _CCCL_NODEBUG_ALIAS = __nothrow_decay_copyable_t<_Errors...>;
+    using __all _CCCL_NODEBUG_ALIAS    = _CUDA_VSTD::_And<__values, __errors>;
   };
 };
 
@@ -587,7 +594,7 @@ _CUDAX_API auto __make_unique(_Sigs*...)
   -> _CUDA_VSTD::__type_apply<_CUDA_VSTD::__type_quote<completion_signatures>, _CUDA_VSTD::__make_type_set<_Sigs...>>;
 
 template <class... _Sigs>
-using __make_completion_signatures_t =
+using __make_completion_signatures_t _CCCL_NODEBUG_ALIAS =
   decltype(__async::__make_unique(__async::__normalize(static_cast<_Sigs*>(nullptr))...));
 
 template <class... _ExplicitSigs, class... _DeducedSigs>
@@ -627,8 +634,8 @@ struct __concat_completion_signatures_helper
     const completion_signatures<_Ds...>& = __empty_completion_signatures,
     const _Rest&...) const noexcept
   {
-    using _Tmp       = completion_signatures<_As..., _Bs..., _Cs..., _Ds...>;
-    using _SigsFnPtr = _CUDA_VSTD::__call_result_t<_Self, const _Tmp&, const _Rest&...>;
+    using _Tmp _CCCL_NODEBUG_ALIAS       = completion_signatures<_As..., _Bs..., _Cs..., _Ds...>;
+    using _SigsFnPtr _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Self, const _Tmp&, const _Rest&...>;
     return static_cast<_SigsFnPtr>(nullptr);
   }
 
@@ -657,20 +664,21 @@ struct __concat_completion_signatures_helper
 };
 
 template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
-using __value_types = typename _Sigs::__partitioned::template __value_types<_Tuple, _Variant>;
+using __value_types _CCCL_NODEBUG_ALIAS = typename _Sigs::__partitioned::template __value_types<_Tuple, _Variant>;
 
 template <class _Sndr, class _Env, template <class...> class _Tuple, template <class...> class _Variant>
-using value_types_of_t =
+using value_types_of_t _CCCL_NODEBUG_ALIAS =
   __value_types<completion_signatures_of_t<_Sndr, _Env>, _Tuple, __type_try_quote<_Variant>::template __call>;
 
 template <class _Sigs, template <class...> class _Variant>
-using __error_types = typename _Sigs::__partitioned::template __error_types<_Variant, _CUDA_VSTD::__type_self_t>;
+using __error_types _CCCL_NODEBUG_ALIAS =
+  typename _Sigs::__partitioned::template __error_types<_Variant, _CUDA_VSTD::__type_self_t>;
 
 template <class _Sndr, class _Env, template <class...> class _Variant>
-using error_types_of_t = __error_types<completion_signatures_of_t<_Sndr, _Env>, _Variant>;
+using error_types_of_t _CCCL_NODEBUG_ALIAS = __error_types<completion_signatures_of_t<_Sndr, _Env>, _Variant>;
 
 template <class _Sigs, template <class...> class _Variant, class _Type>
-using __stopped_types = typename _Sigs::__partitioned::template __stopped_types<_Variant, _Type>;
+using __stopped_types _CCCL_NODEBUG_ALIAS = typename _Sigs::__partitioned::template __stopped_types<_Variant, _Type>;
 
 template <class _Sigs>
 inline constexpr bool __sends_stopped = _Sigs::__partitioned::__count_stopped::value != 0;
@@ -709,7 +717,7 @@ struct __decay_transform
 };
 
 template <class _Fn, class... _As>
-using __meta_call_result_t = decltype(declval<_Fn>().template operator()<_As...>());
+using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().template operator()<_As...>());
 
 template <class _Ay, class... _As, class _Fn>
 _CUDAX_TRIVIAL_API constexpr auto __transform_expr(const _Fn& __fn) -> __meta_call_result_t<const _Fn&, _Ay, _As...>
@@ -724,7 +732,7 @@ _CUDAX_TRIVIAL_API constexpr auto __transform_expr(const _Fn& __fn) -> __call_re
 }
 
 template <class _Fn, class... _As>
-using __transform_expr_t = decltype(__async::__transform_expr<_As...>(declval<const _Fn&>()));
+using __transform_expr_t _CCCL_NODEBUG_ALIAS = decltype(__async::__transform_expr<_As...>(declval<const _Fn&>()));
 
 struct _IN_TRANSFORM_COMPLETION_SIGNATURES;
 struct _A_TRANSFORM_FUNCTION_RETURNED_A_TYPE_THAT_IS_NOT_A_COMPLETION_SIGNATURES_SPECIALIZATION;
@@ -736,7 +744,7 @@ _CUDAX_API constexpr auto __apply_transform(const _Fn& __fn)
 {
   if constexpr (__type_valid_v<__transform_expr_t, _Fn, _As...>)
   {
-    using __completions = __transform_expr_t<_Fn, _As...>;
+    using __completions _CCCL_NODEBUG_ALIAS = __transform_expr_t<_Fn, _As...>;
     if constexpr (__valid_completion_signatures<__completions> || __type_is_error<__completions>
                   || _CUDA_VSTD::is_base_of_v<dependent_sender_error, __completions>)
     {
@@ -869,9 +877,9 @@ catch (...)
 }
 #else
 template <class _Sndr>
-_CUDAX_API constexpr bool __is_dependent_sender() noexcept
+_CUDAX_API constexpr auto __is_dependent_sender() noexcept -> bool
 {
-  using _Completions = decltype(get_completion_signatures<_Sndr>());
+  using _Completions _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr>());
   return _CUDA_VSTD::is_base_of_v<dependent_sender_error, _Completions>;
 }
 #endif

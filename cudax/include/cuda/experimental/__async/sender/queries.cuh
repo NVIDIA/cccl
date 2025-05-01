@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,6 +27,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+#include <cuda/experimental/__async/sender/domain.cuh>
+#include <cuda/experimental/__async/sender/fwd.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/stop_token.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
@@ -40,7 +42,7 @@ template <class _Ty, class _Query>
 auto __query_result_() -> decltype(declval<_Ty>().query(_Query()));
 
 template <class _Ty, class _Query>
-using __query_result_t = decltype(__async::__query_result_<_Ty, _Query>());
+using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(__async::__query_result_<_Ty, _Query>());
 
 template <class _Ty, class _Query>
 inline constexpr bool __queryable_with = __type_valid_v<__query_result_t, _Ty, _Query>;
@@ -50,55 +52,64 @@ template <class _Ty, class _Query>
 inline constexpr bool __nothrow_queryable_with = true;
 #else
 template <class _Ty, class _Query>
-using __nothrow_queryable_with_ = _CUDA_VSTD::enable_if_t<noexcept(declval<_Ty>().query(_Query{}))>;
+using __nothrow_queryable_with_ _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::enable_if_t<noexcept(declval<_Ty>().query(_Query{}))>;
 
 template <class _Ty, class _Query>
 inline constexpr bool __nothrow_queryable_with = __type_valid_v<__nothrow_queryable_with_, _Ty, _Query>;
 #endif
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_allocator
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
   template <class _Env>
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.query(*this))
+  _CUDAX_API auto operator()(const _Env& __env) const noexcept
   {
-    static_assert(noexcept(__env.query(*this)));
-    return __env.query(*this);
-  }
-
-  _CUDAX_API auto operator()(__ignore) const noexcept -> _CUDA_VSTD::allocator<void>
-  {
-    return {};
+    if constexpr (__queryable_with<_Env, get_allocator_t>)
+    {
+      static_assert(noexcept(__env.query(*this)));
+      return __env.query(*this);
+    }
+    else
+    {
+      return _CUDA_VSTD::allocator<void>{};
+    }
   }
 } get_allocator{};
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_stop_token
 _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 {
   template <class _Env>
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.query(*this))
+  _CUDAX_API auto operator()(const _Env& __env) const noexcept
   {
-    static_assert(noexcept(__env.query(*this)));
-    return __env.query(*this);
-  }
-
-  _CUDAX_API auto operator()(__ignore) const noexcept -> never_stop_token
-  {
-    return {};
+    if constexpr (__queryable_with<_Env, get_stop_token_t>)
+    {
+      static_assert(noexcept(__env.query(*this)));
+      return __env.query(*this);
+    }
+    else
+    {
+      return never_stop_token{};
+    }
   }
 } get_stop_token{};
 
 template <class _Ty>
-using stop_token_of_t = __decay_t<__call_result_t<get_stop_token_t, _Ty>>;
+using stop_token_of_t _CCCL_NODEBUG_ALIAS = __decay_t<__call_result_t<get_stop_token_t, _Ty>>;
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_completion_scheduler
 template <class _Tag>
 struct get_completion_scheduler_t
 {
-  template <class _Env>
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.query(*this))
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_completion_scheduler_t>)
+  _CUDAX_API auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
+    static_assert(__is_scheduler<decltype(__env.query(*this))>);
     return __env.query(*this);
   }
 };
@@ -106,28 +117,43 @@ struct get_completion_scheduler_t
 template <class _Tag>
 _CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<_Tag> get_completion_scheduler{};
 
+template <class _Env, class _Tag = set_value_t>
+using __completion_scheduler_of_t _CCCL_NODEBUG_ALIAS =
+  __decay_t<__call_result_t<get_completion_scheduler_t<_Tag>, _Env>>;
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
-  template <class _Env>
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.query(*this))
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
+  _CUDAX_API auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
+    static_assert(__is_scheduler<decltype(__env.query(*this))>);
     return __env.query(*this);
   }
 } get_scheduler{};
 
+template <class _Env>
+using __scheduler_of_t _CCCL_NODEBUG_ALIAS = __decay_t<__call_result_t<get_scheduler_t, _Env>>;
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_delegation_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 {
-  template <class _Env>
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.query(*this))
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
+  _CUDAX_API auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
+    static_assert(__is_scheduler<decltype(__env.query(*this))>);
     return __env.query(*this);
   }
 } get_delegation_scheduler{};
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_forward_progress_guarantee
 enum class forward_progress_guarantee
 {
   concurrent,
@@ -138,31 +164,41 @@ enum class forward_progress_guarantee
 _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
   template <class _Sch>
-  _CUDAX_API auto operator()(const _Sch& __sch) const noexcept //
-    -> decltype(__async::__decay_copy(__sch.query(*this)))
+  _CUDAX_API auto operator()(const _Sch& __sch) const noexcept
   {
-    static_assert(noexcept(__sch.query(*this)));
-    return __sch.query(*this);
-  }
-
-  _CUDAX_API auto operator()(__ignore) const noexcept -> forward_progress_guarantee
-  {
-    return forward_progress_guarantee::weakly_parallel;
+    if constexpr (__queryable_with<_Sch, get_forward_progress_guarantee_t>)
+    {
+      static_assert(noexcept(__sch.query(*this)));
+      return __sch.query(*this);
+    }
+    else
+    {
+      return forward_progress_guarantee::weakly_parallel;
+    }
   }
 } get_forward_progress_guarantee{};
 
+//////////////////////////////////////////////////////////////////////////////////////////
+// get_domain
 _CCCL_GLOBAL_CONSTANT struct get_domain_t
 {
-  template <class _Sch>
-  _CUDAX_API constexpr auto operator()(const _Sch& __sch) const noexcept //
-    -> decltype(__async::__decay_copy(__sch.query(*this)))
+  template <class _Env>
+  _CUDAX_API constexpr auto operator()(const _Env& __env) const noexcept
   {
-    return {};
+    if constexpr (__queryable_with<_Env, get_domain_t>)
+    {
+      static_assert(noexcept(__env.query(*this)));
+      return __env.query(*this);
+    }
+    else
+    {
+      return default_domain{};
+    }
   }
 } get_domain{};
 
-template <class _Sch>
-using domain_of_t = __call_result_t<get_domain_t, _Sch>;
+template <class _Env>
+using __domain_of_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_domain_t, _Env>;
 
 } // namespace cuda::experimental::__async
 

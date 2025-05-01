@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -40,7 +40,7 @@ namespace cuda::experimental::__async
 {
 // Utilities:
 template <class _Ty>
-_CUDAX_API constexpr bool __is_constexpr_helper(_Ty)
+_CUDAX_API constexpr auto __is_constexpr_helper(_Ty) -> bool
 {
   return true;
 }
@@ -87,7 +87,7 @@ _CCCL_CONCEPT __is_awaitable = false; // TODO: Implement this concept.
 
 // Sender traits:
 template <class _Sndr>
-_CUDAX_API constexpr bool __enable_sender()
+_CUDAX_API constexpr auto __enable_sender() -> bool
 {
   if constexpr (__is_sender<_Sndr>)
   {

@@ -47,8 +47,8 @@ C2H_TEST("simple use of sequence executes both child operations", "[adaptors][se
   auto op = cudax_async::connect(std::move(sndr1), checked_value_receiver<>{});
   cudax_async::start(op);
 
-  CUDAX_CHECK(flag1);
-  CUDAX_CHECK(flag2);
+  CHECK(flag1);
+  CHECK(flag2);
 }
 
 } // namespace

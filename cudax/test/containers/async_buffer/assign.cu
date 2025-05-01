@@ -23,11 +23,15 @@
 #include "helper.h"
 #include "types.h"
 
-C2H_TEST("cudax::async_buffer assign",
-         "[container][async_buffer]",
-         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
-                        cuda::std::tuple<cuda::mr::device_accessible>,
-                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                                  cuda::std::tuple<cuda::mr::device_accessible>,
+                                  cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
+#endif
+
+C2H_TEST("cudax::async_buffer assign", "[container][async_buffer]", test_types)
 {
   using TestT    = c2h::get<0, TestType>;
   using Env      = typename extract_properties<TestT>::env;
@@ -37,68 +41,6 @@ C2H_TEST("cudax::async_buffer assign",
 
   cudax::stream stream{};
   Env env{Resource{}, stream};
-
-  SECTION("cudax::async_buffer::assign_range uncommon range")
-  {
-    { // cudax::async_buffer::assign_range with an empty input
-      Buffer buf{env};
-      buf.assign_range(uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // cudax::async_buffer::assign_range with an empty input, shrinking
-      Buffer buf{env, 10, T(-2)};
-      buf.assign_range(uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() != nullptr);
-    }
-
-    { // cudax::async_buffer::assign_range with a non-empty input, shrinking
-      Buffer buf{env, 10, T(-2)};
-      buf.assign_range(uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-
-    { // cudax::async_buffer::assign_range with a non-empty input, growing
-      Buffer buf{env, 4, T(-2)};
-      buf.assign_range(uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-  }
-
-  SECTION("cudax::async_buffer::assign_range sized uncommon range")
-  {
-    { // cudax::async_buffer::assign_range with an empty input
-      Buffer buf{env};
-      buf.assign_range(sized_uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // cudax::async_buffer::assign_range with an empty input, shrinking
-      Buffer buf{env, 10, T(-2)};
-      buf.assign_range(sized_uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() != nullptr);
-    }
-
-    { // cudax::async_buffer::assign_range with a non-empty input, shrinking
-      Buffer buf{env, 10, T(-2)};
-      buf.assign_range(sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-
-    { // cudax::async_buffer::assign_range with a non-empty input, growing
-      Buffer buf{env, 4, T(-2)};
-      buf.assign_range(sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-  }
 
   SECTION("cudax::async_buffer::assign_range random access range")
   {
@@ -223,6 +165,39 @@ C2H_TEST("cudax::async_buffer assign",
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
+  }
+  stream.sync();
+
+  SECTION("cudax::async_buffer::operator=(uninitialized_async_buffer&&)")
+  {
+    Buffer buf1{env};
+    Buffer buf2{env};
+    buf2.assign(cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+    CUDAX_CHECK(buf1.empty());
+    CUDAX_CHECK(!buf2.empty());
+    buf1 = std::move(buf2);
+    CUDAX_CHECK(buf2.empty());
+    CUDAX_CHECK(!buf1.empty());
+    CUDAX_CHECK(equal_range(buf1));
+
+    buf2 = Buffer{env, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+    CUDAX_CHECK(!buf2.empty());
+    CUDAX_CHECK(equal_range(buf2));
+  }
+
+  SECTION("cudax::async_buffer::destroy")
+  {
+    Buffer buf{env};
+    buf.assign(cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+    CUDAX_CHECK(!buf.empty());
+    CUDAX_CHECK(equal_range(buf));
+    buf.destroy();
+    CUDAX_CHECK(buf.empty());
+    CUDAX_CHECK(buf.data() == nullptr);
+
+    buf = Buffer{env, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+    CUDAX_CHECK(!buf.empty());
+    CUDAX_CHECK(equal_range(buf));
   }
 
 #if 0 // Implement exceptions

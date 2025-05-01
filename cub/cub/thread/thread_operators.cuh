@@ -368,7 +368,7 @@ struct ReduceByKeyOp
 //----------------------------------------------------------------------------------------------------------------------
 // Predefined operators
 
-namespace internal
+namespace detail
 {
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -519,7 +519,7 @@ inline constexpr T identity_v<::cuda::maximum<>, T> = _CUDA_VSTD::numeric_limits
 template <typename T>
 inline constexpr T identity_v<::cuda::maximum<T>, T> = _CUDA_VSTD::numeric_limits<T>::min();
 
-} // namespace internal
+} // namespace detail
 
 #endif // !_CCCL_DOXYGEN_INVOKED
 

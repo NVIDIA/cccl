@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,7 +35,7 @@
 namespace cuda::experimental::__async
 {
 #if defined(__CUDA_ARCH__)
-using __thread_id = int;
+using __thread_id _CCCL_NODEBUG_ALIAS = int;
 #elif _CCCL_COMPILER(NVHPC)
 struct __thread_id
 {
@@ -67,10 +67,10 @@ struct __thread_id
   }
 };
 #else
-using __thread_id = ::std::thread::id;
+using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
 #endif
 
-inline _CUDAX_API __thread_id __this_thread_id() noexcept
+inline _CUDAX_API auto __this_thread_id() noexcept -> __thread_id
 {
   _CUDAX_FOR_HOST_OR_DEVICE((return ::std::this_thread::get_id();),
                             (return static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);))

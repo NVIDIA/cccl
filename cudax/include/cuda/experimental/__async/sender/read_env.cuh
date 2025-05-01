@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -41,21 +41,19 @@ namespace cuda::experimental::__async
 struct _THE_CURRENT_ENVIRONMENT_LACKS_THIS_QUERY;
 struct _THE_CURRENT_ENVIRONMENT_RETURNED_VOID_FOR_THIS_QUERY;
 
-struct read_env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t
 {
 private:
   template <class _Rcvr, class _Query>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
   {
-    using operation_state_concept = operation_state_t;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
     _Rcvr __rcvr_;
 
     _CUDAX_API explicit __opstate_t(_Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
-
-    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CUDAX_API void start() noexcept
     {
@@ -97,7 +95,7 @@ public:
 template <class _Query>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
 {
-  using sender_concept = sender_t;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
   _CCCL_NO_UNIQUE_ADDRESS read_env_t __tag;
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 

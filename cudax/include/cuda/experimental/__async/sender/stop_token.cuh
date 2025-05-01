@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,18 +35,13 @@
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
-// warning #20012-D: __device__ annotation is ignored on a
-// function("inplace_stop_source") that is explicitly defaulted on its first
-// declaration
-_CCCL_NV_DIAG_SUPPRESS(20012)
-
 namespace cuda::experimental::__async
 {
 // [stoptoken.inplace], class inplace_stop_token
-class inplace_stop_token;
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_token;
 
 // [stopsource.inplace], class inplace_stop_source
-class inplace_stop_source;
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_source;
 
 // [stopcallback.inplace], class template inplace_stop_callback
 template <class _Callback>
@@ -62,7 +57,7 @@ struct __inplace_stop_callback_base
   }
 
 protected:
-  using __execute_fn_t = void(__inplace_stop_callback_base*) noexcept;
+  using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__inplace_stop_callback_base*) noexcept;
 
   _CUDAX_API explicit __inplace_stop_callback_base( //
     const inplace_stop_source* __source,            //
@@ -110,7 +105,7 @@ struct __check_type_alias_exists;
 } // namespace __stok
 
 // [stoptoken.never], class never_stop_token
-struct never_stop_token
+struct _CCCL_TYPE_VISIBILITY_DEFAULT never_stop_token
 {
 private:
   struct __callback_type
@@ -120,7 +115,7 @@ private:
 
 public:
   template <class>
-  using callback_type = __callback_type;
+  using callback_type _CCCL_NODEBUG_ALIAS = __callback_type;
 
   _CUDAX_API static constexpr auto stop_requested() noexcept -> bool
   {
@@ -132,22 +127,22 @@ public:
     return false;
   }
 
-  _CUDAX_API friend constexpr bool operator==(const never_stop_token&, const never_stop_token&) noexcept
+  _CUDAX_API friend constexpr auto operator==(const never_stop_token&, const never_stop_token&) noexcept -> bool
   {
     return true;
   }
 
-  _CUDAX_API friend constexpr bool operator!=(const never_stop_token&, const never_stop_token&) noexcept
+  _CUDAX_API friend constexpr auto operator!=(const never_stop_token&, const never_stop_token&) noexcept -> bool
   {
     return false;
   }
 };
 
 template <class _Callback>
-class inplace_stop_callback;
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_callback;
 
 // [stopsource.inplace], class inplace_stop_source
-class inplace_stop_source
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_source
 {
 public:
   _CUDAX_DEFAULTED_API inplace_stop_source() noexcept = default;
@@ -187,11 +182,11 @@ private:
 };
 
 // [stoptoken.inplace], class inplace_stop_token
-class inplace_stop_token
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_token
 {
 public:
   template <class _Fun>
-  using callback_type = inplace_stop_callback<_Fun>;
+  using callback_type _CCCL_NODEBUG_ALIAS = inplace_stop_callback<_Fun>;
 
   _CUDAX_API inplace_stop_token() noexcept
       : __source_(nullptr)
@@ -226,12 +221,12 @@ public:
     __async::__swap(__source_, __other.__source_);
   }
 
-  _CUDAX_API friend bool operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+  _CUDAX_API friend auto operator==(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
   {
     return __a.__source_ == __b.__source_;
   }
 
-  _CUDAX_API friend bool operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept
+  _CUDAX_API friend auto operator!=(const inplace_stop_token& __a, const inplace_stop_token& __b) noexcept -> bool
   {
     return __a.__source_ != __b.__source_;
   }
@@ -255,7 +250,7 @@ _CUDAX_API inline auto inplace_stop_source::get_token() const noexcept -> inplac
 
 // [stopcallback.inplace], class template inplace_stop_callback
 template <class _Fun>
-class inplace_stop_callback : __stok::__inplace_stop_callback_base
+class _CCCL_TYPE_VISIBILITY_DEFAULT inplace_stop_callback : __stok::__inplace_stop_callback_base
 {
 public:
   template <class _Fun2>
@@ -478,10 +473,8 @@ struct __on_stop_request
 };
 
 template <class _Token, class _Callback>
-using stop_callback_for_t = typename _Token::template callback_type<_Callback>;
+using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callback_type<_Callback>;
 } // namespace cuda::experimental::__async
-
-_CCCL_NV_DIAG_DEFAULT(20012)
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>
 

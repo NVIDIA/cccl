@@ -182,7 +182,7 @@ template <typename Input,
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace internal
+namespace detail
 {
 
 /***********************************************************************************************************************
@@ -355,7 +355,7 @@ template <typename AccumT, typename Input, typename ReductionOp>
 template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
-  using cub::internal::unsafe_bitcast;
+  using cub::detail::unsafe_bitcast;
   using T                       = _CUDA_VSTD::iter_value_t<Input>;
   using SimdReduceOp            = cub_operator_to_simd_operator_t<ReductionOp, T>;
   using SimdType                = simd_type_t<T>;
@@ -389,7 +389,7 @@ template <typename ReductionOp, typename T>
 inline constexpr bool enable_min_max_promotion_v =
   is_cuda_minimum_maximum_v<ReductionOp, T> && _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 2;
 
-} // namespace internal
+} // namespace detail
 
 /***********************************************************************************************************************
  * Reduction Interface/Dispatch (public)

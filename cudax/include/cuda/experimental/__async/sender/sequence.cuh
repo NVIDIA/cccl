@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,9 +25,11 @@
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/lazy.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
 
@@ -35,26 +37,27 @@
 
 namespace cuda::experimental::__async
 {
-struct __seq_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t
 {
+private:
   template <class _Rcvr, class _Sndr1, class _Sndr2>
   struct __args
   {
-    using __rcvr_t  = _Rcvr;
-    using __sndr1_t = _Sndr1;
-    using __sndr2_t = _Sndr2;
+    using __rcvr_t _CCCL_NODEBUG_ALIAS  = _Rcvr;
+    using __sndr1_t _CCCL_NODEBUG_ALIAS = _Sndr1;
+    using __sndr2_t _CCCL_NODEBUG_ALIAS = _Sndr2;
   };
 
   template <class _Zip>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate : private __immovable
   {
-    using operation_state_concept = operation_state_t;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
-    using __args_t  = __unzip<_Zip>; // __unzip<_Zip> is __args<_Rcvr, _Sndr1, _Sndr2>
-    using __rcvr_t  = typename __args_t::__rcvr_t;
-    using __sndr1_t = typename __args_t::__sndr1_t;
-    using __sndr2_t = typename __args_t::__sndr2_t;
-    using __env_t   = env_of_t<__rcvr_t>;
+    using __args_t _CCCL_NODEBUG_ALIAS  = __unzip<_Zip>; // __unzip<_Zip> is __args<_Rcvr, _Sndr1, _Sndr2>
+    using __rcvr_t _CCCL_NODEBUG_ALIAS  = typename __args_t::__rcvr_t;
+    using __sndr1_t _CCCL_NODEBUG_ALIAS = typename __args_t::__sndr1_t;
+    using __sndr2_t _CCCL_NODEBUG_ALIAS = typename __args_t::__sndr2_t;
+    using __env_t _CCCL_NODEBUG_ALIAS   = env_of_t<__rcvr_t>;
 
     _CUDAX_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
@@ -94,19 +97,31 @@ struct __seq_t
     connect_result_t<__sndr2_t, __rcvr_ref<__rcvr_t>> __opstate2_;
   };
 
+  struct __fn
+  {
+    template <class _Sndr1, class _Sndr2>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const;
+  };
+
+public:
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   template <class _Sndr1, class _Sndr2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr1, class _Sndr2>
-  _CUDAX_API auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
 };
 
 template <class _Sndr1, class _Sndr2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
 {
-  using sender_concept = sender_t;
-  using __sndr1_t      = _Sndr1;
-  using __sndr2_t      = _Sndr2;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+  using __sndr1_t _CCCL_NODEBUG_ALIAS      = _Sndr1;
+  using __sndr2_t _CCCL_NODEBUG_ALIAS      = _Sndr2;
 
   template <class _Self, class... _Env>
   _CUDAX_API static constexpr auto get_completion_signatures()
@@ -126,18 +141,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) &&
   {
-    using __opstate_t = __opstate<__zip<__args<_Rcvr, _Sndr1, _Sndr2>>>;
+    using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, _Sndr1, _Sndr2>>>;
     return __opstate_t{static_cast<_Sndr1&&>(__sndr1_), static_cast<_Sndr2>(__sndr2_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
   _CUDAX_API auto connect(_Rcvr __rcvr) const&
   {
-    using __opstate_t = __opstate<__zip<__args<_Rcvr, const _Sndr1&, const _Sndr2&>>>;
+    using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, const _Sndr1&, const _Sndr2&>>>;
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CUDAX_API env_of_t<_Sndr2> get_env() const noexcept
+  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr2>
   {
     return __async::get_env(__sndr2_);
   }
@@ -149,15 +164,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
 };
 
 template <class _Sndr1, class _Sndr2>
-_CUDAX_API auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>
+_CUDAX_TRIVIAL_API constexpr auto __seq_t::__fn::operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
-  return __sndr_t<_Sndr1, _Sndr2>{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
+  using __sndr_t _CCCL_NODEBUG_ALIAS = __seq_t::__sndr_t<_Sndr1, _Sndr2>;
+  return __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
+}
+
+template <class _Sndr1, class _Sndr2>
+_CUDAX_TRIVIAL_API constexpr auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
+{
+  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr1>;
+  return __dom_t::__apply(*this)(__ignore{}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2));
 }
 
 template <class _Sndr1, class _Sndr2>
 inline constexpr size_t structured_binding_size<__seq_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
 
-using sequence_t = __seq_t;
+using sequence_t _CCCL_NODEBUG_ALIAS = __seq_t;
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 } // namespace cuda::experimental::__async
 
