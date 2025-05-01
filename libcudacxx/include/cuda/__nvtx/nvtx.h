@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__NVTX_NVTX_H
-#define _CUDA__NVTX_NVTX_H
+#ifndef _CUDA___NVTX_NVTX_H
+#define _CUDA___NVTX_NVTX_H
 
 #include <cuda/std/detail/__config>
 
@@ -31,7 +31,7 @@
 // * C++14 is available for cuda::std::optional
 // * NVTX3 uses module as an identifier, which trips up NVHPC
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
-                      && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER == 2017)                           \
+                      && (!_CCCL_COMPILER(NVHPC))                                                    \
                       && !_CCCL_COMPILER(NVRTC)
 // Include our NVTX3 C++ wrapper if not available from the CTK
 // TODO(bgruber): replace by a check for the first CTK version shipping the header
@@ -97,4 +97,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 #  define _CCCL_NVTX_RANGE_SCOPE(name)
 #endif // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE)
 
-#endif // _CUDA__NVTX_NVTX_H
+#endif // _CUDA___NVTX_NVTX_H
