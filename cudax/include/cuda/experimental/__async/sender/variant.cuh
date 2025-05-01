@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -63,7 +63,7 @@ class __variant_impl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...>
   alignas(_Ts...) unsigned char __storage_[__max_size];
 
   template <size_t _Ny>
-  using __at = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
+  using __at _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
 
   _CUDAX_API void __destroy() noexcept
   {
@@ -96,8 +96,8 @@ public:
   }
 
   template <class _Ty, class... _As>
-  _CUDAX_API _Ty& __emplace(_As&&... __as) //
-    noexcept(__nothrow_constructible<_Ty, _As...>)
+  _CUDAX_API auto __emplace(_As&&... __as) //
+    noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
     constexpr size_t __new_index = __async::__index_of<_Ty, _Ts...>();
     static_assert(__new_index != __npos, "Type not in variant");
@@ -109,8 +109,8 @@ public:
   }
 
   template <size_t _Ny, class... _As>
-  _CUDAX_API __at<_Ny>& __emplace_at(_As&&... __as) //
-    noexcept(__nothrow_constructible<__at<_Ny>, _As...>)
+  _CUDAX_API auto __emplace_at(_As&&... __as) //
+    noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
 
@@ -124,8 +124,8 @@ public:
   _CUDAX_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
-    using __result_t             = __call_result_t<_Fn, _As...>;
-    constexpr size_t __new_index = __async::__index_of<__result_t, _Ts...>();
+    using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
+    constexpr size_t __new_index         = __async::__index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
     __destroy();
@@ -148,21 +148,21 @@ public:
   }
 
   template <size_t _Ny>
-  _CUDAX_API __at<_Ny>&& __get() && noexcept
+  _CUDAX_API auto __get() && noexcept -> __at<_Ny>&&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
   template <size_t _Ny>
-  _CUDAX_API __at<_Ny>& __get() & noexcept
+  _CUDAX_API auto __get() & noexcept -> __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<__at<_Ny>*>(__ptr());
   }
 
   template <size_t _Ny>
-  _CUDAX_API const __at<_Ny>& __get() const& noexcept
+  _CUDAX_API auto __get() const& noexcept -> const __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<const __at<_Ny>*>(__ptr());
@@ -173,19 +173,19 @@ public:
 template <class... _Ts>
 struct __mk_variant_
 {
-  using __indices_t = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
-  using type        = __variant_impl<__indices_t, _Ts...>;
+  using __indices_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
+  using type _CCCL_NODEBUG_ALIAS        = __variant_impl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __variant = typename __mk_variant_<_Ts...>::type;
+using __variant _CCCL_NODEBUG_ALIAS = typename __mk_variant_<_Ts...>::type;
 #else
 template <class... _Ts>
-using __variant = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+using __variant _CCCL_NODEBUG_ALIAS = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif
 
 template <class... _Ts>
-using __decayed_variant = __variant<__decay_t<_Ts>...>;
+using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__decay_t<_Ts>...>;
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/sender/epilogue.cuh>

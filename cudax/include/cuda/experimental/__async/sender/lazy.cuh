@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -43,14 +43,14 @@ struct __lazy
   _CUDAX_API ~__lazy() {}
 
   template <class... _Ts>
-  _CUDAX_API _Ty& construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>)
+  _CUDAX_API auto construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>) -> _Ty&
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_))) _Ty{static_cast<_Ts&&>(__ts)...};
     return *_CUDA_VSTD::launder(__value_);
   }
 
   template <class _Fn, class... _Ts>
-  _CUDAX_API _Ty& construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>)
+  _CUDAX_API auto construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>) -> _Ty&
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_)))
       _Ty{static_cast<_Fn&&>(__fn)(static_cast<_Ts&&>(__ts)...)};
@@ -78,7 +78,7 @@ struct __lazy_box_
 };
 
 template <size_t _Idx, class _Ty>
-using __lazy_box = __lazy_box_<_Idx, sizeof(_Ty), alignof(_Ty)>;
+using __lazy_box _CCCL_NODEBUG_ALIAS = __lazy_box_<_Idx, sizeof(_Ty), alignof(_Ty)>;
 } // namespace __detail
 
 template <class _Idx, class... _Ts>
@@ -99,7 +99,7 @@ template <size_t... _Idx, class... _Ts>
 struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts>...
 {
   template <size_t _Ny>
-  using __at = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
+  using __at _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
 
   _CUDAX_TRIVIAL_API __lazy_tupl() noexcept {}
 
@@ -118,9 +118,9 @@ struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__la
   _CUDAX_TRIVIAL_API __at<_Ny>& __emplace(_Us&&... __us) //
     noexcept(__nothrow_constructible<__at<_Ny>, _Us...>)
   {
-    using _Ty       = __at<_Ny>;
-    _Ty* __value_   = ::new (static_cast<void*>(__get<_Ny, _Ty>())) _Ty{static_cast<_Us&&>(__us)...};
-    __engaged_[_Ny] = true;
+    using _Ty _CCCL_NODEBUG_ALIAS = __at<_Ny>;
+    _Ty* __value_                 = ::new (static_cast<void*>(__get<_Ny, _Ty>())) _Ty{static_cast<_Us&&>(__us)...};
+    __engaged_[_Ny]               = true;
     return *_CUDA_VSTD::launder(__value_);
   }
 
@@ -140,19 +140,19 @@ struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__la
 template <class... _Ts>
 struct __mk_lazy_tuple_
 {
-  using __indices_t = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
-  using type        = __lazy_tupl<__indices_t, _Ts...>;
+  using __indices_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
+  using type _CCCL_NODEBUG_ALIAS        = __lazy_tupl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __lazy_tuple = typename __mk_lazy_tuple_<_Ts...>::type;
+using __lazy_tuple _CCCL_NODEBUG_ALIAS = typename __mk_lazy_tuple_<_Ts...>::type;
 #else
 template <class... _Ts>
-using __lazy_tuple = __lazy_tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+using __lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif
 
 template <class... _Ts>
-using __decayed_lazy_tuple = __lazy_tuple<__decay_t<_Ts>...>;
+using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<__decay_t<_Ts>...>;
 
 } // namespace cuda::experimental::__async
 

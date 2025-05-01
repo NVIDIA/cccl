@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -67,7 +67,7 @@ struct __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 };
 
 template <auto _Value>
-using __v = _CUDA_VSTD::integral_constant<decltype(_Value), _Value>;
+using __v _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<decltype(_Value), _Value>;
 
 // Unroll tuples up to some size
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_T, _Idx)
@@ -100,7 +100,7 @@ using __v = _CUDA_VSTD::integral_constant<decltype(_Value), _Value>;
     template <size_t _Idx>                                                                                            \
     _CUDAX_API static constexpr auto __get_mbr_ptr() noexcept                                                         \
     {                                                                                                                 \
-      using __result_t =                                                                                              \
+      using __result_t _CCCL_NODEBUG_ALIAS =                                                                          \
         _CUDA_VSTD::__type_index_c<_Idx, __v<&__tupl::__t0> _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>;      \
       return __result_t::value;                                                                                       \
     }                                                                                                                 \
@@ -134,25 +134,26 @@ __tupl(_Ts...) //
   ->__tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <class _Fn, class _Tupl, class... _Us>
-using __apply_result_t = decltype(declval<_Tupl>().__apply(declval<_Fn>(), declval<_Tupl>(), declval<_Us>()...));
+using __apply_result_t _CCCL_NODEBUG_ALIAS =
+  decltype(declval<_Tupl>().__apply(declval<_Fn>(), declval<_Tupl>(), declval<_Us>()...));
 
 #if _CCCL_COMPILER(MSVC)
 template <class... _Ts>
 struct __mk_tuple_
 {
-  using __indices_t = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
-  using type        = __tupl<__indices_t, _Ts...>;
+  using __indices_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
+  using type _CCCL_NODEBUG_ALIAS        = __tupl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __tuple = typename __mk_tuple_<_Ts...>::type;
+using __tuple _CCCL_NODEBUG_ALIAS = typename __mk_tuple_<_Ts...>::type;
 #else
 template <class... _Ts>
-using __tuple = __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
+using __tuple _CCCL_NODEBUG_ALIAS = __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif
 
 template <class... _Ts>
-using __decayed_tuple = __tuple<__decay_t<_Ts>...>;
+using __decayed_tuple _CCCL_NODEBUG_ALIAS = __tuple<__decay_t<_Ts>...>;
 
 // A very simple pair type
 template <class _First, class _Second>

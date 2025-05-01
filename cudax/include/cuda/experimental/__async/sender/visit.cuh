@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -50,7 +50,7 @@ extern __sender_type_cannot_be_used_to_initialize_a_structured_binding<_Arity> _
   [[maybe_unused]]                                                                                              \
   _CCCL_GLOBAL_CONSTANT auto __unpack<2 + _Arity> =                                                             \
     [](auto& __visitor, auto&& __sndr, auto& __context) -> decltype(auto) {                                     \
-    using _Sndr                                                      = decltype(__sndr);                        \
+    using _Sndr _CCCL_NODEBUG_ALIAS                                  = decltype(__sndr);                        \
     auto&& [__tag, __data _CCCL_PP_REPEAT(_Arity, _CCCL_BIND_CHILD)] = static_cast<_Sndr&&>(__sndr);            \
     return __visitor(__context, __tag, _CCCL_FWD_LIKE(_Sndr, __data) _CCCL_PP_REPEAT(_Arity, _CCCL_FWD_CHILD)); \
   }
@@ -70,7 +70,7 @@ _CCCL_UNPACK_SENDER(7);
 
 [[maybe_unused]]
 _CCCL_GLOBAL_CONSTANT auto visit = [](auto& __visitor, auto&& sndr, auto& __context) -> decltype(auto) {
-  using _Sndr = __decay_t<decltype(sndr)>;
+  using _Sndr _CCCL_NODEBUG_ALIAS = __decay_t<decltype(sndr)>;
   return __unpack<structured_binding_size<_Sndr>>(__visitor, static_cast<decltype(sndr)&&>(sndr), __context);
 };
 

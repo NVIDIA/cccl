@@ -114,7 +114,7 @@ public:
     cuda_safe_call(cudaSetDevice(current_dev));
 
     initialized_peer_accesses = true;
-  };
+  }
 
   // Naive solution
   int get_ith_closest_node(int node, int ith)

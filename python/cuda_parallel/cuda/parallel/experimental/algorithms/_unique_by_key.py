@@ -87,13 +87,8 @@ class _UniqueByKey:
         self.d_out_items_cccl = cccl.to_cccl_iter(d_out_items)
         self.d_out_num_selected_cccl = cccl.to_cccl_iter(d_out_num_selected)
 
-        if isinstance(d_in_keys, IteratorBase):
-            value_type = d_in_keys.value_type
-        else:
-            value_type = numba.from_dtype(protocols.get_dtype(d_in_keys))
-
-        sig = (value_type, value_type)
-        self.op_wrapper = cccl.to_cccl_op(op, sig)
+        value_type = cccl.get_value_type(d_in_keys)
+        self.op_wrapper = cccl.to_cccl_op(op, numba.types.uint8(value_type, value_type))
 
         self.build_result = call_build(
             _bindings.DeviceUniqueByKeyBuildResult,

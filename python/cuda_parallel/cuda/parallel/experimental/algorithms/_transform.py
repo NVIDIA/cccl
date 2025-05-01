@@ -11,6 +11,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import set_cccl_iterator_state
 from .._utils import protocols
 from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
+from ..numba_utils import get_inferred_return_type
 from ..typing import DeviceArrayLike
 
 
@@ -33,9 +34,8 @@ class _UnaryTransform:
         in_value_type = cccl.get_value_type(d_in)
         out_value_type = cccl.get_value_type(d_out)
         if not out_value_type.is_internal:
-            sig = (in_value_type,)
-        else:
-            sig = out_value_type(in_value_type)
+            out_value_type = get_inferred_return_type(op, (in_value_type,))
+        sig = out_value_type(in_value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig=sig)
         self.build_result = cccl.call_build(
             _bindings.DeviceUnaryTransform,
@@ -88,11 +88,11 @@ class _BinaryTransform:
         in1_value_type = cccl.get_value_type(d_in1)
         in2_value_type = cccl.get_value_type(d_in2)
         out_value_type = cccl.get_value_type(d_out)
-
         if not out_value_type.is_internal:
-            sig = (in1_value_type, in2_value_type)
-        else:
-            sig = out_value_type(in1_value_type, in2_value_type)
+            out_value_type = get_inferred_return_type(
+                op, (in1_value_type, in2_value_type)
+            )
+        sig = out_value_type(in1_value_type, in2_value_type)
         self.op_wrapper = cccl.to_cccl_op(op, sig=sig)
         self.build_result = cccl.call_build(
             _bindings.DeviceBinaryTransform,

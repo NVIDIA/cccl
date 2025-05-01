@@ -159,10 +159,6 @@ struct __dev_attr<::cudaDevAttrCooperativeLaunch> //
     : __dev_attr_impl<::cudaDevAttrCooperativeLaunch, bool>
 {};
 template <>
-struct __dev_attr<::cudaDevAttrCooperativeMultiDeviceLaunch> //
-    : __dev_attr_impl<::cudaDevAttrCooperativeMultiDeviceLaunch, bool>
-{};
-template <>
 struct __dev_attr<::cudaDevAttrCanFlushRemoteWrites> //
     : __dev_attr_impl<::cudaDevAttrCanFlushRemoteWrites, bool>
 {};
@@ -606,11 +602,6 @@ struct __device_attrs
   // cudaLaunchCooperativeKernel, and false otherwise
   using cooperative_launch_t = detail::__dev_attr<::cudaDevAttrCooperativeLaunch>;
   static constexpr cooperative_launch_t cooperative_launch{};
-
-  // true if the device supports launching cooperative kernels via
-  // cudaLaunchCooperativeKernelMultiDevice, and false otherwise
-  using cooperative_multi_device_launch_t = detail::__dev_attr<::cudaDevAttrCooperativeMultiDeviceLaunch>;
-  static constexpr cooperative_multi_device_launch_t cooperative_multi_device_launch{};
 
   // true if the device supports flushing of outstanding remote writes, and
   // false otherwise

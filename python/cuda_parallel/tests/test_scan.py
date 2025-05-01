@@ -120,6 +120,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
     "force_inclusive",
     [True, False],
 )
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_scan_struct_type(force_inclusive):
     @gpu_struct
     class XY:

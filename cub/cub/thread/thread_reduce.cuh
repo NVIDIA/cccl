@@ -181,7 +181,7 @@ template <typename Input,
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace internal
+namespace detail
 {
 
 /***********************************************************************************************************************
@@ -366,7 +366,7 @@ template <typename Output, typename Input>
 template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
-  using cub::internal::unsafe_bitcast;
+  using cub::detail::unsafe_bitcast;
   using T                       = _CUDA_VSTD::iter_value_t<Input>;
   using SimdReduceOp            = cub_operator_to_simd_operator_t<ReductionOp, T>;
   using SimdType                = simd_type_t<T>;
@@ -400,7 +400,7 @@ template <typename ReductionOp, typename T>
 inline constexpr bool enable_min_max_promotion_v =
   is_cuda_std_min_max_v<ReductionOp, T> && _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 2;
 
-} // namespace internal
+} // namespace detail
 
 /***********************************************************************************************************************
  * Reduction Interface/Dispatch (public)
@@ -418,7 +418,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     return static_cast<AccumT>(input[0]);
   }
   using cub::detail::is_one_of_v;
-  using namespace cub::internal;
+  using namespace cub::detail;
   using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
   if constexpr ((!is_cuda_std_operator_v<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
