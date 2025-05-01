@@ -29,11 +29,16 @@ jobs:
       image: cruizba/ubuntu-dind:jammy-26.1.3 # See workflow-run-job-linux for details
       env:
         NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
+    outputs:
+      producer_id: ${{ steps.set_id.outputs.id }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Set producer ID output
+        id: set_id
+        run: echo "id=${{ fromJSON(inputs.producers)[0].id }}" >> $GITHUB_OUTPUT
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
@@ -73,3 +78,4 @@ jobs:
           runner:  ${{ matrix.runner }}
           cuda:    ${{ matrix.cuda }}
           host:    ${{ matrix.host }}
+          producer_id : ${{ needs.producer.outputs.producer_id }}

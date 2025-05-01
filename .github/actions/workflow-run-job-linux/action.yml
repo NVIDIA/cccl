@@ -38,6 +38,9 @@ inputs:
   host:
     description: "The host compiler to use when selecting a devcontainer."
     required: true
+  producer_id:
+    description: "The producer job's ID, if downloading a wheelhouse from a producer."
+    required: false
 
 runs:
   using: "composite"
@@ -66,7 +69,7 @@ runs:
     - name: Download wheelhouse artifact if it exists
       uses: actions/download-artifact@v4
       with:
-        name: wheelhouse-${{inputs.id}}
+        name: wheelhouse-${{ inputs.producer_id || inputs.id }}
         path: wheelhouse/
       continue-on-error: true
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
