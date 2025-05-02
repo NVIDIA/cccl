@@ -97,7 +97,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 namespace detail
 {
 template <class _Env, class _Query>
-auto __query_result_() -> decltype(declval<_Env>().query(_Query()));
+_CCCL_API auto __query_result_() -> decltype(declval<_Env>().query(_Query()));
 
 #if _CCCL_HAS_EXCEPTIONS()
 template <class _Env, class _Query>
