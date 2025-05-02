@@ -102,7 +102,11 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
 #  undef _LIBCUDACXX_POP_TIME_MACRO
 #endif // _LIBCUDACXX_POP_TIME_MACRO
 {
+#if _CCCL_CUDA_COMPILER(NVHPC)
+  return ::time(__v);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return _CUDA_VSTD::__cccl_time_impl_device(__v);))
+#endif // !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
 // timespec_get
@@ -131,9 +135,13 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
 #  undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 #endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 {
+#if _CCCL_CUDA_COMPILER(NVHPC)
+  return ::timespec_get(__ts, __base);
+#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
                     (return _CUDA_VSTD::__cccl_timespec_get_impl_device(__ts, __base);))
+#endif // !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
