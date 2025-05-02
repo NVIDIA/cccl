@@ -124,7 +124,7 @@ class ScanOpCategory(Enum):
 
     Callable = "Callable"
     """
-    Represents a user-defined callable operator.
+    Represents a user-defined callable operator (e.g. a Python function).
     """
 
 
@@ -203,7 +203,8 @@ class ScanOp:
 
         """
         if isinstance(op, ScanOp):
-            # If op is already a ScanOp instance, just return it.
+            # If op is already a ScanOp instance, just prime this instance
+            # with its values and return.
             self.op = op.op
             self.op_category = op.op_category
             self.op_cpp = op.op_cpp
@@ -224,9 +225,8 @@ class ScanOp:
             else:
                 raise ValueError(f"Unsupported scan operator: {op}")
 
-        # Handle NumPy functions or other callables
+        # Handle NumPy functions or other callables.
         elif callable(op):
-            # Check if it's a known function in our KNOWN_OPS dictionary
             if op in self.SUM_OPS:
                 self.op_category = ScanOpCategory.Sum
                 self.op_cpp = CUDA_STD_PLUS
