@@ -1,17 +1,21 @@
 /*
- *  Copyright (c) 2020-2022, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Licensed under the Apache License v2.0 with LLVM Exceptions.
+ * See https://nvidia.github.io/NVTX/LICENSE.txt for license information.
  */
 
 /* Temporary helper #defines, #undef'ed at end of header */
@@ -266,7 +270,7 @@
  * - `unique_range` objects can be destroyed in any order whereas `scoped_range` objects must be
  *    destroyed in exact reverse creation order
  * - `unique_range` can start and end on different threads
- * - `unique_range` is moveable
+ * - `unique_range` is movable
  * - `unique_range` objects can be constructed as heap objects
  *
  * There is extra overhead associated with `unique_range` constructs and therefore use of
@@ -522,8 +526,8 @@
  * nvtx3::event_attributes attr1{"message", nvtx3::category{2}};
  * my_scoped_range r1{attr1};
  *
- * // Alternatively, pass arguments of `event_attributes` ctor directly to
- * // `my_scoped_range`
+ * // Alternatively, pass arguments of `event_attributes` constructor directly
+ * // to `my_scoped_range`
  * my_scoped_range r2{"message", nvtx3::category{2}};
  *
  * // construct on first use a registered string
@@ -561,8 +565,30 @@
 
 /* Temporary helper #defines, removed with #undef at end of header */
 
+/* Some compilers do not correctly support SFINAE, which is used in this API
+ * to detect common usage errors and provide clearer error messages (by using
+ * static_assert) than the compiler would produce otherwise.  These compilers
+ * will generate errors while compiling this file such as:
+ *
+ *  error: 'name' is not a member of 'nvtx3::v1::domain::global'
+ *
+ * The following compiler versions are known to have this problem, and so are
+ * set by default to disable the SFINAE-based checks:
+ *
+ * - All MSVC versions prior to VS2017 Update 7 (15.7)
+ * - GCC 8.1-8.3 (the problem was fixed in GCC 8.4)
+ *
+ * If you find your compiler hits this problem, you can work around it by
+ * defining NVTX3_USE_CHECKED_OVERLOADS_FOR_GET to 0 before including this
+ * header, or you can add a check for your compiler version to this #if.
+ * Also, please report the issue on the NVTX GitHub page.
+ */
 #if !defined(NVTX3_USE_CHECKED_OVERLOADS_FOR_GET)
-#  define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 1
+#  if defined(_MSC_VER) && _MSC_VER < 1914 || defined(__GNUC__) && __GNUC__ == 8 && __GNUC_MINOR__ < 4
+#    define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 0
+#  else
+#    define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET 1
+#  endif
 #  define NVTX3_USE_CHECKED_OVERLOADS_FOR_GET_DEFINED_HERE
 #endif
 
@@ -591,6 +617,26 @@
  * in C++11 compilation.  It is used here on constructors that initialize their
  * member unions.
  */
+#if __cpp_constexpr >= 201304L
+#  define NVTX3_CONSTEXPR_IF_CPP14 constexpr
+#else
+#  define NVTX3_CONSTEXPR_IF_CPP14
+#endif
+
+// Macro wrappers for C++ attributes
+#if !defined(__has_cpp_attribute)
+#  define __has_cpp_attribute(x) 0
+#endif
+#if __has_cpp_attribute(maybe_unused)
+#  define NVTX3_MAYBE_UNUSED [[maybe_unused]]
+#else
+#  define NVTX3_MAYBE_UNUSED
+#endif
+#if __has_cpp_attribute(nodiscard)
+#  define NVTX3_NO_DISCARD [[nodiscard]]
+#else
+#  define NVTX3_NO_DISCARD
+#endif
 
 /* Use a macro for static asserts, which defaults to static_assert, but that
  * testing tools can replace with a logging function.  For example:
@@ -598,7 +644,7 @@
  *   do { if (!(c)) printf("static_assert would fail: %s\n", m); } while (0)
  */
 #if !defined(NVTX3_STATIC_ASSERT)
-#  define NVTX3_STATIC_ASSERT(condition, message) static_assert(condition, message);
+#  define NVTX3_STATIC_ASSERT(condition, message) static_assert(condition, message)
 #  define NVTX3_STATIC_ASSERT_DEFINED_HERE
 #endif
 
@@ -613,7 +659,7 @@
 #  include <type_traits>
 #  include <utility>
 
-#  include <nvtx3/nvToolsExt.h> // NOTE(bgruber): "nvtx3/" prefix added and switched to angle brackets
+#  include <nvtx3/nvToolsExt.h>
 
 namespace nvtx3
 {
@@ -653,8 +699,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
   {};
   template <typename T>
   struct is_c_string<T,
-                     std::enable_if_t<std::is_convertible_v<T, char const*> || std::is_convertible_v<T, wchar_t const*>>>
-      : std::true_type
+                     typename std::enable_if<std::is_convertible<T, char const*>::value
+                                             || std::is_convertible<T, wchar_t const*>::value>::type> : std::true_type
   {};
 
   template <typename T>
@@ -754,7 +800,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * `domain::get` for the convenience of the "construct on first use" idiom
      * when using domains with their own use of the NVTX C API.
      *
-     * This function is threadsafe as of C++11. If two or more threads call
+     * This function is thread-safe as of C++11. If two or more threads call
      * `domain::get<D>` concurrently, exactly one of them is guaranteed
      * to construct the `domain` object and the other(s) will receive a
      * reference to the object after it is fully constructed.
@@ -782,8 +828,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * name the `domain` object.
      * @return Reference to the `domain` corresponding to the type `D`.
      */
-    template <typename D = global, std::enable_if_t<detail::is_c_string<decltype(D::name)>::value, int> = 0>
-    static domain const& get() noexcept
+    template <typename D = global, typename std::enable_if<detail::is_c_string<decltype(D::name)>::value, int>::type = 0>
+    NVTX3_NO_DISCARD static domain const& get() noexcept
     {
       static domain const d(D::name);
       return d;
@@ -794,8 +840,9 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * `D` has a `name` member that is not directly convertible to either
      * `char const*` or `wchar_t const*`.
      */
-    template <typename D = global, std::enable_if_t<!detail::is_c_string<decltype(D::name)>::value, int> = 0>
-    static domain const& get() noexcept
+    template <typename D                                                                         = global,
+              typename std::enable_if<!detail::is_c_string<decltype(D::name)>::value, int>::type = 0>
+    NVTX3_NO_DISCARD static domain const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<D>::value,
                           "Type used to identify an NVTX domain must contain a static constexpr member "
@@ -809,8 +856,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `domain::get` to provide a clear compile error when
      * `D` does not have a `name` member.
      */
-    template <typename D = global, std::enable_if_t<!detail::has_name<D>::value, int> = 0>
-    static domain const& get() noexcept
+    template <typename D = global, typename std::enable_if<!detail::has_name<D>::value, int>::type = 0>
+    NVTX3_NO_DISCARD static domain const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<D>::value,
                           "Type used to identify an NVTX domain must contain a static constexpr member "
@@ -820,7 +867,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
     }
 #  else
     template <typename D = global>
-    static domain const& get() noexcept
+    NVTX3_NO_DISCARD static domain const& get() noexcept
     {
       static domain const d(D::name);
       return d;
@@ -895,7 +942,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * "global" NVTX domain.
      *
      */
-    domain() noexcept {}
+    constexpr domain() noexcept {}
 
     /**
      * @brief Intentionally avoid calling nvtxDomainDestroy on the `domain` object.
@@ -931,7 +978,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    *
    */
   template <>
-  inline domain const& domain::get<domain::global>() noexcept
+  NVTX3_NO_DISCARD inline domain const& domain::get<domain::global>() noexcept
   {
     static domain const d{};
     return d;
@@ -997,7 +1044,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 
   /**
    * @brief Represents a custom color that can be associated with an NVTX event
-   * via it's `event_attributes`.
+   * via its `event_attributes`.
    *
    * Specifying colors for NVTX events is a convenient way to visually
    * differentiate among different events in a visualization tool such as Nsight
@@ -1035,7 +1082,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Construct a `color` using the alpha, red, green, blue components
      * in `argb`.
      *
-     * @param argb The alpha, red, green, blue components of the desired `color`
+     * @param argb_ The alpha, red, green, blue components of the desired `color`
      */
     constexpr color(argb argb_) noexcept
         : color{from_bytes_msb_to_lsb(argb_.alpha, argb_.red, argb_.green, argb_.blue)}
@@ -1047,7 +1094,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * Uses maximum value for the alpha channel (opacity) of the `color`.
      *
-     * @param rgb The red, green, blue components of the desired `color`
+     * @param rgb_ The red, green, blue components of the desired `color`
      */
     constexpr color(rgb rgb_) noexcept
         : color{from_bytes_msb_to_lsb(0xFF, rgb_.red, rgb_.green, rgb_.blue)}
@@ -1244,8 +1291,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      */
     template <
       typename C,
-      std::enable_if_t<detail::is_c_string<decltype(C::name)>::value && detail::is_uint32<decltype(C::id)>::value, int> =
-        0>
+      typename std::enable_if<detail::is_c_string<decltype(C::name)>::value && detail::is_uint32<decltype(C::id)>::value,
+                              int>::type = 0>
     static named_category_in const& get() noexcept
     {
       static named_category_in const cat(C::id, C::name);
@@ -1258,11 +1305,11 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * required types.  `name` must be directly convertible to `char const*` or
      * `wchar_t const*`, and `id` must be `uint32_t`.
      */
-    template <
-      typename C,
-      std::enable_if_t<!detail::is_c_string<decltype(C::name)>::value || !detail::is_uint32<decltype(C::id)>::value,
-                       int> = 0>
-    static named_category_in const& get() noexcept
+    template <typename C,
+              typename std::enable_if<!detail::is_c_string<decltype(C::name)>::value
+                                        || !detail::is_uint32<decltype(C::id)>::value,
+                                      int>::type = 0>
+    NVTX3_NO_DISCARD static named_category_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::is_c_string<decltype(C::name)>::value,
                           "Type used to name an NVTX category must contain a static constexpr member "
@@ -1279,8 +1326,9 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `named_category_in::get` to provide a clear compile error
      * when `C` does not have the required `name` and `id` members.
      */
-    template <typename C, std::enable_if_t<!detail::has_name<C>::value || !detail::has_id<C>::value, int> = 0>
-    static named_category_in const& get() noexcept
+    template <typename C,
+              typename std::enable_if<!detail::has_name<C>::value || !detail::has_id<C>::value, int>::type = 0>
+    NVTX3_NO_DISCARD static named_category_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::has_name<C>::value,
                           "Type used to name an NVTX category must contain a static constexpr member "
@@ -1293,7 +1341,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
     }
 #  else
     template <typename C>
-    static named_category_in const& get() noexcept
+    NVTX3_NO_DISCARD static named_category_in const& get() noexcept
     {
       static named_category_in const cat(C::id, C::name);
       return cat;
@@ -1326,7 +1374,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
       (void) id;
       (void) name;
 #  endif
-    };
+    }
 
     /**
      * @brief Construct a `named_category_in` with the specified `id` and `name`.
@@ -1347,7 +1395,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
       (void) id;
       (void) name;
 #  endif
-    };
+    }
   };
 
   /**
@@ -1440,8 +1488,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * registered string's contents.
      * @return Reference to a `registered_string_in` associated with the type `M`.
      */
-    template <typename M, std::enable_if_t<detail::is_c_string<decltype(M::message)>::value, int> = 0>
-    static registered_string_in const& get() noexcept
+    template <typename M, typename std::enable_if<detail::is_c_string<decltype(M::message)>::value, int>::type = 0>
+    NVTX3_NO_DISCARD static registered_string_in const& get() noexcept
     {
       static registered_string_in const regstr(M::message);
       return regstr;
@@ -1452,8 +1500,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * when `M` has a `message` member that is not directly convertible to either
      * `char const*` or `wchar_t const*`.
      */
-    template <typename M, std::enable_if_t<!detail::is_c_string<decltype(M::message)>::value, int> = 0>
-    static registered_string_in const& get() noexcept
+    template <typename M, typename std::enable_if<!detail::is_c_string<decltype(M::message)>::value, int>::type = 0>
+    NVTX3_NO_DISCARD static registered_string_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<M>::value,
                           "Type used to register an NVTX string must contain a static constexpr member "
@@ -1467,8 +1515,8 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @brief Overload of `registered_string_in::get` to provide a clear compile error when
      * `M` does not have a `message` member.
      */
-    template <typename M, std::enable_if_t<!detail::has_message<M>::value, int> = 0>
-    static registered_string_in const& get() noexcept
+    template <typename M, typename std::enable_if<!detail::has_message<M>::value, int>::type = 0>
+    NVTX3_NO_DISCARD static registered_string_in const& get() noexcept
     {
       NVTX3_STATIC_ASSERT(detail::always_false<M>::value,
                           "Type used to register an NVTX string must contain a static constexpr member "
@@ -1479,7 +1527,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
     }
 #  else
     template <typename M>
-    static registered_string_in const& get() noexcept
+    NVTX3_NO_DISCARD static registered_string_in const& get() noexcept
     {
       static registered_string_in const regstr(M::message);
       return regstr;
@@ -1557,7 +1605,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 
   private:
     // Default constructor is only used internally for static_assert(false) cases.
-    registered_string_in() noexcept {};
+    registered_string_in() noexcept {}
 
   public:
     ~registered_string_in()                                      = default;
@@ -1606,7 +1654,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * nvtx3::scoped_range range1{attr1};
    *
    * // `range2` contains message "message 2"
-   * nvtx3::scoped_range range2{nvtx3::Message{"message 2"}};
+   * nvtx3::scoped_range range2{nvtx3::message{"message 2"}};
    *
    * // `std::string` and string literals are implicitly assumed to be
    * // the contents of an `nvtx3::message`
@@ -1624,7 +1672,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param msg The contents of the message
      */
-    constexpr message(char const* msg) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 message(char const* msg) noexcept
         : type_{NVTX_MESSAGE_TYPE_ASCII}
     {
       value_.ascii = msg;
@@ -1654,7 +1702,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param msg The contents of the message
      */
-    constexpr message(wchar_t const* msg) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 message(wchar_t const* msg) noexcept
         : type_{NVTX_MESSAGE_TYPE_UNICODE}
     {
       value_.unicode = msg;
@@ -1688,7 +1736,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      * @param msg The message that has already been registered with NVTX.
      */
     template <typename D>
-    constexpr message(registered_string_in<D> const& msg) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 message(registered_string_in<D> const& msg) noexcept
         : type_{NVTX_MESSAGE_TYPE_REGISTERED}
     {
       value_.registered = msg.get_handle();
@@ -1710,7 +1758,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param handle nvtxStringHandle_t value of registered string handle
      */
-    constexpr message(nvtxStringHandle_t handle) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 message(nvtxStringHandle_t handle) noexcept
         : type_{NVTX_MESSAGE_TYPE_REGISTERED}
     {
       value_.registered = handle;
@@ -1765,7 +1813,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    constexpr explicit payload(int64_t value) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(int64_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_INT64}
         , value_{}
     {
@@ -1777,7 +1825,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    constexpr explicit payload(int32_t value) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(int32_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_INT32}
         , value_{}
     {
@@ -1789,7 +1837,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    constexpr explicit payload(uint64_t value) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(uint64_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_UNSIGNED_INT64}
         , value_{}
     {
@@ -1801,7 +1849,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    constexpr explicit payload(uint32_t value) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(uint32_t value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_UNSIGNED_INT32}
         , value_{}
     {
@@ -1814,7 +1862,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    constexpr explicit payload(float value) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(float value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_FLOAT}
         , value_{}
     {
@@ -1827,7 +1875,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      * @param value Value to use as contents of the payload
      */
-    constexpr explicit payload(double value) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit payload(double value) noexcept
         : type_{NVTX_PAYLOAD_TYPE_DOUBLE}
         , value_{}
     {
@@ -1944,9 +1992,9 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
             0, // color value
             NVTX_PAYLOAD_UNKNOWN, // payload type
             0, // reserved 4B
-            {0}, // payload value (union) // NOTE(bgruber): added braces
+            {0}, // payload value (union)
             NVTX_MESSAGE_UNKNOWN, // message type
-            {0} // message value (union) // NOTE(bgruber): added braces
+            {0} // message value (union)
           }
     {}
 
@@ -1958,7 +2006,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    constexpr explicit event_attributes(category const& c, Args const&... args) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(category const& c, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.category = c.get_id();
@@ -1972,7 +2020,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    constexpr explicit event_attributes(color const& c, Args const&... args) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(color const& c, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.color     = c.get_value();
@@ -1987,7 +2035,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    constexpr explicit event_attributes(payload const& p, Args const&... args) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(payload const& p, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.payload     = p.get_value();
@@ -2002,7 +2050,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
      *
      */
     template <typename... Args>
-    constexpr explicit event_attributes(message const& m, Args const&... args) noexcept
+    NVTX3_CONSTEXPR_IF_CPP14 explicit event_attributes(message const& m, Args const&... args) noexcept
         : event_attributes(args...)
     {
       attributes_.message     = m.get_value();
@@ -2038,7 +2086,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * Behavior is undefined if a `scoped_range_in` object is
    * created/destroyed on different threads.
    *
-   * `scoped_range_in` is neither moveable nor copyable.
+   * `scoped_range_in` is neither movable nor copyable.
    *
    * `scoped_range_in`s may be nested within other ranges.
    *
@@ -2076,7 +2124,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * \endcode
    */
   template <class D = domain::global>
-  class scoped_range_in
+  class NVTX3_MAYBE_UNUSED scoped_range_in
   {
   public:
     /**
@@ -2171,7 +2219,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 
   /// @cond internal
   template <typename D = domain::global>
-  class optional_scoped_range_in
+  class NVTX3_MAYBE_UNUSED optional_scoped_range_in
   {
   public:
     optional_scoped_range_in() = default;
@@ -2260,7 +2308,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
     constexpr explicit operator bool() const noexcept
     {
       return get_value() != null_range_id;
-    };
+    }
 
     /**
      * @brief Implicit conversion from `nullptr` constructs a null handle.
@@ -2339,7 +2387,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * @return Unique handle to be passed to `end_range_in` to end the range.
    */
   template <typename D = domain::global>
-  inline range_handle start_range_in(event_attributes const& attr) noexcept
+  NVTX3_NO_DISCARD inline range_handle start_range_in(event_attributes const& attr) noexcept
   {
 #  ifndef NVTX_DISABLE
     return range_handle{nvtxDomainRangeStartEx(domain::get<D>(), attr.get())};
@@ -2376,11 +2424,11 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * @tparam D Type containing `name` member used to identify the `domain`
    * to which the range belongs. Else, `domain::global` to indicate that the
    * global NVTX domain should be used.
-   * @param args[in] Variadic parameter pack of the arguments for an `event_attributes`.
+   * @param[in] args Variadic parameter pack of the arguments for an `event_attributes`.
    * @return Unique handle to be passed to `end_range` to end the range.
    */
   template <typename D = domain::global, typename... Args>
-  inline range_handle start_range_in(Args const&... args) noexcept
+  NVTX3_NO_DISCARD inline range_handle start_range_in(Args const&... args) noexcept
   {
 #  ifndef NVTX_DISABLE
     return start_range_in<D>(event_attributes{args...});
@@ -2415,7 +2463,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * of the range.
    * @return Unique handle to be passed to `end_range_in` to end the range.
    */
-  inline range_handle start_range(event_attributes const& attr) noexcept
+  NVTX3_NO_DISCARD inline range_handle start_range(event_attributes const& attr) noexcept
   {
 #  ifndef NVTX_DISABLE
     return start_range_in<domain::global>(attr);
@@ -2449,11 +2497,11 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * nvtx3::end_range(h); // Ends the range
    * \endcode
    *
-   * @param args[in] Variadic parameter pack of the arguments for an `event_attributes`.
+   * @param[in] args Variadic parameter pack of the arguments for an `event_attributes`.
    * @return Unique handle to be passed to `end_range` to end the range.
    */
   template <typename... Args>
-  inline range_handle start_range(Args const&... args) noexcept
+  NVTX3_NO_DISCARD inline range_handle start_range(Args const&... args) noexcept
   {
 #  ifndef NVTX_DISABLE
     return start_range_in<domain::global>(args...);
@@ -2520,7 +2568,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * - `unique_range` objects can be destroyed in an order whereas `scoped_range` objects must be
    *    destroyed in exact reverse creation order
    * - `unique_range` can start and end on different threads
-   * - `unique_range` is moveable
+   * - `unique_range` is movable
    * - `unique_range` objects can be constructed as heap objects
    *
    * There is extra overhead associated with `unique_range` constructs and therefore use of
@@ -2531,7 +2579,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * indicate that the global NVTX domain should be used.
    */
   template <typename D = domain::global>
-  class unique_range_in
+  class NVTX3_MAYBE_UNUSED unique_range_in
   {
   public:
     /**
@@ -2915,7 +2963,9 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
 #undef NVTX3_NAMESPACE_FOR
 #undef NVTX3_VERSION_NAMESPACE
 #undef NVTX3_INLINE_IF_REQUESTED
-#undef constexpr
+#undef NVTX3_CONSTEXPR_IF_CPP14
+#undef NVTX3_MAYBE_UNUSED
+#undef NVTX3_NO_DISCARD
 
 #if defined(NVTX3_INLINE_THIS_VERSION)
 #  undef NVTX3_INLINE_THIS_VERSION
