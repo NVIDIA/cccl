@@ -14,6 +14,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <tuple>
 #include <typeinfo>
 #include <unordered_map>
 
@@ -148,3 +149,29 @@ struct KeyBuilder
     return ss.str();
   }
 };
+
+template <typename TupleLike, std::size_t I = 0>
+void adder_helper(std::stringstream& ss)
+{
+  constexpr std::size_t S = std::tuple_size_v<TupleLike>;
+  if constexpr (I < S)
+  {
+    using SelectedType       = std::tuple_element_t<I, TupleLike>;
+    constexpr std::size_t In = I + 1;
+
+    ss << KeyBuilder::type_as_key<SelectedType>();
+    if constexpr (In < S)
+    {
+      ss << "-";
+    }
+    adder_helper<TupleLike, In>(ss);
+  }
+}
+
+template <typename... Ts>
+std::optional<std::string> make_key()
+{
+  std::stringstream ss{};
+  adder_helper<std::tuple<Ts...>, 0>(ss);
+  return std::make_optional(ss.str());
+}
