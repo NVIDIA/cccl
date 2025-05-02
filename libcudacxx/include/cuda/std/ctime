@@ -80,7 +80,7 @@ using ::timespec;
 
 // time
 
-#if _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#if _CCCL_DEVICE_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE time_t __cccl_time_impl_device(time_t* __v) noexcept
 {
   const auto __t = static_cast<clock_t>(_CUDA_VPTX::get_sreg_globaltimer() / 1'000'000'000);
@@ -90,7 +90,7 @@ using ::timespec;
   }
   return __t;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#endif // _CCCL_DEVICE_COMPILATION()
 
 #if defined(time)
 #  pragma push_macro("time")
@@ -102,16 +102,12 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
 #  undef _LIBCUDACXX_POP_TIME_MACRO
 #endif // _LIBCUDACXX_POP_TIME_MACRO
 {
-#if _CCCL_CUDA_COMPILER(NVHPC)
-  return ::time(__v);
-#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   NV_IF_ELSE_TARGET(NV_IS_HOST, (return ::time(__v);), (return _CUDA_VSTD::__cccl_time_impl_device(__v);))
-#endif // !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
 // timespec_get
 
-#if _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#if _CCCL_DEVICE_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_timespec_get_impl_device(timespec* __ts, int __base) noexcept
 {
   if (__base != TIME_UTC)
@@ -123,7 +119,7 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
   __ts->tv_nsec  = static_cast<long>(__t % 1'000'000'000);
   return __base;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER() && defined(__CUDACC__)
+#endif // _CCCL_DEVICE_COMPILATION()
 
 #if defined(timespec_get)
 #  pragma push_macro("timespec_get")
@@ -135,13 +131,9 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
 #  undef _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 #endif // _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 {
-#if _CCCL_CUDA_COMPILER(NVHPC)
-  return ::timespec_get(__ts, __base);
-#else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (return ::timespec_get(__ts, __base);),
                     (return _CUDA_VSTD::__cccl_timespec_get_impl_device(__ts, __base);))
-#endif // !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
