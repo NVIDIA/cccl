@@ -66,13 +66,13 @@
  * The primary namespace for all components defined in this file.
  *
  * @concept __queryable_with
- * Checks if a query `_Query` can be queried from an environment `_Ty`.
- * @tparam _Ty The type of the environment.
+ * Checks if a query `_Query` can be queried from an environment `_Env`.
+ * @tparam _Env The type of the environment.
  * @tparam _Query The type of the property to be queried.
  *
  * @concept __nothrow_queryable_with Checks if a query `_Query` can be queried from an
- * environment `_Ty` without potentially throwing.
- * @tparam _Ty The type of the environment.
+ * environment `_Env` without potentially throwing.
+ * @tparam _Env The type of the environment.
  * @tparam _Query The type of the property to be queried.
  *
  * @struct prop
@@ -96,12 +96,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace detail
 {
-template <class _Ty, class _Query>
-auto __query_result_() -> decltype(declval<_Ty>().query(_Query()));
+template <class _Env, class _Query>
+auto __query_result_() -> decltype(declval<_Env>().query(_Query()));
 
 #if _CCCL_HAS_EXCEPTIONS()
-template <class _Ty, class _Query>
-using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS = enable_if_t<noexcept(declval<_Ty>().query(_Query{}))>;
+template <class _Env, class _Query>
+using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS = enable_if_t<noexcept(declval<_Env>().query(_Query{}))>;
 #endif // _CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
@@ -130,22 +130,55 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
 
 namespace execution
 {
-template <class _Ty, class _Query>
-using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(detail::__query_result_<_Ty, _Query>());
+template <class _Env, class _Query>
+using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(detail::__query_result_<_Env, _Query>());
 
-template <class _Ty, class _Query>
-_CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Ty, _Query>::value;
+template <class _Env, class _Query>
+_CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Env, _Query>::value;
 
 #if _CCCL_HAS_EXCEPTIONS()
-template <class _Ty, class _Query>
-_CCCL_CONCEPT __nothrow_queryable_with = _IsValidExpansion<detail::__nothrow_queryable_with_t, _Ty, _Query>::value;
+
+template <class _Env, class _Query>
+_CCCL_CONCEPT __nothrow_queryable_with = _IsValidExpansion<detail::__nothrow_queryable_with_t, _Env, _Query>::value;
+
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-template <class _Ty, class _Query>
+
+template <class _Env, class _Query>
 _CCCL_CONCEPT __nothrow_queryable_with = true;
+
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
 using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(detail::__unwrap_ref<_Ty>);
+
+template <class _Query, class _DefaultFn = void>
+struct __basic_query : __basic_query<_Query>
+{
+  static constexpr bool __is_nothrow = noexcept(_DefaultFn{}());
+
+  using __basic_query<_Query>::operator();
+
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t) const noexcept(__is_nothrow)
+    -> decltype(_DefaultFn{}())
+  {
+    static_assert(is_base_of_v<__basic_query, _Query>, "_Query must be derived from __basic_query<_Query>");
+    return _DefaultFn{}();
+  }
+};
+
+template <class _Query>
+struct __basic_query<_Query, void>
+{
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const
+    noexcept(__nothrow_queryable_with<_Env, _Query>) -> __query_result_t<_Env, _Query>
+  {
+    static_assert(is_base_of_v<__basic_query, _Query>, "_Query must be derived from __basic_query<_Query>");
+    return __env.query(_Query{});
+  }
+};
+
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() || defined(_CCCL_DOXYGEN_INVOKED)
 
 /**
  * @brief A template structure representing a query with a query and a value.
@@ -169,14 +202,29 @@ using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(detail::__unwrap_ref<_
 template <class _Query, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
 {
-  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
-  _CCCL_NO_UNIQUE_ADDRESS _Value __value;
-
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept -> const _Value&
   {
     return __value;
   }
+
+  _CCCL_NO_UNIQUE_ADDRESS _Query __ignore;
+  _CCCL_NO_UNIQUE_ADDRESS _Value __value;
 };
+
+#else // ^^^ _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() ^^^ / vvv !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() vvv
+
+template <class _Query, class _Value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
+{
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const noexcept -> const _Value&
+  {
+    return __value;
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS _Value __value;
+};
+
+#endif // !_CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS()
 
 template <class _Query, class _Value>
 _CCCL_HOST_DEVICE prop(_Query, _Value) -> prop<_Query, _Value>;
@@ -288,19 +336,37 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 };
 #endif // _CCCL_DOXYGEN_INVOKED
 
+/**
+ * @brief Provides utilities for extracting the execution environment from an object.
+ *
+ * This code defines a utility for obtaining the execution environment of a given object
+ * through its `get_env` member function. It also provides a fallback for types that do
+ * not have a `get_env` member function.
+ *
+ * @tparam _Ty The type of the object from which the environment is to be extracted.
+ *
+ * @details
+ * - The first `operator()` is a callable operator that extracts the environment from an
+ *   object of type `_Ty` by calling its `get_env` method. It ensures that the `get_env`
+ *   method is `noexcept` and returns the deduced environment type.
+ * - The second `operator()` is less preferred than the first. It accepts any argument and
+ *   returns a default-constructed `env<>`.
+ *
+ * @throws None. Both `operator()` overloads are marked as `noexcept`.
+ */
 struct get_env_t
 {
   template <class _Ty>
   using __env_of _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty>().get_env());
 
   template <class _Ty>
-  [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
   {
     static_assert(noexcept(__ty.get_env()));
     return __ty.get_env();
   }
 
-  [[nodiscard]] _CCCL_TRIVIAL_API auto operator()(__ignore_t) const noexcept -> env<>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t) const noexcept -> env<>
   {
     return {};
   }
