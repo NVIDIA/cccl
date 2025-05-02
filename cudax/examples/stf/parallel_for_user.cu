@@ -49,6 +49,10 @@ using namespace cuda::experimental::stf;
 class epoch : public task_dep<void_interface, ::std::monostate, false>
 {
 public:
+  epoch(epoch&) = default;
+  epoch(const epoch&) = default;
+  epoch(epoch&&) = default;
+
   /**
    * @brief Constructs an epoch from a given context.
    *
@@ -56,9 +60,12 @@ public:
    *
    * @param ctx Reference to the task execution context.
    */
-  epoch(context& ctx)
+  template <typename Ctx>
+  epoch(Ctx& ctx)
       : task_dep<void_interface, ::std::monostate, false>(ctx.token().read())
-      , ctx(ctx)
+      , increment([&]() {
+        ctx.task(this->as_mode(access_mode::rw))->*[](cudaStream_t, auto) {};
+      })
   {}
 
   /**
@@ -71,7 +78,7 @@ public:
    */
   epoch& operator++()
   {
-    ctx.task(this->as_mode(access_mode::rw))->*[](cudaStream_t, auto) {};
+    increment();
     return *this;
   }
 
@@ -81,14 +88,10 @@ public:
    * This operator is intentionally disabled to enforce use of the prefix version.
    * Attempting to use it results in a compile-time error.
    */
-  epoch operator++(int)
-  {
-    static_assert("Please use the prefix increment.");
-    return *this;
-  }
+  epoch operator++(int) = delete;
 
 private:
-  context& ctx; ///< Reference to the context that manages task tokens.
+  ::std::function<void()> increment;
 };
 
 double X0(size_t i)
@@ -103,7 +106,7 @@ double Y0(size_t i)
 
 int main()
 {
-  context ctx    = graph_ctx();
+  context ctx = graph_ctx();
   const size_t N = 16384;
 
   double *X, *Y, *Z;
@@ -131,7 +134,6 @@ int main()
     Z[i] += beta * X[i];
   };
 
-  // ctx.task_fence();
   ++e;
 
   ctx.parallel_for(box(N), e)->*[Y, Z] __device__(size_t i) {
