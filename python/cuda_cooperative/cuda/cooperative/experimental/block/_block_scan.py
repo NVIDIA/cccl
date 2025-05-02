@@ -44,8 +44,15 @@ Unsupported C++ APIs
 ++++++++++++++++++++
 
 This module does not support any of the :class:`cub.BlockScan` C++ APIs
-that take a block aggregate reference as an argument.  These APIs are
-as follows:
+that take a block aggregate reference as an argument.  That being said, the
+`BlockPrefixCallbackOp` callable is supported, and thus, block aggregates can
+be obtained using those measures.
+
+The reason the `T &block_aggregate` pattern is not supported as it will usually
+result in two output parameters, which we don't support in our underlying type
+machinery (i.e. _types.py).
+
+The unsupported APIs are as follows:
 
     ExclusiveSum(T input, T &output, T &block_aggregate)
     ExclusiveSum(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T &block_aggregate)
