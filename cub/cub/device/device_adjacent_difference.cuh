@@ -42,7 +42,7 @@
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
 #include <cub/util_namespace.cuh>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

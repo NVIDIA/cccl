@@ -304,8 +304,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -434,8 +434,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -544,8 +544,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -682,8 +682,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -975,8 +975,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1191,8 +1191,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1439,8 +1439,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -1753,8 +1753,8 @@ struct DeviceScan
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh>   // or equivalently <cub/device/device_scan.cuh>
-  //!    #include <climits>       // for INT_MAX
+  //!    #include <cub/cub.cuh>      // or equivalently <cub/device/device_scan.cuh>
+  //!    #include <cuda/std/climits> // for INT_MAX
   //!
   //!    // CustomMin functor
   //!    struct CustomMin

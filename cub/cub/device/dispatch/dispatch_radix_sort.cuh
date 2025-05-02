@@ -57,10 +57,6 @@
 #include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
-#include <stdio.h>
-
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
 // might be disabled or specified as part of an unsupported transformation ordering [-Wpass-failed=transform-warning]"

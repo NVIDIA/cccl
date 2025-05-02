@@ -45,11 +45,8 @@
 #include <cub/device/dispatch/dispatch_histogram.cuh>
 
 #include <cuda/std/array>
-
-#include <iterator>
-#include <limits>
-
-#include <stdio.h>
+#include <cuda/std/iterator>
+#include <cuda/std/limits>
 
 CUB_NAMESPACE_BEGIN
 
