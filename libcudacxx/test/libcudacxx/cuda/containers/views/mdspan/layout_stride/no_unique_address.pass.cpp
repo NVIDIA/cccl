@@ -15,7 +15,7 @@
 #include "test_macros.h"
 
 template <class Mapping>
-__host__ __device__ void test(Mapping map, size_t expected_size)
+__host__ __device__ void test([[maybe_unused]] Mapping map, size_t expected_size)
 {
   using extents = typename Mapping::extents_type;
   if constexpr (extents::rank() > 0)
