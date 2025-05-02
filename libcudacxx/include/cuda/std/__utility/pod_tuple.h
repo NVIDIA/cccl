@@ -69,7 +69,7 @@ template <size_t... _Idx, class... _Ts>
 struct _CCCL_DECLSPEC_EMPTY_BASES __tupl<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 {
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn, __copy_cvref_t<_Self, _Ts>..., _Us...>)
     -> __call_result_t<_Fn, __copy_cvref_t<_Self, _Ts>..., _Us...>
   {
@@ -81,7 +81,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tupl<index_sequence<_Idx...>, _Ts...> : __bo
 
 // Unroll tuples of size 1-8 to bring down the number of template instantiations and to
 // permit __tuple to be used to initialize a structured binding without resorting to the
-// heavy-weight std::tuple protocol. This code was generated with the following:
+// heavy-weight std::tuple protocol. This code was generated with the following macros,
+// which can be found here: https://godbolt.org/z/KG8c5vEdr
 
 /*
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_T, _Idx)
@@ -101,7 +102,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tupl<index_sequence<_Idx...>, _Ts...> : __bo
     _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                                   \
                                                                                                                 \
     template <class _Fn, class _Self, class... _Us>                                                             \
-    _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(                  \
+    _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(        \
       __is_nothrow_callable_v<_Fn,                                                                              \
                          _Us...                                                                                 \
                          _CCCL_TUPLE_CVREF_TPARAM(0) _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_CVREF_TPARAM, 1)>)  \
@@ -138,7 +139,7 @@ struct __tupl<index_sequence<0>, _T0>
   _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn, _Us..., __copy_cvref_t<_Self, _T0>>)
     -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _T0>>
   {
@@ -160,7 +161,7 @@ struct __tupl<index_sequence<0, 1>, _T0, _T1>
   _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn, _Us..., __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>>)
     -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _T0>, __copy_cvref_t<_Self, _T1>>
   {
@@ -184,7 +185,7 @@ struct __tupl<index_sequence<0, 1, 2>, _T0, _T1, _T2>
   _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
                             _Us...,
                             __copy_cvref_t<_Self, _T0>,
@@ -217,7 +218,7 @@ struct __tupl<index_sequence<0, 1, 2, 3>, _T0, _T1, _T2, _T3>
   _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
                             _Us...,
                             __copy_cvref_t<_Self, _T0>,
@@ -258,7 +259,7 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4>, _T0, _T1, _T2, _T3, _T4>
   _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
                             _Us...,
                             __copy_cvref_t<_Self, _T0>,
@@ -308,7 +309,7 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5>, _T0, _T1, _T2, _T3, _T4, _T5>
   _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
                             _Us...,
                             __copy_cvref_t<_Self, _T0>,
@@ -363,7 +364,7 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6>, _T0, _T1, _T2, _T3, _T4, _T5,
   _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
                             _Us...,
                             __copy_cvref_t<_Self, _T0>,
@@ -423,7 +424,7 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _
   _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
 
   template <class _Fn, class _Self, class... _Us>
-  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
+  _CCCL_TRIVIAL_API static constexpr auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) noexcept(
     __is_nothrow_callable_v<_Fn,
                             _Us...,
                             __copy_cvref_t<_Self, _T0>,

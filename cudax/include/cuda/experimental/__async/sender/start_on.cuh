@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -85,12 +85,23 @@ private:
     connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
   };
 
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
+  {
+    template <class _Sch, class _Sndr>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+  };
+
 public:
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sch, class _Sndr>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const noexcept -> __sndr_t<_Sch, _Sndr>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
 };
 
 template <class _Sch, class _Sndr>
@@ -141,10 +152,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-_CUDAX_TRIVIAL_API constexpr auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept
-  -> __sndr_t<_Sch, _Sndr>
+_CUDAX_TRIVIAL_API constexpr auto start_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
 {
   return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
+}
+
+template <class _Sch, class _Sndr>
+_CUDAX_TRIVIAL_API constexpr auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const
+{
+  using __dom_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Sch>; // see [exec.starts.on]
+  return __dom_t::__apply(*this)(static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr));
 }
 
 template <class _Sch, class _Sndr>

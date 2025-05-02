@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/lazy.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
@@ -38,6 +39,7 @@ namespace cuda::experimental::__async
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t
 {
+private:
   template <class _Rcvr, class _Sndr1, class _Sndr2>
   struct __args
   {
@@ -97,11 +99,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t
     connect_result_t<__sndr2_t, __rcvr_ref<__rcvr_t>> __opstate2_;
   };
 
+  struct __fn
+  {
+    template <class _Sndr1, class _Sndr2>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const;
+  };
+
+public:
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   template <class _Sndr1, class _Sndr2>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr1, class _Sndr2>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
 };
 
 template <class _Sndr1, class _Sndr2>
@@ -152,9 +166,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
 };
 
 template <class _Sndr1, class _Sndr2>
-_CUDAX_TRIVIAL_API constexpr auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>
+_CUDAX_TRIVIAL_API constexpr auto __seq_t::__fn::operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
-  return __sndr_t<_Sndr1, _Sndr2>{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
+  using __sndr_t _CCCL_NODEBUG_ALIAS = __seq_t::__sndr_t<_Sndr1, _Sndr2>;
+  return __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
+}
+
+template <class _Sndr1, class _Sndr2>
+_CUDAX_TRIVIAL_API constexpr auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
+{
+  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr1>;
+  return __dom_t::__apply(*this)(__ignore{}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2));
 }
 
 template <class _Sndr1, class _Sndr2>

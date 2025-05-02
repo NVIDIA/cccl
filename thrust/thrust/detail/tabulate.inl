@@ -41,6 +41,7 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          ForwardIterator last,
          UnaryOperation unary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::tabulate");
   using thrust::system::detail::generic::tabulate;
   return tabulate(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, unary_op);
 } // end tabulate()
@@ -48,6 +49,7 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(ForwardIterator first, ForwardIterator last, UnaryOperation unary_op)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::tabulate");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;

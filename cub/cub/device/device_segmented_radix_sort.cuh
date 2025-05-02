@@ -43,7 +43,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
 #include <iterator>
@@ -244,7 +243,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
@@ -428,7 +427,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
@@ -606,7 +605,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
@@ -794,7 +793,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
@@ -958,7 +957,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
@@ -1132,7 +1131,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
@@ -1296,7 +1295,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;
@@ -1467,7 +1466,7 @@ public:
     int end_bit         = sizeof(KeyT) * 8,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
 
     // Signed integer type for global offsets
     using SegmentSizeT = ::cuda::std::int32_t;

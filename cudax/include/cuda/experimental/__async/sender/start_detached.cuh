@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,6 +24,8 @@
 #include <cuda/std/__exception/terminate.h>
 
 #include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
@@ -79,19 +81,33 @@ private:
 
     _CUDAX_IMMOVABLE(__opstate_t);
 
-    _CUDAX_API void start() & noexcept
+    _CUDAX_API void start() noexcept
     {
       __async::start(__opstate_);
     }
   };
 
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
+  {
+    template <class _Sndr>
+    _CUDAX_API auto operator()(_Sndr __sndr) const
+    {
+      __async::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
+    }
+  };
+
 public:
-  /// @brief Eagerly connects and starts a sender and lets it
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   /// run detached.
   template <class _Sndr>
   _CUDAX_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
-    __async::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
+    using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
+    __dom_t::__apply (*this)(static_cast<_Sndr&&>(__sndr));
   }
 };
 

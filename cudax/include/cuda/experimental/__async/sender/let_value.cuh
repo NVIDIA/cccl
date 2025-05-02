@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,6 +29,7 @@
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/concepts.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
@@ -222,7 +223,18 @@ private:
     }
   };
 
+  struct __fn
+  {
+    template <class _Fn, class _Sndr>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
+  };
+
 public:
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   /// @brief The `let_(value|error|stopped)` sender.
   /// @tparam _Sndr The predecessor sender.
   /// @tparam _Fn The function to be called when the predecessor sender
@@ -234,10 +246,10 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 
   template <class _Sndr, class _Fn>
-  _CUDAX_API auto operator()(_Sndr __sndr, _Fn __fn) const -> __sndr_t<_Sndr, _Fn>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>;
 };
 
 template <__disposition_t _Disposition>
@@ -316,8 +328,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
 };
 
 template <__disposition_t _Disposition>
-template <class _Sndr, class _Fn>
-_CUDAX_API auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const -> __sndr_t<_Sndr, _Fn>
+template <class _Fn, class _Sndr>
+_CUDAX_TRIVIAL_API constexpr auto __let_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
 {
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -330,8 +342,16 @@ _CUDAX_API auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const 
 }
 
 template <__disposition_t _Disposition>
+template <class _Sndr, class _Fn>
+_CUDAX_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
+{
+  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
+  return __dom_t::__apply(*this)(static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr));
+}
+
+template <__disposition_t _Disposition>
 template <class _Fn>
-_CUDAX_TRIVIAL_API auto __let_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>
+_CUDAX_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>
 {
   return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
 }

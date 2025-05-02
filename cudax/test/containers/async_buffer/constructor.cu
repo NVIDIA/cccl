@@ -78,18 +78,10 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
   SECTION("Construction from iterators")
   {
     const cuda::std::array<T, 6> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
-    { // can be constructed from two equal forward iterators
-      using iter = forward_iterator<const T*>;
-      Buffer buf(env, iter{input.begin()}, iter{input.begin()});
+    { // can be constructed from two equal input iterators
+      Buffer buf(env, input.begin(), input.begin());
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // can be constructed from two forward iterators
-      using iter = forward_iterator<const T*>;
-      Buffer buf(env, iter{input.begin()}, iter{input.end()});
-      CUDAX_CHECK(buf.size() == 6);
-      CUDAX_CHECK(equal_range(buf));
     }
 
     { // can be constructed from two input iterators
@@ -101,30 +93,6 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
 
   SECTION("Construction from range")
   {
-    { // can be constructed from an empty uncommon forward range
-      Buffer buf(env, uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // can be constructed from a non-empty uncommon forward range
-      Buffer buf(env, uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-
-    { // can be constructed from an empty sized uncommon forward range
-      Buffer buf(env, sized_uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // can be constructed from a non-empty sized uncommon forward range
-      Buffer buf(env, sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-
     { // can be constructed from an empty random access range
       Buffer buf(env, cuda::std::array<T, 0>{});
       CUDAX_CHECK(buf.empty());

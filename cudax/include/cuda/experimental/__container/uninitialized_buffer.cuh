@@ -188,15 +188,26 @@ public:
     return *this;
   }
 
-  //! @brief Destroys an \c uninitialized_buffer and deallocates the buffer
-  //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
+  //! @brief Destroys an \c uninitialized_buffer, deallocates the buffer and destroys the memory resource
+  //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
-  _CCCL_HIDE_FROM_ABI ~uninitialized_buffer()
+  _CCCL_HIDE_FROM_ABI void destroy()
   {
     if (__buf_)
     {
       __mr_.deallocate(__buf_, __get_allocation_size(__count_));
+      __buf_   = nullptr;
+      __count_ = 0;
     }
+    auto __tmp_mr = _CUDA_VSTD::move(__mr_);
+  }
+
+  //! @brief Destroys an \c uninitialized_buffer, deallocates the buffer and destroys the memory resource
+  //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
+  //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
+  _CCCL_HIDE_FROM_ABI ~uninitialized_buffer()
+  {
+    destroy();
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer
