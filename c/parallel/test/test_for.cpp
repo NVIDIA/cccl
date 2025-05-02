@@ -72,7 +72,7 @@ template <typename T>
 void for_each_pointer_input(pointer_t<T>& input_ptr, uint64_t num_items, cccl_op_t op)
 {
   auto& build_cache    = fixture<for_each_build_cache_t, DeviceFor_Pointer_Fixture_Tag>::get_or_create().get_value();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
+  const auto& test_key = make_key<T>();
 
   for_each(static_cast<cccl_iterator_t>(input_ptr), num_items, op, build_cache, test_key);
 }

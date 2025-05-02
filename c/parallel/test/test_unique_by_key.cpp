@@ -124,11 +124,8 @@ C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[unique_by_key]"
   auto& output_items_it = input_keys_it;
 
   auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
-
   // key: (input_type, output_type, num_selected_type)
-  std::string key_string = KeyBuilder::join(
-    {KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<int>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = make_key<key_t, key_t, int>();
 
   unique_by_key(
     input_keys_it,
@@ -161,11 +158,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   pointer_t<int> output_num_selected_it(1);
 
   auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
-
   // key: (input_type, output_type, num_selected_type)
-  std::string key_string = KeyBuilder::join(
-    {KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>(), KeyBuilder::type_as_key<int>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = make_key<key_t, item_t, int>();
 
   unique_by_key(
     input_keys_it,
@@ -221,11 +215,8 @@ C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique
   pointer_t<int> output_num_selected_it(1);
 
   auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
-
   // key: (input_type, output_type, num_selected_type)
-  std::string key_string = KeyBuilder::join(
-    {KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>(), KeyBuilder::type_as_key<int>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = make_key<key_t, item_t, int>();
 
   unique_by_key(
     input_keys_it,
@@ -260,11 +251,8 @@ C2H_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_
   pointer_t<int> output_num_selected_it(1);
 
   auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
-
   // key: (input_type, output_type, num_selected_type)
-  std::string key_string = KeyBuilder::join(
-    {KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>(), KeyBuilder::type_as_key<int>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = make_key<key_t, item_t, int>();
 
   unique_by_key(
     input_keys_it,
@@ -322,11 +310,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_u
   pointer_t<int> output_num_selected_it(1);
 
   auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
-
   // key: (input_type, output_type, num_selected_type)
-  std::string key_string = KeyBuilder::join(
-    {KeyBuilder::type_as_key<key_pair>(), KeyBuilder::type_as_key<item_t>(), KeyBuilder::type_as_key<int>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = make_key<key_pair, item_t, int>();
 
   unique_by_key(
     input_keys_it,
@@ -402,11 +387,8 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[m
   output_num_selected_it.state.data = output_num_selected_ptr.ptr;
 
   auto& build_cache = get_cache<UniqueByKey_Iterators_Fixture_Tag>();
-
   // key: (input_type, output_type, num_selected_type)
-  std::string key_string =
-    KeyBuilder::join({KeyBuilder::type_as_key<T>(), KeyBuilder::type_as_key<T>(), KeyBuilder::type_as_key<int>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = make_key<T, T, int>();
 
   unique_by_key(
     input_keys_it,

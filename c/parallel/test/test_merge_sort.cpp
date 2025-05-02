@@ -102,7 +102,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
   pointer_t<key_t> input_items_it;
 
   auto& build_cache    = get_cache<DeviceMergeSort_SortKeys_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<key_t>());
+  const auto& test_key = make_key<key_t>();
 
   merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
@@ -127,7 +127,7 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", key_types)
   pointer_t<key_t> output_keys_it(output_keys);
 
   auto& build_cache    = get_cache<DeviceMergeSort_SortKeysCopy_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<key_t>());
+  const auto& test_key = make_key<key_t>();
 
   merge_sort(input_keys_it, input_items_it, output_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
@@ -154,9 +154,8 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<item_t> input_items_it(input_items);
 
-  auto& build_cache = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
-  const auto& test_key =
-    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>()}));
+  auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
+  const auto& test_key = make_key<key_t, item_t>();
 
   merge_sort(input_keys_it, input_items_it, input_keys_it, input_items_it, num_items, op, build_cache, test_key);
 
@@ -189,9 +188,8 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
   pointer_t<key_t> output_keys_it(output_keys);
   pointer_t<item_t> output_items_it(output_items);
 
-  auto& build_cache = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
-  const auto& test_key =
-    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>()}));
+  auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
+  const auto& test_key = make_key<key_t, item_t>();
 
   merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
 
@@ -243,9 +241,8 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]"
   pointer_t<key_pair> output_keys_it(input_keys);
   pointer_t<item_pair> output_items_it(input_items);
 
-  auto& build_cache = get_cache<DeviceMergeSort_SortPairsCopy_CustomType_Fixture_Tag>();
-  const auto& test_key =
-    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<key_pair>(), KeyBuilder::type_as_key<item_pair>()}));
+  auto& build_cache    = get_cache<DeviceMergeSort_SortPairsCopy_CustomType_Fixture_Tag>();
+  const auto& test_key = make_key<key_pair, item_pair>();
 
   merge_sort(input_keys_it, input_items_it, output_keys_it, output_items_it, num_items, op, build_cache, test_key);
 
@@ -288,7 +285,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]")
   pointer_t<T> input_items_it;
 
   auto& build_cache    = get_cache<DeviceMergeSort_SortKeys_Iterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
+  const auto& test_key = make_key<T>();
 
   merge_sort(input_keys_it, input_items_it, input_keys_ptr, input_items_it, num_items, op, build_cache, test_key);
 
@@ -323,9 +320,8 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]"
   pointer_t<key_t> input_items_ptr(input_items);
   input_items_it.state.data = input_items_ptr.ptr;
 
-  auto& build_cache = get_cache<DeviceMergeSort_SortPairs_Iterators_Fixture_Tag>();
-  const auto& test_key =
-    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>()}));
+  auto& build_cache    = get_cache<DeviceMergeSort_SortPairs_Iterators_Fixture_Tag>();
+  const auto& test_key = make_key<key_t, item_t>();
 
   merge_sort(input_keys_it, input_items_it, input_keys_ptr, input_items_ptr, num_items, op, build_cache, test_key);
 

@@ -122,7 +122,7 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
   value_t<T> init{T{42}};
 
   auto& build_cache    = get_cache<Scan_IntegralTypes_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
+  const auto& test_key = make_key<T>();
 
   scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -148,7 +148,7 @@ C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
   value_t<T> init{T{42}};
 
   auto& build_cache    = get_cache<InclusiveScan_IntegralTypes_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
+  const auto& test_key = make_key<T>();
 
   scan(input_ptr, output_ptr, num_items, op, init, true, build_cache, test_key);
 
@@ -198,7 +198,7 @@ C2H_TEST("Scan works with custom types", "[scan]")
   value_t<pair> init{pair{4, 2}};
 
   auto& build_cache    = get_cache<Scan_CustomTypes_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<pair>());
+  const auto& test_key = make_key<pair>();
 
   scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -223,7 +223,7 @@ C2H_TEST("Scan works with input iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_InputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -253,7 +253,7 @@ C2H_TEST("Scan works with output iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_OutputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -283,7 +283,7 @@ C2H_TEST("Scan works with reverse input iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_ReverseInputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -309,7 +309,7 @@ C2H_TEST("Scan works with reverse output iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_ReverseOutputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -336,7 +336,7 @@ C2H_TEST("Scan works with input and output iterators", "[scan]")
   value_t<int> init{42};
 
   auto& build_cache    = get_cache<Scan_InputOutputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 

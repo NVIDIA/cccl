@@ -179,7 +179,7 @@ extern "C" __device__ unsigned long long {0}(
   value_t<TestType> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<TestType>());
+  const auto& test_key = make_key<TestType>();
 
   segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
@@ -255,7 +255,7 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
   value_t<pair> init{v0};
 
   auto& build_cache    = get_cache<SegmentedReduce_CustomTypes_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<pair>());
+  const auto& test_key = make_key<pair>();
 
   segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
@@ -398,7 +398,7 @@ extern "C" __device__ {1} {0}({2} *state) {{
   value_t<ValueT> init{0};
 
   auto& build_cache    = get_cache<SegmentedReduce_InputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<ValueT>());
+  const auto& test_key = make_key<ValueT>();
 
   segmented_reduce(
     input_transposed_iterator_it, output_ptr, n_cols, start_offset_it, end_offset_it, op, init, build_cache, test_key);

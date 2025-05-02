@@ -112,7 +112,7 @@ C2H_TEST("Transform works with integral types", "[transform]", integral_types)
   pointer_t<T> output_ptr(output);
 
   auto& build_cache    = get_cache<Transform_IntegralTypes_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
+  const auto& test_key = make_key<T>();
 
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
@@ -161,9 +161,8 @@ C2H_TEST("Transform works with output of different type", "[transform]")
   pointer_t<int> input_ptr(input);
   pointer_t<pair> output_ptr(output);
 
-  auto& build_cache = get_cache<Transform_DifferentOutputTypes_Fixture_Tag>();
-  const auto& test_key =
-    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<int>(), KeyBuilder::type_as_key<pair>()}));
+  auto& build_cache    = get_cache<Transform_DifferentOutputTypes_Fixture_Tag>();
+  const auto& test_key = make_key<int, pair>();
 
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
@@ -197,9 +196,8 @@ C2H_TEST("Transform works with custom types", "[transform]")
   pointer_t<pair> input_ptr(input);
   pointer_t<pair> output_ptr(output);
 
-  auto& build_cache = get_cache<Transform_CustomTypes_FIxture_Tag>();
-  const auto& test_key =
-    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<pair>(), KeyBuilder::type_as_key<pair>()}));
+  auto& build_cache    = get_cache<Transform_CustomTypes_FIxture_Tag>();
+  const auto& test_key = make_key<pair, pair>();
 
   unary_transform(input_ptr, output_ptr, num_items, op, build_cache, test_key);
 
@@ -223,7 +221,7 @@ C2H_TEST("Transform works with input iterators", "[transform]")
   pointer_t<int> output_it(num_items);
 
   auto& build_cache    = get_cache<Transform_InputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   unary_transform(input_it, output_it, num_items, op, build_cache, test_key);
 
@@ -254,7 +252,7 @@ C2H_TEST("Transform works with output iterators", "[transform]")
   output_it.state.data = inner_output_it.ptr;
 
   auto& build_cache    = get_cache<Transform_OutputIterators_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   unary_transform(input_it, output_it, num_items, op, build_cache, test_key);
 
@@ -289,7 +287,7 @@ C2H_TEST("Transform with binary operator", "[transform]")
     "}");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   binary_transform(input1_ptr, input2_ptr, output_ptr, num_items, op, build_cache, test_key);
 
@@ -327,7 +325,7 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
     "}");
 
   auto& build_cache    = get_cache<Transform_BinaryOp_Iterator_Fixture_Tag>();
-  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
+  const auto& test_key = make_key<int>();
 
   binary_transform(input1_ptr, input2_it, output_ptr, num_items, op, build_cache, test_key);
 
