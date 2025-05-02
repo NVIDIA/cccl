@@ -59,9 +59,11 @@ struct NVTXCCCLDomain
 } // namespace detail
 
 // Hook for the NestedNVTXRangeGuard from the unit tests
+// todo(giannis): This hook serves no purpose currently since removed.
+// See TODO in cub/test/insert_nested_NVTX_range_guard.h
 #    ifndef _CCCL_BEFORE_NVTX_RANGE_SCOPE
 #      define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)
-#    endif // !_CCCL_BEFORE_NVTX_RANGE_SCOPE
+#    endif // !CCCL_DETAIL_BEFORE_NVTX_RANGE_SCOPE
 
 // Conditionally inserts a NVTX range starting here until the end of the current function scope in host code. Does
 // nothing in device code.
