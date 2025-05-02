@@ -10,6 +10,7 @@ Standard API
    standard_api/c_library
    standard_api/concepts_library
    standard_api/container_library
+   standard_api/execution_library
    standard_api/numerics_library
    standard_api/ranges_library
    standard_api/synchronization_library

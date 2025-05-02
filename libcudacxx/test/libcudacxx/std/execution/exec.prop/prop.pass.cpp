@@ -8,7 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__execution/env.h>
+#include <cuda/std/execution>
+
+// all other includes follow after <cuda/std/execution>
 #include <cuda/std/__type_traits/is_aggregate.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_standard_layout.h>
