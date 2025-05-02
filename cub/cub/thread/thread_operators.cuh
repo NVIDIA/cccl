@@ -130,7 +130,7 @@ namespace detail
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
-struct ArgMax
+struct arg_max
 {
   /// Boolean max operator, preferring the item having the smaller offset in
   /// case of ties
@@ -149,7 +149,7 @@ struct ArgMax
 
 /// @brief Arg min functor (keeps the value and offset of the first occurrence
 ///        of the smallest item)
-struct ArgMin
+struct arg_min
 {
   /// Boolean min operator, preferring the item having the smaller offset in
   /// case of ties

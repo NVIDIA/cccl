@@ -57,30 +57,6 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-
-// @brief Functor to generate a key-value pair from an index and value
-template <typename Iterator, typename OutputValueT>
-struct generate_idx_value
-{
-private:
-  Iterator it;
-  int segment_size;
-
-public:
-  __host__ __device__ generate_idx_value(Iterator it, int segment_size)
-      : it(it)
-      , segment_size(segment_size)
-  {}
-
-  __host__ __device__ auto operator()(::cuda::std::int64_t idx) const
-  {
-    return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
-  }
-};
-
-} // namespace detail
 //! @rst
 //! DeviceSegmentedReduce provides device-wide, parallel operations for
 //! computing a reduction across multiple sequences of data items
@@ -569,11 +545,19 @@ public:
     using offset_t = int;
 
     // The output value type
-    using OutputT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+    using output_t = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
     return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::std::plus<>, OutputT>::Dispatch(
-        d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, segment_size, {}, OutputT{}, stream);
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::std::plus<>, output_t>::Dispatch(
+        d_temp_storage,
+        temp_storage_bytes,
+        d_in,
+        d_out,
+        num_segments,
+        segment_size,
+        ::cuda::std::plus{},
+        output_t{},
+        stream);
   }
 
   //! @rst
@@ -769,10 +753,10 @@ public:
     using offset_t = int;
 
     // The input value type
-    using InputT = cub::detail::it_value_t<InputIteratorT>;
+    using input_t = cub::detail::it_value_t<InputIteratorT>;
 
     return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, InputT>::Dispatch(
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::minimum<>, input_t>::Dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -780,7 +764,7 @@ public:
         num_segments,
         segment_size,
         ::cuda::minimum<>{},
-        ::cuda::std::numeric_limits<InputT>::max(),
+        ::cuda::std::numeric_limits<input_t>::max(),
         stream);
   }
 
@@ -962,7 +946,7 @@ public:
   //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
-  //!   (having value type `KeyValuePair<int, T>`) @iterator
+  //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -1001,46 +985,46 @@ public:
 
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
-    using OffsetT = int;
+    using offset_t = int;
 
     // The input type
-    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
+    using input_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<OffsetT, InputValueT>>;
+    using output_tuple_t = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<offset_t, input_value_t>>;
 
-    using AccumT = OutputTupleT;
+    using accum_t = output_tuple_t;
 
-    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
+    using init_t = detail::reduce::empty_problem_init_t<accum_t>;
 
     // The output value type
-    using OutputValueT = typename OutputTupleT::second_type;
+    using output_value_t = typename output_tuple_t::second_type;
 
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
+    // Wrapped input iterator to produce index-value <offset_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
-      detail::generate_idx_value<InputIteratorT, OutputValueT>(d_in, segment_size));
+      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
 
-    using ArgIndexInputIteratorT = decltype(d_indexed_in);
+    using arg_index_input_iterator_t = decltype(d_indexed_in);
 
     // Initial value
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::max())};
 
     return detail::reduce::DispatchFixedSizeSegmentedReduce<
-      ArgIndexInputIteratorT,
+      arg_index_input_iterator_t,
       OutputIteratorT,
-      OffsetT,
-      cub::detail::ArgMin,
-      InitT,
-      AccumT>::Dispatch(d_temp_storage,
-                        temp_storage_bytes,
-                        d_indexed_in,
-                        d_out,
-                        num_segments,
-                        segment_size,
-                        cub::detail::ArgMin(),
-                        initial_value,
-                        stream);
+      offset_t,
+      cub::detail::arg_min,
+      init_t,
+      accum_t>::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_indexed_in,
+                         d_out,
+                         num_segments,
+                         segment_size,
+                         cub::detail::arg_min(),
+                         initial_value,
+                         stream);
   }
 
   //! @rst
@@ -1219,10 +1203,10 @@ public:
     using offset_t = int;
 
     // The input value type
-    using InputT = cub::detail::it_value_t<InputIteratorT>;
+    using input_t = cub::detail::it_value_t<InputIteratorT>;
 
     return detail::reduce::
-      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, InputT>::Dispatch(
+      DispatchFixedSizeSegmentedReduce<InputIteratorT, OutputIteratorT, offset_t, ::cuda::maximum<>, input_t>::Dispatch(
         d_temp_storage,
         temp_storage_bytes,
         d_in,
@@ -1230,7 +1214,7 @@ public:
         num_segments,
         segment_size,
         ::cuda::maximum<>{},
-        ::cuda::std::numeric_limits<InputT>::lowest(),
+        ::cuda::std::numeric_limits<input_t>::lowest(),
         stream);
   }
 
@@ -1417,7 +1401,7 @@ public:
   //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
-  //!   (having value type `KeyValuePair<int, T>`) @iterator
+  //!   (having value type `cuda::std::pair<int, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -1457,46 +1441,46 @@ public:
 
     // `offset_t` a.k.a `SegmentSizeT` is fixed to `int` type now, but later can be changed to accept
     // integral constant or larger integral types
-    using OffsetT = int;
+    using input_t = int;
 
     // The input type
-    using InputValueT = cub::detail::it_value_t<InputIteratorT>;
+    using input_value_t = cub::detail::it_value_t<InputIteratorT>;
 
     // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<OffsetT, InputValueT>>;
+    using output_tuple_t = cub::detail::non_void_value_t<OutputIteratorT, ::cuda::std::pair<input_t, input_value_t>>;
 
-    using AccumT = OutputTupleT;
+    using accum_t = output_tuple_t;
 
-    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
+    using init_t = detail::reduce::empty_problem_init_t<accum_t>;
 
     // The output value type
-    using OutputValueT = typename OutputTupleT::second_type;
+    using output_value_t = typename output_tuple_t::second_type;
 
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
+    // Wrapped input iterator to produce index-value <input_t, InputT> tuples
     auto d_indexed_in = THRUST_NS_QUALIFIER::make_transform_iterator(
       THRUST_NS_QUALIFIER::counting_iterator<::cuda::std::int64_t>{0},
-      detail::generate_idx_value<InputIteratorT, OutputValueT>(d_in, segment_size));
+      detail::reduce::generate_idx_value<InputIteratorT, output_value_t>(d_in, segment_size));
 
-    using ArgIndexInputIteratorT = decltype(d_indexed_in);
+    using arg_index_input_iterator_t = decltype(d_indexed_in);
 
     // Initial value
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    init_t initial_value{accum_t(1, ::cuda::std::numeric_limits<input_value_t>::lowest())};
 
     return detail::reduce::DispatchFixedSizeSegmentedReduce<
-      ArgIndexInputIteratorT,
+      arg_index_input_iterator_t,
       OutputIteratorT,
-      OffsetT,
-      cub::detail::ArgMax,
-      InitT,
-      AccumT>::Dispatch(d_temp_storage,
-                        temp_storage_bytes,
-                        d_indexed_in,
-                        d_out,
-                        num_segments,
-                        segment_size,
-                        cub::detail::ArgMax(),
-                        initial_value,
-                        stream);
+      input_t,
+      cub::detail::arg_max,
+      init_t,
+      accum_t>::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_indexed_in,
+                         d_out,
+                         num_segments,
+                         segment_size,
+                         cub::detail::arg_max(),
+                         initial_value,
+                         stream);
   }
 };
 
