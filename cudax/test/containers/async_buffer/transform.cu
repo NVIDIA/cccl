@@ -147,7 +147,7 @@ C2H_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
   cudax::stream stream{};
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
 
-  const std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+  const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
   cudax::async_device_buffer<int> a{env, array};
   const cudax::async_device_buffer<int> b{env, a.size(), 1};
