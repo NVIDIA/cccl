@@ -8,8 +8,6 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc
-// We cannot suppress execution checks in cuda::std::construct_at
-// XFAIL: c++20 && gcc
 
 #include <cuda/std/cassert>
 #include <cuda/std/expected>

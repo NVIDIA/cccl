@@ -44,7 +44,7 @@ __host__ __device__ constexpr cuda::std::array<int, 3> get_strides(Extent src_ex
   strides[0] = 1;
   for (size_t r = 1; r < 3; r++)
   {
-    strides[r] = src_exts.extent(r - 1) * strides[r - 1];
+    strides[r] = static_cast<int>(src_exts.extent(r - 1) * strides[r - 1]);
   }
   return strides;
 }
