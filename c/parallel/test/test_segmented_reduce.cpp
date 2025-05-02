@@ -3,37 +3,79 @@
 
 #include <cstdint>
 #include <cstdlib>
-#include <iostream> // std::cerr
 #include <numeric>
 #include <optional> // std::optional
 #include <string>
 
+#include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h>
 
-struct segmented_reduce_build_cleaner
+using BuildResultT = cccl_device_segmented_reduce_build_result_t;
+
+struct segmented_reduce_cleanup
 {
-  void operator()(cccl_device_segmented_reduce_build_result_t* build_data) noexcept
+  CUresult operator()(BuildResultT* build_data) const noexcept
   {
-    auto command_status = cccl_device_segmented_reduce_cleanup(build_data);
-    if (CUDA_SUCCESS != command_status)
-    {
-      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
-                << static_cast<void*>(build_data) << std::endl;
-      if (build_data)
-      {
-        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
-                  << ", build->cubin_size: " << build_data->cubin_size << std::endl;
-      }
-    };
+    return cccl_device_segmented_reduce_cleanup(build_data);
   }
 };
 
+using segmented_reduce_deleter = BuildResultDeleter<BuildResultT, segmented_reduce_cleanup>;
 using segmented_reduce_build_cache_t =
-  build_cache_t<std::string,
-                result_wrapper_t<cccl_device_segmented_reduce_build_result_t, segmented_reduce_build_cleaner>>;
+  build_cache_t<std::string, result_wrapper_t<BuildResultT, segmented_reduce_deleter>>;
+
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<segmented_reduce_build_cache_t, Tag>::get_or_create().get_value();
+}
+
+struct segmented_reduce_build
+{
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_iterator_t start_offsets,
+    cccl_iterator_t end_offsets,
+    cccl_op_t op,
+    cccl_value_t init,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_segmented_reduce_build(
+      build_ptr,
+      input,
+      output,
+      start_offsets,
+      end_offsets,
+      op,
+      init,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path);
+  }
+};
+
+struct segmented_reduce_run
+{
+  template <typename... Ts>
+  CUresult operator()(Ts... args) const noexcept
+  {
+    return cccl_device_segmented_reduce(args...);
+  }
+};
 
 template <typename BuildCache = segmented_reduce_build_cache_t, typename KeyT = std::string>
 void segmented_reduce(
@@ -47,87 +89,8 @@ void segmented_reduce(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
-
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_segmented_reduce_build_result_t build;
-  bool found = false;
-
-  const bool cache_and_key = bool(cache) && bool(lookup_key);
-
-  if (cache_and_key)
-  {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
-    if (cache_v.contains(key_v))
-    {
-      build = cache_v.get(key_v).get();
-      found = true;
-    }
-  }
-
-  if (!found)
-  {
-    REQUIRE(
-      CUDA_SUCCESS
-      == cccl_device_segmented_reduce_build(
-        &build,
-        input,
-        output,
-        start_offsets,
-        end_offsets,
-        op,
-        init,
-        cc_major,
-        cc_minor,
-        cub_path,
-        thrust_path,
-        libcudacxx_path,
-        ctk_path));
-
-    if (cache_and_key)
-    {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
-      cache_v.insert(key_v, build);
-    }
-  }
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  size_t temp_storage_bytes = 0;
-  REQUIRE(CUDA_SUCCESS
-          == cccl_device_segmented_reduce(
-            build, nullptr, &temp_storage_bytes, input, output, num_segments, start_offsets, end_offsets, op, init, 0));
-
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_segmented_reduce(
-      build, temp_storage.ptr, &temp_storage_bytes, input, output, num_segments, start_offsets, end_offsets, op, init, 0));
-
-  if (cache_and_key)
-  {
-    // if cache and lookup_key were provided, the ownership of resources
-    // allocated for build is transferred to the cache
-  }
-  else
-  {
-    // release build data resources
-    REQUIRE(CUDA_SUCCESS == cccl_device_segmented_reduce_cleanup(&build));
-  }
+  AlgorithmExecute<BuildResultT, segmented_reduce_build, segmented_reduce_cleanup, segmented_reduce_run, BuildCache, KeyT>(
+    cache, lookup_key, input, output, num_segments, start_offsets, end_offsets, op, init);
 }
 
 using SizeT = unsigned long long;
@@ -211,8 +174,7 @@ extern "C" __device__ unsigned long long {0}(
   operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   value_t<TestType> init{0};
 
-  auto& build_cache =
-    fixture<segmented_reduce_build_cache_t, SegmentedReduce_SumOverRows_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<SegmentedReduce_SumOverRows_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<TestType>();
   std::optional<std::string> test_key{key_string};
@@ -290,8 +252,7 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
   pair v0        = pair{4, 2};
   value_t<pair> init{v0};
 
-  auto& build_cache =
-    fixture<segmented_reduce_build_cache_t, SegmentedReduce_CustomTypes_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<SegmentedReduce_CustomTypes_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<pair>();
   std::optional<std::string> test_key{key_string};
@@ -436,8 +397,7 @@ extern "C" __device__ {1} {0}({2} *state) {{
   operation_t op = make_operation("op", get_reduce_op(get_type_info<ValueT>().type));
   value_t<ValueT> init{0};
 
-  auto& build_cache =
-    fixture<segmented_reduce_build_cache_t, SegmentedReduce_InputIterators_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<SegmentedReduce_InputIterators_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<ValueT>();
   std::optional<std::string> test_key{key_string};

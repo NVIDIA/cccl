@@ -8,99 +8,80 @@
 #include <optional> // std::optional
 #include <string>
 
+#include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/transform.h>
 #include <cccl/c/types.h>
 
-struct transform_build_cleaner
+using BuildResultT = cccl_device_transform_build_result_t;
+
+struct transform_cleanup
 {
-  void operator()(cccl_device_transform_build_result_t* build_data) noexcept
+  CUresult operator()(BuildResultT* build_data) const noexcept
   {
-    auto command_status = cccl_device_transform_cleanup(build_data);
-    if (CUDA_SUCCESS != command_status)
-    {
-      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
-                << static_cast<void*>(build_data) << std::endl;
-      if (build_data)
-      {
-        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
-                  << ", build->cubin_size: " << build_data->cubin_size << std::endl;
-      }
-    };
+    return cccl_device_transform_cleanup(build_data);
   }
 };
 
-using transform_build_cache_t =
-  build_cache_t<std::string, result_wrapper_t<cccl_device_transform_build_result_t, transform_build_cleaner>>;
+using transform_deleter       = BuildResultDeleter<BuildResultT, transform_cleanup>;
+using transform_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, transform_deleter>>;
+
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<transform_build_cache_t, Tag>::get_or_create().get_value();
+}
+
+struct transform_build
+{
+  using IterT = cccl_iterator_t;
+
+  template <typename... Ts>
+  CUresult operator()(BuildResultT* build_ptr, IterT input, IterT output, uint64_t, Ts... rest) const noexcept
+  {
+    return cccl_device_unary_transform_build(build_ptr, input, output, rest...);
+  }
+
+  template <typename... Ts>
+  CUresult
+  operator()(BuildResultT* build_ptr, IterT input1, IterT input2, IterT output, uint64_t, Ts... rest) const noexcept
+  {
+    return cccl_device_binary_transform_build(build_ptr, input1, input2, output, rest...);
+  }
+};
+
+struct unary_transform_run
+{
+  template <typename... Ts>
+  CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
+  {
+    *scratch_size = 1;
+    return (scratch) ? cccl_device_unary_transform(build, args...) : CUDA_SUCCESS;
+  }
+};
+
+struct binary_transform_run
+{
+  template <typename... Ts>
+  CUresult operator()(BuildResultT build, void* scratch, size_t* scratch_size, Ts... args) const noexcept
+  {
+    *scratch_size = 1;
+    return (scratch) ? cccl_device_binary_transform(build, args...) : CUDA_SUCCESS;
+  }
+};
 
 template <typename BuildCache = transform_build_cache_t, typename KeyT = std::string>
 void unary_transform(
   cccl_iterator_t input,
   cccl_iterator_t output,
-  long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
-
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_transform_build_result_t build;
-  bool found = false;
-
-  const bool cache_and_key = bool(cache) && bool(lookup_key);
-
-  if (cache_and_key)
-  {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
-    if (cache_v.contains(key_v))
-    {
-      build = cache_v.get(key_v).get();
-      found = true;
-    }
-  }
-
-  if (!found)
-  {
-    REQUIRE(CUDA_SUCCESS
-            == cccl_device_unary_transform_build(
-              &build, input, output, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
-
-    if (cache_and_key)
-    {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
-      cache_v.insert(key_v, build);
-    }
-  }
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  REQUIRE(CUDA_SUCCESS == cccl_device_unary_transform(build, input, output, num_items, op, 0));
-
-  if (cache_and_key)
-  {
-    // if cache and lookup_key were provided, the ownership of resources
-    // allocated for build is transferred to the cache
-  }
-  else
-  {
-    // release build data resources
-    REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
-  }
+  AlgorithmExecute<BuildResultT, transform_build, transform_cleanup, unary_transform_run, BuildCache, KeyT>(
+    cache, lookup_key, input, output, num_items, op);
 }
 
 template <typename BuildCache = transform_build_cache_t, typename KeyT = std::string>
@@ -108,70 +89,13 @@ void binary_transform(
   cccl_iterator_t input1,
   cccl_iterator_t input2,
   cccl_iterator_t output,
-  long num_items,
+  uint64_t num_items,
   cccl_op_t op,
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
-
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_transform_build_result_t build;
-  bool found = false;
-
-  const bool cache_and_key = bool(cache) && bool(lookup_key);
-
-  if (cache_and_key)
-  {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
-    if (cache_v.contains(key_v))
-    {
-      build = cache_v.get(key_v).get();
-      found = true;
-    }
-  }
-
-  if (!found)
-  {
-    REQUIRE(
-      CUDA_SUCCESS
-      == cccl_device_binary_transform_build(
-        &build, input1, input2, output, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
-
-    if (cache_and_key)
-    {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
-      cache_v.insert(key_v, build);
-    }
-  }
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  REQUIRE(CUDA_SUCCESS == cccl_device_binary_transform(build, input1, input2, output, num_items, op, 0));
-
-  if (cache_and_key)
-  {
-    // if cache and lookup_key were provided, the ownership of resources
-    // allocated for build is transferred to the cache
-  }
-  else
-  {
-    // release build data resources
-    REQUIRE(CUDA_SUCCESS == cccl_device_transform_cleanup(&build));
-  }
+  AlgorithmExecute<BuildResultT, transform_build, transform_cleanup, binary_transform_run, BuildCache, KeyT>(
+    cache, lookup_key, input1, input2, output, num_items, op);
 }
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
@@ -187,8 +111,7 @@ C2H_TEST("Transform works with integral types", "[transform]", integral_types)
   pointer_t<T> input_ptr(input);
   pointer_t<T> output_ptr(output);
 
-  auto& build_cache =
-    fixture<transform_build_cache_t, Transform_IntegralTypes_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Transform_IntegralTypes_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<T>();
   std::optional<std::string> test_key{key_string};
@@ -240,8 +163,7 @@ C2H_TEST("Transform works with output of different type", "[transform]")
   pointer_t<int> input_ptr(input);
   pointer_t<pair> output_ptr(output);
 
-  auto& build_cache =
-    fixture<transform_build_cache_t, Transform_DifferentOutputTypes_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Transform_DifferentOutputTypes_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<int>(), KeyBuilder::type_as_key<pair>()});
   std::optional<std::string> test_key{key_string};
@@ -278,7 +200,7 @@ C2H_TEST("Transform works with custom types", "[transform]")
   pointer_t<pair> input_ptr(input);
   pointer_t<pair> output_ptr(output);
 
-  auto& build_cache = fixture<transform_build_cache_t, Transform_CustomTypes_FIxture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Transform_CustomTypes_FIxture_Tag>();
 
   std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<pair>(), KeyBuilder::type_as_key<pair>()});
   std::optional<std::string> test_key{key_string};
@@ -304,8 +226,7 @@ C2H_TEST("Transform works with input iterators", "[transform]")
   input_it.state.value                                     = 0;
   pointer_t<int> output_it(num_items);
 
-  auto& build_cache =
-    fixture<transform_build_cache_t, Transform_InputIterators_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Transform_InputIterators_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<int>();
   std::optional<std::string> test_key{key_string};
@@ -338,8 +259,7 @@ C2H_TEST("Transform works with output iterators", "[transform]")
   pointer_t<int> inner_output_it(num_items);
   output_it.state.data = inner_output_it.ptr;
 
-  auto& build_cache =
-    fixture<transform_build_cache_t, Transform_OutputIterators_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Transform_OutputIterators_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<int>();
   std::optional<std::string> test_key{key_string};
@@ -376,7 +296,7 @@ C2H_TEST("Transform with binary operator", "[transform]")
     "  *out = (*x > *y) ? *x : *y;\n"
     "}");
 
-  auto& build_cache = fixture<transform_build_cache_t, Transform_BinaryOp_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Transform_BinaryOp_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<int>();
   std::optional<std::string> test_key{key_string};
@@ -416,8 +336,7 @@ C2H_TEST("Binary transform with one iterator", "[transform]")
     "  *out = (*x > *y) ? *x : *y;\n"
     "}");
 
-  auto& build_cache =
-    fixture<transform_build_cache_t, Transform_BinaryOp_Iterator_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Transform_BinaryOp_Iterator_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<int>();
   std::optional<std::string> test_key{key_string};

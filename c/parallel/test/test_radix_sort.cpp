@@ -15,6 +15,7 @@
 #include <optional> // std::optional
 #include <string>
 
+#include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/radix_sort.h>
@@ -22,26 +23,86 @@
 using key_types = std::tuple<uint8_t, int16_t, uint32_t, double>;
 using item_t    = float;
 
-struct radix_sort_build_cleaner
+using BuildResultT = cccl_device_radix_sort_build_result_t;
+
+struct radix_sort_cleanup
 {
-  void operator()(cccl_device_radix_sort_build_result_t* build_data) noexcept
+  CUresult operator()(BuildResultT* build_data) const noexcept
   {
-    auto command_status = cccl_device_radix_sort_cleanup(build_data);
-    if (CUDA_SUCCESS != command_status)
-    {
-      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
-                << static_cast<void*>(build_data) << std::endl;
-      if (build_data)
-      {
-        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
-                  << ", build->cubin_size: " << build_data->cubin_size << ", order: " << build_data->order << std::endl;
-      }
-    };
+    return cccl_device_radix_sort_cleanup(build_data);
   }
 };
 
-using radix_sort_build_cache_t =
-  build_cache_t<std::string, result_wrapper_t<cccl_device_radix_sort_build_result_t, radix_sort_build_cleaner>>;
+using radix_sort_deleter       = BuildResultDeleter<BuildResultT, radix_sort_cleanup>;
+using radix_sort_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, radix_sort_deleter>>;
+
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<radix_sort_build_cache_t, Tag>::get_or_create().get_value();
+}
+
+struct radix_sort_build
+{
+  // operator arguments are (build_ptr, <all_args_of_algo_driver>, cc_major, cc_minor, <paths>)
+  //   of all_args_of_algo_driver we pick out what gets passed to cccl_algo_build function
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_sort_order_t sort_order,
+    cccl_iterator_t d_keys_in,
+    cccl_iterator_t,
+    cccl_iterator_t d_values_in,
+    cccl_iterator_t,
+    cccl_op_t decomposer,
+    const char* decomposer_return_type,
+    uint64_t,
+    int,
+    int,
+    bool,
+    int*,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_radix_sort_build(
+      build_ptr,
+      sort_order,
+      d_keys_in,
+      d_values_in,
+      decomposer,
+      decomposer_return_type,
+      cc_major,
+      cc_minor,
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path);
+  }
+};
+
+struct radix_sort_run
+{
+  template <typename... Rest>
+  CUresult operator()(
+    BuildResultT build,
+    void* temp_storage,
+    size_t* temp_storage_bytes,
+    cccl_sort_order_t,
+    cccl_iterator_t d_keys_in,
+    cccl_iterator_t d_keys_out,
+    cccl_iterator_t d_values_in,
+    cccl_iterator_t d_values_out,
+    cccl_op_t decomposer,
+    const char*,
+    Rest... rest) const noexcept
+  {
+    return cccl_device_radix_sort(
+      build, temp_storage, temp_storage_bytes, d_keys_in, d_keys_out, d_values_in, d_values_out, decomposer, rest...);
+  }
+};
 
 template <typename BuildCache = radix_sort_build_cache_t, typename KeyT = std::string>
 void radix_sort(
@@ -60,112 +121,21 @@ void radix_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
-
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_radix_sort_build_result_t build;
-  bool found = false;
-
-  const bool cache_and_key = bool(cache) && bool(lookup_key);
-
-  if (cache_and_key)
-  {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
-    if (cache_v.contains(key_v))
-    {
-      build = cache_v.get(key_v).get();
-      found = true;
-    }
-  }
-
-  if (!found)
-  {
-    REQUIRE(
-      CUDA_SUCCESS
-      == cccl_device_radix_sort_build(
-        &build,
-        sort_order,
-        d_keys_in,
-        d_values_in,
-        decomposer,
-        decomposer_return_type,
-        cc_major,
-        cc_minor,
-        cub_path,
-        thrust_path,
-        libcudacxx_path,
-        ctk_path));
-
-    if (cache_and_key)
-    {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
-      cache_v.insert(key_v, build);
-    }
-  }
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  size_t temp_storage_bytes = 0;
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_radix_sort(
-      build,
-      nullptr,
-      &temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      decomposer,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      selector,
-      0));
-
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_radix_sort(
-      build,
-      temp_storage.ptr,
-      &temp_storage_bytes,
-      d_keys_in,
-      d_keys_out,
-      d_values_in,
-      d_values_out,
-      decomposer,
-      num_items,
-      begin_bit,
-      end_bit,
-      is_overwrite_okay,
-      selector,
-      0));
-
-  if (cache_and_key)
-  {
-    // if cache and lookup_key were provided, the ownership of resources
-    // allocated for build is transferred to the cache
-  }
-  else
-  {
-    // release build data resources
-    REQUIRE(CUDA_SUCCESS == cccl_device_radix_sort_cleanup(&build));
-  }
+  AlgorithmExecute<BuildResultT, radix_sort_build, radix_sort_cleanup, radix_sort_run, BuildCache, KeyT>(
+    cache,
+    lookup_key,
+    sort_order,
+    d_keys_in,
+    d_keys_out,
+    d_values_in,
+    d_values_out,
+    decomposer,
+    decomposer_return_type,
+    num_items,
+    begin_bit,
+    end_bit,
+    is_overwrite_okay,
+    selector);
 }
 
 struct DeviceRadixSort_SortKeys_Fixture_Tag;
@@ -193,8 +163,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
 
   pointer_t<item_t> input_items_it, output_items_it;
 
-  auto& build_cache =
-    fixture<radix_sort_build_cache_t, DeviceRadixSort_SortKeys_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceRadixSort_SortKeys_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
@@ -266,8 +235,7 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
   pointer_t<item_t> input_items_it(input_items);
   pointer_t<item_t> output_items_it(num_items);
 
-  auto& build_cache =
-    fixture<radix_sort_build_cache_t, DeviceRadixSort_SortPairs_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceRadixSort_SortPairs_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),

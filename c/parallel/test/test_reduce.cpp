@@ -15,30 +15,59 @@
 #include <optional> // std::optional
 #include <string>
 
+#include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/reduce.h>
 
-struct reduce_build_cleaner
+using BuildResultT = cccl_device_reduce_build_result_t;
+
+struct reduce_cleanup
 {
-  void operator()(cccl_device_reduce_build_result_t* build_data) noexcept
+  CUresult operator()(BuildResultT* build_data) const noexcept
   {
-    auto command_status = cccl_device_reduce_cleanup(build_data);
-    if (CUDA_SUCCESS != command_status)
-    {
-      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
-                << static_cast<void*>(build_data) << std::endl;
-      if (build_data)
-      {
-        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
-                  << ", build->cubin_size: " << build_data->cubin_size << std::endl;
-      }
-    };
+    return cccl_device_reduce_cleanup(build_data);
   }
 };
 
-using reduce_build_cache_t =
-  build_cache_t<std::string, result_wrapper_t<cccl_device_reduce_build_result_t, reduce_build_cleaner>>;
+using reduce_deleter       = BuildResultDeleter<BuildResultT, reduce_cleanup>;
+using reduce_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, reduce_deleter>>;
+
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<reduce_build_cache_t, Tag>::get_or_create().get_value();
+}
+
+struct reduce_build
+{
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_iterator_t input,
+    cccl_iterator_t output,
+    uint64_t,
+    cccl_op_t op,
+    cccl_value_t init,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_reduce_build(
+      build_ptr, input, output, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path);
+  }
+};
+
+struct reduce_run
+{
+  template <typename... Ts>
+  CUresult operator()(Ts... args) const noexcept
+  {
+    return cccl_device_reduce(args...);
+  }
+};
 
 template <typename BuildCache = reduce_build_cache_t, typename KeyT = std::string>
 void reduce(cccl_iterator_t input,
@@ -49,70 +78,13 @@ void reduce(cccl_iterator_t input,
             std::optional<BuildCache>& cache,
             const std::optional<KeyT>& lookup_key)
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
-
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_reduce_build_result_t build;
-  const bool cache_and_key = bool(cache) && bool(lookup_key);
-  bool found               = false;
-
-  if (cache_and_key)
-  {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
-    if (cache_v.contains(key_v))
-    {
-      build = cache_v.get(key_v).get();
-      found = true;
-    }
-  }
-
-  if (!found)
-  {
-    REQUIRE(CUDA_SUCCESS
-            == cccl_device_reduce_build(
-              &build, input, output, op, init, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
-
-    if (cache_and_key)
-    {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
-      cache_v.insert(key_v, build);
-    }
-  }
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  size_t temp_storage_bytes = 0;
-  REQUIRE(
-    CUDA_SUCCESS == cccl_device_reduce(build, nullptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
-
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-  REQUIRE(CUDA_SUCCESS
-          == cccl_device_reduce(build, temp_storage.ptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
-
-  if (cache_and_key)
-  {
-    // if cache and lookup_key were provided, the ownership of resources
-    // allocated for build is transferred to the cache
-  }
-  else
-  {
-    // release build data resources
-    REQUIRE(CUDA_SUCCESS == cccl_device_reduce_cleanup(&build));
-  }
+  AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run, BuildCache, KeyT>(
+    cache, lookup_key, input, output, num_items, op, init);
 }
+
+// ===============
+//   Tests section
+// ===============
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 struct Reduce_IntegralTypes_Fixture_Tag;
@@ -127,7 +99,7 @@ C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
   pointer_t<T> output_ptr(1);
   value_t<T> init{T{42}};
 
-  auto& build_cache = fixture<reduce_build_cache_t, Reduce_IntegralTypes_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Reduce_IntegralTypes_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<T>();
   std::optional<std::string> test_key{key_string};
@@ -170,7 +142,7 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
   pointer_t<pair> output_ptr(1);
   value_t<pair> init{pair{4, 2}};
 
-  auto& build_cache = fixture<reduce_build_cache_t, Reduce_CustomTypes_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Reduce_CustomTypes_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<pair>();
   std::optional<std::string> test_key{key_string};
@@ -195,7 +167,7 @@ C2H_TEST("Reduce works with input iterators", "[reduce]")
   pointer_t<int> output_it(1);
   value_t<int> init{42};
 
-  auto& build_cache = fixture<reduce_build_cache_t, Reduce_CustomTypes_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Reduce_CustomTypes_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<int>();
   std::optional<std::string> test_key{key_string};
@@ -220,7 +192,7 @@ C2H_TEST("Reduce works with output iterators", "[reduce]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  auto& build_cache = fixture<reduce_build_cache_t, Reduce_OutputIterators_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Reduce_OutputIterators_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<int>();
   std::optional<std::string> test_key{key_string};
@@ -245,8 +217,7 @@ C2H_TEST("Reduce works with input and output iterators", "[reduce]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  auto& build_cache =
-    fixture<reduce_build_cache_t, Reduce_InputOutputIterators_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Reduce_InputOutputIterators_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<int>();
   std::optional<std::string> test_key{key_string};
@@ -269,7 +240,7 @@ C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
   pointer_t<size_t> output_it(1);
   value_t<size_t> init{42};
 
-  auto& build_cache = fixture<reduce_build_cache_t, Reduce_AccumulatorType_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Reduce_AccumulatorType_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<char>(), KeyBuilder::type_as_key<size_t>()});
   std::optional<std::string> test_key{key_string};
@@ -291,7 +262,7 @@ C2H_TEST("Reduce works with large inputs", "[reduce]")
   value_t<size_t> init{42};
 
   // reuse fixture cache from previous example, as it runs identical example on larger input
-  auto& build_cache = fixture<reduce_build_cache_t, Reduce_AccumulatorType_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<Reduce_AccumulatorType_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<char>(), KeyBuilder::type_as_key<size_t>()});
   std::optional<std::string> test_key{key_string};

@@ -15,6 +15,7 @@
 #include <optional>
 #include <string>
 
+#include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/merge_sort.h>
@@ -22,26 +23,50 @@
 using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, double>;
 using item_t    = float;
 
-struct merge_sort_build_cleaner
+using BuildResultT = cccl_device_merge_sort_build_result_t;
+
+struct merge_sort_cleanup
 {
-  void operator()(cccl_device_merge_sort_build_result_t* build_data) noexcept
+  CUresult operator()(BuildResultT* build_data) const noexcept
   {
-    auto command_status = cccl_device_merge_sort_cleanup(build_data);
-    if (CUDA_SUCCESS != command_status)
-    {
-      std::cerr << "  Clean-up call returned status " << command_status << ". The pointer was "
-                << static_cast<void*>(build_data) << std::endl;
-      if (build_data)
-      {
-        std::cerr << "build->cc: " << build_data->cc << ", build->cubin: " << build_data->cubin
-                  << ", build->cubin_size: " << build_data->cubin_size << std::endl;
-      }
-    };
+    return cccl_device_merge_sort_cleanup(build_data);
   }
 };
 
-using merge_sort_build_cache_t =
-  build_cache_t<std::string, result_wrapper_t<cccl_device_merge_sort_build_result_t, merge_sort_build_cleaner>>;
+using merge_sort_deleter       = BuildResultDeleter<BuildResultT, merge_sort_cleanup>;
+using merge_sort_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, merge_sort_deleter>>;
+
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<merge_sort_build_cache_t, Tag>::get_or_create().get_value();
+}
+
+struct merge_sort_build
+{
+  template <typename... Rest>
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_iterator_t input_keys,
+    cccl_iterator_t input_items,
+    cccl_iterator_t output_keys,
+    cccl_iterator_t output_items,
+    uint64_t,
+    cccl_op_t op,
+    Rest... rest) const noexcept
+  {
+    return cccl_device_merge_sort_build(build_ptr, input_keys, input_items, output_keys, output_items, op, rest...);
+  }
+};
+
+struct merge_sort_run
+{
+  template <typename... Args>
+  CUresult operator()(Args... args) const noexcept
+  {
+    return cccl_device_merge_sort(args...);
+  }
+};
 
 template <typename BuildCache = merge_sort_build_cache_t, typename KeyT = std::string>
 void merge_sort(
@@ -54,86 +79,13 @@ void merge_sort(
   std::optional<BuildCache>& cache,
   const std::optional<KeyT>& lookup_key)
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
-
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_merge_sort_build_result_t build;
-  bool found = false;
-
-  const bool cache_and_key = bool(cache) && bool(lookup_key);
-
-  if (cache_and_key)
-  {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
-    if (cache_v.contains(key_v))
-    {
-      build = cache_v.get(key_v).get();
-      found = true;
-    }
-  }
-
-  if (!found)
-  {
-    REQUIRE(
-      CUDA_SUCCESS
-      == cccl_device_merge_sort_build(
-        &build,
-        input_keys,
-        input_items,
-        output_keys,
-        output_items,
-        op,
-        cc_major,
-        cc_minor,
-        cub_path,
-        thrust_path,
-        libcudacxx_path,
-        ctk_path));
-
-    if (cache_and_key)
-    {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
-      cache_v.insert(key_v, build);
-    }
-  }
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  size_t temp_storage_bytes = 0;
-  REQUIRE(CUDA_SUCCESS
-          == cccl_device_merge_sort(
-            build, nullptr, &temp_storage_bytes, input_keys, input_items, output_keys, output_items, num_items, op, 0));
-
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_merge_sort(
-      build, temp_storage.ptr, &temp_storage_bytes, input_keys, input_items, output_keys, output_items, num_items, op, 0));
-
-  if (cache_and_key)
-  {
-    // if cache and lookup_key were provided, the ownership of resources
-    // allocated for build is transferred to the cache
-  }
-  else
-  {
-    // release build data resources
-    REQUIRE(CUDA_SUCCESS == cccl_device_merge_sort_cleanup(&build));
-  }
+  AlgorithmExecute<BuildResultT, merge_sort_build, merge_sort_cleanup, merge_sort_run, BuildCache, KeyT>(
+    cache, lookup_key, input_keys, input_items, output_keys, output_items, num_items, op);
 }
+
+// ================
+//   Start of tests
+// ================
 
 struct DeviceMergeSort_SortKeys_Fixture_Tag;
 C2H_TEST("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
@@ -149,8 +101,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works", "[merge_sort]", key_types)
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<key_t> input_items_it;
 
-  auto& build_cache =
-    fixture<merge_sort_build_cache_t, DeviceMergeSort_SortKeys_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceMergeSort_SortKeys_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<key_t>();
   std::optional<std::string> test_key{key_string};
@@ -177,8 +128,7 @@ C2H_TEST("DeviceMergeSort::SortKeysCopy works", "[merge_sort]", key_types)
   pointer_t<key_t> input_items_it;
   pointer_t<key_t> output_keys_it(output_keys);
 
-  auto& build_cache =
-    fixture<merge_sort_build_cache_t, DeviceMergeSort_SortKeysCopy_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceMergeSort_SortKeysCopy_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<key_t>();
   std::optional<std::string> test_key{key_string};
@@ -208,8 +158,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works", "[merge_sort]", key_types)
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<item_t> input_items_it(input_items);
 
-  auto& build_cache =
-    fixture<merge_sort_build_cache_t, DeviceMergeSort_SortPairs_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>()});
   std::optional<std::string> test_key{key_string};
@@ -245,8 +194,7 @@ C2H_TEST("DeviceMergeSort::SortPairsCopy works ", "[merge_sort]", key_types)
   pointer_t<key_t> output_keys_it(output_keys);
   pointer_t<item_t> output_items_it(output_items);
 
-  auto& build_cache =
-    fixture<merge_sort_build_cache_t, DeviceMergeSort_SortPairs_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceMergeSort_SortPairs_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>()});
   std::optional<std::string> test_key{key_string};
@@ -301,8 +249,7 @@ C2H_TEST("DeviceMergeSort:SortPairsCopy works with custom types", "[merge_sort]"
   pointer_t<key_pair> output_keys_it(input_keys);
   pointer_t<item_pair> output_items_it(input_items);
 
-  auto& build_cache =
-    fixture<merge_sort_build_cache_t, DeviceMergeSort_SortPairsCopy_CustomType_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceMergeSort_SortPairsCopy_CustomType_Fixture_Tag>();
 
   std::string key_string =
     KeyBuilder::join({KeyBuilder::type_as_key<key_pair>(), KeyBuilder::type_as_key<item_pair>()});
@@ -348,8 +295,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with input iterators", "[merge_sort]")
   input_keys_it.state.data = input_keys_ptr.ptr;
   pointer_t<T> input_items_it;
 
-  auto& build_cache =
-    fixture<merge_sort_build_cache_t, DeviceMergeSort_SortKeys_Iterators_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceMergeSort_SortKeys_Iterators_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::type_as_key<T>();
   std::optional<std::string> test_key{key_string};
@@ -387,8 +333,7 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input iterators", "[merge_sort]"
   pointer_t<key_t> input_items_ptr(input_items);
   input_items_it.state.data = input_items_ptr.ptr;
 
-  auto& build_cache =
-    fixture<merge_sort_build_cache_t, DeviceMergeSort_SortPairs_Iterators_Fixture_Tag>::get_or_create().get_value();
+  auto& build_cache = get_cache<DeviceMergeSort_SortPairs_Iterators_Fixture_Tag>();
 
   std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<key_t>(), KeyBuilder::type_as_key<item_t>()});
   std::optional<std::string> test_key{key_string};
