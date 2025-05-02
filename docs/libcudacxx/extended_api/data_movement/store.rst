@@ -11,7 +11,7 @@ Defined in the header ``<cuda/data_movement>``.
     __device__ inline
     void store(T                         data,
                T*                        ptr,
-               /*L1 reuse policy*/       l1_reuse = L1_unchanged_reuse,
+               /*L1 reuse policy*/       l1_reuse = cache_reuse_unchanged,
                /*cuda::access_property*/ l2_hint  = access_property::global{})
 
     template <size_t N, typename T, size_t Align>
@@ -19,21 +19,21 @@ Defined in the header ``<cuda/data_movement>``.
     void store(cuda::std::array<T, N>      data,
                T*                          ptr,
                cuda::aligned_size_t<Align> align,
-               /*L1 reuse policy*/         l1_reuse        = L1_unchanged_reuse,
+               /*L1 reuse policy*/         l1_reuse        = cache_reuse_unchanged,
                /*cuda::access_property*/   l2_hint  = access_property::global{})
 
     template <typename T, typename Prop>
     __device__ inline
     void store(T                            data,
                cuda::annotated_ptr<T, Prop> ptr,
-               /*L1 reuse policy*/          l1_reuse = L1_unchanged_reuse)
+               /*L1 reuse policy*/          l1_reuse = cache_reuse_unchanged)
 
     template <size_t N, typename T, typename Prop, size_t Align>
     __device__ inline
     void store(cuda::std::array<T, N>       data,
                cuda::annotated_ptr<T, Prop> ptr,
                cuda::aligned_size_t<Align>  align,
-               /*L1 reuse policy*/          l1_reuse = L1_unchanged_reuse)
+               /*L1 reuse policy*/          l1_reuse = cache_reuse_unchanged)
 
 The function stores data to global memory and allows to specify memory access properties.
 
@@ -43,11 +43,11 @@ The function stores data to global memory and allows to specify memory access pr
 
 - ``l1_reuse``: L1 cache reuse policy. Requires ``SM >= 70``. See also `"Cache Eviction Priority Hints" <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#id150>`_ section of the PTX Language Reference.
 
-    - ``L1_unchanged_reuse``: Unchanged evict policy.
-    - ``L1_normal_reuse``: Normal reuse eviction policy.
-    - ``L1_low_reuse``: Low reuse eviction policy (streaming).
-    - ``L1_high_reuse``: High reuse eviction policy (persisting).
-    - ``L1_no_reuse``: No reuse eviction policy (streaming).
+    - ``cache_reuse_unchanged``: Unchanged evict policy.
+    - ``cache_reuse_normal``: Normal reuse eviction policy.
+    - ``cache_reuse_low``: Low reuse eviction policy (streaming).
+    - ``cache_reuse_high``: High reuse eviction policy (persisting).
+    - ``cache_no_reuse``: No reuse eviction policy (streaming).
 
 - ``access_property``: L2 cache residency control property. Requires ``SM >= 80``. See also `cuda::access_property <https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_access_properties/access_property.html>`_ documentation.
 
@@ -89,8 +89,8 @@ Example
     __global__ void store_kernel() {
         auto ptr = &output;
         cuda::device::store(1, ptr);
-        cuda::device::store(2, ptr, cuda::device::L1_low_reuse);
-        cuda::device::store(3, ptr, cuda::device::L1_high_reuse);
+        cuda::device::store(2, ptr, cuda::device::cache_reuse_low);
+        cuda::device::store(3, ptr, cuda::device::cache_reuse_high);
 
         cuda::std::array array{1, 2, 3};
         cuda::device::store(array, output2);

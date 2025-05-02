@@ -51,7 +51,7 @@ inline constexpr auto read_write = __read_write_t{};
  * L1 Eviction Policies
  **********************************************************************************************************************/
 
-enum class _L1_ReuseEnum
+enum class _CacheReuseEnum
 {
   _Normal,
   _Unchanged,
@@ -60,21 +60,20 @@ enum class _L1_ReuseEnum
   _NoReuse,
 };
 
-template <_L1_ReuseEnum _Value>
-using __l1_reuse_t = _CUDA_VSTD::integral_constant<_L1_ReuseEnum, _Value>;
+template <_CacheReuseEnum _Value>
+using __cache_reuse_t = _CUDA_VSTD::integral_constant<_CacheReuseEnum, _Value>;
 
-using __l1_normal_reuse_t    = __l1_reuse_t<_L1_ReuseEnum::_Normal>;
-using __l1_unchanged_reuse_t = __l1_reuse_t<_L1_ReuseEnum::_Unchanged>;
-using __l1_low_reuse_t       = __l1_reuse_t<_L1_ReuseEnum::_Low>;
-using __l1_high_reuse_t      = __l1_reuse_t<_L1_ReuseEnum::_High>;
-using __l1_no_reuse_t        = __l1_reuse_t<_L1_ReuseEnum::_NoReuse>;
+using __cache_reuse_normal_t    = __cache_reuse_t<_CacheReuseEnum::_Normal>;
+using __cache_reuse_unchanged_t = __cache_reuse_t<_CacheReuseEnum::_Unchanged>;
+using __cache_reuse_low_t       = __cache_reuse_t<_CacheReuseEnum::_Low>;
+using __cache_reuse_high_t      = __cache_reuse_t<_CacheReuseEnum::_High>;
+using __cache_no_reuse_t        = __cache_reuse_t<_CacheReuseEnum::_NoReuse>;
 
-// inline constexpr auto L1_unchanged_reuse      = __eviction_none_t{};
-inline constexpr auto L1_normal_reuse    = __l1_normal_reuse_t{};
-inline constexpr auto L1_unchanged_reuse = __l1_unchanged_reuse_t{};
-inline constexpr auto L1_low_reuse       = __l1_low_reuse_t{};
-inline constexpr auto L1_high_reuse      = __l1_high_reuse_t{};
-inline constexpr auto L1_no_reuse        = __l1_no_reuse_t{};
+inline constexpr auto cache_reuse_normal    = __cache_reuse_normal_t{};
+inline constexpr auto cache_reuse_unchanged = __cache_reuse_unchanged_t{};
+inline constexpr auto cache_reuse_low       = __cache_reuse_low_t{};
+inline constexpr auto cache_reuse_high      = __cache_reuse_high_t{};
+inline constexpr auto cache_no_reuse        = __cache_no_reuse_t{};
 
 /***********************************************************************************************************************
  * Prefetch Spatial Locality

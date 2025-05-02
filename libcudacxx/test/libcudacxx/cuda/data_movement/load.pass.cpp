@@ -55,12 +55,12 @@ __device__ void load_call(T* input, T& value, Access access, L1Reuse l1_reuse)
 template <typename T, typename Access>
 __device__ void load_call(T* input, T& value, Access access)
 {
-  load_call(input, value, access, cuda::device::L1_unchanged_reuse);
-  load_call(input, value, access, cuda::device::L1_normal_reuse);
-  load_call(input, value, access, cuda::device::L1_unchanged_reuse);
-  load_call(input, value, access, cuda::device::L1_low_reuse);
-  load_call(input, value, access, cuda::device::L1_high_reuse);
-  load_call(input, value, access, cuda::device::L1_no_reuse);
+  load_call(input, value, access, cuda::device::cache_reuse_unchanged);
+  load_call(input, value, access, cuda::device::cache_reuse_normal);
+  load_call(input, value, access, cuda::device::cache_reuse_unchanged);
+  load_call(input, value, access, cuda::device::cache_reuse_low);
+  load_call(input, value, access, cuda::device::cache_reuse_high);
+  load_call(input, value, access, cuda::device::cache_no_reuse);
 }
 
 template <typename T>

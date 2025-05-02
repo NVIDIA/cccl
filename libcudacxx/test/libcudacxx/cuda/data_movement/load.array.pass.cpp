@@ -56,12 +56,12 @@ __device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access
 template <size_t Align, size_t N, typename T, typename Access>
 __device__ void load_call(T* input, cuda::std::array<T, N>& value, Access access)
 {
-  load_call<Align>(input, value, access, cuda::device::L1_unchanged_reuse);
-  load_call<Align>(input, value, access, cuda::device::L1_normal_reuse);
-  load_call<Align>(input, value, access, cuda::device::L1_unchanged_reuse);
-  load_call<Align>(input, value, access, cuda::device::L1_low_reuse);
-  load_call<Align>(input, value, access, cuda::device::L1_high_reuse);
-  load_call<Align>(input, value, access, cuda::device::L1_no_reuse);
+  load_call<Align>(input, value, access, cuda::device::cache_reuse_unchanged);
+  load_call<Align>(input, value, access, cuda::device::cache_reuse_normal);
+  load_call<Align>(input, value, access, cuda::device::cache_reuse_unchanged);
+  load_call<Align>(input, value, access, cuda::device::cache_reuse_low);
+  load_call<Align>(input, value, access, cuda::device::cache_reuse_high);
+  load_call<Align>(input, value, access, cuda::device::cache_no_reuse);
 }
 
 template <size_t Align, size_t N, typename T>

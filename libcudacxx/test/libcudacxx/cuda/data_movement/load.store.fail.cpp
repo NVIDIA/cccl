@@ -22,15 +22,15 @@ __device__ uint32_t pointer2[16];
 __global__ void load_kernel()
 {
   unused(cuda::device::load(&pointer1, cuda::device::read_only));
-  unused(cuda::device::load(&pointer1, cuda::device::read_write, cuda::device::L1_unchanged_reuse));
+  unused(cuda::device::load(&pointer1, cuda::device::read_write, cuda::device::cache_reuse_unchanged));
   unused(cuda::device::load(
-    &pointer1, cuda::device::read_write, cuda::device::L1_unchanged_reuse, cuda::device::L2_prefetch_64B));
+    &pointer1, cuda::device::read_write, cuda::device::cache_reuse_unchanged, cuda::device::L2_prefetch_64B));
 }
 
 __global__ void store_kernel()
 {
   cuda::std::array<uint32_t, 7> array{};
-  cuda::device::store(array, &pointer1, cuda::device::L1_unchanged_reuse); // not a multiple of 16 with eviction
+  cuda::device::store(array, &pointer1, cuda::device::cache_reuse_unchanged); // not a multiple of 16 with eviction
 
   cuda::std::array<const uint32_t, 1> array1{};
   cuda::device::store(array1, reinterpret_cast<const uint32_t*>(&pointer2)); // const pointer

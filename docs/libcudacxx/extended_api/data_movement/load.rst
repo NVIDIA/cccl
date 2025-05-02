@@ -11,7 +11,7 @@ Defined in the header ``<cuda/data_movement>``.
     [[nodiscard]] __device__ inline
     T load(const T*                  ptr,
            /*Memory access kind*/    memory_access = read_write,
-           /*L1 reuse policy*/       l1_reuse      = L1_unchanged_reuse,
+           /*L1 reuse policy*/       l1_reuse      = cache_reuse_unchanged,
            /*cuda::access_property*/ l2_hint       = access_property::global{},
            /*L2 prefetch policy*/    l2_prefetch   = L2_prefetch_none)
 
@@ -20,7 +20,7 @@ Defined in the header ``<cuda/data_movement>``.
     cuda::std::array<T, N> load(const T*                    ptr,
                                 cuda::aligned_size_t<Align> align,
                                 /*Memory access kind*/      memory_access = read_write,
-                                /*L1 reuse policy*/         l1_reuse      = L1_unchanged_reuse,
+                                /*L1 reuse policy*/         l1_reuse      = cache_reuse_unchanged,
                                 /*cuda::access_property*/   l2_hint       = access_property::global{},
                                 /*L2 prefetch policy*/      l2_prefetch   = L2_prefetch_none)
 
@@ -28,7 +28,7 @@ Defined in the header ``<cuda/data_movement>``.
     [[nodiscard]] __device__ inline
     T load(cuda::annotated_ptr<T, Prop> ptr,
            /*Memory access kind*/       memory_access = read_write,
-           /*L1 reuse policy*/          l1_reuse      = L1_unchanged_reuse,
+           /*L1 reuse policy*/          l1_reuse      = cache_reuse_unchanged,
            /*L2 prefetch policy*/       l2_prefetch   = L2_prefetch_none)
 
     template <size_t N, typename T, typename Prop, size_t Align>
@@ -36,7 +36,7 @@ Defined in the header ``<cuda/data_movement>``.
     cuda::std::array<T, N> load(cuda::annotated_ptr<T, Prop> ptr,
                                 cuda::aligned_size_t<Align>  align,
                                 /*Memory access kind*/       memory_access = read_write,
-                                /*L1 reuse policy*/          l1_reuse      = L1_unchanged_reuse,
+                                /*L1 reuse policy*/          l1_reuse      = cache_reuse_unchanged,
                                 /*L2 prefetch policy*/       l2_prefetch   = L2_prefetch_none)
 
 The function loads data from global memory and allows to specify memory access properties.
@@ -51,11 +51,11 @@ The function loads data from global memory and allows to specify memory access p
 
 - ``l1_reuse``: L1 cache reuse policy. Requires ``SM >= 70``. See also `"Cache Eviction Priority Hints" <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#id150>`_ section of the PTX Language Reference.
 
-    - ``L1_unchanged_reuse``: Unchanged evict policy.
-    - ``L1_normal_reuse``: Normal reuse eviction policy.
-    - ``L1_low_reuse``: Low reuse eviction policy (streaming).
-    - ``L1_high_reuse``: High reuse eviction policy (persisting).
-    - ``L1_no_reuse``: No reuse eviction policy (streaming).
+    - ``cache_reuse_unchanged``: Unchanged evict policy.
+    - ``cache_reuse_normal``: Normal reuse eviction policy.
+    - ``cache_reuse_low``: Low reuse eviction policy (streaming).
+    - ``cache_reuse_high``: High reuse eviction policy (persisting).
+    - ``cache_no_reuse``: No reuse eviction policy (streaming).
 
 - ``access_property``: L2 cache residency control property. Requires ``SM >= 80``. See also `cuda::access_property <https://nvidia.github.io/cccl/libcudacxx/extended_api/memory_access_properties/access_property.html>`_ documentation.
 
@@ -111,10 +111,10 @@ Example
     __global__ void load_kernel() {
         auto ptr = &input;
         output   = cuda::device::load(ptr);
-        output   = cuda::device::load(ptr, read_only, L1_low_reuse);
-        output   = cuda::device::load(ptr, read_write, L1_high_reuse, access_property::persisting);
-        output   = cuda::device::load(ptr, read_write, L1_high_reuse, access_property::persisting, L2_prefetch_256B);
-        output   = cuda::device::load<4>(input2, read_only, L1_high_reuse)[0];
+        output   = cuda::device::load(ptr, read_only, cache_reuse_low);
+        output   = cuda::device::load(ptr, read_write, cache_reuse_high, access_property::persisting);
+        output   = cuda::device::load(ptr, read_write, cache_reuse_high, access_property::persisting, L2_prefetch_256B);
+        output   = cuda::device::load<4>(input2, read_only, cache_reuse_high)[0];
 
         auto ptr2 = cuda::std::annotated_ptr<int, cuda::access_property::normal>(&input);
         output    = cuda::device::load(ptr2);
