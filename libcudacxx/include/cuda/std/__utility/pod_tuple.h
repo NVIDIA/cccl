@@ -505,10 +505,10 @@ struct __mk_tuple_
 
 template <class... _Ts>
 using __tuple _CCCL_NODEBUG_ALIAS = typename __mk_tuple_<_Ts...>::type;
-#else
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class... _Ts>
 using __tuple _CCCL_NODEBUG_ALIAS = __tupl<make_index_sequence<sizeof...(_Ts)>, _Ts...>;
-#endif
+#endif // !_CCCL_COMPILER(MSVC)
 
 template <class... _Ts>
 using __decayed_tuple _CCCL_NODEBUG_ALIAS = __tuple<decay_t<_Ts>...>;

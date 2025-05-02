@@ -302,7 +302,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __dependent_sender_error : dependent_sender
 //   }
 //   else
 
-#if defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
 
 #  define _CUDAX_LET_COMPLETIONS(...)                  \
     if constexpr ([[maybe_unused]] __VA_ARGS__; false) \
@@ -857,7 +857,7 @@ _CUDAX_API constexpr auto __eptr_completion_if() noexcept
   }
 }
 
-#if defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
+#if _CCCL_HAS_EXCEPTIONS() && defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
 // When asked for its completions without an envitonment, a dependent sender
 // will throw an exception of a type derived from `dependent_sender_error`.
 template <class _Sndr>
