@@ -52,10 +52,6 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
-#include <iterator>
-
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst

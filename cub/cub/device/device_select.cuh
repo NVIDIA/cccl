@@ -47,11 +47,6 @@
 #include <cub/device/dispatch/dispatch_unique_by_key.cuh>
 
 #include <cuda/std/type_traits>
-
-#include <iterator>
-
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst

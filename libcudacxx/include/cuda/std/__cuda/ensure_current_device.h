@@ -29,6 +29,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+#if !_CCCL_COMPILER(NVRTC)
+
 //! @brief `__ensure_current_device` is a simple helper that the current device is set to the right one.
 //! Only changes the current device if the target device is not the current one
 struct __ensure_current_device
@@ -58,6 +60,8 @@ struct __ensure_current_device
     }
   }
 };
+
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

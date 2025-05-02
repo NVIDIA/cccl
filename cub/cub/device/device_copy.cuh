@@ -45,7 +45,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cstdint>
+#include <cuda/std/cstdint>
 
 CUB_NAMESPACE_BEGIN
 

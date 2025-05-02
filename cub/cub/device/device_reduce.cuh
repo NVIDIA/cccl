@@ -52,8 +52,6 @@
 
 #include <cuda/std/limits>
 
-#include <iterator>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail
