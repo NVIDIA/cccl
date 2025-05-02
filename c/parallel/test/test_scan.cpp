@@ -103,95 +103,9 @@ void scan(cccl_iterator_t input,
     cache, lookup_key, inclusive, input, output, num_items, op, init);
 }
 
-template <typename BuildCache = scan_build_cache_t, typename KeyT = std::string>
-void scan_old(
-  cccl_iterator_t input,
-  cccl_iterator_t output,
-  uint64_t num_items,
-  cccl_op_t op,
-  cccl_value_t init,
-  bool force_inclusive,
-  std::optional<BuildCache>& cache,
-  const std::optional<KeyT>& lookup_key)
-{
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
-
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
-
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
-
-  cccl_device_scan_build_result_t build;
-  const bool cache_and_key = bool(cache) && bool(lookup_key);
-  bool found               = false;
-
-  if (cache_and_key)
-  {
-    auto& cache_v     = cache.value();
-    const auto& key_v = lookup_key.value();
-    if (cache_v.contains(key_v))
-    {
-      build = cache_v.get(key_v).get();
-      found = true;
-    }
-  }
-
-  if (!found)
-  {
-    REQUIRE(
-      CUDA_SUCCESS
-      == cccl_device_scan_build(
-        &build,
-        input,
-        output,
-        op,
-        init,
-        force_inclusive,
-        cc_major,
-        cc_minor,
-        cub_path,
-        thrust_path,
-        libcudacxx_path,
-        ctk_path));
-
-    if (cache_and_key)
-    {
-      auto& cache_v     = cache.value();
-      const auto& key_v = lookup_key.value();
-      cache_v.insert(key_v, build);
-    }
-  }
-
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
-
-  auto scan_function = force_inclusive ? cccl_device_inclusive_scan : cccl_device_exclusive_scan;
-
-  size_t temp_storage_bytes = 0;
-  REQUIRE(CUDA_SUCCESS == scan_function(build, nullptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
-
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-  REQUIRE(
-    CUDA_SUCCESS == scan_function(build, temp_storage.ptr, &temp_storage_bytes, input, output, num_items, op, init, 0));
-
-  if (cache_and_key)
-  {
-    // if cache and lookup_key were provided, the ownership of resources
-    // allocated for build is transferred to the cache
-  }
-  else
-  {
-    // release build data resources
-    REQUIRE(CUDA_SUCCESS == cccl_device_scan_cleanup(&build));
-  }
-}
+// ==============
+//   Test section
+// ==============
 
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 struct Scan_IntegralTypes_Fixture_Tag;
@@ -207,10 +121,8 @@ C2H_TEST("Scan works with integral types", "[scan]", integral_types)
   pointer_t<T> output_ptr(output);
   value_t<T> init{T{42}};
 
-  auto& build_cache = get_cache<Scan_IntegralTypes_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<T>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Scan_IntegralTypes_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
 
   scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -235,10 +147,8 @@ C2H_TEST("Inclusive Scan works with integral types", "[scan]", integral_types)
   pointer_t<T> output_ptr(output);
   value_t<T> init{T{42}};
 
-  auto& build_cache = get_cache<InclusiveScan_IntegralTypes_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<T>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<InclusiveScan_IntegralTypes_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
 
   scan(input_ptr, output_ptr, num_items, op, init, true, build_cache, test_key);
 
@@ -287,10 +197,8 @@ C2H_TEST("Scan works with custom types", "[scan]")
   pointer_t<pair> output_ptr(output);
   value_t<pair> init{pair{4, 2}};
 
-  auto& build_cache = get_cache<Scan_CustomTypes_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<pair>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Scan_CustomTypes_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<pair>());
 
   scan(input_ptr, output_ptr, num_items, op, init, false, build_cache, test_key);
 
@@ -314,10 +222,8 @@ C2H_TEST("Scan works with input iterators", "[scan]")
   pointer_t<int> output_it(num_items);
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Scan_InputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Scan_InputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -346,10 +252,8 @@ C2H_TEST("Scan works with output iterators", "[scan]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Scan_OutputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Scan_OutputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -378,10 +282,8 @@ C2H_TEST("Scan works with reverse input iterators", "[scan]")
   pointer_t<int> output_it(num_items);
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Scan_ReverseInputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Scan_ReverseInputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -406,10 +308,8 @@ C2H_TEST("Scan works with reverse output iterators", "[scan]")
   output_it.state.data = inner_output_it.ptr + num_items - 1;
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Scan_ReverseOutputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Scan_ReverseOutputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 
@@ -435,10 +335,8 @@ C2H_TEST("Scan works with input and output iterators", "[scan]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Scan_InputOutputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Scan_InputOutputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   scan(input_it, output_it, num_items, op, init, false, build_cache, test_key);
 

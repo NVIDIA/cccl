@@ -99,10 +99,8 @@ C2H_TEST("Reduce works with integral types", "[reduce]", integral_types)
   pointer_t<T> output_ptr(1);
   value_t<T> init{T{42}};
 
-  auto& build_cache = get_cache<Reduce_IntegralTypes_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<T>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Reduce_IntegralTypes_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<T>());
 
   reduce(input_ptr, output_ptr, num_items, op, init, build_cache, test_key);
 
@@ -142,10 +140,8 @@ C2H_TEST("Reduce works with custom types", "[reduce]")
   pointer_t<pair> output_ptr(1);
   value_t<pair> init{pair{4, 2}};
 
-  auto& build_cache = get_cache<Reduce_CustomTypes_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<pair>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Reduce_CustomTypes_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<pair>());
 
   reduce(input_ptr, output_ptr, num_items, op, init, build_cache, test_key);
 
@@ -167,10 +163,8 @@ C2H_TEST("Reduce works with input iterators", "[reduce]")
   pointer_t<int> output_it(1);
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Reduce_CustomTypes_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Reduce_CustomTypes_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
@@ -192,10 +186,8 @@ C2H_TEST("Reduce works with output iterators", "[reduce]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Reduce_OutputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Reduce_OutputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
@@ -217,10 +209,8 @@ C2H_TEST("Reduce works with input and output iterators", "[reduce]")
   output_it.state.data = inner_output_it.ptr;
   value_t<int> init{42};
 
-  auto& build_cache = get_cache<Reduce_InputOutputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<int>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<Reduce_InputOutputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<int>());
 
   reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
@@ -241,9 +231,8 @@ C2H_TEST("Reduce accumulator type is influenced by initial value", "[reduce]")
   value_t<size_t> init{42};
 
   auto& build_cache = get_cache<Reduce_AccumulatorType_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<char>(), KeyBuilder::type_as_key<size_t>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key =
+    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<char>(), KeyBuilder::type_as_key<size_t>()}));
 
   reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 
@@ -263,9 +252,8 @@ C2H_TEST("Reduce works with large inputs", "[reduce]")
 
   // reuse fixture cache from previous example, as it runs identical example on larger input
   auto& build_cache = get_cache<Reduce_AccumulatorType_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::join({KeyBuilder::type_as_key<char>(), KeyBuilder::type_as_key<size_t>()});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key =
+    std::make_optional(KeyBuilder::join({KeyBuilder::type_as_key<char>(), KeyBuilder::type_as_key<size_t>()}));
 
   reduce(input_it, output_it, num_items, op, init, build_cache, test_key);
 

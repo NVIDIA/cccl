@@ -93,6 +93,10 @@ void segmented_reduce(
     cache, lookup_key, input, output, num_segments, start_offsets, end_offsets, op, init);
 }
 
+// ==============
+//   Test section
+// ==============
+
 using SizeT = unsigned long long;
 
 struct row_offset_iterator_state_t
@@ -174,10 +178,8 @@ extern "C" __device__ unsigned long long {0}(
   operation_t op = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   value_t<TestType> init{0};
 
-  auto& build_cache = get_cache<SegmentedReduce_SumOverRows_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<TestType>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<SegmentedReduce_SumOverRows_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<TestType>());
 
   segmented_reduce(input_ptr, output_ptr, n_rows, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
@@ -252,10 +254,8 @@ extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
   pair v0        = pair{4, 2};
   value_t<pair> init{v0};
 
-  auto& build_cache = get_cache<SegmentedReduce_CustomTypes_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<pair>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<SegmentedReduce_CustomTypes_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<pair>());
 
   segmented_reduce(input_ptr, output_ptr, n_segments, start_offset_it, end_offset_it, op, init, build_cache, test_key);
 
@@ -397,10 +397,8 @@ extern "C" __device__ {1} {0}({2} *state) {{
   operation_t op = make_operation("op", get_reduce_op(get_type_info<ValueT>().type));
   value_t<ValueT> init{0};
 
-  auto& build_cache = get_cache<SegmentedReduce_InputIterators_Fixture_Tag>();
-
-  std::string key_string = KeyBuilder::type_as_key<ValueT>();
-  std::optional<std::string> test_key{key_string};
+  auto& build_cache    = get_cache<SegmentedReduce_InputIterators_Fixture_Tag>();
+  const auto& test_key = std::make_optional(KeyBuilder::type_as_key<ValueT>());
 
   segmented_reduce(
     input_transposed_iterator_it, output_ptr, n_cols, start_offset_it, end_offset_it, op, init, build_cache, test_key);

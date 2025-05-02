@@ -165,12 +165,12 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortKeys works", "[radix_sort]", key_t
 
   auto& build_cache = get_cache<DeviceRadixSort_SortKeys_Fixture_Tag>();
 
-  std::string key_string = KeyBuilder::join(
+  const std::string& key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
      KeyBuilder::type_as_key<TestType>(),
      KeyBuilder::type_as_key<item_t>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = std::make_optional(key_string);
 
   radix_sort(
     order,
@@ -237,13 +237,12 @@ TEMPLATE_LIST_TEST_CASE("DeviceRadixSort::SortPairs works", "[radix_sort]", key_
 
   auto& build_cache = get_cache<DeviceRadixSort_SortPairs_Fixture_Tag>();
 
-  std::string key_string = KeyBuilder::join(
+  const std::string& key_string = KeyBuilder::join(
     {KeyBuilder::bool_as_key(is_descending),
      KeyBuilder::type_as_key<TestType>(),
      KeyBuilder::type_as_key<item_t>(),
      KeyBuilder::bool_as_key(is_overwrite_okay)});
-
-  std::optional<std::string> test_key{key_string};
+  const auto& test_key = std::make_optional(key_string);
 
   radix_sort(
     order,
