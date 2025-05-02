@@ -82,7 +82,7 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tupl<index_sequence<_Idx...>, _Ts...> : __bo
 // Unroll tuples of size 1-8 to bring down the number of template instantiations and to
 // permit __tuple to be used to initialize a structured binding without resorting to the
 // heavy-weight std::tuple protocol. This code was generated with the following macros,
-// which can be found here: https://godbolt.org/z/KG8c5vEdr
+// which can be found here: https://godbolt.org/z/bsE37a5EG
 
 /*
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_T, _Idx)
@@ -115,12 +115,8 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __tupl<index_sequence<_Idx...>, _Ts...> : __bo
     }                                                                                                           \
                                                                                                                 \
     template <size_t _Idx>                                                                                      \
-    [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept                                      \
-    {                                                                                                           \
-      using __result_t _CCCL_NODEBUG_ALIAS =                                                                    \
-        __type_index_c<_Idx, __mbr<&__tupl::__t0> _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>;          \
-      return __result_t::value;                                                                                 \
-    }                                                                                                           \
+    using __mbr_ptr_t _CCCL_NODEBUG_ALIAS =                                                                     \
+      __type_index_c<_Idx, __mbr<&__tupl::__t0> _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>;            \
   }
 
 _CCCL_DEFINE_TUPLE(0);
@@ -147,11 +143,7 @@ struct __tupl<index_sequence<0>, _T0>
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __mbr<&__tupl::__t0>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __mbr<&__tupl::__t0>>;
 };
 
 template <class _T0, class _T1>
@@ -170,11 +162,7 @@ struct __tupl<index_sequence<0, 1>, _T0, _T1>
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS = __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>>;
 };
 
 template <class _T0, class _T1, class _T2>
@@ -201,12 +189,8 @@ struct __tupl<index_sequence<0, 1, 2>, _T0, _T1, _T2>
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>, __mbr<&__tupl::__t2>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS =
+    __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>, __mbr<&__tupl::__t2>>;
 };
 
 template <class _T0, class _T1, class _T2, class _T3>
@@ -241,12 +225,8 @@ struct __tupl<index_sequence<0, 1, 2, 3>, _T0, _T1, _T2, _T3>
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>, __mbr<&__tupl::__t2>, __mbr<&__tupl::__t3>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS =
+    __type_index_c<_Idx, __mbr<&__tupl::__t0>, __mbr<&__tupl::__t1>, __mbr<&__tupl::__t2>, __mbr<&__tupl::__t3>>;
 };
 
 template <class _T0, class _T1, class _T2, class _T3, class _T4>
@@ -285,17 +265,13 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4>, _T0, _T1, _T2, _T3, _T4>
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx,
-                     __mbr<&__tupl::__t0>,
-                     __mbr<&__tupl::__t1>,
-                     __mbr<&__tupl::__t2>,
-                     __mbr<&__tupl::__t3>,
-                     __mbr<&__tupl::__t4>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS =
+    __type_index_c<_Idx,
+                   __mbr<&__tupl::__t0>,
+                   __mbr<&__tupl::__t1>,
+                   __mbr<&__tupl::__t2>,
+                   __mbr<&__tupl::__t3>,
+                   __mbr<&__tupl::__t4>>;
 };
 
 template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5>
@@ -338,18 +314,14 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5>, _T0, _T1, _T2, _T3, _T4, _T5>
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx,
-                     __mbr<&__tupl::__t0>,
-                     __mbr<&__tupl::__t1>,
-                     __mbr<&__tupl::__t2>,
-                     __mbr<&__tupl::__t3>,
-                     __mbr<&__tupl::__t4>,
-                     __mbr<&__tupl::__t5>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS =
+    __type_index_c<_Idx,
+                   __mbr<&__tupl::__t0>,
+                   __mbr<&__tupl::__t1>,
+                   __mbr<&__tupl::__t2>,
+                   __mbr<&__tupl::__t3>,
+                   __mbr<&__tupl::__t4>,
+                   __mbr<&__tupl::__t5>>;
 };
 
 template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6>
@@ -396,19 +368,15 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6>, _T0, _T1, _T2, _T3, _T4, _T5,
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx,
-                     __mbr<&__tupl::__t0>,
-                     __mbr<&__tupl::__t1>,
-                     __mbr<&__tupl::__t2>,
-                     __mbr<&__tupl::__t3>,
-                     __mbr<&__tupl::__t4>,
-                     __mbr<&__tupl::__t5>,
-                     __mbr<&__tupl::__t6>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS =
+    __type_index_c<_Idx,
+                   __mbr<&__tupl::__t0>,
+                   __mbr<&__tupl::__t1>,
+                   __mbr<&__tupl::__t2>,
+                   __mbr<&__tupl::__t3>,
+                   __mbr<&__tupl::__t4>,
+                   __mbr<&__tupl::__t5>,
+                   __mbr<&__tupl::__t6>>;
 };
 
 template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6, class _T7>
@@ -459,20 +427,16 @@ struct __tupl<index_sequence<0, 1, 2, 3, 4, 5, 6, 7>, _T0, _T1, _T2, _T3, _T4, _
   }
 
   template <size_t _Idx>
-  [[nodiscard]] _CCCL_API static constexpr auto __get_mbr_ptr() noexcept
-  {
-    using __result_t _CCCL_NODEBUG_ALIAS =
-      __type_index_c<_Idx,
-                     __mbr<&__tupl::__t0>,
-                     __mbr<&__tupl::__t1>,
-                     __mbr<&__tupl::__t2>,
-                     __mbr<&__tupl::__t3>,
-                     __mbr<&__tupl::__t4>,
-                     __mbr<&__tupl::__t5>,
-                     __mbr<&__tupl::__t6>,
-                     __mbr<&__tupl::__t7>>;
-    return __result_t::value;
-  }
+  using __mbr_ptr_t _CCCL_NODEBUG_ALIAS =
+    __type_index_c<_Idx,
+                   __mbr<&__tupl::__t0>,
+                   __mbr<&__tupl::__t1>,
+                   __mbr<&__tupl::__t2>,
+                   __mbr<&__tupl::__t3>,
+                   __mbr<&__tupl::__t4>,
+                   __mbr<&__tupl::__t5>,
+                   __mbr<&__tupl::__t6>,
+                   __mbr<&__tupl::__t7>>;
 };
 
 template <size_t _Idx, class _Ty>
@@ -481,10 +445,10 @@ template <size_t _Idx, class _Ty>
   return __box.__value_;
 }
 
-template <size_t _Idx, class _Tupl, auto _MbrPtr = _Tupl::template __get_mbr_ptr<_Idx>()>
+template <size_t _Idx, class _Tupl, class _MbrPtr = typename _Tupl::template __mbr_ptr_t<_Idx>>
 [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __cget(_Tupl const& __tupl) noexcept -> decltype(auto)
 {
-  return __tupl.*_MbrPtr;
+  return __tupl.*_MbrPtr::value;
 }
 
 template <class... _Ts>
