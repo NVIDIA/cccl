@@ -16,6 +16,10 @@
 
 #include <cuda/std/cassert>
 
+#include "test_macros.h"
+
+TEST_DIAG_SUPPRESS_CLANG("-Wassume")
+
 int main(int, char**)
 {
   NV_IF_ELSE_TARGET(

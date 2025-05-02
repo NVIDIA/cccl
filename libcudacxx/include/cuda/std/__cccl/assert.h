@@ -63,7 +63,7 @@
 //! Use the different standard library implementations to implement host side asserts
 //! _CCCL_ASSERT_IMPL_HOST should never be used directly
 #if _CCCL_COMPILER(NVRTC) // There is no host standard library in nvrtc
-#  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
+#  define _CCCL_ASSERT_IMPL_HOST(expression, message) _CCCL_ASSUME(expression)
 #elif _CCCL_HAS_INCLUDE(<yvals.h>) && _CCCL_COMPILER(MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
@@ -103,21 +103,21 @@ _CCCL_HOST_DEVICE
 #elif _CCCL_HAS_CUDA_COMPILER()
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
-#  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) ((void) 0)
+#  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) _CCCL_ASSUME(expression)
 #endif // !_CCCL_HAS_CUDA_COMPILER()
 
 //! _CCCL_ASSERT_HOST is enabled conditionally depending on CCCL_ENABLE_HOST_ASSERTIONS
 #ifdef CCCL_ENABLE_HOST_ASSERTIONS
 #  define _CCCL_ASSERT_HOST(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #else // ^^^ CCCL_ENABLE_HOST_ASSERTIONS ^^^ / vvv !CCCL_ENABLE_HOST_ASSERTIONS vvv
-#  define _CCCL_ASSERT_HOST(expression, message) ((void) 0)
+#  define _CCCL_ASSERT_HOST(expression, message) _CCCL_ASSUME(expression)
 #endif // !CCCL_ENABLE_HOST_ASSERTIONS
 
 //! _CCCL_ASSERT_DEVICE is enabled conditionally depending on CCCL_ENABLE_DEVICE_ASSERTIONS
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
 #  define _CCCL_ASSERT_DEVICE(expression, message) _CCCL_ASSERT_IMPL_DEVICE(expression, message)
 #else // ^^^ CCCL_ENABLE_DEVICE_ASSERTIONS ^^^ / vvv !CCCL_ENABLE_DEVICE_ASSERTIONS vvv
-#  define _CCCL_ASSERT_DEVICE(expression, message) ((void) 0)
+#  define _CCCL_ASSERT_DEVICE(expression, message) _CCCL_ASSUME(expression)
 #endif // !CCCL_ENABLE_DEVICE_ASSERTIONS
 
 //! _CCCL_VERIFY is enabled unconditionally and reserved for critical checks that are required to always be on
@@ -128,7 +128,7 @@ _CCCL_HOST_DEVICE
 #  if defined(CCCL_ENABLE_HOST_ASSERTIONS) || defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 #    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_HOST(expression, message)
 #  else
-#    define _CCCL_ASSERT(expression, message) ((void) 0)
+#    define _CCCL_ASSERT(expression, message) _CCCL_ASSUME(expression)
 #  endif
 #elif _CCCL_HAS_CUDA_COMPILER()
 #  ifdef __CUDA_ARCH__
