@@ -160,25 +160,43 @@ C2H_TEST("make_async_buffer variants", "[container][async_buffer]")
   // straight from a resource
   auto buf = cuda::experimental::make_async_buffer(input.get_stream(), cudax::device_memory_resource{}, input);
   CUDAX_CHECK(equal_range(buf));
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf)::__resource_t, cuda::mr::device_accessible>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf)::__resource_t, cuda::mr::host_accessible>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf)::__resource_t, other_property>);
 
   auto buf2 = cuda::experimental::make_async_buffer<int, cuda::mr::device_accessible>(
     input.get_stream(), {cudax::device_memory_resource{}}, input);
   CUDAX_CHECK(equal_range(buf2));
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf2)::__resource_t, cuda::mr::device_accessible>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf2)::__resource_t, other_property>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf2)::__resource_t, cuda::mr::host_accessible>);
 
   // from any resource
   auto any_res =
     cudax::any_async_resource<cuda::mr::device_accessible, other_property>(cudax::device_memory_resource{});
   auto buf3 = cudax::make_async_buffer(input.get_stream(), any_res, input);
   CUDAX_CHECK(equal_range(buf3));
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf3)::__resource_t, cuda::mr::device_accessible>);
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf3)::__resource_t, other_property>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf3)::__resource_t, cuda::mr::host_accessible>);
 
   auto buf4 = cudax::make_async_buffer<int, cuda::mr::device_accessible>(input.get_stream(), any_res, input);
   CUDAX_CHECK(equal_range(buf4));
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf4)::__resource_t, cuda::mr::device_accessible>);
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf4)::__resource_t, other_property>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf4)::__resource_t, cuda::mr::host_accessible>);
 
   // from a resource reference
   auto res_ref = cudax::async_resource_ref<cuda::mr::device_accessible, other_property>{any_res};
   auto buf5    = cudax::make_async_buffer(input.get_stream(), res_ref, input);
   CUDAX_CHECK(equal_range(buf5));
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf5)::__resource_t, cuda::mr::device_accessible>);
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf5)::__resource_t, other_property>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf5)::__resource_t, cuda::mr::host_accessible>);
 
   auto buf6 = cudax::make_async_buffer<int, cuda::mr::device_accessible>(input.get_stream(), {res_ref}, input);
   CUDAX_CHECK(equal_range(buf6));
+  static_assert(_CUDA_VMR::resource_with<typename decltype(buf6)::__resource_t, cuda::mr::device_accessible>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf6)::__resource_t, other_property>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf6)::__resource_t, cuda::mr::host_accessible>);
 }
