@@ -433,6 +433,39 @@ class DependentOperator:
             return StatelessOperator(mangled_name, ret_cpp_type, arg_cpp_types, ltoir)
 
 
+class CxxFunction(Parameter):
+    def __init__(self, cpp, func_dtype):
+        super().__init__()
+        self.cpp = cpp
+        self.func_dtype = func_dtype
+
+    def __repr__(self) -> str:
+        return f"CxxFunction(cpp={self.cpp})"
+
+    def mangled_name(self):
+        return f"F{mangle_cpp(self.cpp)}"
+
+    def dtype(self):
+        return self.func_dtype
+
+    def is_provided_by_user(self):
+        return False
+
+
+class DependentCxxOperator:
+    def __init__(self, dep: Dependency, cpp: str):
+        self.dep = dep
+        self.cpp = cpp
+
+    def specialize(self, template_arguments):
+        dtype = self.dep.resolve(template_arguments)
+        dtype_cpp = numba_type_to_cpp(dtype)
+        source = f"<{self.dep.dep}>"
+        target = f"<{dtype_cpp}>"
+        cpp = self.cpp.replace(source, target)
+        return CxxFunction(cpp=f"{cpp}{{}}", func_dtype=dtype)
+
+
 class DependentArray(Parameter):
     def __init__(self, value_dtype, size, is_output=False):
         self.value_dtype = value_dtype
@@ -456,6 +489,29 @@ class TemplateParameter:
 
     def __repr__(self) -> str:
         return f"{self.name}"
+
+
+def mangle_cpp(cpp_name: str):
+    """
+    Substitutes non-alphanumeric characters in a C++ name with underscores.
+
+    :param cpp_name: Supplies a C++ name to be mangled.
+    :type cpp_name: str
+
+    :return: Returns the mangled C++ name.
+    :rtype: str
+
+    Example
+    -------
+
+    .. code-block:: python
+
+        >>> mangle("std::vector<int>")
+        'std_vector_int_'
+        >>> mangle("::cuda::std::min<::cuda::std::uint32_t>{}")
+        '__cuda__std__min__cuda__std__uint32_t__'
+    """
+    return re.sub(r"[^a-zA-Z0-9]", "_", cpp_name)
 
 
 def mangle_symbol(name, template_parameters):
@@ -524,7 +580,7 @@ class Algorithm:
         template_list = ", ".join(template_list)
 
         # '::cuda::std::int32_t, 32' -> __cuda__std__int32_t__32
-        mangle = re.sub(r"[^a-zA-Z0-9]", "_", template_list)
+        mangle = mangle_cpp(template_list)
 
         specialized_parameters = []
         for method in self.parameters:
@@ -645,6 +701,8 @@ class Algorithm:
                     func_decls.append(param.wrap_decl(name))
                     param_args.append(name)
                     param_decls.append(param.cpp_decl(name))
+                elif isinstance(param, CxxFunction):
+                    param_args.append(param.cpp)
                 else:
                     name = f"param_{pid}"
                     param_decls.append(param.cpp_decl(name))
@@ -744,7 +802,9 @@ class Algorithm:
                 ret = None
                 arg_id = 0
                 for param in method:
-                    if not isinstance(param, StatelessOperator):
+                    if not isinstance(param, StatelessOperator) and not isinstance(
+                        param, CxxFunction
+                    ):
                         dtype = param.dtype()
                         if isinstance(param, StatefulOperator):
                             arg = args[arg_id]
@@ -810,7 +870,9 @@ class Algorithm:
             params = []
             ret = numba.types.void
             for param in method:
-                if not isinstance(param, StatelessOperator):
+                if not isinstance(param, StatelessOperator) and not isinstance(
+                    param, CxxFunction
+                ):
                     if param.is_output:
                         if ret is not numba.types.void:
                             raise ValueError("Multiple output parameters not supported")
