@@ -145,18 +145,6 @@ class Value(Parameter):
         return f"{self.value_type}"
 
 
-class Function(Parameter):
-    def __init__(self, cpp):
-        super().__init__()
-        self.cpp = cpp
-
-    def __repr__(self) -> str:
-        return f"Function(cpp={self.cpp})"
-
-    def cpp_decl(self, name):
-        return self.cpp + " " + name
-
-
 class Pointer(Parameter):
     def __init__(self, value_dtype, is_output=False):
         self.value_dtype = value_dtype
@@ -261,30 +249,6 @@ class Constant:
 
     def resolve(self, _):
         return self.val
-
-
-class DependentFunction(Dependency):
-    def __init__(self, dep: Dependency, op: str):
-        super().__init__(dep)
-        self.op = op
-
-    def specialize(self, template_arguments):
-        tmp = self.resolve(template_arguments)
-        tmp2 = self.op.replace(self.dep.dep, tmp)
-        print(tmp2)
-        return tmp2
-
-    def __repr__(self) -> str:
-        return f"DependentFunction(dep={self.dep}, op={self.op})"
-
-    def dtype(self):
-        return self.dep.dtype()
-
-    def cpp_decl(self, name):
-        return numba_type_to_cpp(self.value_type) + " " + name
-
-    def mangled_name(self):
-        return f"{self.dep.mangled_name()}"
 
 
 class StatefulFunction:
@@ -823,6 +787,7 @@ class Algorithm:
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
+        # N.B. Uncomment this to immediately print generated source to stdout.
         # print(src)
         _, lto_fn = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="lto")
         lto_irs.append(lto_fn)
@@ -838,118 +803,18 @@ class Algorithm:
                 func_to_overload, method[1:], self.mangled_name(method) + "_alloc"
             )
 
-    # original
-    def codegen_method_orig(self, func_to_overload, method, mangled_name):
-        if len(self.template_parameters):
-            raise ValueError("Cannot generate codegen for a template")
-
-        def intrinsic_impl(*args):
-            def codegen(context, builder, sig, args):
-                types = []
-                arguments = []
-                ret = None
-                arg_id = 0
-                for param in method:
-                    if not isinstance(param, StatelessOperator):
-                        dtype = param.dtype()
-                        if isinstance(param, StatefulOperator):
-                            arg = args[arg_id]
-                            state_ptr = cgutils.create_struct_proxy(dtype)(
-                                context, builder, arg
-                            ).data
-                            void_ptr = builder.bitcast(
-                                state_ptr, ir.PointerType(ir.IntType(8))
-                            )
-                            types.append(ir.PointerType(ir.IntType(8)))
-                            arguments.append(void_ptr)
-                        elif isinstance(param, Reference):
-                            if param.is_output:
-                                ptr = cgutils.alloca_once(
-                                    builder, context.get_value_type(dtype)
-                                )
-                                void_ptr = builder.bitcast(
-                                    ptr, ir.PointerType(ir.IntType(8))
-                                )
-                                types.append(ir.PointerType(ir.IntType(8)))
-                                arguments.append(void_ptr)
-                                ret = ptr
-                            else:
-                                arg = args[arg_id]
-                                ptr = cgutils.alloca_once_value(builder, arg)
-                                data_type = context.get_value_type(dtype)
-                                void_ptr = builder.bitcast(
-                                    ptr, ir.PointerType(ir.IntType(8))
-                                )
-                                types.append(ir.PointerType(ir.IntType(8)))
-                                arguments.append(void_ptr)
-                        elif isinstance(param, Array) or isinstance(param, Pointer):
-                            if param.is_output:
-                                raise ValueError("Output arrays not supported")
-                            arg = args[arg_id]
-                            data_type = context.get_value_type(dtype.dtype)
-                            types.append(ir.PointerType(data_type))
-                            arguments.append(
-                                cgutils.create_struct_proxy(dtype)(
-                                    context, builder, arg
-                                ).data
-                            )
-                        else:
-                            if param.is_output:
-                                raise ValueError("Output values not supported")
-                            arg = args[arg_id]
-                            data_type = context.get_value_type(dtype)
-                            types.append(data_type)
-                            arguments.append(arg)
-
-                        if not param.is_output:
-                            arg_id += 1
-
-                function_type = ir.FunctionType(ir.VoidType(), types)
-                function = cgutils.get_or_insert_function(
-                    builder.module, function_type, mangled_name
-                )
-                builder.call(function, arguments)
-
-                if ret is not None:
-                    return builder.load(ret)
-
-            params = []
-            ret = numba.types.void
-            for param in method:
-                if not isinstance(param, StatelessOperator):
-                    if param.is_output:
-                        if ret is not numba.types.void:
-                            raise ValueError("Multiple output parameters not supported")
-                        ret = param.dtype()
-                    else:
-                        params.append(param.dtype())
-
-            return signature(ret, *params), codegen
-
-        num_user_provided_params = sum(
-            [param.is_provided_by_user() for param in method]
-        )
-        numba_intrinsic = intrinsic(
-            war_introspection(intrinsic_impl, 1 + num_user_provided_params)
-        )
-
-        def algorithm_impl(*args):
-            return war_introspection(numba_intrinsic, len(args))
-
-        wrapped_algorithm_impl = war_introspection(
-            algorithm_impl, num_user_provided_params
-        )
-        overload(func_to_overload, target="cuda")(wrapped_algorithm_impl)
-
-    # new
     def codegen_method(self, func_to_overload, method, mangled_name):
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
         def ignore_param(param):
-            return isinstance(param, StatelessOperator) or isinstance(
+            # Stateless operators and C++ functions do not require any
+            # additional argument handling or code generation, so we can
+            # safely ignore them during this code gen phase.
+            ignore = isinstance(param, StatelessOperator) or isinstance(
                 param, CxxFunction
             )
+            return ignore
 
         def intrinsic_impl(*args):
             def codegen(context, builder, sig, args):
