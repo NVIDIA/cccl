@@ -16,7 +16,7 @@ from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
     DependentArray,
-    DependentOperator,
+    DependentPythonOperator,
     DependentReference,
     Invocable,
     Pointer,
@@ -109,7 +109,7 @@ def _scan(
                     # T& output
                     DependentReference(Dependency("T"), is_output=True),
                     # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
+                    DependentPythonOperator(
                         Dependency("T"),
                         [Dependency("T")],
                         Dependency("BlockPrefixCallbackOp"),
@@ -154,7 +154,7 @@ def _scan(
                     # T (&)[ITEMS_PER_THREAD] output
                     DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
                     # BlockPrefixCallbackOp& block_prefix_callback_op
-                    DependentOperator(
+                    DependentPythonOperator(
                         Dependency("T"),
                         [Dependency("T")],
                         Dependency("BlockPrefixCallbackOp"),
