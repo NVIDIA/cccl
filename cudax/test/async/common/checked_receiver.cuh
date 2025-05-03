@@ -40,7 +40,7 @@ struct checked_value_receiver
   {
     if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::__type_list<Values...>, _CUDA_VSTD::__type_list<As...>>)
     {
-      _values.__apply(
+      _CUDA_VSTD::__apply(
         [&](auto const&... vs) {
           CUDAX_CHECK(((vs == as) && ...));
         },

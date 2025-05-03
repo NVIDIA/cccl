@@ -141,7 +141,7 @@ private:
             // Call the function with the results and connect the resulting
             // sender, storing the operation state in __opstate2_.
             auto& __next_op = __opstate2_.__emplace_from(
-              __async::connect, __tupl.__apply(static_cast<_Fn&&>(__fn_), __tupl), __rcvr_ref{__rcvr_});
+              __async::connect, _CUDA_VSTD::__apply(static_cast<_Fn&&>(__fn_), __tupl), __rcvr_ref{__rcvr_});
             __async::start(__next_op);
           }),
           _CUDAX_CATCH(...) //

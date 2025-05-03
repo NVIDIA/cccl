@@ -149,8 +149,8 @@ private:
   template <class _Rcvr, class _CvFn, class _Sndrs>
   struct __state_t;
 
-  template <class _Rcvr, class _CvFn, class _Idx, class _Ign0, class _Ign1, class... _Sndrs>
-  struct __state_t<_Rcvr, _CvFn, _CUDA_VSTD::__tupl<_Idx, _Ign0, _Ign1, _Sndrs...>>
+  template <class _Rcvr, class _CvFn, class _Ign0, class _Ign1, class... _Sndrs>
+  struct __state_t<_Rcvr, _CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>>
   {
     using __env_t _CCCL_NODEBUG_ALIAS     = when_all_t::__env_t<__zip<__state_t>>;
     using __sndr_t _CCCL_NODEBUG_ALIAS    = when_all_t::__sndr_t<_Sndrs...>;
@@ -296,12 +296,15 @@ private:
   };
 
   /// The operation state for when_all
-  template <class, class, class>
+  template <class _Rcvr,
+            class _CvFn,
+            class _Sndrs,
+            class = _CUDA_VSTD::make_index_sequence<_CUDA_VSTD::__tuple_size_v<_Sndrs> - 2>>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t;
 
   template <class _Rcvr, class _CvFn, size_t... _Idx, class _Ign0, class _Ign1, class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT
-  __opstate_t<_Rcvr, _CvFn, _CUDA_VSTD::__tupl<_CUDA_VSTD::index_sequence<0, 1, _Idx...>, _Ign0, _Ign1, _Sndrs...>>
+  __opstate_t<_Rcvr, _CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>, _CUDA_VSTD::index_sequence<_Idx...>>
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __sndrs_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<_CvFn, _CUDA_VSTD::__tuple<_Ign0, _Ign1, _Sndrs...>>;
@@ -324,8 +327,8 @@ private:
           _CUDA_VSTD::is_same_v<decltype(__state_t::__completions_and_offsets.second), __nil>;
         // The offsets are used to determine which elements in the values
         // tuple each receiver is responsible for setting.
-        return _CUDA_VSTD::__tupl{__async::connect(
-          static_cast<_CvSndrs&&>(__sndrs_), __rcvr_t<__state_ref_t, __no_values ? 0 : _Idx - 2>{__state})...};
+        return _CUDA_VSTD::__tuple{__async::connect(
+          static_cast<_CvSndrs&&>(__sndrs_), __rcvr_t<__state_ref_t, __no_values ? 0 : _Idx>{__state})...};
       }
     };
 
@@ -339,7 +342,7 @@ private:
     /// save the resulting operation states in __sub_ops_.
     _CUDAX_API __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
-        , __sub_ops_{__sndrs_.__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
+        , __sub_ops_{_CUDA_VSTD::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);
@@ -364,7 +367,7 @@ private:
       else
       {
         // Start all the sub-operations.
-        __sub_ops_.__apply(__start_all{}, __sub_ops_);
+        _CUDA_VSTD::__apply(__start_all{}, __sub_ops_);
 
         // If there are no sub-operations, we're done.
         if constexpr (sizeof...(_Sndrs) == 0)

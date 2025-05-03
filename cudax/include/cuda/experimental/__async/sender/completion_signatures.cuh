@@ -319,7 +319,7 @@ template <class... What, class... Values>
   }
   else
   {
-    throw __sender_type_check_failure<_CUDA_VSTD::__tuple<Values...>, What...>(_CUDA_VSTD::__tupl{values...});
+    throw __sender_type_check_failure<_CUDA_VSTD::__tuple<Values...>, What...>(_CUDA_VSTD::__tuple{values...});
   }
 }
 

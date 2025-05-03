@@ -90,7 +90,7 @@ private:
       __complete_ = +[](void* __ptr) noexcept {
         auto& __self = *static_cast<__rcvr_t*>(__ptr);
         auto& __tupl = *static_cast<__tupl_t*>(__self.__result_.__ptr());
-        __tupl.__apply(__self, __tupl);
+        _CUDA_VSTD::__apply(__self, __tupl);
       };
     }
 

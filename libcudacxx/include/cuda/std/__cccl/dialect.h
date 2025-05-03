@@ -85,6 +85,12 @@
 #  define _CCCL_NO_THREE_WAY_COMPARISON
 #endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 
+// Some compilers turn on pack indexing in pre-C++26 code. We want to use it if it is
+// available.
+#if !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
+#  define _CCCL_NO_PACK_INDEXING
+#endif // !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
+
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////

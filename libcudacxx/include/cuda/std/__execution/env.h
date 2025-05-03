@@ -261,7 +261,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     constexpr size_t __idx   = detail::__find_pos(__flags, __flags + sizeof...(_Envs));
     if constexpr (__idx != detail::__npos)
     {
-      return __cget<__idx>(__self.__envs_);
+      return _CUDA_VSTD::__get<__idx>(__self.__envs_);
     }
   }
 
