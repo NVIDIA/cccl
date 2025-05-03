@@ -66,7 +66,7 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
   auto explode_args = [&](auto&&... data) {
     CUDASTF_NO_DEVICE_STACK
     auto const explode_coords = [&](auto&&... coords) {
-      f(coords..., data...);
+      f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -306,7 +306,7 @@ __global__ void loop_redux(
   const auto explode_args = [&](auto&&... data) {
     CUDASTF_NO_DEVICE_STACK
     const auto explode_coords = [&](auto&&... coords) {
-      f(coords..., data...);
+      f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
     };
     // For every linearized index in the shape
     for (; i < n; i += step)
@@ -395,13 +395,6 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
     per_block_redux_buffer[0].fill_results(targs);
   }
 }
-
-template <typename T>
-using filter_void_interface =
-  ::std::conditional_t<::std::is_same_v<T, void_interface>,
-                       ::std::tuple<>, // drop
-                       ::std::tuple<T> // keep
-                       >;
 
 /**
  * @brief Supporting class for the parallel_for construct
@@ -951,11 +944,7 @@ public:
     using args_t = ::std::tuple<deps_tup_t, size_t, Fun, sub_shape_t>;
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
+    deps_tup_t instances = get_arg_instances(deps, t);
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
@@ -977,9 +966,9 @@ public:
 
       // deps_ops_t are pairs of data instance type, and a reduction operator,
       // this gets only the data instance types (eg. slice<double>)
-      auto explode_coords = [&](size_t i, typename deps_ops_t::dep_type... data) {
-        auto h = [&](auto... coords) {
-          f(coords..., data...);
+      auto explode_coords = [&](size_t i, auto&&... data) {
+        auto h = [&](auto&&... coords) {
+          f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
         };
         ::std::apply(h, shape.index_to_coords(i));
       };

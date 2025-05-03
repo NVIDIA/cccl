@@ -106,7 +106,7 @@ double Y0(size_t i)
 
 int main()
 {
-  context ctx = graph_ctx();
+  auto ctx = graph_ctx();
   const size_t N = 16384;
 
   double *X, *Y, *Z;
