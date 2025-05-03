@@ -318,10 +318,6 @@ def block_scan(
         user-defined types. The default is *None*.
     :type  methods: dict, optional
 
-    :returns: A callable that can be linked to a CUDA kernel and invoked to
-        perform the block-wide prefix scan.
-    :rtype: Callable
-
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms
         (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
 
@@ -349,6 +345,10 @@ def block_scan(
         ``block_prefix_callback_op`` is *None*.  If not provided, the function
         will attempt to create a default value (``0``) for the given data type,
         but will raise an error if this is not possible.
+
+    :returns: A callable that can be linked to a CUDA kernel and invoked to
+        perform the block-wide prefix scan.
+    :rtype: Callable
     """
     if algorithm not in CUB_BLOCK_SCAN_ALGOS:
         raise ValueError(f"Unsupported algorithm: {algorithm}")
@@ -869,6 +869,11 @@ def exclusive_sum(
         user-defined types.  The default is *None*.
     :type  methods: dict, optional
 
+    :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+        (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+    :raises ValueError: If ``items_per_thread`` is less than 1.
+
     :returns: A callable that can be linked to a CUDA kernel and invoked to perform
         the block-wide exclusive prefix scan.
     :rtype: Callable
@@ -925,6 +930,11 @@ def inclusive_sum(
     :param methods: Optionally supplies a dictionary of methods to use for
         user-defined types.  The default is *None*.
     :type  methods: dict, optional
+
+    :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+        (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+    :raises ValueError: If ``items_per_thread`` is less than 1.
 
     :returns: A callable that can be linked to a CUDA kernel and invoked to perform
         the block-wide inclusive prefix scan.
@@ -992,6 +1002,26 @@ def exclusive_scan(
     :param methods: Optionally supplies a dictionary of methods to use for
         user-defined types.  The default is *None*.
     :type  methods: dict, optional
+
+    :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+        (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+    :raises ValueError: If ``items_per_thread`` is less than 1.
+
+    :raises ValueError: If ``scan_op`` is an unsupported operator type.
+
+    :raises ValueError: If ``initial_value`` is provided but the ``scan_op``
+        is a sum operator (sum operators do not support initial values).
+
+    :raises ValueError: If ``initial_value`` is provided with
+        ``items_per_thread=1``, and ``block_prefix_callback_op`` is not *None*
+        (this combination is not supported).
+
+    :raises ValueError: If ``initial_value`` is required but not provided.
+        An initial value is required when ``items_per_thread > 1`` and
+        ``block_prefix_callback_op`` is *None*.  If not provided, the function
+        will attempt to create a default value (``0``) for the given data type,
+        but will raise an error if this is not possible.
 
     :returns: A callable that can be linked to a CUDA kernel and invoked to
         perform the block-wide exclusive prefix scan.
@@ -1061,6 +1091,20 @@ def inclusive_scan(
     :param methods: Optionally supplies a dictionary of methods to use for
         user-defined types.  The default is *None*.
     :type  methods: dict, optional
+
+    :raises ValueError: If ``algorithm`` is not one of the supported algorithms
+        (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
+
+    :raises ValueError: If ``items_per_thread`` is less than 1.
+
+    :raises ValueError: If ``scan_op`` is an unsupported operator type.
+
+    :raises ValueError: If ``initial_value`` is provided but the ``scan_op``
+        is a sum operator (sum operators do not support initial values).
+
+    :raises ValueError: If ``initial_value`` is provided with
+        ``items_per_thread=1`` (initial values are not supported for inclusive
+        scans with a single item per thread).
 
     :returns: A callable that can be linked to a CUDA kernel and invoked to
         perform the block-wide inclusive prefix scan.
