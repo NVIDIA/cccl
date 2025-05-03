@@ -251,15 +251,6 @@ class Constant:
         return self.val
 
 
-class DependentFunction:
-    def __init__(self, dep, op):
-        self.dep = dep
-        self.op = op
-
-    def resolve(self, template_arguments):
-        return template_arguments[self.dep]
-
-
 class StatefulFunction:
     def __init__(self, op, dtype):
         self.op = op
@@ -726,6 +717,8 @@ class Algorithm:
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
+        # N.B. Uncomment this to immediately print generated source to stdout.
+        # print(src)
         _, lto_fn = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="lto")
         lto_irs.append(lto_fn)
         return lto_irs
