@@ -315,13 +315,17 @@ def block_scan(
     :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"], optional
 
     :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types. The default is *None*.
+        user-defined types.  The default is *None*.  Not supported if
+        ``items_per_thread > 1``.
     :type  methods: dict, optional
 
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms
         (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
 
     :raises ValueError: If ``items_per_thread`` is less than 1.
+
+    :raises ValueError: If ``items_per_thread`` is greater than 1 and ``methods``
+        is not *None* (i.e. a user-defined type is being used).
 
     :raises ValueError: If ``mode`` is not one of the supported modes
         (``"exclusive"`` or ``"inclusive"``).
@@ -373,6 +377,12 @@ def block_scan(
         cpp_function_name = f"{cpp_func_prefix}Sum"
     else:
         cpp_function_name = f"{cpp_func_prefix}Scan"
+
+    # If items_per_thread > 1, we need to check that methods is not None.
+    if items_per_thread > 1 and methods is not None:
+        raise ValueError(
+            "user-defined types are not supported for items_per_thread > 1"
+        )
 
     # An initial value is not supported for inclusive and exclusive sums.
     if initial_value is not None and scan_op.is_sum:
@@ -772,6 +782,14 @@ def block_scan(
     # Invariant check: if we get here, parameters shouldn't be empty.
     assert parameters, "parameters should not be empty"
 
+    # If we have a non-None `methods`, we're dealing with user-defined types.
+    if methods is not None:
+        type_definitions = [
+            numba_type_to_wrapper(dtype, methods=methods),
+        ]
+    else:
+        type_definitions = None
+
     template = Algorithm(
         "BlockScan",
         cpp_function_name,
@@ -780,7 +798,7 @@ def block_scan(
         template_parameters,
         parameters,
         fake_return=fake_return,
-        type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
+        type_definitions=type_definitions,
     )
 
     if scan_op.is_callable:
@@ -866,13 +884,17 @@ def exclusive_sum(
         optional
 
     :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types.  The default is *None*.
+        user-defined types.  The default is *None*.  Not supported if
+        ``items_per_thread > 1``.
     :type  methods: dict, optional
 
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms
         (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
 
     :raises ValueError: If ``items_per_thread`` is less than 1.
+
+    :raises ValueError: If ``items_per_thread`` is greater than 1 and ``methods``
+        is not *None* (i.e. a user-defined type is being used).
 
     :returns: A callable that can be linked to a CUDA kernel and invoked to perform
         the block-wide exclusive prefix scan.
@@ -928,7 +950,8 @@ def inclusive_sum(
         optional
 
     :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types.  The default is *None*.
+        user-defined types.  The default is *None*.  Not supported if
+        ``items_per_thread > 1``.
     :type  methods: dict, optional
 
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms
@@ -1000,13 +1023,17 @@ def exclusive_scan(
         optional
 
     :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types.  The default is *None*.
+        user-defined types.  The default is *None*.  Not supported if
+        ``items_per_thread > 1``.
     :type  methods: dict, optional
 
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms
         (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
 
     :raises ValueError: If ``items_per_thread`` is less than 1.
+
+    :raises ValueError: If ``items_per_thread`` is greater than 1 and ``methods``
+        is not *None* (i.e. a user-defined type is being used).
 
     :raises ValueError: If ``scan_op`` is an unsupported operator type.
 
@@ -1089,7 +1116,8 @@ def inclusive_scan(
         optional
 
     :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types.  The default is *None*.
+        user-defined types.  The default is *None*.  Not supported if
+        ``items_per_thread > 1``.
     :type  methods: dict, optional
 
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms

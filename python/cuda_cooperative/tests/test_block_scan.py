@@ -583,14 +583,15 @@ def test_block_scan_with_callable(
 
 
 @pytest.mark.parametrize("mode", ["inclusive", "exclusive"])
-def test_block_scan_initial_value_invariants(mode):
+def test_block_scan_invariants(mode):
     """
-    Tests invariants for initial_value usage:
+    Tests invariants:
       1) Initial value unsupported for inclusive scans with 1 item/thread.
       2) Initial value unsupported for exclusive scans with 1 item/thread and
          a block prefix callback.
       3) When items_per_thread > 1 and no prefix callback is supplied, an
          initial value is required.
+      4) User-defined types are not supported for items_per_thread > 1.
     """
     if mode == "inclusive":
         scan_func = cudax.block.inclusive_scan
@@ -643,6 +644,22 @@ def test_block_scan_initial_value_invariants(mode):
         ),
     ):
         scan_func(complex_type, 128, scan_op="+", items_per_thread=2)
+
+    # 4) User-defined types are not supported for items_per_thread > 1.
+    with pytest.raises(
+        ValueError,
+        match="user-defined types are not supported for items_per_thread > 1",
+    ):
+        scan_func(
+            complex_type,
+            128,
+            scan_op="+",
+            items_per_thread=2,
+            methods={
+                "construct": Complex.construct,
+                "assign": Complex.assign,
+            },
+        )
 
 
 @pytest.mark.parametrize("T", [types.int32])
@@ -805,7 +822,7 @@ def test_block_scan_known_ops(
     dtype_np = NUMBA_TYPES_TO_NP[T]
     total_items = num_threads * items_per_thread
 
-    # Generate appropriate test data based on operation
+    # Generate appropriate test data based on operation.
     if scan_op == "multiplies":
         # For multiplication, use very small values (1-2) to avoid overflow.
         h_input = np.ones(total_items, dtype=dtype_np)
@@ -827,7 +844,7 @@ def test_block_scan_known_ops(
 
     output = d_output.copy_to_host()
 
-    # Choose the appropriate operator and identity based on scan_op
+    # Choose the appropriate operator based on scan_op.
     if scan_op == "multiplies":
         py_op = np.multiply
     elif scan_op == "bit_and":
@@ -862,7 +879,6 @@ def test_block_scan_known_ops(
         ref[0] = output[0]
 
         if scan_op == "multiplies":
-            # Compute exclusive scan for multiplies carefully
             accum = np.array(h_input[0], dtype=dtype_np)
             for i in range(1, total_items):
                 ref[i] = accum
