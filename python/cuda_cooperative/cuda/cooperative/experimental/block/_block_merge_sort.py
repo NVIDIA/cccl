@@ -16,7 +16,7 @@ from cuda.cooperative.experimental._types import (
     Constant,
     Dependency,
     DependentArray,
-    DependentOperator,
+    DependentPythonOperator,
     Invocable,
     Pointer,
     TemplateParameter,
@@ -94,7 +94,7 @@ def merge_sort_keys(
             [
                 Pointer(numba.uint8),
                 DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-                DependentOperator(
+                DependentPythonOperator(
                     Constant(numba.int8),
                     [Dependency("KeyT"), Dependency("KeyT")],
                     Dependency("Op"),

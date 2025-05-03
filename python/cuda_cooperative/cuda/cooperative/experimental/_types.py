@@ -371,7 +371,7 @@ class StatelessOperator:
         return False
 
 
-class DependentOperator:
+class DependentPythonOperator:
     def __init__(self, ret_dtype, arg_dtypes, op):
         self.ret_dtype = ret_dtype
         self.arg_dtypes = arg_dtypes
