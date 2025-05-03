@@ -67,10 +67,6 @@ The unsupported APIs are as follows:
 
     InclusiveScan(T input, T &output, ScanOp scan_op, T &block_aggregate)
     InclusiveScan(T&)[ITEMS_PER_THREAD] input, T(&)[ITEMS_PER_THREAD] output, T initial_value, ScanOp scan_op, T &block_aggregate)
-
-TODO: 1. Link these APIs to the appropriate C++ APIs in the documentation.
-      2. Show Python examples for each C++ counterpart.
-
 """
 
 import operator
@@ -270,7 +266,7 @@ def block_scan(
     items_per_thread: int = 1,
     initial_value: Any = None,
     mode: Literal["exclusive", "inclusive"] = "exclusive",
-    scan_op: ScanOpType = ScanOp("+"),
+    scan_op: ScanOpType = "+",
     block_prefix_callback_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
