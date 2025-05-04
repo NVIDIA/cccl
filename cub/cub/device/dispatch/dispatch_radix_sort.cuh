@@ -57,10 +57,6 @@
 #include <cuda/std/__algorithm_>
 #include <cuda/std/type_traits>
 
-#include <iterator>
-
-#include <stdio.h>
-
 // suppress warnings triggered by #pragma unroll:
 // "warning: loop not unrolled: the optimizer was unable to perform the requested transformation; the transformation
 // might be disabled or specified as part of an unsupported transformation ordering [-Wpass-failed=transform-warning]"
@@ -644,8 +640,7 @@ struct DispatchRadixSort
       int histo_blocks_per_sm       = 1;
       auto histogram_kernel         = kernel_source.RadixSortHistogramKernel();
 
-      error = CubDebug(
-        cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
+      error = CubDebug(launcher_factory.MaxSmOccupancy(histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
       if (cudaSuccess != error)
       {
         break;

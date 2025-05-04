@@ -32,18 +32,17 @@
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/array>
+#include <cuda/std/cassert>
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include <cassert>
-
 // cooperative groups do not support NVHPC yet
 #if !_CCCL_CUDA_COMPILER(NVHPC)
 #  include <cooperative_groups.h>
 #  include <cooperative_groups/memcpy_async.h>
-#endif
+#endif // !_CCCL_CUDA_COMPILER(NVHPC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -216,8 +215,8 @@ struct dispatch_t<StableAddress,
         }
 
         int max_occupancy = 0;
-        const auto error =
-          CubDebug(MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_dim, smem_size));
+        const auto error  = CubDebug(
+          launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_dim, smem_size));
         if (error != cudaSuccess)
         {
           return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 with GCC 7 fails CTAD here */>(error);
