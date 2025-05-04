@@ -107,8 +107,10 @@ using __nothrow_queryable_with_t _CCCL_NODEBUG_ALIAS = enable_if_t<noexcept(decl
 template <class _Ty>
 extern _Ty __unwrap_ref;
 
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Ty>
 extern _Ty& __unwrap_ref<::std::reference_wrapper<_Ty>>;
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Ty>
 extern _Ty& __unwrap_ref<reference_wrapper<_Ty>>;
