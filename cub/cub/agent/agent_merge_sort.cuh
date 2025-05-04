@@ -47,7 +47,6 @@
 
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -183,7 +182,7 @@ struct AgentBlockSort
   {
     ValueT items_local[ITEMS_PER_THREAD];
 
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+    NV_IF_TARGET(NV_PROVIDES_SM_90, cudaGridDependencySynchronize();)
 
     if constexpr (!KEYS_ONLY)
     {
@@ -211,7 +210,7 @@ struct AgentBlockSort
     }
 
     __syncthreads();
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    NV_IF_TARGET(NV_PROVIDES_SM_90, cudaTriggerProgrammaticLaunchCompletion();)
 
     if constexpr (IS_LAST_TILE)
     {
@@ -350,7 +349,7 @@ struct AgentPartition
     const OffsetT keys2_beg = keys1_end;
     const OffsetT keys2_end = (::cuda::std::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
 
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+    NV_IF_TARGET(NV_PROVIDES_SM_90, cudaGridDependencySynchronize();)
 
     // The last partition (which is one-past-the-last-tile) is only to mark the end of keys1_end for the merge stage
     if (partition_idx + 1 == num_partitions)
@@ -549,7 +548,7 @@ struct AgentMerge
     const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
-    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+    NV_IF_TARGET(NV_PROVIDES_SM_90, cudaGridDependencySynchronize();)
 
     // load keys1 & keys2
     KeyT keys_local[ITEMS_PER_THREAD];
@@ -591,7 +590,7 @@ struct AgentMerge
     }
 
     __syncthreads();
-    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
+    NV_IF_TARGET(NV_PROVIDES_SM_90, cudaTriggerProgrammaticLaunchCompletion();)
 
     // use binary search in shared memory
     // to find merge path for each of thread

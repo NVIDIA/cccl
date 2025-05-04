@@ -39,7 +39,6 @@
 #include <thrust/system/cuda/config.h>
 
 #include <cuda/cmath>
-#include <cuda/std/__cccl/cuda_capabilities.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -86,7 +85,6 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_HOST doit_host(K k, Args const&... args) const
   {
-#if _CCCL_HAS_PDL
     if (dependent_launch)
     {
       cudaLaunchAttribute attribute[1];
@@ -100,14 +98,13 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
       config.stream           = stream;
       config.attrs            = attribute;
       config.numAttrs         = 1;
-#  if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
+#if _CCCL_COMPILER(MSVC) && _CCCL_CUDACC_BELOW(12, 3)
       cudaLaunchKernelEx_MSVC_workaround(&config, k, args...);
-#  else
+#else
       cudaLaunchKernelEx(&config, k, args...);
-#  endif
+#endif
     }
     else
-#endif // _CCCL_HAS_PDL
     {
       k<<<grid, block, shared_mem, stream>>>(args...);
     }
