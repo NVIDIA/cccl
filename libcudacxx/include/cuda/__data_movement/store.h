@@ -39,26 +39,44 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
  * CUDA TO PTX MAPPINGS
  **********************************************************************************************************************/
 
-#  define _CCCL_STORE_PTX_CALL(_L1_REUSE, _L2_HINT, ...)                                      \
-    if constexpr (_L1_REUSE == cache_reuse_unchanged)                                         \
-    {                                                                                         \
-      _CUDA_VPTX::st_L1_evict_unchanged##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__); \
-    }                                                                                         \
-    else if constexpr (_L1_REUSE == cache_reuse_normal)                                       \
-    {                                                                                         \
-      _CUDA_VPTX::st_L1_evict_normal##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);    \
-    }                                                                                         \
-    else if constexpr (_L1_REUSE == cache_reuse_low)                                          \
-    {                                                                                         \
-      _CUDA_VPTX::st_L1_evict_first##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);     \
-    }                                                                                         \
-    else if constexpr (_L1_REUSE == cache_reuse_high)                                         \
-    {                                                                                         \
-      _CUDA_VPTX::st_L1_evict_last##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);      \
-    }                                                                                         \
-    else if constexpr (_L1_REUSE == cache_no_reuse)                                           \
-    {                                                                                         \
-      _CUDA_VPTX::st_L1_no_allocate##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);     \
+#  define _CCCL_STORE_PTX_CALL(_L1_POLICY, _L2_POLICY, _L2_HINT, ...)                                    \
+    if constexpr (_L2_POLICY == cache_reuse_unchanged)                                                   \
+    {                                                                                                    \
+      _CUDA_VPTX::st##_L1_POLICY##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);                   \
+    }                                                                                                    \
+    else if constexpr (_L2_POLICY == cache_reuse_normal)                                                 \
+    {                                                                                                    \
+      _CUDA_VPTX::st##_L1_POLICY##_L2_evict_normal##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__); \
+    }                                                                                                    \
+    else if constexpr (_L2_POLICY == cache_reuse_low)                                                    \
+    {                                                                                                    \
+      _CUDA_VPTX::st##_L1_POLICY##_L2_evict_first##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);  \
+    }                                                                                                    \
+    else if constexpr (_L2_POLICY == cache_reuse_high)                                                   \
+    {                                                                                                    \
+      _CUDA_VPTX::st##_L1_POLICY##_L2_evict_last##_L2_HINT(_CUDA_VPTX::space_global_t{}, __VA_ARGS__);   \
+    }
+
+#  define _CCCL_STORE_ADD_L1_POLICY(_L1_POLICY, _L2_POLICY, _L2_HINT, ...)       \
+    if constexpr (_L1_POLICY == cache_reuse_unchanged)                           \
+    {                                                                            \
+      _CCCL_STORE_PTX_CALL(, _L2_POLICY, _L2_HINT, __VA_ARGS__);                 \
+    }                                                                            \
+    else if constexpr (_L1_POLICY == cache_reuse_normal)                         \
+    {                                                                            \
+      _CCCL_STORE_PTX_CALL(_L1_evict_normal, _L2_POLICY, _L2_HINT, __VA_ARGS__); \
+    }                                                                            \
+    else if constexpr (_L1_POLICY == cache_reuse_low)                            \
+    {                                                                            \
+      _CCCL_STORE_PTX_CALL(_L1_evict_first, _L2_POLICY, _L2_HINT, __VA_ARGS__);  \
+    }                                                                            \
+    else if constexpr (_L1_POLICY == cache_reuse_high)                           \
+    {                                                                            \
+      _CCCL_STORE_PTX_CALL(_L1_evict_last, _L2_POLICY, _L2_HINT, __VA_ARGS__);   \
+    }                                                                            \
+    else if constexpr (_L1_POLICY == cache_no_reuse)                             \
+    {                                                                            \
+      _CCCL_STORE_PTX_CALL(_L1_no_allocate, _L2_POLICY, _L2_HINT, __VA_ARGS__);  \
     }
 
 /***********************************************************************************************************************
@@ -66,7 +84,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
  **********************************************************************************************************************/
 
 template <typename _Tp, _CacheReuseEnum _L1>
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm70(_Tp __data, _Tp* __ptr, __cache_reuse_t<_L1> __l1_reuse) noexcept
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm70(_Tp* __ptr, _Tp __data, __cache_reuse_t<_L1> __l1_reuse) noexcept
 {
   if constexpr (__l1_reuse == cache_reuse_unchanged)
   {
@@ -74,14 +92,14 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm70(_Tp __data, _Tp* __ptr, __cac
   }
   else
   {
-    _CCCL_STORE_PTX_CALL(__l1_reuse, , __ptr, __data);
+    _CCCL_STORE_ADD_L1_POLICY(__l1_reuse, /*l2_reuse*/, /*l2_hint*/, __ptr, __data);
   }
 }
 
 template <typename _Tp, _CacheReuseEnum _L1, typename _AccessProperty>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm80(
-  _Tp __data,
   _Tp* __ptr,
+  _Tp __data,
   __cache_reuse_t<_L1> __l1_reuse,
   [[maybe_unused]] __l2_hint_t<_AccessProperty> __l2_hint) noexcept
 {
@@ -91,25 +109,25 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm80(
   }
   else
   {
-    _CCCL_STORE_PTX_CALL(__l1_reuse, _L2_cache_hint, __ptr, __data, __l2_hint.__property);
+    _CCCL_STORE_ADD_L1_POLICY(__l1_reuse, /*l2_reuse*/, _L2_cache_hint, __ptr, __data, __l2_hint.__property);
   }
 }
 
 template <typename _Tp, _CacheReuseEnum _L1, _CacheReuseEnum _L2, typename _AccessProperty>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_sm100(
-  _Tp __data,
   _Tp* __ptr,
+  _Tp __data,
   __cache_reuse_t<_L1> __l1_reuse,
   __cache_reuse_t<_L2> __l2_reuse,
   [[maybe_unused]] __l2_hint_t<_AccessProperty> __l2_hint) noexcept
 {
-  if constexpr (__l2_reuse == cache_reuse_unchanged)
+  if constexpr (__l2_reuse == cache_reuse_unchanged || sizeof(_Tp) <= 8)
   {
-    _CUDA_VDEV::__store_sm100(__data, __ptr, __l1_reuse, __l2_hint);
+    _CUDA_VDEV::__store_sm80(__data, __ptr, __l1_reuse, __l2_hint);
   }
   else
   {
-    _CCCL_STORE_PTX_CALL(__l1_reuse, __l2_reuse, _L2_cache_hint, __ptr, __data, __l2_hint.__property);
+    _CCCL_STORE_ADD_L1_POLICY(__l1_reuse, __l2_reuse, _L2_cache_hint, __ptr, __data, __l2_hint.__property);
   }
 }
 
@@ -125,12 +143,11 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_dispatch(
   [[maybe_unused]] __cache_reuse_t<_L2> __l2_reuse,
   [[maybe_unused]] __l2_hint_t<_AccessProperty> __l2_hint) noexcept
 {
-  static_assert(sizeof(_Tp) <= __max_ptx_access_size);
   // clang-format off
-  NV_DISPATCH_TARGET(NV_PROVIDES_SM_100, (_CUDA_VDEV::__store_sm100(__data, __ptr, __l1_reuse, __l2_reuse, __l2_hint);),
-                     NV_PROVIDES_SM_80, (_CUDA_VDEV::__store_sm80(__data, __ptr, __l1_reuse, __l2_hint);),
-                     NV_PROVIDES_SM_70, (_CUDA_VDEV::__store_sm70(__data, __ptr, __l1_reuse);),
-                     NV_IS_DEVICE,      (*__ptr = __data;)); // fallback
+  NV_DISPATCH_TARGET(NV_PROVIDES_SM_100, (_CUDA_VDEV::__store_sm100(__ptr, __data, __l1_reuse, __l2_reuse, __l2_hint);),
+                     NV_PROVIDES_SM_80,  (_CUDA_VDEV::__store_sm80(__ptr,  __data, __l1_reuse, __l2_hint);),
+                     NV_PROVIDES_SM_70,  (_CUDA_VDEV::__store_sm70(__ptr,  __data, __l1_reuse);),
+                     NV_IS_DEVICE,       (*__ptr = __data;)); // fallback
   // clang-format on
   _CCCL_UNREACHABLE();
 }
@@ -148,72 +165,89 @@ _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __unroll_store(
   __l2_hint_t<_AccessProperty> __l2_hint,
   _CUDA_VSTD::index_sequence<_Ip...> = {})
 {
-  // if constexpr (__l1_reuse == cache_reuse_unchanged && !__l2_hint)
-  //{
-  //   ((__ptr[_Ip] = data[_Ip]), ...);
-  // }
-  // else
-  //{
-  ((_CUDA_VDEV::__store_dispatch(data[_Ip], __ptr + _Ip, __l1_reuse, __l2_reuse, __l2_hint)), ...);
-  //}
-};
+  ((_CUDA_VDEV::__store_dispatch(__ptr + _Ip, data[_Ip], __l1_reuse, __l2_reuse, __l2_hint)), ...);
+}
 
 /***********************************************************************************************************************
  * INTERNAL API
  **********************************************************************************************************************/
 
-template <typename _Tp, _CacheReuseEnum _L1, _CacheReuseEnum _L2, typename _AccessProperty>
-_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_element(
-  _Tp __data,
+template <size_t _MaxPtxAccessSize,
+          typename _Tp,
+          size_t _Align,
+          _CacheReuseEnum _L1,
+          _CacheReuseEnum _L2,
+          typename _AccessProperty>
+_CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_impl(
   _Tp* __ptr,
+  aligned_size_t<_Align>,
+  _Tp __data,
   __cache_reuse_t<_L1> __l1_reuse,
   __cache_reuse_t<_L2> __l2_reuse,
   __l2_hint_t<_AccessProperty> __l2_hint) noexcept
 {
+  static_assert(_CUDA_VSTD::has_single_bit(_Align), "_Align must be a power of 2");
   static_assert(!_CUDA_VSTD::is_const_v<_Tp>, "_Tp must not be const");
   _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
   _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
-  _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % alignof(_Tp) == 0, "'ptr' must be aligned");
-  auto __ptr_gmem = _CUDA_VSTD::bit_cast<_Tp*>(__cvta_generic_to_global(__ptr));
-  static_assert(_CUDA_VSTD::has_single_bit(sizeof(_Tp)) || sizeof(_Tp) % __max_ptx_access_size == 0,
-                "'sizeof(_Tp)' must be a power of 2 or multiple of max_alignment with non-default properties");
-  constexpr auto __access_size = _CUDA_VSTD::min(sizeof(_Tp), __max_ptx_access_size);
-  constexpr auto __num_unroll  = sizeof(_Tp) / __access_size;
-  using __aligned_data         = _AlignedData<__access_size>;
-  using __store_type           = _CUDA_VSTD::array<__aligned_data, __num_unroll>;
-  auto __index_seq             = _CUDA_VSTD::make_index_sequence<__num_unroll>{};
-  auto __ptr_gmem2             = reinterpret_cast<__aligned_data*>(__ptr_gmem);
-  auto __data_tmp              = _CUDA_VSTD::bit_cast<__store_type>(__data);
-  _CUDA_VDEV::__unroll_store(__data_tmp, __ptr_gmem2, __l1_reuse, __l2_reuse, __l2_hint, __index_seq);
+  _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "'ptr' must be aligned");
+  constexpr auto __max_align = _CUDA_VSTD::min({_Align, _MaxPtxAccessSize, sizeof(_Tp)});
+  static_assert(sizeof(_Tp) % __max_align == 0);
+  constexpr auto __num_unroll = sizeof(_Tp) / __max_align;
+  using __aligned_data        = _AlignedData<__max_align>;
+  auto __ptr_gmem             = _CUDA_VSTD::bit_cast<__aligned_data*>(__cvta_generic_to_global(__ptr));
+  using __store_type          = _CUDA_VSTD::array<__aligned_data, __num_unroll>;
+  auto __index_seq            = _CUDA_VSTD::make_index_sequence<__num_unroll>{};
+  auto __data_tmp             = _CUDA_VSTD::bit_cast<__store_type>(__data);
+  _CUDA_VDEV::__unroll_store(__ptr_gmem, __data_tmp, __l1_reuse, __l2_reuse, __l2_hint, __index_seq);
+}
+
+template <typename _Tp,
+          size_t _Align,
+          _MemoryAccess _Bp,
+          _CacheReuseEnum _L1,
+          _CacheReuseEnum _L2,
+          _L2_PrefetchEnum _Pp,
+          typename _AccessProperty>
+[[nodiscard]] _CCCL_PURE _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _Tp __store_ptx_isa_dispatch(
+  const _Tp* __ptr,
+  aligned_size_t<_Align> __align,
+  __memory_access_t<_Bp> __memory_access,
+  __cache_reuse_t<_L1> __l1_reuse,
+  [[maybe_unused]] __cache_reuse_t<_L2> __l2_reuse,
+  __l2_hint_t<_AccessProperty> __l2_hint,
+  __l2_prefetch_t<_Pp> __l2_prefetch) noexcept
+{
+  if constexpr (__cccl_ptx_isa >= 880)
+  {
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_100,
+      (return _CUDA_VDEV::__store_impl<32>(
+                __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch);),
+      (return _CUDA_VDEV::__store_impl<__max_ptx_access_size>(
+                __ptr, __align, __memory_access, __l1_reuse, __l2_reuse, __l2_hint, __l2_prefetch);))
+  }
+  else
+  {
+    return _CUDA_VDEV::__store_impl<__max_ptx_access_size>(
+      __ptr, __align, __memory_access, __l1_reuse, cache_reuse_unchanged, __l2_hint, __l2_prefetch);
+  }
 }
 
 template <size_t _Np, typename _Tp, size_t _Align, _CacheReuseEnum _L1, _CacheReuseEnum _L2, typename _AccessProperty>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void __store_array(
-  _CUDA_VSTD::array<_Tp, _Np> __data,
   _Tp* __ptr,
-  aligned_size_t<_Align>,
+  _CUDA_VSTD::array<_Tp, _Np> __data,
+  aligned_size_t<_Align> __align,
   __cache_reuse_t<_L1> __l1_reuse,
   __cache_reuse_t<_L2> __l2_reuse,
   __l2_hint_t<_AccessProperty> __l2_hint) noexcept
 {
-  constexpr auto __access_size = sizeof(_Tp) * _Np;
-  static_assert(!_CUDA_VSTD::is_const_v<_Tp>, "_Tp must not be const");
   static_assert(_Np > 0);
-  static_assert(_CUDA_VSTD::has_single_bit(_Align), "_Align must be a power of 2");
   static_assert(_Align >= alignof(_Tp), "_Align must be greater than or equal to alignof(_Tp)");
-  static_assert(__access_size % _Align == 0, "Np * sizeof(_Tp) must be a multiple of _Align");
-  _CCCL_ASSERT(__ptr != nullptr, "'ptr' must not be null");
-  _CCCL_ASSERT(__isGlobal(__ptr), "'ptr' must point to global memory");
-  _CCCL_ASSERT(_CUDA_VSTD::bit_cast<uintptr_t>(__ptr) % _Align == 0, "'ptr' must be aligned");
-  constexpr bool __is_default_access = __l1_reuse == cache_reuse_unchanged && !__l2_hint;
-  constexpr auto __max_align         = __is_default_access ? _Align : _CUDA_VSTD::min(_Align, __max_ptx_access_size);
-  constexpr auto __num_unroll        = __access_size / __max_align;
-  using __store_type                 = _AlignedData<__max_align>;
-  using __store_array_type           = _CUDA_VSTD::array<__store_type, __num_unroll>;
-  auto __ptr_gmem                    = _CUDA_VSTD::bit_cast<__store_type*>(__cvta_generic_to_global(__ptr));
-  auto __tmp                         = _CUDA_VSTD::bit_cast<__store_array_type>(__data);
-  auto __index_seq                   = _CUDA_VSTD::make_index_sequence<__num_unroll>{};
-  _CUDA_VDEV::__unroll_store(__tmp, __ptr_gmem, __l1_reuse, __l2_reuse, __l2_hint, __index_seq);
+  using __result_t = _CUDA_VSTD::array<_Tp, _Np>;
+  auto __ptr1      = reinterpret_cast<const __result_t*>(__ptr);
+  return _CUDA_VDEV::__store_ptx_isa_dispatch(__ptr1, __data, __align, __l1_reuse, __l2_reuse, __l2_hint);
 }
 
 /***********************************************************************************************************************
@@ -225,13 +259,13 @@ template <typename _Tp,
           _CacheReuseEnum _L2      = _CacheReuseEnum::_Unchanged,
           typename _AccessProperty = access_property::global>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
-store(_Tp __data,
-      _Tp* __ptr,
+store(_Tp* __ptr,
+      _Tp __data,
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L2> __l2_reuse = cache_reuse_unchanged,
       _AccessProperty __l2_hint       = access_property::global{}) noexcept
 {
-  _CUDA_VDEV::__store_element(__data, __ptr, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
+  _CUDA_VDEV::__store_ptx_isa_dispatch(__ptr, __data, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
 }
 
 template <typename _Tp,
@@ -239,12 +273,13 @@ template <typename _Tp,
           _CacheReuseEnum _L1 = _CacheReuseEnum::_Unchanged,
           _CacheReuseEnum _L2 = _CacheReuseEnum::_Unchanged>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
-store(_Tp __data,
-      annotated_ptr<_Tp, _Prop> __ptr,
+store(annotated_ptr<_Tp, _Prop> __ptr,
+      _Tp __data,
+
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L1> __l2_reuse = cache_reuse_unchanged) noexcept
 {
-  _CUDA_VDEV::__store_element(__data, __ptr.__get_raw_ptr(), __l1_reuse, __l2_reuse, __ptr.__property());
+  _CUDA_VDEV::__store_ptx_isa_dispatch(__ptr.__get_raw_ptr(), __data, __l1_reuse, __l2_reuse, __ptr.__property());
 }
 
 template <size_t _Np,
@@ -254,14 +289,15 @@ template <size_t _Np,
           _CacheReuseEnum _L2      = _CacheReuseEnum::_Unchanged,
           typename _AccessProperty = access_property::global>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
-store(const _CUDA_VSTD::array<_Tp, _Np>& __data,
-      _Tp* __ptr,
+store(_Tp* __ptr,
+      const _CUDA_VSTD::array<_Tp, _Np>& __data,
+
       aligned_size_t<_Align> __align  = aligned_size_t<_Align>{alignof(_Tp)},
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L1> __l2_reuse = cache_reuse_unchanged,
       _AccessProperty __l2_hint       = access_property::global{}) noexcept
 {
-  _CUDA_VDEV::__store_array<_Np>(__data, __ptr, __align, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
+  _CUDA_VDEV::__store_array<_Np>(__ptr, __data, __align, __l1_reuse, __l2_reuse, __l2_hint_t{__l2_hint});
 }
 
 template <size_t _Np,
@@ -272,13 +308,13 @@ template <size_t _Np,
           _CacheReuseEnum _L2      = _CacheReuseEnum::_Unchanged,
           typename _AccessProperty = access_property::global>
 _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void
-store(const _CUDA_VSTD::array<_Tp, _Np>& __data,
-      annotated_ptr<_Tp, _Prop> __ptr,
+store(annotated_ptr<_Tp, _Prop> __ptr,
+      const _CUDA_VSTD::array<_Tp, _Np>& __data,
       aligned_size_t<_Align> __align  = aligned_size_t<_Align>{alignof(_Tp)},
       __cache_reuse_t<_L1> __l1_reuse = cache_reuse_unchanged,
       __cache_reuse_t<_L2> __l2_reuse = cache_reuse_unchanged) noexcept
 {
-  _CUDA_VDEV::__store_array<_Np>(__data, __ptr.__get_raw_ptr(), __align, __l1_reuse, __l2_reuse, __ptr.__property());
+  _CUDA_VDEV::__store_array<_Np>(__ptr.__get_raw_ptr(), __data, __align, __l1_reuse, __l2_reuse, __ptr.__property());
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE

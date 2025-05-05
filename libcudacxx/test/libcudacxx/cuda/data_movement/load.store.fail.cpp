@@ -23,20 +23,18 @@ __global__ void load_kernel()
 {
   unused(cuda::device::load(&pointer1, cuda::device::read_only));
   unused(cuda::device::load(&pointer1, cuda::device::read_write, cuda::device::cache_reuse_unchanged));
-  unused(cuda::device::load(
-    &pointer1, cuda::device::read_write, cuda::device::cache_reuse_unchanged, cuda::device::L2_prefetch_64B));
 }
 
 __global__ void store_kernel()
 {
   cuda::std::array<uint32_t, 7> array{};
-  cuda::device::store(array, &pointer1, cuda::device::cache_reuse_unchanged); // not a multiple of 16 with eviction
+  cuda::device::store(&pointer1, array, cuda::device::cache_reuse_unchanged); // not a multiple of 16 with eviction
 
   cuda::std::array<const uint32_t, 1> array1{};
-  cuda::device::store(array1, reinterpret_cast<const uint32_t*>(&pointer2)); // const pointer
+  cuda::device::store(reinterpret_cast<const uint32_t*>(&pointer2), array1); // const pointer
 
   cuda::std::array<uint32_t, 0> array2;
-  cuda::device::store(array2, pointer2); // 0 size
+  cuda::device::store(pointer2, array2); // 0 size
 }
 
 __global__ void load_array_kernel()
@@ -51,18 +49,10 @@ __global__ void store_array_kernel()
 {
   cuda::std::array<uint32_t, 2> array1{};
   cuda::std::array<uint32_t, 3> array2{};
-  cuda::device::store(array1, pointer2, cuda::aligned_size_t<6>{6}); // non power of 2
-  cuda::device::store(array1, pointer2, cuda::aligned_size_t<2>{2}); // alignment too small
-  cuda::device::store(array2, pointer2, cuda::aligned_size_t<8>{8}); // sizeof(T) * N is not a multiple of alignment
+  cuda::device::store(pointer2, array1, cuda::aligned_size_t<6>{6}); // non power of 2
+  cuda::device::store(pointer2, array1, cuda::aligned_size_t<2>{2}); // alignment too small
+  cuda::device::store(pointer2, array2, cuda::aligned_size_t<8>{8}); // sizeof(T) * N is not a multiple of alignment
 }
-
-// the compiler gets stuck on this one
-//__global__ void store_span_kernel()
-//{
-//  cuda::std::array<uint32_t, 2> array{};
-//  cuda::std::span<uint32_t, cuda::std::dynamic_extent> span{array};
-//  cuda::device::store(span, pointer2); // dynamic_extent
-//}
 
 //----------------------------------------------------------------------------------------------------------------------
 

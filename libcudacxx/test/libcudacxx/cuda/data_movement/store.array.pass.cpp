@@ -26,7 +26,7 @@ template <size_t Align, typename T, size_t N, typename Eviction>
 __device__ void store_call(cuda::std::array<T, N>& value, T* output, Eviction eviction)
 {
   update(value);
-  cuda::device::store<N>(value, output, cuda::aligned_size_t<Align>{Align}, eviction);
+  cuda::device::store<N>(output, value, cuda::aligned_size_t<Align>{Align}, eviction);
   __threadfence();
   auto result = *reinterpret_cast<cuda::std::array<T, N>*>(output);
   assert(result == value);
@@ -54,8 +54,6 @@ __global__ void store_kernel()
   store_call<16>(array, pointer);
   store_call<32>(array, pointer);
   store_call<64>(array, pointer);
-  // cuda::device::store(cuda::std::span{array}, pointer, cuda::aligned_size_t<4>{4});
-  // cuda::device::store(cuda::std::span{array}, pointer);
 }
 
 //----------------------------------------------------------------------------------------------------------------------
