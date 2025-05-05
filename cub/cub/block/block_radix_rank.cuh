@@ -52,6 +52,7 @@
 #include <cuda/std/__algorithm_>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -309,7 +310,7 @@ private:
       {
         cached_segment[i] = smem_raking_ptr[i];
       }
-      return cub::ThreadReduce(cached_segment, ::cuda::std::plus<>{});
+      return cub::ThreadReduce(::cuda::std::span<PackedCounter, RAKING_SEGMENT>{cached_segment}, ::cuda::std::plus<>{});
     }
     else
     {

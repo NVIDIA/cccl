@@ -45,10 +45,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
 
-#include <iterator>
-
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst

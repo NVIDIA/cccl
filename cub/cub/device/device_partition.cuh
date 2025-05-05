@@ -46,10 +46,6 @@
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
 
-#include <iterator>
-
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 //! @rst
