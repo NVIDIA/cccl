@@ -33,11 +33,14 @@
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_HAS_CTK() && !_CCCL_CUDA_COMPILATION()
 
+#if _CCCL_CUDA_COMPILATION() && _CCCL_CUDACC_BELOW(CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10)
+#  error \
+    "CUDA compiler must come from a CUDA toolkit version greater than or equal to the included CUDA Runtime version"
+#endif // _CCCL_CUDA_COMPILATION() && _CCCL_CUDACC_BELOW(CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10)
+
 #define _CCCL_CTK_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 1000 + (_MINOR) * 10)
 #define _CCCL_CTK()                            (CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10)
 #define _CCCL_CTK_BELOW(...)                   _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, <, __VA_ARGS__)
 #define _CCCL_CTK_AT_LEAST(...)                _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, >=, __VA_ARGS__)
-
-// todo: check CUDA compatibility: must CUDART_VERSION be <= CUDACC?
 
 #endif // __CCCL_CUDA_TOOLKIT_H
