@@ -132,7 +132,7 @@ executables. This defeats the purpose of splitting up the test since the
 compiler will generate redundant code across the new split executables.
 
 The best candidate parameters for splitting are input value types, rather than
-integral parameters like BLOCK_THREADS, etc. Splitting by value type allows more
+integral parameters like ``BLOCK_THREADS``, etc. Splitting by value type allows more
 infrastructure (data generation, validation) to be reused. Splitting other
 parameters can cause build times to increase since type-related infrastructure
 has to be rebuilt for each test variant.
