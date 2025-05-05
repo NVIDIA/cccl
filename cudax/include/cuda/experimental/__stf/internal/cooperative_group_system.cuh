@@ -21,9 +21,9 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
-#ifdef __CUDACC__
+#if _CCCL_CUDA_COMPILATION()
 #  include <cooperative_groups.h>
-#endif
+#endif // _CCCL_CUDA_COMPILATION()
 
 namespace cuda::experimental::stf::reserved
 {
@@ -54,7 +54,7 @@ public:
   }
   ///@}
 
-#ifdef __CUDACC__
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE void sync(size_t devid, size_t ndevs) const
   {
     auto grid = cooperative_groups::this_grid();
@@ -95,12 +95,12 @@ public:
 
     grid.sync();
   }
-#endif // __CUDACC__
+#endif // _CCCL_CUDA_COMPILATION()
 
 private:
   unsigned char* hostMemoryArrivedList = nullptr; ///< Pointer to the host memory synchronization list.
 
-#ifdef __CUDACC__
+#if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE unsigned char load_arrived(unsigned char* arrived) const
   {
 #  if __CUDA_ARCH__ < 700
@@ -123,7 +123,7 @@ private:
     (void) (reg_val = reg_val);
 #  endif
   }
-#endif // __CUDACC__
+#endif // _CCCL_CUDA_COMPILATION()
 };
 
 } // end namespace cuda::experimental::stf::reserved

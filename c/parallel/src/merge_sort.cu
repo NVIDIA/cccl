@@ -127,7 +127,7 @@ merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
   // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
   // types test as well. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  items_per_thread = 2;
+  items_per_thread = 1;
 
   return {block_size, items_per_thread, block_size * items_per_thread};
 }

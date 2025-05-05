@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -58,14 +58,25 @@ private:
     connect_result_t<_Sndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, _Env>>> __opstate_;
   };
 
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
+  {
+    template <class _Env, class _Sndr>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(_Env __env, _Sndr __sndr) const;
+  };
+
 public:
+  _CUDAX_TRIVIAL_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   template <class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   /// @brief Wraps one sender in another that modifies the execution
   /// environment by merging in the environment specified.
   template <class _Sndr, class _Env>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr, _Env) const -> __sndr_t<_Sndr, _Env>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr, _Env) const;
 };
 
 template <class _Sndr, class _Env>
@@ -103,10 +114,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   _Sndr __sndr_;
 };
 
-template <class _Sndr, class _Env>
-_CUDAX_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const -> __sndr_t<_Sndr, _Env>
+template <class _Env, class _Sndr>
+_CUDAX_TRIVIAL_API constexpr auto write_env_t::__fn::operator()(_Env __env, _Sndr __sndr) const
 {
   return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
+}
+
+template <class _Sndr, class _Env>
+_CUDAX_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const
+{
+  using __dom_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Env>;
+  return __dom_t::__apply(*this)(static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr));
 }
 
 template <class _Sndr, class _Env>

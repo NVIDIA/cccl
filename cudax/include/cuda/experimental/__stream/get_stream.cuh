@@ -29,7 +29,6 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
 
 namespace cuda::experimental

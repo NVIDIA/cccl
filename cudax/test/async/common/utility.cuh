@@ -86,7 +86,7 @@ struct string
     while (c[len++])
       ;
     char* tmp = str = new char[len];
-    while (*tmp++ = *c++)
+    while ((*tmp++ = *c++))
       ;
   }
 

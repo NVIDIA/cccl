@@ -49,9 +49,9 @@ Defined in header ``<cuda/annotated_ptr>``.
 .. note::
   If ``Property`` is :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property>`,
   namely a dynamic property with a runtime value,
-  then ``sizeof(cuda::annotated_ptr<Type, cuda::access_property>) == 2 * sizeof(Type*)``. Otherwise, its size is ``sizeof  (Type*)``.
+  then ``sizeof(cuda::annotated_ptr<Type, cuda::access_property>) == 2 * sizeof(Type*)``. Otherwise, its size is ``sizeof(Type*)``.
 
-In contrast to :ref:`cuda::associate_access_property <libcudacxx-extended-api-memory-access-properties-associate-access-property>`, ``cuda::annotated_ptr`` maintains the association when passed across translation units.
+In contrast to :ref:`cuda::associate_access_property <libcudacxx-extended-api-memory-access-properties-associate-access-property>`, ``cuda::annotated_ptr`` maintains the association between the pointer and the property when passed across translation units.
 
 **Constraints**
 
@@ -62,8 +62,8 @@ In contrast to :ref:`cuda::associate_access_property <libcudacxx-extended-api-me
 -  :ref:`cuda::access_property::persisting <libcudacxx-extended-api-memory-access-properties-access-property-persisting>`,
 -  :ref:`cuda::access_property::normal <libcudacxx-extended-api-memory-access-properties-access-property-normal>`,
 -  :ref:`cuda::access_property::streaming <libcudacxx-extended-api-memory-access-properties-access-property-streaming>` or,
--  :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property>`
-   (a type-erased property with a runtime value).
+-  :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property>`:
+   a type-erased specification that allows ``annotated_ptr`` to set the access property at runtime value.
 
 **Semantics**
 
@@ -150,7 +150,7 @@ Constructs an ``annotated_ptr`` requesting associating ``ptr`` with ``Property``
 
 **Constraints**:
 
-- If ``Property`` is :ref:`cuda::access_property::shared <libcudacxx-extended-api-memory-access-properties-access-property-shared>`, :ref:`cuda::access_property::global <libcudacxx-extended-api-memory-access-properties-access-property-global>`,  :ref:`cuda::access_property::normal <libcudacxx-extended-api-memory-access-properties-access-property-normal>`, :ref:`cuda::access_property::streaming <libcudacxx-extended-api-memory-access-properties-access-property-streaming>`, :ref:`cuda::access_property::persisting <libcudacxx-extended-api-memory-access-properties-access-property-persisting>`, or :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property-dynamic>`.
+- If ``Property`` is :ref:`cuda::access_property::shared <libcudacxx-extended-api-memory-access-properties-access-property-shared>`, :ref:`cuda::access_property::global <libcudacxx-extended-api-memory-access-properties-access-property-global>`,  :ref:`cuda::access_property::normal <libcudacxx-extended-api-memory-access-properties-access-property-normal>`, :ref:`cuda::access_property::streaming <libcudacxx-extended-api-memory-access-properties-access-property-streaming>`, :ref:`cuda::access_property::persisting <libcudacxx-extended-api-memory-access-properties-access-property-persisting>`, or `cuda::access_property` (dynamic).
 
 **Preconditions**:
 
@@ -162,7 +162,7 @@ Constructor from pointer and access property
 
 .. code:: cuda
 
-   template <class RuntimeProperty>
+   template <typename RuntimeProperty>
    annotated_ptr(pointer ptr, RuntimeProperty prop);
 
 Constructs an ``annotated_ptr`` requesting the association of ``ptr`` with the property ``prop``.
@@ -173,7 +173,7 @@ Constructs an ``annotated_ptr`` requesting the association of ``ptr`` with the p
    :ref:`cuda::access_property::normal <libcudacxx-extended-api-memory-access-properties-access-property-normal>`,
    :ref:`cuda::access_property::streaming <libcudacxx-extended-api-memory-access-properties-access-property-streaming>`,
    :ref:`cuda::access_property::persisting <libcudacxx-extended-api-memory-access-properties-access-property-persisting>`, or
-   :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property>`.
+   :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property>` (same as *global*).
 
 **Preconditions**:
 
@@ -192,7 +192,7 @@ Constructs an ``annotated_ptr`` for the same pointer as the input ``annotated_pt
 **Constraints**
 
 -  ``annotated_ptr<Type, Property>::pointer`` is assignable from ``annotated_ptr<T, P>::pointer``.
--  ``Property`` is either :ref:`cuda::access_property <libcudacxx-extended-api-memory-access-properties-access-property-dynamic>` or ``P``.
+-  ``Property`` is either ``cuda::access_property`` (*dynamic*) or ``P``.
 -  ``Property`` and ``P`` specify the same memory space.
 
 **Preconditions**
@@ -271,6 +271,8 @@ Pointer distance
 **Preconditions**
 
 - ``ptr >= p``.
+
+----
 
 Example
 -------
