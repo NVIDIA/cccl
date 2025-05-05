@@ -112,6 +112,7 @@ template <class _Tp>
 #  if _LIBCUDACXX_HAS_NVFP16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
+    // Should this be _CCCL_CTK_BELOW(12, 3)? I cannot view the nvbug :(
 #    if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
     // this is a workaround for nvbug 4362808
     return !::__hisnan(__x) && ::__hisnan(__x - __x);
