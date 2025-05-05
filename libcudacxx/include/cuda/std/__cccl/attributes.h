@@ -169,7 +169,9 @@
 // Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
 #if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
 #  undef _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#  undef _CCCL_NO_UNIQUE_ADDRESS
 #  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
+#  define _CCCL_NO_UNIQUE_ADDRESS
 #endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
 
 // _CCCL_PREFERED_NAME
