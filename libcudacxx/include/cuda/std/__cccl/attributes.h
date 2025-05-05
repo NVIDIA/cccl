@@ -84,9 +84,9 @@
 // _CCCL_DIAGNOSE_IF
 
 #if _CCCL_HAS_ATTRIBUTE(__diagnose_if__)
-#  define _CCCL_DIAGNOSE_IF(_COND, _MSG) __attribute__((__diagnose_if__(_COND, _MSG)))
+#  define _CCCL_DIAGNOSE_IF(_COND, _MSG, _TYPE) __attribute__((__diagnose_if__(_COND, _MSG, _TYPE)))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(diagnose_if) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(diagnose_if) vvv
-#  define _CCCL_DIAGNOSE_IF(_COND, _MSG)
+#  define _CCCL_DIAGNOSE_IF(_COND, _MSG, _TYPE)
 #endif // !_CCCL_HAS_ATTRIBUTE(diagnose_if)
 
 // _CCCL_INTRINSIC
