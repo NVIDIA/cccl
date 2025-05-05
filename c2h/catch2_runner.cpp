@@ -29,6 +29,6 @@
 //! This file includes a custom Catch2 main function when CMake is configured to build all tests into a single
 //! executable.
 
-#define CUB_CONFIG_MAIN
-#define CUB_EXCLUDE_CATCH2_HELPER_IMPL
+#define C2H_CONFIG_MAIN
+#define C2H_EXCLUDE_CATCH2_HELPER_IMPL
 #include <c2h/catch2_main.h>
