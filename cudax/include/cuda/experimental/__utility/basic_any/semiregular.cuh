@@ -52,7 +52,7 @@ _CCCL_PUSH_MACROS
 namespace cuda::experimental
 {
 template <class _Tp>
-[[nodiscard]] _CUDAX_HOST_API constexpr _Tp __constant_war(_Tp __val) noexcept
+[[nodiscard]] _CCCL_HOST_API constexpr _Tp __constant_war(_Tp __val) noexcept
 {
   return __val;
 }
@@ -137,14 +137,14 @@ struct imovable : interface<imovable>
   using overrides _CCCL_NODEBUG_ALIAS =
     overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__try_move_fn<_Tp>), _CUDAX_FNPTR_CONSTANT_WAR(&__move_fn<_Tp>)>;
 
-  _CUDAX_HOST_API auto __move_to(void* __pv) noexcept -> void
+  _CCCL_HOST_API auto __move_to(void* __pv) noexcept -> void
   {
-    return __cudax::virtcall<&__move_fn<imovable>>(this, __pv);
+    return experimental::virtcall<&__move_fn<imovable>>(this, __pv);
   }
 
-  [[nodiscard]] _CUDAX_HOST_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
+  [[nodiscard]] _CCCL_HOST_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
   {
-    return __cudax::virtcall<&__try_move_fn<imovable>>(this, __pv, __size, __align);
+    return experimental::virtcall<&__try_move_fn<imovable>>(this, __pv, __size, __align);
   }
 };
 
@@ -155,7 +155,7 @@ struct icopyable : interface<icopyable, extends<imovable<>>>
   _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__copy_fn<_Tp>)>;
 
-  [[nodiscard]] _CUDAX_HOST_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
+  [[nodiscard]] _CCCL_HOST_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
     return virtcall<&__copy_fn<icopyable>>(this, __pv, __size, __align);
   }
@@ -172,13 +172,13 @@ struct iequality_comparable_base : interface<iequality_comparable>
   // These overloads are only necessary so that iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
   // `iequality_comparable<>::overloads` alias template below.
-  [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CCCL_TRIVIAL_HOST_API auto
   operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
   }
 
-  [[noreturn]] friend _CUDAX_TRIVIAL_HOST_API auto
+  [[noreturn]] friend _CCCL_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CUDA_VSTD::unreachable();
@@ -189,18 +189,18 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
                  || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto
   operator==(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
-    auto const& __other = __cudax::basic_any_from(__rhs);
+    auto const& __other = experimental::basic_any_from(__rhs);
     constexpr auto __eq = &__equal_fn<iequality_comparable<_ILeft>>;
-    return __cudax::virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
+    return experimental::virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
   }
 
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
                  || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
-  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -219,27 +219,27 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto
   operator==(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
-    return __cudax::virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__rhs));
+    return experimental::virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__rhs));
   }
 
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto
   operator==(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
-    return __cudax::virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__lhs));
+    return experimental::virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__lhs));
   }
 
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -248,7 +248,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
   _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
                    _CCCL_AND __satisfies<_Object, _Interface>)
-  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto
   operator!=(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
@@ -285,9 +285,9 @@ struct __iconvertible_to<self, _To>
   template <class...>
   struct __interface_ : interface<__interface_>
   {
-    [[nodiscard]] _CUDAX_HOST_API operator _To()
+    [[nodiscard]] _CCCL_HOST_API operator _To()
     {
-      return __cudax::virtcall<__conversion_fn<__interface_, _To>>(this);
+      return experimental::virtcall<__conversion_fn<__interface_, _To>>(this);
     }
 
     template <class _From>
@@ -301,9 +301,9 @@ struct __iconvertible_to<self&, _To>
   template <class...>
   struct __interface_ : interface<__interface_>
   {
-    [[nodiscard]] _CUDAX_HOST_API operator _To() &
+    [[nodiscard]] _CCCL_HOST_API operator _To() &
     {
-      return __cudax::virtcall<&__conversion_fn<__interface_&, _To>>(this);
+      return experimental::virtcall<&__conversion_fn<__interface_&, _To>>(this);
     }
 
     template <class _From>
@@ -317,9 +317,9 @@ struct __iconvertible_to<self const&, _To>
   template <class...>
   struct __interface_ : interface<__interface_>
   {
-    [[nodiscard]] _CUDAX_HOST_API operator _To() const&
+    [[nodiscard]] _CCCL_HOST_API operator _To() const&
     {
-      return __cudax::virtcall<&__conversion_fn<__interface_ const&, _To>>(this);
+      return experimental::virtcall<&__conversion_fn<__interface_ const&, _To>>(this);
     }
 
     template <class _From>

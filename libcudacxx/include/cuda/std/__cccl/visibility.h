@@ -95,7 +95,7 @@
 #define _CCCL_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 
-// _CUDAX_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes
+// _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes
 // debuggers to skip it. This is useful for trivial internal functions that do dispatching
 // or other plumbing work. It is particularly useful in the definition of customization
 // point objects.

@@ -26,7 +26,6 @@
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
@@ -75,13 +74,13 @@ private:
       delete static_cast<__opstate_t*>(__ptr);
     }
 
-    _CUDAX_API explicit __opstate_t(_Sndr&& __sndr)
+    _CCCL_API explicit __opstate_t(_Sndr&& __sndr)
         : __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
 
-    _CUDAX_IMMOVABLE(__opstate_t);
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CUDAX_API void start() noexcept
+    _CCCL_API void start() noexcept
     {
       __async::start(__opstate_);
     }
@@ -90,21 +89,21 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
   {
     template <class _Sndr>
-    _CUDAX_API auto operator()(_Sndr __sndr) const
+    _CCCL_API auto operator()(_Sndr __sndr) const
     {
       __async::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
     }
   };
 
 public:
-  _CUDAX_API static constexpr auto __apply() noexcept
+  _CCCL_API static constexpr auto __apply() noexcept
   {
     return __fn{};
   }
 
   /// run detached.
   template <class _Sndr>
-  _CUDAX_TRIVIAL_API void operator()(_Sndr __sndr) const
+  _CCCL_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
     using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
     __dom_t::__apply (*this)(static_cast<_Sndr&&>(__sndr));

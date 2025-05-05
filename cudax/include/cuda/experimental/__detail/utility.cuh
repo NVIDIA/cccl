@@ -23,8 +23,6 @@
 
 #include <cuda/std/__utility/declval.h>
 
-#include <cuda/experimental/__detail/config.cuh>
-
 namespace cuda::experimental
 {
 namespace detail
@@ -32,7 +30,7 @@ namespace detail
 // This is a helper type that can be used to ignore function arguments.
 struct [[maybe_unused]] __ignore
 {
-  _CUDAX_DEFAULTED_API __ignore() = default;
+  _CCCL_HIDE_FROM_ABI __ignore() = default;
 
   template <typename... _Args>
   _CCCL_HOST_DEVICE constexpr __ignore(_Args&&...) noexcept
@@ -42,7 +40,7 @@ struct [[maybe_unused]] __ignore
 // Classes can inherit from this type to become immovable.
 struct __immovable
 {
-  _CUDAX_DEFAULTED_API __immovable()             = default;
+  _CCCL_HIDE_FROM_ABI __immovable()              = default;
   __immovable(__immovable&&) noexcept            = delete;
   __immovable& operator=(__immovable&&) noexcept = delete;
 };

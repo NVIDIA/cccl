@@ -58,25 +58,25 @@ private:
     using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
     using __rcvr_with_sch_t _CCCL_NODEBUG_ALIAS       = __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>;
 
-    _CUDAX_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
+    _CCCL_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
         : __rcvr_with_sch_t{static_cast<_Rcvr&&>(__rcvr), {__sch}}
         , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref<__opstate_t, __env_t>{*this})}
         , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref<__rcvr_with_sch_t>{*this})}
     {}
 
-    _CUDAX_IMMOVABLE(__opstate_t);
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
-    _CUDAX_API void start() noexcept
+    _CCCL_API void start() noexcept
     {
       __async::start(__opstate1_);
     }
 
-    _CUDAX_API void set_value() noexcept
+    _CCCL_API void set_value() noexcept
     {
       __async::start(__opstate2_);
     }
 
-    _CUDAX_API auto get_env() const noexcept -> __env_t
+    _CCCL_API auto get_env() const noexcept -> __env_t
     {
       return __async::get_env(this->__base());
     }
@@ -88,11 +88,11 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
   {
     template <class _Sch, class _Sndr>
-    _CUDAX_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
   };
 
 public:
-  _CUDAX_API static constexpr auto __apply() noexcept
+  _CCCL_API static constexpr auto __apply() noexcept
   {
     return __fn{};
   }
@@ -101,7 +101,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sch, class _Sndr>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
 };
 
 template <class _Sch, class _Sndr>
@@ -116,7 +116,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
   using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, _FWD_ENV_T<_Env>>;
 
   template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures()
+  _CCCL_API static constexpr auto get_completion_signatures()
   {
     using __sch_sndr _CCCL_NODEBUG_ALIAS   = schedule_result_t<_Sch>;
     using __child_sndr _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
@@ -134,31 +134,31 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sch, _Sndr>
+  _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sch, _Sndr>
   {
     return __opstate_t<_Rcvr, _Sch, _Sndr>{__sch_, static_cast<_Rcvr&&>(__rcvr), static_cast<_Sndr&&>(__sndr_)};
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, _Sch, const _Sndr&>
+  _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, _Sch, const _Sndr&>
   {
     return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
   }
 
-  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return __async::get_env(__sndr_);
   }
 };
 
 template <class _Sch, class _Sndr>
-_CUDAX_TRIVIAL_API constexpr auto start_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
+_CCCL_TRIVIAL_API constexpr auto start_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
 {
   return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
 }
 
 template <class _Sch, class _Sndr>
-_CUDAX_TRIVIAL_API constexpr auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const
+_CCCL_TRIVIAL_API constexpr auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Sch>; // see [exec.starts.on]
   return __dom_t::__apply(*this)(static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr));

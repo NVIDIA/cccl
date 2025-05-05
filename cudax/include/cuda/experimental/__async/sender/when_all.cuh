@@ -46,7 +46,6 @@
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -67,12 +66,12 @@ private:
   // Returns the completion signatures of a child sender. Throws an exception if
   // the child sender has more than one set_value completion signature.
   template <class _Child, class... _Env>
-  _CUDAX_API static constexpr auto __child_completions();
+  _CCCL_API static constexpr auto __child_completions();
 
   // Merges the completion signatures of the child senders into a single set of
   // completion signatures for the when_all sender.
   template <class... _Completions>
-  _CUDAX_API static constexpr auto __merge_completions(_Completions...);
+  _CCCL_API static constexpr auto __merge_completions(_Completions...);
 
   /// The receivers connected to the when_all's sub-operations expose this as
   /// their environment. Its `get_stop_token` query returns the token from
@@ -86,14 +85,14 @@ private:
 
     __state_t& __state_;
 
-    _CUDAX_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
+    _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }
 
     // TODO: only forward the "forwarding" queries
     template <class _Tag>
-    _CUDAX_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
+    _CCCL_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
     {
       return __async::get_env(__state_.__rcvr_).query(_Tag());
     }
@@ -108,7 +107,7 @@ private:
     __state_t& __state_;
 
     template <class... _Ts>
-    _CUDAX_TRIVIAL_API void set_value(_Ts&&... __ts) noexcept
+    _CCCL_TRIVIAL_API void set_value(_Ts&&... __ts) noexcept
     {
       constexpr _CUDA_VSTD::index_sequence_for<_Ts...>* idx = nullptr;
       __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -116,19 +115,19 @@ private:
     }
 
     template <class _Error>
-    _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
+    _CCCL_TRIVIAL_API void set_error(_Error&& __error) noexcept
     {
       __state_.__set_error(static_cast<_Error&&>(__error));
       __state_.__arrive();
     }
 
-    _CUDAX_API void set_stopped() noexcept
+    _CCCL_API void set_stopped() noexcept
     {
       __state_.__set_stopped();
       __state_.__arrive();
     }
 
-    _CUDAX_API auto get_env() const noexcept -> __env_t<_StateZip>
+    _CCCL_API auto get_env() const noexcept -> __env_t<_StateZip>
     {
       return {__state_};
     }
@@ -165,7 +164,7 @@ private:
     using __stop_tok_t _CCCL_NODEBUG_ALIAS      = stop_token_of_t<env_of_t<_Rcvr>>;
     using __stop_callback_t _CCCL_NODEBUG_ALIAS = stop_callback_for_t<__stop_tok_t, __on_stop_request>;
 
-    _CUDAX_API explicit __state_t(_Rcvr __rcvr, size_t __count)
+    _CCCL_API explicit __state_t(_Rcvr __rcvr, size_t __count)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __count_{__count}
         , __stop_source_{}
@@ -177,7 +176,7 @@ private:
     {}
 
     template <size_t _Index, size_t... _Jdx, class... _Ts>
-    _CUDAX_API void __set_value(_CUDA_VSTD::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
+    _CCCL_API void __set_value(_CUDA_VSTD::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
     {
       if constexpr (!_CUDA_VSTD::is_same_v<__values_t, __nil>)
       {
@@ -202,7 +201,7 @@ private:
     }
 
     template <class _Error>
-    _CUDAX_API void __set_error(_Error&& __err) noexcept
+    _CCCL_API void __set_error(_Error&& __err) noexcept
     {
       // TODO: Use weaker memory orders
       if (__error != __state_.exchange(__error))
@@ -229,7 +228,7 @@ private:
       }
     }
 
-    _CUDAX_API void __set_stopped() noexcept
+    _CCCL_API void __set_stopped() noexcept
     {
       _CUDA_VSTD::underlying_type_t<__estate_t> __expected = __started;
       // Transition to the "stopped" state if and only if we're in the
@@ -242,7 +241,7 @@ private:
       }
     }
 
-    _CUDAX_API void __arrive() noexcept
+    _CCCL_API void __arrive() noexcept
     {
       if (0 == --__count_)
       {
@@ -250,7 +249,7 @@ private:
       }
     }
 
-    _CUDAX_API void __complete() noexcept
+    _CCCL_API void __complete() noexcept
     {
       // Stop callback is no longer needed. Destroy it.
       __on_stop_.destroy();
@@ -289,7 +288,7 @@ private:
   struct __start_all
   {
     template <class... _Ops>
-    _CUDAX_TRIVIAL_API void operator()(_Ops&... __ops) const noexcept
+    _CCCL_TRIVIAL_API void operator()(_Ops&... __ops) const noexcept
     {
       (__async::start(__ops), ...);
     }
@@ -317,7 +316,7 @@ private:
     struct __connect_subs_fn
     {
       template <class... _CvSndrs>
-      _CUDAX_API auto operator()(__state_t& __state, __ignore, __ignore, _CvSndrs&&... __sndrs_) const
+      _CCCL_API auto operator()(__state_t& __state, __ignore, __ignore, _CvSndrs&&... __sndrs_) const
       {
         using __state_ref_t _CCCL_NODEBUG_ALIAS = __zip<__state_t>;
         // When there are no offsets, the when_all sender has no value
@@ -340,15 +339,15 @@ private:
 
     /// Initialize the data member, connect all the sub-operations and
     /// save the resulting operation states in __sub_ops_.
-    _CUDAX_API __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
+    _CCCL_API __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
         , __sub_ops_{_CUDA_VSTD::__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
 
-    _CUDAX_IMMOVABLE(__opstate_t);
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
     /// Start all the sub-operations.
-    _CUDAX_API void start() & noexcept
+    _CCCL_API void start() & noexcept
     {
       // register stop callback:
       __state_.__on_stop_.construct(
@@ -384,21 +383,21 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
   {
     template <class... _Sndrs>
-    _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
   };
 
 public:
-  _CUDAX_API static constexpr auto __apply() noexcept
+  _CCCL_API static constexpr auto __apply() noexcept
   {
     return __fn{};
   }
 
   template <class... _Sndrs>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
-_CUDAX_API constexpr auto when_all_t::__child_completions()
+_CCCL_API constexpr auto when_all_t::__child_completions()
 {
   using __env_t _CCCL_NODEBUG_ALIAS = prop<get_stop_token_t, inplace_stop_token>;
   _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, _FWD_ENV_T<_Env>>...>())
@@ -420,7 +419,7 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
 
 template <class... _Completions>
-_CUDAX_API constexpr auto when_all_t::__merge_completions(_Completions... __cs)
+_CCCL_API constexpr auto when_all_t::__merge_completions(_Completions... __cs)
 {
   // Use _CUDAX_LET_COMPLETIONS to ensure all completions are valid:
   _CUDAX_LET_COMPLETIONS(auto(__tmp) = (completion_signatures{}, ..., __cs)) // NB: uses overloaded comma operator
@@ -471,32 +470,32 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<
   using __sndrs_t _CCCL_NODEBUG_ALIAS      = _CUDA_VSTD::__tuple<when_all_t, __ignore, _Sndrs...>;
 
   template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto __get_completions_and_offsets()
+  _CCCL_API static constexpr auto __get_completions_and_offsets()
   {
     return __merge_completions(__child_completions<__copy_cvref_t<_Self, _Sndrs>, _Env...>()...);
   }
 
   template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures()
+  _CCCL_API static constexpr auto get_completion_signatures()
   {
     return __get_completions_and_offsets<_Self, _Env...>().first;
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
+  _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cp, __sndrs_t>(static_cast<__sndrs_t&&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
+  _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 };
 
 template <class... _Sndrs>
-_CUDAX_TRIVIAL_API constexpr auto when_all_t::__fn::operator()(_Sndrs... __sndrs) const
+_CCCL_TRIVIAL_API constexpr auto when_all_t::__fn::operator()(_Sndrs... __sndrs) const
 {
   // If the incoming senders are non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -509,7 +508,7 @@ _CUDAX_TRIVIAL_API constexpr auto when_all_t::__fn::operator()(_Sndrs... __sndrs
 }
 
 template <class... _Sndrs>
-_CUDAX_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+_CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {

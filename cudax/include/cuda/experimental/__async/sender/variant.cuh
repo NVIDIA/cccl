@@ -50,7 +50,7 @@ class __variant_impl<_CUDA_VSTD::index_sequence<>>
 {
 public:
   template <class _Fn, class... _Us>
-  _CUDAX_API void __visit(_Fn&&, _Us&&...) const noexcept
+  _CCCL_API void __visit(_Fn&&, _Us&&...) const noexcept
   {}
 };
 
@@ -65,7 +65,7 @@ class __variant_impl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...>
   template <size_t _Ny>
   using __at _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
 
-  _CUDAX_API void __destroy() noexcept
+  _CCCL_API void __destroy() noexcept
   {
     if (__index_ != __npos)
     {
@@ -76,27 +76,27 @@ class __variant_impl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...>
   }
 
 public:
-  _CUDAX_IMMOVABLE(__variant_impl);
+  __variant_impl(__variant_impl&&) = delete;
 
-  _CUDAX_API __variant_impl() noexcept {}
+  _CCCL_API __variant_impl() noexcept {}
 
-  _CUDAX_API ~__variant_impl()
+  _CCCL_API ~__variant_impl()
   {
     __destroy();
   }
 
-  _CUDAX_TRIVIAL_API void* __ptr() noexcept
+  _CCCL_TRIVIAL_API void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  _CUDAX_TRIVIAL_API size_t __index() const noexcept
+  _CCCL_TRIVIAL_API size_t __index() const noexcept
   {
     return __index_;
   }
 
   template <class _Ty, class... _As>
-  _CUDAX_API auto __emplace(_As&&... __as) //
+  _CCCL_API auto __emplace(_As&&... __as) //
     noexcept(__nothrow_constructible<_Ty, _As...>) -> _Ty&
   {
     constexpr size_t __new_index = __async::__index_of<_Ty, _Ts...>();
@@ -109,7 +109,7 @@ public:
   }
 
   template <size_t _Ny, class... _As>
-  _CUDAX_API auto __emplace_at(_As&&... __as) //
+  _CCCL_API auto __emplace_at(_As&&... __as) //
     noexcept(__nothrow_constructible<__at<_Ny>, _As...>) -> __at<_Ny>&
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
@@ -121,7 +121,7 @@ public:
   }
 
   template <class _Fn, class... _As>
-  _CUDAX_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
+  _CCCL_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
     using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
@@ -135,7 +135,7 @@ public:
   }
 
   template <class _Fn, class _Self, class... _As>
-  _CUDAX_API static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
+  _CCCL_API static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
     noexcept((__nothrow_callable<_Fn, _As..., __copy_cvref_t<_Self, _Ts>> && ...))
   {
     // make this local in case destroying the sub-object destroys *this
@@ -148,21 +148,21 @@ public:
   }
 
   template <size_t _Ny>
-  _CUDAX_API auto __get() && noexcept -> __at<_Ny>&&
+  _CCCL_API auto __get() && noexcept -> __at<_Ny>&&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
   template <size_t _Ny>
-  _CUDAX_API auto __get() & noexcept -> __at<_Ny>&
+  _CCCL_API auto __get() & noexcept -> __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<__at<_Ny>*>(__ptr());
   }
 
   template <size_t _Ny>
-  _CUDAX_API auto __get() const& noexcept -> const __at<_Ny>&
+  _CCCL_API auto __get() const& noexcept -> const __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<const __at<_Ny>*>(__ptr());

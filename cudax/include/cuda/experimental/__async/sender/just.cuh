@@ -27,7 +27,6 @@
 #include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -62,7 +61,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __complete_fn
   {
     template <class... _Ts>
-    _CUDAX_TRIVIAL_API void operator()(_Ts&&... __ts) const noexcept
+    _CCCL_TRIVIAL_API void operator()(_Ts&&... __ts) const noexcept
     {
       _SetTag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
@@ -76,7 +75,7 @@ private:
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __tuple_t _CCCL_NODEBUG_ALIAS               = _CUDA_VSTD::__tuple<_Ts...>;
 
-    _CUDAX_API __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
+    _CCCL_API __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
         : __rcvr_{__rcvr}
         , __values_{static_cast<__tuple_t&&>(__values)}
     {}
@@ -87,10 +86,10 @@ private:
     // operation state doesn't strictly need to be immovable, since its address never
     // escapes. So for gcc, we let this operation state be movable.
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
-    _CUDAX_IMMOVABLE(__opstate_t);
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 #endif
 
-    _CUDAX_API void start() & noexcept
+    _CCCL_API void start() & noexcept
     {
       _CUDA_VSTD::__apply(
         _SetTag{}, static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
@@ -105,7 +104,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class... _Ts>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
 };
 
 template <__disposition_t _Disposition>
@@ -115,13 +114,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures() noexcept
+  _CCCL_API static constexpr auto get_completion_signatures() noexcept
   {
     return completion_signatures<_SetTag(_Ts...)>();
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) && noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
+  _CCCL_API auto connect(_Rcvr __rcvr) && noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
     -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{
@@ -129,7 +128,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
+  _CCCL_API auto connect(_Rcvr __rcvr) const& noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
     -> __opstate_t<_Rcvr, _Ts...>
   {
     return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
@@ -141,7 +140,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
 
 template <__disposition_t _Disposition>
 template <class... _Ts>
-_CUDAX_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts) const
+_CCCL_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts) const
 {
   return __sndr_t<_Ts...>{{}, {static_cast<_Ts&&>(__ts)...}};
 }

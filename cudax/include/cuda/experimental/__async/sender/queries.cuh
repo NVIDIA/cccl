@@ -47,7 +47,7 @@ using _CUDA_VSTD::execution::__queryable_with;
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
   template <class _Env>
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept
+  _CCCL_API auto operator()(const _Env& __env) const noexcept
   {
     if constexpr (__queryable_with<_Env, get_allocator_t>)
     {
@@ -66,7 +66,7 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 {
   template <class _Env>
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept
+  _CCCL_API auto operator()(const _Env& __env) const noexcept
   {
     if constexpr (__queryable_with<_Env, get_stop_token_t>)
     {
@@ -90,7 +90,7 @@ struct get_completion_scheduler_t
 {
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_completion_scheduler_t>)
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept
+  _CCCL_API auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     static_assert(__is_scheduler<decltype(__env.query(*this))>);
@@ -111,7 +111,7 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept
+  _CCCL_API auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     static_assert(__is_scheduler<decltype(__env.query(*this))>);
@@ -128,7 +128,7 @@ _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 {
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
-  _CUDAX_API auto operator()(const _Env& __env) const noexcept
+  _CCCL_API auto operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)));
     static_assert(__is_scheduler<decltype(__env.query(*this))>);
@@ -148,7 +148,7 @@ enum class forward_progress_guarantee
 _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
   template <class _Sch>
-  _CUDAX_API auto operator()(const _Sch& __sch) const noexcept
+  _CCCL_API auto operator()(const _Sch& __sch) const noexcept
   {
     if constexpr (__queryable_with<_Sch, get_forward_progress_guarantee_t>)
     {
@@ -167,7 +167,7 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 _CCCL_GLOBAL_CONSTANT struct get_domain_t
 {
   template <class _Env>
-  _CUDAX_API constexpr auto operator()(const _Env& __env) const noexcept
+  _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
   {
     if constexpr (__queryable_with<_Env, get_domain_t>)
     {
