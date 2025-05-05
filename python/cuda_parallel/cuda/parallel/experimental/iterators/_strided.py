@@ -14,7 +14,7 @@ from numba.core.typing.templates import AttributeTemplate
 from numba.cuda.cudadecl import registry as cuda_registry
 from numba.cuda.cudaimpl import registry as cuda_lower_registry
 
-from . import _iterators
+from cuda.parallel.experimental.iterators import _iterators
 
 
 @lru_cache
@@ -181,7 +181,8 @@ class NdArrayIterator(_iterators.IteratorBase):
         state = state_ref[0]
         id_ = state.linear_id
         # init offset_ to zero of the same type as id_
-        offset_ = id_ - id_
+        zero_ = id_ - id_
+        offset_ = zero_
         ndim_ = state.ndim
         if ndim_ > 0:
             shape_ = state.shape
@@ -195,7 +196,7 @@ class NdArrayIterator(_iterators.IteratorBase):
                     r_ = id_ - q_ * sh_i
                 else:
                     q_ = id_
-                    r_ = id_ - id_  # make zero of the right type
+                    r_ = zero_  # make zero of the right type
                 offset_ = offset_ + r_ * strides_[bi_]
                 id_ = q_
             zero_i32 = one_i32 - one_i32
