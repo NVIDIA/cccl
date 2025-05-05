@@ -66,8 +66,6 @@
 #include <cuda/std/type_traits>
 
 #include <cstdio>
-#include <iterator>
-#include <limits>
 
 #include <nv/target>
 
@@ -77,13 +75,134 @@ namespace detail::histogram
 {
 template <int NUM_CHANNELS,
           int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          typename PolicyHub>
+struct DeviceHistogramKernelSource
+{
+  using SampleT     = cub::detail::it_value_t<SampleIteratorT>;
+  using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
+  using odd_fallback_policy_hub =
+    detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>;
+  using OddMaxPolicyT =
+    typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, odd_fallback_policy_hub, PolicyHub>::MaxPolicy;
+  using even_fallback_policy_hub =
+    detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>;
+  using EvenMaxPolicyT =
+    typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, odd_fallback_policy_hub, PolicyHub>::MaxPolicy;
+
+  CUB_DEFINE_KERNEL_GETTER(HistogramInitKernel, DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelRangeZeroSmemBins,
+    DeviceHistogramSweepKernel<OddMaxPolicyT,
+                               0,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::template SearchTransform<const LevelT*>,
+                               typename TransformsT::PassThruTransform,
+                               OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelRangeMaxSmemBins,
+    DeviceHistogramSweepKernel<OddMaxPolicyT,
+                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::template SearchTransform<const LevelT*>,
+                               typename TransformsT::PassThruTransform,
+                               OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelRangeByteSampleZeroSmemBins,
+    DeviceHistogramSweepKernel<OddMaxPolicyT,
+                               0,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::PassThruTransform,
+                               typename TransformsT::template SearchTransform<const LevelT*>,
+                               OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelRangeByteSampleMaxSmemBins,
+    DeviceHistogramSweepKernel<OddMaxPolicyT,
+                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::PassThruTransform,
+                               typename TransformsT::template SearchTransform<const LevelT*>,
+                               OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelEvenZeroSmemBins,
+    DeviceHistogramSweepKernel<EvenMaxPolicyT,
+                               0,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::ScaleTransform,
+                               typename TransformsT::PassThruTransform,
+                               OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelEvenMaxSmemBins,
+    DeviceHistogramSweepKernel<EvenMaxPolicyT,
+                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::ScaleTransform,
+                               typename TransformsT::PassThruTransform,
+                               OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelEvenByteSampleZeroSmemBins,
+    DeviceHistogramSweepKernel<EvenMaxPolicyT,
+                               0,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::PassThruTransform,
+                               typename TransformsT::ScaleTransform,
+                               OffsetT>);
+
+  CUB_DEFINE_KERNEL_GETTER(
+    HistogramSweepKernelEvenByteSampleMaxSmemBins,
+    DeviceHistogramSweepKernel<EvenMaxPolicyT,
+                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
+                               NUM_CHANNELS,
+                               NUM_ACTIVE_CHANNELS,
+                               SampleIteratorT,
+                               CounterT,
+                               typename TransformsT::PassThruTransform,
+                               typename TransformsT::ScaleTransform,
+                               OffsetT>);
+};
+
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
           int PRIVATIZED_SMEM_BINS,
           typename SampleIteratorT,
           typename CounterT,
           typename PrivatizedDecodeOpT,
           typename OutputDecodeOpT,
           typename OffsetT,
-          typename MaxPolicyT>
+          typename MaxPolicyT,
+          typename KernelSource,
+          typename KernelLauncherFactory>
 struct dispatch_histogram
 {
   void* d_temp_storage;
@@ -99,6 +218,8 @@ struct dispatch_histogram
   OffsetT num_rows;
   OffsetT row_stride_samples;
   cudaStream_t stream;
+  KernelSource kernel_source;
+  KernelLauncherFactory kernel_launcher_factory;
 
   template <typename ActivePolicyT, typename DeviceHistogramInitKernelT, typename DeviceHistogramSweepKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
@@ -328,13 +449,17 @@ struct dispatch_histogram
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename LevelT,
-          typename OffsetT,
-          typename PolicyHub = void> // if user passes a custom Policy this should not be void
+template <
+  int NUM_CHANNELS,
+  int NUM_ACTIVE_CHANNELS,
+  typename SampleIteratorT,
+  typename CounterT,
+  typename LevelT,
+  typename OffsetT,
+  typename PolicyHub    = void, // if user passes a custom Policy this should not be void
+  typename KernelSource = detail::histogram::
+    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, PolicyHub>,
+  typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
@@ -347,294 +472,8 @@ public:
   //---------------------------------------------------------------------
 
   /// The sample value type of the input iterator
-  using SampleT = cub::detail::it_value_t<SampleIteratorT>;
-
-  enum
-  {
-    // Maximum number of bins per channel for which we will use a privatized smem strategy
-    MAX_PRIVATIZED_SMEM_BINS = 256
-  };
-
-  //---------------------------------------------------------------------
-  // Transform functors for converting samples to bin-ids
-  //---------------------------------------------------------------------
-
-  // Searches for bin given a list of bin-boundary levels
-  template <typename LevelIteratorT>
-  struct SearchTransform
-  {
-    LevelIteratorT d_levels; // Pointer to levels array
-    int num_output_levels; // Number of levels in array
-
-    /**
-     * @brief Initializer
-     *
-     * @param d_levels_ Pointer to levels array
-     * @param num_output_levels_ Number of levels in array
-     */
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void Init(LevelIteratorT d_levels_, int num_output_levels_)
-    {
-      this->d_levels          = d_levels_;
-      this->num_output_levels = num_output_levels_;
-    }
-
-    // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid)
-    {
-      /// Level iterator wrapper type
-      // Wrap the native input pointer with CacheModifiedInputIterator
-      // or Directly use the supplied input iterator type
-      using WrappedLevelIteratorT =
-        ::cuda::std::_If<::cuda::std::is_pointer_v<LevelIteratorT>,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
-                         LevelIteratorT>;
-
-      WrappedLevelIteratorT wrapped_levels(d_levels);
-
-      int num_bins = num_output_levels - 1;
-      if (valid)
-      {
-        bin = UpperBound(wrapped_levels, num_output_levels, (LevelT) sample) - 1;
-        if (bin >= num_bins)
-        {
-          bin = -1;
-        }
-      }
-    }
-  };
-
-  // Scales samples to evenly-spaced bins
-  struct ScaleTransform
-  {
-  private:
-    using CommonT = ::cuda::std::common_type_t<LevelT, SampleT>;
-    static_assert(::cuda::std::is_convertible_v<CommonT, int>,
-                  "The common type of `LevelT` and `SampleT` must be "
-                  "convertible to `int`.");
-    static_assert(::cuda::std::is_trivially_copyable_v<CommonT>,
-                  "The common type of `LevelT` and `SampleT` must be "
-                  "trivially copyable.");
-
-    // An arithmetic type that's used for bin computation of integral types, guaranteed to not
-    // overflow for (max_level - min_level) * scale.fraction.bins. Since we drop invalid samples
-    // of less than min_level, (sample - min_level) is guaranteed to be non-negative. We use the
-    // rule: 2^l * 2^r = 2^(l + r) to determine a sufficiently large type to hold the
-    // multiplication result.
-    // If CommonT used to be a 128-bit wide integral type already, we use CommonT's arithmetic
-    using IntArithmeticT = ::cuda::std::_If< //
-      sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
-      uint32_t, //
-#if _CCCL_HAS_INT128()
-      ::cuda::std::_If< //
-        (::cuda::std::is_same_v<CommonT, __int128_t> || //
-         ::cuda::std::is_same_v<CommonT, __uint128_t>), //
-        CommonT, //
-        uint64_t> //
-#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-      uint64_t
-#endif // !_CCCL_HAS_INT128()
-      >;
-
-    // Alias template that excludes __[u]int128 from the integral types
-    template <typename T>
-    using is_integral_excl_int128 =
-#if _CCCL_HAS_INT128()
-      ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t>&& ::cuda::std::is_same_v<T, __uint128_t>,
-                       ::cuda::std::false_type,
-                       ::cuda::std::is_integral<T>>;
-#else // ^^^ _CCCL_HAS_INT128() ^^^ / vvv !_CCCL_HAS_INT128() vvv
-      ::cuda::std::is_integral<T>;
-#endif // !_CCCL_HAS_INT128()
-
-    union ScaleT
-    {
-      // Used when CommonT is not floating-point to avoid intermediate
-      // rounding errors (see NVIDIA/cub#489).
-      struct FractionT
-      {
-        CommonT bins;
-        CommonT range;
-      } fraction;
-
-      // Used when CommonT is floating-point as an optimization.
-      CommonT reciprocal;
-    };
-
-    CommonT m_max; // Max sample level (exclusive)
-    CommonT m_min; // Min sample level (inclusive)
-    ScaleT m_scale; // Bin scaling
-
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
-    ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::true_type /* is_fp */)
-    {
-      ScaleT result;
-      result.reciprocal = static_cast<T>(static_cast<T>(num_levels - 1) / static_cast<T>(max_level - min_level));
-      return result;
-    }
-
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT
-    ComputeScale(int num_levels, T max_level, T min_level, ::cuda::std::false_type /* is_fp */)
-    {
-      ScaleT result;
-      result.fraction.bins  = static_cast<T>(num_levels - 1);
-      result.fraction.range = static_cast<T>(max_level - min_level);
-      return result;
-    }
-
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, T max_level, T min_level)
-    {
-      return this->ComputeScale(num_levels, max_level, min_level, ::cuda::std::is_floating_point<T>{});
-    }
-
-#if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScaleT ComputeScale(int num_levels, __half max_level, __half min_level)
-    {
-      ScaleT result;
-      NV_IF_TARGET(NV_PROVIDES_SM_53,
-                   (result.reciprocal = __hdiv(__float2half(num_levels - 1), __hsub(max_level, min_level));),
-                   (result.reciprocal = __float2half(
-                      static_cast<float>(num_levels - 1) / (__half2float(max_level) - __half2float(min_level)));))
-      return result;
-    }
-#endif // _CCCL_HAS_NVFP16()
-
-    // All types but __half:
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(T sample, T max_level, T min_level)
-    {
-      return sample >= min_level && sample < max_level;
-    }
-
-#if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int SampleIsValid(__half sample, __half max_level, __half min_level)
-    {
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_53,
-        (return __hge(sample, min_level) && __hlt(sample, max_level);),
-        (return __half2float(sample) >= __half2float(min_level) && __half2float(sample) < __half2float(max_level);));
-    }
-#endif // _CCCL_HAS_NVFP16()
-
-    /**
-     * @brief Bin computation for floating point (and extended floating point) types
-     */
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::true_type /* is_fp */)
-    {
-      return static_cast<int>((sample - min_level) * scale.reciprocal);
-    }
-
-    /**
-     * @brief Bin computation for custom types and __[u]int128
-     */
-    template <typename T>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int
-    ComputeBin(T sample, T min_level, ScaleT scale, ::cuda::std::false_type /* is_fp */)
-    {
-      return static_cast<int>(((sample - min_level) * scale.fraction.bins) / scale.fraction.range);
-    }
-
-    /**
-     * @brief Bin computation for integral types of up to 64-bit types
-     */
-    template <typename T, ::cuda::std::enable_if_t<is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
-    {
-      return static_cast<int>(
-        (static_cast<IntArithmeticT>(sample - min_level) * static_cast<IntArithmeticT>(scale.fraction.bins))
-        / static_cast<IntArithmeticT>(scale.fraction.range));
-    }
-
-    template <typename T, ::cuda::std::enable_if_t<!is_integral_excl_int128<T>::value, int> = 0>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(T sample, T min_level, ScaleT scale)
-    {
-      return this->ComputeBin(sample, min_level, scale, ::cuda::std::is_floating_point<T>{});
-    }
-
-#if _CCCL_HAS_NVFP16()
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE int ComputeBin(__half sample, __half min_level, ScaleT scale)
-    {
-      NV_IF_TARGET(
-        NV_PROVIDES_SM_53,
-        (return static_cast<int>(__hmul(__hsub(sample, min_level), scale.reciprocal));),
-        (return static_cast<int>((__half2float(sample) - __half2float(min_level)) * __half2float(scale.reciprocal));));
-    }
-#endif // _CCCL_HAS_NVFP16()
-
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool
-    MayOverflow(CommonT /* num_bins */, ::cuda::std::false_type /* is_integral */)
-    {
-      return false;
-    }
-
-    /**
-     * @brief Returns true if the bin computation for a given combination of range `(max_level -
-     * min_level)` and number of bins may overflow.
-     */
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool MayOverflow(CommonT num_bins, ::cuda::std::true_type /* is_integral */)
-    {
-      return static_cast<IntArithmeticT>(m_max - m_min)
-           > (::cuda::std::numeric_limits<IntArithmeticT>::max() / static_cast<IntArithmeticT>(num_bins));
-    }
-
-  public:
-    /**
-     * @brief Initializes the ScaleTransform for the given parameters
-     * @return cudaErrorInvalidValue if the ScaleTransform for the given values may overflow,
-     * cudaSuccess otherwise
-     */
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Init(int num_levels, LevelT max_level, LevelT min_level)
-    {
-      m_max = static_cast<CommonT>(max_level);
-      m_min = static_cast<CommonT>(min_level);
-
-      // Check whether accurate bin computation for an integral sample type may overflow
-      if (MayOverflow(static_cast<CommonT>(num_levels - 1), ::cuda::std::is_integral<CommonT>{}))
-      {
-        return cudaErrorInvalidValue;
-      }
-
-      m_scale = this->ComputeScale(num_levels, m_max, m_min);
-      return cudaSuccess;
-    }
-
-    // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(SampleT sample, int& bin, bool valid)
-    {
-      const CommonT common_sample = static_cast<CommonT>(sample);
-
-      if (valid && this->SampleIsValid(common_sample, m_max, m_min))
-      {
-        bin = this->ComputeBin(common_sample, m_min, m_scale);
-      }
-    }
-  };
-
-  // Pass-through bin transform operator
-  struct PassThruTransform
-  {
-// GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
-// bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
-#if _CCCL_COMPILER(GCC, >=, 13)
-    char dummy;
-#endif
-
-    // Method for converting samples to bin-ids
-    template <CacheLoadModifier LOAD_MODIFIER, typename _SampleT>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void BinSelect(_SampleT sample, int& bin, bool valid)
-    {
-      if (valid)
-      {
-        bin = (int) sample;
-      }
-    }
-  };
+  using SampleT     = cub::detail::it_value_t<SampleIteratorT>;
+  using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
 
   //---------------------------------------------------------------------
   // Dispatch entrypoints
@@ -686,6 +525,12 @@ public:
    * @param is_byte_sample
    *   type indicating whether or not SampleT is a 8b type
    */
+  // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
+  template <
+    typename MaxPolicyT = typename ::cuda::std::_If<
+      ::cuda::std::is_void_v<PolicyHub>,
+      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
+      PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -697,32 +542,28 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    ::cuda::std::false_type /*is_byte_sample*/)
+    ::cuda::std::false_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
-    // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
-    static constexpr bool isEven = 0;
-    using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
-
-    using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
       }
 
       // Use the search transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = SearchTransform<const LevelT*>;
+      using PrivatizedDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = PassThruTransform;
+      using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
       ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
@@ -739,7 +580,7 @@ public:
       int max_num_output_bins = max_levels - 1;
 
       // Dispatch
-      if (max_num_output_bins > MAX_PRIVATIZED_SMEM_BINS)
+      if (max_num_output_bins > TransformsT::MAX_PRIVATIZED_SMEM_BINS)
       {
         // Too many bins to keep in shared memory.
         constexpr int PRIVATIZED_SMEM_BINS = 0;
@@ -753,7 +594,9 @@ public:
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
-          MaxPolicyT>
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
@@ -767,9 +610,11 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream};
+            stream,
+            kernel_source,
+            launcher_factory};
 
-        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
         {
           break;
@@ -778,7 +623,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = TransformsT::MAX_PRIVATIZED_SMEM_BINS;
 
         detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
@@ -789,7 +634,9 @@ public:
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
-          MaxPolicyT>
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
@@ -803,9 +650,11 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream};
+            stream,
+            kernel_source,
+            launcher_factory};
 
-        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
         {
           break;
@@ -863,6 +712,11 @@ public:
    * @param is_byte_sample
    *   Marker type indicating whether or not SampleT is a 8b type
    */
+  template <
+    typename MaxPolicyT = typename ::cuda::std::_If<
+      ::cuda::std::is_void_v<PolicyHub>,
+      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
+      PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -874,31 +728,28 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    ::cuda::std::true_type /*is_byte_sample*/)
+    ::cuda::std::true_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
-    static constexpr bool isEven = 0;
-    using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
-
-    using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = PassThruTransform;
+      using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
 
       // Use the search transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = SearchTransform<const LevelT*>;
+      using OutputDecodeOpT = typename TransformsT::template SearchTransform<const LevelT*>;
 
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
@@ -928,7 +779,9 @@ public:
         PrivatizedDecodeOpT,
         OutputDecodeOpT,
         OffsetT,
-        MaxPolicyT>
+        MaxPolicyT,
+        KernelSource,
+        KernelLauncherFactory>
         dispatch{
           d_temp_storage,
           temp_storage_bytes,
@@ -942,9 +795,11 @@ public:
           num_row_pixels,
           num_rows,
           row_stride_samples,
-          stream};
+          stream,
+          kernel_source,
+          launcher_factory};
 
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -1002,6 +857,11 @@ public:
    * @param is_byte_sample
    *   Marker type indicating whether or not SampleT is a 8b type
    */
+  template <
+    typename MaxPolicyT = typename ::cuda::std::_If<
+      ::cuda::std::is_void_v<PolicyHub>,
+      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
+      PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1014,31 +874,28 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    ::cuda::std::false_type /*is_byte_sample*/)
+    ::cuda::std::false_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
-    static constexpr bool isEven = 1;
-    using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
-
-    using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
       }
 
       // Use the scale transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = ScaleTransform;
+      using PrivatizedDecodeOpT = typename TransformsT::ScaleTransform;
 
       // Use the pass-thru transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = PassThruTransform;
+      using OutputDecodeOpT = typename TransformsT::PassThruTransform;
 
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
       ::cuda::std::array<OutputDecodeOpT, NUM_ACTIVE_CHANNELS> output_decode_op{};
@@ -1067,7 +924,7 @@ public:
       }
       int max_num_output_bins = max_levels - 1;
 
-      if (max_num_output_bins > MAX_PRIVATIZED_SMEM_BINS)
+      if (max_num_output_bins > TransformsT::MAX_PRIVATIZED_SMEM_BINS)
       {
         // Dispatch shared-privatized approach
         constexpr int PRIVATIZED_SMEM_BINS = 0;
@@ -1081,7 +938,9 @@ public:
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
-          MaxPolicyT>
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
@@ -1095,9 +954,11 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream};
+            stream,
+            kernel_source,
+            launcher_factory};
 
-        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
         {
           break;
@@ -1106,7 +967,7 @@ public:
       else
       {
         // Dispatch shared-privatized approach
-        constexpr int PRIVATIZED_SMEM_BINS = MAX_PRIVATIZED_SMEM_BINS;
+        constexpr int PRIVATIZED_SMEM_BINS = TransformsT::MAX_PRIVATIZED_SMEM_BINS;
 
         detail::histogram::dispatch_histogram<
           NUM_CHANNELS,
@@ -1117,7 +978,9 @@ public:
           PrivatizedDecodeOpT,
           OutputDecodeOpT,
           OffsetT,
-          MaxPolicyT>
+          MaxPolicyT,
+          KernelSource,
+          KernelLauncherFactory>
           dispatch{
             d_temp_storage,
             temp_storage_bytes,
@@ -1131,9 +994,11 @@ public:
             num_row_pixels,
             num_rows,
             row_stride_samples,
-            stream};
+            stream,
+            kernel_source,
+            launcher_factory};
 
-        error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+        error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
         if (cudaSuccess != error)
         {
           break;
@@ -1193,6 +1058,11 @@ public:
    * @param is_byte_sample
    *   type indicating whether or not SampleT is a 8b type
    */
+  template <
+    typename MaxPolicyT = typename ::cuda::std::_If<
+      ::cuda::std::is_void_v<PolicyHub>,
+      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
+      PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -1205,31 +1075,28 @@ public:
     OffsetT num_rows,
     OffsetT row_stride_samples,
     cudaStream_t stream,
-    ::cuda::std::true_type /*is_byte_sample*/)
+    ::cuda::std::true_type /*is_byte_sample*/,
+    KernelSource kernel_source             = {},
+    KernelLauncherFactory launcher_factory = {},
+    MaxPolicyT max_policy                  = {})
   {
-    static constexpr bool isEven = 1;
-    using fallback_policy_hub    = detail::histogram::
-      policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, isEven>;
-
-    using MaxPolicyT =
-      typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, fallback_policy_hub, PolicyHub>::MaxPolicy;
     cudaError error = cudaSuccess;
 
     do
     {
       // Get PTX version
       int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
+      error           = CubDebug(launcher_factory.PtxVersion(ptx_version));
       if (cudaSuccess != error)
       {
         break;
       }
 
       // Use the pass-thru transform op for converting samples to privatized bins
-      using PrivatizedDecodeOpT = PassThruTransform;
+      using PrivatizedDecodeOpT = typename TransformsT::PassThruTransform;
 
       // Use the scale transform op for converting privatized bins to output bins
-      using OutputDecodeOpT = ScaleTransform;
+      using OutputDecodeOpT = typename TransformsT::ScaleTransform;
 
       ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_privatized_levels;
       ::cuda::std::array<PrivatizedDecodeOpT, NUM_ACTIVE_CHANNELS> privatized_decode_op{};
@@ -1260,7 +1127,9 @@ public:
         PrivatizedDecodeOpT,
         OutputDecodeOpT,
         OffsetT,
-        MaxPolicyT>
+        MaxPolicyT,
+        KernelSource,
+        KernelLauncherFactory>
         dispatch{
           d_temp_storage,
           temp_storage_bytes,
@@ -1274,9 +1143,11 @@ public:
           num_row_pixels,
           num_rows,
           row_stride_samples,
-          stream};
+          stream,
+          kernel_source,
+          launcher_factory};
 
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy.Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
