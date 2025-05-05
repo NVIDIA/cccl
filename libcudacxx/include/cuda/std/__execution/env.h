@@ -89,12 +89,9 @@
  * A callable object for retrieving the environment associated with an object.
  */
 
-#define _CCCL_API         _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#define _CCCL_TRIVIAL_API _CCCL_API _CCCL_FORCEINLINE _CCCL_ARTIFICIAL _CCCL_NODEBUG
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-namespace detail
+namespace __detail
 {
 template <class _Env, class _Query>
 _CCCL_API auto __query_result_() -> decltype(declval<_Env>().query(_Query()));
@@ -128,12 +125,12 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
   }
   return __npos;
 }
-} // namespace detail
+} // namespace __detail
 
 namespace execution
 {
 template <class _Env, class _Query>
-using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(detail::__query_result_<_Env, _Query>());
+using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__query_result_<_Env, _Query>());
 
 template <class _Env, class _Query>
 _CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Env, _Query>::value;
@@ -141,7 +138,7 @@ _CCCL_CONCEPT __queryable_with = _IsValidExpansion<__query_result_t, _Env, _Quer
 #if _CCCL_HAS_EXCEPTIONS()
 
 template <class _Env, class _Query>
-_CCCL_CONCEPT __nothrow_queryable_with = _IsValidExpansion<detail::__nothrow_queryable_with_t, _Env, _Query>::value;
+_CCCL_CONCEPT __nothrow_queryable_with = _IsValidExpansion<__detail::__nothrow_queryable_with_t, _Env, _Query>::value;
 
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 
@@ -151,7 +148,7 @@ _CCCL_CONCEPT __nothrow_queryable_with = true;
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 template <class _Ty>
-using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(detail::__unwrap_ref<_Ty>);
+using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__unwrap_ref<_Ty>);
 
 template <class _Query, class _DefaultFn = void>
 struct __basic_query : __basic_query<_Query>
@@ -260,8 +257,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   {
     // NOLINTNEXTLINE (modernize-avoid-c-arrays)
     constexpr bool __flags[] = {__queryable_with<_Envs, _Query>..., false};
-    constexpr size_t __idx   = detail::__find_pos(__flags, __flags + sizeof...(_Envs));
-    if constexpr (__idx != detail::__npos)
+    constexpr size_t __idx   = __detail::__find_pos(__flags, __flags + sizeof...(_Envs));
+    if constexpr (__idx != __detail::__npos)
     {
       return _CUDA_VSTD::__get<__idx>(__self.__envs_);
     }
@@ -382,8 +379,5 @@ using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(declval<_Ty>()));
 } // namespace execution
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#undef _CCCL_API
-#undef _CCCL_TRIVIAL_API
 
 #endif // __CUDA_STD___EXECUTION_ENV_H

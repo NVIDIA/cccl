@@ -51,32 +51,28 @@
  * - Utilities for accessing tuple elements using `__get`.
  */
 
-#define _CCCL_API               _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#define _CCCL_TRIVIAL_API       _CCCL_API _CCCL_FORCEINLINE _CCCL_ARTIFICIAL _CCCL_NODEBUG
-#define _CCCL_TUPL_UNROLL_LIMIT _CCCL_META_UNROLL_LIMIT
-
 // Unroll tuples of size 1-16 to bring down the number of template instantiations and to
 // permit __tuple to be used to initialize a structured binding without resorting to the
 // heavy-weight std::tuple protocol. This code was generated with the following macros,
 // which can be found here: https://godbolt.org/z/do7ThETo7
 
 /*
-#define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_T, _Idx)
-#define _CCCL_TUPLE_TPARAM(_Idx)         , _CCCL_PP_CAT(_T, _Idx)
-#define _CCCL_TUPLE_DEFINE_ELEMENT(_Idx) _CCCL_NO_UNIQUE_ADDRESS _CCCL_PP_CAT(_T, _Idx) _CCCL_PP_CAT(__t, _Idx);
-#define _CCCL_TUPLE_MBR_PTR(_Idx)        , &__tupl::_CCCL_PP_CAT(__t, _Idx)
+#define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_Tp, _Idx)
+#define _CCCL_TUPLE_TPARAM(_Idx)         , _CCCL_PP_CAT(_Tp, _Idx)
+#define _CCCL_TUPLE_DEFINE_ELEMENT(_Idx) _CCCL_NO_UNIQUE_ADDRESS _CCCL_PP_CAT(_Tp, _Idx) _CCCL_PP_CAT(__val, _Idx);
+#define _CCCL_TUPLE_MBR_PTR(_Idx)        , &__tupl::_CCCL_PP_CAT(__val, _Idx)
 
-#define _CCCL_DEFINE_TUPLE(_SizeSub1)                                                                           \
-  template <class _T0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_TPARAM, 1)>                                 \
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __tupl<_T0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_TPARAM, 1)>            \
-  {                                                                                                             \
-    _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;                                                                           \
-    _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                                   \
-                                                                                                                \
-    _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept                                                   \
-    {                                                                                                           \
-      return static_cast<__mbr_list<&__tupl::__t0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>*>(nullptr); \
-    }                                                                                                           \
+#define _CCCL_DEFINE_TUPLE(_SizeSub1)                                                                               \
+  template <class _Tp0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_TPARAM, 1)>                                    \
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __tupl<_Tp0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_TPARAM, 1)>               \
+  {                                                                                                                 \
+    _CCCL_NO_UNIQUE_ADDRESS _Tp0 __t0;                                                                              \
+    _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                                       \
+                                                                                                                    \
+    _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept                                                       \
+    {                                                                                                               \
+      return static_cast<__mbr_list<&__tupl::__val0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>*>(nullptr); \
+    }                                                                                                               \
   };
 
 _CCCL_PP_REPEAT_REVERSE(_CCCL_TUPL_UNROLL_LIMIT, _CCCL_DEFINE_TUPLE)
@@ -114,478 +110,493 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __tuple //
     : __tupl_base<index_sequence_for<_Ts...>, _Ts...>
 {};
 
-template <class _T0,
-          class _T1,
-          class _T2,
-          class _T3,
-          class _T4,
-          class _T5,
-          class _T6,
-          class _T7,
-          class _T8,
-          class _T9,
-          class _T10,
-          class _T11,
-          class _T12,
-          class _T13,
-          class _T14,
-          class _T15>
+template <class _Tp0,
+          class _Tp1,
+          class _Tp2,
+          class _Tp3,
+          class _Tp4,
+          class _Tp5,
+          class _Tp6,
+          class _Tp7,
+          class _Tp8,
+          class _Tp9,
+          class _Tp10,
+          class _Tp11,
+          class _Tp12,
+          class _Tp13,
+          class _Tp14,
+          class _Tp15>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-__tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9, _T10, _T11, _T12, _T13, _T14, _T15>
+__tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8, _Tp9, _Tp10, _Tp11, _Tp12, _Tp13, _Tp14, _Tp15>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
-  _CCCL_NO_UNIQUE_ADDRESS _T9 __t9;
-  _CCCL_NO_UNIQUE_ADDRESS _T10 __t10;
-  _CCCL_NO_UNIQUE_ADDRESS _T11 __t11;
-  _CCCL_NO_UNIQUE_ADDRESS _T12 __t12;
-  _CCCL_NO_UNIQUE_ADDRESS _T13 __t13;
-  _CCCL_NO_UNIQUE_ADDRESS _T14 __t14;
-  _CCCL_NO_UNIQUE_ADDRESS _T15 __t15;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp9 __val9;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp10 __val10;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp11 __val11;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp12 __val12;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp13 __val13;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp14 __val14;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp15 __val15;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
     return static_cast<__mbr_list<
-      &__tuple::__t0,
-      &__tuple::__t1,
-      &__tuple::__t2,
-      &__tuple::__t3,
-      &__tuple::__t4,
-      &__tuple::__t5,
-      &__tuple::__t6,
-      &__tuple::__t7,
-      &__tuple::__t8,
-      &__tuple::__t9,
-      &__tuple::__t10,
-      &__tuple::__t11,
-      &__tuple::__t12,
-      &__tuple::__t13,
-      &__tuple::__t14,
-      &__tuple::__t15>*>(nullptr);
+      &__tuple::__val0,
+      &__tuple::__val1,
+      &__tuple::__val2,
+      &__tuple::__val3,
+      &__tuple::__val4,
+      &__tuple::__val5,
+      &__tuple::__val6,
+      &__tuple::__val7,
+      &__tuple::__val8,
+      &__tuple::__val9,
+      &__tuple::__val10,
+      &__tuple::__val11,
+      &__tuple::__val12,
+      &__tuple::__val13,
+      &__tuple::__val14,
+      &__tuple::__val15>*>(nullptr);
   }
 };
 
-template <class _T0,
-          class _T1,
-          class _T2,
-          class _T3,
-          class _T4,
-          class _T5,
-          class _T6,
-          class _T7,
-          class _T8,
-          class _T9,
-          class _T10,
-          class _T11,
-          class _T12,
-          class _T13,
-          class _T14>
+template <class _Tp0,
+          class _Tp1,
+          class _Tp2,
+          class _Tp3,
+          class _Tp4,
+          class _Tp5,
+          class _Tp6,
+          class _Tp7,
+          class _Tp8,
+          class _Tp9,
+          class _Tp10,
+          class _Tp11,
+          class _Tp12,
+          class _Tp13,
+          class _Tp14>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-__tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9, _T10, _T11, _T12, _T13, _T14>
+__tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8, _Tp9, _Tp10, _Tp11, _Tp12, _Tp13, _Tp14>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
-  _CCCL_NO_UNIQUE_ADDRESS _T9 __t9;
-  _CCCL_NO_UNIQUE_ADDRESS _T10 __t10;
-  _CCCL_NO_UNIQUE_ADDRESS _T11 __t11;
-  _CCCL_NO_UNIQUE_ADDRESS _T12 __t12;
-  _CCCL_NO_UNIQUE_ADDRESS _T13 __t13;
-  _CCCL_NO_UNIQUE_ADDRESS _T14 __t14;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp9 __val9;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp10 __val10;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp11 __val11;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp12 __val12;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp13 __val13;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp14 __val14;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
     return static_cast<__mbr_list<
-      &__tuple::__t0,
-      &__tuple::__t1,
-      &__tuple::__t2,
-      &__tuple::__t3,
-      &__tuple::__t4,
-      &__tuple::__t5,
-      &__tuple::__t6,
-      &__tuple::__t7,
-      &__tuple::__t8,
-      &__tuple::__t9,
-      &__tuple::__t10,
-      &__tuple::__t11,
-      &__tuple::__t12,
-      &__tuple::__t13,
-      &__tuple::__t14>*>(nullptr);
+      &__tuple::__val0,
+      &__tuple::__val1,
+      &__tuple::__val2,
+      &__tuple::__val3,
+      &__tuple::__val4,
+      &__tuple::__val5,
+      &__tuple::__val6,
+      &__tuple::__val7,
+      &__tuple::__val8,
+      &__tuple::__val9,
+      &__tuple::__val10,
+      &__tuple::__val11,
+      &__tuple::__val12,
+      &__tuple::__val13,
+      &__tuple::__val14>*>(nullptr);
   }
 };
 
-template <class _T0,
-          class _T1,
-          class _T2,
-          class _T3,
-          class _T4,
-          class _T5,
-          class _T6,
-          class _T7,
-          class _T8,
-          class _T9,
-          class _T10,
-          class _T11,
-          class _T12,
-          class _T13>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9, _T10, _T11, _T12, _T13>
+template <class _Tp0,
+          class _Tp1,
+          class _Tp2,
+          class _Tp3,
+          class _Tp4,
+          class _Tp5,
+          class _Tp6,
+          class _Tp7,
+          class _Tp8,
+          class _Tp9,
+          class _Tp10,
+          class _Tp11,
+          class _Tp12,
+          class _Tp13>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+__tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8, _Tp9, _Tp10, _Tp11, _Tp12, _Tp13>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
-  _CCCL_NO_UNIQUE_ADDRESS _T9 __t9;
-  _CCCL_NO_UNIQUE_ADDRESS _T10 __t10;
-  _CCCL_NO_UNIQUE_ADDRESS _T11 __t11;
-  _CCCL_NO_UNIQUE_ADDRESS _T12 __t12;
-  _CCCL_NO_UNIQUE_ADDRESS _T13 __t13;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp9 __val9;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp10 __val10;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp11 __val11;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp12 __val12;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp13 __val13;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
     return static_cast<__mbr_list<
-      &__tuple::__t0,
-      &__tuple::__t1,
-      &__tuple::__t2,
-      &__tuple::__t3,
-      &__tuple::__t4,
-      &__tuple::__t5,
-      &__tuple::__t6,
-      &__tuple::__t7,
-      &__tuple::__t8,
-      &__tuple::__t9,
-      &__tuple::__t10,
-      &__tuple::__t11,
-      &__tuple::__t12,
-      &__tuple::__t13>*>(nullptr);
+      &__tuple::__val0,
+      &__tuple::__val1,
+      &__tuple::__val2,
+      &__tuple::__val3,
+      &__tuple::__val4,
+      &__tuple::__val5,
+      &__tuple::__val6,
+      &__tuple::__val7,
+      &__tuple::__val8,
+      &__tuple::__val9,
+      &__tuple::__val10,
+      &__tuple::__val11,
+      &__tuple::__val12,
+      &__tuple::__val13>*>(nullptr);
   }
 };
 
-template <class _T0,
-          class _T1,
-          class _T2,
-          class _T3,
-          class _T4,
-          class _T5,
-          class _T6,
-          class _T7,
-          class _T8,
-          class _T9,
-          class _T10,
-          class _T11,
-          class _T12>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9, _T10, _T11, _T12>
+template <class _Tp0,
+          class _Tp1,
+          class _Tp2,
+          class _Tp3,
+          class _Tp4,
+          class _Tp5,
+          class _Tp6,
+          class _Tp7,
+          class _Tp8,
+          class _Tp9,
+          class _Tp10,
+          class _Tp11,
+          class _Tp12>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT
+__tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8, _Tp9, _Tp10, _Tp11, _Tp12>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
-  _CCCL_NO_UNIQUE_ADDRESS _T9 __t9;
-  _CCCL_NO_UNIQUE_ADDRESS _T10 __t10;
-  _CCCL_NO_UNIQUE_ADDRESS _T11 __t11;
-  _CCCL_NO_UNIQUE_ADDRESS _T12 __t12;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp9 __val9;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp10 __val10;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp11 __val11;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp12 __val12;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
     return static_cast<__mbr_list<
-      &__tuple::__t0,
-      &__tuple::__t1,
-      &__tuple::__t2,
-      &__tuple::__t3,
-      &__tuple::__t4,
-      &__tuple::__t5,
-      &__tuple::__t6,
-      &__tuple::__t7,
-      &__tuple::__t8,
-      &__tuple::__t9,
-      &__tuple::__t10,
-      &__tuple::__t11,
-      &__tuple::__t12>*>(nullptr);
+      &__tuple::__val0,
+      &__tuple::__val1,
+      &__tuple::__val2,
+      &__tuple::__val3,
+      &__tuple::__val4,
+      &__tuple::__val5,
+      &__tuple::__val6,
+      &__tuple::__val7,
+      &__tuple::__val8,
+      &__tuple::__val9,
+      &__tuple::__val10,
+      &__tuple::__val11,
+      &__tuple::__val12>*>(nullptr);
   }
 };
 
-template <class _T0,
-          class _T1,
-          class _T2,
-          class _T3,
-          class _T4,
-          class _T5,
-          class _T6,
-          class _T7,
-          class _T8,
-          class _T9,
-          class _T10,
-          class _T11>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9, _T10, _T11>
+template <class _Tp0,
+          class _Tp1,
+          class _Tp2,
+          class _Tp3,
+          class _Tp4,
+          class _Tp5,
+          class _Tp6,
+          class _Tp7,
+          class _Tp8,
+          class _Tp9,
+          class _Tp10,
+          class _Tp11>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8, _Tp9, _Tp10, _Tp11>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
-  _CCCL_NO_UNIQUE_ADDRESS _T9 __t9;
-  _CCCL_NO_UNIQUE_ADDRESS _T10 __t10;
-  _CCCL_NO_UNIQUE_ADDRESS _T11 __t11;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp9 __val9;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp10 __val10;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp11 __val11;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0,
-                                  &__tuple::__t1,
-                                  &__tuple::__t2,
-                                  &__tuple::__t3,
-                                  &__tuple::__t4,
-                                  &__tuple::__t5,
-                                  &__tuple::__t6,
-                                  &__tuple::__t7,
-                                  &__tuple::__t8,
-                                  &__tuple::__t9,
-                                  &__tuple::__t10,
-                                  &__tuple::__t11>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0,
+                                  &__tuple::__val1,
+                                  &__tuple::__val2,
+                                  &__tuple::__val3,
+                                  &__tuple::__val4,
+                                  &__tuple::__val5,
+                                  &__tuple::__val6,
+                                  &__tuple::__val7,
+                                  &__tuple::__val8,
+                                  &__tuple::__val9,
+                                  &__tuple::__val10,
+                                  &__tuple::__val11>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6, class _T7, class _T8, class _T9, class _T10>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9, _T10>
+template <class _Tp0,
+          class _Tp1,
+          class _Tp2,
+          class _Tp3,
+          class _Tp4,
+          class _Tp5,
+          class _Tp6,
+          class _Tp7,
+          class _Tp8,
+          class _Tp9,
+          class _Tp10>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8, _Tp9, _Tp10>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
-  _CCCL_NO_UNIQUE_ADDRESS _T9 __t9;
-  _CCCL_NO_UNIQUE_ADDRESS _T10 __t10;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp9 __val9;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp10 __val10;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0,
-                                  &__tuple::__t1,
-                                  &__tuple::__t2,
-                                  &__tuple::__t3,
-                                  &__tuple::__t4,
-                                  &__tuple::__t5,
-                                  &__tuple::__t6,
-                                  &__tuple::__t7,
-                                  &__tuple::__t8,
-                                  &__tuple::__t9,
-                                  &__tuple::__t10>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0,
+                                  &__tuple::__val1,
+                                  &__tuple::__val2,
+                                  &__tuple::__val3,
+                                  &__tuple::__val4,
+                                  &__tuple::__val5,
+                                  &__tuple::__val6,
+                                  &__tuple::__val7,
+                                  &__tuple::__val8,
+                                  &__tuple::__val9,
+                                  &__tuple::__val10>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6, class _T7, class _T8, class _T9>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8, _T9>
+template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5, class _Tp6, class _Tp7, class _Tp8, class _Tp9>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8, _Tp9>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
-  _CCCL_NO_UNIQUE_ADDRESS _T9 __t9;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp9 __val9;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0,
-                                  &__tuple::__t1,
-                                  &__tuple::__t2,
-                                  &__tuple::__t3,
-                                  &__tuple::__t4,
-                                  &__tuple::__t5,
-                                  &__tuple::__t6,
-                                  &__tuple::__t7,
-                                  &__tuple::__t8,
-                                  &__tuple::__t9>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0,
+                                  &__tuple::__val1,
+                                  &__tuple::__val2,
+                                  &__tuple::__val3,
+                                  &__tuple::__val4,
+                                  &__tuple::__val5,
+                                  &__tuple::__val6,
+                                  &__tuple::__val7,
+                                  &__tuple::__val8,
+                                  &__tuple::__val9>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6, class _T7, class _T8>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7, _T8>
+template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5, class _Tp6, class _Tp7, class _Tp8>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7, _Tp8>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
-  _CCCL_NO_UNIQUE_ADDRESS _T8 __t8;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp8 __val8;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0,
-                                  &__tuple::__t1,
-                                  &__tuple::__t2,
-                                  &__tuple::__t3,
-                                  &__tuple::__t4,
-                                  &__tuple::__t5,
-                                  &__tuple::__t6,
-                                  &__tuple::__t7,
-                                  &__tuple::__t8>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0,
+                                  &__tuple::__val1,
+                                  &__tuple::__val2,
+                                  &__tuple::__val3,
+                                  &__tuple::__val4,
+                                  &__tuple::__val5,
+                                  &__tuple::__val6,
+                                  &__tuple::__val7,
+                                  &__tuple::__val8>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6, class _T7>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6, _T7>
+template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5, class _Tp6, class _Tp7>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6, _Tp7>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
-  _CCCL_NO_UNIQUE_ADDRESS _T7 __t7;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp7 __val7;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0,
-                                  &__tuple::__t1,
-                                  &__tuple::__t2,
-                                  &__tuple::__t3,
-                                  &__tuple::__t4,
-                                  &__tuple::__t5,
-                                  &__tuple::__t6,
-                                  &__tuple::__t7>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0,
+                                  &__tuple::__val1,
+                                  &__tuple::__val2,
+                                  &__tuple::__val3,
+                                  &__tuple::__val4,
+                                  &__tuple::__val5,
+                                  &__tuple::__val6,
+                                  &__tuple::__val7>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5, class _T6>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5, _T6>
+template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5, class _Tp6>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5, _Tp6>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
-  _CCCL_NO_UNIQUE_ADDRESS _T6 __t6;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp6 __val6;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0,
-                                  &__tuple::__t1,
-                                  &__tuple::__t2,
-                                  &__tuple::__t3,
-                                  &__tuple::__t4,
-                                  &__tuple::__t5,
-                                  &__tuple::__t6>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0,
+                                  &__tuple::__val1,
+                                  &__tuple::__val2,
+                                  &__tuple::__val3,
+                                  &__tuple::__val4,
+                                  &__tuple::__val5,
+                                  &__tuple::__val6>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3, class _T4, class _T5>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4, _T5>
+template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4, class _Tp5>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4, _Tp5>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
-  _CCCL_NO_UNIQUE_ADDRESS _T5 __t5;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp5 __val5;
+
+  _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
+  {
+    return static_cast<__mbr_list<&__tuple::__val0,
+                                  &__tuple::__val1,
+                                  &__tuple::__val2,
+                                  &__tuple::__val3,
+                                  &__tuple::__val4,
+                                  &__tuple::__val5>*>(nullptr);
+  }
+};
+
+template <class _Tp0, class _Tp1, class _Tp2, class _Tp3, class _Tp4>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3, _Tp4>
+{
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp4 __val4;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
     return static_cast<
-      __mbr_list<&__tuple::__t0, &__tuple::__t1, &__tuple::__t2, &__tuple::__t3, &__tuple::__t4, &__tuple::__t5>*>(
-      nullptr);
+      __mbr_list<&__tuple::__val0, &__tuple::__val1, &__tuple::__val2, &__tuple::__val3, &__tuple::__val4>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3, class _T4>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3, _T4>
+template <class _Tp0, class _Tp1, class _Tp2, class _Tp3>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2, _Tp3>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
-  _CCCL_NO_UNIQUE_ADDRESS _T4 __t4;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp3 __val3;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0, &__tuple::__t1, &__tuple::__t2, &__tuple::__t3, &__tuple::__t4>*>(
-      nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0, &__tuple::__val1, &__tuple::__val2, &__tuple::__val3>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2, class _T3>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2, _T3>
+template <class _Tp0, class _Tp1, class _Tp2>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1, _Tp2>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
-  _CCCL_NO_UNIQUE_ADDRESS _T3 __t3;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp2 __val2;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0, &__tuple::__t1, &__tuple::__t2, &__tuple::__t3>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0, &__tuple::__val1, &__tuple::__val2>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1, class _T2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1, _T2>
+template <class _Tp0, class _Tp1>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0, _Tp1>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
-  _CCCL_NO_UNIQUE_ADDRESS _T2 __t2;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp1 __val1;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0, &__tuple::__t1, &__tuple::__t2>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0, &__tuple::__val1>*>(nullptr);
   }
 };
 
-template <class _T0, class _T1>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0, _T1>
+template <class _Tp0>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0>
 {
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-  _CCCL_NO_UNIQUE_ADDRESS _T1 __t1;
+  _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;
 
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<&__tuple::__t0, &__tuple::__t1>*>(nullptr);
-  }
-};
-
-template <class _T0>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_T0>
-{
-  _CCCL_NO_UNIQUE_ADDRESS _T0 __t0;
-
-  _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
-  {
-    return static_cast<__mbr_list<&__tuple::__t0>*>(nullptr);
+    return static_cast<__mbr_list<&__tuple::__val0>*>(nullptr);
   }
 };
 
@@ -608,20 +619,20 @@ template <auto _Mbr>
 using __mbr_t _CCCL_NODEBUG_ALIAS = integral_constant<decltype(_Mbr), _Mbr>;
 
 template <size_t _Idx, class _Tupl, auto... _Mbrs>
-_CCCL_TRIVIAL_API constexpr auto __get_aux(_Tupl&& __tuple, __mbr_list<_Mbrs...>*) noexcept -> decltype(auto)
+_CCCL_TRIVIAL_API constexpr auto __get_aux(_Tupl&& __tupl, __mbr_list<_Mbrs...>*) noexcept -> decltype(auto)
 {
 #if defined(_CCCL_NO_PACK_INDEXING)
-  return (static_cast<_Tupl&&>(__tuple).*(__type_index_c<_Idx, __mbr_t<_Mbrs>...>::value));
+  return (static_cast<_Tupl&&>(__tupl).*(__type_index_c<_Idx, __mbr_t<_Mbrs>...>::value));
 #else
-  return (static_cast<_Tupl&&>(__tuple).*(_Mbrs...[_Idx]));
+  return (static_cast<_Tupl&&>(__tupl).*(_Mbrs...[_Idx]));
 #endif
 }
 
 template <size_t _Idx, class _Tupl>
-_CCCL_TRIVIAL_API constexpr auto __get(_Tupl&& __tuple) noexcept
-  -> decltype(_CUDA_VSTD::__get_aux<_Idx>(static_cast<_Tupl&&>(__tuple), __tuple.__mbrs()))
+_CCCL_TRIVIAL_API constexpr auto __get(_Tupl&& __tupl) noexcept
+  -> decltype(_CUDA_VSTD::__get_aux<_Idx>(static_cast<_Tupl&&>(__tupl), __tupl.__mbrs()))
 {
-  return _CUDA_VSTD::__get_aux<_Idx>(static_cast<_Tupl&&>(__tuple), __tuple.__mbrs());
+  return _CUDA_VSTD::__get_aux<_Idx>(static_cast<_Tupl&&>(__tupl), __tupl.__mbrs());
 }
 
 //
@@ -636,14 +647,14 @@ _CCCL_TRIVIAL_API constexpr auto __apply_aux(_Fn&& __fn, _Tupl&& __tuple, __mbr_
 }
 
 template <class _Fn, class _Tupl, class... _Us>
-_CCCL_TRIVIAL_API constexpr auto __apply(_Fn&& __fn, _Tupl&& __tuple, _Us&&... __us) //
+_CCCL_TRIVIAL_API constexpr auto __apply(_Fn&& __fn, _Tupl&& __tupl, _Us&&... __us) //
   noexcept(noexcept(_CUDA_VSTD::__apply_aux(
-    static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tuple), __tuple.__mbrs(), static_cast<_Us&&>(__us)...)))
+    static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...)))
     -> decltype(_CUDA_VSTD::__apply_aux(
-      static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tuple), __tuple.__mbrs(), static_cast<_Us&&>(__us)...))
+      static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...))
 {
   return _CUDA_VSTD::__apply_aux(
-    static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tuple), __tuple.__mbrs(), static_cast<_Us&&>(__us)...);
+    static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...);
 }
 
 template <class _Fn, class _Tupl, class... _Us>
@@ -692,19 +703,24 @@ inline constexpr size_t __tuple_size_v<__tuple<_Ts...>> = sizeof...(_Ts);
 template <class... _Ts>
 inline constexpr size_t __tuple_size_v<const __tuple<_Ts...>> = sizeof...(_Ts);
 
+template <class... _Ts>
+inline constexpr size_t __tuple_size_v<__tuple<_Ts...>&> = sizeof...(_Ts);
+
+template <class... _Ts>
+inline constexpr size_t __tuple_size_v<const __tuple<_Ts...>&> = sizeof...(_Ts);
+
 //
 // __tuple_element_t
 //
+template <class _Tp>
+_CCCL_API auto __remove_rvalue_ref(_Tp&&) noexcept -> _Tp;
+
 template <size_t _Idx, class _Tuple>
 using __tuple_element_t _CCCL_NODEBUG_ALIAS =
-  decltype(_CUDA_VSTD::__get_aux<_Idx>(declval<_Tuple>(), declval<_Tuple>().__mbrs()));
+  decltype(_CUDA_VSTD::__remove_rvalue_ref(_CUDA_VSTD::__get_aux<_Idx>(declval<_Tuple>(), declval<_Tuple>().__mbrs())));
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
-
-#undef _CCCL_TUPL_UNROLL_LIMIT
-#undef _CCCL_TRIVIAL_API
-#undef _CCCL_API
 
 #endif // __CUDA_STD___UTILITY_POD_TUPLE_H
