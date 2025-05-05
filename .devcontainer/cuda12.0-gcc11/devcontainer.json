@@ -27,7 +27,8 @@
     "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent",
-    "source=cccl-build,target=/home/coder/cccl/build"
+    "source=cccl-build,target=/home/coder/cccl/build",
+    "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
   ],
   "customizations": {
     "vscode": {
@@ -50,5 +51,8 @@
       }
     }
   },
-  "name": "cuda12.0-gcc11"
+  "name": "cuda12.0-gcc11",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  }
 }
