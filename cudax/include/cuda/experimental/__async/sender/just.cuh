@@ -81,7 +81,14 @@ private:
         , __values_{static_cast<__tuple_t&&>(__values)}
     {}
 
+#if !_CCCL_COMPILER(GCC)
+    // Because of gcc#98995, making this operation state immovable will cause errors in
+    // functions that return composite operation states by value. Fortunately, the `just`
+    // operation state doesn't strictly need to be immovable, since its address never
+    // escapes. So for gcc, we let this operation state be movable.
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
     _CUDAX_IMMOVABLE(__opstate_t);
+#endif
 
     _CUDAX_API void start() & noexcept
     {
