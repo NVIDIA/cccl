@@ -71,123 +71,42 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::histogram
 {
-template <int NUM_CHANNELS,
-          int NUM_ACTIVE_CHANNELS,
-          typename SampleIteratorT,
-          typename CounterT,
-          typename LevelT,
-          typename OffsetT,
-          typename PolicyHub>
+template <int NUM_CHANNELS, int NUM_ACTIVE_CHANNELS, typename SampleIteratorT, typename CounterT, typename OffsetT>
 struct DeviceHistogramKernelSource
 {
-  using SampleT     = cub::detail::it_value_t<SampleIteratorT>;
-  using TransformsT = Transforms<LevelT, OffsetT, SampleT>;
-  using odd_fallback_policy_hub =
-    detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>;
-  using OddMaxPolicyT =
-    typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, odd_fallback_policy_hub, PolicyHub>::MaxPolicy;
-  using even_fallback_policy_hub =
-    detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>;
-  using EvenMaxPolicyT =
-    typename ::cuda::std::_If<::cuda::std::is_void_v<PolicyHub>, odd_fallback_policy_hub, PolicyHub>::MaxPolicy;
-
   CUB_DEFINE_KERNEL_GETTER(HistogramInitKernel, DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>);
 
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelRangeZeroSmemBins,
-    DeviceHistogramSweepKernel<OddMaxPolicyT,
-                               0,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::template SearchTransform<const LevelT*>,
-                               typename TransformsT::PassThruTransform,
-                               OffsetT>);
+  // We define this differently than the other kernel getters because there are
+  // different dispatch paths which affect which policy is used and the decode operators.
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
+  _CCCL_HIDE_FROM_ABI
+  CUB_RUNTIME_FUNCTION static constexpr decltype(&DeviceHistogramSweepKernel<PolicyT,
+                                                                             PRIVATIZED_SMEM_BINS,
+                                                                             NUM_CHANNELS,
+                                                                             NUM_ACTIVE_CHANNELS,
+                                                                             SampleIteratorT,
+                                                                             CounterT,
+                                                                             PrivatizedDecodeOpT,
+                                                                             OutputDecodeOpT,
+                                                                             OffsetT>)
+  HistogramSweepKernel()
+  {
+    return &DeviceHistogramSweepKernel<
+      PolicyT,
+      PRIVATIZED_SMEM_BINS,
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
+      SampleIteratorT,
+      CounterT,
+      PrivatizedDecodeOpT,
+      OutputDecodeOpT,
+      OffsetT>;
+  }
 
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelRangeMaxSmemBins,
-    DeviceHistogramSweepKernel<OddMaxPolicyT,
-                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::template SearchTransform<const LevelT*>,
-                               typename TransformsT::PassThruTransform,
-                               OffsetT>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelRangeByteSampleZeroSmemBins,
-    DeviceHistogramSweepKernel<OddMaxPolicyT,
-                               0,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::PassThruTransform,
-                               typename TransformsT::template SearchTransform<const LevelT*>,
-                               OffsetT>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelRangeByteSampleMaxSmemBins,
-    DeviceHistogramSweepKernel<OddMaxPolicyT,
-                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::PassThruTransform,
-                               typename TransformsT::template SearchTransform<const LevelT*>,
-                               OffsetT>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelEvenZeroSmemBins,
-    DeviceHistogramSweepKernel<EvenMaxPolicyT,
-                               0,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::ScaleTransform,
-                               typename TransformsT::PassThruTransform,
-                               OffsetT>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelEvenMaxSmemBins,
-    DeviceHistogramSweepKernel<EvenMaxPolicyT,
-                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::ScaleTransform,
-                               typename TransformsT::PassThruTransform,
-                               OffsetT>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelEvenByteSampleZeroSmemBins,
-    DeviceHistogramSweepKernel<EvenMaxPolicyT,
-                               0,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::PassThruTransform,
-                               typename TransformsT::ScaleTransform,
-                               OffsetT>);
-
-  CUB_DEFINE_KERNEL_GETTER(
-    HistogramSweepKernelEvenByteSampleMaxSmemBins,
-    DeviceHistogramSweepKernel<EvenMaxPolicyT,
-                               TransformsT::MAX_PRIVATIZED_SMEM_BINS,
-                               NUM_CHANNELS,
-                               NUM_ACTIVE_CHANNELS,
-                               SampleIteratorT,
-                               CounterT,
-                               typename TransformsT::PassThruTransform,
-                               typename TransformsT::ScaleTransform,
-                               OffsetT>);
+  CUB_RUNTIME_FUNCTION static constexpr size_t CounterSize()
+  {
+    return sizeof(CounterT);
+  }
 };
 
 template <int NUM_CHANNELS,
@@ -217,30 +136,26 @@ struct dispatch_histogram
   OffsetT row_stride_samples;
   cudaStream_t stream;
   KernelSource kernel_source;
-  KernelLauncherFactory kernel_launcher_factory;
+  KernelLauncherFactory launcher_factory;
 
   template <typename ActivePolicyT, typename DeviceHistogramInitKernelT, typename DeviceHistogramSweepKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
-  Invoke(DeviceHistogramInitKernelT histogram_init_kernel, DeviceHistogramSweepKernelT histogram_sweep_kernel)
+  Invoke(DeviceHistogramInitKernelT histogram_init_kernel,
+         DeviceHistogramSweepKernelT histogram_sweep_kernel,
+         ActivePolicyT policy = {})
   {
     cudaError error = cudaSuccess;
 
-    constexpr int block_threads     = ActivePolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
-    constexpr int pixels_per_thread = ActivePolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
+    auto wrapped_policy = detail::histogram::MakeHistogramPolicyWrapper(policy);
+
+    const int block_threads     = wrapped_policy.BlockThreads();
+    const int pixels_per_thread = wrapped_policy.PixelsPerThread();
 
     do
     {
-      // Get device ordinal
-      int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
       // Get SM count
       int sm_count;
-      error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+      error = CubDebug(launcher_factory.MultiProcessorCount(sm_count));
 
       if (cudaSuccess != error)
       {
@@ -249,7 +164,8 @@ struct dispatch_histogram
 
       // Get SM occupancy for histogram_sweep_kernel
       int histogram_sweep_sm_occupancy;
-      error = CubDebug(MaxSmOccupancy(histogram_sweep_sm_occupancy, histogram_sweep_kernel, block_threads));
+      error =
+        CubDebug(launcher_factory.MaxSmOccupancy(histogram_sweep_sm_occupancy, histogram_sweep_kernel, block_threads));
       if (cudaSuccess != error)
       {
         break;
@@ -288,7 +204,8 @@ struct dispatch_histogram
 
       for (int CHANNEL = 0; CHANNEL < NUM_ACTIVE_CHANNELS; ++CHANNEL)
       {
-        allocation_sizes[CHANNEL] = size_t(num_thread_blocks) * (num_privatized_levels[CHANNEL] - 1) * sizeof(CounterT);
+        allocation_sizes[CHANNEL] =
+          size_t(num_thread_blocks) * (num_privatized_levels[CHANNEL] - 1) * kernel_source.CounterSize();
       }
 
       allocation_sizes[NUM_ALLOCATIONS - 1] = GridQueue<int>::AllocationSize();
@@ -340,8 +257,7 @@ struct dispatch_histogram
 #endif // CUB_DEBUG_LOG
 
       // Invoke histogram_init_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        histogram_init_grid_dims, histogram_init_block_threads, 0, stream)
+      launcher_factory(histogram_init_grid_dims, histogram_init_block_threads, 0, stream)
         .doit(histogram_init_kernel, num_output_bins_wrapper, d_output_histograms, tile_queue);
 
       // Return if empty problem
@@ -364,7 +280,7 @@ struct dispatch_histogram
 #endif // CUB_DEBUG_LOG
 
       // Invoke histogram_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(sweep_grid_dims, block_threads, 0, stream)
+      launcher_factory(sweep_grid_dims, block_threads, 0, stream)
         .doit(histogram_sweep_kernel,
               d_samples,
               num_output_bins_wrapper,
@@ -398,20 +314,13 @@ struct dispatch_histogram
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
     return Invoke<ActivePolicyT>(
-      detail::histogram::DeviceHistogramInitKernel<NUM_ACTIVE_CHANNELS, CounterT, OffsetT>,
-      detail::histogram::DeviceHistogramSweepKernel<
-        MaxPolicyT,
-        PRIVATIZED_SMEM_BINS,
-        NUM_CHANNELS,
-        NUM_ACTIVE_CHANNELS,
-        SampleIteratorT,
-        CounterT,
-        PrivatizedDecodeOpT,
-        OutputDecodeOpT,
-        OffsetT>);
+      kernel_source.HistogramInitKernel(),
+      kernel_source
+        .template HistogramSweepKernel<MaxPolicyT, PRIVATIZED_SMEM_BINS, PrivatizedDecodeOpT, OutputDecodeOpT>(),
+      active_policy);
   }
 };
 
@@ -447,17 +356,16 @@ struct dispatch_histogram
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <
-  int NUM_CHANNELS,
-  int NUM_ACTIVE_CHANNELS,
-  typename SampleIteratorT,
-  typename CounterT,
-  typename LevelT,
-  typename OffsetT,
-  typename PolicyHub    = void, // if user passes a custom Policy this should not be void
-  typename KernelSource = detail::histogram::
-    DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, LevelT, OffsetT, PolicyHub>,
-  typename KernelLauncherFactory = detail::TripleChevronFactory>
+template <int NUM_CHANNELS,
+          int NUM_ACTIVE_CHANNELS,
+          typename SampleIteratorT,
+          typename CounterT,
+          typename LevelT,
+          typename OffsetT,
+          typename PolicyHub    = void, // if user passes a custom Policy this should not be void
+          typename KernelSource = detail::histogram::
+            DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, OffsetT>,
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
