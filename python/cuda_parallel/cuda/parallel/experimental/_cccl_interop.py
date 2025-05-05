@@ -8,12 +8,13 @@ import functools
 import os
 import subprocess
 import tempfile
-from typing import Callable, List
+import textwrap
+from typing import TYPE_CHECKING, Callable, List
 
 import numba
 import numpy as np
 from numba import cuda, types
-from numba.core.extending import as_numba_type
+from numba.core.extending import as_numba_type, intrinsic
 
 from cuda.cccl import get_include_paths  # type: ignore[import-not-found]
 
@@ -47,6 +48,10 @@ _TYPE_TO_ENUM = {
     types.float32: TypeEnum.FLOAT32,
     types.float64: TypeEnum.FLOAT64,
 }
+
+
+if TYPE_CHECKING:
+    from numba.core.typing import Signature
 
 
 def _type_to_enum(numba_type: types.Type) -> IntEnumerationMember:
@@ -178,20 +183,78 @@ def to_cccl_value(array_or_struct: np.ndarray | GpuStruct) -> Value:
         return to_cccl_value(array_or_struct._data)
 
 
-def to_cccl_op(op: Callable | None, sig) -> Op:
-    if op is None:
-        return Op(
-            operator_type=OpKind.STATELESS,
-            name=None,
-            ltoir=None,
-            state_alignment=1,
-            state=None,
-        )
+def _create_void_ptr_wrapper(op, sig):
+    """Creates a wrapper function that takes all void* arguments and calls the original operator.
 
-    ltoir, _ = cuda.compile(op, sig=sig, output="ltoir")
+    The wrapper takes N+1 arguments where N is the number of input arguments to `op`, the last
+    argument is a pointer to the result.
+    """
+    # Generate argument names for both inputs and output
+    input_args = [f"arg_{i}" for i in range(len(sig.args))]
+    all_args = input_args + ["ret"]  # ret is the output pointer
+    arg_str = ", ".join(all_args)
+    void_sig = types.void(*(types.voidptr for _ in all_args))
+
+    # Create the wrapper function source code
+    wrapper_src = textwrap.dedent(f"""
+    @intrinsic
+    def impl(typingctx, {arg_str}):
+        def codegen(context, builder, impl_sig, args):
+            # Get LLVM types for all arguments
+            arg_types = [context.get_value_type(t) for t in sig.args]
+            ret_type = context.get_value_type(sig.return_type)
+
+            # Bitcast from void* to the appropriate pointer types
+            input_ptrs = [builder.bitcast(p, t.as_pointer()) for p, t in zip(args[:-1], arg_types)]
+            ret_ptr = builder.bitcast(args[-1], ret_type.as_pointer())
+
+            # Load input values from pointers
+            input_vals = [builder.load(p) for p in input_ptrs]
+
+            # Call the original operator
+            result = context.compile_internal(builder, op, sig, input_vals)
+
+            # Store the result
+            builder.store(result, ret_ptr)
+
+            return context.get_dummy_value()
+        return void_sig, codegen
+
+    # intrinsics cannot directly be compiled by numba, so we make a trivial wrapper:
+    def wrapped_{op.__name__}({arg_str}):
+        return impl({arg_str})
+    """)
+
+    # Create namespace and compile the wrapper
+    local_dict = {
+        "types": types,
+        "sig": sig,
+        "op": op,
+        "intrinsic": intrinsic,
+        "void_sig": void_sig,
+    }
+    exec(wrapper_src, globals(), local_dict)
+
+    wrapper_func = local_dict[f"wrapped_{op.__name__}"]
+    wrapper_func.__globals__.update(local_dict)
+
+    return wrapper_func, void_sig
+
+
+def to_cccl_op(op: Callable, sig: Signature) -> Op:
+    """Return an `Op` object corresponding to the given callable.
+
+    Importantly, this wraps the callable in a device function that takes void* arguments
+    and a void* return value. This is the only way to match the corresponding "extern"
+    declaration of the device function in the C code, which knows nothing about the types
+    of the arguments and return value. The two functions must have the same signature in
+    order to link correctly without violating ODR.
+    """
+    wrapped_op, wrapper_sig = _create_void_ptr_wrapper(op, sig)
+    ltoir, _ = cuda.compile(wrapped_op, sig=wrapper_sig, output="ltoir")
     return Op(
         operator_type=OpKind.STATELESS,
-        name=op.__name__,
+        name=wrapped_op.__name__,
         ltoir=ltoir,
         state_alignment=1,
         state=None,
@@ -260,6 +323,8 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
 
     Returns result of the call.
     """
+    global _check_sass
+
     cc_major, cc_minor = cuda.get_current_device().compute_capability
     cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
     common_data = CommonData(
@@ -270,7 +335,9 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         common_data,
         **kwargs,
     )
+
     if _check_sass:
         cubin = result._get_cubin()
         _check_compile_result(cubin)
+
     return result

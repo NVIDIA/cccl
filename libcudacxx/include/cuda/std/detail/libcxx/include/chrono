@@ -839,6 +839,7 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #  endif // _CCCL_COMPILER(NVRTC)
 #endif // __cuda_std__
 
+#include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -1591,9 +1592,25 @@ public:
   using time_point                      = chrono::time_point<system_clock>;
   static constexpr const bool is_steady = false;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static time_point now() noexcept;
-  _LIBCUDACXX_HIDE_FROM_ABI static time_t to_time_t(const time_point& __t) noexcept;
-  _LIBCUDACXX_HIDE_FROM_ABI static time_point from_time_t(time_t __t) noexcept;
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static time_point now() noexcept
+  {
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      (return time_point(duration_cast<duration>(nanoseconds(
+        ::std::chrono::duration_cast<::std::chrono::nanoseconds>(::std::chrono::system_clock::now().time_since_epoch())
+          .count())));),
+      (return time_point(duration_cast<duration>(nanoseconds(_CUDA_VPTX::get_sreg_globaltimer())));))
+  }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static time_t to_time_t(const time_point& __t) noexcept
+  {
+    return time_t(duration_cast<seconds>(__t.time_since_epoch()).count());
+  }
+
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static time_point from_time_t(time_t __t) noexcept
+  {
+    return time_point(seconds(__t));
+  }
 };
 
 #if _LIBCUDACXX_HAS_MONOTONIC_CLOCK()
@@ -3663,7 +3680,6 @@ _LIBCUDACXX_END_NAMESPACE_FILESYSTEM
 
 _CCCL_NV_DIAG_DEFAULT(cuda_demote_unsupported_floating_point)
 
-#include <cuda/std/__cuda/chrono.h>
 _CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX_CHRONO

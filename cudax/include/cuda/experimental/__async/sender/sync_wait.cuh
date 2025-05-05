@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,24 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
-// run_loop isn't supported on-device yet, so neither can sync_wait be.
-#if !defined(__CUDA_ARCH__)
+#include <cuda/std/__type_traits/always_false.h>
+#include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/optional>
+#include <cuda/std/tuple>
 
-#  include <cuda/std/__type_traits/always_false.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/__type_traits/type_identity.h>
-#  include <cuda/std/optional>
-#  include <cuda/std/tuple>
+#include <cuda/experimental/__async/sender/env.cuh>
+#include <cuda/experimental/__async/sender/exception.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/run_loop.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
+#include <cuda/experimental/__async/sender/write_env.cuh>
 
-#  include <cuda/experimental/__async/sender/exception.cuh>
-#  include <cuda/experimental/__async/sender/meta.cuh>
-#  include <cuda/experimental/__async/sender/run_loop.cuh>
-#  include <cuda/experimental/__async/sender/utility.cuh>
-#  include <cuda/experimental/__async/sender/write_env.cuh>
+#include <system_error>
 
-#  include <system_error>
-
-#  include <cuda/experimental/__async/sender/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -47,7 +45,7 @@ namespace cuda::experimental::__async
 struct sync_wait_t
 {
 private:
-  struct __env_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     run_loop* __loop_;
 
@@ -63,15 +61,15 @@ private:
   };
 
   template <class _Values>
-  struct __state_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t
   {
     struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
     {
-      using receiver_concept = receiver_t;
+      using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
       __state_t* __state_;
 
       template <class... _As>
-      _CUDAX_API void set_value(_As&&... __as) noexcept
+      _CUDAX_API void set_value(_As&&... __as) && noexcept
       {
         _CUDAX_TRY( //
           ({        //
@@ -86,7 +84,7 @@ private:
       }
 
       template <class _Error>
-      _CUDAX_API void set_error(_Error __err) noexcept
+      _CUDAX_API void set_error(_Error __err) && noexcept
       {
         if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::exception_ptr>)
         {
@@ -103,12 +101,12 @@ private:
         __state_->__loop_.finish();
       }
 
-      _CUDAX_API void set_stopped() noexcept
+      _CUDAX_API void set_stopped() && noexcept
       {
         __state_->__loop_.finish();
       }
 
-      __env_t get_env() const noexcept
+      auto get_env() const noexcept -> __env_t
       {
         return __env_t{&__state_->__loop_};
       }
@@ -124,85 +122,108 @@ private:
   {
     static_assert(_CUDA_VSTD::__always_false_v<_Diagnostic>(),
                   "sync_wait cannot compute the completions of the sender passed to it.");
-    static __bad_sync_wait __result();
+    static auto __result() -> __bad_sync_wait;
 
-    const __bad_sync_wait& value() const;
-    const __bad_sync_wait& operator*() const;
+    auto value() const -> const __bad_sync_wait&;
+    auto operator*() const -> const __bad_sync_wait&;
 
     int i{}; // so that structured bindings kinda work
   };
 
+  // This is the actual default sync_wait implementation.
+  struct __fn
+  {
+    template <class _Sndr>
+    _CUDAX_HOST_API auto operator()(_Sndr&& __sndr) const
+    {
+      using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t>;
+
+      if constexpr (!__valid_completion_signatures<__completions>)
+      {
+        return __bad_sync_wait<__completions>::__result();
+      }
+      else
+      {
+        using __values _CCCL_NODEBUG_ALIAS = __value_types<__completions, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+        _CUDA_VSTD::optional<__values> __result{};
+        __state_t<__values> __state{&__result, {}, {}};
+
+        // Launch the sender with a continuation that will fill in a variant
+        using __rcvr   = typename __state_t<__values>::__rcvr_t;
+        auto __opstate = __async::connect(static_cast<_Sndr&&>(__sndr), __rcvr{&__state});
+        __async::start(__opstate);
+
+        // Wait for the variant to be filled in, and process any work that
+        // may be delegated to this thread.
+        __state.__loop_.run();
+
+        if (__state.__eptr_)
+        {
+          ::std::rethrow_exception(__state.__eptr_);
+        }
+
+        return __result; // uses NRVO to "return" the result
+      }
+    }
+
+    template <class _Sndr, class _Env>
+    _CUDAX_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
+    {
+      return (*this)(__async::write_env(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)));
+    }
+  };
+
 public:
+  _CUDAX_HOST_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   // clang-format off
-    /// @brief Synchronously wait for the result of a sender, blocking the
-    ///         current thread.
-    ///
-    /// `sync_wait` connects and starts the given sender, and then drives a
-    ///         `run_loop` instance until the sender completes. Additional work
-    ///         can be delegated to the `run_loop` by scheduling work on the
-    ///         scheduler returned by calling `get_delegation_scheduler` on the
-    ///         receiver's environment.
-    ///
-    /// @pre The sender must have a exactly one value completion signature. That
-    ///         is, it can only complete successfully in one way, with a single
-    ///         set of values.
-    ///
-    /// @retval success Returns an engaged `::std::optional` containing the result
-    ///         values in a `::std::tuple`.
-    /// @retval canceled Returns an empty `::std::optional`.
-    /// @retval error Throws the error.
-    ///
-    /// @throws ::std::rethrow_exception(error) if the error has type
-    ///         `::std::exception_ptr`.
-    /// @throws ::std::system_error(error) if the error has type
-    ///         `::std::error_code`.
-    /// @throws error otherwise
+  /// @brief Synchronously wait for the result of a sender, blocking the
+  ///         current thread.
+  ///
+  /// `sync_wait` connects and starts the given sender, and then drives a
+  ///         `run_loop` instance until the sender completes. Additional work
+  ///         can be delegated to the `run_loop` by scheduling work on the
+  ///         scheduler returned by calling `get_delegation_scheduler` on the
+  ///         receiver's environment.
+  ///
+  /// @pre The sender must have a exactly one value completion signature. That
+  ///         is, it can only complete successfully in one way, with a single
+  ///         set of values.
+  ///
+  /// @retval success Returns an engaged `cuda::std::optional` containing the result
+  ///         values in a `cuda::std::tuple`.
+  /// @retval canceled Returns an empty `cuda::std::optional`.
+  /// @retval error Throws the error.
+  ///
+  /// @throws ::std::rethrow_exception(error) if the error has type
+  ///         `::std::exception_ptr`.
+  /// @throws ::std::system_error(error) if the error has type
+  ///         `::std::error_code`.
+  /// @throws ::cuda::cuda_error(error, "...") if the error has type
+  ///         `cudaError_t`.
+  /// @throws error otherwise
   // clang-format on
   template <class _Sndr>
-  auto operator()(_Sndr&& __sndr) const
+  _CUDAX_HOST_API auto operator()(_Sndr&& __sndr) const
   {
-    using __completions = completion_signatures_of_t<_Sndr, __env_t>;
-
-    if constexpr (!__valid_completion_signatures<__completions>)
-    {
-      return __bad_sync_wait<__completions>::__result();
-    }
-    else
-    {
-      using __values = __value_types<__completions, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
-      _CUDA_VSTD::optional<__values> __result{};
-      __state_t<__values> __state{&__result, {}, {}};
-
-      // Launch the sender with a continuation that will fill in a variant
-      using __rcvr   = typename __state_t<__values>::__rcvr_t;
-      auto __opstate = __async::connect(static_cast<_Sndr&&>(__sndr), __rcvr{&__state});
-      __async::start(__opstate);
-
-      // Wait for the variant to be filled in, and process any work that
-      // may be delegated to this thread.
-      __state.__loop_.run();
-
-      if (__state.__eptr_)
-      {
-        ::std::rethrow_exception(__state.__eptr_);
-      }
-
-      return __result; // uses NRVO to "return" the result
-    }
+    using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
+    return __dom_t::__apply(*this)(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr, class _Env>
-  auto operator()(_Sndr&& __sndr, _Env&& __env) const
+  _CUDAX_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
-    return (*this)(__async::write_env(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)));
+    using __dom_t _CCCL_NODEBUG_ALIAS = late_domain_of_t<_Sndr, _Env>;
+    return __dom_t::__apply(*this)(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
   }
 };
 
 _CCCL_GLOBAL_CONSTANT sync_wait_t sync_wait{};
 } // namespace cuda::experimental::__async
 
-#  include <cuda/experimental/__async/sender/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
-#endif // !defined(__CUDA_ARCH__)
-
-#endif
+#endif // __CUDAX_ASYNC_DETAIL_SYNC_WAIT

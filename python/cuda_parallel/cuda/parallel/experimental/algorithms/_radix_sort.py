@@ -114,7 +114,13 @@ class _RadixSort:
         self.d_out_values_cccl = cccl.to_cccl_iter(d_out_values_array)
 
         # TODO: decomposer op is not supported for now
-        self.decomposer_op = cccl.to_cccl_op(None, None)
+        self.decomposer_op = cccl.Op(
+            name="",
+            operator_type=cccl.OpKind.STATELESS,
+            ltoir=b"",
+            state_alignment=1,
+            state=None,
+        )
         decomposer_return_type = "".encode("utf-8")
 
         self.build_result = call_build(

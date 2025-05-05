@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,6 +24,7 @@
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__numeric/exclusive_scan.h>
 #include <cuda/std/__tuple_dir/ignore.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -59,7 +60,8 @@ private:
   // Extract the first template parameter of the __state_t specialization.
   // The first template parameter is the receiver type.
   template <class _State>
-  using __rcvr_from_state_t = _CUDA_VSTD::__type_apply<_CUDA_VSTD::__detail::__type_at_fn<0>, _State>;
+  using __rcvr_from_state_t _CCCL_NODEBUG_ALIAS =
+    _CUDA_VSTD::__type_apply<_CUDA_VSTD::__detail::__type_at_fn<0>, _State>;
 
   // Returns the completion signatures of a child sender. Throws an exception if
   // the child sender has more than one set_value completion signature.
@@ -78,12 +80,12 @@ private:
   template <class _StateZip>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
-    using __state_t = __unzip<_StateZip>;
-    using __rcvr_t  = __rcvr_from_state_t<__state_t>;
+    using __state_t _CCCL_NODEBUG_ALIAS = __unzip<_StateZip>;
+    using __rcvr_t _CCCL_NODEBUG_ALIAS  = __rcvr_from_state_t<__state_t>;
 
     __state_t& __state_;
 
-    _CUDAX_API inplace_stop_token query(get_stop_token_t) const noexcept
+    _CUDAX_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }
@@ -99,8 +101,8 @@ private:
   template <class _StateZip, size_t _Index>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
   {
-    using receiver_concept = receiver_t;
-    using __state_t        = __unzip<_StateZip>;
+    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
+    using __state_t _CCCL_NODEBUG_ALIAS        = __unzip<_StateZip>;
 
     __state_t& __state_;
 
@@ -149,18 +151,18 @@ private:
   template <class _Rcvr, class _CvFn, class _Idx, class _Ign0, class _Ign1, class... _Sndrs>
   struct __state_t<_Rcvr, _CvFn, __tupl<_Idx, _Ign0, _Ign1, _Sndrs...>>
   {
-    using __env_t     = when_all_t::__env_t<__zip<__state_t>>;
-    using __sndr_t    = when_all_t::__sndr_t<_Sndrs...>;
-    using __cv_sndr_t = _CUDA_VSTD::__type_call1<_CvFn, __sndr_t>;
+    using __env_t _CCCL_NODEBUG_ALIAS     = when_all_t::__env_t<__zip<__state_t>>;
+    using __sndr_t _CCCL_NODEBUG_ALIAS    = when_all_t::__sndr_t<_Sndrs...>;
+    using __cv_sndr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call1<_CvFn, __sndr_t>;
 
     static constexpr auto __completions_and_offsets =
       __sndr_t::template __get_completions_and_offsets<__cv_sndr_t, __env_t>();
 
-    using __completions_t   = decltype(__completions_and_offsets.first);
-    using __values_t        = __value_types<__completions_t, __lazy_tuple, __type_self_or<__nil>::__call>;
-    using __errors_t        = __error_types<__completions_t, __variant>;
-    using __stop_tok_t      = stop_token_of_t<env_of_t<_Rcvr>>;
-    using __stop_callback_t = stop_callback_for_t<__stop_tok_t, __on_stop_request>;
+    using __completions_t _CCCL_NODEBUG_ALIAS = decltype(__completions_and_offsets.first);
+    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, __lazy_tuple, __type_self_or<__nil>::__call>;
+    using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __variant>;
+    using __stop_tok_t _CCCL_NODEBUG_ALIAS      = stop_token_of_t<env_of_t<_Rcvr>>;
+    using __stop_callback_t _CCCL_NODEBUG_ALIAS = stop_callback_for_t<__stop_tok_t, __on_stop_request>;
 
     _CUDAX_API explicit __state_t(_Rcvr __rcvr, size_t __count)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
@@ -299,10 +301,11 @@ private:
   template <class _Rcvr, class _CvFn, size_t... _Idx, class _Ign0, class _Ign1, class... _Sndrs>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT
   __opstate_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<0, 1, _Idx...>, _Ign0, _Ign1, _Sndrs...>>
+      : private __immovable
   {
-    using operation_state_concept = operation_state_t;
-    using __sndrs_t               = _CUDA_VSTD::__type_call<_CvFn, __tuple<_Ign0, _Ign1, _Sndrs...>>;
-    using __state_t               = when_all_t::__state_t<_Rcvr, _CvFn, __tuple<_Ign0, _Ign1, _Sndrs...>>;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using __sndrs_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<_CvFn, __tuple<_Ign0, _Ign1, _Sndrs...>>;
+    using __state_t _CCCL_NODEBUG_ALIAS = when_all_t::__state_t<_Rcvr, _CvFn, __tuple<_Ign0, _Ign1, _Sndrs...>>;
 
     // This function object is used to connect all the sub-operations with
     // receivers, each of which knows which elements in the values tuple it
@@ -312,7 +315,7 @@ private:
       template <class... _CvSndrs>
       _CUDAX_API auto operator()(__state_t& __state, __ignore, __ignore, _CvSndrs&&... __sndrs_) const
       {
-        using __state_ref_t = __zip<__state_t>;
+        using __state_ref_t _CCCL_NODEBUG_ALIAS = __zip<__state_t>;
         // When there are no offsets, the when_all sender has no value
         // completions. All child senders can be connected to receivers
         // of the same type, saving template instantiations.
@@ -326,7 +329,7 @@ private:
     };
 
     // This is a tuple of operation states for the sub-operations.
-    using __sub_opstates_t = __apply_result_t<__connect_subs_fn, __sndrs_t, __state_t&>;
+    using __sub_opstates_t _CCCL_NODEBUG_ALIAS = __apply_result_t<__connect_subs_fn, __sndrs_t, __state_t&>;
 
     __state_t __state_;
     __sub_opstates_t __sub_ops_;
@@ -337,8 +340,6 @@ private:
         : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
         , __sub_ops_{__sndrs_.__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
     {}
-
-    _CUDAX_IMMOVABLE(__opstate_t);
 
     /// Start all the sub-operations.
     _CUDAX_API void start() & noexcept
@@ -372,17 +373,28 @@ private:
   };
 
   template <class... _Ts>
-  using __decay_all = _CUDA_VSTD::__type_list<_CUDA_VSTD::decay_t<_Ts>...>;
+  using __decay_all _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list<_CUDA_VSTD::decay_t<_Ts>...>;
+
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
+  {
+    template <class... _Sndrs>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
+  };
 
 public:
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   template <class... _Sndrs>
-  _CUDAX_API auto operator()(_Sndrs... __sndrs) const -> __sndr_t<_Sndrs...>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
 _CUDAX_API constexpr auto when_all_t::__child_completions()
 {
-  using __env_t = prop<get_stop_token_t, inplace_stop_token>;
+  using __env_t _CCCL_NODEBUG_ALIAS = prop<get_stop_token_t, inplace_stop_token>;
   _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, _FWD_ENV_T<_Env>>...>())
   {
     if constexpr (__completions.count(set_value) > 1)
@@ -428,8 +440,8 @@ _CUDAX_API constexpr auto when_all_t::__merge_completions(_Completions... __cs)
       // All child senders have exactly one value completion signature, each of
       // which may have multiple arguments. Concatenate all the arguments into a
       // single set_value_t completion signature.
-      using __values_t = _CUDA_VSTD::__type_call<         //
-        __type_concat_into<__type_function<set_value_t>>, //
+      using __values_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call< //
+        __type_concat_into<__type_function<set_value_t>>,             //
         __value_types<_Completions, __decay_all, _CUDA_VSTD::__type_self_t>...>;
       // Add the value completion to the error and stopped completions.
       auto __local = __non_value_completions + completion_signatures<__values_t>();
@@ -449,8 +461,8 @@ _CCCL_DIAG_POP
 template <class... _Sndrs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : __tuple<when_all_t, __ignore, _Sndrs...>
 {
-  using sender_concept = sender_t;
-  using __sndrs_t      = __tuple<when_all_t, __ignore, _Sndrs...>;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+  using __sndrs_t _CCCL_NODEBUG_ALIAS      = __tuple<when_all_t, __ignore, _Sndrs...>;
 
   template <class _Self, class... _Env>
   _CUDAX_API static constexpr auto __get_completions_and_offsets()
@@ -478,16 +490,35 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : __tuple<when_all_t, 
 };
 
 template <class... _Sndrs>
-_CUDAX_API auto when_all_t::operator()(_Sndrs... __sndrs) const -> __sndr_t<_Sndrs...>
+_CUDAX_TRIVIAL_API constexpr auto when_all_t::__fn::operator()(_Sndrs... __sndrs) const
 {
   // If the incoming senders are non-dependent, we can check the completion
   // signatures of the composed sender immediately.
   if constexpr (((!dependent_sender<_Sndrs>) && ...))
   {
-    using __completions = completion_signatures_of_t<__sndr_t<_Sndrs...>>;
+    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Sndrs...>>;
     static_assert(__valid_completion_signatures<__completions>);
   }
   return __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}};
+}
+
+template <class... _Sndrs>
+_CUDAX_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
+{
+  if constexpr (sizeof...(_Sndrs) == 0)
+  {
+    return __sndr_t{};
+  }
+  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>)
+  {
+    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>,
+                  "when_all: all child senders must have the same domain");
+  }
+  else
+  {
+    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<early_domain_of_t<_Sndrs>...>;
+    return __dom_t::__apply(*this)(static_cast<_Sndrs&&>(__sndrs)...);
+  }
 }
 
 template <class... _Sndrs>

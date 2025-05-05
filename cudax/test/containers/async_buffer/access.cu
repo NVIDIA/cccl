@@ -23,10 +23,15 @@
 #include "helper.h"
 #include "types.h"
 
-C2H_TEST("cudax::async_buffer access",
-         "[container][async_buffer]",
-         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
-                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                                  cuda::std::tuple<cuda::mr::device_accessible>,
+                                  cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
+#endif
+
+C2H_TEST("cudax::async_buffer access", "[container][async_buffer]", test_types)
 {
   using TestT           = c2h::get<0, TestType>;
   using Env             = typename extract_properties<TestT>::env;
@@ -41,24 +46,6 @@ C2H_TEST("cudax::async_buffer access",
   cudax::stream stream{};
   Env env{Resource{}, stream};
 
-  SECTION("cudax::async_buffer::get")
-  {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get(1ull)), reference>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Buffer&>().get(1ull)), const_reference>);
-
-    {
-      Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      auto& res = buf.get(2);
-      CUDAX_CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
-      CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
-      assign_value<Buffer::__is_host_only>(res, T(4));
-
-      auto& const_res = cuda::std::as_const(buf).get(2);
-      CUDAX_CHECK(compare_value<Buffer::__is_host_only>(const_res, T(4)));
-      CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - buf.data()) == 2);
-    }
-  }
-
   SECTION("cudax::async_buffer::get_unsynchronized")
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Buffer&>().get_unsynchronized(1ull)), reference>);
@@ -67,7 +54,7 @@ C2H_TEST("cudax::async_buffer access",
 
     {
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.sync();
+      buf.get_stream().sync();
       auto& res = buf.get_unsynchronized(2);
       CUDAX_CHECK(compare_value<Buffer::__is_host_only>(res, T(1337)));
       CUDAX_CHECK(static_cast<size_t>(cuda::std::addressof(res) - buf.data()) == 2);
@@ -86,14 +73,14 @@ C2H_TEST("cudax::async_buffer access",
 
     { // Works without allocation
       Buffer buf{env};
-      buf.sync();
+      buf.get_stream().sync();
       CUDAX_CHECK(buf.data() == nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == nullptr);
     }
 
     { // Works with allocation
       Buffer buf{env, {T(1), T(42), T(1337), T(0)}};
-      buf.sync();
+      buf.get_stream().sync();
       CUDAX_CHECK(buf.data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
       CUDAX_CHECK(cuda::std::as_const(buf).data() == buf.data());

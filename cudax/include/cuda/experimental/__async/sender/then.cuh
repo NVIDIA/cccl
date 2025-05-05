@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,6 +29,7 @@
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/concepts.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
@@ -64,58 +65,56 @@ template <bool IsVoid, bool _Nothrow>
 struct __completion_fn
 { // non-void, potentially throwing case
   template <class _Result>
-  using __call = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<true, false>
 { // void, potentially throwing case
   template <class>
-  using __call = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<false, true>
 { // non-void, non-throwing case
   template <class _Result>
-  using __call = completion_signatures<set_value_t(_Result)>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t(_Result)>;
 };
 
 template <>
 struct __completion_fn<true, true>
 { // void, non-throwing case
   template <class>
-  using __call = completion_signatures<set_value_t()>;
+  using __call _CCCL_NODEBUG_ALIAS = completion_signatures<set_value_t()>;
 };
 
 template <class _Result, bool _Nothrow>
-using __completion_ =
+using __completion_ _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::__type_call1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
-using __completion = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
+using __completion _CCCL_NODEBUG_ALIAS = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
 } // namespace __upon
 
 template <__disposition_t _Disposition>
-struct __upon_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t
 {
 private:
-  using _UponTag = decltype(__detail::__upon_tag<_Disposition>());
-  using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
+  using _UponTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__upon_tag<_Disposition>());
+  using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
   template <class _Rcvr, class _CvSndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
   {
-    using operation_state_concept = operation_state_t;
-    using __env_t                 = env_of_t<_Rcvr>;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
 
     _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __fn_{static_cast<_Fn&&>(__fn)}
         , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
     {}
-
-    _CUDAX_IMMOVABLE(__opstate_t);
 
     _CUDAX_API void start() & noexcept
     {
@@ -211,7 +210,18 @@ private:
     }
   };
 
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
+  {
+    template <class _Fn, class _Sndr>
+    _CUDAX_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
+  };
+
 public:
+  _CUDAX_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   template <class _Fn, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
@@ -219,17 +229,17 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 
   template <class _Sndr, class _Fn>
-  _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr, _Fn __fn) const -> __sndr_t<_Fn, _Sndr>;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept;
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Fn __fn) const;
 };
 
 template <__disposition_t _Disposition>
 template <class _Fn, class _Sndr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
 {
-  using sender_concept = sender_t;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
   _CCCL_NO_UNIQUE_ADDRESS _UponTag __tag_;
   _Fn __fn_;
   _Sndr __sndr_;
@@ -276,7 +286,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
-  _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
+  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return __async::get_env(__sndr_);
   }
@@ -286,7 +296,7 @@ template <__disposition_t _Disposition>
 template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
 {
-  using _UponTag = decltype(__detail::__upon_tag<_Disposition>());
+  using _UponTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__upon_tag<_Disposition>());
   _Fn __fn_;
 
   template <class _Sndr>
@@ -304,22 +314,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
 };
 
 template <__disposition_t _Disposition>
-template <class _Sndr, class _Fn>
-_CUDAX_TRIVIAL_API auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const -> __sndr_t<_Fn, _Sndr>
+template <class _Fn, class _Sndr>
+_CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
 {
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)
   {
-    using __completions = completion_signatures_of_t<__sndr_t<_Fn, _Sndr>>;
+    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Fn, _Sndr>>;
     static_assert(__valid_completion_signatures<__completions>);
   }
   return __sndr_t<_Fn, _Sndr>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)};
 }
 
 template <__disposition_t _Disposition>
+template <class _Sndr, class _Fn>
+_CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
+{
+  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
+  return __dom_t::__apply(*this)(static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr));
+}
+
+template <__disposition_t _Disposition>
 template <class _Fn>
-_CUDAX_TRIVIAL_API auto __upon_t<_Disposition>::operator()(_Fn __fn) const noexcept
+_CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Fn __fn) const
 {
   return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
 }

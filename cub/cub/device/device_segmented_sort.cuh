@@ -42,7 +42,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_segmented_sort.cuh>
 #include <cub/util_namespace.cuh>
 
@@ -297,7 +296,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
@@ -467,7 +466,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysDescendingNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
@@ -645,7 +644,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
@@ -816,7 +815,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysDescendingNoNVTX(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
@@ -944,7 +943,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1080,7 +1079,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
@@ -1226,7 +1225,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
@@ -1363,7 +1362,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortKeysDescendingNoNVTX<KeyT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_keys, num_items, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
@@ -1555,7 +1554,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
@@ -1753,7 +1752,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsDescendingNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
@@ -1953,7 +1952,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
@@ -2150,7 +2149,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsDescendingNoNVTX(
       d_temp_storage,
       temp_storage_bytes,
@@ -2306,7 +2305,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
@@ -2464,7 +2463,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
@@ -2630,7 +2629,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
@@ -2793,7 +2792,7 @@ public:
     EndOffsetIteratorT d_end_offsets,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, GetName());
     return SortPairsDescendingNoNVTX<KeyT, ValueT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage,
       temp_storage_bytes,
