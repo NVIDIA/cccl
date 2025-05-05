@@ -5,6 +5,9 @@ cd "$(dirname "$0")/../python/cuda_cccl"
 # Get the Python version from the command line arguments -py-version=3.10
 py_version=${2#*=}
 echo "Python version: ${py_version}"
+echo "Docker socket: " $(ls /var/run/docker.sock)
+ls /usr/bin
+which docker
 
 # given the py_version build the wheel and output the artifact
 # to the artifacts directory
