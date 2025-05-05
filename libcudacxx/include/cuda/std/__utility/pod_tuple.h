@@ -54,25 +54,25 @@
 // Unroll tuples of size 1-16 to bring down the number of template instantiations and to
 // permit __tuple to be used to initialize a structured binding without resorting to the
 // heavy-weight std::tuple protocol. This code was generated with the following macros,
-// which can be found here: https://godbolt.org/z/do7ThETo7
+// which can be found here: https://godbolt.org/z/1ddMTzz5x
 
 /*
 #define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_Tp, _Idx)
 #define _CCCL_TUPLE_TPARAM(_Idx)         , _CCCL_PP_CAT(_Tp, _Idx)
 #define _CCCL_TUPLE_DEFINE_ELEMENT(_Idx) _CCCL_NO_UNIQUE_ADDRESS _CCCL_PP_CAT(_Tp, _Idx) _CCCL_PP_CAT(__val, _Idx);
-#define _CCCL_TUPLE_MBR_PTR(_Idx)        , &__tupl::_CCCL_PP_CAT(__val, _Idx)
+#define _CCCL_TUPLE_MBR_PTR(_Idx)        , &__tuple::_CCCL_PP_CAT(__val, _Idx)
 
-#define _CCCL_DEFINE_TUPLE(_SizeSub1)                                                                               \
-  template <class _Tp0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_TPARAM, 1)>                                    \
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __tupl<_Tp0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_TPARAM, 1)>               \
-  {                                                                                                                 \
-    _CCCL_NO_UNIQUE_ADDRESS _Tp0 __t0;                                                                              \
-    _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                                       \
-                                                                                                                    \
-    _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept                                                       \
-    {                                                                                                               \
-      return static_cast<__mbr_list<&__tupl::__val0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>*>(nullptr); \
-    }                                                                                                               \
+#define _CCCL_DEFINE_TUPLE(_SizeSub1)                                                                                \
+  template <class _Tp0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_TPARAM, 1)>                                     \
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __tuple<_Tp0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_TPARAM, 1)>               \
+  {                                                                                                                  \
+    _CCCL_NO_UNIQUE_ADDRESS _Tp0 __val0;                                                                             \
+    _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_ELEMENT, 1)                                                        \
+                                                                                                                     \
+    _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept                                                        \
+    {                                                                                                                \
+      return static_cast<__mbr_list<&__tuple::__val0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_MBR_PTR, 1)>*>(nullptr); \
+    }                                                                                                                \
   };
 
 _CCCL_PP_REPEAT_REVERSE(_CCCL_TUPL_UNROLL_LIMIT, _CCCL_DEFINE_TUPLE)
