@@ -111,10 +111,10 @@ def test_segmented_reduce_for_columnwise_max():
     # example-begin segmented-reduce-columnwise-maximum
     import cupy as cp
     import numpy as np
+    from helper._strided import make_ndarray_iterator
 
     import cuda.parallel.experimental.algorithms as algorithms
     import cuda.parallel.experimental.iterators as iterators
-    from cuda.parallel.experimental.iterators._strided import make_ndarray_iterator
 
     def binary_op(a, b):
         return max(a, b)
@@ -169,10 +169,10 @@ def test_segmented_reduce_for_multiaxis_sum():
 
     import cupy as cp
     import numpy as np
+    from helper._strided import make_ndarray_iterator
 
     import cuda.parallel.experimental.algorithms as algorithms
     import cuda.parallel.experimental.iterators as iterators
-    from cuda.parallel.experimental.iterators._strided import make_ndarray_iterator
 
     def binary_op(a, b):
         return a + b
