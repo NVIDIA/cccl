@@ -57,9 +57,9 @@ typedef struct
 } TOptionData;
 
 typedef struct
-// #ifdef __CUDACC__
+// #if _CCCL_CUDA_COMPILATION()
 //__align__(8)
-// #endif
+// #endif // _CCCL_CUDA_COMPILATION()
 {
   float Expected;
   float Confidence;
