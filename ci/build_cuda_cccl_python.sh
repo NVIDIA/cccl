@@ -6,12 +6,6 @@ cd "$(dirname "$0")/../python/cuda_cccl"
 py_version=${2#*=}
 echo "Python version: ${py_version}"
 
-echo "Some debug info:"
-pwd
-echo "--------------------------------"
-ls __w
-echo "End of debug info"
-
 # given the py_version build the wheel and output the artifact
 # to the artifacts directory
 docker run --rm \
@@ -24,7 +18,7 @@ docker run --rm \
     pip wheel .'
 
 # print wheel name:
-wheel_name=$(ls __w/cccl/python/cuda_parallel/*.whl)
+wheel_name=$(ls python/cuda_parallel/*.whl)
 echo "Wheel name: ${wheel_name}"
 
 # copy the wheel to the artifacts directory
