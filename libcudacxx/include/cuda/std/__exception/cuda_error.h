@@ -27,6 +27,7 @@
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
 #include <cuda/std/__exception/terminate.h>
+#include <cuda/std/source_location>
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdio>
@@ -44,8 +45,6 @@ namespace __detail
 
 struct __msg_storage
 {
-  char __location[128]{0};
-  char __api[128]{0};
   char __buffer[512]{0};
 };
 
@@ -53,25 +52,16 @@ static char* __format_cuda_error(
   __msg_storage& __msg_buffer,
   const int __status,
   const char* __msg,
-  const char* __api  = nullptr,
-  const char* __file = nullptr,
-  const int __line   = 0) noexcept
+  const char* __api,
+  _CUDA_VSTD::source_location __loc = _CUDA_VSTD::source_location::current()) noexcept
 {
-  if (__file)
-  {
-    ::snprintf(__msg_buffer.__location, 128, "%s:%d ", __file, __line);
-  }
-  if (__api)
-  {
-    ::snprintf(__msg_buffer.__api, 128, "%s: ", __api);
-  }
-
   ::snprintf(
     __msg_buffer.__buffer,
     512,
-    "%s%s%s(%d): %s",
-    __msg_buffer.__location,
-    __msg_buffer.__api,
+    "%s:%d %s %s(%d): %s",
+    __loc.file_name(),
+    __loc.line(),
+    __api,
 #  if _CCCL_HAS_CUDA_COMPILER()
     ::cudaGetErrorString(::cudaError_t(__status)),
 #  else
@@ -91,36 +81,34 @@ class cuda_error : public ::std::runtime_error
 public:
   cuda_error(const int __status,
              const char* __msg,
-             const char* __api                    = nullptr,
-             const char* __file                   = nullptr,
-             const int __line                     = 0,
+             const char* __api,
+             _CUDA_VSTD::source_location __loc    = _CUDA_VSTD::source_location::current(),
              __detail::__msg_storage __msg_buffer = {}) noexcept
-      : ::std::runtime_error(__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __file, __line))
+      : ::std::runtime_error(__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
   {}
 };
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
   [[maybe_unused]] const int __status,
   [[maybe_unused]] const char* __msg,
-  [[maybe_unused]] const char* __api  = nullptr,
-  [[maybe_unused]] const char* __file = nullptr,
-  [[maybe_unused]] const int __line   = 0)
+  [[maybe_unused]] const char* __api,
+  [[maybe_unused]] _CUDA_VSTD::source_location __loc = _CUDA_VSTD::source_location::current())
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw ::cuda::cuda_error(__status, __msg, __api, __file, __line);),
+                    (throw ::cuda::cuda_error(__status, __msg, __api, __loc);), //
                     (_CUDA_VSTD_NOVERSION::terminate();))
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 class cuda_error
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI
-  cuda_error(const int, const char*, const char* = nullptr, const char* = nullptr, const int = 0) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI cuda_error(
+    const int, const char*, const char*, _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current()) noexcept
   {}
 };
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void
-__throw_cuda_error(const int, const char*, const char* = nullptr, const char* = nullptr, const int = 0)
+[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
+  const int, const char*, const char*, _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current())
 {
   _CUDA_VSTD_NOVERSION::terminate();
 }
