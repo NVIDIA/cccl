@@ -31,8 +31,8 @@
 #include "unique_ptr_test_helper.h"
 
 #if !TEST_COMPILER(NVRTC) // no dynamic initialization
-_LIBCUDACXX_SAFE_STATIC cuda::std::unique_ptr<int> global_static_unique_ptr_single;
-_LIBCUDACXX_SAFE_STATIC cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime;
+_CCCL_CONSTINIT cuda::std::unique_ptr<int> global_static_unique_ptr_single;
+_CCCL_CONSTINIT cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime;
 #endif // TEST_COMPILER(NVRTC)
 
 struct NonDefaultDeleter
