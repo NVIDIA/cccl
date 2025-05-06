@@ -27,9 +27,14 @@
 
 #pragma once
 
-#include "array.h"
-#include "object.h"
-#include "string.h"
+#include <cub/detail/ptx-json/array.h>
+#include <cub/detail/ptx-json/object.h>
+#include <cub/detail/ptx-json/string.h>
+#include <cub/detail/ptx-json/value.h>
+
+#include <cuda/std/cstddef>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 namespace ptx_json
 {
@@ -40,7 +45,7 @@ template <int N, string<N> T, cuda::std::size_t... Is>
 struct tagged_json<T, cuda::std::index_sequence<Is...>>
 {
   template <typename V, typename = cuda::std::enable_if_t<is_object<V>::value || is_array<V>::value>>
-  __noinline__ __device__ void operator=(V v)
+  __noinline__ __device__ void operator=(V)
   {
     asm volatile("cccl.ptx_json.begin(%0)\n\n" ::"C"(storage_helper<T.str[Is]...>::value) : "memory");
     V::emit();

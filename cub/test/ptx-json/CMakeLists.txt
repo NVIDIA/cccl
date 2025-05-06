@@ -1,5 +1,6 @@
-if ("${CMAKE_CXX_STANDARD}" STREQUAL "" OR "${CMAKE_CXX_STANDARD}" LESS "20")
-    return()
+if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
+  message(STATUS "Skipping ptx-json tests on non-Linux platforms.")
+  return()
 endif()
 
 cccl_get_json()
@@ -16,27 +17,36 @@ target_link_libraries(ptx-json-test-filter
 )
 
 function(cub_detail_ptx_json_add_test target_name_var source)
-  string(REGEX REPLACE "test_([^.]*).cu" "cub.detail.ptx_json.test.\\1.ptx" target_name "${source}")
-  set(target_name_var ${target_name} PARENT_SCOPE)
+  foreach(cub_target IN LISTS CUB_TARGETS)
+    cub_get_target_property(dialect ${cub_target} DIALECT)
+    if (${dialect} LESS 20)
+      continue()
+    endif()
 
-  add_library(${target_name} OBJECT
-    "${source}"
-  )
-  cccl_configure_target(${target_name} DIALECT 20)
+    cub_get_target_property(prefix ${cub_target} PREFIX)
 
-  target_link_libraries(${target_name} PRIVATE
-    CUB::CUB
-  )
-  set_target_properties(${target_name} PROPERTIES
-    CUDA_PTX_COMPILATION ON
-    CUDA_ARCHITECTURES 90
-  )
+    string(REGEX REPLACE "ptx_json_test_([^.]*).cu" "${prefix}.detail.ptx_json.test.\\1.ptx" target_name "${source}")
+    set(target_name_var ${target_name} PARENT_SCOPE)
 
-  add_test(NAME ${target_name}
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dump_and_check.bash
-      $<TARGET_FILE:ptx-json-test-filter> $<TARGET_OBJECTS:${target_name}>
-      ${CMAKE_CURRENT_SOURCE_DIR}/${source} "test-json-id"
-  )
+    add_library(${target_name} OBJECT
+      "${source}"
+    )
+
+    cub_clone_target_properties(${target_name} ${cub_target})
+    target_link_libraries(${target_name}
+      PRIVATE ${cub_target}
+    )
+    set_target_properties(${target_name} PROPERTIES
+      CUDA_PTX_COMPILATION ON
+      CUDA_ARCHITECTURES 90
+    )
+
+    add_test(NAME ${target_name}
+      COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/dump_and_check.bash
+        $<TARGET_FILE:ptx-json-test-filter> $<TARGET_OBJECTS:${target_name}>
+        ${CMAKE_CURRENT_SOURCE_DIR}/${source} "test-json-id"
+    )
+  endforeach()
 endfunction()
 
 file(GLOB test_srcs

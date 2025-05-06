@@ -235,7 +235,6 @@ CUresult cccl_device_reduce_build(
 
     const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
-      "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
       "struct __align__({1}) storage_t {{\n"
       "  char data[{0}];\n"
       "}};\n"
@@ -260,22 +259,19 @@ CUresult cccl_device_reduce_build(
     using cub::detail::RuntimeReduceAgentPolicy;
     auto [reduce_policy, reduce_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
     auto [st_policy, st_policy_str]         = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SingleTilePolicy");
-    auto [segment_policy,
-          segment_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "SegmentedReducePolicy");
 
     std::string final_src = std::format(
+      "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
       "{0}\n"
       "struct device_reduce_policy {{\n"
       "  struct ActivePolicy {{\n"
       "    {1}\n"
       "    {2}\n"
-      "    {3}\n"
       "  }};\n"
       "}};",
       src,
       reduce_policy_str,
-      st_policy_str,
-      segment_policy_str);
+      st_policy_str);
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);

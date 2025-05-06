@@ -27,9 +27,9 @@
 
 #pragma once
 
-#include <cuda/std/type_traits>
+#include <cub/detail/ptx-json/string.h>
 
-#include "string.h"
+#include <cuda/std/type_traits>
 
 namespace ptx_json
 {

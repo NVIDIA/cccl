@@ -43,7 +43,7 @@ For the purpose of this document, the following phrases are defined:
 
 ### Algorithm policy wrappers
 
-An algorithm policy generally contains one or more agent subpolicies used in different cases and kernels by said
+An algorithm policy generally contains one or more agent sub-policies used in different cases and kernels by said
 algorithm. In CUB, these use member typedefs to define specific agent policies; to enable passing runtime values into
 CUB algorithm dispatch layers, algorithm-specific policy wrappers have to be defined. An example of such an algorithm
 policy wrapper is the one defined for `DeviceReduce`.
@@ -90,12 +90,12 @@ aforementioned subpolicies using the function style:
 The `CUB_DEFINE_SUB_POLICY_GETTER` macro also automates wrapping the subpolicies in agent policy wrappers; see the next
 section for more details.
 
-Finally, because the functions define above return wrapped policies, we also have access to their `EncodedPolicy`
+Finally, because the functions defined above return wrapped policies, we also have access to their `EncodedPolicy`
 functions. These return `ptx-json` objects, which we can combine into a larger object describing all the subpolicies of
 the algorithm:
 
 ```cpp
-#if defined(CCCL_CUB_ENABLE_POLICY_PTX_JSON)
+#if defined(CUB_ENABLE_POLICY_PTX_JSON)
   _CCCL_DEVICE static constexpr auto EncodedPolicy()
   {
     using namespace ptx_json;
@@ -130,7 +130,7 @@ CUB_DETAIL_POLICY_WRAPPER_DEFINE(
 This invocation defines the `GenericAgentPolicy` agent policy category. This is the name for which `<Name>` in the
 following sections stands for. Specifying `always_true` as the "parent" category means we are defining a root category;
 when defining a new category, make sure to not create ambiguities between unrelated categories, or compilation errors
-will ensure.
+will ensue.
 
 After the name and the list of parent categories follows a list of tuples describing the fields of a given policy
 category. Each tuple must contain three elements:

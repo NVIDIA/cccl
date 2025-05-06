@@ -27,7 +27,10 @@
 
 #pragma once
 
-#include "value.h"
+#include <cub/detail/ptx-json/string.h>
+#include <cub/detail/ptx-json/value.h>
+
+#include <cuda/std/type_traits>
 
 namespace ptx_json
 {
@@ -89,7 +92,7 @@ template <string V>
 struct key
 {
   template <typename U>
-  __forceinline__ __device__ constexpr keyed_value<V, U> operator=(U u)
+  __forceinline__ __device__ constexpr keyed_value<V, U> operator=(U)
   {
     return {};
   }

@@ -27,7 +27,7 @@
 
 #pragma once
 
-#include "object.h"
+#include <cub/detail/ptx-json/object.h>
 
 namespace ptx_json
 {
