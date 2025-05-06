@@ -408,6 +408,8 @@ doxygen_predefined = [
   "_CCCL_AND=&&",
   "_CCCL_CUDACC_AT_LEAST(x, y)=1",
   "_CCCL_CUDACC_BELOW(x, y)=0",
+  "_CCCL_CTK_AT_LEAST(x, y)=1",
+  "_CCCL_CTK_BELOW(x, y)=0",
   "_CCCL_DEVICE=",
   "_CCCL_DOXYGEN_INVOKED",
   "_CCCL_EAT_REST(x)=",
