@@ -30,7 +30,7 @@ docker run --rm \
     python -m pip wheel .'
 
 # print wheel name:
-wheel_name=$(ls python/cuda_parallel/*.whl)
+wheel_name=$(ls python/cuda_cccl/*.whl)
 echo "Wheel name: ${wheel_name}"
 
 # copy the wheel to the artifacts directory
