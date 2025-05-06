@@ -95,7 +95,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 //
 // See: https://godbolt.org/z/co7K7qxqe
 template <class _Ty>
-_CCCL_API constexpr auto __msvc_workaround(_Ty __val) noexcept
+_CCCL_TRIVIAL_API constexpr auto __msvc_workaround(_Ty __val) noexcept
 {
   return __val;
 }
@@ -668,7 +668,6 @@ _CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tupl) noexcept
 // __apply(fn, tuple, extra...)
 //
 _CCCL_EXEC_CHECK_DISABLE
-
 template <class _Fn, class _Tuple, auto... _Members, class... _Us>
 _CCCL_TRIVIAL_API constexpr auto
 __apply_impl(_Fn&& __fn, _Tuple&& __tupl, __mbr_list<_Members...>*, _Us&&... __us) noexcept(

@@ -20,15 +20,15 @@
 
 #include "test_macros.h"
 
-_CCCL_GLOBAL_CONSTANT struct query1_t
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query1_t
 {
 } query1{};
 
-_CCCL_GLOBAL_CONSTANT struct query2_t
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query2_t
 {
 } query2{};
 
-_CCCL_GLOBAL_CONSTANT struct none_such_t
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct none_such_t
 {
 } none_such{};
 
@@ -47,9 +47,9 @@ __host__ __device__ constexpr bool is_trivial_aggregate()
       && cuda::std::is_trivially_constructible_v<Ty> && cuda::std::is_trivially_destructible_v<Ty>;
 }
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-  cuda::std::execution::env e1{};
+  [[maybe_unused]] cuda::std::execution::env e1{};
   static_assert(cuda::std::is_same_v<decltype(e1), cuda::std::execution::env<>>);
   static_assert(is_trivial_aggregate<cuda::std::execution::env<>>(), "");
   static_assert(!cuda::std::execution::__queryable_with<cuda::std::execution::env<>, query1_t>, "");
@@ -84,8 +84,6 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
   static_assert(is_trivial_aggregate<expected_e4_t>(), "");
   static_assert(cuda::std::is_same_v<decltype(e4.query(query1)), int>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query2)), const double&>);
-
-  unused(e1, e2, query1, query2, none_such);
 
   return true;
 }

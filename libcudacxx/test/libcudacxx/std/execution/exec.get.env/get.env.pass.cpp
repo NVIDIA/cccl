@@ -15,10 +15,10 @@
 
 #include "test_macros.h"
 
-_CCCL_GLOBAL_CONSTANT struct query1_t
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query1_t
 {
 } query1{};
-_CCCL_GLOBAL_CONSTANT struct query2_t
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct query2_t
 {
 } query2{};
 
@@ -46,20 +46,18 @@ struct env_provider
 struct none_such_t
 {};
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
   env_provider provider;
-  auto&& env = cuda::std::execution::get_env(provider);
+  [[maybe_unused]] auto&& env = cuda::std::execution::get_env(provider);
 
   static_assert(cuda::std::is_same_v<decltype(env), an_env_t&&>, "");
   static_assert(cuda::std::is_same_v<decltype(cuda::std::execution::get_env), const cuda::std::execution::get_env_t>,
                 "");
   static_assert(noexcept(cuda::std::execution::get_env(provider)), "");
 
-  auto&& env2 = cuda::std::execution::get_env(none_such_t{});
+  [[maybe_unused]] auto&& env2 = cuda::std::execution::get_env(none_such_t{});
   static_assert(cuda::std::is_same_v<decltype(env2), cuda::std::execution::env<>&&>, "");
-
-  unused(env, env2, query1, query2);
 
   return true;
 }

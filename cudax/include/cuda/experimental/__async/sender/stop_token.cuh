@@ -58,9 +58,8 @@ struct __inplace_stop_callback_base
 protected:
   using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__inplace_stop_callback_base*) noexcept;
 
-  _CCCL_API explicit __inplace_stop_callback_base( //
-    const inplace_stop_source* __source,           //
-    __execute_fn_t* __execute) noexcept
+  _CCCL_API explicit __inplace_stop_callback_base(const inplace_stop_source* __source,
+                                                  __execute_fn_t* __execute) noexcept
       : __source_(__source)
       , __execute_fn_(__execute)
   {}

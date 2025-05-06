@@ -33,61 +33,60 @@
 #  include <functional> // IWYU pragma: keep for ::std::reference_wrapper
 #endif // !_CCCL_COMPILER(NVRTC)
 
-/**
- * @file env.h
- * @brief Provides utilities for querying and managing environments, an unordered
- * collection of key/value pairs.
- *
- * This header defines templates and structures for querying properties of environments
- * and managing them in a composable way. It includes support for querying properties of
- * individual environments, combining multiple environments, and handling reference
- * wrappers.
- *
- * An environment is a collection of key/value pairs where the key is an empty tag type.
- * Environment objects have a `query` member function that accepts a key and returns the
- * associated value.
- *
- * @details
- * The key components in this file include:
- * - `__query_result_t`: A type alias for the result of querying a query from an
- *   environment.
- * - `__queryable_with`: A concept to check if a query can be property from an
- *   environment.
- * - `__nothrow_queryable_with`: A concept to check if a property can be queried without
- *   potentially throwing.
- * - `prop`: Builds an environment from a key/value pair.
- * - `env`: Builds an environment from a variadic number of environments. It allows
- *   querying properties from the first environment that satisfies a given query type.
- * - `get_env_t`: A callable object for retrieving the environment associated with an
- *   object.
- * - `env_of_t`: A type alias for the environment type of an object.
- *
- * @namespace cuda::std::execution
- * The primary namespace for all components defined in this file.
- *
- * @concept __queryable_with
- * Checks if a query `_Query` can be queried from an environment `_Env`.
- * @tparam _Env The type of the environment.
- * @tparam _Query The type of the property to be queried.
- *
- * @concept __nothrow_queryable_with Checks if a query `_Query` can be queried from an
- * environment `_Env` without potentially throwing.
- * @tparam _Env The type of the environment.
- * @tparam _Query The type of the property to be queried.
- *
- * @struct prop
- * @tparam _Query The type of the property to be queried.
- * @tparam _Value The type of the value associated with the query.
- * A simple environment with a single value associated with a query.
- *
- * @struct env
- * @tparam _Envs The types of the sub-environments contained within this environment.
- * Represents a composable execution environment that can query properties from its
- * sub-environments.
- *
- * @struct get_env_t
- * A callable object for retrieving the environment associated with an object.
- */
+//! @file env.h
+//! @brief Provides utilities for querying and managing environments, an unordered
+//! collection of key/value pairs.
+//!
+//! This header defines templates and structures for querying properties of environments
+//! and managing them in a composable way. It includes support for querying properties of
+//! individual environments, combining multiple environments, and handling reference
+//! wrappers.
+//!
+//! An environment is a collection of key/value pairs where the key is an empty tag type.
+//! Environment objects have a `query` member function that accepts a key and returns the
+//! associated value.
+//!
+//! @details
+//! The key components in this file include:
+//! - `__query_result_t`: A type alias for the result of querying a query from an
+//!   environment.
+//! - `__queryable_with`: A concept to check if a query can be property from an
+//!   environment.
+//! - `__nothrow_queryable_with`: A concept to check if a property can be queried without
+//!   potentially throwing.
+//! - `prop`: Builds an environment from a key/value pair.
+//! - `env`: Builds an environment from a variadic number of environments. It allows
+//!   querying properties from the first environment that satisfies a given query type.
+//! - `get_env_t`: A callable object for retrieving the environment associated with an
+//!   object.
+//! - `env_of_t`: A type alias for the environment type of an object.
+//!
+//! @namespace cuda::std::execution
+//! The primary namespace for all components defined in this file.
+//!
+//! @concept __queryable_with
+//! Checks if a query `_Query` can be queried from an environment `_Env`.
+//! @tparam _Env The type of the environment.
+//! @tparam _Query The type of the property to be queried.
+//!
+//! @concept __nothrow_queryable_with Checks if a query `_Query` can be queried from an
+//! environment `_Env` without potentially throwing.
+//! @tparam _Env The type of the environment.
+//! @tparam _Query The type of the property to be queried.
+//!
+//! @struct prop
+//! @tparam _Query The type of the property to be queried.
+//! @tparam _Value The type of the value associated with the query.
+//! A simple environment with a single value associated with a query.
+//!
+//! @struct env
+//! @tparam _Envs The types of the sub-environments contained within this environment.
+//! Represents a composable execution environment that can query properties from its
+//! sub-environments.
+//!
+//! @struct get_env_t
+//! A callable object for retrieving the environment associated with an object.
+//!
 
 _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION
 
@@ -177,25 +176,21 @@ struct __basic_query<_Query, void>
 
 #if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() || defined(_CCCL_DOXYGEN_INVOKED)
 
-/**
- * @brief A template structure representing a query with a query and a value.
- *
- * @tparam _Query The type of the query associated with the query.
- * @tparam _Value The type of the value associated with the query.
- *
- * This structure provides a mechanism to associate a query with a value
- * and allows querying the value using the query type.
- *
- * Members:
- * - _Query __query: The query object.
- * - _Value __value: The value associated with the query.
- *
- * Member Functions:
- * - constexpr auto query(_Query) const noexcept -> const _Value&:
- *   Returns the value associated with the query. This function is marked
- *   as `constexpr` and `noexcept`, ensuring it can be evaluated at compile-time
- *   and does not throw exceptions.
- */
+//! @brief A template structure representing a query with a query and a value.
+//!
+//! @tparam _Query The type of the query associated with the query.
+//! @tparam _Value The type of the value associated with the query.
+//!
+//! This structure provides a mechanism to associate a query with a value
+//! and allows querying the value using the query type.
+//!
+//! Members:
+//! - _Query __query: The query object.
+//! - _Value __value: The value associated with the query.
+//!
+//! Member Functions:
+//! - constexpr auto query(_Query) const noexcept -> const _Value&:
+//!   Returns the value associated with the query.
 template <class _Query, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
 {
@@ -226,30 +221,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES prop : _Query
 template <class _Query, class _Value>
 _CCCL_HOST_DEVICE prop(_Query, _Value) -> prop<_Query, _Value>;
 
-/**
- * @brief A variadic template structure representing an environment.
- *
- * This structure encapsulates a tuple of environments and provides functionality to query
- * the first environment that satisfies a given query type.
- *
- * @tparam _Envs... Variadic template parameter pack representing the types of
- * environments.
- */
+//! @brief A variadic template structure representing an environment.
+//!
+//! This structure encapsulates a tuple of environments and provides functionality to query
+//! the first environment that satisfies a given query type.
+//!
+//! @tparam _Envs... Variadic template parameter pack representing the types of
+//! environments.
 template <class... _Envs>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT env
 {
-  /**
-   * @brief Retrieves the first environment that satisfies the given query type.
-   *
-   * This static constexpr function checks each environment in the tuple to find
-   * the first one that is queryable with the specified query type. If such an
-   * environment is found, it is returned.
-   *
-   * @tparam _Query The type of the query to be performed.
-   * @param __self A constant reference to the current `env` instance.
-   * @return The first environment in the tuple that satisfies the query type.
-   * @note If no environment satisfies the query, the behavior is undefined.
-   */
+  //!
+  //! @brief Retrieves the first environment that satisfies the given query type.
+  //!
+  //! This static constexpr function checks each environment in the tuple to find
+  //! the first one that is queryable with the specified query type. If such an
+  //! environment is found, it is returned.
+  //!
+  //! @tparam _Query The type of the query to be performed.
+  //! @param __self A constant reference to the current `env` instance.
+  //! @return The first environment in the tuple that satisfies the query type.
+  //! @note If no environment satisfies the query, the behavior is undefined.
   template <class _Query>
   [[nodiscard]] _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
   {
@@ -262,28 +254,24 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
     }
   }
 
-  /**
-   * @brief Alias for the type of the first environment that satisfies the query type.
-   *
-   * This alias resolves to the type of the first environment in the tuple that
-   * satisfies the specified query type.
-   *
-   * @tparam _Query The type of the query to be performed.
-   */
+  //! @brief Alias for the type of the first environment that satisfies the query type.
+  //!
+  //! This alias resolves to the type of the first environment in the tuple that
+  //! satisfies the specified query type.
+  //!
+  //! @tparam _Query The type of the query to be performed.
   template <class _Query>
   using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query>(declval<const env&>()));
 
-  /**
-   * @brief Queries the first environment that satisfies the given query type.
-   *
-   * This function invokes the `query` method on the first environment in the tuple
-   * that satisfies the specified query type, passing the query object as an argument.
-   *
-   * @tparam _Query The type of the query to be performed.
-   * @param __query The query object to be passed to the environment's `query` method.
-   * @return The result of the `query` method on the first environment that satisfies the query type.
-   * @throws noexcept If the query operation is noexcept for the resolved environment and query type.
-   */
+  //! @brief Queries the first environment that satisfies the given query type.
+  //!
+  //! This function invokes the `query` method on the first environment in the tuple
+  //! that satisfies the specified query type, passing the query object as an argument.
+  //!
+  //! @tparam _Query The type of the query to be performed.
+  //! @param __query The query object to be passed to the environment's `query` method.
+  //! @return The result of the `query` method on the first environment that satisfies the query type.
+  //! @throws noexcept If the query operation is noexcept for the resolved environment and query type.
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
@@ -333,24 +321,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
 };
 #endif // _CCCL_DOXYGEN_INVOKED
 
-/**
- * @brief Provides utilities for extracting the execution environment from an object.
- *
- * This code defines a utility for obtaining the execution environment of a given object
- * through its `get_env` member function. It also provides a fallback for types that do
- * not have a `get_env` member function.
- *
- * @tparam _Ty The type of the object from which the environment is to be extracted.
- *
- * @details
- * - The first `operator()` is a callable operator that extracts the environment from an
- *   object of type `_Ty` by calling its `get_env` method. It ensures that the `get_env`
- *   method is `noexcept` and returns the deduced environment type.
- * - The second `operator()` is less preferred than the first. It accepts any argument and
- *   returns a default-constructed `env<>`.
- *
- * @throws None. Both `operator()` overloads are marked as `noexcept`.
- */
+//! @brief Provides utilities for extracting the execution environment from an object.
+//!
+//! This code defines a utility for obtaining the execution environment of a given object
+//! through its `get_env` member function. It also provides a fallback for types that do
+//! not have a `get_env` member function.
+//!
+//! @tparam _Ty The type of the object from which the environment is to be extracted.
+//!
+//! @details
+//! - The first `operator()` is a callable operator that extracts the environment from an
+//!   object of type `_Ty` by calling its `get_env` method. It ensures that the `get_env`
+//!   method is `noexcept` and returns the deduced environment type.
+//! - The second `operator()` is less preferred than the first. It accepts any argument and
+//!   returns a default-constructed `env<>`.
+//!
+//! @throws None. Both `operator()` overloads are marked as `noexcept`.
 struct get_env_t
 {
   template <class _Ty>

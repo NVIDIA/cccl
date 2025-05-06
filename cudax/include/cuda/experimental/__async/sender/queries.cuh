@@ -40,7 +40,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace cuda::experimental::__async
 {
-using _CUDA_VSTDEXEC::__queryable_with;
+using _CUDA_STD_EXEC::__queryable_with;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_allocator

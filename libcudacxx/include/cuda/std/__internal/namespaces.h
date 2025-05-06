@@ -72,7 +72,7 @@
 #  define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VSTD_FS        ::cuda::std::__fs::filesystem::_LIBCUDACXX_ABI_NAMESPACE
-#  define _CUDA_VSTDEXEC       ::cuda::std::execution::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_STD_EXEC       ::cuda::std::execution::_LIBCUDACXX_ABI_NAMESPACE
 
 // clang-format on
 

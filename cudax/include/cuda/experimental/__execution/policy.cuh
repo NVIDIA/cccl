@@ -70,7 +70,7 @@ template <class _Env>
 _CCCL_CONCEPT __has_query_get_execution_policy = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_execution_policy<_Env>),
   requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible,
-                       _CUDA_VSTDEXEC::__query_result_t<const _Env&, get_execution_policy_t>,
+                       _CUDA_STD_EXEC::__query_result_t<const _Env&, get_execution_policy_t>,
                        execution_policy)));
 
 struct get_execution_policy_t

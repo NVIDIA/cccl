@@ -20,19 +20,18 @@
 
 #include "test_macros.h"
 
-_CCCL_GLOBAL_CONSTANT struct a_query_t
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct a_query_t
 {
 } a_query{};
 
-_CCCL_GLOBAL_CONSTANT struct none_such_t
+[[maybe_unused]] _CCCL_GLOBAL_CONSTANT struct none_such_t
 {
 } none_such{};
 
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
-  cuda::std::execution::prop<a_query_t, int> prop1{a_query, 42};
-  cuda::std::execution::prop prop2{a_query, 42};
-  unused(prop2, none_such);
+  [[maybe_unused]] cuda::std::execution::prop<a_query_t, int> prop1{a_query, 42};
+  [[maybe_unused]] cuda::std::execution::prop prop2{a_query, 42};
 
   static_assert(cuda::std::is_same_v<decltype(prop1), decltype(prop2)>);
   static_assert(sizeof(prop1) == sizeof(int), "");
