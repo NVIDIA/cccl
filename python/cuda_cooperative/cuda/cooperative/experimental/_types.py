@@ -443,7 +443,7 @@ class CxxFunction(Parameter):
         return f"CxxFunction(cpp={self.cpp})"
 
     def mangled_name(self):
-        return f"F{mangle_cpp(self.cpp)}"
+        return f"F{internal_mangle_cpp(self.cpp)}"
 
     def dtype(self):
         return self.func_dtype
@@ -491,14 +491,17 @@ class TemplateParameter:
         return f"{self.name}"
 
 
-def mangle_cpp(cpp_name: str):
+def internal_mangle_cpp(cpp_name: str):
     """
-    Substitutes non-alphanumeric characters in a C++ name with underscores.
+    Substitutes non-alphanumeric characters in a C++ name with underscores,
+    such that they can be used as valid, unique identifiers in C code.  This
+    is for internal use only, and does not comport with C++ ABI name mangling.
 
     :param cpp_name: Supplies a C++ name to be mangled.
     :type cpp_name: str
 
-    :return: Returns the mangled C++ name.
+    :return: Returns the mangled C++ name with non-alphanumeric characters
+    substituted with underscores.
     :rtype: str
 
     Example
@@ -580,7 +583,7 @@ class Algorithm:
         template_list = ", ".join(template_list)
 
         # '::cuda::std::int32_t, 32' -> __cuda__std__int32_t__32
-        mangle = mangle_cpp(template_list)
+        mangle = internal_mangle_cpp(template_list)
 
         specialized_parameters = []
         for method in self.parameters:
