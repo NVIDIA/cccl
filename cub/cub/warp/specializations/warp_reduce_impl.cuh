@@ -231,10 +231,10 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
   constexpr auto half_bits = __num_bits_v<Input> / 2;
   auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
   auto high_reduction      = warp_reduce_dispatch(high, reduction_op, warp_config);
-  auto low_digits          = static_cast<uint32_t>(low >> (half_bits - 5)); // carry out bits
-  auto carry_out           = warp_reduce_dispatch(low_digits, reduction_op, warp_config);
   auto low_reduction       = warp_reduce_dispatch(low, reduction_op, warp_config);
-  auto result_high         = high_reduction + (carry_out >> 5);
+  auto low_top_digits      = static_cast<uint32_t>(low >> 5); // low 27-bit, carry out
+  auto carry_out           = warp_reduce_dispatch(low_top_digits, reduction_op, warp_config);
+  auto result_high         = high_reduction + (carry_out >> (half_bits - 5));
   return merge_integers(result_high, low_reduction);
 }
 
@@ -257,12 +257,12 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   using cub::detail::warp_reduce_shuffle_op;
   using namespace _CUDA_VSTD;
   check_warp_reduce_config(config);
-  [[maybe_unused]] constexpr bool is_specialized_operator =
+  constexpr bool is_specialized_operator =
     is_cuda_minimum_maximum_v<ReductionOp, Input> || is_cuda_std_plus_v<ReductionOp, Input>
     || is_cuda_std_bitwise_v<ReductionOp, Input>;
-  [[maybe_unused]] constexpr bool is_small_integer = is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
-  constexpr auto logical_warp_size                 = config.logical_size;
-  auto valid_items                                 = config.valid_items;
+  constexpr bool is_small_integer  = is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
+  constexpr auto logical_warp_size = config.logical_size;
+  auto valid_items                 = config.valid_items;
   // early exit for threads outside the range with dynamic number of valid items
   if (!config.is_segmented && valid_items.rank_dynamic() == 1
       && logical_lane_id(logical_warp_size) >= valid_items.extent(0))
