@@ -28,6 +28,7 @@ if ! command -v docker >/dev/null 2>&1; then
         cd /tmp/features/src/docker-outside-of-docker
         chmod +x install.sh
         sudo MOBY=false ./install.sh || { echo "docker-outside-of-docker install failed"; exit 1; }
+        export DOCKER_HOST="unix:///var/run/docker-host.sock"
         cd -
     fi
 fi
