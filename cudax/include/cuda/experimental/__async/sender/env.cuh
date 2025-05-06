@@ -30,14 +30,14 @@
 
 namespace cuda::experimental::__async
 {
-using _CUDA_VSTD::execution::env;
-using _CUDA_VSTD::execution::env_of_t;
-using _CUDA_VSTD::execution::get_env;
-using _CUDA_VSTD::execution::prop;
+using _CUDA_VSTDEXEC::env;
+using _CUDA_VSTDEXEC::env_of_t;
+using _CUDA_VSTDEXEC::get_env;
+using _CUDA_VSTDEXEC::prop;
 
-using _CUDA_VSTD::execution::__nothrow_queryable_with;
-using _CUDA_VSTD::execution::__query_result_t;
-using _CUDA_VSTD::execution::__queryable_with;
+using _CUDA_VSTDEXEC::__nothrow_queryable_with;
+using _CUDA_VSTDEXEC::__query_result_t;
+using _CUDA_VSTDEXEC::__queryable_with;
 
 struct __not_a_scheduler
 {

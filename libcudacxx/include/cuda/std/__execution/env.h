@@ -89,7 +89,7 @@
  * A callable object for retrieving the environment associated with an object.
  */
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION
 
 namespace __detail
 {
@@ -127,8 +127,6 @@ inline constexpr size_t __npos = static_cast<size_t>(-1);
 }
 } // namespace __detail
 
-namespace execution
-{
 template <class _Env, class _Query>
 using __query_result_t _CCCL_NODEBUG_ALIAS = decltype(__detail::__query_result_<_Env, _Query>());
 
@@ -376,8 +374,6 @@ _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 template <class _Ty>
 using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(declval<_Ty>()));
 
-} // namespace execution
-
-_LIBCUDACXX_END_NAMESPACE_STD
+_LIBCUDACXX_END_NAMESPACE_EXECUTION
 
 #endif // __CUDA_STD___EXECUTION_ENV_H

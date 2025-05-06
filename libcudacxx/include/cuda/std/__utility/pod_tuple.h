@@ -57,10 +57,11 @@
 // which can be found here: https://godbolt.org/z/rE4ercq71
 
 /*
-#define _CCCL_TUPLE_DEFINE_TPARAM(_Idx)  , class _CCCL_PP_CAT(_Tp, _Idx)
-#define _CCCL_TUPLE_TPARAM(_Idx)         , _CCCL_PP_CAT(_Tp, _Idx)
-#define _CCCL_TUPLE_DEFINE_ELEMENT(_Idx) _CCCL_NO_UNIQUE_ADDRESS _CCCL_PP_CAT(_Tp, _Idx) _CCCL_PP_CAT(__val, _Idx);
-#define _CCCL_TUPLE_MBR_PTR(_Idx)        , _CCCL_MBR_PTR(&__tuple::_CCCL_PP_CAT(__val, _Idx))
+#define _CCCL_TUPLE_DEFINE_TPARAM(_Index)  , class _CCCL_PP_CAT(_Tp, _Index)
+#define _CCCL_TUPLE_TPARAM(_Index)         , _CCCL_PP_CAT(_Tp, _Index)
+#define _CCCL_TUPLE_DEFINE_ELEMENT(_Index) _CCCL_NO_UNIQUE_ADDRESS _CCCL_PP_CAT(_Tp, _Index)           \
+                                           _CCCL_PP_CAT(__val, _Index);
+#define _CCCL_TUPLE_MBR_PTR(_Index)        , _CCCL_MBR_PTR(&__tuple::_CCCL_PP_CAT(__val, _Index))
 
 #define _CCCL_DEFINE_TUPLE(_SizeSub1)                                                                  \
   template <class _Tp0 _CCCL_PP_REPEAT(_SizeSub1, _CCCL_TUPLE_DEFINE_TPARAM, 1)>                       \
@@ -104,24 +105,24 @@ _CCCL_API constexpr auto __msvc_workaround(_Ty __val) noexcept
 #  define _CCCL_MBR_PTR(...) __VA_ARGS__
 #endif
 
-template <auto... _Mbrs>
+template <auto... _Members>
 struct __mbr_list;
 
-template <size_t _Idx, class _Ty>
+template <size_t _Index, class _Ty>
 struct __box
 {
   _CCCL_NO_UNIQUE_ADDRESS _Ty value;
 };
 
-template <class _Idx, class... _Ts>
+template <class _Index, class... _Ts>
 struct __tupl_base;
 
-template <size_t... _Idx, class... _Ts>
-struct _CCCL_DECLSPEC_EMPTY_BASES __tupl_base<index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
+template <size_t... _Index, class... _Ts>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tupl_base<index_sequence<_Index...>, _Ts...> : __box<_Index, _Ts>...
 {
   _CCCL_TRIVIAL_API static constexpr auto __mbrs() noexcept
   {
-    return static_cast<__mbr_list<_CCCL_MBR_PTR(&__box<_Idx, _Ts>::value)...>*>(nullptr);
+    return static_cast<__mbr_list<_CCCL_MBR_PTR(&__box<_Index, _Ts>::value)...>*>(nullptr);
   }
 };
 
@@ -646,21 +647,21 @@ _CCCL_HOST_DEVICE __tuple(_Ts...) -> __tuple<_Ts...>;
 template <auto _Mbr>
 using __mbr_t _CCCL_NODEBUG_ALIAS = integral_constant<decltype(_Mbr), _Mbr>;
 
-template <size_t _Idx, class _Tupl, auto... _Mbrs>
-_CCCL_TRIVIAL_API constexpr auto __get_impl(_Tupl&& __tupl, __mbr_list<_Mbrs...>*) noexcept -> decltype(auto)
+template <size_t _Index, class _Tuple, auto... _Members>
+_CCCL_TRIVIAL_API constexpr auto __get_impl(_Tuple&& __tupl, __mbr_list<_Members...>*) noexcept -> decltype(auto)
 {
 #if defined(_CCCL_NO_PACK_INDEXING)
-  return (static_cast<_Tupl&&>(__tupl).*(__type_index_c<_Idx, __mbr_t<_Mbrs>...>::value));
+  return (static_cast<_Tuple&&>(__tupl).*(__type_index_c<_Index, __mbr_t<_Members>...>::value));
 #else
-  return (static_cast<_Tupl&&>(__tupl).*(_Mbrs...[_Idx]));
+  return (static_cast<_Tuple&&>(__tupl).*(_Members...[_Index]));
 #endif
 }
 
-template <size_t _Idx, class _Tupl>
-_CCCL_TRIVIAL_API constexpr auto __get(_Tupl&& __tupl) noexcept
-  -> decltype(_CUDA_VSTD::__get_impl<_Idx>(static_cast<_Tupl&&>(__tupl), __tupl.__mbrs()))
+template <size_t _Index, class _Tuple>
+_CCCL_TRIVIAL_API constexpr auto __get(_Tuple&& __tupl) noexcept
+  -> decltype(_CUDA_VSTD::__get_impl<_Index>(static_cast<_Tuple&&>(__tupl), __tupl.__mbrs()))
 {
-  return _CUDA_VSTD::__get_impl<_Idx>(static_cast<_Tupl&&>(__tupl), __tupl.__mbrs());
+  return _CUDA_VSTD::__get_impl<_Index>(static_cast<_Tuple&&>(__tupl), __tupl.__mbrs());
 }
 
 //
@@ -668,39 +669,40 @@ _CCCL_TRIVIAL_API constexpr auto __get(_Tupl&& __tupl) noexcept
 //
 _CCCL_EXEC_CHECK_DISABLE
 
-template <class _Fn, class _Tupl, auto... _Mbrs, class... _Us>
-_CCCL_TRIVIAL_API constexpr auto __apply_impl(_Fn&& __fn, _Tupl&& __tupl, __mbr_list<_Mbrs...>*, _Us&&... __us) noexcept(
-  noexcept(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Tupl&&>(__tupl).*_Mbrs...)))
-  -> decltype(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Tupl&&>(__tupl).*_Mbrs...))
+template <class _Fn, class _Tuple, auto... _Members, class... _Us>
+_CCCL_TRIVIAL_API constexpr auto
+__apply_impl(_Fn&& __fn, _Tuple&& __tupl, __mbr_list<_Members...>*, _Us&&... __us) noexcept(
+  noexcept(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Tuple&&>(__tupl).*_Members...)))
+  -> decltype(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Tuple&&>(__tupl).*_Members...))
 {
-  return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Tupl&&>(__tupl).*_Mbrs...);
+  return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Tuple&&>(__tupl).*_Members...);
 }
 
-template <class _Fn, class _Tupl, class... _Us>
+template <class _Fn, class _Tuple, class... _Us>
 _CCCL_TRIVIAL_API constexpr auto
-__apply(_Fn&& __fn, _Tupl&& __tupl, _Us&&... __us) noexcept(noexcept(_CUDA_VSTD::__apply_impl(
-  static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...)))
+__apply(_Fn&& __fn, _Tuple&& __tupl, _Us&&... __us) noexcept(noexcept(_CUDA_VSTD::__apply_impl(
+  static_cast<_Fn&&>(__fn), static_cast<_Tuple&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...)))
   -> decltype(_CUDA_VSTD::__apply_impl(
-    static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...))
+    static_cast<_Fn&&>(__fn), static_cast<_Tuple&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...))
 {
   return _CUDA_VSTD::__apply_impl(
-    static_cast<_Fn&&>(__fn), static_cast<_Tupl&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...);
+    static_cast<_Fn&&>(__fn), static_cast<_Tuple&&>(__tupl), __tupl.__mbrs(), static_cast<_Us&&>(__us)...);
 }
 
-template <class _Fn, class _Tupl, class... _Us>
+template <class _Fn, class _Tuple, class... _Us>
 using __apply_result_t _CCCL_NODEBUG_ALIAS =
-  decltype(_CUDA_VSTD::__apply_impl(declval<_Fn>(), declval<_Tupl>(), declval<_Tupl>().__mbrs(), declval<_Us>()...));
+  decltype(_CUDA_VSTD::__apply_impl(declval<_Fn>(), declval<_Tuple>(), declval<_Tuple>().__mbrs(), declval<_Us>()...));
 
-template <class _Fn, class _Tupl, class... _Us>
+template <class _Fn, class _Tuple, class... _Us>
 using __nothrow_applicable_detail_t = _CUDA_VSTD::enable_if_t<noexcept(
-  _CUDA_VSTD::__apply_impl(declval<_Fn>(), declval<_Tupl>(), declval<_Tupl>().__mbrs(), declval<_Us>()...))>;
+  _CUDA_VSTD::__apply_impl(declval<_Fn>(), declval<_Tuple>(), declval<_Tuple>().__mbrs(), declval<_Us>()...))>;
 
-template <class _Fn, class _Tupl, class... _Us>
-_CCCL_CONCEPT __applicable = _CUDA_VSTD::_IsValidExpansion<__apply_result_t, _Fn, _Tupl, _Us...>::value;
+template <class _Fn, class _Tuple, class... _Us>
+_CCCL_CONCEPT __applicable = _CUDA_VSTD::_IsValidExpansion<__apply_result_t, _Fn, _Tuple, _Us...>::value;
 
-template <class _Fn, class _Tupl, class... _Us>
+template <class _Fn, class _Tuple, class... _Us>
 _CCCL_CONCEPT __nothrow_applicable =
-  _CUDA_VSTD::_IsValidExpansion<__nothrow_applicable_detail_t, _Fn, _Tupl, _Us...>::value;
+  _CUDA_VSTD::_IsValidExpansion<__nothrow_applicable_detail_t, _Fn, _Tuple, _Us...>::value;
 
 //
 // __decayed_tuple<Ts...>
@@ -745,9 +747,9 @@ inline constexpr size_t __tuple_size_v<const __tuple<_Ts...>&> = sizeof...(_Ts);
 template <class _Tp>
 _CCCL_API auto __remove_rvalue_ref(_Tp&&) noexcept -> _Tp;
 
-template <size_t _Idx, class _Tuple>
+template <size_t _Index, class _Tuple>
 using __tuple_element_t _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::__remove_rvalue_ref(
-  _CUDA_VSTD::__get_impl<_Idx>(declval<_Tuple>(), declval<_Tuple>().__mbrs())));
+  _CUDA_VSTD::__get_impl<_Index>(declval<_Tuple>(), declval<_Tuple>().__mbrs())));
 
 #undef _CCCL_MBR_PTR
 

@@ -40,7 +40,7 @@ template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_resource<_Env>),
   requires(_CUDA_VMR::async_resource<
-           cuda::std::remove_cvref_t<_CUDA_VSTD::execution::__query_result_t<const _Env&, get_memory_resource_t>>>));
+           cuda::std::remove_cvref_t<_CUDA_VSTDEXEC::__query_result_t<const _Env&, get_memory_resource_t>>>));
 
 //! @brief `get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
