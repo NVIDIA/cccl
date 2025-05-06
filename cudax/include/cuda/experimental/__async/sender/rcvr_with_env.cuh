@@ -34,7 +34,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     template <class _Query>
-    _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const __env_t& __self) noexcept
+    _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const __env_t& __self) noexcept
     {
       if constexpr (__queryable_with<_Env, _Query>)
       {
@@ -50,7 +50,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
     using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
 
     template <class _Query>
-    _CUDAX_TRIVIAL_API constexpr auto query(_Query) const
+    _CCCL_TRIVIAL_API constexpr auto query(_Query) const
       noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
       -> __query_result_t<__1st_env_t<_Query>, _Query>
     {
@@ -60,22 +60,22 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
     __rcvr_with_env_t const* __rcvr_;
   };
 
-  _CUDAX_TRIVIAL_API auto __base() && noexcept -> _Rcvr&&
+  _CCCL_TRIVIAL_API auto __base() && noexcept -> _Rcvr&&
   {
     return static_cast<_Rcvr&&>(*this);
   }
 
-  _CUDAX_TRIVIAL_API auto __base() & noexcept -> _Rcvr&
+  _CCCL_TRIVIAL_API auto __base() & noexcept -> _Rcvr&
   {
     return *this;
   }
 
-  _CUDAX_TRIVIAL_API auto __base() const& noexcept -> _Rcvr const&
+  _CCCL_TRIVIAL_API auto __base() const& noexcept -> _Rcvr const&
   {
     return *this;
   }
 
-  _CUDAX_TRIVIAL_API auto get_env() const noexcept -> __env_t
+  _CCCL_TRIVIAL_API auto get_env() const noexcept -> __env_t
   {
     return __env_t{this};
   }
