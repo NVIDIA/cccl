@@ -75,45 +75,46 @@ using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, cub::detail::it
 template <typename OutputIteratorT, typename InputIteratorT>
 using InitT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
 
-template <typename FloatType = float, typename std::enable_if<std::is_floating_point<FloatType>::value>::type* = nullptr>
+template <typename FloatType                                                              = float,
+          typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
 {
   using DeterministicAcc = detail::rfa_detail::ReproducibleFloatingAccumulator<FloatType>;
 
-  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
+  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, float4 f)
+  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc acc, float4 f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, double4 f)
+  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc acc, double4 f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
+  _CCCL_HOST_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(float4 f, DeterministicAcc acc)
+  _CCCL_HOST_DEVICE DeterministicAcc operator()(float4 f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(double4 f, DeterministicAcc acc)
+  _CCCL_HOST_DEVICE DeterministicAcc operator()(double4 f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_HOST _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
+  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
   {
     DeterministicAcc rtn = lhs;
     rtn += rhs;
@@ -193,7 +194,7 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
 
   FloatType* shared_bins = detail::rfa_detail::get_shared_bin_array<FloatType, BinLength>();
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = threadIdx.x; index < BinLength; index += ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)
   {
     shared_bins[index] = detail::rfa_detail::RFA_bins<FloatType>::initialize_bins(index);
@@ -204,7 +205,7 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
   AccumT thread_aggregate{};
   int count = 0;
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = tid; i < num_items; i += ITEMS_PER_THREAD * GRID_DIM * BLOCK_THREADS)
   {
     FloatType items[ITEMS_PER_THREAD] = {};
@@ -218,14 +219,14 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
     }
     FloatType abs_max_val = fabs(items[0]);
 
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (auto j = 1; j < ITEMS_PER_THREAD; j++)
     {
       abs_max_val = fmax(fabs(items[j]), abs_max_val);
     }
 
     thread_aggregate.set_max_val(abs_max_val);
-#pragma unroll
+    _CCCL_PRAGMA_UNROLL_FULL()
     for (auto j = 0; j < ITEMS_PER_THREAD; j++)
     {
       thread_aggregate.unsafe_add(items[j]);
@@ -333,7 +334,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
 
   FloatType* shared_bins = detail::rfa_detail::get_shared_bin_array<FloatType, BinLength>();
 
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = threadIdx.x; index < BinLength;
        index += ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS)
   {
@@ -347,7 +348,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   AccumT thread_aggregate{};
 
   // Consume block aggregates of previous kernel
-#pragma unroll
+  _CCCL_PRAGMA_UNROLL_FULL()
   for (int i = threadIdx.x; i < num_items; i += BLOCK_THREADS)
   {
     thread_aggregate += transform_op(d_in[i]);
