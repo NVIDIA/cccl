@@ -101,23 +101,25 @@ runs:
 
         chmod +x ci.sh
 
-        mkdir "$RUNNER_TEMP/.aws";
+        # The devcontainer will mount this path to the home directory:
+        readonly aws_dir="${{github.event.repository.name}}/.aws"
+        mkdir "${aws_dir}";
 
-        cat <<EOF > "$RUNNER_TEMP/.aws/config"
+        cat <<EOF > "${aws_dir}/config"
         [default]
         bucket=rapids-sccache-devs
         region=us-east-2
         EOF
 
-        cat <<EOF > "$RUNNER_TEMP/.aws/credentials"
+        cat <<EOF > "${aws_dir}/credentials"
         [default]
         aws_access_key_id=$AWS_ACCESS_KEY_ID
         aws_session_token=$AWS_SESSION_TOKEN
         aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
         EOF
 
-        chmod 0600 "$RUNNER_TEMP/.aws/credentials"
-        chmod 0664 "$RUNNER_TEMP/.aws/config"
+        chmod 0600 "${aws_dir}/credentials"
+        chmod 0664 "${aws_dir}/config"
 
         declare -a gpu_request=()
 
@@ -125,10 +127,6 @@ runs:
         if [[ "${RUNNER}" = *"-gpu-"* ]]; then
           gpu_request+=(--gpus "device=${NVIDIA_VISIBLE_DEVICES}")
         fi
-
-        host_path() {
-          sed "s@/__w@$(dirname "$(dirname "${{github.workspace}}")")@" <<< "$1"
-        }
 
         # If the image contains "cudaXX.Yext"...
         if [[ "${IMAGE}" =~ cuda[0-9.]+ext ]]; then
@@ -158,7 +156,6 @@ runs:
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
           --volume "${{github.workspace}}/artifacts:/artifacts" \
-          --volume "$(host_path "$RUNNER_TEMP")/.aws:/home/coder/.aws" \
           -- /ci.sh
 
     - name: Prepare job artifacts
