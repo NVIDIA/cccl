@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2022-2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -145,8 +145,7 @@ public:
       // A wrapper to forward allocations from a node to its parent node (none is used at the root level)
       ::std::shared_ptr<stream_adapter> alloc_adapters;
 
-      // This map keeps track of the logical data that were pushed in this ctx node
-      // key: logical data's unique id
+      // This keeps track of the logical data that were pushed in this ctx node
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> pushed_data;
 
       // Where was the push() called ?
@@ -393,7 +392,12 @@ public:
         // current_node.ctx.print_logical_data_summary();
       }
 
-      // Automatically pop data if needed
+      // Automatically pop data if needed. This will destroy the logical data
+      // created within the context that is being destroyed. Unless using "non
+      // exportable data" this logical data was created as an alias of an
+      // another logical data that was frozen in the parent context. The
+      // unfreeze operation is delayed after finalizing the context, in the
+      // pop_after_finalize stage.
       for (auto& d_impl : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
@@ -405,6 +409,9 @@ public:
 
       if (display_graph_stats)
       {
+	// When a graph context is finalized, a CUDA graph is created, we here
+	// retrieve some information about it, and relate it to the location in
+	// sources of the context push() call.
         executable_graph_cache_stat* stat = current_node.ctx.graph_get_cache_stat();
         _CCCL_ASSERT(stat, "");
 
@@ -417,12 +424,15 @@ public:
       cudaStream_t stream = current_node.support_stream;
 
       int parent_offset = node_tree.get_parent(head_offset);
-      _CCCL_ASSERT(parent_offset != -1, "");
+      _CCCL_ASSERT(parent_offset != -1, "internal error: no parent ctx");
 
       auto& parent_node = nodes[parent_offset].value();
 
+      // Create an event that depends on the completion of previous operations in the stream
       event_list finalize_prereqs = parent_node.ctx.stream_to_event_list(stream, "finalized");
 
+      // Now that the context has been finalized, we can unfreeze data (unless
+      // another sibling context has pushed it too)
       for (auto& d_impl : current_node.pushed_data)
       {
         _CCCL_ASSERT(d_impl, "invalid value");
@@ -500,6 +510,7 @@ public:
       return (it != head_map.end()) ? it->second : -1;
     }
 
+    // Record the offset of the current context in the calling thread
     void set_head_offset(int offset)
     {
       head_map[::std::this_thread::get_id()] = offset;
