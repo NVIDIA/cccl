@@ -194,6 +194,7 @@ runs:
           --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+          --env "HOST_WORKSPACE=$(dirname "$(dirname "${{github.workspace}}")")" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
           --volume "${{github.workspace}}/artifacts:/artifacts" \
           --volume "${{github.workspace}}/wheelhouse:/wheelhouse" \
