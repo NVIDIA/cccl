@@ -158,7 +158,7 @@ runs:
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
           --volume "${{github.workspace}}/artifacts:/artifacts" \
-          --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
+          --volume "$(host_path "$RUNNER_TEMP")/.aws:/home/coder/.aws" \
           -- /ci.sh
 
     - name: Prepare job artifacts
