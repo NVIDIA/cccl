@@ -10,14 +10,18 @@ echo "Docker socket: " $(ls /var/run/docker.sock)
 # given the py_version build the wheel and output the artifact
 # to the artifacts directory
 docker run --rm \
-  --workdir /home/coder/workspace/cccl/cccl/python/cuda_cccl \
+  --workdir /home/coder/workspace/cccl/python/cuda_cccl \
   --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
-  --mount type=bind,source=${HOST_WORKSPACE}/wheelhouse,target=/wheelhouse \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
     # dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ && \
     # echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" > /etc/profile.d/enable_devtools.sh && \
     # source /etc/profile.d/enable_devtools.sh && \
+    ls -la /home/coder/workspace/ && \
+    ls -la /home/coder/workspace/wheelhouse/ && \
+    ls -la /home/coder/workspace/cccl/ && \
+    ls -la /home/coder/workspace/cccl/python/ && \
+    ls -la /home/coder/workspace/cccl/python/cuda_cccl/ && \
     python -m pip wheel . && \
     wheel_name=$(ls *.whl) && \
-    cp ${wheel_name} /wheelhouse/'
+    cp ${wheel_name} /home/coder/workspace/wheelhouse/'
