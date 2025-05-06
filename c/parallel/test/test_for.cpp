@@ -99,17 +99,12 @@ C2H_TEST("for works with integral types", "[for]", integral_types)
 
   for_each_pointer_input(input_ptr, num_items, op);
 
-  // Copy back input arrayw
+  // Copy input array back to host
   input = input_ptr;
 
-  bool all_match = true;
-  const T expected{2};
-
-  std::for_each(input.begin(), input.end(), [&all_match, expected](auto v) {
-    all_match = all_match && (v == expected);
-  });
-
-  REQUIRE(all_match);
+  REQUIRE(std::all_of(input.begin(), input.end(), [](auto&& v) {
+    return v == T{2};
+  }));
 }
 
 struct pair
@@ -138,14 +133,11 @@ extern "C" __device__ void op(void* a_ptr) {
   for_each_pointer_input(input_ptr, num_items, op);
 
   // Copy back input array
-  input          = input_ptr;
-  bool all_match = true;
-  const pair expected{2, 2};
-  std::for_each(input.begin(), input.end(), [&all_match, expected](auto v) {
-    all_match = all_match && (v.a == expected.a) && (v.b == expected.b);
-  });
+  input = input_ptr;
 
-  REQUIRE(all_match);
+  REQUIRE(std::all_of(input.begin(), input.end(), [](auto v) {
+    return (v.a == short(2)) && (v.b == size_t(2));
+  }));
 }
 
 struct invocation_counter_state_t
