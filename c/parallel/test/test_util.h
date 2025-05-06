@@ -20,6 +20,7 @@
 #include <fstream>
 #include <random>
 #include <string>
+#include <tuple>
 #include <type_traits>
 #include <vector>
 
@@ -665,6 +666,13 @@ struct operation_t
   std::string name;
   std::string code;
 
+  operation_t() = default;
+
+  operation_t(std::string_view op_name, std::string_view op_code)
+      : name(op_name)
+      , code(op_code)
+  {}
+
   operator cccl_op_t()
   {
     cccl_op_t op;
@@ -686,6 +694,12 @@ struct stateful_operation_t
   std::string name;
   std::string code;
 
+  stateful_operation_t(const OpT& state, std::string_view op_name, std::string_view op_code)
+      : op_state(state)
+      , name(op_name)
+      , code(op_code)
+  {}
+
   operator cccl_op_t()
   {
     cccl_op_t op;
@@ -700,13 +714,13 @@ struct stateful_operation_t
   }
 };
 
-static operation_t make_operation(std::string name, std::string code)
+static operation_t make_operation(std::string_view name, const std::string& code)
 {
   return operation_t{name, compile(code)};
 }
 
 template <class OpT>
-static stateful_operation_t<OpT> make_operation(std::string name, std::string code, OpT op)
+static stateful_operation_t<OpT> make_operation(std::string_view name, const std::string& code, OpT op)
 {
   return {op, name, compile(code)};
 }
@@ -715,6 +729,7 @@ template <class ValueT, class StateT>
 struct iterator_t
 {
   StateT state;
+  std::string state_name;
   operation_t advance;
   operation_t dereference;
 
@@ -756,138 +771,382 @@ struct constant_iterator_state_t
   T value;
 };
 
+template <typename BaseIteratorStateTy>
+struct stateless_transform_it_state
+{
+  using BaseIteratorStateT = BaseIteratorStateTy;
+
+  BaseIteratorStateTy base_it_state;
+};
+
+template <typename BaseIteratorStateTy, typename FunctorStateTy>
+struct stateful_transform_it_state
+{
+  using BaseIteratorStateT = BaseIteratorStateTy;
+  using FunctorStateT      = FunctorStateTy;
+
+  BaseIteratorStateTy base_it_state;
+  FunctorStateTy functor_state;
+};
+
+struct name_source_t
+{
+  std::string_view name;
+  std::string_view def_src;
+};
+
 template <class ValueT, class StateT>
-iterator_t<ValueT, StateT> make_iterator(std::string state, operation_t advance, operation_t dereference)
+iterator_t<ValueT, StateT> make_iterator(name_source_t state, operation_t advance, operation_t dereference)
 {
   iterator_t<ValueT, StateT> it;
-  it.advance     = make_operation(advance.name, state + advance.code);
-  it.dereference = make_operation(dereference.name, state + dereference.code);
+  it.state_name                = state.name;
+  const std::string& state_src = std::string{state.def_src};
+  it.advance                   = make_operation(advance.name, state_src + advance.code);
+  it.dereference               = make_operation(dereference.name, state_src + dereference.code);
   return it;
+}
+
+inline std::tuple<std::string, std::string, std::string> make_random_access_iterator_sources(
+  iterator_kind kind,
+  std::string_view value_type,
+  std::string_view iterator_state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name,
+  std::string_view transform = "")
+{
+  std::string state_def_src      = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
+  std::string advance_fn_def_src = std::format(
+    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
+    "  state->data += offset;\n"
+    "}}",
+    advance_fn_name,
+    iterator_state_name);
+
+  std::string dereference_fn_def_src;
+  if (kind == iterator_kind::INPUT)
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ {1} {0}({2}* state) {{\n"
+      "  return (*state->data){3};\n"
+      "}}",
+      dereference_fn_name,
+      value_type,
+      iterator_state_name,
+      transform);
+  }
+  else
+  {
+    dereference_fn_def_src = std::format(
+      "extern \"C\" __device__ void {0}({1}* state, {2} x) {{\n"
+      "  *state->data = x{3};\n"
+      "}}",
+      dereference_fn_name,
+      iterator_state_name,
+      value_type,
+      transform);
+  }
+
+  return std::make_tuple(state_def_src, advance_fn_def_src, dereference_fn_def_src);
 }
 
 template <class ValueT>
 iterator_t<ValueT, random_access_iterator_state_t<ValueT>> make_random_access_iterator(
-  iterator_kind kind, std::string value_type, std::string prefix = "", std::string transform = "")
+  iterator_kind kind, std::string_view value_type, std::string prefix = "", std::string transform = "")
 {
-  std::string iterator_state = std::format("struct state_t {{ {0}* data; }};\n", value_type);
+  std::string iterator_state_name = std::format("{0}state_t", prefix);
+  std::string advance_fn_name     = std::format("{0}advance", prefix);
+  std::string dereference_fn_name = std::format("{0}dereference", prefix);
 
-  operation_t advance = {
-    std::format("{0}_advance", prefix),
-    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{\n"
-                "  state->data += offset;\n"
-                "}}",
-                prefix)};
+  auto [iterator_state_def_src, advance_fn_def_src, dereference_fn_def_src] = make_random_access_iterator_sources(
+    kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name, transform);
 
-  std::string dereference_method;
-  if (kind == iterator_kind::INPUT)
-  {
-    dereference_method = std::format(
-      "extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{\n"
-      "  return (*state->data){2};\n"
-      "}}",
-      prefix,
-      value_type,
-      transform);
-  }
-  else
-  {
-    dereference_method = std::format(
-      "extern \"C\" __device__ void {0}_dereference(state_t* state, {1} x) {{\n"
-      "  *state->data = x{2};\n"
-      "}}",
-      prefix,
-      value_type,
-      transform);
-  }
-
-  operation_t dereference = {std::format("{0}_dereference", prefix), dereference_method};
+  name_source_t iterator_state = {iterator_state_name, iterator_state_def_src};
+  operation_t advance          = {advance_fn_name, advance_fn_def_src};
+  operation_t dereference      = {dereference_fn_name, dereference_fn_def_src};
 
   return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
+}
+
+inline std::tuple<std::string, std::string, std::string> make_counting_iterator_sources(
+  std::string_view value_type,
+  std::string_view iterator_state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  std::string iterator_state_def_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
+  std::string advance_fn_def_src     = std::format(
+    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
+        "  state->value += offset;\n"
+        "}}",
+    advance_fn_name,
+    iterator_state_name);
+
+  std::string dereference_fn_def_src = std::format(
+    "extern \"C\" __device__ {1} {0}({2}* state) {{ \n"
+    "  return state->value;\n"
+    "}}",
+    dereference_fn_name,
+    value_type,
+    iterator_state_name);
+
+  return std::make_tuple(iterator_state_def_src, advance_fn_def_src, dereference_fn_def_src);
 }
 
 template <class ValueT>
 iterator_t<ValueT, counting_iterator_state_t<ValueT>>
-make_counting_iterator(std::string value_type, std::string prefix = "")
+make_counting_iterator(std::string_view value_type, std::string_view prefix = "")
 {
-  std::string iterator_state = std::format("struct state_t {{ {0} value; }};\n", value_type);
+  std::string iterator_state_name = std::format("{0}state_t", prefix);
+  std::string advance_fn_name     = std::format("{0}advance", prefix);
+  std::string dereference_fn_name = std::format("{0}dereference", prefix);
 
-  operation_t advance = {
-    std::format("{0}_advance", prefix),
-    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{\n"
-                "  state->value += offset;\n"
-                "}}",
-                prefix)};
+  auto [iterator_state_src, advance_fn_def_src, dereference_fn_def_src] =
+    make_counting_iterator_sources(value_type, iterator_state_name, advance_fn_name, dereference_fn_name);
 
-  operation_t dereference = {
-    std::format("{0}_dereference", prefix),
-    std::format("extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{ \n"
-                "  return state->value;\n"
-                "}}",
-                prefix,
-                value_type)};
+  name_source_t iterator_state = {iterator_state_name, iterator_state_src};
+  operation_t advance          = {advance_fn_name, advance_fn_def_src};
+  operation_t dereference      = {dereference_fn_name, dereference_fn_def_src};
 
   return make_iterator<ValueT, counting_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
+inline std::tuple<std::string, std::string, std::string> make_constant_iterator_sources(
+  std::string_view value_type,
+  std::string_view iterator_state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name)
+{
+  std::string iterator_state_src = std::format("struct {0} {{ {1} value; }};\n", iterator_state_name, value_type);
+  std::string advance_fn_src     = std::format(
+    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{ }}",
+    advance_fn_name,
+    iterator_state_name);
+  std::string dereference_fn_src = std::format(
+    "extern \"C\" __device__ {1} {0}({2}* state) {{ \n"
+    "  return state->value;\n"
+    "}}",
+    dereference_fn_name,
+    value_type,
+    iterator_state_name);
+
+  return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
+}
+
 template <class ValueT>
 iterator_t<ValueT, constant_iterator_state_t<ValueT>>
-make_constant_iterator(std::string value_type, std::string prefix = "")
+make_constant_iterator(std::string_view value_type, std::string_view prefix = "")
 {
-  std::string iterator_state = std::format("struct state_t {{ {0} value; }};\n", value_type);
+  std::string iterator_state_name = std::format("{0}struct_t", prefix);
+  std::string advance_fn_name     = std::format("{0}advance", prefix);
+  std::string dereference_fn_name = std::format("{0}dereference", prefix);
 
-  operation_t advance = {
-    std::format("{0}_advance", prefix),
-    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{ }}", prefix)};
+  auto [iterator_state_src, advance_fn_src, dereference_fn_src] =
+    make_constant_iterator_sources(value_type, iterator_state_name, advance_fn_name, dereference_fn_name);
 
-  operation_t dereference = {
-    std::format("{0}_dereference", prefix),
-    std::format("extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{ \n"
-                "  return state->value;\n"
-                "}}",
-                prefix,
-                value_type)};
+  name_source_t iterator_state = {iterator_state_name, iterator_state_src};
+  operation_t advance          = {advance_fn_name, advance_fn_src};
+  operation_t dereference      = {dereference_fn_name, dereference_fn_src};
 
   return make_iterator<ValueT, constant_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
-template <class ValueT>
-iterator_t<ValueT, random_access_iterator_state_t<ValueT>>
-make_reverse_iterator(iterator_kind kind, std::string value_type, std::string prefix = "", std::string transform = "")
+inline std::tuple<std::string, std::string, std::string> make_reverse_iterator_sources(
+  iterator_kind kind,
+  std::string_view value_type,
+  std::string_view iterator_state_name,
+  std::string_view advance_fn_name,
+  std::string_view dereference_fn_name,
+  std::string_view transform = "")
 {
-  std::string iterator_state = std::format("struct state_t {{ {0}* data; }};\n", value_type);
-
-  operation_t advance = {
-    std::format("{0}_advance", prefix),
-    std::format("extern \"C\" __device__ void {0}_advance(state_t* state, unsigned long long offset) {{\n"
-                "  state->data -= offset;\n"
-                "}}",
-                prefix)};
-
-  std::string dereference_method;
+  std::string iterator_state_src = std::format("struct {0} {{ {1}* data; }};\n", iterator_state_name, value_type);
+  std::string advance_fn_src     = std::format(
+    "extern \"C\" __device__ void {0}({1}* state, unsigned long long offset) {{\n"
+        "  state->data -= offset;\n"
+        "}}",
+    advance_fn_name,
+    iterator_state_name);
+  std::string dereference_fn_src;
   if (kind == iterator_kind::INPUT)
   {
-    dereference_method = std::format(
-      "extern \"C\" __device__ {1} {0}_dereference(state_t* state) {{\n"
-      "  return (*state->data){2};\n"
+    dereference_fn_src = std::format(
+      "extern \"C\" __device__ {1} {0}({2}* state) {{\n"
+      "  return (*state->data){3};\n"
       "}}",
-      prefix,
+      dereference_fn_name,
       value_type,
+      iterator_state_name,
       transform);
   }
   else
   {
-    dereference_method = std::format(
-      "extern \"C\" __device__ void {0}_dereference(state_t* state, {1} x) {{\n"
-      "  *state->data = x{2};\n"
+    dereference_fn_src = std::format(
+      "extern \"C\" __device__ void {0}({1}* state, {2} x) {{\n"
+      "  *state->data = x{3};\n"
       "}}",
-      prefix,
+      dereference_fn_name,
+      iterator_state_name,
       value_type,
       transform);
   }
 
-  operation_t dereference = {std::format("{0}_dereference", prefix), dereference_method};
+  return std::make_tuple(iterator_state_src, advance_fn_src, dereference_fn_src);
+}
+
+template <class ValueT>
+iterator_t<ValueT, random_access_iterator_state_t<ValueT>> make_reverse_iterator(
+  iterator_kind kind, std::string_view value_type, std::string_view prefix = "", std::string_view transform = "")
+{
+  std::string iterator_state_name = std::format("{0}struct_t", prefix);
+  std::string advance_fn_name     = std::format("{0}advance", prefix);
+  std::string dereference_fn_name = std::format("{0}dereference", prefix);
+
+  auto [iterator_state_src, advance_fn_src, dereference_fn_src] = make_reverse_iterator_sources(
+    kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name, transform);
+
+  name_source_t iterator_state = {iterator_state_name, iterator_state_src};
+  operation_t advance          = {advance_fn_name, advance_fn_src};
+  operation_t dereference      = {dereference_fn_name, dereference_fn_src};
 
   return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
+}
+
+template <typename ValueT, typename BaseIteratorStateT, typename TransformerStateT>
+auto make_stateful_transform_input_iterator(
+  std::string_view transformed_value_type,
+  name_source_t base_state,
+  name_source_t base_it_advance_fn,
+  name_source_t base_it_dereference_fn,
+  name_source_t transform_state,
+  name_source_t transform_op)
+{
+  static constexpr std::string_view transform_it_state_name     = "stateful_transform_iterator_state_t";
+  static constexpr std::string_view transform_it_state_src_tmpl = R"XXX(
+/* Define state of stateful transform operation */
+{3}
+/* Define state of base iterator over whose values transformation is applied */
+{4}
+struct {0} {{
+  {1} base_it_state;
+  {2} functor_state;
+}};
+)XXX";
+  const std::string transform_it_state_src                      = std::format(
+    transform_it_state_src_tmpl,
+    /* 0 */ transform_it_state_name,
+    /* 1 */ base_state.name,
+    /* 2 */ transform_state.name,
+    /* 3 */ transform_state.def_src,
+    /* 4 */ base_state.def_src);
+
+  static constexpr std::string_view transform_it_advance_fn_name     = "advance_stateful_transform_it";
+  static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
+  {3}
+  extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
+      {2}(&(transform_it_state->base_it_state), offset);
+  }}
+  )XXX";
+  const std::string transform_it_advance_fn_src                      = std::format(
+    transform_it_advance_fn_src_tmpl,
+    /* 0 */ transform_it_advance_fn_name,
+    /* 1 */ transform_it_state_name,
+    /* 2 */ base_it_advance_fn.name,
+    /* 3 */ base_it_advance_fn.def_src);
+
+  static constexpr std::string_view transform_it_deref_fn_name     = "dereference_stateful_transform_it";
+  static constexpr std::string_view transform_it_deref_fn_src_tmpl = R"XXX(
+  {5}
+  {6}
+  extern "C" __device__ {2} {0}({1} *transform_it_state) {{
+      return {3}(
+          &(transform_it_state->functor_state),
+          {4}(&(transform_it_state->base_it_state))
+      );
+  }}
+  )XXX";
+
+  const std::string transform_it_deref_fn_src = std::format(
+    transform_it_deref_fn_src_tmpl,
+    /* 0 */ transform_it_deref_fn_name /* name of transform's deref function */,
+    /* 1 */ transform_it_state_name /* name of transform's state*/,
+    /* 2 */ transformed_value_type /* function return type name */,
+    /* 3 */ transform_op.name /* transformation functor function name */,
+    /* 4 */ base_it_dereference_fn.name /* deref function of base iterator */,
+    /* 5 */ base_it_dereference_fn.def_src,
+    /* 6 */ transform_op.def_src);
+
+  using HostTransformStateT = stateful_transform_it_state<BaseIteratorStateT, TransformerStateT>;
+  auto transform_it         = make_iterator<ValueT, HostTransformStateT>(
+    {transform_it_state_name, transform_it_state_src},
+    {transform_it_advance_fn_name, transform_it_advance_fn_src},
+    {transform_it_deref_fn_name, transform_it_deref_fn_src});
+
+  return transform_it;
+}
+
+template <typename ValueT, typename BaseIteratorStateT>
+auto make_stateless_transform_input_iterator(
+  std::string_view transformed_value_type,
+  name_source_t base_state,
+  name_source_t base_it_advance_fn,
+  name_source_t base_it_dereference_fn,
+  name_source_t transform_op)
+{
+  static constexpr std::string_view transform_it_state_name     = "stateless_transform_iterator_state_t";
+  static constexpr std::string_view transform_it_state_src_tmpl = R"XXX(
+/* Define state of base iterator over whose values transformation is applied */
+{2}
+struct {0} {{
+  {1} base_it_state;
+}};
+)XXX";
+  const std::string transform_it_state_src                      = std::format(
+    transform_it_state_src_tmpl,
+    /* 0 */ transform_it_state_name,
+    /* 1 */ base_state.name,
+    /* 2 */ base_state.def_src);
+
+  static constexpr std::string_view transform_it_advance_fn_name     = "advance_stateless_transform_it";
+  static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
+{3}
+extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
+    {2}(&(transform_it_state->base_it_state), offset);
+}}
+)XXX";
+  const std::string transform_it_advance_fn_src                      = std::format(
+    transform_it_advance_fn_src_tmpl,
+    /* 0 */ transform_it_advance_fn_name,
+    /* 1 */ transform_it_state_name,
+    /* 2 */ base_it_advance_fn.name,
+    /* 3 */ base_it_advance_fn.def_src);
+
+  static constexpr std::string_view transform_it_deref_fn_name     = "dereference_stateless_transform_it";
+  static constexpr std::string_view transform_it_deref_fn_src_tmpl = R"XXX(
+{5}
+{6}
+extern "C" __device__ {2} {0}({1} *transform_it_state) {{
+    return {3}(
+        {4}(&(transform_it_state->base_it_state))
+    );
+}}
+)XXX";
+
+  const std::string transform_it_deref_fn_src = std::format(
+    transform_it_deref_fn_src_tmpl,
+    /* 0 */ transform_it_deref_fn_name /* name of transform's deref function */,
+    /* 1 */ transform_it_state_name /* name of transform's state*/,
+    /* 2 */ transformed_value_type /* function return type name */,
+    /* 3 */ transform_op.name /* transformation functor function name */,
+    /* 4 */ base_it_dereference_fn.name /* deref function of base iterator */,
+    /* 5 */ base_it_dereference_fn.def_src,
+    /* 6 */ transform_op.def_src);
+
+  using HostTransformStateT = stateless_transform_it_state<BaseIteratorStateT>;
+  auto transform_it         = make_iterator<ValueT, HostTransformStateT>(
+    {transform_it_state_name, transform_it_state_src},
+    {transform_it_advance_fn_name, transform_it_advance_fn_src},
+    {transform_it_deref_fn_name, transform_it_deref_fn_src});
+
+  return transform_it;
 }
 
 template <class T>
