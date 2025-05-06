@@ -54,7 +54,7 @@ inline constexpr bool __valid_any_cast<_Interface*, _Tp*> =
 //!
 _CCCL_TEMPLATE(class _Tp, class _Interface)
 _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-[[nodiscard]] _CUDAX_HOST_API auto any_cast(basic_any<_Interface>* __self) noexcept -> _Tp*
+[[nodiscard]] _CCCL_HOST_API auto any_cast(basic_any<_Interface>* __self) noexcept -> _Tp*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
@@ -66,7 +66,7 @@ _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
 
 _CCCL_TEMPLATE(class _Tp, class _Interface)
 _CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-[[nodiscard]] _CUDAX_HOST_API auto any_cast(basic_any<_Interface> const* __self) noexcept -> _Tp const*
+[[nodiscard]] _CCCL_HOST_API auto any_cast(basic_any<_Interface> const* __self) noexcept -> _Tp const*
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))

@@ -32,37 +32,37 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-[[nodiscard]] _CUDAX_HOST_API inline constexpr auto __buffer_size(size_t __size) -> size_t
+[[nodiscard]] _CCCL_HOST_API inline constexpr auto __buffer_size(size_t __size) -> size_t
 {
   //! round up to the nearest multiple of `__word`, which is the size of a
   //! void*.
   return ((__size ? (_CUDA_VSTD::max)(__size, sizeof(void*)) : __default_buffer_size) + __word - 1) / __word * __word;
 }
 
-[[nodiscard]] _CUDAX_HOST_API inline constexpr auto __buffer_align(size_t __align) -> size_t
+[[nodiscard]] _CCCL_HOST_API inline constexpr auto __buffer_align(size_t __align) -> size_t
 {
   //! need to be able to store a void* in the buffer.
   return __align ? (_CUDA_VSTD::max)(__align, alignof(void*)) : __default_buffer_align;
 }
 
 template <class _Tp>
-[[nodiscard]] _CUDAX_HOST_API inline constexpr auto __is_small(size_t __size, size_t __align) noexcept -> bool
+[[nodiscard]] _CCCL_HOST_API inline constexpr auto __is_small(size_t __size, size_t __align) noexcept -> bool
 {
   return (sizeof(_Tp) <= __size) && (__align % alignof(_Tp) == 0) && _CUDA_VSTD::is_nothrow_move_constructible_v<_Tp>;
 }
 
-_CUDAX_HOST_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept
+_CCCL_HOST_API inline void __swap_ptr_ptr(void* __lhs, void* __rhs) noexcept
 {
   _CUDA_VSTD::swap(*static_cast<void**>(__lhs), *static_cast<void**>(__rhs));
 }
 
 template <class _Tp, class _Up, class _Vp = decltype(true ? __identity_t<_Tp*>() : __identity_t<_Up*>())>
-[[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
+[[nodiscard]] _CCCL_TRIVIAL_HOST_API auto __ptr_eq(_Tp* __lhs, _Up* __rhs) noexcept -> bool
 {
   return static_cast<_Vp>(__lhs) == static_cast<_Vp>(__rhs);
 }
 
-[[nodiscard]] _CUDAX_TRIVIAL_HOST_API constexpr auto __ptr_eq(detail::__ignore, detail::__ignore) noexcept -> bool
+[[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __ptr_eq(detail::__ignore, detail::__ignore) noexcept -> bool
 {
   return false;
 }

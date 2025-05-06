@@ -55,6 +55,15 @@
 #  define _CCCL_NODEBUG
 #endif // !_CCCL_HAS_ATTRIBUTE(__nodebug__)
 
+// Debuggers do not step into functions marked with __attribute__((__artificial__)). This
+// is useful for small wrapper functions that just dispatch to other functions and that
+// are inlined into the caller.
+#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_HAS_CUDA_COMPILER()
+#  define _CCCL_ARTIFICIAL __attribute__((__artificial__))
+#else // ^^^ _CCCL_HAS_ATTRIBUTE(__artificial__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__artificial__) vvv
+#  define _CCCL_ARTIFICIAL
+#endif // !_CCCL_HAS_ATTRIBUTE(__artificial__)
+
 // The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
 #if _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_NODEBUG_ALIAS _CCCL_NODEBUG

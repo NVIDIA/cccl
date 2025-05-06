@@ -28,7 +28,6 @@
 #include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__async/sender/meta.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 

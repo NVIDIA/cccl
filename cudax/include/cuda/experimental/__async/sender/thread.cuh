@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__detail/config.cuh>
-
 #include <thread>
 
 #if _CCCL_CUDA_COMPILATION()
@@ -45,23 +43,23 @@ struct __thread_id
     int __device_;
   };
 
-  _CUDAX_API __thread_id() noexcept
+  _CCCL_API __thread_id() noexcept
       : __host_()
   {}
-  _CUDAX_API __thread_id(::std::thread::id __host) noexcept
+  _CCCL_API __thread_id(::std::thread::id __host) noexcept
       : __host_(__host)
   {}
-  _CUDAX_API __thread_id(int __device) noexcept
+  _CCCL_API __thread_id(int __device) noexcept
       : __device_(__device)
   {}
 
-  _CUDAX_API friend bool operator==(const __thread_id& __self, const __thread_id& __other) noexcept
+  _CCCL_API friend bool operator==(const __thread_id& __self, const __thread_id& __other) noexcept
   {
     _CUDAX_FOR_HOST_OR_DEVICE((return __self.__host_ == __other.__host_;),
                               (return __self.__device_ == __other.__device_;))
   }
 
-  _CUDAX_API friend bool operator!=(const __thread_id& __self, const __thread_id& __other) noexcept
+  _CCCL_API friend bool operator!=(const __thread_id& __self, const __thread_id& __other) noexcept
   {
     return !(__self == __other);
   }
@@ -70,13 +68,13 @@ struct __thread_id
 using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
 #endif
 
-inline _CUDAX_API auto __this_thread_id() noexcept -> __thread_id
+inline _CCCL_API auto __this_thread_id() noexcept -> __thread_id
 {
   _CUDAX_FOR_HOST_OR_DEVICE((return ::std::this_thread::get_id();),
                             (return static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);))
 }
 
-inline _CUDAX_API void __this_thread_yield() noexcept
+inline _CCCL_API void __this_thread_yield() noexcept
 {
   _CUDAX_FOR_HOST_OR_DEVICE((::std::this_thread::yield();), (void();))
 }

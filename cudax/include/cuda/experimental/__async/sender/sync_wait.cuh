@@ -49,12 +49,12 @@ private:
   {
     run_loop* __loop_;
 
-    _CUDAX_API auto query(get_scheduler_t) const noexcept
+    _CCCL_API auto query(get_scheduler_t) const noexcept
     {
       return __loop_->get_scheduler();
     }
 
-    _CUDAX_API auto query(get_delegation_scheduler_t) const noexcept
+    _CCCL_API auto query(get_delegation_scheduler_t) const noexcept
     {
       return __loop_->get_scheduler();
     }
@@ -69,7 +69,7 @@ private:
       __state_t* __state_;
 
       template <class... _As>
-      _CUDAX_API void set_value(_As&&... __as) && noexcept
+      _CCCL_API void set_value(_As&&... __as) && noexcept
       {
         _CUDAX_TRY( //
           ({        //
@@ -84,7 +84,7 @@ private:
       }
 
       template <class _Error>
-      _CUDAX_API void set_error(_Error __err) && noexcept
+      _CCCL_API void set_error(_Error __err) && noexcept
       {
         if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::exception_ptr>)
         {
@@ -101,7 +101,7 @@ private:
         __state_->__loop_.finish();
       }
 
-      _CUDAX_API void set_stopped() && noexcept
+      _CCCL_API void set_stopped() && noexcept
       {
         __state_->__loop_.finish();
       }
@@ -134,7 +134,7 @@ private:
   struct __fn
   {
     template <class _Sndr>
-    _CUDAX_HOST_API auto operator()(_Sndr&& __sndr) const
+    _CCCL_HOST_API auto operator()(_Sndr&& __sndr) const
     {
       using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t>;
 
@@ -167,14 +167,14 @@ private:
     }
 
     template <class _Sndr, class _Env>
-    _CUDAX_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
+    _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
     {
       return (*this)(__async::write_env(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)));
     }
   };
 
 public:
-  _CUDAX_HOST_API static constexpr auto __apply() noexcept
+  _CCCL_HOST_API static constexpr auto __apply() noexcept
   {
     return __fn{};
   }
@@ -207,14 +207,14 @@ public:
   /// @throws error otherwise
   // clang-format on
   template <class _Sndr>
-  _CUDAX_HOST_API auto operator()(_Sndr&& __sndr) const
+  _CCCL_HOST_API auto operator()(_Sndr&& __sndr) const
   {
     using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
     return __dom_t::__apply(*this)(static_cast<_Sndr&&>(__sndr));
   }
 
   template <class _Sndr, class _Env>
-  _CUDAX_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
+  _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
     using __dom_t _CCCL_NODEBUG_ALIAS = late_domain_of_t<_Sndr, _Env>;
     return __dom_t::__apply(*this)(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));

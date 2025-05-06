@@ -60,7 +60,11 @@
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM namespace cuda { namespace std { inline namespace __fs { namespace filesystem { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM } } } } }
 
-// Shorthands for different qualifiers
+  // Namespaces related to execution
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION namespace cuda { namespace std { namespace execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_EXECUTION } } } }
+
+  // Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
 #  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
@@ -68,6 +72,7 @@
 #  define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VSTD_FS        ::cuda::std::__fs::filesystem::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_STD_EXEC       ::cuda::std::execution::_LIBCUDACXX_ABI_NAMESPACE
 
 // clang-format on
 
