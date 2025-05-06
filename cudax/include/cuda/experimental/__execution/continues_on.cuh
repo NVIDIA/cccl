@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONTINUE_ON
-#define __CUDAX_ASYNC_DETAIL_CONTINUE_ON
+#ifndef __CUDAX_ASYNC_DETAIL_CONTINUES_ON
+#define __CUDAX_ASYNC_DETAIL_CONTINUES_ON
 
 #include <cuda/std/detail/__config>
 
@@ -40,7 +40,7 @@
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
 {
 private:
   template <class... _As>
@@ -195,14 +195,14 @@ public:
 };
 
 template <class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__closure_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__closure_t
 {
   _Sch __sch;
 
   template <class _Sndr>
   _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
   {
-    return continue_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
+    return continues_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
   }
 };
 
@@ -214,7 +214,7 @@ struct __decay_args
   {
     if constexpr (!__decay_copyable<_Ts...>)
     {
-      return invalid_completion_signature<_WHERE(_IN_ALGORITHM, continue_on_t),
+      return invalid_completion_signature<_WHERE(_IN_ALGORITHM, continues_on_t),
                                           _WHAT(_ARGUMENTS_ARE_NOT_DECAY_COPYABLE),
                                           _WITH_ARGUMENTS(_Ts...)>();
     }
@@ -230,10 +230,10 @@ struct __decay_args
 };
 
 template <class _Sndr, class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS continue_on_t __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS continues_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
 
@@ -292,28 +292,28 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continue_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto continue_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
+_CCCL_TRIVIAL_API constexpr auto continues_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
 {
   return __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)};
 }
 
 template <class _Sndr, class _Sch>
-_CCCL_TRIVIAL_API constexpr auto continue_on_t::operator()(_Sndr __sndr, _Sch __sch) const
+_CCCL_TRIVIAL_API constexpr auto continues_on_t::operator()(_Sndr __sndr, _Sch __sch) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
   return __dom_t::__apply(*this)(static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr));
 }
 
 template <class _Sch>
-_CCCL_TRIVIAL_API constexpr auto continue_on_t::operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
+_CCCL_TRIVIAL_API constexpr auto continues_on_t::operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
 {
   return __closure_t<_Sch>{__sch};
 }
 
 template <class _Sndr, class _Sch>
-inline constexpr size_t structured_binding_size<continue_on_t::__sndr_t<_Sndr, _Sch>> = 3;
+inline constexpr size_t structured_binding_size<continues_on_t::__sndr_t<_Sndr, _Sch>> = 3;
 
-_CCCL_GLOBAL_CONSTANT continue_on_t continue_on{};
+_CCCL_GLOBAL_CONSTANT continues_on_t continues_on{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
