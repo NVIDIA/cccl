@@ -60,6 +60,15 @@
 #  define _LIBCUDACXX_BEGIN_NAMESPACE_FILESYSTEM namespace cuda { namespace std { inline namespace __fs { namespace filesystem { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
 #  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM } } } } }
 
+// Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
+#if _CCCL_COMPILER(CLANG, ==, 16)
+#  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE namespace __hidden {
+#  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS) } using __hidden::_CLASS;
+#else
+#  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
+#  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
+#endif
+
 // Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
 #  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
