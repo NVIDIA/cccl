@@ -101,7 +101,7 @@ from cuda.cooperative.experimental._typing import (
 )
 
 
-def block_scan(
+def scan(
     dtype: DtypeType,
     threads_per_block: DimType,
     items_per_thread: int = 1,
@@ -741,7 +741,7 @@ def exclusive_sum(
         the block-wide exclusive prefix scan.
     :rtype: Callable
     """
-    return block_scan(
+    return scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -804,7 +804,7 @@ def inclusive_sum(
         the block-wide inclusive prefix scan.
     :rtype: Callable
     """
-    return block_scan(
+    return scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -895,7 +895,7 @@ def exclusive_scan(
         perform the block-wide exclusive prefix scan.
     :rtype: Callable
     """
-    return block_scan(
+    return scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
@@ -979,7 +979,7 @@ def inclusive_scan(
         perform the block-wide inclusive prefix scan.
     :rtype: Callable
     """
-    return block_scan(
+    return scan(
         dtype=dtype,
         threads_per_block=threads_per_block,
         items_per_thread=items_per_thread,
