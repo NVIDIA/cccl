@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -93,8 +93,7 @@ template <typename T, typename Tag>
 class fixture
 {
 public:
-  using OptionalT  = typename std::optional<T>;
-  using FixtureTag = Tag;
+  using OptionalT = typename std::optional<T>;
 
 private:
   OptionalT v;
@@ -104,8 +103,6 @@ private:
   {}
 
 public:
-  ~fixture() = default;
-
   OptionalT& get_value()
   {
     return v;
