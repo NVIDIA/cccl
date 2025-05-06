@@ -166,8 +166,10 @@
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #endif
 
-// Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
-#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
+// Passing objects with nested [[no_unique_address]] to kernels leads to data corruption.
+// This is caused by cudafe++ not honoring [[no_unique_address]] when compiling for C++17
+// with clang as the host compiler. See nvbug 5265027 for more details.
+#if _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG) && _CCCL_STD_VER < 2020 && _CCCL_CUDA_COMPILATION()
 #  undef _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #  undef _CCCL_NO_UNIQUE_ADDRESS
 #  define _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() 0
