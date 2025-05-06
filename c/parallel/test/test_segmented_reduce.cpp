@@ -11,6 +11,7 @@
 #include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
+#include <cccl/c/reduce.h>
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h>
 
@@ -444,4 +445,311 @@ C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
 
   auto host_actual = std::vector<ValueT>(output_ptr);
   REQUIRE(host_actual == host_output);
+}
+
+template <typename ValueT>
+struct host_offset_functor_state
+{
+  ValueT m_p;
+  ValueT m_min;
+};
+
+template <typename ValueT, typename DataT>
+struct host_check_functor_state
+{
+  ValueT m_p;
+  ValueT m_min;
+  DataT* m_ptr;
+};
+
+namespace validate
+{
+
+using BuildResultT = cccl_device_reduce_build_result_t;
+
+struct reduce_cleanup
+{
+  CUresult operator()(BuildResultT* build_data) const noexcept
+  {
+    return cccl_device_reduce_cleanup(build_data);
+  }
+};
+
+struct reduce_build
+{
+  template <typename... Ts>
+  CUresult operator()(
+    BuildResultT* build_ptr, cccl_iterator_t input, cccl_iterator_t output, uint64_t, Ts... args) const noexcept
+  {
+    return cccl_device_reduce_build(build_ptr, input, output, args...);
+  }
+};
+
+struct reduce_run
+{
+  template <typename... Ts>
+  CUresult operator()(Ts... args) const noexcept
+  {
+    return cccl_device_reduce(args...);
+  }
+};
+
+using reduce_deleter       = BuildResultDeleter<BuildResultT, reduce_cleanup>;
+using reduce_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, reduce_deleter>>;
+
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<reduce_build_cache_t, Tag>::get_or_create().get_value();
+}
+
+struct Reduce_Pointer_Fixture_Tag;
+
+template <typename... Ts>
+void reduce_for_pointer_inputs(
+  cccl_iterator_t input, cccl_iterator_t output, uint64_t num_items, cccl_op_t op, cccl_value_t init)
+{
+  auto& build_cache    = get_cache<Reduce_Pointer_Fixture_Tag>();
+  const auto& test_key = make_key<Ts...>();
+
+  AlgorithmExecute<BuildResultT, reduce_build, reduce_cleanup, reduce_run>(
+    build_cache, test_key, input, output, num_items, op, init);
+}
+
+} // namespace validate
+
+struct SegmentedReduce_LargeNumSegments_Fixture_Tag;
+C2H_TEST("SegmentedReduce works with large num_segments", "[segmented_reduce]")
+{
+  using DataT  = signed short;
+  using IndexT = signed long long;
+
+  static constexpr std::string_view data_ty_name  = "signed short";
+  static constexpr std::string_view index_ty_name = "signed long long";
+
+  // Segment sizes vary in range [min, min + p) in a linear progression
+  // and restart periodically. Size of segment with 0-based index k is
+  // min + (k % p)
+  const IndexT min = 265;
+  const IndexT p   = 163;
+
+  static constexpr IndexT n_segments_base          = (IndexT(1) << 15) + (IndexT(1) << 3);
+  static constexpr IndexT n_segments_under_int_max = n_segments_base << 10;
+
+#ifdef SUPPORTS_HOST_INCREMENT
+  static constexpr IndexT n_segments_over_int_max = n_segments_base << 16;
+
+  const IndexT n_segments = GENERATE(n_segments_under_int_max, n_segments_over_int_max);
+#else
+  const IndexT n_segments = GENERATE(n_segments_under_int_max, n_segments_under_int_max * 8);
+#endif
+
+  // first define constant iterator:
+  //   iterators.ConstantIterator(np.int8(1))
+
+  auto input_const_it        = make_constant_iterator<DataT>(std::string{data_ty_name});
+  input_const_it.state.value = DataT(1);
+
+  // Build counting iterator:   iterators.CountingIterator(np.int64(-1))
+
+  // N.B.: Even though make_counting_iterator helper function exists, we need
+  // source code for advance and dereference functions associated with counting iterator
+  // to build transformed_iterator needed by this example
+
+  static constexpr std::string_view counting_it_state_name      = "counting_iterator_state_t";
+  static constexpr std::string_view counting_it_advance_fn_name = "advance_counting_it";
+  static constexpr std::string_view counting_it_deref_fn_name   = "dereference_counting_it";
+
+  const auto [counting_it_state_src, counting_it_advance_fn_src, counting_it_deref_fn_src] =
+    make_counting_iterator_sources(
+      index_ty_name, counting_it_state_name, counting_it_advance_fn_name, counting_it_deref_fn_name);
+
+  // Build transformation operation: offset_functor
+
+  static constexpr std::string_view offset_functor_name           = "offset_functor";
+  static constexpr std::string_view offset_functor_state_name     = "offset_functor_state";
+  static constexpr std::string_view offset_functor_state_src_tmpl = R"XXX(
+struct {0} {{
+  {1} m_p;
+  {1} m_min;
+}};
+)XXX";
+  const std::string offset_functor_state_src =
+    std::format(offset_functor_state_src_tmpl, offset_functor_state_name, index_ty_name);
+
+  static constexpr std::string_view offset_functor_src_tmpl = R"XXX(
+extern "C" __device__ {2} {0}({1} *functor_state, {2} n) {{
+  /*
+    def transform_fn(n):
+      q = n // p
+      r = n - q * p
+      p2 = (p * (p - 1)) // 2
+      r2 = (r * (r + 1)) // 2
+
+      return min*(n + 1) + q * p2 + r2
+  */
+  {2} m0 = functor_state->m_min;
+  {2} t = (n + 1) * m0;
+
+  {2} p = functor_state->m_p;
+  {2} q = n / p;
+  {2} r = n - (q * p);
+  {2} p2 = (p * (p - 1)) / 2;
+  {2} qp2 = q * p2;
+  {2} r2 = (r * (r + 1)) / 2;
+  {2} t2 = t + r2;
+
+  return (t2 + qp2);
+}}
+)XXX";
+  const std::string offset_functor_src =
+    std::format(offset_functor_src_tmpl, offset_functor_name, offset_functor_state_name, index_ty_name);
+
+  // Building transform_iterator
+
+  /*  offset_it = iterators.TransformIterator(
+        iterators.CountingIterator(np.int64(0)), make_offset_transform(min, p)
+    )
+  */
+
+  auto start_offsets_it =
+    make_stateful_transform_input_iterator<IndexT, counting_iterator_state_t<IndexT>, host_offset_functor_state<IndexT>>(
+      index_ty_name,
+      {counting_it_state_name, counting_it_state_src},
+      {counting_it_advance_fn_name, counting_it_advance_fn_src},
+      {counting_it_deref_fn_name, counting_it_deref_fn_src},
+      {offset_functor_state_name, offset_functor_state_src},
+      {offset_functor_name, offset_functor_src});
+
+  // Initialize the state of start_offset_it
+  start_offsets_it.state.base_it_state.value = IndexT(-1);
+  start_offsets_it.state.functor_state.m_p   = IndexT(p);
+  start_offsets_it.state.functor_state.m_min = IndexT(min);
+
+  using HostTransformStateT = decltype(start_offsets_it.state);
+
+  // end_offsets_it reuses advance/dereference definitions provided by start_offsets_it
+  constexpr std::string_view empty_src = "";
+  auto end_offsets_it                  = make_iterator<IndexT, HostTransformStateT>(
+    {start_offsets_it.state_name, empty_src},
+    {start_offsets_it.advance.name, empty_src},
+    {start_offsets_it.dereference.name, empty_src});
+
+  // Initialize the state of end_offset_it
+  end_offsets_it.state.base_it_state.value = IndexT(0);
+  end_offsets_it.state.functor_state       = start_offsets_it.state.functor_state;
+
+  static constexpr std::string_view binary_op_name     = "_plus";
+  static constexpr std::string_view binary_op_src_tmpl = R"XXX(
+extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) {{
+  const {1} *x1_tp = static_cast<const {1}*>(x1_p);
+  const {1} *x2_tp = static_cast<const {1}*>(x2_p);
+  {1} *out_tp = static_cast<{1}*>(out_p);
+  *out_tp = (*x1_tp) + (*x2_tp);
+}}
+)XXX";
+  const std::string binary_op_src                      = std::format(binary_op_src_tmpl, binary_op_name, data_ty_name);
+
+  auto binary_op = make_operation(binary_op_name, binary_op_src);
+
+  // allocate memory for the result
+  pointer_t<DataT> res(n_segments);
+
+  auto cccl_start_offsets_it = static_cast<cccl_iterator_t>(start_offsets_it);
+  auto cccl_end_offsets_it   = static_cast<cccl_iterator_t>(end_offsets_it);
+
+  value_t<DataT> h_init{DataT{0}};
+
+  auto& build_cache    = get_cache<SegmentedReduce_LargeNumSegments_Fixture_Tag>();
+  const auto& test_key = make_key<IndexT, DataT>();
+
+  // launch segmented reduce
+  segmented_reduce(
+    input_const_it,
+    res,
+    n_segments,
+    cccl_start_offsets_it,
+    cccl_end_offsets_it,
+    binary_op,
+    h_init,
+    build_cache,
+    test_key);
+
+  // Build validation call using device_reduce
+  using CmpT                             = int;
+  constexpr std::string_view cmp_ty_name = "int";
+
+  // check functor transforms computed values to comparison value against the expected result
+  static constexpr std::string_view check_functor_name           = "check_functor";
+  static constexpr std::string_view check_functor_state_name     = "check_functor_state";
+  static constexpr std::string_view check_functor_state_src_tmpl = R"XXX(
+struct {0} {{
+  {1} m_p;
+  {1} m_min;
+  {2} *m_ptr;
+}};
+)XXX";
+  const std::string check_functor_state_src =
+    std::format(check_functor_state_src_tmpl, check_functor_state_name, index_ty_name, data_ty_name);
+
+  static constexpr std::string_view check_functor_src_tmpl = R"XXX(
+extern "C" __device__ {4} {0}({1} *functor_state, {2} n) {{
+  /*
+    def expected_fn(n, ptr):
+      q = n % p
+      return (min + q) == ptr[n]
+  */
+  {2} m0 = functor_state->m_min;
+  {2} p = functor_state->m_p;
+  {2} r = n % p;
+  {3} actual = ({3})((functor_state->m_ptr)[n]);
+  {3} expected = ({3})(m0 + r);
+
+  return (expected == actual);
+}}
+)XXX";
+  static constexpr std::string_view common_ty_name         = index_ty_name;
+  const std::string check_functor_src                      = std::format(
+    check_functor_src_tmpl, check_functor_name, check_functor_state_name, index_ty_name, common_ty_name, cmp_ty_name);
+
+  // Building transform_iterator
+  auto check_it = make_stateful_transform_input_iterator<CmpT,
+                                                         counting_iterator_state_t<IndexT>,
+                                                         host_check_functor_state<IndexT, DataT>>(
+    cmp_ty_name,
+    {counting_it_state_name, counting_it_state_src},
+    {counting_it_advance_fn_name, counting_it_advance_fn_src},
+    {counting_it_deref_fn_name, counting_it_deref_fn_src},
+    {check_functor_state_name, check_functor_state_src},
+    {check_functor_name, check_functor_src});
+
+  // Initialize the state of check_it
+  check_it.state.base_it_state.value = IndexT(0);
+  check_it.state.functor_state.m_p   = IndexT(p);
+  check_it.state.functor_state.m_min = IndexT(min);
+  check_it.state.functor_state.m_ptr = res.ptr;
+
+  pointer_t<CmpT> as_expected(1);
+
+  CmpT expected_value{1};
+  value_t<CmpT> _true{expected_value};
+
+  static constexpr std::string_view cmp_combine_op_name = "_logical_and";
+  static constexpr std::string_view cmp_combine_op_src_tmpl =
+    R"XXX(
+extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) {{
+  const {1} one = 1;
+  const {1} zero = 0;
+  {1} b1 = (*static_cast<const {1}*>(x1_p)) ? one : zero;
+  {1} b2 = (*static_cast<const {1}*>(x2_p)) ? one : zero;
+  *static_cast<{1}*>(out_p) = b1 * b2;
+}}
+)XXX";
+  const std::string cmp_combine_op_src = std::format(cmp_combine_op_src_tmpl, cmp_combine_op_name, cmp_ty_name);
+
+  auto cmp_combine_op = make_operation(cmp_combine_op_name, cmp_combine_op_src);
+
+  validate::reduce_for_pointer_inputs<IndexT, DataT>(check_it, as_expected, n_segments, cmp_combine_op, _true);
+
+  REQUIRE(expected_value == std::vector<CmpT>(as_expected)[0]);
 }
