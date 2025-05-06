@@ -233,7 +233,7 @@ launch_docker() {
     fi
 
     # mount /var/run/docker.sock
-    # MOUNTS+=(--mount "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind")
+    MOUNTS+=(--mount "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind")
 
     # Append user-provided envvars
     if test -v env_vars && test ${#env_vars[@]} -gt 0; then

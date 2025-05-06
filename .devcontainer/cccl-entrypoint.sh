@@ -27,8 +27,7 @@ if ! command -v docker >/dev/null 2>&1; then
         git clone --depth=1 https://github.com/devcontainers/features.git /tmp/features
         cd /tmp/features/src/docker-outside-of-docker
         chmod +x install.sh
-        sudo MOBY=false ./install.sh || { echo "docker-outside-of-docker install failed"; exit 1; }
-        export DOCKER_HOST="unix:///var/run/docker-host.sock"
+        sudo  SOURCE_SOCKET=/var/run/docker.sock TARGET_SOCKET=/var/run/docker.sock MOBY=false ./install.sh || { echo "docker-outside-of-docker install failed"; exit 1; }
         cd -
     fi
 fi
