@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -160,11 +160,11 @@ struct BuildResultDeleter
   static constexpr Cleanup cleanup_{};
   void operator()(BuildResultT* build_data) const noexcept
   {
-    check_success(cleanup_(build_data));
+    BuildResultDeleter::check_success(cleanup_(build_data));
   }
 
 private:
-  void check_success(CUresult status) const noexcept
+  static void check_success(CUresult status) noexcept
   {
     if (status != CUDA_SUCCESS)
     {
