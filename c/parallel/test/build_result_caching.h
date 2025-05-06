@@ -10,6 +10,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -85,6 +86,7 @@ public:
 
   ValueT& get(const KeyT& key)
   {
+    assert(m_map.contains(key));
     return m_map[key];
   }
 };
