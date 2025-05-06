@@ -159,7 +159,6 @@ runs:
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
           --volume "${{github.workspace}}/artifacts:/artifacts" \
           --volume "$(host_path "$RUNNER_TEMP")/.aws:/root/.aws" \
-          --volume "$(dirname "$(dirname "${{github.workspace}}")"):/__w" \
           -- /ci.sh
 
     - name: Prepare job artifacts
