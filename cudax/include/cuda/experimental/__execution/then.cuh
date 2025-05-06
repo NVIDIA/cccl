@@ -140,12 +140,12 @@ private:
       }
       else
       {
-        _CUDAX_TRY(                                   //
-          ({                                          //
+        _CUDAX_TRY( //
+          ({ //
             __set<true>(static_cast<_Ts&&>(__ts)...); //
-          }),                                         //
-          _CUDAX_CATCH(...)                           //
-          ({                                          //
+          }), //
+          _CUDAX_CATCH(...) //
+          ({ //
             execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
           }) //
         )
@@ -269,7 +269,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_API auto connect(_Rcvr __rcvr) &&                                                //
+  _CCCL_API auto connect(_Rcvr __rcvr) && //
     noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Rcvr, _Fn>) //
     -> __opstate_t<_Rcvr, _Sndr, _Fn>
   {

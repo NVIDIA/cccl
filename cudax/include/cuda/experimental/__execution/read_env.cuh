@@ -70,11 +70,11 @@ private:
       else
       {
         _CUDAX_TRY( //
-          ({        //
+          ({ //
             execution::set_value(static_cast<_Rcvr&&>(__rcvr_), _Query()(execution::get_env(__rcvr_)));
           }),
           _CUDAX_CATCH(...) //
-          ({                //
+          ({ //
             execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
           }) //
         )

@@ -78,11 +78,11 @@ private:
       else
       {
         _CUDAX_TRY( //
-          ({        //
+          ({ //
             __result_.template __emplace<__tupl_t>(_Tag(), static_cast<_As&&>(__as)...);
           }),
           _CUDAX_CATCH(...) //
-          ({                //
+          ({ //
             execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
           }) //
         )

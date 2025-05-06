@@ -188,11 +188,11 @@ private:
         else
         {
           _CUDAX_TRY( //
-            ({        //
+            ({ //
               (__values_.template __emplace<_Jdx + _Offset>(static_cast<_Ts&&>(__ts)), ...);
             }),
             _CUDAX_CATCH(...) //
-            ({                //
+            ({ //
               __set_error(::std::current_exception());
             }) //
           )
@@ -216,11 +216,11 @@ private:
         else
         {
           _CUDAX_TRY( //
-            ({        //
+            ({ //
               __errors_.template __emplace<__decay_t<_Error>>(static_cast<_Error&&>(__err));
             }),
             _CUDAX_CATCH(...) //
-            ({                //
+            ({ //
               __errors_.template __emplace<::std::exception_ptr>(::std::current_exception());
             }) //
           )
@@ -446,7 +446,7 @@ _CCCL_API constexpr auto when_all_t::__merge_completions(_Completions... __cs)
       // which may have multiple arguments. Concatenate all the arguments into a
       // single set_value_t completion signature.
       using __values_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call< //
-        __type_concat_into<__type_function<set_value_t>>,             //
+        __type_concat_into<__type_function<set_value_t>>, //
         __value_types<_Completions, __decay_all, _CUDA_VSTD::__type_self_t>...>;
       // Add the value completion to the error and stopped completions.
       auto __local = __non_value_completions + completion_signatures<__values_t>();

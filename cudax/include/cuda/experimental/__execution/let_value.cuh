@@ -132,7 +132,7 @@ private:
       if constexpr (_Tag() == _SetTag())
       {
         _CUDAX_TRY( //
-          ({        //
+          ({ //
             // Store the results so the lvalue refs we pass to the function
             // will be valid for the duration of the async op.
             auto& __tupl =
@@ -144,7 +144,7 @@ private:
             execution::start(__next_op);
           }),
           _CUDAX_CATCH(...) //
-          ({                //
+          ({ //
             execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
           }) //
         )

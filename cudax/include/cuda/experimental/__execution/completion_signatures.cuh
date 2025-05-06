@@ -836,7 +836,7 @@ _CCCL_API inline constexpr auto __eptr_completion() noexcept
 {
   return completion_signatures<set_error_t(::std::exception_ptr)>();
 }
-#else  // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 _CCCL_API inline constexpr auto __eptr_completion() noexcept
 {
   return completion_signatures{};

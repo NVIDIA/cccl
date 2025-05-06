@@ -46,12 +46,12 @@ _CCCL_API constexpr auto __is_constexpr_helper(_Ty) -> bool
 
 // Receiver concepts:
 template <class _Rcvr>
-_CCCL_CONCEPT receiver =                                                              //
-  _CCCL_REQUIRES_EXPR((_Rcvr))                                                        //
-  (                                                                                   //
-    requires(__is_receiver<_CUDA_VSTD::decay_t<_Rcvr>>),                              //
-    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Rcvr>>),             //
-    requires(_CUDA_VSTD::constructible_from<_CUDA_VSTD::decay_t<_Rcvr>, _Rcvr>),      //
+_CCCL_CONCEPT receiver = //
+  _CCCL_REQUIRES_EXPR((_Rcvr)) //
+  ( //
+    requires(__is_receiver<_CUDA_VSTD::decay_t<_Rcvr>>), //
+    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Rcvr>>), //
+    requires(_CUDA_VSTD::constructible_from<_CUDA_VSTD::decay_t<_Rcvr>, _Rcvr>), //
     requires(_CUDA_VSTD::is_nothrow_move_constructible_v<_CUDA_VSTD::decay_t<_Rcvr>>) //
   );
 
@@ -69,10 +69,10 @@ inline constexpr bool __has_completions<_Rcvr, completion_signatures<_Sigs...>> 
   (__valid_completion_for<_Rcvr, _Sigs> && ...);
 
 template <class _Rcvr, class _Completions>
-_CCCL_CONCEPT receiver_of =                                               //
-  _CCCL_REQUIRES_EXPR((_Rcvr, _Completions))                              //
-  (                                                                       //
-    requires(receiver<_Rcvr>),                                            //
+_CCCL_CONCEPT receiver_of = //
+  _CCCL_REQUIRES_EXPR((_Rcvr, _Completions)) //
+  ( //
+    requires(receiver<_Rcvr>), //
     requires(__has_completions<_CUDA_VSTD::decay_t<_Rcvr>, _Completions>) //
   );
 
@@ -120,29 +120,29 @@ struct __completions_tester
 };
 
 template <class _Sndr>
-_CCCL_CONCEPT sender =                                                          //
-  _CCCL_REQUIRES_EXPR((_Sndr))                                                  //
-  (                                                                             //
-    requires(enable_sender<_CUDA_VSTD::decay_t<_Sndr>>),                        //
-    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Sndr>>),       //
+_CCCL_CONCEPT sender = //
+  _CCCL_REQUIRES_EXPR((_Sndr)) //
+  ( //
+    requires(enable_sender<_CUDA_VSTD::decay_t<_Sndr>>), //
+    requires(_CUDA_VSTD::move_constructible<_CUDA_VSTD::decay_t<_Sndr>>), //
     requires(_CUDA_VSTD::constructible_from<_CUDA_VSTD::decay_t<_Sndr>, _Sndr>) //
   );
 
 template <class _Sndr, class... _Env>
-_CCCL_CONCEPT sender_in =                                                  //
-  _CCCL_REQUIRES_EXPR((_Sndr, variadic _Env))                              //
-  (                                                                        //
-    requires(sender<_Sndr>),                                               //
-    requires(sizeof...(_Env) <= 1),                                        //
-    requires(_CUDA_VSTD::__fold_and_v<__queryable<_Env>...>),              //
+_CCCL_CONCEPT sender_in = //
+  _CCCL_REQUIRES_EXPR((_Sndr, variadic _Env)) //
+  ( //
+    requires(sender<_Sndr>), //
+    requires(sizeof...(_Env) <= 1), //
+    requires(_CUDA_VSTD::__fold_and_v<__queryable<_Env>...>), //
     requires(__completions_tester<_Env...>::template __is_valid<_Sndr>(0)) //
   );
 
 template <class _Sndr>
-_CCCL_CONCEPT dependent_sender =             //
-  _CCCL_REQUIRES_EXPR((_Sndr))               //
-  (                                          //
-    requires(sender<_Sndr>),                 //
+_CCCL_CONCEPT dependent_sender = //
+  _CCCL_REQUIRES_EXPR((_Sndr)) //
+  ( //
+    requires(sender<_Sndr>), //
     requires(__is_dependent_sender<_Sndr>()) //
   );
 

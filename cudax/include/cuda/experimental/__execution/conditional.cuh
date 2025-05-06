@@ -110,7 +110,7 @@ private:
 
     template <class... _As>
     using __opstate_t _CCCL_NODEBUG_ALIAS = //
-      _CUDA_VSTD::__type_list<              //
+      _CUDA_VSTD::__type_list< //
         connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>,
         connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>>;
 
@@ -135,7 +135,7 @@ private:
     {
       auto __just = just_from(__cond_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
       _CUDAX_TRY( //
-        ({        //
+        ({ //
           if (static_cast<_Pred&&>(__params_.pred)(__as...))
           {
             auto& __op =
@@ -150,7 +150,7 @@ private:
           }
         }),
         _CUDAX_CATCH(...) //
-        ({                //
+        ({ //
           execution::set_error(static_cast<_Rcvr&&>(__rcvr_), ::std::current_exception());
         }) //
       )

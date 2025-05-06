@@ -72,11 +72,11 @@ private:
       _CCCL_API void set_value(_As&&... __as) && noexcept
       {
         _CUDAX_TRY( //
-          ({        //
+          ({ //
             __state_->__values_->emplace(static_cast<_As&&>(__as)...);
-          }),               //
+          }), //
           _CUDAX_CATCH(...) //
-          ({                //
+          ({ //
             __state_->__eptr_ = ::std::current_exception();
           }) //
         )

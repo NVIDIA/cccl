@@ -37,8 +37,8 @@ namespace cuda::experimental::execution
 _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 
 using __ignore _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // NOLINT: misc-unused-using-decls
-using _CUDA_VSTD::__undefined;                               // NOLINT: misc-unused-using-decls
-using experimental::detail::__immovable;                     // NOLINT: misc-unused-using-decls
+using _CUDA_VSTD::__undefined; // NOLINT: misc-unused-using-decls
+using experimental::detail::__immovable; // NOLINT: misc-unused-using-decls
 
 struct __empty
 {};
@@ -84,8 +84,8 @@ _CCCL_API constexpr auto __index_of() noexcept -> size_t
 template <class _Ty, class _Uy = _Ty>
 _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
 {
-  constexpr bool __is_nothrow =                        //
-    noexcept(_Ty(static_cast<_Ty&&>(__obj))) &&        //
+  constexpr bool __is_nothrow = //
+    noexcept(_Ty(static_cast<_Ty&&>(__obj))) && //
     noexcept(__obj = static_cast<_Uy&&>(__new_value)); //
   static_assert(__is_nothrow);
 
@@ -97,8 +97,8 @@ _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _
 template <class _Ty>
 _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
-  constexpr bool __is_nothrow =                     //
-    noexcept(_Ty(static_cast<_Ty&&>(__left))) &&    //
+  constexpr bool __is_nothrow = //
+    noexcept(_Ty(static_cast<_Ty&&>(__left))) && //
     noexcept(__left = static_cast<_Ty&&>(__right)); //
   static_assert(__is_nothrow);
 

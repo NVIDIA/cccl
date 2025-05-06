@@ -89,7 +89,7 @@ private:
     {
       auto& __rcvr = static_cast<__opstate_t*>(__p)->__rcvr_;
       _CUDAX_TRY( //
-        ({        //
+        ({ //
           if (get_stop_token(get_env(__rcvr)).stop_requested())
           {
             set_stopped(static_cast<_Rcvr&&>(__rcvr));
@@ -100,7 +100,7 @@ private:
           }
         }),
         _CUDAX_CATCH(...) //
-        ({                //
+        ({ //
           set_error(static_cast<_Rcvr&&>(__rcvr), ::std::current_exception());
         }) //
       )
@@ -136,7 +136,7 @@ public:
       {
 #if _CCCL_HAS_EXCEPTIONS()
         return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>();
-#else  // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
         return completion_signatures<set_value_t(), set_stopped_t()>();
 #endif // !_CCCL_HAS_EXCEPTIONS()
       }
