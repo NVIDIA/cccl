@@ -37,13 +37,13 @@ using u32string_view = basic_string_view<char32_t>;
 
 // clang-format off
 template <class _CharT, class _Traits>
-class _LIBCUDACXX_PREFERRED_NAME(string_view)
-      _LIBCUDACXX_PREFERRED_NAME(wstring_view)
+class _CCCL_PREFERED_NAME(string_view)
+      _CCCL_PREFERED_NAME(wstring_view)
 #if _CCCL_HAS_CHAR8_T()
-      _LIBCUDACXX_PREFERRED_NAME(u8string_view)
+      _CCCL_PREFERED_NAME(u8string_view)
 #endif // _CCCL_HAS_CHAR8_T()
-      _LIBCUDACXX_PREFERRED_NAME(u16string_view)
-      _LIBCUDACXX_PREFERRED_NAME(u32string_view)
+      _CCCL_PREFERED_NAME(u16string_view)
+      _CCCL_PREFERED_NAME(u32string_view)
       basic_string_view;
 // clang-format on
 _LIBCUDACXX_END_NAMESPACE_STD

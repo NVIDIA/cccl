@@ -99,4 +99,10 @@
 #  define _CCCL_GLOBAL_CONSTANT inline constexpr
 #endif // __CUDA_ARCH__
 
+#if _CCCL_STD_VER >= 2020 && __cpp_constinit >= 201907L
+#  define _CCCL_CONSTINIT constinit
+#else // ^^^ has constinit ^^^ / vvv no constinit vvv
+#  define _CCCL_CONSTINIT _CCCL_REQUIRE_CONSTANT_INITIALIZATION
+#endif // ^^^ no constinit ^^^
+
 #endif // __CCCL_DIALECT_H
