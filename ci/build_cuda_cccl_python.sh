@@ -12,15 +12,14 @@ which docker
 # given the py_version build the wheel and output the artifact
 # to the artifacts directory
 docker run --rm \
-  --workdir /home/coder/cccl/python/cuda_cccl \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
-    dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ && \
-    echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" > /etc/profile.d/enable_devtools.sh && \
-    source /etc/profile.d/enable_devtools.sh && \
+    # dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ && \
+    # echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" > /etc/profile.d/enable_devtools.sh && \
+    # source /etc/profile.d/enable_devtools.sh && \
     pwd && \
-    ls -la && \
-    python -m pip wheel .'
+    ls -la / && \
+    ls -la /home/'
 
 # print wheel name:
 wheel_name=$(ls python/cuda_parallel/*.whl)
