@@ -61,13 +61,6 @@ extern "C++" {
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
 #  endif // _CCCL_CUDA_COMPILER
 
-#  if _CCCL_COMPILER(CLANG)
-// Allow for build-time disabling of unsigned integer sanitization
-#    if !defined(_LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK)
-#      define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK _CCCL_NO_SANITIZE("unsigned-integer-overflow")
-#    endif
-#  endif //  _CCCL_COMPILER(CLANG)
-
 #  ifdef _LIBCUDACXX_DEBUG
 #    if _LIBCUDACXX_DEBUG == 0
 #      define _LIBCUDACXX_DEBUG_LEVEL 1
@@ -186,10 +179,6 @@ extern "C++" {
 #    ifndef _LIBCUDACXX_ATOMIC_FLAG_TYPE
 #      define _LIBCUDACXX_ATOMIC_FLAG_TYPE bool
 #    endif
-#  endif
-
-#  ifndef _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
-#    define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 #  endif
 
 #  if !defined(_LIBCUDACXX_DISABLE_ADDITIONAL_DIAGNOSTICS)
