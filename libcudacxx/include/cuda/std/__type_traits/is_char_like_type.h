@@ -18,7 +18,7 @@
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
-#endif // no system header
+#endif // no system headerW
 
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_standard_layout.h>
@@ -26,8 +26,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _CharT>
-using _IsCharLikeType = _And<is_standard_layout<_CharT>, is_trivial<_CharT>>;
+template <class _Tp>
+inline constexpr bool __cccl_is_char_like_type_v = is_standard_layout_v<_Tp> && is_trivial_v<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
