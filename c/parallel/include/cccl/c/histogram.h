@@ -29,6 +29,8 @@ typedef struct cccl_device_histogram_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  cccl_type_info counter_type;
+  int num_active_channels;
   CUkernel init_kernel;
   CUkernel sweep_kernel;
 } cccl_device_histogram_build_result_t;
@@ -40,7 +42,8 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   cccl_iterator_t samples_it,
   cccl_type_info counter_t,
   cccl_type_info level_t,
-  cccl_type_info offset_t,
+  uint64_t num_rows,
+  uint64_t row_stride_samples,
   bool is_evenly_segmented,
   int cc_major,
   int cc_minor,

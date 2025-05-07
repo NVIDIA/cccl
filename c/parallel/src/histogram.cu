@@ -8,6 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cub/detail/launcher/cuda_driver.cuh>
+#include <cub/device/device_histogram.cuh>
+
 #include <cuda/std/__algorithm_>
 
 #include <format>
@@ -15,6 +18,8 @@
 #include "cccl/c/types.h"
 #include "cub/util_type.cuh"
 #include "kernels/iterators.h"
+#include "util/context.h"
+#include "util/indirect_arg.h"
 #include "util/types.h"
 #include <cccl/c/histogram.h>
 #include <nvrtc/ltoir_list_appender.h>
@@ -36,6 +41,42 @@ struct histogram_runtime_tuning_policy
   int PixelsPerThread() const
   {
     return pixels_per_thread;
+  }
+};
+
+template <auto* GetPolicy>
+struct dynamic_histogram_policy_t
+{
+  using MaxPolicy = dynamic_histogram_policy_t;
+
+  template <typename F>
+  cudaError_t Invoke(int device_ptx_version, F& op)
+  {
+    return op.template Invoke<histogram_runtime_tuning_policy>(
+      GetPolicy(device_ptx_version, sample_t, num_active_channels));
+  }
+
+  cccl_type_info sample_t;
+  int num_active_channels;
+};
+
+struct histogram_kernel_source
+{
+  cccl_device_histogram_build_result_t& build;
+
+  CUkernel HistogramInitKernel() const
+  {
+    return build.init_kernel;
+  }
+
+  CUkernel HistogramSweepKernel() const
+  {
+    return build.sweep_kernel;
+  }
+
+  std::size_t CounterSize() const
+  {
+    return build.counter_type.size;
   }
 };
 
@@ -113,7 +154,8 @@ CUresult cccl_device_histogram_build(
   cccl_iterator_t samples_it,
   cccl_type_info counter_t,
   cccl_type_info level_t,
-  cccl_type_info offset_t,
+  uint64_t num_rows,
+  uint64_t row_stride_samples,
   bool is_evenly_segmented,
   int cc_major,
   int cc_minor,
@@ -133,7 +175,11 @@ CUresult cccl_device_histogram_build(
     const auto sample_cpp  = cccl_type_enum_to_name(samples_it.value_type.type);
     const auto counter_cpp = cccl_type_enum_to_name(counter_t.type);
     const auto level_cpp   = cccl_type_enum_to_name(level_t.type);
-    const auto offset_cpp  = cccl_type_enum_to_name(offset_t.type);
+
+    const std::string offset_cpp =
+      ((unsigned long long) (num_rows * row_stride_samples * samples_it.value_type.size) < (unsigned long long) INT_MAX)
+        ? "int"
+        : "long long";
 
     std::string samples_iterator_name;
     check(nvrtcGetTypeName<samples_iterator_t>(&samples_iterator_name));
@@ -237,9 +283,10 @@ struct {5} {{
     check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
-    build_ptr->cc         = cc;
-    build_ptr->cubin      = (void*) result.data.release();
-    build_ptr->cubin_size = result.size;
+    build_ptr->cc           = cc;
+    build_ptr->cubin        = (void*) result.data.release();
+    build_ptr->cubin_size   = result.size;
+    build_ptr->counter_type = counter_t;
   }
   catch (const std::exception& exc)
   {
@@ -247,6 +294,195 @@ struct {5} {{
     printf("\nEXCEPTION in cccl_device_histogram_build(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
+  }
+
+  return error;
+}
+
+template <typename is_byte_sample>
+CUresult cccl_device_histogram_even_impl(
+  cccl_device_histogram_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_samples,
+  cccl_iterator_t d_output_histograms,
+  cccl_iterator_t num_output_levels,
+  cccl_iterator_t lower_level,
+  cccl_iterator_t upper_level,
+  uint64_t num_row_pixels,
+  uint64_t num_rows,
+  uint64_t row_stride_samples,
+  CUstream stream)
+{
+  if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
+      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type
+      || cccl_iterator_kind_t::CCCL_POINTER != lower_level.type
+      || cccl_iterator_kind_t::CCCL_POINTER != upper_level.type)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_histogram_even(): histogram parameters must be pointers (except for d_samples)\n ");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  CUresult error = CUDA_SUCCESS;
+  bool pushed    = false;
+  try
+  {
+    pushed = try_push_context();
+
+    CUdevice cu_device;
+    check(cuCtxGetDevice(&cu_device));
+
+    auto exec_status = cub::DispatchHistogram<
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
+      histogram::histogram_kernel_source,
+      cub::detail::CudaDriverLauncherFactory>::
+      DispatchEven(
+        d_temp_storage,
+        *temp_storage_bytes,
+        d_output_histograms,
+        num_output_levels,
+        lower_level,
+        upper_level,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        is_byte_sample{},
+        {build},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+        {d_samples.value_type, build.num_active_channels});
+
+    error = static_cast<CUresult>(exec_status);
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_radix_sort(): %s\n", exc.what());
+    fflush(stdout);
+    error = CUDA_ERROR_UNKNOWN;
+  }
+
+  if (pushed)
+  {
+    CUcontext dummy;
+    cuCtxPopCurrent(&dummy);
+  }
+
+  return error;
+}
+
+CUresult cccl_device_histogram_even(
+  cccl_device_histogram_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_samples,
+  cccl_iterator_t d_output_histograms,
+  cccl_iterator_t num_output_levels,
+  cccl_iterator_t lower_level,
+  cccl_iterator_t upper_level,
+  uint64_t num_row_pixels,
+  uint64_t num_rows,
+  uint64_t row_stride_samples,
+  CUstream stream)
+{
+  auto histogram_impl = d_samples.value_type.size == 1 ? cccl_device_histogram_even_impl<::cuda::std::true_type>
+                                                       : cccl_device_histogram_even_impl<::cuda::std::false_type>;
+
+  return histogram_impl(
+    build,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_samples,
+    d_output_histograms,
+    num_output_levels,
+    lower_level,
+    upper_level,
+    num_row_pixels,
+    num_rows,
+    row_stride_samples,
+    stream);
+}
+
+template <typename is_byte_sample>
+CUresult cccl_device_histogram_range_impl(
+  cccl_device_histogram_build_result_t build,
+  void* d_temp_storage,
+  size_t* temp_storage_bytes,
+  cccl_iterator_t d_samples,
+  cccl_iterator_t d_output_histograms,
+  cccl_iterator_t num_output_levels,
+  cccl_iterator_t d_levels,
+  uint64_t num_row_pixels,
+  uint64_t num_rows,
+  uint64_t row_stride_samples,
+  CUstream stream)
+{
+  if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
+      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type
+      || cccl_iterator_kind_t::CCCL_POINTER != d_levels.type)
+  {
+    fflush(stderr);
+    printf("\nERROR in cccl_device_histogram_even(): histogram parameters must be pointers (except for d_samples)\n ");
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  CUresult error = CUDA_SUCCESS;
+  bool pushed    = false;
+  try
+  {
+    pushed = try_push_context();
+
+    CUdevice cu_device;
+    check(cuCtxGetDevice(&cu_device));
+
+    auto exec_status = cub::DispatchHistogram<
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      indirect_arg_t,
+      histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
+      histogram::histogram_kernel_source,
+      cub::detail::CudaDriverLauncherFactory>::
+      DispatchRange(
+        d_temp_storage,
+        *temp_storage_bytes,
+        d_output_histograms,
+        num_output_levels,
+        d_levels,
+        num_row_pixels,
+        num_rows,
+        row_stride_samples,
+        stream,
+        is_byte_sample{},
+        {build},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
+        {d_samples.value_type, build.num_active_channels});
+
+    error = static_cast<CUresult>(exec_status);
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_radix_sort(): %s\n", exc.what());
+    fflush(stdout);
+    error = CUDA_ERROR_UNKNOWN;
+  }
+
+  if (pushed)
+  {
+    CUcontext dummy;
+    cuCtxPopCurrent(&dummy);
   }
 
   return error;
@@ -264,4 +500,43 @@ CUresult cccl_device_histogram_range(
   uint64_t num_rows,
   uint64_t row_stride_samples,
   CUstream stream)
-{}
+{
+  auto histogram_impl = d_samples.value_type.size == 1 ? cccl_device_histogram_range_impl<::cuda::std::true_type>
+                                                       : cccl_device_histogram_range_impl<::cuda::std::false_type>;
+
+  return histogram_impl(
+    build,
+    d_temp_storage,
+    temp_storage_bytes,
+    d_samples,
+    d_output_histograms,
+    num_output_levels,
+    d_levels,
+    num_row_pixels,
+    num_rows,
+    row_stride_samples,
+    stream);
+}
+
+CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* build_ptr)
+{
+  try
+  {
+    if (build_ptr == nullptr)
+    {
+      return CUDA_ERROR_INVALID_VALUE;
+    }
+
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    check(cuLibraryUnload(build_ptr->library));
+  }
+  catch (const std::exception& exc)
+  {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_histogram_cleanup(): %s\n", exc.what());
+    fflush(stdout);
+    return CUDA_ERROR_UNKNOWN;
+  }
+
+  return CUDA_SUCCESS;
+}
