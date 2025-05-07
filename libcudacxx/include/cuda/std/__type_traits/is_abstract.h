@@ -29,7 +29,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public bool_constant<__is_abs
 {};
 
 template <class _Tp>
-inline constexpr bool is_abstract_v = __is_abstract(_Tp);
+inline constexpr bool is_abstract_v = __is_abstract(_Tp); // don't we want to rather use _CCCL_BUILTIN_IS_ABSTRACT here?
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
