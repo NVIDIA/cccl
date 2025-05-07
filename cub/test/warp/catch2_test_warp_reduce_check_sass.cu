@@ -100,4 +100,10 @@ C2H_TEST("SASS WarpReduce::Min/Max", "[reduce][warp][predefined_op][full]", min_
   warp_reduce_kernel<T><<<1, 32>>>(cuda::minimum<>{});
 }
 
+#else
+
+#  include "c2h/catch2_test_helper.h"
+
+C2H_TEST("WarpReduce Empty Test", "[reduce][thread][empty]") {}
+
 #endif // defined(CCCL_CHECK_SASS)
