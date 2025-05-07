@@ -416,6 +416,7 @@ doxygen_predefined = [
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
   "_CCCL_GLOBAL_CONSTANT=constexpr",
+  "_CCCL_HAS_CTK()=1",
   "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",

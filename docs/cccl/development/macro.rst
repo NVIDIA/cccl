@@ -186,7 +186,7 @@ CUDA attributes
 ----
 
 CUDA Toolkit macros
----------------
+-------------------
 
 +-------------------------------+-----------------------------------------------------------------------------------------------------------------------------+
 | ``_CCCL_HAS_CTK()``           | CUDA toolkit is available if ``_CCCL_CUDA_COMPILER()`` evaluates to a ``true`` value or if ``cuda_runtime_api.h`` was found |
