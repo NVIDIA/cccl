@@ -3,6 +3,20 @@ if (NOT "${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
   return()
 endif()
 
+set(is_20_available FALSE)
+foreach(cub_target IN LISTS CUB_TARGETS)
+  cub_get_target_property(dialect ${cub_target} DIALECT)
+  if (${dialect} GREATER_EQUAL 20)
+    set(is_20_available TRUE)
+    break()
+  endif()
+endforeach()
+
+if(NOT is_20_available)
+  message(STATUS "Skipping ptx-json tests because no targets with DIALECT >= 20 were found.")
+  return()
+endif()
+
 cccl_get_json()
 
 add_executable(ptx-json-test-filter
