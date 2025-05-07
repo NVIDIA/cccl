@@ -7,6 +7,8 @@ py_version=${2#*=}
 echo "Python version: ${py_version}"
 echo "Docker socket: " $(ls /var/run/docker.sock)
 
+nvidia-smi
+
 # Run tests in the same container as the build
 docker run --rm \
   --workdir /home/coder/workspace/cccl/python/cuda_cccl \
@@ -14,13 +16,15 @@ docker run --rm \
   --gpus device=${NVIDIA_VISIBLE_DEVICES} \
   rapidsai/citestwheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
-    source "$(dirname "$0")/build_common.sh" && \
+    source /home/coder/workspace/cccl/ci/build_common.sh && \
     print_environment_details && \
     fail_if_no_gpu && \
-    source "test_python_common.sh" && \
+    source /home/coder/workspace/cccl/ci/test_python_common.sh && \
     list_environment && \
     # Install the wheel from the artifact location \
     ls /wheelhouse && \
     ls /wheelhouse/cuda_cccl-*.whl && \
     WHEEL_PATH="$(ls /wheelhouse/cuda_cccl-*.whl)" && \
-    run_tests_from_wheel "cuda_cccl" "$WHEEL_PATH"'
+    run_tests_from_wheel
+
+    "cuda_cccl" "$WHEEL_PATH"'
