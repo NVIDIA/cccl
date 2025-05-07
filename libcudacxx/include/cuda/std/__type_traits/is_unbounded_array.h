@@ -30,7 +30,7 @@ inline constexpr bool is_unbounded_array_v = false;
 template <class _Tp>
 inline constexpr bool is_unbounded_array_v<_Tp[]> = true;
 
-template <class>
+template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array : bool_constant<is_unbounded_array_v<_Tp>>
 {};
 

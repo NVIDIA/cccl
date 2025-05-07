@@ -40,7 +40,7 @@ inline constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
 #else
 
 template <class _Tp, bool = is_integral_v<_Tp>>
-inline constexpr bool __cccl_is_signed_helper_v = false;
+inline constexpr bool __cccl_is_signed_helper_v = true;
 
 template <class _Tp>
 inline constexpr bool __cccl_is_signed_helper_v<_Tp, true> = _Tp(-1) < _Tp(0);

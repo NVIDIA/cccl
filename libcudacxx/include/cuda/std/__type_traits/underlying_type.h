@@ -31,7 +31,7 @@ template <class _Tp, bool = is_enum_v<_Tp>>
 struct __cccl_underlying_type_impl
 {
   using type = _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp);
-}
+};
 
 template <class _Tp>
 struct __cccl_underlying_type_impl<_Tp, false>
