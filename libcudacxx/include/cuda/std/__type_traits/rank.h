@@ -20,15 +20,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK) && 0
 
 template <class _Tp>
-struct rank : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_RANK(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT rank : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_RANK(_Tp)>
 {};
 
 template <class _Tp>
@@ -37,17 +37,17 @@ inline constexpr size_t rank_v = _CCCL_BUILTIN_ARRAY_RANK(_Tp);
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT rank : public integral_constant<size_t, 0>
-{};
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT rank<_Tp[]> : public integral_constant<size_t, rank<_Tp>::value + 1>
-{};
-template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT rank<_Tp[_Np]> : public integral_constant<size_t, rank<_Tp>::value + 1>
-{};
+inline constexpr size_t rank_v = 0;
 
 template <class _Tp>
-inline constexpr size_t rank_v = rank<_Tp>::value;
+inline constexpr size_t rank_v<_Tp[]> = rank_v<_Tp> + 1;
+
+template <class _Tp, size_t _Np>
+inline constexpr size_t rank_v<_Tp[_Np]> = rank_v<_Tp> + 1;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT rank : public integral_constant<size_t, rank_v<_Tp>>
+{};
 
 #endif // defined(_CCCL_BUILTIN_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK)
 
