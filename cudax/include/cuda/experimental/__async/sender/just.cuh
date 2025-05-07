@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/pod_tuple.h>
+
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -57,17 +57,11 @@ private:
   using _JustTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__just_tag<_Disposition>());
   using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __signatures_fn
-  {
-    template <class... _Ts>
-    _CUDAX_API auto operator()(const _Ts&...) const noexcept -> __async::completion_signatures<_SetTag(_Ts...)>;
-  };
-
   template <class _Rcvr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __complete_fn
   {
     template <class... _Ts>
-    _CUDAX_TRIVIAL_API void operator()(_Ts&&... __ts) const noexcept
+    _CCCL_TRIVIAL_API void operator()(_Ts&&... __ts) const noexcept
     {
       _SetTag{}(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
@@ -75,85 +69,80 @@ private:
     _Rcvr& __rcvr_;
   };
 
-  template <class _Rcvr, class _Values>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : __immovable
+  template <class _Rcvr, class... _Ts>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
+    using __tuple_t _CCCL_NODEBUG_ALIAS               = _CUDA_VSTD::__tuple<_Ts...>;
 
-    _CUDAX_API void start() & noexcept
+    _CCCL_API __opstate_t(_Rcvr&& __rcvr, __tuple_t __values)
+        : __rcvr_{__rcvr}
+        , __values_{static_cast<__tuple_t&&>(__values)}
+    {}
+
+#if !_CCCL_COMPILER(GCC)
+    // Because of gcc#98995, making this operation state immovable will cause errors in
+    // functions that return composite operation states by value. Fortunately, the `just`
+    // operation state doesn't strictly need to be immovable, since its address never
+    // escapes. So for gcc, we let this operation state be movable.
+    // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+#endif
+
+    _CCCL_API void start() & noexcept
     {
-      __values_(__complete_fn<_Rcvr>{__rcvr_});
+      _CUDA_VSTD::__apply(
+        _SetTag{}, static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_), static_cast<_Rcvr&&>(__rcvr_));
     }
 
     _Rcvr __rcvr_;
-    _Values __values_;
+    __tuple_t __values_;
   };
 
-  template <class... _Ts>
-  static _CUDAX_TRIVIAL_API auto __mk_values(_Ts&... __ts)
-  {
-#if _CCCL_STD_VER >= 2020 && _CCCL_COMPILER(CLANG)
-    // In C++20 we can directly move-capture a variadic pack of arguments:
-    return [... __ts = static_cast<_Ts&&>(__ts)](auto fn) mutable noexcept {
-      using _Fn _CCCL_NODEBUG_ALIAS = decltype(fn);
-      static_assert(__nothrow_callable<_Fn, _Ts...>);
-      return static_cast<_Fn&&>(fn)(static_cast<_Ts&&>(__ts)...);
-    };
-#else
-    // In C++17 we need to use a tuple to move-capture a variadic pack of arguments:
-    return [__ts = __tupl{static_cast<_Ts&&>(__ts)...}](auto fn) mutable noexcept {
-      using _Fn _CCCL_NODEBUG_ALIAS = decltype(fn);
-      static_assert(__nothrow_callable<_Fn, _Ts...>);
-      return __ts.__apply(static_cast<_Fn&&>(fn), static_cast<__tuple<_Ts...>&&>(__ts));
-    };
-#endif
-  }
-
 public:
-  template <class _Values>
+  template <class... _Ts>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class... _Ts>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
-};
-
-template <__disposition_t _Disposition>
-template <class _Values>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
-{
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-
-  _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
-  _Values __values_;
-
-  template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures() noexcept
-  {
-    using __signatures_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Values&, __signatures_fn>;
-    return __signatures_t();
-  }
-
-  template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) && //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Values>) -> __opstate_t<_Rcvr, _Values>
-  {
-    return __opstate_t<_Rcvr, _Values>{{}, static_cast<_Rcvr&&>(__rcvr), static_cast<_Values&&>(__values_)};
-  }
-
-  template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Values const&>) -> __opstate_t<_Rcvr, _Values>
-  {
-    return __opstate_t<_Rcvr, _Values>{{}, static_cast<_Rcvr&&>(__rcvr), __values_};
-  }
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Ts... __ts) const;
 };
 
 template <__disposition_t _Disposition>
 template <class... _Ts>
-_CUDAX_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts) const
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
 {
-  using _Values _CCCL_NODEBUG_ALIAS = decltype(__mk_values(__ts...));
-  return __sndr_t<_Values>{{}, __mk_values(__ts...)};
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
+
+  template <class _Self, class... _Env>
+  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  {
+    return completion_signatures<_SetTag(_Ts...)>();
+  }
+
+  template <class _Rcvr>
+  _CCCL_API auto connect(_Rcvr __rcvr) && noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
+    -> __opstate_t<_Rcvr, _Ts...>
+  {
+    return __opstate_t<_Rcvr, _Ts...>{
+      static_cast<_Rcvr&&>(__rcvr), static_cast<_CUDA_VSTD::__tuple<_Ts...>&&>(__values_)};
+  }
+
+  template <class _Rcvr>
+  _CCCL_API auto connect(_Rcvr __rcvr) const& noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
+    -> __opstate_t<_Rcvr, _Ts...>
+  {
+    return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
+  _CUDA_VSTD::__tuple<_Ts...> __values_;
+};
+
+template <__disposition_t _Disposition>
+template <class... _Ts>
+_CCCL_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts) const
+{
+  return __sndr_t<_Ts...>{{}, {static_cast<_Ts&&>(__ts)...}};
 }
 
 template <class _Fn>

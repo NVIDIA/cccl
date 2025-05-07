@@ -7,10 +7,15 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
+
+// IMPORTANT: This file intionally lacks a header guard.
+
 #if !defined(_CUDAX_ASYNC_PROLOGUE_INCLUDED)
 #  error epilogue.cuh included without a prior inclusion of prologue.cuh
 #endif
 
+#undef _CCCL_IMMOVABLE_OPSTATE
 #undef _CUDAX_ASYNC_PROLOGUE_INCLUDED
 
 _CCCL_DIAG_POP
+_CCCL_POP_MACROS

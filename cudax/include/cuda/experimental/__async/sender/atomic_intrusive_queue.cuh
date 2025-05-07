@@ -24,7 +24,6 @@
 #include <cuda/std/atomic>
 
 #include <cuda/experimental/__async/sender/intrusive_queue.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -41,12 +40,12 @@ public:
   using __atomic_node_pointer _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::atomic<_Tp*>;
 
   [[nodiscard]]
-  _CUDAX_API auto empty() const noexcept -> bool
+  _CCCL_API auto empty() const noexcept -> bool
   {
     return __head_.load(_CUDA_VSTD::memory_order_relaxed) == nullptr;
   }
 
-  _CUDAX_API auto push(__node_pointer __node) noexcept -> bool
+  _CCCL_API auto push(__node_pointer __node) noexcept -> bool
   {
     _CCCL_ASSERT(__node != nullptr, "Cannot push a null pointer to the queue");
     __node_pointer __old_head = __head_.load(_CUDA_VSTD::memory_order_relaxed);
@@ -64,14 +63,14 @@ public:
     return true;
   }
 
-  _CUDAX_API void wait_for_item() noexcept
+  _CCCL_API void wait_for_item() noexcept
   {
     // Wait until the queue has an item in it:
     __head_.wait(nullptr);
   }
 
   [[nodiscard]]
-  _CUDAX_API auto pop_all() noexcept -> __intrusive_queue<_NextPtr>
+  _CCCL_API auto pop_all() noexcept -> __intrusive_queue<_NextPtr>
   {
     return __intrusive_queue<_NextPtr>::make_reversed(__head_.exchange(nullptr, _CUDA_VSTD::memory_order_acq_rel));
   }

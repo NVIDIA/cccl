@@ -22,7 +22,6 @@
 #endif // no system header
 
 // Include this first
-#include <cuda/experimental/__detail/config.cuh> // IWYU pragma: export
 
 // Include the other implementation headers:
 #include <cuda/experimental/__async/sender/conditional.cuh>    // IWYU pragma: export

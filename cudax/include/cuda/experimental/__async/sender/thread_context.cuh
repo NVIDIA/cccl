@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__detail/config.cuh>
-
 #if !defined(__CUDA_ARCH__)
 
 #  include <cuda/experimental/__async/sender/run_loop.cuh>
