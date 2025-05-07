@@ -67,7 +67,7 @@ _create_rapids_cmake_override_json() {
     # Define CCCL_TAG to override the default CCCL SHA. Otherwise the current HEAD of the local checkout is used.
     if test -n "${CCCL_TAG-}"; then
         # If CCCL_TAG is defined, fetch it to the local checkout
-        git fetch origin "${CCCL_TAG}";
+        git -C "${HOME}/cccl" fetch origin "${CCCL_TAG}";
         cccl_sha="$(git -C "${HOME}/cccl" rev-parse FETCH_HEAD)";
     else
         cccl_sha="$(git -C "${HOME}/cccl" rev-parse HEAD)";

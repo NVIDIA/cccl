@@ -1601,6 +1601,111 @@ will differ between the different threads which call `inner()`.
     ...
     th.inner().sync(); // synchronize threads in the same block of the second level of the hierarchy
 
+``cuda_kernel`` construct
+-------------------------
+
+CUDASTF provides the `cuda_kernel` construct to implement tasks executing a
+CUDA kernel. This construct is especially useful when we writing code that may
+be executed using a CUDA graph backend, because its `task` construct relies on
+a graph capture mechanism which has some overhead, while the `cuda_kernel`
+construct is directly translated to CUDA kernel launch APIs, thus avoiding this
+overhead.
+
+
+`cuda_kernel` accepts the same arguments as the task construct, including an
+execution place and a list of data dependencies.  It implements a `->*`
+operator that takes a lambda function as argument.  This lambda function must
+return an object of type `cuda_kernel_desc`, describing the CUDA kernel to
+execute.  The constructor of the `cuda_kernel_desc` class, shown below, takes
+the CUDA kernel function pointer (ie. the ``__global__`` method defining the
+kernel), a grid description, the amount of dynamically allocated shared memory,
+and finally all the arguments that must be passed to the CUDA kernel.
+
+.. code:: cpp
+
+  template <typename Fun, typename... Args>
+  cuda_kernel_desc(Fun func,           // Pointer to the CUDA kernel function (__global__)
+                   dim3 gridDim_,      // Dimensions of the grid (number of thread blocks)
+                   dim3 blockDim_,     // Dimensions of each thread block
+                   size_t sharedMem_,  // Amount of dynamically allocated shared memory
+                   Args... args)       // Arguments passed to the CUDA kernel
+
+For example, the following piece of code creates a task that launches a CUDA kernel that accesses two logical data.
+
+.. code:: cpp
+
+  ctx.cuda_kernel(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
+    // calls __global__ void axpy(double a, slice<const double> x, slice<double> y);
+    // similarly to axpy<<<16, 128, 0, ...>>>(alpha, dX, dY)
+    return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
+  };
+
+Similar to the `task` construct, the `cuda_kernel` construct also supports
+specifying dynamic dependencies using the `add_deps` method and retrieving data
+instances using `get`. The previous code can therefore be rewritten as:
+
+.. code:: cpp
+
+  auto t = ctx.cuda_kernel();
+  t.add_deps(lX.read());
+  t.add_deps(lY.rw());
+  t->*[&]() {
+    auto dX = t.template get<slice<double>>(0);
+    auto dY = t.template get<slice<double>>(1);
+    return cuda_kernel_desc{axpy, 16, 128, 0, alpha, dX, dY};
+  };
+
+``cuda_kernel_chain`` construct
+-------------------------------
+
+In addition to `cuda_kernel`, CUDASTF provides the `cuda_kernel_chain`
+construct to execute sequences of CUDA kernels within a single task. Unlike
+`cuda_kernel`, which expects a single kernel descriptor, the lambda passed to
+the `->*` operator of `cuda_kernel_chain` should return a
+`::std::vector<cuda_kernel_desc>` describing multiple kernel launches.
+Kernels specified within the vector are executed sequentially in the order they appear.
+
+The following two constructs are therefore equivalent, except that the
+`cuda_kernel_chain` implementation directly translate to efficient, direct CUDA
+kernel launch APIs, while the implementation of the `task` construct may rely
+on graph capture when using a CUDA graph backend.
+
+.. code:: cpp
+
+  /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
+  ctx.cuda_kernel_chain(lX.read(), lY.rw())->*[&](auto dX, auto dY) {
+     return ::std::vector<cuda_kernel_desc> {
+         { axpy, 16, 128, 0, alpha, dX, dY },
+         { axpy, 16, 128, 0, beta,  dX, dY },
+         { axpy, 16, 128, 0, gamma, dX, dY }
+     };
+  };
+
+  /* Equivalent to the previous construct, but possibly less efficient */
+  ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t stream, auto dX, auto dY) {
+     axpy<<<16, 128, 0, stream>>>(alpha, dX, dY);
+     axpy<<<16, 128, 0, stream>>>(beta,  dX, dY);
+     axpy<<<16, 128, 0, stream>>>(gamma, dX, dY);
+  };
+
+Similarly to the `cuda_kernel` constructs, dependencies can be set dynamically:
+
+.. code:: cpp
+
+  /* Compute Y = Y + alpha X, Y = Y + beta X, then Y = Y + gamma X sequentially */
+  auto t = ctx.cuda_kernel_chain();
+  t.add_deps(lX.read());
+  t.add_deps(lY.rw());
+  t->*[&]() {
+    auto dX = t.template get<slice<double>>(0);
+    auto dY = t.template get<slice<double>>(1);
+    return ::std::vector<cuda_kernel_desc> {
+        { axpy, 16, 128, 0, alpha, dX, dY },
+        { axpy, 16, 128, 0, beta, dX, dY },
+        { axpy, 16, 128, 0, gamma, dX, dY }
+    };
+  };
+
 C++ Types of logical data and tasks
 -----------------------------------
 
@@ -1781,7 +1886,7 @@ one may however already manage coherency or enforce dependencies.
 
 - The "logical data freezing" mechanism ensures data availability while letting
   the application take care of synchronization.
-- Logical token makes it possible to enforce concurrent execution while
+- Tokens make it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 
 Freezing logical data
@@ -1856,24 +1961,24 @@ depend on the completion of the work in the streams used for any preceding
 It is possible to retrieve the access mode used to freeze a logical data with
 the ``get_access_mode()`` method of the ``frozen_logical_data`` object.
 
-Logical token
-^^^^^^^^^^^^^
+Tokens
+^^^^^^
 
-A logical token is a specific type of logical data whose only purpose is to
+A token is a specific type of logical data whose only purpose is to
 automate synchronization, while letting the application manage the actual data.
 This can, for example, be useful with user-provided buffers on a single device,
 where no allocations or transfers are required, but where concurrent accesses
 may occur.
 
-A logical token internally relies on the ``void_interface`` data interface,
+A token internally relies on the ``void_interface`` data interface,
 which is specifically optimized to skip unnecessary stages in the cache
 coherency protocol (e.g., data allocations or copying data). When appropriate,
-using a logical token rather than a logical data with a full-fledged data
+using a token rather than a logical data with a full-fledged data
 interface therefore minimizes runtime overhead.
 
 .. code:: cpp
 
-    auto token = ctx.logical_token();
+    auto token = ctx.token();
 
     // A and B are assumed to be two other valid logical data
     ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, auto a, auto b)
@@ -1881,10 +1986,10 @@ interface therefore minimizes runtime overhead.
         ...
     };
 
-The example above shows how to create a logical token and how to use it in a
+The example above shows how to create a token and how to use it in a
 task.
 
-Since the logical token is only used for synchronization purposes, the
+Since the token is only used for synchronization purposes, the
 corresponding argument may be omitted in the lambda function passed as the
 task’s implementation. Thus, the above task is equivalent to this code:
 
@@ -1897,10 +2002,14 @@ To avoid ambiguities, you must either consistently ignore every
 unused. Eliding these token arguments is possible in the ``ctx.task`` and
 ``ctx.host_launch`` constructs.
 
-Note that the token created by the ``logical_token`` method of the context
+Note that the token created by the ``token`` method of the context
 object is already valid, which means the first access can be either a ``read()``
 or an ``rw()`` access. There is no need to set any content in the token
 (unlike a logical data object created from a shape).
+
+A token corresponds to a ``logical_data<void_interface>`` object, so that the
+``token`` type serves as a short-hand for this type. ``ctx.token()`` thus
+returns an object with a ``token`` type.
 
 Tools
 -----
@@ -2022,9 +2131,9 @@ illustrates how to add nested sections:
 .. code:: c++
 
     context ctx;
-    auto lA = ctx.logical_token().set_symbol("A");
-    auto lB = ctx.logical_token().set_symbol("B");
-    auto lC = ctx.logical_token().set_symbol("C");
+    auto lA = ctx.token().set_symbol("A");
+    auto lB = ctx.token().set_symbol("B");
+    auto lC = ctx.token().set_symbol("C");
 
     // Begin a top-level section named "foo"
     auto s_foo = ctx.dot_section("foo");

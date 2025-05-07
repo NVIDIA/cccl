@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,8 +26,6 @@
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/type_list.h>
 
-#include <cuda/experimental/__detail/config.cuh>
-
 #if __cpp_lib_three_way_comparison
 #  include <compare> // IWYU pragma: keep
 #endif
@@ -41,10 +39,10 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 namespace cuda::experimental::__async
 {
 template <class _Ret, class... _Args>
-using __fn_t = _Ret(_Args...);
+using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
 
 template <class _Ty>
-_Ty&& declval() noexcept;
+auto declval() noexcept -> _Ty&&;
 
 template <size_t... _Vals>
 struct __moffsets;
@@ -90,9 +88,9 @@ struct _WITH_COMPLETIONS
 
 struct __merror_base
 {
-  // _CUDAX_DEFAULTED_API virtual ~__merror_base() = default;
+  // _CCCL_HIDE_FROM_ABI virtual ~__merror_base() = default;
 
-  _CCCL_HOST_DEVICE constexpr friend bool __ustdex_unhandled_error(void*) noexcept
+  _CCCL_HOST_DEVICE constexpr friend auto __ustdex_unhandled_error(void*) noexcept -> bool
   {
     return true;
   }
@@ -117,16 +115,16 @@ struct _ERROR : __merror_base
   using __sends_stopped _CCCL_NODEBUG_ALIAS = _ERROR;
 
   // The following operator overloads also simplify error propagation.
-  _CCCL_HOST_DEVICE _ERROR operator+();
+  _CCCL_HOST_DEVICE auto operator+() -> _ERROR;
 
   template <class _Ty>
-  _CCCL_HOST_DEVICE _ERROR& operator,(_Ty&);
+  _CCCL_HOST_DEVICE auto operator,(_Ty&) -> _ERROR&;
 
   template <class... _With>
-  _CCCL_HOST_DEVICE _ERROR<_What..., _With...>& with(_ERROR<_With...>&);
+  _CCCL_HOST_DEVICE auto with(_ERROR<_With...>&) -> _ERROR<_What..., _With...>&;
 };
 
-_CCCL_HOST_DEVICE constexpr bool __ustdex_unhandled_error(...) noexcept
+_CCCL_HOST_DEVICE constexpr auto __ustdex_unhandled_error(...) noexcept -> bool
 {
   return false;
 }
@@ -150,7 +148,7 @@ inline constexpr bool __type_contains_error =
 #endif
 
 template <class... _Ts>
-using __type_find_error = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
+using __type_find_error _CCCL_NODEBUG_ALIAS = decltype(+(declval<_Ts&>(), ..., declval<_ERROR<_UNKNOWN>&>()));
 
 template <template <class...> class _Fn, class... _Ts>
 inline constexpr bool __type_valid_v = _CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value;
@@ -170,7 +168,7 @@ struct __type_self_or_error_with_<true>
 };
 
 template <class _Ty, class... _With>
-using __type_self_or_error_with =
+using __type_self_or_error_with _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::__type_call<__type_self_or_error_with_<__type_is_error<_Ty>>, _Ty, _With...>;
 
 template <bool>
@@ -180,7 +178,7 @@ template <>
 struct __type_try__<false>
 {
   template <template <class...> class _Fn, class... _Ts>
-  using __call_q = _Fn<_Ts...>;
+  using __call_q _CCCL_NODEBUG_ALIAS = _Fn<_Ts...>;
 
   template <class _Fn, class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS = typename _Fn::template __call<_Ts...>;
@@ -190,17 +188,19 @@ template <>
 struct __type_try__<true>
 {
   template <template <class...> class _Fn, class... _Ts>
-  using __call_q = __type_find_error<_Ts...>;
+  using __call_q _CCCL_NODEBUG_ALIAS = __type_find_error<_Ts...>;
 
   template <class _Fn, class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS = __type_find_error<_Fn, _Ts...>;
 };
 
 template <class _Fn, class... _Ts>
-using __type_try_call = typename __type_try__<__type_contains_error<_Fn, _Ts...>>::template __call<_Fn, _Ts...>;
+using __type_try_call _CCCL_NODEBUG_ALIAS =
+  typename __type_try__<__type_contains_error<_Fn, _Ts...>>::template __call<_Fn, _Ts...>;
 
 template <template <class...> class _Fn, class... _Ts>
-using __type_try_call_quote = typename __type_try__<__type_contains_error<_Ts...>>::template __call_q<_Fn, _Ts...>;
+using __type_try_call_quote _CCCL_NODEBUG_ALIAS =
+  typename __type_try__<__type_contains_error<_Ts...>>::template __call_q<_Fn, _Ts...>;
 
 // wraps a meta-callable such that if any of the arguments are errors, the
 // result is an error.
@@ -244,15 +244,15 @@ struct __type_function
 template <class _First, class _Second>
 struct __type_pair
 {
-  using first  = _First;
-  using second = _Second;
+  using first _CCCL_NODEBUG_ALIAS  = _First;
+  using second _CCCL_NODEBUG_ALIAS = _Second;
 };
 
 template <class _Pair>
-using __type_first = typename _Pair::first;
+using __type_first _CCCL_NODEBUG_ALIAS = typename _Pair::first;
 
 template <class _Pair>
-using __type_second = typename _Pair::second;
+using __type_second _CCCL_NODEBUG_ALIAS = typename _Pair::second;
 
 template <template <class...> class _Second, template <class...> class _First>
 struct __type_compose_quote

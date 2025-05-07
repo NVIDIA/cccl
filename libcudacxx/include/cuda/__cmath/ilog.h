@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__cmath/rounding_functions.h>
 #include <cuda/std/__concepts/concept_macros.h>
@@ -36,14 +37,22 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
 {
   using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
   _CCCL_ASSERT(__t > 0, "ilog2() argument must be strictly positive");
-  auto __log10_approx = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
-  _CCCL_ASSUME(__log10_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits);
-  return __log10_approx;
+  auto __log2_approx = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
+  _CCCL_ASSUME(__log2_approx <= _CUDA_VSTD::numeric_limits<_Tp>::digits);
+  return __log2_approx;
+}
+
+_CCCL_TEMPLATE(typename _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int ceil_ilog2(_Tp __t) noexcept
+{
+  using _Up = _CUDA_VSTD::make_unsigned_t<_Tp>;
+  return ::cuda::ilog2(__t) + !_CUDA_VSTD::has_single_bit(static_cast<_Up>(__t));
 }
 
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::array<uint32_t, 10> __power_of_10_32bit() noexcept
@@ -133,7 +142,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog2(_Tp __t) noexcept
 #endif // _CCCL_HAS_INT128()
 
 _CCCL_TEMPLATE(typename _Tp)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_integer, _Tp))
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_cv_integer, _Tp))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
 {
   _CCCL_ASSERT(__t > 0, "ilog10() argument must be strictly positive");

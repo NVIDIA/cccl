@@ -127,7 +127,7 @@ merge_sort_runtime_tuning_policy get_policy(int cc, int key_size)
   // TODO: we hardcode this value in order to make sure that the merge_sort test does not fail due to the memory op
   // assertions. This currently happens when we pass in items and keys of type uint8_t or int16_t, and for the custom
   // types test as well. This will be fixed after https://github.com/NVIDIA/cccl/issues/3570 is resolved.
-  items_per_thread = 2;
+  items_per_thread = 1;
 
   return {block_size, items_per_thread, block_size * items_per_thread};
 }
@@ -226,6 +226,16 @@ struct merge_sort_kernel_source
   CUkernel MergeSortMergeKernel() const
   {
     return build.merge_kernel;
+  }
+
+  std::size_t KeySize() const
+  {
+    return build.key_type.size;
+  }
+
+  std::size_t ValueSize() const
+  {
+    return build.item_type.size;
   }
 };
 
@@ -398,8 +408,9 @@ struct device_merge_sort_vsmem_helper {{
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 7;
-    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 8;
+    const char* args[num_args] = {
+      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
@@ -438,6 +449,8 @@ struct device_merge_sort_vsmem_helper {{
     build_ptr->cc         = cc;
     build_ptr->cubin      = (void*) result.data.release();
     build_ptr->cubin_size = result.size;
+    build_ptr->key_type   = input_keys_it.value_type;
+    build_ptr->item_type  = input_items_it.value_type;
   }
   catch (const std::exception& exc)
   {
@@ -480,7 +493,7 @@ CUresult cccl_device_merge_sort(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    cub::DispatchMergeSort<
+    auto exec_status = cub::DispatchMergeSort<
       indirect_arg_t,
       indirect_arg_t,
       indirect_arg_t,
@@ -504,6 +517,8 @@ CUresult cccl_device_merge_sort(
                                 {build},
                                 cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
                                 {d_out_keys.value_type.size});
+
+    error = static_cast<CUresult>(exec_status);
   }
   catch (const std::exception& exc)
   {

@@ -42,7 +42,7 @@ using terminate_handler = void (*)();
 #  ifdef __CUDA_ARCH__
 __device__
 #  endif // __CUDA_ARCH__
-  static _LIBCUDACXX_SAFE_STATIC _CUDA_VSTD::atomic<terminate_handler>
+  static _CCCL_CONSTINIT _CUDA_VSTD::atomic<terminate_handler>
     __cccl_terminate_handler{&__cccl_terminate};
 
 _LIBCUDACXX_HIDE_FROM_ABI  terminate_handler set_terminate(terminate_handler __func) noexcept

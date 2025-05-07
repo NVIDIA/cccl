@@ -44,16 +44,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
+#include <cub/detail/choose_offset.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce_by_key.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
 
 #include <thrust/iterator/constant_iterator.h>
-
-#include <iterator>
-
-#include <stdio.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -180,7 +177,8 @@ struct DeviceRunLengthEncode
   template <typename InputIteratorT,
             typename UniqueOutputIteratorT,
             typename LengthsOutputIteratorT,
-            typename NumRunsOutputIteratorT>
+            typename NumRunsOutputIteratorT,
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Encode(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -188,14 +186,16 @@ struct DeviceRunLengthEncode
     UniqueOutputIteratorT d_unique_out,
     LengthsOutputIteratorT d_counts_out,
     NumRunsOutputIteratorT d_num_runs_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
 
-    using offset_t     = int; // Signed integer type for global offsets
     using equality_op  = ::cuda::std::equal_to<>; // Default == operator
     using reduction_op = ::cuda::std::plus<>; // Value reduction operator
+
+    // Offset type used for global offsets
+    using offset_t = detail::choose_signed_offset_t<NumItemsT>;
 
     // The lengths output value type
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
@@ -209,7 +209,7 @@ struct DeviceRunLengthEncode
 
     using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 
-    return DispatchReduceByKey<
+    return detail::reduce::DispatchStreamingReduceByKey<
       InputIteratorT,
       UniqueOutputIteratorT,
       lengths_input_iterator_t,
@@ -342,7 +342,7 @@ struct DeviceRunLengthEncode
     int num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
     using OffsetT    = int; // Signed integer type for global offsets
     using EqualityOp = ::cuda::std::equal_to<>; // Default == operator

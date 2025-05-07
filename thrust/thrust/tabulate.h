@@ -67,7 +67,7 @@ THRUST_NAMESPACE_BEGIN
  *  ...
  *  const int N = 10;
  *  int A[N];
- *  thrust::tabulate(thrust::host, A, A + 10, thrust::negate<int>());
+ *  thrust::tabulate(thrust::host, A, A + 10, ::cuda::std::negate<int>());
  *  // A is now {0, -1, -2, -3, -4, -5, -6, -7, -8, -9}
  *  \endcode
  *
@@ -106,7 +106,7 @@ tabulate(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
  *  ...
  *  const int N = 10;
  *  int A[N];
- *  thrust::tabulate(A, A + 10, thrust::negate<int>());
+ *  thrust::tabulate(A, A + 10, ::cuda::std::negate<int>());
  *  // A is now {0, -1, -2, -3, -4, -5, -6, -7, -8, -9}
  *  \endcode
  *

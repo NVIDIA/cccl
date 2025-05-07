@@ -102,14 +102,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool check_Y()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
   int j_ = 0;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, bool);
+  STATIC_MEMBER_VAR(dtor_called, bool)
   Z()
       : i_(0)
   {}
@@ -141,7 +141,7 @@ void test_exceptions()
   {
     assert(static_cast<bool>(opt) == true);
     assert(Z::dtor_called() == false);
-    auto& v = opt.emplace({1, 2});
+    [[maybe_unused]] auto& v = opt.emplace({1, 2});
     static_assert(cuda::std::is_same_v<Z&, decltype(v)>, "");
     assert(false);
   }
@@ -152,7 +152,7 @@ void test_exceptions()
     assert(Z::dtor_called() == true);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -178,9 +178,9 @@ int main(int, char**)
     static_assert(check_Y());
 #endif
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

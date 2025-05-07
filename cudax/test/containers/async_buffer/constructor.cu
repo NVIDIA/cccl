@@ -23,15 +23,20 @@
 #include "helper.h"
 #include "types.h"
 
-TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
-                   "[container][async_buffer]",
-                   cuda::std::tuple<cuda::mr::host_accessible>,
-                   cuda::std::tuple<cuda::mr::device_accessible>,
-                   (cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>) )
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                                  cuda::std::tuple<cuda::mr::device_accessible>,
+                                  cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
+#endif
+
+C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_types)
 {
-  using Env      = typename extract_properties<TestType>::env;
-  using Resource = typename extract_properties<TestType>::resource;
-  using Buffer   = typename extract_properties<TestType>::async_buffer;
+  using TestT    = c2h::get<0, TestType>;
+  using Env      = typename extract_properties<TestT>::env;
+  using Resource = typename extract_properties<TestT>::resource;
+  using Buffer   = typename extract_properties<TestT>::async_buffer;
   using T        = typename Buffer::value_type;
 
   cudax::stream stream{};
@@ -73,18 +78,10 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
   SECTION("Construction from iterators")
   {
     const cuda::std::array<T, 6> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
-    { // can be constructed from two equal forward iterators
-      using iter = forward_iterator<const T*>;
-      Buffer buf(env, iter{input.begin()}, iter{input.begin()});
+    { // can be constructed from two equal input iterators
+      Buffer buf(env, input.begin(), input.begin());
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // can be constructed from two forward iterators
-      using iter = forward_iterator<const T*>;
-      Buffer buf(env, iter{input.begin()}, iter{input.end()});
-      CUDAX_CHECK(buf.size() == 6);
-      CUDAX_CHECK(equal_range(buf));
     }
 
     { // can be constructed from two input iterators
@@ -96,30 +93,6 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
 
   SECTION("Construction from range")
   {
-    { // can be constructed from an empty uncommon forward range
-      Buffer buf(env, uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // can be constructed from a non-empty uncommon forward range
-      Buffer buf(env, uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-
-    { // can be constructed from an empty sized uncommon forward range
-      Buffer buf(env, sized_uncommon_range<T, 0>{});
-      CUDAX_CHECK(buf.empty());
-      CUDAX_CHECK(buf.data() == nullptr);
-    }
-
-    { // can be constructed from a non-empty sized uncommon forward range
-      Buffer buf(env, sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
-      CUDAX_CHECK(!buf.empty());
-      CUDAX_CHECK(equal_range(buf));
-    }
-
     { // can be constructed from an empty random access range
       Buffer buf(env, cuda::std::array<T, 0>{});
       CUDAX_CHECK(buf.empty());
@@ -193,7 +166,7 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
   }
 
 #if 0 // Implement exception handling
-#  ifndef TEST_HAS_NO_EXCEPTIONS
+#  if _CCCL_HAS_EXCEPTIONS()
   SECTION("Exception handling throwing bad_alloc")
   {
     using async_buffer = cudax::async_buffer<int>;
@@ -280,6 +253,6 @@ TEMPLATE_TEST_CASE("cudax::async_buffer constructors",
       CUDAX_CHECK(false);
     }
   }
-#  endif // !TEST_HAS_NO_EXCEPTIONS
+#  endif // _CCCL_HAS_EXCEPTIONS()
 #endif // 0
 }

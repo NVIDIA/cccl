@@ -27,7 +27,7 @@ class X
   int i_;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   __host__ __device__ X(int i)
       : i_(i)
   {}
@@ -49,7 +49,7 @@ class Y
   int i_;
 
 public:
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   __host__ __device__ Y(int i)
       : i_(i)
   {}
@@ -157,7 +157,7 @@ public:
   }
 };
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 class Z
 {
   int i_;
@@ -250,7 +250,7 @@ void test_exceptions()
     assert(*opt2 == 2);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -402,9 +402,9 @@ int main(int, char**)
     assert(cuda::std::addressof(other_value) == cuda::std::addressof(*opt1));
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   return 0;
 }

@@ -2073,15 +2073,15 @@ inline void fetch_data(
 
     // This will initiate a copy if the data was not valid
     d.enforce_msi_protocol(instance_id, mode, stf_prereq);
-
-    stf_prereq.optimize(bctx);
-
-    // Gather all prereqs required to fetch this piece of data into the
-    // dependencies of the task.
-    // Even temporary allocation may require to enforce dependencies
-    // because we are reclaiming data for instance.
-    result.merge(mv(stf_prereq));
   }
+
+  stf_prereq.optimize(bctx);
+
+  // Gather all prereqs required to fetch this piece of data into the
+  // dependencies of the task.
+  // Even temporary allocation may require to enforce dependencies
+  // because we are reclaiming data for instance.
+  result.merge(mv(stf_prereq));
 }
 
 }; // namespace reserved
@@ -2438,6 +2438,9 @@ public:
 
   ///@}
 };
+
+// Shortcut type for the logical data produced by ctx.token()
+using token = logical_data<void_interface>;
 
 /**
  * @brief Reclaims memory from allocated data instances.

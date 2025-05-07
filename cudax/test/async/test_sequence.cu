@@ -25,7 +25,7 @@
 
 namespace
 {
-TEST_CASE("simple use of sequence executes both child operations", "[adaptors][sequence]")
+C2H_TEST("simple use of sequence executes both child operations", "[adaptors][sequence]")
 {
   bool flag1{false};
   bool flag2{false};
@@ -47,8 +47,8 @@ TEST_CASE("simple use of sequence executes both child operations", "[adaptors][s
   auto op = cudax_async::connect(std::move(sndr1), checked_value_receiver<>{});
   cudax_async::start(op);
 
-  CUDAX_CHECK(flag1);
-  CUDAX_CHECK(flag2);
+  CHECK(flag1);
+  CHECK(flag2);
 }
 
 } // namespace

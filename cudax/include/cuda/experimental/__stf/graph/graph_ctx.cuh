@@ -534,11 +534,11 @@ private:
   impl& state()
   {
     return dynamic_cast<impl&>(get_state());
-  };
+  }
   const impl& state() const
   {
     return dynamic_cast<const impl&>(get_state());
-  };
+  }
 
   /// @brief Inserts an empty node that depends on all pending operations
   cudaStream_t task_fence_impl(backend_ctx_untyped& bctx)
@@ -742,7 +742,7 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   unpin_memory(Y);
 };
 
-#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 
@@ -1025,7 +1025,7 @@ UNITTEST("create many graph ctxs")
 
 } // end namespace reserved
 
-#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf

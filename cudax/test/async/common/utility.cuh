@@ -12,6 +12,8 @@
 
 #include <cuda/experimental/__async/sender.cuh>
 
+#include <iostream>
+
 #include "testing.cuh"
 
 //! A move-only type
@@ -33,7 +35,13 @@ struct movable
     return a.value_ != b.value_;
   }
 
-  _CCCL_HOST_DEVICE int value()
+  friend std::ostream& operator<<(std::ostream& os, const movable& self)
+  {
+    os << "movable{" << self.value_ << "}";
+    return os;
+  }
+
+  _CCCL_HOST_DEVICE int value() const
   {
     return value_;
   } // silence warning of unused private field
@@ -60,6 +68,12 @@ struct potentially_throwing
   {
     return *this;
   }
+
+  friend std::ostream& operator<<(std::ostream& os, const potentially_throwing&)
+  {
+    os << "potentially_throwing{}";
+    return os;
+  }
 };
 
 struct string
@@ -72,7 +86,7 @@ struct string
     while (c[len++])
       ;
     char* tmp = str = new char[len];
-    while (*tmp++ = *c++)
+    while ((*tmp++ = *c++))
       ;
   }
 
@@ -110,6 +124,12 @@ struct string
     return !(left == right);
   }
 
+  friend std::ostream& operator<<(std::ostream& os, const string& self)
+  {
+    os << "string{" << self.str << "}";
+    return os;
+  }
+
 private:
   char* str{};
 };
@@ -124,6 +144,12 @@ struct error_code
   _CCCL_HOST_DEVICE friend bool operator!=(const error_code& left, const error_code& right) noexcept
   {
     return !(left == right);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const error_code& self)
+  {
+    os << "error_code{" << static_cast<int>(self.ec) << "}";
+    return os;
   }
 
   std::errc ec;

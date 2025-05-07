@@ -24,6 +24,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _BinaryPredicate>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator
 adjacent_find(_ForwardIterator __first, _ForwardIterator __last, _BinaryPredicate __pred)

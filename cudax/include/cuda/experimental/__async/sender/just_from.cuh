@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,12 +23,12 @@
 
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
-#include <cuda/experimental/__detail/config.cuh>
+#include <cuda/experimental/__async/sender/visit.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -59,18 +59,19 @@ template <__disposition_t _Disposition>
 struct __just_from_t
 {
 private:
-  using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
-  using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
+  using _JustTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__just_from_tag<_Disposition>());
+  using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
-  using __diag_t = _CUDA_VSTD::conditional_t<_SetTag() == set_error,
-                                             _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
-                                             _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
+  using __diag_t _CCCL_NODEBUG_ALIAS =
+    _CUDA_VSTD::conditional_t<_SetTag() == set_error,
+                              _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
+                              _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
   template <class... _Ts>
-  using __error_t =
+  using __error_t _CCCL_NODEBUG_ALIAS =
     _ERROR<_WHERE(_IN_ALGORITHM, _JustTag), _WHAT(__diag_t), _WITH_COMPLETION_SIGNATURE<_SetTag(_Ts...)>>;
 
-  struct __probe_fn
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __probe_fn
   {
     template <class... _Ts>
     auto operator()(_Ts&&... __ts) const noexcept
@@ -80,29 +81,29 @@ private:
   };
 
   template <class _Rcvr>
-  struct __complete_fn
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __complete_fn
   {
     _Rcvr& __rcvr_;
 
     template <class... _Ts>
-    _CUDAX_API auto operator()(_Ts&&... __ts) const noexcept
+    _CCCL_API auto operator()(_Ts&&... __ts) const noexcept
     {
       _SetTag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
   };
 
   template <class _Rcvr, class _Fn>
-  struct __opstate
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
   {
-    using operation_state_concept = operation_state_t;
+    using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
-    _Rcvr __rcvr_;
-    _Fn __fn_;
-
-    _CUDAX_API void start() & noexcept
+    _CCCL_API void start() & noexcept
     {
       static_cast<_Fn&&>(__fn_)(__complete_fn<_Rcvr>{__rcvr_});
     }
+
+    _Rcvr __rcvr_;
+    _Fn __fn_;
   };
 
 public:
@@ -110,34 +111,34 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Fn>
-  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>;
 };
 
 template <__disposition_t _Disposition>
 template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
 {
-  using sender_concept = sender_t;
+  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   _CCCL_NO_UNIQUE_ADDRESS _JustTag __tag_;
   _Fn __fn_;
 
   template <class _Self, class...>
-  _CUDAX_API static constexpr auto get_completion_signatures() noexcept
+  _CCCL_API static constexpr auto get_completion_signatures() noexcept
   {
     return __call_result_t<_Fn, __probe_fn>{};
   }
 
   template <class _Rcvr>
-  _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) && //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>)
+  _CCCL_API auto connect(_Rcvr __rcvr) && //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>) -> __opstate<_Rcvr, _Fn>
   {
     return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
   }
 
   template <class _Rcvr>
-  _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) const& //
-    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>)
+  _CCCL_API auto connect(_Rcvr __rcvr) const& //
+    noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>) -> __opstate<_Rcvr, _Fn>
   {
     return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
@@ -145,14 +146,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
 
 template <__disposition_t _Disposition>
 template <class _Fn>
-_CUDAX_TRIVIAL_API auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
+_CCCL_TRIVIAL_API constexpr auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
 {
-  using __completions = __call_result_t<_Fn, __probe_fn>;
+  using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;
   static_assert(__valid_completion_signatures<__completions>,
                 "The function passed to just_from must return an instance of a specialization of "
                 "completion_signatures<>.");
   return __sndr_t<_Fn>{{}, static_cast<_Fn&&>(__fn)};
 }
+
+template <class _Fn>
+inline constexpr size_t structured_binding_size<__just_from_t<__value>::__sndr_t<_Fn>> = 2;
+template <class _Fn>
+inline constexpr size_t structured_binding_size<__just_from_t<__error>::__sndr_t<_Fn>> = 2;
+template <class _Fn>
+inline constexpr size_t structured_binding_size<__just_from_t<__stopped>::__sndr_t<_Fn>> = 2;
 
 _CCCL_GLOBAL_CONSTANT struct just_from_t : __just_from_t<__value>
 {

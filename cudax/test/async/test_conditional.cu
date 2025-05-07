@@ -24,7 +24,7 @@
 
 namespace
 {
-TEST_CASE("simple use of conditional runs exactly one of the two closures", "[adaptors][conditional]")
+C2H_TEST("simple use of conditional runs exactly one of the two closures", "[adaptors][conditional]")
 {
   for (int i = 42; i < 44; ++i)
   {
@@ -46,17 +46,17 @@ TEST_CASE("simple use of conditional runs exactly one of the two closures", "[ad
 
     check_value_types<types<>>(sndr1);
     check_sends_stopped<false>(sndr1);
-#if defined(_CCCL_NO_EXCEPTIONS)
-    check_error_types<>(sndr1);
-#else
+#if _CCCL_HAS_EXCEPTIONS()
     check_error_types<std::exception_ptr>(sndr1);
-#endif
+#else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
+    check_error_types<>(sndr1);
+#endif // !_CCCL_HAS_EXCEPTIONS()
 
     auto op = cudax_async::connect(std::move(sndr1), checked_value_receiver<>{});
     cudax_async::start(op);
 
-    CUDAX_CHECK(even == (i % 2 == 0));
-    CUDAX_CHECK(odd == (i % 2 == 1));
+    CHECK(even == (i % 2 == 0));
+    CHECK(odd == (i % 2 == 1));
   }
 }
 

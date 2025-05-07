@@ -99,7 +99,9 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
         return a + b
 
     num_items = 1024
-    d_input = iterators.ReverseIterator(iterators.CountingIterator(np.int32(num_items)))
+    d_input = iterators.ReverseInputIterator(
+        iterators.CountingIterator(np.int32(num_items))
+    )
     dtype = np.dtype("int32")
     h_init = np.array([0], dtype=dtype)
     d_output = cp.empty(num_items, dtype=dtype)
@@ -118,6 +120,7 @@ def test_scan_reverse_counting_iterator_input(force_inclusive):
     "force_inclusive",
     [True, False],
 )
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_scan_struct_type(force_inclusive):
     @gpu_struct
     class XY:

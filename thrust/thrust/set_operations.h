@@ -240,7 +240,7 @@ OutputIterator set_difference(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_difference(thrust::host, A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_difference(thrust::host, A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result is now {6, 4, 0}
  *  \endcode
  *
@@ -314,7 +314,7 @@ _CCCL_HOST_DEVICE OutputIterator set_difference(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_difference(A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_difference(A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result is now {6, 4, 0}
  *  \endcode
  *
@@ -561,7 +561,8 @@ OutputIterator set_intersection(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_intersection(thrust::host, A1, A1 + 6, A2, A2 + 7, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_intersection(thrust::host, A1, A1 + 6, A2, A2 + 7, result,
+ * ::cuda::std::greater<int>());
  *  // result is now {5, 3, 1}
  *  \endcode
  *
@@ -646,7 +647,7 @@ _CCCL_HOST_DEVICE OutputIterator set_intersection(
  *
  *  int result[3];
  *
- *  int *result_end = thrust::set_intersection(A1, A1 + 6, A2, A2 + 7, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_intersection(A1, A1 + 6, A2, A2 + 7, result, ::cuda::std::greater<int>());
  *  // result is now {5, 3, 1}
  *  \endcode
  *
@@ -1195,7 +1196,7 @@ OutputIterator set_union(
  *
  *  int result[11];
  *
- *  int *result_end = thrust::set_union(thrust::host, A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_union(thrust::host, A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result = {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  \endcode
  *
@@ -1271,7 +1272,7 @@ _CCCL_HOST_DEVICE OutputIterator set_union(
  *
  *  int result[11];
  *
- *  int *result_end = thrust::set_union(A1, A1 + 7, A2, A2 + 5, result, thrust::greater<int>());
+ *  int *result_end = thrust::set_union(A1, A1 + 7, A2, A2 + 5, result, ::cuda::std::greater<int>());
  *  // result = {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  \endcode
  *
@@ -1584,7 +1585,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_difference_by_key(
  *  int vals_result[3];
  *
  *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 5,
- * A_vals, B_vals, keys_result, vals_result, thrust::greater<int>());
+ * A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -1692,7 +1693,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_difference_
  *  int vals_result[3];
  *
  *  thrust::pair<int*,int*> end = thrust::set_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5, A_vals, B_vals,
- * keys_result, vals_result, thrust::greater<int>());
+ * keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {0, 4, 6}
  *  // vals_result is now {0, 0, 0}
  *  \endcode
@@ -2010,7 +2011,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_intersection_by_key(
  *  int vals_result[7];
  *
  *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(thrust::host, A_keys, A_keys + 6, B_keys, B_keys + 7,
- * A_vals, keys_result, vals_result, thrust::greater<int>());
+ * A_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
  *  // vals_result is now {0, 0, 0}
@@ -2117,7 +2118,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_intersectio
  *  int vals_result[7];
  *
  *  thrust::pair<int*,int*> end = thrust::set_intersection_by_key(A_keys, A_keys + 6, B_keys, B_keys + 7, A_vals,
- * keys_result, vals_result, thrust::greater<int>());
+ * keys_result, vals_result, ::cuda::std::greater<int>());
  *
  *  // keys_result is now {5, 3, 1}
  *  // vals_result is now {0, 0, 0}
@@ -2879,7 +2880,7 @@ thrust::pair<OutputIterator1, OutputIterator2> set_union_by_key(
  *  int vals_result[11];
  *
  *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(thrust::host, A_keys, A_keys + 6, B_keys,
- * B_keys + 5, A_vals, B_vals, keys_result, vals_result, thrust::greater<int>());
+ * B_keys + 5, A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
  *  \endcode
@@ -2988,7 +2989,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> set_union_by_ke
  *  int vals_result[11];
  *
  *  thrust::pair<int*,int*> end = thrust::set_symmetric_difference_by_key(A_keys, A_keys + 6, B_keys, B_keys + 5,
- * A_vals, B_vals, keys_result, vals_result, thrust::greater<int>());
+ * A_vals, B_vals, keys_result, vals_result, ::cuda::std::greater<int>());
  *  // keys_result is now {12, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0}
  *  // vals_result is now { 0,  1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0}
  *  \endcode

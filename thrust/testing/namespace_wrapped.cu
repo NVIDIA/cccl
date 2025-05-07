@@ -25,8 +25,7 @@ void TestWrappedNamespace()
   // Check that the qualifier resolves properly:
   THRUST_NS_QUALIFIER::device_vector<int> d_out(n);
 
-  ::wrap_thrust::thrust::transform(
-    in_1_begin, in_1_begin + n, in_2_begin, d_out.begin(), ::wrap_thrust::thrust::plus<>{});
+  ::wrap_thrust::thrust::transform(in_1_begin, in_1_begin + n, in_2_begin, d_out.begin(), ::cuda::std::plus<>{});
 
   ::wrap_thrust::thrust::host_vector<int> h_out(d_out);
 

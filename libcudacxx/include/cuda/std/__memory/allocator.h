@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/allocate_at_least.h>
 #include <cuda/std/__memory/allocator_traits.h>
@@ -38,9 +39,6 @@
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <class _Tp>
-class allocator;
 
 #if _CCCL_STD_VER <= 2017
 // These specializations shouldn't be marked _LIBCUDACXX_DEPRECATED.

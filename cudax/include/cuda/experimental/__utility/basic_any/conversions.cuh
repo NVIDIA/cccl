@@ -54,9 +54,9 @@ struct __archetype<false, false> // immovable archetype
   __archetype(const __archetype&) = delete;
 
   template <class _Value>
-  _CUDAX_HOST_API __archetype(_Value) noexcept;
+  _CCCL_HOST_API __archetype(_Value) noexcept;
   template <class _Value>
-  _CUDAX_HOST_API __archetype(_Value*) = delete;
+  _CCCL_HOST_API __archetype(_Value*) = delete;
 };
 
 // Archetype for interfaces that extend imovable but not icopyable
@@ -64,7 +64,7 @@ template <>
 struct __archetype<true, false> : __archetype<false, false> // movable archetype
 {
   __archetype() = default;
-  _CUDAX_HOST_API __archetype(__archetype&&) noexcept;
+  _CCCL_HOST_API __archetype(__archetype&&) noexcept;
   __archetype(const __archetype&) = delete;
 };
 
@@ -73,7 +73,7 @@ template <>
 struct __archetype<true, true> : __archetype<true, false>
 {
   __archetype() = default;
-  _CUDAX_HOST_API __archetype(__archetype const&);
+  _CCCL_HOST_API __archetype(__archetype const&);
 };
 
 template <class _Interface>
@@ -89,7 +89,7 @@ auto __normalize(_Ty*) -> _Ty*
 {}
 
 template <class _Ty>
-using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(__cudax::__normalize(declval<_Ty>()));
+using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(experimental::__normalize(declval<_Ty>()));
 
 // Used to map a basic_any specialization to a normalized interface type:
 template <class _Ty>

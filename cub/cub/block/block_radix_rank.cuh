@@ -52,6 +52,7 @@
 #include <cuda/std/__algorithm_>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -309,7 +310,7 @@ private:
       {
         cached_segment[i] = smem_raking_ptr[i];
       }
-      return cub::ThreadReduce(cached_segment, ::cuda::std::plus<>{});
+      return cub::ThreadReduce(::cuda::std::span<PackedCounter, RAKING_SEGMENT>{cached_segment}, ::cuda::std::plus<>{});
     }
     else
     {
@@ -325,7 +326,7 @@ private:
     PackedCounter* raking_ptr = (MEMOIZE_OUTER_SCAN) ? cached_segment : smem_raking_ptr;
 
     // Exclusive raking downsweep scan
-    internal::ThreadScanExclusive<RAKING_SEGMENT>(raking_ptr, raking_ptr, ::cuda::std::plus<>{}, raking_partial);
+    detail::ThreadScanExclusive<RAKING_SEGMENT>(raking_ptr, raking_ptr, ::cuda::std::plus<>{}, raking_partial);
 
     if (MEMOIZE_OUTER_SCAN)
     {

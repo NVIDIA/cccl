@@ -72,8 +72,8 @@ struct MoveAssignOnly
 
 struct MoveAssign
 {
-  STATIC_MEMBER_VAR(move_construct, int);
-  STATIC_MEMBER_VAR(move_assign, int);
+  STATIC_MEMBER_VAR(move_construct, int)
+  STATIC_MEMBER_VAR(move_assign, int)
   __host__ __device__ static void reset()
   {
     move_construct() = move_assign() = 0;
@@ -248,7 +248,7 @@ __host__ __device__ void test_move_assignment_sfinae()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 void test_move_assignment_empty_empty()
 {
   using MET = MakeEmptyT;
@@ -318,7 +318,7 @@ void test_move_assignment_empty_non_empty()
   }
 #  endif // _LIBCUDACXX_HAS_STRING
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <typename T>
 struct Result
@@ -359,7 +359,7 @@ __host__ __device__ void test_move_assignment_same_index()
     assert(MoveAssign::move_construct() == 0);
     assert(MoveAssign::move_assign() == 1);
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)
   using MET = MakeEmptyT;
   {
@@ -378,7 +378,7 @@ __host__ __device__ void test_move_assignment_same_index()
     assert(&cuda::std::get<1>(v1) == &mref);
   }
 #  endif // _LIBCUDACXX_HAS_STRING
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -454,7 +454,7 @@ __host__ __device__ void test_move_assignment_different_index()
     assert(MoveAssign::move_construct() == 1);
     assert(MoveAssign::move_assign() == 0);
   }
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 #  if defined(_LIBCUDACXX_HAS_STRING)
   using MET = MakeEmptyT;
   {
@@ -481,7 +481,7 @@ __host__ __device__ void test_move_assignment_different_index()
     assert(cuda::std::get<2>(v1) == "hello");
   }
 #  endif // _LIBCUDACXX_HAS_STRING
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   // Make sure we properly propagate triviality, which implies constexpr-ness (see P0602R4).
   {
@@ -542,11 +542,11 @@ __host__ __device__ void test_constexpr_move_assignment()
 
 int main(int, char**)
 {
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_non_empty_empty();))
   NV_IF_TARGET(NV_IS_HOST, (test_move_assignment_empty_non_empty();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
   test_move_assignment_same_index();
   test_move_assignment_different_index();

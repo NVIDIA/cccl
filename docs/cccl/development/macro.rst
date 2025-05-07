@@ -49,30 +49,43 @@ the compiler's major version number. For example, when the compiler is ``gcc-9.1
 | ``_CCCL_CUDA_COMPILER(CLANG)`` | Clang                   |
 +--------------------------------+-------------------------+
 
-The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the version of a compiler.
+The ``_CCCL_CUDA_COMPILER`` function-like macro can also be used to check the version of a CUDA compiler.
 
 .. code:: cpp
 
    _CCCL_CUDA_COMPILER(NVCC, <, 12, 3)
    _CCCL_CUDA_COMPILER(CLANG, >=, 14)
 
+*Note*: ``_CCCL_CUDA_COMPILER(...)`` check may result in a ``true`` value even during the compilation of a C++ source
+file. Use ``_CCCL_CUDA_COMPILATION()`` to check for the compilation of a CUDA source file.
+
 **CUDA identification/version macros**:
 
-+----------------------------------+-----------------------------+
-| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available  |
-+----------------------------------+-----------------------------+
-| ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7     |
-+----------------------------------+-----------------------------+
-| ``_CCCL_CUDACC_AT_LEAST(12, 7)`` | CUDA version at least 12.7  |
-+----------------------------------+-----------------------------+
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_HAS_CUDA_COMPILER()``    | CUDA compiler is available                                                                     |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDA_COMPILATION()``     | CUDA code is being compiled                                                                    |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_HOST_COMPILATION()``     | Compiling host code, ``true`` when executing the CUDA host pass or compiling a C++ source file |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_DEVICE_COMPILATION()``   | Compiling device code, ``true`` when executing the CUDA device pass                            |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDACC_BELOW(12, 7)``    | CUDA version below 12.7 when compiling a CUDA source file                                      |
++----------------------------------+------------------------------------------------------------------------------------------------+
+| ``_CCCL_CUDACC_AT_LEAST(12, 7)`` | CUDA version at least 12.7 when compiling a CUDA source file                                   |
++----------------------------------+------------------------------------------------------------------------------------------------+
+
+*Note*: When compiling CUDA code with ``nvc++`` both ``_CCCL_HOST_COMPILATION()`` and ``_CCCL_DEVICE_COMPILATION()`` result in a ``true`` value.
 
 **PTX macros**:
 
-+--------------------+-------------------------------------------------------------------------------------------------------------------+
-| ``_CCCL_PTX_ARCH`` | Alias of ``__CUDA_ARCH__`` with value equal to 0 if cuda compiler is not available                                |
-+--------------------+-------------------------------------------------------------------------------------------------------------------+
-| ``__cccl_ptx_isa`` | PTX ISA version available with the current CUDA compiler, e.g. PTX ISA 8.4 (``840``) is available from CUDA 12.4  |
-+--------------------+-------------------------------------------------------------------------------------------------------------------+
++----------------------+-------------------------------------------------------------------------------------------------------------------+
+| ``_CCCL_PTX_ARCH()`` | Alias of ``__CUDA_ARCH__`` with value equal to 0 if a CUDA compiler is not available                              |
++----------------------+-------------------------------------------------------------------------------------------------------------------+
+| ``__cccl_ptx_isa``   | PTX ISA version available with the current CUDA compiler, e.g. PTX ISA 8.4 (``840``) is available from CUDA 12.4  |
++----------------------+-------------------------------------------------------------------------------------------------------------------+
+
+*Note*: When compiling CUDA code with ``nvc++`` the ``_CCCL_PTX_ARCH()`` macro expands to ``0``.
 
 ----
 
@@ -219,6 +232,8 @@ The following macros are required only if the target C++ version does not suppor
 +-----------------------------+----------------------------------------------------------+
 | ``_CCCL_CONSTEXPR_CXX23``   | Enable ``constexpr`` for C++23 or newer                  |
 +-----------------------------+----------------------------------------------------------+
+| ``_CCCL_HAS_EXCEPTIONS()``  | Features can use exceptions, e.g ``bad_optional_access`` |
++-----------------------------+----------------------------------------------------------+
 
 **Concept-like Macros**:
 
@@ -258,7 +273,7 @@ Usage example:
 **Portable attributes**:
 
 +----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_ASSUME()``               | Portable ``[[assume]]`` attribute (before C++23)                             |
+| ``_CCCL_ASSUME(EXPR)``           | Portable ``[[assume]]`` attribute (before C++23)                             |
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NO_UNIQUE_ADDRESS``      | Portable ``[[no_unique_address]]`` attribute                                 |
 +----------------------------------+------------------------------------------------------------------------------+
@@ -270,13 +285,16 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_FORCEINLINE``            | Portable "always inline" attribute                                           |
 +----------------------------------+------------------------------------------------------------------------------+
+| ``_CCCL_PURE``                   | Portable "pure" function attribute                                           |
++----------------------------------+------------------------------------------------------------------------------+
+| ``_CCCL_CONST``                  | Portable "constant" function attribute                                       |
++----------------------------------+------------------------------------------------------------------------------+
+
 
 **Portable Builtin Macros**:
 
 +---------------------------------------+--------------------------------------------+
 | ``_CCCL_UNREACHABLE()``               | Portable ``__builtin_unreachable()``       |
-+---------------------------------------+--------------------------------------------+
-| ``_CCCL_BUILTIN_ASSUME(X)``           | Portable ``__builtin_assume(X)``           |
 +---------------------------------------+--------------------------------------------+
 | ``_CCCL_BUILTIN_EXPECT(X)``           | Portable ``__builtin_expected(X)``         |
 +---------------------------------------+--------------------------------------------+

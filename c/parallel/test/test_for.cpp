@@ -41,14 +41,16 @@ void for_each(cccl_iterator_t input, uint64_t num_items, cccl_op_t op)
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
 }
 
-using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
-TEMPLATE_LIST_TEST_CASE("for works with integral types", "[for]", integral_types)
+using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
+C2H_TEST("for works with integral types", "[for]", integral_types)
 {
+  using T = c2h::get<0, TestType>;
+
   const uint64_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
-  operation_t op = make_operation("op", get_for_op(get_type_info<TestType>().type));
-  std::vector<TestType> input(num_items, TestType(1));
-  pointer_t<TestType> input_ptr(input);
+  operation_t op = make_operation("op", get_for_op(get_type_info<T>().type));
+  std::vector<T> input(num_items, T(1));
+  pointer_t<T> input_ptr(input);
 
   for_each(input_ptr, num_items, op);
 
@@ -71,14 +73,18 @@ struct pair
   size_t b;
 };
 
-TEST_CASE("for works with custom types", "[for]")
+C2H_TEST("for works with custom types", "[for]")
 {
   const int num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op = make_operation("op",
                                   R"XXX(
 struct pair { short a; size_t b; };
-extern "C" __device__ void op(pair* a) {a->a++; a->b++;}
+extern "C" __device__ void op(void* a_ptr) {
+  pair* a = static_cast<pair*>(a_ptr);
+  a->a++;
+  a->b++;
+}
 )XXX");
 
   std::vector<pair> input(num_items, pair{short(1), size_t(1)});
@@ -104,7 +110,7 @@ struct invocation_counter_state_t
   int* d_counter;
 };
 
-TEST_CASE("for works with stateful operators", "[for]")
+C2H_TEST("for_each works with stateful operators", "[for_each]")
 {
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
@@ -113,8 +119,9 @@ TEST_CASE("for works with stateful operators", "[for]")
     "op",
     R"XXX(
 struct invocation_counter_state_t { int* d_counter; };
-extern "C" __device__ void op(invocation_counter_state_t* state, int* a) {
-  atomicAdd(state->d_counter, *a);
+extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
+  invocation_counter_state_t* state = static_cast<invocation_counter_state_t*>(state_ptr);
+  atomicAdd(state->d_counter, *static_cast<int*>(a_ptr));
 }
 )XXX",
     op_state);
@@ -135,7 +142,7 @@ struct large_state_t
   int y, z, a;
 };
 
-TEST_CASE("for works with large stateful operators", "[for]")
+C2H_TEST("for_each works with large stateful operators", "[for_each]")
 {
   const int num_items = 1 << 12;
   pointer_t<int> counter(1);
@@ -149,8 +156,9 @@ struct large_state_t
   int* d_counter;
   int y, z, a;
 };
-extern "C" __device__ void op(large_state_t* state, int* a) {
-  atomicAdd(state->d_counter, *a);
+extern "C" __device__ void op(void* state_ptr, void* a_ptr) {
+  large_state_t* state = static_cast<large_state_t*>(state_ptr);
+  atomicAdd(state->d_counter, *static_cast<int*>(a_ptr));
 }
 )XXX",
     op_state);
@@ -166,7 +174,7 @@ extern "C" __device__ void op(large_state_t* state, int* a) {
 
 // TODO:
 /*
-TEST_CASE("for works with iterators", "[for]")
+C2H_TEST("for works with iterators", "[for]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
 

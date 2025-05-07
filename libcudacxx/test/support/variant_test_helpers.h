@@ -29,7 +29,7 @@ constexpr bool VariantAllowsNarrowingConversions = true;
 constexpr bool VariantAllowsNarrowingConversions = false;
 #endif
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct CopyThrows
 {
   CopyThrows() = default;
@@ -122,7 +122,7 @@ void makeEmpty(Variant& v)
     assert(v.valueless_by_exception());
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 enum CallType : unsigned
 {
@@ -192,8 +192,8 @@ struct ForwardingCallObject
     return 0;
   }
 
-  STATIC_MEMBER_VAR(last_call_type, CallType);
-  STATIC_MEMBER_VAR(last_call_args, const TypeID*);
+  STATIC_MEMBER_VAR(last_call_type, CallType)
+  STATIC_MEMBER_VAR(last_call_args, const TypeID*)
 };
 
 struct ReturnFirst

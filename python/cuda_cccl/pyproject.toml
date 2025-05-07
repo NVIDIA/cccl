@@ -51,4 +51,7 @@ input = "cuda/cccl/_version.py"
 # use default regex
 
 [project.optional-dependencies]
-test = ["pytest"]
+test = ["pytest", "pytest-xdist"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["cuda.cccl"]

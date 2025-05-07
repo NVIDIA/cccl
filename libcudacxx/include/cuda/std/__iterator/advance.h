@@ -32,45 +32,6 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
-template <class _InputIter>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-__advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type __n, input_iterator_tag)
-{
-  for (; __n > 0; --__n)
-  {
-    ++__i;
-  }
-}
-
-_CCCL_EXEC_CHECK_DISABLE
-template <class _BiDirIter>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-__advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type __n, bidirectional_iterator_tag)
-{
-  if (__n >= 0)
-  {
-    for (; __n > 0; --__n)
-    {
-      ++__i;
-    }
-  }
-  else
-  {
-    for (; __n < 0; ++__n)
-    {
-      --__i;
-    }
-  }
-}
-
-_CCCL_EXEC_CHECK_DISABLE
-template <class _RandIter>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void
-__advance(_RandIter& __i, typename iterator_traits<_RandIter>::difference_type __n, random_access_iterator_tag)
-{
-  __i += __n;
-}
-
 template <class _InputIter,
           class _Distance,
           class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
@@ -79,9 +40,35 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void advance(_InputIter& __i, _Distance __or
 {
   using _Difference = typename iterator_traits<_InputIter>::difference_type;
   _Difference __n   = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
-  _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
-               "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
-  _CUDA_VSTD::__advance(__i, __n, typename iterator_traits<_InputIter>::iterator_category());
+  if constexpr (__is_cpp17_random_access_iterator<_InputIter>::value) // To support pointers to incomplete types
+  {
+    __i += __n;
+  }
+  else if constexpr (__is_cpp17_bidirectional_iterator<_InputIter>::value)
+  {
+    if (__n >= 0)
+    {
+      for (; __n > 0; --__n)
+      {
+        ++__i;
+      }
+    }
+    else
+    {
+      for (; __n < 0; ++__n)
+      {
+        --__i;
+      }
+    }
+  }
+  else
+  {
+    _CCCL_ASSERT(__n >= 0, "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
+    for (; __n > 0; --__n)
+    {
+      ++__i;
+    }
+  }
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
@@ -93,37 +80,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__advance)
 struct __fn
 {
 private:
-  template <class _Ip>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __advance_forward(_Ip& __i, iter_difference_t<_Ip> __n)
-  {
-    while (__n > 0)
-    {
-      --__n;
-      ++__i;
-    }
-  }
-
-  template <class _Ip>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __advance_backward(_Ip& __i, iter_difference_t<_Ip> __n)
-  {
-    while (__n < 0)
-    {
-      ++__n;
-      --__i;
-    }
-  }
-
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Iter_difference>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
+  __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b
                      : __a <= __b;
-  };
+  }
 
 public:
   // Preconditions: If `I` does not model `bidirectional_iterator`, `n` is not negative.
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
@@ -139,19 +109,32 @@ public:
     else if constexpr (bidirectional_iterator<_Ip>)
     {
       // Otherwise, if `n` is non-negative, increments `i` by `n`.
-      __advance_forward(__i, __n);
+      while (__n > 0)
+      {
+        --__n;
+        ++__i;
+      }
       // Otherwise, decrements `i` by `-n`.
-      __advance_backward(__i, __n);
+      while (__n < 0)
+      {
+        ++__n;
+        --__i;
+      }
       return;
     }
     else
     {
       // Otherwise, if `n` is non-negative, increments `i` by `n`.
-      __advance_forward(__i, __n);
+      while (__n > 0)
+      {
+        --__n;
+        ++__i;
+      }
       return;
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
@@ -183,6 +166,7 @@ public:
   //   * If `n < 0`, [bound_sentinel, i) denotes a range, `I` models `bidirectional_iterator`,
   //     and `I` and `S` model `same_as<I, S>`.
   // Returns: `n - M`, where `M` is the difference between the ending and starting position.
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Ip, class _Sp)
   _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip>

@@ -43,7 +43,6 @@
 #endif // no system header
 
 #include <cub/detail/choose_offset.cuh>
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
@@ -52,8 +51,6 @@
 #include <thrust/iterator/tabulate_output_iterator.h>
 
 #include <cuda/std/limits>
-
-#include <iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -219,7 +216,7 @@ struct DeviceReduce
     T init,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Reduce");
 
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -312,7 +309,7 @@ struct DeviceReduce
       NumItemsT num_items,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Sum");
 
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -418,7 +415,7 @@ struct DeviceReduce
       NumItemsT num_items,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Min");
 
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -536,7 +533,7 @@ struct DeviceReduce
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
     // The input type
     using InputValueT = cub::detail::it_value_t<InputIteratorT>;
@@ -667,7 +664,7 @@ struct DeviceReduce
            int num_items,
            cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
     // Signed integer type for global offsets
     using OffsetT = int;
@@ -779,7 +776,7 @@ struct DeviceReduce
       NumItemsT num_items,
       cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::Max");
 
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
@@ -897,7 +894,7 @@ struct DeviceReduce
     ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
     // The input type
     using InputValueT = cub::detail::it_value_t<InputIteratorT>;
@@ -1032,7 +1029,7 @@ struct DeviceReduce
            int num_items,
            cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
     // Signed integer type for global offsets
     using OffsetT = int;
@@ -1184,7 +1181,7 @@ struct DeviceReduce
     T init,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::TransformReduce");
 
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
@@ -1353,7 +1350,7 @@ struct DeviceReduce
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
+    _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ReduceByKey");
 
     // Signed integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;

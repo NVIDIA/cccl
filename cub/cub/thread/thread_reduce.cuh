@@ -181,7 +181,7 @@ template <typename Input,
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /// Internal namespace (to prevent ADL mishaps between static functions when mixing different CUB installations)
-namespace internal
+namespace detail
 {
 
 /***********************************************************************************************************************
@@ -266,39 +266,6 @@ inline constexpr bool enable_sm70_simd_reduction_v = false;
 
 #  endif // !_CCCL_HAS_NVFP16() ^^^^
 
-//----------------------------------------------------------------------------------------------------------------------
-// All architectures SIMD
-
-template <typename Input, typename ReductionOp, typename AccumT>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_simd_reduction()
-{
-  using T = _CUDA_VSTD::iter_value_t<Input>;
-  if constexpr (!_CUDA_VSTD::is_same_v<T, AccumT>)
-  {
-    return false;
-  }
-  else
-  {
-    [[maybe_unused]] constexpr auto length = cub::detail::static_size_v<Input>;
-    // clang-format off
-    _NV_TARGET_DISPATCH(
-      NV_PROVIDES_SM_90,
-        (return enable_sm90_simd_reduction_v<T, ReductionOp, length> ||
-                enable_sm80_simd_reduction_v<T, ReductionOp, length> ||
-                enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
-      NV_PROVIDES_SM_80,
-        (return enable_sm80_simd_reduction_v<T, ReductionOp, length> ||
-                enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
-      NV_PROVIDES_SM_70,
-        (return enable_sm70_simd_reduction_v<T, ReductionOp, length>;),
-      NV_IS_DEVICE,
-        (return false;)
-    );
-    // clang-format on
-    return false;
-  }
-}
-
 /***********************************************************************************************************************
  * Enable Ternary Reduction (Trait)
  **********************************************************************************************************************/
@@ -330,31 +297,6 @@ inline constexpr bool enable_ternary_reduction_sm50_v =
   _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 4
   && (cub::detail::is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<T>>
       || is_cuda_std_bitwise_v<ReductionOp, T>);
-
-template <typename Input, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr bool enable_ternary_reduction()
-{
-  constexpr auto length = cub::detail::static_size_v<Input>;
-  if constexpr (length < 6)
-  {
-    return false;
-  }
-  else
-  {
-    // apply SM90 min/max ternary reduction only if the input is natively int32/uint32
-    using T = _CUDA_VSTD::iter_value_t<Input>;
-    // clang-format off
-    NV_DISPATCH_TARGET(
-      NV_PROVIDES_SM_90,
-        (return enable_ternary_reduction_sm90_v<T, ReductionOp> || enable_ternary_reduction_sm50_v<T, ReductionOp>;),
-      NV_PROVIDES_SM_50,
-        (return enable_ternary_reduction_sm50_v<T, ReductionOp>;),
-      NV_ANY_TARGET,
-        (return false;)
-    );
-    // clang-format on
-  }
-}
 
 /***********************************************************************************************************************
  * Internal Reduction Algorithms: Sequential, Binary, Ternary
@@ -424,7 +366,7 @@ template <typename Output, typename Input>
 template <typename Input, typename ReductionOp>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto ThreadReduceSimd(const Input& input, ReductionOp)
 {
-  using cub::internal::unsafe_bitcast;
+  using cub::detail::unsafe_bitcast;
   using T                       = _CUDA_VSTD::iter_value_t<Input>;
   using SimdReduceOp            = cub_operator_to_simd_operator_t<ReductionOp, T>;
   using SimdType                = simd_type_t<T>;
@@ -458,7 +400,7 @@ template <typename ReductionOp, typename T>
 inline constexpr bool enable_min_max_promotion_v =
   is_cuda_std_min_max_v<ReductionOp, T> && _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 2;
 
-} // namespace internal
+} // namespace detail
 
 /***********************************************************************************************************************
  * Reduction Interface/Dispatch (public)
@@ -476,7 +418,7 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
     return static_cast<AccumT>(input[0]);
   }
   using cub::detail::is_one_of_v;
-  using namespace cub::internal;
+  using namespace cub::detail;
   using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
   if constexpr ((!is_cuda_std_operator_v<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
@@ -484,11 +426,24 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
   {
     return ThreadReduceSequential<AccumT>(input, reduction_op);
   }
-  else if constexpr (enable_simd_reduction<Input, ReductionOp, AccumT>())
+
+  constexpr auto length = cub::detail::static_size_v<Input>;
+  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm90_simd_reduction_v<Input, ReductionOp, length>)
   {
-    return ThreadReduceSimd(input, reduction_op);
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSimd(input, reduction_op);))
   }
-  else if constexpr (enable_ternary_reduction<Input, ReductionOp>())
+
+  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm80_simd_reduction_v<Input, ReductionOp, length>)
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_80, (return ThreadReduceSimd(input, reduction_op);))
+  }
+
+  if constexpr (_CUDA_VSTD::is_same_v<Input, AccumT> && enable_sm70_simd_reduction_v<Input, ReductionOp, length>)
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_70, (return ThreadReduceSimd(input, reduction_op);))
+  }
+
+  if constexpr (enable_ternary_reduction_sm90_v<Input, ReductionOp>)
   {
     // with the current tuning policies, SM90/int32/+ uses too many registers (TODO: fix tuning policy)
     if constexpr ((is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<PromT>>
@@ -496,15 +451,17 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
                   // the compiler generates bad code for int8/uint8 and min/max for SM90
                   || (is_cuda_std_min_max_v<ReductionOp, ValueT> && is_one_of_v<PromT, int8_t, uint8_t>) )
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_90, //
-                   (return ThreadReduceSequential<PromT>(input, reduction_op);));
+      NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceSequential<PromT>(input, reduction_op);));
     }
-    return ThreadReduceTernaryTree<PromT>(input, reduction_op);
+    NV_IF_TARGET(NV_PROVIDES_SM_90, (return ThreadReduceTernaryTree<PromT>(input, reduction_op);));
   }
-  else
+
+  if constexpr (enable_ternary_reduction_sm50_v<Input, ReductionOp>)
   {
-    return ThreadReduceBinaryTree<PromT>(input, reduction_op);
+    NV_IF_TARGET(NV_PROVIDES_SM_50, (return ThreadReduceSequential<PromT>(input, reduction_op);));
   }
+
+  return ThreadReduceBinaryTree<PromT>(input, reduction_op);
 }
 
 //! @brief Reduction over statically-sized array-like types, seeded with the specified @p prefix.

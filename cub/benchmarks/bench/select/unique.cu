@@ -120,7 +120,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace
   state.add_global_memory_writes<T>(num_unique);
   state.add_global_memory_writes<offset_t>(1);
 
-  state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
+  state.exec(nvbench::exec_tag::gpu | nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
       temp_storage,
       temp_size,

@@ -59,10 +59,10 @@ class D : public B
 template <class T>
 struct AssignableFrom
 {
-  STATIC_MEMBER_VAR(type_constructed, int);
-  STATIC_MEMBER_VAR(type_assigned, int);
-  STATIC_MEMBER_VAR(int_constructed, int);
-  STATIC_MEMBER_VAR(int_assigned, int);
+  STATIC_MEMBER_VAR(type_constructed, int)
+  STATIC_MEMBER_VAR(type_assigned, int)
+  STATIC_MEMBER_VAR(int_constructed, int)
+  STATIC_MEMBER_VAR(int_assigned, int)
 
   __host__ __device__ static void reset()
   {
@@ -339,10 +339,10 @@ __host__ __device__ constexpr bool test()
   return true;
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct X
 {
-  STATIC_MEMBER_VAR(throw_now, bool);
+  STATIC_MEMBER_VAR(throw_now, bool)
 
   X() = default;
   X(int&&)
@@ -371,7 +371,7 @@ void test_exceptions()
     assert(static_cast<bool>(opt) == false);
   }
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 int main(int, char**)
 {
@@ -395,8 +395,8 @@ int main(int, char**)
   }
 #endif // _LIBCUDACXX_HAS_MEMORY
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

@@ -30,12 +30,19 @@ void TestExclusiveScanByKeySimple()
   ASSERT_EQUAL(output, ref);
 
   thrust::exclusive_scan_by_key(
-    keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), thrust::equal_to<T>(), thrust::multiplies<T>());
+    keys.begin(),
+    keys.end(),
+    vals.begin(),
+    output.begin(),
+    T(10),
+    ::cuda::std::equal_to<T>(),
+    ::cuda::std::multiplies<T>());
 
   ref = {10, 10, 20, 60, 10, 10, 60};
   ASSERT_EQUAL(output, ref);
 
-  thrust::exclusive_scan_by_key(keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), thrust::equal_to<T>());
+  thrust::exclusive_scan_by_key(
+    keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), ::cuda::std::equal_to<T>());
 
   ref = {10, 10, 12, 15, 10, 10, 16};
   ASSERT_EQUAL(output, ref);
@@ -101,7 +108,7 @@ void TestScanByKeyHeadFlags()
   Vector output(7, 0);
 
   thrust::exclusive_scan_by_key(
-    keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), head_flag_predicate(), thrust::plus<T>());
+    keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), head_flag_predicate(), ::cuda::std::plus<T>());
 
   Vector ref{10, 10, 12, 15, 10, 10, 16};
   ASSERT_EQUAL(output, ref);
@@ -270,9 +277,9 @@ void TestScanByKeyDiscardOutput(std::size_t n)
   // These are no-ops, but they should compile.
   thrust::exclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out);
   thrust::exclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, T{});
-  thrust::exclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, T{}, thrust::equal_to<T>{});
+  thrust::exclusive_scan_by_key(d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, T{}, ::cuda::std::equal_to<T>{});
   thrust::exclusive_scan_by_key(
-    d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, T{}, thrust::equal_to<T>{}, thrust::multiplies<T>{});
+    d_keys.cbegin(), d_keys.cend(), d_vals.cbegin(), out, T{}, ::cuda::std::equal_to<T>{}, ::cuda::std::multiplies<T>{});
 }
 DECLARE_VARIABLE_UNITTEST(TestScanByKeyDiscardOutput);
 

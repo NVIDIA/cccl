@@ -63,7 +63,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '12.8', libs: 'rmm kvikio cudf cudf_kafka cuspatial' }
+          - { cuda: '12.8', libs: 'rmm kvikio cudf cudf_kafka' }
           - { cuda: '12.8', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml' }
           - { cuda: '12.8', libs: 'rmm ucxx raft cugraph'                }
     permissions:
@@ -89,19 +89,18 @@ jobs:
           CI: true
           RAPIDS_LIBS: ${{ matrix.libs }}
           # Uncomment any of these to customize the git repo and branch for a RAPIDS lib:
-          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cuspatial_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.04"}'
-          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.43"}'
+          # RAPIDS_cmake_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_cudf_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_cudf_kafka_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_cugraph_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_cugraph_gnn_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_cuml_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.06"}'
+          # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.44"}'
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci-entrypoint.sh"
           #! /usr/bin/env bash
@@ -203,7 +202,7 @@ jobs:
           WORKFLOW_TYPE: ${{ github.workflow }}
           SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          channel-id: ${{ secrets.SLACK_CHANNEL_RAPIDS_CI_ALERT }}
           slack-message: |
             RAPIDS build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
 

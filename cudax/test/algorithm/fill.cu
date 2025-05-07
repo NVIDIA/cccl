@@ -10,7 +10,7 @@
 
 #include "common.cuh"
 
-TEST_CASE("Fill", "[data_manipulation]")
+C2H_TEST("Fill", "[data_manipulation]")
 {
   cudax::stream _stream;
   SECTION("Host resource")
@@ -45,7 +45,7 @@ TEST_CASE("Fill", "[data_manipulation]")
   }
 }
 
-TEST_CASE("Mdspan Fill", "[data_manipulation]")
+C2H_TEST("Mdspan Fill", "[data_manipulation]")
 {
   cudax::stream stream;
   {
@@ -75,7 +75,7 @@ TEST_CASE("Mdspan Fill", "[data_manipulation]")
   }
 }
 
-TEST_CASE("Non exhaustive mdspan fill_bytes", "[data_manipulation]")
+C2H_TEST("Non exhaustive mdspan fill_bytes", "[data_manipulation]")
 {
   cudax::stream stream;
   {

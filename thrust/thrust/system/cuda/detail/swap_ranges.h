@@ -88,7 +88,7 @@ swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, 
 {
   using size_type = thrust::detail::it_difference_t<ItemsIt1>;
 
-  size_type num_items = static_cast<size_type>(thrust::distance(first1, last1));
+  size_type num_items = static_cast<size_type>(::cuda::std::distance(first1, last1));
 
   cuda_cub::parallel_for(policy, __swap_ranges::swap_f<ItemsIt1, ItemsIt2>(first1, first2), num_items);
 

@@ -22,9 +22,9 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 
 namespace cuda::experimental
@@ -39,8 +39,8 @@ _CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& 
 template <class _Env>
 _CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
   requires(!__has_member_get_resource<_Env>),
-  requires(
-    _CUDA_VMR::async_resource<cuda::std::remove_cvref_t<__async::__query_result_t<const _Env&, get_memory_resource_t>>>));
+  requires(_CUDA_VMR::async_resource<
+           cuda::std::remove_cvref_t<_CUDA_STD_EXEC::__query_result_t<const _Env&, get_memory_resource_t>>>));
 
 //! @brief `get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource

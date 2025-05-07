@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -51,7 +52,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
   inline constexpr bool NAME##_v<_Tp, void_t<typename _Tp::PROPERTY>> = true;
 
 // __pointer
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_pointer, pointer)
 template <class _Tp,
           class _Alloc,
           class _RawAlloc = remove_reference_t<_Alloc>,
@@ -67,7 +68,7 @@ struct __pointer<_Tp, _Alloc, _RawAlloc, false>
 };
 
 // __const_pointer
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_pointer, const_pointer);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_pointer, const_pointer)
 template <class _Tp, class _Ptr, class _Alloc, bool = _CCCL_TRAIT(__has_const_pointer, _Alloc)>
 struct __const_pointer
 {
@@ -80,7 +81,7 @@ struct __const_pointer<_Tp, _Ptr, _Alloc, false>
 };
 
 // __void_pointer
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_void_pointer, void_pointer)
 template <class _Ptr, class _Alloc, bool = _CCCL_TRAIT(__has_void_pointer, _Alloc)>
 struct __void_pointer
 {
@@ -93,7 +94,7 @@ struct __void_pointer<_Ptr, _Alloc, false>
 };
 
 // __const_void_pointer
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_void_pointer, const_void_pointer);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_const_void_pointer, const_void_pointer)
 template <class _Ptr, class _Alloc, bool = _CCCL_TRAIT(__has_const_void_pointer, _Alloc)>
 struct __const_void_pointer
 {
@@ -106,7 +107,7 @@ struct __const_void_pointer<_Ptr, _Alloc, false>
 };
 
 // __size_type
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_size_type, size_type);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_size_type, size_type)
 template <class _Alloc, class _DiffType, bool = _CCCL_TRAIT(__has_size_type, _Alloc)>
 struct __size_type : make_unsigned<_DiffType>
 {};
@@ -117,7 +118,7 @@ struct __size_type<_Alloc, _DiffType, true>
 };
 
 // __alloc_traits_difference_type
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_alloc_traits_difference_type, difference_type);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_alloc_traits_difference_type, difference_type)
 template <class _Alloc, class _Ptr, bool = _CCCL_TRAIT(__has_alloc_traits_difference_type, _Alloc)>
 struct __alloc_traits_difference_type
 {
@@ -131,7 +132,7 @@ struct __alloc_traits_difference_type<_Alloc, _Ptr, true>
 
 // __propagate_on_container_copy_assignment
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_propagate_on_container_copy_assignment,
-                                     propagate_on_container_copy_assignment);
+                                     propagate_on_container_copy_assignment)
 template <class _Alloc, bool = _CCCL_TRAIT(__has_propagate_on_container_copy_assignment, _Alloc)>
 struct __propagate_on_container_copy_assignment : false_type
 {};
@@ -143,7 +144,7 @@ struct __propagate_on_container_copy_assignment<_Alloc, true>
 
 // __propagate_on_container_move_assignment
 _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_propagate_on_container_move_assignment,
-                                     propagate_on_container_move_assignment);
+                                     propagate_on_container_move_assignment)
 template <class _Alloc, bool = _CCCL_TRAIT(__has_propagate_on_container_move_assignment, _Alloc)>
 struct __propagate_on_container_move_assignment : false_type
 {};
@@ -154,7 +155,7 @@ struct __propagate_on_container_move_assignment<_Alloc, true>
 };
 
 // __propagate_on_container_swap
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_propagate_on_container_swap, propagate_on_container_swap);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_propagate_on_container_swap, propagate_on_container_swap)
 template <class _Alloc, bool = _CCCL_TRAIT(__has_propagate_on_container_swap, _Alloc)>
 struct __propagate_on_container_swap : false_type
 {};
@@ -165,7 +166,7 @@ struct __propagate_on_container_swap<_Alloc, true>
 };
 
 // __is_always_equal
-_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal, is_always_equal);
+_LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX(__has_is_always_equal, is_always_equal)
 template <class _Alloc, bool = _CCCL_TRAIT(__has_is_always_equal, _Alloc)>
 struct __is_always_equal : is_empty<_Alloc>
 {};
@@ -300,9 +301,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 template <class _Tp>
 struct __is_default_allocator : false_type
 {};
-
-template <class>
-class allocator;
 
 template <class _Tp>
 struct __is_default_allocator<allocator<_Tp>> : true_type
@@ -463,11 +461,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__begin2),
-#ifdef _CCCL_NO_EXCEPTIONS
+#if !_CCCL_HAS_EXCEPTIONS()
                 _CUDA_VSTD::move(*__begin1)
-#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
                 _CUDA_VSTD::move_if_noexcept(*__begin1)
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
       );
     }
   }
@@ -525,11 +523,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_traits
     {
       construct(__a,
                 _CUDA_VSTD::__to_raw_pointer(__end2 - 1),
-#ifdef _CCCL_NO_EXCEPTIONS
+#if !_CCCL_HAS_EXCEPTIONS()
                 _CUDA_VSTD::move(*--__end1)
-#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_HAS_EXCEPTIONS() ^^^ / vvv _CCCL_HAS_EXCEPTIONS() vvv
                 _CUDA_VSTD::move_if_noexcept(*--__end1)
-#endif // !_CCCL_NO_EXCEPTIONS
+#endif // _CCCL_HAS_EXCEPTIONS()
       );
       --__end2;
     }

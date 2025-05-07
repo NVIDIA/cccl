@@ -19,6 +19,12 @@ name: "Release: 3. Create Final Release"
 
 on:
   workflow_dispatch:
+    inputs:
+      create_patch_version:
+        description: "Optionally create a patch PR to update the branch."
+        type: boolean
+        required: true
+        default: false
 
 defaults:
   run:
@@ -34,6 +40,8 @@ jobs:
     outputs:
       rc_tag: ${{ steps.prepare.outputs.rc_tag }}
       release_tag: ${{ steps.prepare.outputs.release_tag }}
+      working_branch: ${{ steps.prepare.outputs.working_branch }}
+      next_full_version: ${{ steps.prepare.outputs.next_full_version }}
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
@@ -63,8 +71,13 @@ jobs:
           release_tag="v${full_version}"
           rc_tag="${release_tag}-rc${rc}"
           repo_version=$(jq -r .full cccl-version.json)
+          working_branch="branch/${major_version}.${minor_version}.x"
 
-          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag repo_version
+          # Create next point release version number as this point release is finalized.
+          declare -i next_patch_version=$patch_version
+          next_full_version="${major_version}.${minor_version}.$((next_patch_version + 1))"
+
+          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag repo_version working_branch next_full_version
 
           if [[ "${repo_version}" != "${full_version}" ]]; then
             echo "::error::cccl-version.json (${repo_version}) does not match release candidate tag (${rc_tag})."
@@ -151,9 +164,13 @@ jobs:
 
       - name: Draft Github Release
         run: |
+          version_bump=$(git log -n 1 --pretty=format:%H --grep 'Bump [/A-Za-z]* to [0-9]*\.[0-9]*\.[0-9]*')
+          closest_tag=$(git describe --abbrev=0 $version_bump)
+
           gh release create ${release_tag} \
             --draft \
             --generate-notes \
+            --notes-start-tag "${closest_tag}" \
             --title "${release_tag}" \
             "${source_zipfile}#Source Archive (zip)" \
             "${source_tarball}#Source Archive (tar.gz)" \
@@ -190,3 +207,21 @@ jobs:
             An error has occurred while creating a release from ${{ github.ref }}.
 
             Details: ${{ env.SUMMARY_URL }}
+
+  create-point-version:
+    if: ${{ inputs.create_patch_version }}
+    runs-on: ubuntu-latest
+    needs: create-release
+    env:
+      GH_TOKEN: ${{ github.token }}
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Create patch version PR
+        uses: ./.github/actions/version-update
+        with:
+          new_version: ${{ needs.create-release.outputs.next_full_version }}
+          target_branch: ${{ needs.create-release.outputs.working_branch }}

@@ -27,9 +27,11 @@ macro(cccl_get_json)
   CPMAddPackage("gh:nlohmann/json@3.12.0")
 endmacro()
 
+set(CCCL_NVBENCH_SHA "9d189280de0dcb1e59e974aa531abec32faf829f" CACHE STRING "SHA/tag to use for CCCL's NVBench.")
+mark_as_advanced(CCCL_NVBENCH_SHA)
 macro(cccl_get_nvbench)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:NVIDIA/nvbench#main")
+  CPMAddPackage("gh:NVIDIA/nvbench#${CCCL_NVBENCH_SHA}")
 endmacro()
 
 macro(cccl_get_nvtx)

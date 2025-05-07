@@ -53,11 +53,6 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cstdio>
-#include <iterator>
-
-#include <nv/target>
-
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
@@ -66,6 +61,72 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
 {
+
+template <typename PrecedingKeyItT, typename AccumT, typename GlobalOffsetT>
+struct streaming_context
+{
+  bool first_partition;
+  bool last_partition;
+  PrecedingKeyItT preceding_key_it;
+
+  // We use a double-buffer to track the aggregate of the last run of the previous partition
+  AccumT* preceding_prefix;
+  AccumT* prefix_out;
+
+  // We use a double-buffer to track the number of runs of previous partition
+  GlobalOffsetT* d_num_previous_uniques_in;
+  GlobalOffsetT* d_num_accumulated_uniques_out;
+
+  _CCCL_DEVICE _CCCL_FORCEINLINE GlobalOffsetT num_accumulated_uniques_out() const
+  {
+    return first_partition ? GlobalOffsetT{0} : *d_num_previous_uniques_in;
+  };
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_first_partition() const
+  {
+    return first_partition;
+  }
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE bool is_last_partition() const
+  {
+    return last_partition;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE auto predecessor_key() const
+  {
+    return *preceding_key_it;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE AccumT prefix() const
+  {
+    return *preceding_prefix;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE void write_prefix(AccumT prefix) const
+  {
+    *prefix_out = prefix;
+  }
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE GlobalOffsetT* previous_uniques_ptr() const
+  {
+    return d_num_previous_uniques_in;
+  }
+
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT num_uniques() const
+  {
+    return num_accumulated_uniques_out();
+  }
+
+  template <typename NumUniquesT>
+  _CCCL_FORCEINLINE _CCCL_HOST_DEVICE GlobalOffsetT add_num_uniques(NumUniquesT num_uniques) const
+  {
+    GlobalOffsetT total_uniques = num_accumulated_uniques_out() + static_cast<GlobalOffsetT>(num_uniques);
+
+    // Otherwise, just write out the number of unique items in this partition
+    *d_num_accumulated_uniques_out = total_uniques;
+
+    return total_uniques;
+  }
+};
 
 /**
  * @brief Multi-block reduce-by-key sweep kernel entry point
@@ -141,7 +202,8 @@ template <typename ChainedPolicyT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT>
+          typename AccumT,
+          typename StreamingContextT>
 __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_THREADS))
   CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceReduceByKeyKernel(
     KeysInputIteratorT d_keys_in,
@@ -153,29 +215,39 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
     int start_tile,
     EqualityOpT equality_op,
     ReductionOpT reduction_op,
-    OffsetT num_items)
+    OffsetT num_items,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   using AgentReduceByKeyPolicyT = typename ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT;
 
   // Thread block type for reducing tiles of value segments
-  using AgentReduceByKeyT =
-    AgentReduceByKey<AgentReduceByKeyPolicyT,
-                     KeysInputIteratorT,
-                     UniqueOutputIteratorT,
-                     ValuesInputIteratorT,
-                     AggregatesOutputIteratorT,
-                     NumRunsOutputIteratorT,
-                     EqualityOpT,
-                     ReductionOpT,
-                     OffsetT,
-                     AccumT>;
+  using AgentReduceByKeyT = AgentReduceByKey<
+    AgentReduceByKeyPolicyT,
+    KeysInputIteratorT,
+    UniqueOutputIteratorT,
+    ValuesInputIteratorT,
+    AggregatesOutputIteratorT,
+    NumRunsOutputIteratorT,
+    EqualityOpT,
+    ReductionOpT,
+    OffsetT,
+    AccumT,
+    StreamingContextT>;
 
   // Shared memory for AgentReduceByKey
   __shared__ typename AgentReduceByKeyT::TempStorage temp_storage;
 
   // Process tiles
   AgentReduceByKeyT(
-    temp_storage, d_keys_in, d_unique_out, d_values_in, d_aggregates_out, d_num_runs_out, equality_op, reduction_op)
+    temp_storage,
+    d_keys_in,
+    d_unique_out,
+    d_values_in,
+    d_aggregates_out,
+    d_num_runs_out,
+    equality_op,
+    reduction_op,
+    streaming_context)
     .ConsumeRange(num_items, tile_state, start_tile);
 }
 
@@ -368,7 +440,7 @@ struct DispatchReduceByKey
         break;
       }
 
-      // Return if empty problem
+      // Return if empty problem: note, we're initializing d_num_runs_out to 0 in init_kernel above
       if (num_items == 0)
       {
         break;
@@ -419,7 +491,8 @@ struct DispatchReduceByKey
                 start_tile,
                 equality_op,
                 reduction_op,
-                num_items);
+                num_items,
+                NullType{});
 
         // Check for failure to launch
         error = CubDebug(cudaPeekAtLastError());
@@ -456,7 +529,8 @@ struct DispatchReduceByKey
         EqualityOpT,
         ReductionOpT,
         OffsetT,
-        AccumT>);
+        AccumT,
+        NullType>);
   }
 
   /**

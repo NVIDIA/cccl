@@ -14,7 +14,6 @@
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__detail/config.cuh>
 #include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
 
 #if _CCCL_STD_VER >= 2017
@@ -132,13 +131,13 @@ struct level_dimensions
 #  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_API constexpr bool
   operator==(const level_dimensions& left, const level_dimensions& right) noexcept
   {
     return left.dims == right.dims;
   }
 
-  _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_API constexpr bool
   operator!=(const level_dimensions& left, const level_dimensions& right) noexcept
   {
     return left.dims != right.dims;

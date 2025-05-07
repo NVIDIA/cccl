@@ -329,7 +329,12 @@ C2H_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
     {
       c2h::gen(C2H_SEED(1), tmp);
       thrust::transform(
-        c2h::device_policy, in_keys.cbegin(), in_keys.cend(), tmp.cbegin(), in_keys.begin(), thrust::bit_and<key_t>{});
+        c2h::device_policy,
+        in_keys.cbegin(),
+        in_keys.cend(),
+        tmp.cbegin(),
+        in_keys.begin(),
+        cuda::std::bit_and<key_t>{});
     }
   }
 

@@ -76,13 +76,12 @@ struct row_offset_iterator_state_t
 };
 
 // FIXME: can we cache compiled code for the same TesType and reuse it for different n_rows, n_cols
-TEMPLATE_TEST_CASE(
-  "segmented_reduce can sum over rows of matrix with integral type",
-  "[segmented_reduce]",
-  std::int32_t,
-  std::int64_t,
-  std::uint32_t,
-  std::uint64_t)
+C2H_TEST_LIST("segmented_reduce can sum over rows of matrix with integral type",
+              "[segmented_reduce]",
+              std::int32_t,
+              std::int64_t,
+              std::uint32_t,
+              std::uint64_t)
 {
   // generate 4 choices for n_rows: 0, 13 and 2 random samples from [1024, 4096)
   const std::size_t n_rows = GENERATE(0, 13, take(2, random(1 << 10, 1 << 12)));
@@ -173,7 +172,7 @@ struct pair
   }
 };
 
-TEST_CASE("SegmentedReduce works with custom types", "[segmented_reduce]")
+C2H_TEST("SegmentedReduce works with custom types", "[segmented_reduce]")
 {
   const std::size_t n_segments = 50;
   auto increments              = generate<std::size_t>(n_segments);
@@ -208,8 +207,11 @@ struct pair {{
   short a;
   size_t b;
 }};
-extern "C" __device__ pair {0}(pair lhs, pair rhs) {{
-  return pair{{ lhs.a + rhs.a, lhs.b + rhs.b }};
+extern "C" __device__ void {0}(void* lhs_ptr, void* rhs_ptr, void* out_ptr) {{
+  pair* lhs = static_cast<pair*>(lhs_ptr);
+  pair* rhs = static_cast<pair*>(rhs_ptr);
+  pair* out = static_cast<pair*>(out_ptr);
+  *out = pair{{ lhs->a + rhs->a, lhs->b + rhs->b }};
 }}
 )XXX";
   std::string plus_pair_op_src                     = std::format(plus_pair_op_template, device_op_name);
@@ -247,7 +249,7 @@ struct input_transposed_iterator_state_t
   SizeT n_cols;
 };
 
-TEST_CASE("SegmentedReduce works with input iterators", "[segmented_reduce]")
+C2H_TEST("SegmentedReduce works with input iterators", "[segmented_reduce]")
 {
   // Sum over columns of matrix
   const std::size_t n_rows = 2048;

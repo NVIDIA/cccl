@@ -76,11 +76,11 @@ struct NoThrowMove
 };
 static_assert(cuda::std::is_nothrow_move_assignable<optional<NoThrowMove>>::value, "");
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
 struct X
 {
-  STATIC_MEMBER_VAR(throw_now, bool);
-  STATIC_MEMBER_VAR(alive, int);
+  STATIC_MEMBER_VAR(throw_now, bool)
+  STATIC_MEMBER_VAR(alive, int)
 
   X()
   {
@@ -157,7 +157,7 @@ void test_exceptions()
   }
   assert(X::alive() == 0);
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 template <class T>
 __host__ __device__ constexpr void test()
@@ -239,8 +239,8 @@ int main(int, char**)
     assert(static_cast<bool>(opt) == static_cast<bool>(input));
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
   return 0;
 }

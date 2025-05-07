@@ -36,7 +36,7 @@ namespace detail
 {
 
 template <typename RandomAccessIterator,
-          typename BinaryPredicate = equal_to<detail::it_value_t<RandomAccessIterator>>,
+          typename BinaryPredicate = ::cuda::std::equal_to<detail::it_value_t<RandomAccessIterator>>,
           typename ValueType       = bool,
           typename IndexType       = detail::it_difference_t<RandomAccessIterator>>
 class tail_flags
@@ -107,7 +107,7 @@ public:
     return *(begin() + i);
   }
 
-  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(tail_flags, iterator);
+  _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(tail_flags, iterator)
 
 private:
   iterator m_begin, m_end;

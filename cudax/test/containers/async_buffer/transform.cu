@@ -63,12 +63,12 @@ CUB_RUNTIME_FUNCTION static cudaError_t transform_many_with_alg(
 }
 
 using algorithms =
-  ::cuda::std::__type_list<::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>
+  c2h::type_list<::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-                           ,
-                           ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>
+                 ,
+                 ::cuda::std::integral_constant<Algorithm, Algorithm::ublkcp>
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-                           >;
+                 >;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 #  define FILTER_UBLKCP                                \
@@ -88,11 +88,10 @@ using algorithms =
   FILTER_UBLKCP                                                           \
   _CCCL_DIAG_POP
 
-TEMPLATE_LIST_TEST_CASE(
-  "DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]", algorithms)
+C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][device_transform]", algorithms)
 {
   using type         = int;
-  constexpr auto alg = TestType::value;
+  constexpr auto alg = c2h::get<0, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
   const int num_items = 1 << 24;
 
@@ -101,8 +100,8 @@ TEMPLATE_LIST_TEST_CASE(
 
   cudax::async_device_buffer<type> a{env, num_items, cudax::uninit};
   cudax::async_device_buffer<type> b{env, num_items, cudax::uninit};
-  thrust::sequence(thrust::cuda::par_nosync.on(stream), a.begin(), a.end());
-  thrust::sequence(thrust::cuda::par_nosync.on(stream), b.begin(), b.end());
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), a.begin(), a.end());
+  thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), b.begin(), b.end());
 
   cudax::async_device_buffer<type> result{env, num_items, cudax::uninit};
 
@@ -120,7 +119,7 @@ TEMPLATE_LIST_TEST_CASE(
   REQUIRE(
     cudaMemcpyAsync(result_h.data(), result.data(), num_items * sizeof(type), cudaMemcpyDeviceToHost, stream.get())
     == cudaSuccess);
-  stream.wait();
+  stream.sync();
 
   // compute reference and verify
   thrust::host_vector<type> reference_h(num_items);

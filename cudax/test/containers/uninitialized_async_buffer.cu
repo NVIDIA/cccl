@@ -46,7 +46,7 @@ constexpr int get_property(const cuda::experimental::device_memory_resource&, my
   return 42;
 }
 
-TEMPLATE_TEST_CASE(
+C2H_TEST_LIST(
   "uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
   using uninitialized_async_buffer =
@@ -184,9 +184,9 @@ TEMPLATE_TEST_CASE(
     if constexpr (!cuda::std::is_same_v<TestType, do_not_construct>)
     {
       uninitialized_async_buffer buf{resource, stream, 42};
-      stream.wait();
+      stream.sync();
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
-      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
+      const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, cuda::std::plus<int>());
       CUDAX_CHECK(res == TestType{84});
     }
   }
@@ -207,6 +207,20 @@ TEMPLATE_TEST_CASE(
 
       CUDAX_CHECK(buf.get_stream() == old_buf.get_stream());
     }
+  }
+
+  SECTION("destroy")
+  {
+    uninitialized_async_buffer buf{resource, stream, 42};
+    buf.destroy();
+    CUDAX_CHECK(buf.data() == nullptr);
+    CUDAX_CHECK(buf.size() == 0);
+    CUDAX_CHECK(buf.get_stream() == stream);
+
+    buf = uninitialized_async_buffer{resource, stream, 42};
+    CUDAX_CHECK(buf.data() != nullptr);
+    CUDAX_CHECK(buf.size() == 42);
+    CUDAX_CHECK(buf.get_stream() == stream);
   }
 }
 
@@ -235,7 +249,7 @@ struct test_async_device_memory_resource : cudax::device_memory_resource
 
 int test_async_device_memory_resource::count = 0;
 
-TEST_CASE("uninitialized_async_buffer's memory resource does not dangle", "[container]")
+C2H_TEST("uninitialized_async_buffer's memory resource does not dangle", "[container]")
 {
   cuda::experimental::stream stream{};
   cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{

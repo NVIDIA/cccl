@@ -36,7 +36,7 @@ int main(int, char**)
 template <cuda::std::size_t N>
 constexpr void test_string_ctor()
 {
-#  ifndef TEST_HAS_NO_EXCEPTIONS
+#  if TEST_HAS_EXCEPTIONS()
   if (!TEST_IS_CONSTANT_EVALUATED)
   {
     try
@@ -88,7 +88,7 @@ constexpr void test_string_ctor()
     catch (cuda::std::invalid_argument&)
     {}
   }
-#  endif // TEST_HAS_NO_EXCEPTIONS
+#  endif // TEST_HAS_EXCEPTIONS()
 
   static_assert(!cuda::std::is_convertible_v<cuda::std::string_view, cuda::std::bitset<N>>, "");
   static_assert(cuda::std::is_constructible_v<cuda::std::bitset<N>, cuda::std::string_view>, "");

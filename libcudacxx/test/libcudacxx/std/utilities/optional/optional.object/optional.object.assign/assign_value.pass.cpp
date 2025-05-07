@@ -255,10 +255,11 @@ __host__ __device__ void test_with_type_multi()
   }
 }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
+TEST_DIAG_SUPPRESS_NVHPC(code_is_unreachable)
 struct ThrowAssign
 {
-  STATIC_MEMBER_VAR(dtor_called, unsigned);
+  STATIC_MEMBER_VAR(dtor_called, unsigned)
   ThrowAssign() = default;
   ThrowAssign(int)
   {
@@ -267,7 +268,6 @@ struct ThrowAssign
   ThrowAssign& operator=(int)
   {
     TEST_THROW(42);
-    return *this;
   }
   ~ThrowAssign()
   {
@@ -305,7 +305,7 @@ void test_exceptions()
   }
   assert(T::dtor_called() == 1);
 }
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 enum MyEnum
 {
@@ -353,9 +353,9 @@ int main(int, char**)
     assert(*opt == 3);
   }
 
-#ifndef TEST_HAS_NO_EXCEPTIONS
+#if TEST_HAS_EXCEPTIONS()
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
-#endif // !TEST_HAS_NO_EXCEPTIONS
+#endif // TEST_HAS_EXCEPTIONS()
 
 #if !TEST_COMPILER(GCC, <, 7)
   static_assert(pr38638(3) == 5, "");

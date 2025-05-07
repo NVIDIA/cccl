@@ -26,8 +26,8 @@ struct with_get_resource_const_lvalue
     return res_;
   }
 };
-TEST_CASE("Can call get_memory_resource on a type with a get_memory_resource method that returns a const lvalue",
-          "[resource]")
+C2H_TEST("Can call get_memory_resource on a type with a get_memory_resource method that returns a const lvalue",
+         "[resource]")
 {
   with_get_resource_const_lvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -44,7 +44,7 @@ struct with_get_resource_rvalue
     return res_;
   }
 };
-TEST_CASE("Can call get_memory_resource on a type with a get_memory_resource method returns an rvalue", "[resource]")
+C2H_TEST("Can call get_memory_resource on a type with a get_memory_resource method returns an rvalue", "[resource]")
 {
   with_get_resource_rvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -61,7 +61,7 @@ struct with_get_resource_non_const
     return res_;
   }
 };
-TEST_CASE("Cannot call get_memory_resource on a type with a non-const get_memory_resource method", "[resource]")
+C2H_TEST("Cannot call get_memory_resource on a type with a non-const get_memory_resource method", "[resource]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_memory_resource_t, const with_get_resource_non_const&>);
@@ -76,8 +76,8 @@ struct env_with_query_const_ref
     return res_;
   }
 };
-TEST_CASE("Can call get_memory_resource on an env with a get_memory_resource query that returns a const lvalue",
-          "[resource]")
+C2H_TEST("Can call get_memory_resource on an env with a get_memory_resource query that returns a const lvalue",
+         "[resource]")
 {
   env_with_query_const_ref val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -94,8 +94,7 @@ struct env_with_query_rvalue
     return res_;
   }
 };
-TEST_CASE("Can call get_memory_resource on an env with a get_memory_resource query that returns an rvalue",
-          "[resource]")
+C2H_TEST("Can call get_memory_resource on an env with a get_memory_resource query that returns an rvalue", "[resource]")
 {
   env_with_query_rvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -112,7 +111,7 @@ struct env_with_query_non_const
     return res_;
   }
 };
-TEST_CASE("Cannot call get_memory_resource on an env with a non-const query", "[resource]")
+C2H_TEST("Cannot call get_memory_resource on an env with a non-const query", "[resource]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_memory_resource_t, const env_with_query_non_const&>);
@@ -132,7 +131,7 @@ struct env_with_query_and_method
     return res_;
   }
 };
-TEST_CASE("Can call get_memory_resource on a type with both get_memory_resource and query", "[resource]")
+C2H_TEST("Can call get_memory_resource on a type with both get_memory_resource and query", "[resource]")
 {
   env_with_query_and_method val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -167,7 +166,7 @@ struct with_get_resource_non_async
     return res_;
   }
 };
-TEST_CASE("Cannot call get_memory_resource on an env with a non-async resource", "[resource]")
+C2H_TEST("Cannot call get_memory_resource on an env with a non-async resource", "[resource]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_memory_resource_t, const with_get_resource_non_async&>);
