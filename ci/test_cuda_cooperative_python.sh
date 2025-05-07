@@ -11,7 +11,7 @@ echo "Docker socket: " $(ls /var/run/docker.sock)
 docker run --rm \
   --workdir /home/coder/workspace/cccl/python/cuda_cooperative \
   --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
-  --gpus all \
+  --gpus device=${NVIDIA_VISIBLE_DEVICES} \
   rapidsai/citestwheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
     source "$(dirname "$0")/build_common.sh" && \

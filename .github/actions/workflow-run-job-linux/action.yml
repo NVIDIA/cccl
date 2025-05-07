@@ -164,6 +164,7 @@ runs:
           --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
           --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
           --env "HOST_WORKSPACE=${{github.workspace}}" \
+          --env "NVIDIA_VISIBLE_DEVICES=${{inputs.nvidia_visible_devices}}" \
           --volume "${{github.workspace}}/ci.sh:/ci.sh" \
           --volume "${{github.workspace}}/artifacts:/artifacts" \
           --volume "${{github.workspace}}/wheelhouse:/wheelhouse" \
