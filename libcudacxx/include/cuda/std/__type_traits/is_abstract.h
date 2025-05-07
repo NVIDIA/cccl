@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public integral_constant<bool, __is_abstract(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public bool_constant<__is_abstract(_Tp)>
 {};
 
 template <class _Tp>
