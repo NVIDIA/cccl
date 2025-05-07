@@ -255,12 +255,12 @@ template <typename T, typename ReductionOp, typename Config>
   using cub::detail::warp_reduce_shuffle_op;
   using namespace _CUDA_VSTD;
   cub::detail::check_warp_reduce_config(config);
-  constexpr bool is_specialized_operator =
+  [[maybe_unused]] constexpr bool is_specialized_operator =
     is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
     || is_cuda_std_bitwise_v<ReductionOp, T>;
-  constexpr bool is_small_integer  = is_integral_v<T> && sizeof(T) <= sizeof(uint32_t);
-  constexpr auto logical_warp_size = config.logical_size;
-  auto valid_items                 = config.valid_items;
+  [[maybe_unused]] constexpr bool is_small_integer = is_integral_v<T> && sizeof(T) <= sizeof(uint32_t);
+  constexpr auto logical_warp_size                 = config.logical_size;
+  auto valid_items                                 = config.valid_items;
   // early exit for threads outside the range with dynamic number of valid items
   if (!config.is_segmented && valid_items.rank_dynamic() == 1
       && logical_lane_id(logical_warp_size) >= valid_items.extent(0))
