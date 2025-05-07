@@ -143,7 +143,7 @@ __mu(_Ti&, _Uj& __uj)
 
 template <class _Ti, class _Uj>
 _LIBCUDACXX_HIDE_FROM_ABI
-enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__is_reference_wrapper<_Ti>::value,
+enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__cccl_is_reference_wrapper_v<_Ti>,
             _Ti&>
 __mu(_Ti& __ti, _Uj&)
 {
@@ -192,7 +192,7 @@ template <class _Ti, class _TupleUj>
 struct __mu_return
     : public __mu_return_impl<
         _Ti,
-        __is_reference_wrapper<_Ti>::value,
+        __cccl_is_reference_wrapper_v<_Ti>,
         is_bind_expression<_Ti>::value,
         0 < is_placeholder<_Ti>::value && is_placeholder<_Ti>::value <= tuple_size<_TupleUj>::value,
         _TupleUj>
