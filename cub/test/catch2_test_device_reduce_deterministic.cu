@@ -53,7 +53,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t DeterministicSum(
   NumItemsT num_items,
   cudaStream_t stream = 0)
 {
-  CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::DeterministicSum");
+  _CCCL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::DeterministicSum");
 
   // Signed integer type for global offsets
   using OffsetT = cub::detail::choose_offset_t<NumItemsT>;
