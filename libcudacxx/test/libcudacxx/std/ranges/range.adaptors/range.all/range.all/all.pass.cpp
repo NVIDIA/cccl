@@ -240,7 +240,6 @@ __host__ __device__ constexpr bool test()
       assert(&result.base() == &range);
     }
 
-#ifdef _LIBCUDACXX_HAS_RANGES
     // Test `adaptor | views::all`
     {
       Range range(0);
@@ -259,7 +258,7 @@ __host__ __device__ constexpr bool test()
       static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
-#endif
+
     {
       struct NotAView
       {};

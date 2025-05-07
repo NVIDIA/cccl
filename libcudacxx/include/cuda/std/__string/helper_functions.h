@@ -201,8 +201,7 @@ __cccl_str_find_last_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Size
   }
   for (const _CharT* __ps = __p + __pos; __ps != __p;)
   {
-    const _CharT* __r = _Traits::find(__s, __n, *--__ps);
-    if (__r)
+    if (_Traits::find(__s, __n, *--__ps) != nullptr)
     {
       return static_cast<_SizeT>(__ps - __p);
     }
@@ -221,7 +220,7 @@ __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, 
   const _CharT* __pe = __p + __sz;
   for (const _CharT* __ps = __p + __pos; __ps != __pe; ++__ps)
   {
-    if (_Traits::find(__s, __n, *__ps) == 0)
+    if (_Traits::find(__s, __n, *__ps) == nullptr)
     {
       return static_cast<_SizeT>(__ps - __p);
     }
@@ -261,7 +260,7 @@ __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _
   }
   for (const _CharT* __ps = __p + __pos; __ps != __p;)
   {
-    if (_Traits::find(__s, __n, *--__ps) == 0)
+    if (_Traits::find(__s, __n, *--__ps) == nullptr)
     {
       return static_cast<_SizeT>(__ps - __p);
     }
@@ -271,7 +270,7 @@ __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _
 
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
-__str_find_last_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
+__cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
 {
   if (__pos < __sz)
   {

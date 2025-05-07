@@ -446,21 +446,21 @@ struct kernel_config
 
 // We can consider removing the operator&, but its convenient for in-line construction
 template <typename Dimensions, typename... Options, typename NewLevel>
-_CUDAX_HOST_API constexpr auto
+_CCCL_HOST_API constexpr auto
 operator&(const kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
 
 template <typename NewLevel, typename Dimensions, typename... Options>
-_CUDAX_HOST_API constexpr auto
+_CCCL_HOST_API constexpr auto
 operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>& config) noexcept
 {
   return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
 }
 
 template <typename L1, typename Dims1, typename L2, typename Dims2>
-_CUDAX_HOST_API constexpr auto
+_CCCL_HOST_API constexpr auto
 operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
 {
   return kernel_config(make_hierarchy(l1, l2));

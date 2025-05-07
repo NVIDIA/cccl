@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,13 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT reference_wrapper;
 
 template <class _Tp>
 struct __is_reference_wrapper_impl : public false_type
