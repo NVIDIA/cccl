@@ -63,8 +63,11 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs: Basic testing",
 
   constexpr std::size_t min_num_items = 1 << 5;
   constexpr std::size_t max_num_items = 1 << 20;
-  const std::size_t num_items         = GENERATE_COPY(take(3, random(min_num_items, max_num_items)));
-  const std::size_t num_segments      = GENERATE_COPY(take(2, random(std::size_t{2}, num_items / 2)));
+
+  // Use c2h::adjust_seed_count to reduce runtime with sanitizers:
+  const std::size_t num_items = GENERATE_COPY(take(c2h::adjust_seed_count(3), random(min_num_items, max_num_items)));
+  const std::size_t num_segments =
+    GENERATE_COPY(take(c2h::adjust_seed_count(2), random(std::size_t{2}, num_items / 2)));
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
@@ -278,7 +281,7 @@ C2H_TEST("DeviceSegmentedRadixSort::SortPairs: unspecified ranges",
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          all_offset_types)
 try
 {
@@ -337,7 +340,9 @@ catch (std::bad_alloc& e)
 
 // Currently, size of a single segment in DeviceRadixSort is limited to INT_MAX
 #if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
-C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
+C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments",
+         "[pairs][segmented][sort][device][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
