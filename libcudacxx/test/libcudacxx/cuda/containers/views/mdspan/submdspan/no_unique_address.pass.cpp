@@ -14,7 +14,7 @@
 
 #include "test_macros.h"
 
-template <class OffsetType, class ExtentType, class StrideType>
+template <size_t ExpectedSize, class OffsetType, class ExtentType, class StrideType>
 __host__ __device__ void test(cuda::std::strided_slice<OffsetType, ExtentType, StrideType> slice, size_t expected_size)
 {
   using strided_slice = cuda::std::strided_slice<OffsetType, ExtentType, StrideType>;
@@ -22,12 +22,13 @@ __host__ __device__ void test(cuda::std::strided_slice<OffsetType, ExtentType, S
   assert(slice.extent == 1337);
   assert(slice.stride == 7);
   assert(sizeof(strided_slice) == expected_size);
+  static_assert(sizeof(strided_slice) == ExpectedSize, "Size mismatch");
 }
 
-template <class OffsetType, class ExtentType, class StrideType>
+template <size_t ExpectedSize, class OffsetType, class ExtentType, class StrideType>
 __global__ void test_kernel(cuda::std::strided_slice<OffsetType, ExtentType, StrideType> slice, size_t expected_size)
 {
-  test(slice, expected_size);
+  test<ExpectedSize>(slice, expected_size);
 }
 
 void test()
@@ -35,37 +36,37 @@ void test()
   { // all non_empty
     using strided_slice = cuda::std::strided_slice<int, int, int>;
     strided_slice slice{42, 1337, 7};
-    test(slice, sizeof(strided_slice));
-    test_kernel<<<1, 1>>>(slice, sizeof(strided_slice));
+    test<sizeof(strided_slice)>(slice, sizeof(strided_slice));
+    test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
   }
 
   { // OffsetType empty
     using strided_slice = cuda::std::strided_slice<cuda::std::integral_constant<int, 42>, int, int>;
     strided_slice slice{{}, 1337, 7};
-    test(slice, sizeof(strided_slice));
-    test_kernel<<<1, 1>>>(slice, sizeof(strided_slice));
+    test<sizeof(strided_slice)>(slice, sizeof(strided_slice));
+    test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
   }
 
   { // ExtentType empty
     using strided_slice = cuda::std::strided_slice<int, cuda::std::integral_constant<int, 1337>, int>;
     strided_slice slice{42, {}, 7};
-    test(slice, sizeof(strided_slice));
-    test_kernel<<<1, 1>>>(slice, sizeof(strided_slice));
+    test<sizeof(strided_slice)>(slice, sizeof(strided_slice));
+    test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
   }
 
   { // StrideType empty
     using strided_slice = cuda::std::strided_slice<int, int, cuda::std::integral_constant<int, 7>>;
     strided_slice slice{42, 1337, {}};
-    test(slice, sizeof(strided_slice));
-    test_kernel<<<1, 1>>>(slice, sizeof(strided_slice));
+    test<sizeof(strided_slice)>(slice, sizeof(strided_slice));
+    test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
   }
 
   { // OffsetType + StrideType empty
     using strided_slice =
       cuda::std::strided_slice<cuda::std::integral_constant<int, 42>, int, cuda::std::integral_constant<int, 7>>;
     strided_slice slice{{}, 1337, {}};
-    test(slice, sizeof(strided_slice));
-    test_kernel<<<1, 1>>>(slice, sizeof(strided_slice));
+    test<sizeof(strided_slice)>(slice, sizeof(strided_slice));
+    test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
   }
 
   { // All empty
@@ -74,8 +75,8 @@ void test()
                                cuda::std::integral_constant<int, 1337>,
                                cuda::std::integral_constant<int, 7>>;
     strided_slice slice{};
-    test(slice, sizeof(strided_slice));
-    test_kernel<<<1, 1>>>(slice, sizeof(strided_slice));
+    test<sizeof(strided_slice)>(slice, sizeof(strided_slice));
+    test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
   }
 }
 
