@@ -14,6 +14,6 @@ docker run --rm \
   --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
-    python -m pip wheel . && \
+    python -m pip wheel --no-deps . && \
     wheel_name=$(ls *.whl) && \
     cp ${wheel_name} /home/coder/workspace/wheelhouse/'

@@ -17,6 +17,6 @@ docker run --rm \
     dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ && \
     echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" > /etc/profile.d/enable_devtools.sh && \
     source /etc/profile.d/enable_devtools.sh && \
-    python -m pip wheel . && \
+    python -m pip wheel --no-deps . && \
     wheel_name=$(ls *.whl) && \
     cp ${wheel_name} /home/coder/workspace/wheelhouse/'
