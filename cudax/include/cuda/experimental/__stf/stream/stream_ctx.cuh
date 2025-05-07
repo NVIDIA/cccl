@@ -845,7 +845,7 @@ UNITTEST("logical_data_untyped moveable")
 };
 #  endif // !_CCCL_COMPILER(MSVC)
 
-#  ifdef __CUDACC__
+#  if _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 
@@ -1116,7 +1116,7 @@ UNITTEST("get logical_data from a task_dep")
   ctx.finalize();
 };
 
-#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 inline void unit_test_pfor()
@@ -1304,7 +1304,7 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 
 #endif // UNITTESTED_FILE
 

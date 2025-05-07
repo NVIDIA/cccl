@@ -76,11 +76,11 @@ struct __iset_vptr : __base_vptr
 
   __iset_vptr() = default;
 
-  _CUDAX_HOST_API constexpr __iset_vptr(__iset_vtable const* __vptr) noexcept
+  _CCCL_HOST_API constexpr __iset_vptr(__iset_vtable const* __vptr) noexcept
       : __base_vptr(__vptr)
   {}
 
-  _CUDAX_HOST_API constexpr __iset_vptr(__base_vptr __vptr) noexcept
+  _CCCL_HOST_API constexpr __iset_vptr(__base_vptr __vptr) noexcept
       : __base_vptr(__vptr)
   {}
 
@@ -88,7 +88,7 @@ struct __iset_vptr : __base_vptr
   // simply constrain this because then the ctor from __base_vptr would be
   // selected instead, giving the wrong result.
   template <class... _Others>
-  _CUDAX_HOST_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
+  _CCCL_HOST_API __iset_vptr(__iset_vptr<_Others...> __vptr) noexcept
       : __base_vptr(__vptr->__query_interface(iunknown()))
   {
     static_assert(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Others...>, _Interfaces...>, "");
@@ -96,13 +96,13 @@ struct __iset_vptr : __base_vptr
                  "query_interface returned a bad pointer to the iunknown vtable");
   }
 
-  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API constexpr auto operator->() const noexcept -> __iset_vptr const*
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto operator->() const noexcept -> __iset_vptr const*
   {
     return this;
   }
 
   template <class _Interface>
-  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API constexpr auto __query_interface(_Interface) const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __query_interface(_Interface) const noexcept
     -> __vptr_for<_Interface>
   {
     if (__vptr_->__kind_ == __vtable_kind::__normal)
@@ -119,17 +119,17 @@ struct __iset_vptr : __base_vptr
 template <class... _Interfaces>
 struct __tagged_ptr<__iset_vptr<_Interfaces...>>
 {
-  _CUDAX_TRIVIAL_HOST_API auto __set(__iset_vptr<_Interfaces...> __vptr, bool __flag) noexcept -> void
+  _CCCL_TRIVIAL_HOST_API auto __set(__iset_vptr<_Interfaces...> __vptr, bool __flag) noexcept -> void
   {
     __ptr_ = reinterpret_cast<uintptr_t>(__vptr.__vptr_) | uintptr_t(__flag);
   }
 
-  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto __get() const noexcept -> __iset_vptr<_Interfaces...>
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto __get() const noexcept -> __iset_vptr<_Interfaces...>
   {
     return __iset_vptr<_Interfaces...>{reinterpret_cast<__rtti_base const*>(__ptr_ & ~uintptr_t(1))};
   }
 
-  [[nodiscard]] _CUDAX_TRIVIAL_HOST_API auto __flag() const noexcept -> bool
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API auto __flag() const noexcept -> bool
   {
     return static_cast<bool>(__ptr_ & uintptr_t(1));
   }

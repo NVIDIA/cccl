@@ -24,7 +24,6 @@
 #include <cuda/std/__type_traits/copy_cvref.h>
 
 #include <cuda/experimental/__async/sender/type_traits.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
