@@ -13,6 +13,7 @@ nvidia-smi
 docker run --rm \
   --workdir /home/coder/workspace/cccl/python/cuda_cccl \
   --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
+  -e NVIDIA_DISABLE_REQUIRE=true \
   --gpus device=${NVIDIA_VISIBLE_DEVICES} \
   rapidsai/citestwheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
