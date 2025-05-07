@@ -25,6 +25,8 @@
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 
+#include <cuda/experimental/__execution/prologue.cuh>
+
 namespace cuda::experimental::execution
 {
 
@@ -94,5 +96,7 @@ struct get_execution_policy_t
 _CCCL_GLOBAL_CONSTANT get_execution_policy_t get_execution_policy{};
 
 } // namespace cuda::experimental::execution
+
+#include <cuda/experimental/__execution/epilogue.cuh>
 
 #endif //__CUDAX___EXECUTION_POLICY_CUH
