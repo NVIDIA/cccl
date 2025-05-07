@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__detail/config.cuh>
-
 #include <exception> // IWYU pragma: export
 
 #if _CCCL_CUDA_COMPILATION()

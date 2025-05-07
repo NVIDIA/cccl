@@ -1108,9 +1108,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr tuple<_Tp&...> tie(_Tp&... __t) noexcept
 }
 
 template <class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple<typename __unwrap_ref_decay<_Tp>::type...> make_tuple(_Tp&&... __t)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr tuple<unwrap_ref_decay_t<_Tp>...> make_tuple(_Tp&&... __t)
 {
-  return tuple<typename __unwrap_ref_decay<_Tp>::type...>(_CUDA_VSTD::forward<_Tp>(__t)...);
+  return tuple<unwrap_ref_decay_t<_Tp>...>(_CUDA_VSTD::forward<_Tp>(__t)...);
 }
 
 template <class... _Tp>

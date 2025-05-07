@@ -25,7 +25,6 @@
 #include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__async/sender/meta.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -67,14 +66,14 @@ struct dependent_sender_error;
 struct default_domain
 {
   template <class _Tag>
-  _CUDAX_API static constexpr auto __apply(_Tag) noexcept;
+  _CCCL_API static constexpr auto __apply(_Tag) noexcept;
 };
 
 template <class... _Sigs>
 struct completion_signatures;
 
 template <class _Sndr, class... _Env>
-_CUDAX_TRIVIAL_API _CUDAX_CONSTEVAL auto get_completion_signatures();
+_CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures();
 
 template <class _Sndr, class... _Env>
 using completion_signatures_of_t _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr, _Env...>());

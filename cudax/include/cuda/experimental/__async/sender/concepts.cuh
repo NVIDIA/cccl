@@ -32,7 +32,6 @@
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -40,7 +39,7 @@ namespace cuda::experimental::__async
 {
 // Utilities:
 template <class _Ty>
-_CUDAX_API constexpr auto __is_constexpr_helper(_Ty) -> bool
+_CCCL_API constexpr auto __is_constexpr_helper(_Ty) -> bool
 {
   return true;
 }
@@ -87,7 +86,7 @@ _CCCL_CONCEPT __is_awaitable = false; // TODO: Implement this concept.
 
 // Sender traits:
 template <class _Sndr>
-_CUDAX_API constexpr auto __enable_sender() -> bool
+_CCCL_API constexpr auto __enable_sender() -> bool
 {
   if constexpr (__is_sender<_Sndr>)
   {
@@ -108,13 +107,13 @@ template <class... _Env>
 struct __completions_tester
 {
   template <class _Sndr, bool EnableIfConstexpr = (get_completion_signatures<_Sndr, _Env...>(), true)>
-  _CUDAX_API static constexpr auto __is_valid(int) -> bool
+  _CCCL_API static constexpr auto __is_valid(int) -> bool
   {
     return __valid_completion_signatures<completion_signatures_of_t<_Sndr, _Env...>>;
   }
 
   template <class _Sndr>
-  _CUDAX_API static constexpr auto __is_valid(long) -> bool
+  _CCCL_API static constexpr auto __is_valid(long) -> bool
   {
     return false;
   }

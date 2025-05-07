@@ -22,14 +22,13 @@
 #endif // no system header
 
 #include <cuda/experimental/__async/sender/fwd.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
 template <class _Tag>
-_CUDAX_API constexpr auto default_domain::__apply(_Tag) noexcept
+_CCCL_API constexpr auto default_domain::__apply(_Tag) noexcept
 {
   return _Tag::__apply();
 }

@@ -1055,8 +1055,9 @@ public:
 
 template <class _IntType>
 template <class _URNG>
-typename uniform_int_distribution<_IntType>::result_type uniform_int_distribution<_IntType>::operator()(
-  _URNG& __g, const param_type& __p) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+typename uniform_int_distribution<_IntType>::result_type
+uniform_int_distribution<_IntType>::operator()(_URNG& __g, const param_type& __p)
+  _CCCL_NO_SANITIZE("unsigned-integer-overflow")
 {
   typedef conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, uint64_t> _UIntType;
   const _UIntType _Rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);

@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/concepts.cuh>
@@ -33,7 +34,6 @@
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
 
@@ -105,24 +105,26 @@ private:
   using _SetTag _CCCL_NODEBUG_ALIAS  = decltype(__detail::__set_tag<_Disposition>());
 
   template <class _Rcvr, class _CvSndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
 
-    _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
+    _CCCL_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __fn_{static_cast<_Fn&&>(__fn)}
         , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
     {}
 
-    _CUDAX_API void start() & noexcept
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+
+    _CCCL_API void start() & noexcept
     {
       __async::start(__opstate_);
     }
 
     template <bool _CanThrow = false, class... _Ts>
-    _CUDAX_API void __set(_Ts&&... __ts) noexcept(!_CanThrow)
+    _CCCL_API void __set(_Ts&&... __ts) noexcept(!_CanThrow)
     {
       if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
       {
@@ -151,7 +153,7 @@ private:
     }
 
     template <class _Tag, class... _Ts>
-    _CUDAX_TRIVIAL_API void __complete(_Tag, _Ts&&... __ts) noexcept
+    _CCCL_TRIVIAL_API void __complete(_Tag, _Ts&&... __ts) noexcept
     {
       if constexpr (_CUDA_VSTD::is_same_v<_Tag, _SetTag>)
       {
@@ -164,23 +166,23 @@ private:
     }
 
     template <class... _Ts>
-    _CUDAX_API void set_value(_Ts&&... __ts) noexcept
+    _CCCL_API void set_value(_Ts&&... __ts) noexcept
     {
       __complete(set_value_t(), static_cast<_Ts&&>(__ts)...);
     }
 
     template <class _Error>
-    _CUDAX_API void set_error(_Error&& __error) noexcept
+    _CCCL_API void set_error(_Error&& __error) noexcept
     {
       __complete(set_error_t(), static_cast<_Error&&>(__error));
     }
 
-    _CUDAX_API void set_stopped() noexcept
+    _CCCL_API void set_stopped() noexcept
     {
       __complete(set_stopped_t());
     }
 
-    _CUDAX_API auto get_env() const noexcept -> __env_t
+    _CCCL_API auto get_env() const noexcept -> __env_t
     {
       return __async::get_env(__rcvr_);
     }
@@ -194,7 +196,7 @@ private:
   struct __transform_args_fn
   {
     template <class... _Ts>
-    _CUDAX_API constexpr auto operator()() const
+    _CCCL_API constexpr auto operator()() const
     {
       if constexpr (_CUDA_VSTD::__is_callable_v<_Fn, _Ts...>)
       {
@@ -213,11 +215,11 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
   {
     template <class _Fn, class _Sndr>
-    _CUDAX_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
   };
 
 public:
-  _CUDAX_API static constexpr auto __apply() noexcept
+  _CCCL_API static constexpr auto __apply() noexcept
   {
     return __fn{};
   }
@@ -229,10 +231,10 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 
   template <class _Sndr, class _Fn>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Fn __fn) const;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const;
 };
 
 template <__disposition_t _Disposition>
@@ -245,7 +247,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   _Sndr __sndr_;
 
   template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures()
+  _CCCL_API static constexpr auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -267,7 +269,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) &&                                               //
+  _CCCL_API auto connect(_Rcvr __rcvr) &&                                                //
     noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Rcvr, _Fn>) //
     -> __opstate_t<_Rcvr, _Sndr, _Fn>
   {
@@ -276,7 +278,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& //
+  _CCCL_API auto connect(_Rcvr __rcvr) const& //
     noexcept(__nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>,
                                      const _Sndr&,
                                      _Rcvr,
@@ -286,7 +288,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
-  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return __async::get_env(__sndr_);
   }
@@ -300,13 +302,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
   _Fn __fn_;
 
   template <class _Sndr>
-  _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr) -> __call_result_t<_UponTag, _Sndr, _Fn>
+  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) -> __call_result_t<_UponTag, _Sndr, _Fn>
   {
     return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
   }
 
   template <class _Sndr>
-  _CUDAX_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
+  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
     -> __call_result_t<_UponTag, _Sndr, _Fn>
   {
     return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
@@ -315,7 +317,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
 
 template <__disposition_t _Disposition>
 template <class _Fn, class _Sndr>
-_CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
+_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
 {
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -329,7 +331,7 @@ _CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::__fn::operator()(_Fn _
 
 template <__disposition_t _Disposition>
 template <class _Sndr, class _Fn>
-_CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
+_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
   return __dom_t::__apply(*this)(static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr));
@@ -337,7 +339,7 @@ _CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __snd
 
 template <__disposition_t _Disposition>
 template <class _Fn>
-_CUDAX_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Fn __fn) const
+_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Fn __fn) const
 {
   return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
 }
