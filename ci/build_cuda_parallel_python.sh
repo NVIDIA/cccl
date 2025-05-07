@@ -14,6 +14,9 @@ docker run --rm \
   --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
+    dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ && \
+    echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" > /etc/profile.d/enable_devtools.sh && \
+    source /etc/profile.d/enable_devtools.sh && \
     python -m pip wheel . && \
     wheel_name=$(ls *.whl) && \
     cp ${wheel_name} /home/coder/workspace/wheelhouse/'
