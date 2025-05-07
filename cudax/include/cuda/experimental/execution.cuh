@@ -13,7 +13,7 @@
 
 // IWYU pragma: begin_exports
 #include <cuda/experimental/__execution/conditional.cuh>
-#include <cuda/experimental/__execution/continue_on.cuh>
+#include <cuda/experimental/__execution/continues_on.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/domain.cuh>
 #include <cuda/experimental/__execution/env.cuh>
@@ -26,7 +26,7 @@
 #include <cuda/experimental/__execution/run_loop.cuh>
 #include <cuda/experimental/__execution/sequence.cuh>
 #include <cuda/experimental/__execution/start_detached.cuh>
-#include <cuda/experimental/__execution/start_on.cuh>
+#include <cuda/experimental/__execution/starts_on.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/then.cuh>
