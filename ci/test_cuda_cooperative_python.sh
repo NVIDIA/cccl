@@ -12,7 +12,7 @@ docker run --rm \
   --workdir /home/coder/workspace/cccl/python/cuda_cooperative \
   --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
   --gpus all \
-  rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py${py_version} \
+  rapidsai/citestwheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
     source "$(dirname "$0")/build_common.sh" && \
     print_environment_details && \
