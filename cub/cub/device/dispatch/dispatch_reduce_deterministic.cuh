@@ -549,28 +549,6 @@ struct DeterministicDispatchReduce : SelectedPolicy
       , transform_op(transform_op)
   {}
 
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeterministicDispatchReduce(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorTransformT d_out,
-    OffsetT num_items,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous,
-    int ptx_version)
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_items(num_items)
-      , reduction_op(reduction_op)
-      , init(init)
-      , stream(stream)
-      , ptx_version(ptx_version)
-  {}
-
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
   //---------------------------------------------------------------------------
@@ -917,20 +895,6 @@ struct DeterministicDispatchReduce : SelectedPolicy
     } while (0);
 
     return error;
-  }
-
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchHelper(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorTransformT d_out,
-    OffsetT num_items,
-    deterministic_add_t reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    bool debug_synchronous)
-  {
-    return DispatchHelper(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, reduction_op, init, stream);
   }
 
   /**

@@ -165,7 +165,7 @@ private:
   ::cuda::std::array<ftype, 2 * FOLD> data = {0};
 
   /// Floating-point precision bin width
-  static constexpr int BIN_WIDTH = std::is_same<ftype, double>::value ? 40 : 13;
+  static constexpr int BIN_WIDTH = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
   static constexpr int MIN_EXP   = ::cuda::std::numeric_limits<ftype>::min_exponent;
   static constexpr int MAX_EXP   = ::cuda::std::numeric_limits<ftype>::max_exponent;
   static constexpr int MANT_DIG  = ::cuda::std::numeric_limits<ftype>::digits;
@@ -178,7 +178,7 @@ public:
   // The maximum floating-point fold supported by the library
   static constexpr auto MAXFOLD = MAXINDEX + 1;
 
-public:
+private:
   /// Binned floating-point compression factor
   /// This factor is used to scale down inputs before deposition into the bin of
   /// highest index

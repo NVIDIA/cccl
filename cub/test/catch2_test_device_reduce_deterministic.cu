@@ -30,14 +30,13 @@
 // above header needs to be included first
 
 #include <cub/detail/rfa.cuh>
+#include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
 
 #include <thrust/device_vector.h>
 
 #include <numeric>
 
 #include "catch2_test_launch_helper.h"
-#include "cub/device/dispatch/dispatch_reduce_deterministic.cuh"
-#include "cub/thread/thread_load.cuh"
 #include <c2h/catch2_test_helper.h>
 #include <c2h/generators.h>
 
