@@ -258,8 +258,7 @@ warp_reduce_dispatch(Input input, ReductionOp reduction_op, Config config)
   using namespace _CUDA_VSTD;
   check_warp_reduce_config(config);
   constexpr bool is_specialized_operator =
-    is_cuda_minimum_maximum_v<ReductionOp, Input> || is_cuda_std_plus_v<ReductionOp, Input>
-    || is_cuda_std_bitwise_v<ReductionOp, Input>;
+    is_cuda_minimum_maximum_v<ReductionOp> || is_cuda_std_plus_v<ReductionOp> || is_cuda_std_bitwise_v<ReductionOp>;
   constexpr bool is_small_integer  = is_integral_v<Input> && sizeof(Input) <= sizeof(uint32_t);
   constexpr auto logical_warp_size = config.logical_size;
   auto valid_items                 = config.valid_items;
