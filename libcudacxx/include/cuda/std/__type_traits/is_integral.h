@@ -37,7 +37,7 @@ inline constexpr bool is_integral_v = _CCCL_BUILTIN_IS_INTEGRAL(_Tp);
 #else // ^^^ _CCCL_BUILTIN_IS_INTEGRAL ^^^ / vvv !_CCCL_BUILTIN_IS_INTEGRAL vvv
 
 template <class _Tp>
-inline constexpr bool __cccl_is_integral_helper_v = true;
+inline constexpr bool __cccl_is_integral_helper_v = false;
 
 template <>
 inline constexpr bool __cccl_is_integral_helper_v<bool> = true;
