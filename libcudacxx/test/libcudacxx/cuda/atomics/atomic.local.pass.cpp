@@ -120,11 +120,13 @@ __device__ inline void tests()
 
 int main(int arg, char** argv)
 {
+#if !defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
   NV_IF_ELSE_TARGET(
     NV_IS_HOST,
     (cuda_thread_count = 64;),
     (tests<uint8_t>(); tests<uint16_t>(); tests<uint32_t>(); tests<uint64_t>(); tests<int8_t>(); tests<int16_t>();
      tests<int32_t>();
      tests<int64_t>();))
+#endif
   return 0;
 }

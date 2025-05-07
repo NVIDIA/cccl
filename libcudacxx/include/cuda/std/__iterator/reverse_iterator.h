@@ -69,6 +69,8 @@ inline constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<i
   is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
   && noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
 
+_LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
+
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT reverse_iterator
@@ -249,6 +251,8 @@ public:
     return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
 };
+
+_LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(reverse_iterator)
 
 template <class _Iter>
 struct __is_reverse_iterator : false_type

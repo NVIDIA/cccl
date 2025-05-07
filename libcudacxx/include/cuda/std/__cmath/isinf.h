@@ -112,12 +112,12 @@ template <class _Tp>
 #  if _LIBCUDACXX_HAS_NVFP16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-#    if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
+#    if _CCCL_STD_VER >= 2020 && _CCCL_CUDA_COMPILER(NVCC, <, 12, 3)
     // this is a workaround for nvbug 4362808
     return !::__hisnan(__x) && ::__hisnan(__x - __x);
-#    else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
+#    else // ^^^ C++20 and nvcc below 12.3 ^^^ / vvv C++17 or nvcc 12.3+ vvv
     return ::__hisinf(__x) != 0;
-#    endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
+#    endif // ^^^ C++17 or nvcc 12.3+ ^^^
   }
 #  endif // _LIBCUDACXX_HAS_NVFP16()
   return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<__half>) == __fp_exp_mask_of_v<__half>;
@@ -130,12 +130,12 @@ template <class _Tp>
 #  if _LIBCUDACXX_HAS_NVBF16()
   if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
   {
-#    if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
+#    if _CCCL_STD_VER >= 2020 && _CCCL_CUDA_COMPILER(NVCC, <, 12, 3)
     // this is a workaround for nvbug 4362808
     return !::__hisnan(__x) && ::__hisnan(__x - __x);
-#    else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
+#    else // ^^^ C++20 and nvcc below 12.3 ^^^ / vvv C++17 or nvcc 12.3+ vvv
     return ::__hisinf(__x) != 0;
-#    endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
+#    endif // ^^^ C++17 or nvcc 12.3+ ^^^
   }
 #  endif // _LIBCUDACXX_HAS_NVBF16()
   return (_CUDA_VSTD::__fp_get_storage(__x) & __fp_exp_mant_mask_of_v<__nv_bfloat16>)

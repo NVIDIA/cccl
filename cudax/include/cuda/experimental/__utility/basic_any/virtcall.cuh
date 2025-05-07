@@ -105,7 +105,7 @@ template <auto _Mbr, class _Interface>
 inline constexpr bool __valid_virtcall<_Mbr, __ireference<_Interface const>> = __virtual_fn<_Mbr>::__const_fn;
 
 template <auto _Mbr, class _Interface, class _Super, class _Self, class... _Args>
-_CUDAX_HOST_API auto __virtcall(_Self* __self, _Args&&... __args) //
+_CCCL_HOST_API auto __virtcall(_Self* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
@@ -118,27 +118,27 @@ _CUDAX_HOST_API auto __virtcall(_Self* __self, _Args&&... __args) //
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super>* __self, _Args&&... __args) //
+_CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super>* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
-  return __cudax::__virtcall<_Mbr, _Interface<>, _Super>(
-    __cudax::basic_any_from(__self), static_cast<_Args&&>(__args)...);
+  return experimental::__virtcall<_Mbr, _Interface<>, _Super>(
+    experimental::basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
 _CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
-_CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
+_CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {
-  return __cudax::__virtcall<_Mbr, _Interface<>, _Super>(
-    __cudax::basic_any_from(__self), static_cast<_Args&&>(__args)...);
+  return experimental::__virtcall<_Mbr, _Interface<>, _Super>(
+    experimental::basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
 _CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
 _CCCL_REQUIRES((!__valid_virtcall<_Mbr, _Super...>) )
-_CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super...> const*, _Args&&...) //
+_CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super...> const*, _Args&&...) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
 {

@@ -22,6 +22,7 @@
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/weak_result_type.h>
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cvref.h>

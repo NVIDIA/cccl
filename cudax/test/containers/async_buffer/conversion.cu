@@ -22,11 +22,15 @@
 #include "test_resources.h"
 #include "types.h"
 
-C2H_TEST("cudax::async_buffer conversion",
-         "[container][async_buffer]",
-         c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
-                        cuda::std::tuple<cuda::mr::device_accessible>,
-                        cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>)
+#if _CCCL_CUDACC_AT_LEAST(12, 6)
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::host_accessible>,
+                                  cuda::std::tuple<cuda::mr::device_accessible>,
+                                  cuda::std::tuple<cuda::mr::host_accessible, cuda::mr::device_accessible>>;
+#else
+using test_types = c2h::type_list<cuda::std::tuple<cuda::mr::device_accessible>>;
+#endif
+
+C2H_TEST("cudax::async_buffer conversion", "[container][async_buffer]", test_types)
 {
   using TestT    = c2h::get<0, TestType>;
   using Env      = typename extract_properties<TestT>::env;

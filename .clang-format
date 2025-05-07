@@ -43,12 +43,12 @@ AttributeMacros: [
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
                   '_LIBCUDACXX_HIDE_FROM_ABI',
-                  '_CUDAX_API',
-                  '_CUDAX_HOST_API',
-                  '_CUDAX_DEVICE_API',
-                  '_CUDAX_TRIVIAL_API',
-                  '_CUDAX_TRIVIAL_HOST_API',
-                  '_CUDAX_TRIVIAL_DEVICE_API',
+                  '_CCCL_API',
+                  '_CCCL_HOST_API',
+                  '_CCCL_DEVICE_API',
+                  '_CCCL_TRIVIAL_API',
+                  '_CCCL_TRIVIAL_HOST_API',
+                  '_CCCL_TRIVIAL_DEVICE_API',
                  ]
 BinPackArguments: false
 BinPackParameters: false
@@ -81,7 +81,7 @@ FixNamespaceComments: true
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<cuda/experimental/__async/sender/prologue.cuh>'
+  - Regex:           '^<cuda/experimental/__execution/prologue.cuh>'
     Priority:            0x7FFFFFFF
     SortPriority:        0x7FFFFFFF
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'

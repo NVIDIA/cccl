@@ -27,18 +27,28 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_HAS_BUILTIN_STD_FORWARD()
+
+// The compiler treats ::std::forward_like as a builtin function so it does not need to be
+// instantiated and will be compiled away even at -O0.
+using ::std::forward;
+
+#else // ^^^ _CCCL_HAS_BUILTIN_STD_FORWARD() ^^^ / vvv !_CCCL_HAS_BUILTIN_STD_FORWARD() vvv
+
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(remove_reference_t<_Tp>& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(remove_reference_t<_Tp>& __t) noexcept
 {
   return static_cast<_Tp&&>(__t);
 }
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
+[[nodiscard]] _CCCL_INTRINSIC _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& forward(remove_reference_t<_Tp>&& __t) noexcept
 {
   static_assert(!is_lvalue_reference<_Tp>::value, "cannot forward an rvalue as an lvalue");
   return static_cast<_Tp&&>(__t);
 }
+
+#endif // _CCCL_HAS_BUILTIN_STD_FORWARD()
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -18,72 +18,6 @@ if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   set(build_nvrtc_tests OFF)
 endif()
 
-# The function below reads the filepath `src`, extracts the %PARAM% comments,
-# and fills `labels_var` with a list of `label1_value1.label2_value2...`
-# strings, and puts the corresponding `DEFINITION=value1:DEFINITION=value2`
-# entries into `defs_var`.
-#
-# See the README.md file in this directory for background info.
-function(cub_get_test_params src labels_var defs_var)
-  file(READ "${src}" file_data)
-  set(param_regex "//[ ]+%PARAM%[ ]+([^ ]+)[ ]+([^ ]+)[ ]+([^\n]*)")
-
-  string(REGEX MATCHALL
-    "${param_regex}"
-    matches
-    "${file_data}"
-  )
-
-  set(variant_labels)
-  set(variant_defs)
-
-  foreach(match IN LISTS matches)
-    string(REGEX MATCH
-      "${param_regex}"
-      unused
-      "${match}"
-    )
-
-    set(def ${CMAKE_MATCH_1})
-    set(label ${CMAKE_MATCH_2})
-    set(values "${CMAKE_MATCH_3}")
-    string(REPLACE ":" ";" values "${values}")
-
-    # Build lists of test name suffixes (labels) and preprocessor definitions
-    # (defs) containing the cartesian product of all param values:
-    if (NOT variant_labels)
-      foreach(value IN LISTS values)
-        list(APPEND variant_labels ${label}_${value})
-      endforeach()
-    else()
-      set(tmp_labels)
-      foreach(old_label IN LISTS variant_labels)
-        foreach(value IN LISTS values)
-          list(APPEND tmp_labels ${old_label}.${label}_${value})
-        endforeach()
-      endforeach()
-      set(variant_labels "${tmp_labels}")
-    endif()
-
-    if (NOT variant_defs)
-      foreach(value IN LISTS values)
-        list(APPEND variant_defs ${def}=${value})
-      endforeach()
-    else()
-      set(tmp_defs)
-      foreach(old_def IN LISTS variant_defs)
-        foreach(value IN LISTS values)
-          list(APPEND tmp_defs ${old_def}:${def}=${value})
-        endforeach()
-      endforeach()
-      set(variant_defs "${tmp_defs}")
-    endif()
-  endforeach()
-
-  set(${labels_var} "${variant_labels}" PARENT_SCOPE)
-  set(${defs_var} "${variant_defs}" PARENT_SCOPE)
-endfunction()
-
 # Create meta targets that build all tests for a single configuration:
 foreach(cub_target IN LISTS CUB_TARGETS)
   cub_get_target_property(config_prefix ${cub_target} PREFIX)
@@ -180,7 +114,14 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     target_link_libraries(${test_target} PRIVATE cccl.c2h.main)
     add_dependencies(${config_meta_target} ${test_target})
 
-    add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+    add_test(NAME ${test_target} COMMAND
+      "${CMAKE_COMMAND}"
+      "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+      "-DTEST=$<TARGET_FILE:${test_target}>"
+      "-DTYPE=Catch2"
+      -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+    )
+    set_tests_properties(${test_target} PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST")
 
     if ("${test_target}" MATCHES "nvrtc")
       configure_file("cmake/nvrtc_args.h.in" ${CMAKE_CURRENT_BINARY_DIR}/nvrtc_args.h)
@@ -259,7 +200,13 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       endif()
       add_dependencies(${test_meta_target} ${test_target})
 
-      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+      add_test(NAME ${test_target} COMMAND
+        "${CMAKE_COMMAND}"
+        "-DCCCL_SOURCE_DIR=${CCCL_SOURCE_DIR}"
+        "-DTEST=$<TARGET_FILE:${test_target}>"
+        -P "${CUB_SOURCE_DIR}/test/run_test.cmake"
+      )
+      set_tests_properties(${test_target} PROPERTIES SKIP_REGULAR_EXPRESSION "CCCL_SKIP_TEST")
     endif()
   endif() # Not catch2 test
 
@@ -293,28 +240,13 @@ foreach (test_src IN LISTS test_srcs)
   string(REGEX REPLACE "^catch2_test_" "" test_name "${test_name}")
   string(REGEX REPLACE "^test_" "" test_name "${test_name}")
 
-  cub_get_test_params("${test_src}" variant_labels variant_defs)
-  list(LENGTH variant_labels num_variants)
-
   if ("${test_name}" MATCHES "nvrtc")
     if (NOT build_nvrtc_tests)
       continue()
     endif()
   endif()
 
-  # Subtract 1 to support the inclusive endpoint of foreach(...RANGE...):
-  math(EXPR range_end "${num_variants} - 1")
-
-  # Verbose output:
-  if (num_variants GREATER 0)
-    message(VERBOSE "Detected ${num_variants} variants of test '${test_src}':")
-    foreach(var_idx RANGE ${range_end})
-      math(EXPR i "${var_idx} + 1")
-      list(GET variant_labels ${var_idx} label)
-      list(GET variant_defs ${var_idx} defs)
-      message(VERBOSE "  ${i}: ${test_name} ${label} ${defs}")
-    endforeach()
-  endif()
+  cccl_parse_variant_params("${test_src}" num_variants variant_labels variant_defs)
 
   foreach(cub_target IN LISTS CUB_TARGETS)
     cub_get_target_property(config_prefix ${cub_target} PREFIX)
@@ -339,6 +271,8 @@ foreach (test_src IN LISTS test_srcs)
       cub_add_test(test_target ${test_name} "${test_src}" ${cub_target} ${launcher})
       cub_configure_cuda_target(${test_target} RDC ${CUB_FORCE_RDC})
     else() # has variants:
+      cccl_log_variant_params("${test_name}" ${num_variants} variant_labels variant_defs)
+
       # Meta target to build all parametrizations of the current test for the
       # current CUB_TARGET config
       set(variant_meta_target ${config_prefix}.test.${test_name}.all)
@@ -353,16 +287,22 @@ foreach (test_src IN LISTS test_srcs)
         add_custom_target(${cub_variant_meta_target})
       endif()
 
-      # Generate multiple tests, one per variant.
-      # See `cub_get_test_params` for details.
-      foreach(var_idx RANGE ${range_end})
-        list(GET variant_labels ${var_idx} label)
-        list(GET variant_defs ${var_idx} defs)
-        string(REPLACE ":" ";" defs "${defs}")
-        # A unique index per variant:
-        list(APPEND defs VAR_IDX=${var_idx})
+      # Subtract 1 to support the inclusive endpoint of foreach(...RANGE...):
+      math(EXPR range_end "${num_variants} - 1")
 
-        # Check if the test explicitly specifies launcher id:
+      # Generate multiple tests, one per variant.
+      foreach(var_idx RANGE ${range_end})
+        cccl_get_variant_data(variant_labels variant_defs ${var_idx} label defs)
+
+        # If a `label` is `lid`, it is assumed that the parameter is used to explicitly
+        # test variants built with different launchers. The `values` for such a
+        # parameter must be `0:1:2`, with:
+        # - `0` indicating host launch and CDP disabled (RDC off),
+        # - `1` indicating device launch and CDP enabled (RDC on),
+        # - `2` indicating graph capture launch and CDP disabled (RDC off).
+        #
+        # Tests that do not contain a variant labeled `lid` will only enable RDC if
+        # the CMake config enables them.
         _cub_has_lid_variant(explicit_launcher "${label}")
         _cub_launcher_id(explicit_launcher_id "${label}")
 

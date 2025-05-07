@@ -22,8 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-// We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if _CCCL_HAS_CUDA_COMPILER() && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#if _CCCL_CUDA_COMPILATION()
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
@@ -34,26 +33,27 @@
 #endif // !_CCCL_CUDA_COMPILATION
 
 // Global variables of non builtin types are only device accessible if they are marked as `__device__`
-#if defined(__CUDA_ARCH__)
+#if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_GLOBAL_VARIABLE _CCCL_DEVICE
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 #  define _CCCL_GLOBAL_VARIABLE
-#endif // __CUDA_ARCH__
+#endif // ^^^ !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) ^^^
 
-/// In device code, _CCCL_PTX_ARCH expands to the PTX version for which we are compiling.
-/// In host code, _CCCL_PTX_ARCH's value is implementation defined.
+/// In device code, _CCCL_PTX_ARCH() expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH()'s value is implementation defined.
 #if !defined(__CUDA_ARCH__)
-#  define _CCCL_PTX_ARCH 0
+#  define _CCCL_PTX_ARCH() 0
 #else
-#  define _CCCL_PTX_ARCH __CUDA_ARCH__
+#  define _CCCL_PTX_ARCH() __CUDA_ARCH__
 #endif
 
 // Compile with NVCC compiler and only device code, Volta+  GPUs
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH() >= 700
 #  define _CCCL_GRID_CONSTANT __grid_constant__
 #else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
 #  define _CCCL_GRID_CONSTANT
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH() >= 700
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if _CCCL_CUDA_COMPILER(NVCC)

@@ -220,6 +220,18 @@ C2H_TEST_LIST("uninitialized_buffer", "[container]", char, short, int, long, lon
       CUDAX_CHECK(old_buf.size() == old_size);
     }
   }
+
+  SECTION("destroy")
+  {
+    uninitialized_buffer buf{resource, 42};
+    buf.destroy();
+    CUDAX_CHECK(buf.data() == nullptr);
+    CUDAX_CHECK(buf.size() == 0);
+
+    buf = uninitialized_buffer{resource, 42};
+    CUDAX_CHECK(buf.data() != nullptr);
+    CUDAX_CHECK(buf.size() == 42);
+  }
 }
 
 C2H_TEST("uninitialized_buffer is usable with cudax::launch", "[container]")

@@ -41,6 +41,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   ForwardIterator last,
   const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::lower_bound;
   return lower_bound(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 }
@@ -54,6 +55,7 @@ _CCCL_HOST_DEVICE ForwardIterator lower_bound(
   const T& value,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::lower_bound;
   return lower_bound(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value, comp);
 }
@@ -66,6 +68,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   ForwardIterator last,
   const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::upper_bound;
   return upper_bound(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 }
@@ -79,6 +82,7 @@ _CCCL_HOST_DEVICE ForwardIterator upper_bound(
   const T& value,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::upper_bound;
   return upper_bound(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value, comp);
 }
@@ -91,6 +95,7 @@ _CCCL_HOST_DEVICE bool binary_search(
   ForwardIterator last,
   const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::binary_search;
   return binary_search(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 }
@@ -104,6 +109,7 @@ _CCCL_HOST_DEVICE bool binary_search(
   const T& value,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::binary_search;
   return binary_search(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value, comp);
 }
@@ -117,6 +123,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
   const T& value,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal_range");
   using thrust::system::detail::generic::equal_range;
   return equal_range(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value, comp);
 }
@@ -129,6 +136,7 @@ _CCCL_HOST_DEVICE thrust::pair<ForwardIterator, ForwardIterator> equal_range(
   ForwardIterator last,
   const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal_range");
   using thrust::system::detail::generic::equal_range;
   return equal_range(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, value);
 }
@@ -143,6 +151,7 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
   InputIterator values_last,
   OutputIterator output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::lower_bound;
   return lower_bound(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, values_first, values_last, output);
@@ -163,6 +172,7 @@ _CCCL_HOST_DEVICE OutputIterator lower_bound(
   OutputIterator output,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::lower_bound;
   return lower_bound(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -184,6 +194,7 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
   InputIterator values_last,
   OutputIterator output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::upper_bound;
   return upper_bound(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, values_first, values_last, output);
@@ -204,6 +215,7 @@ _CCCL_HOST_DEVICE OutputIterator upper_bound(
   OutputIterator output,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::upper_bound;
   return upper_bound(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -225,6 +237,7 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
   InputIterator values_last,
   OutputIterator output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::binary_search;
   return binary_search(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, values_first, values_last, output);
@@ -245,6 +258,7 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
   OutputIterator output,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::binary_search;
   return binary_search(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -263,6 +277,7 @@ _CCCL_HOST_DEVICE OutputIterator binary_search(
 template <typename ForwardIterator, typename LessThanComparable>
 ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -275,6 +290,7 @@ ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const L
 template <typename ForwardIterator, typename T, typename StrictWeakOrdering>
 ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -287,6 +303,7 @@ ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T
 template <typename ForwardIterator, typename LessThanComparable>
 ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -299,6 +316,7 @@ ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const L
 template <typename ForwardIterator, typename T, typename StrictWeakOrdering>
 ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -311,6 +329,7 @@ ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T
 template <typename ForwardIterator, typename LessThanComparable>
 bool binary_search(ForwardIterator first, ForwardIterator last, const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -323,6 +342,7 @@ bool binary_search(ForwardIterator first, ForwardIterator last, const LessThanCo
 template <typename ForwardIterator, typename T, typename StrictWeakOrdering>
 bool binary_search(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -336,6 +356,7 @@ template <typename ForwardIterator, typename LessThanComparable>
 thrust::pair<ForwardIterator, ForwardIterator>
 equal_range(ForwardIterator first, ForwardIterator last, const LessThanComparable& value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal_range");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -349,6 +370,7 @@ template <typename ForwardIterator, typename T, typename StrictWeakOrdering>
 thrust::pair<ForwardIterator, ForwardIterator>
 equal_range(ForwardIterator first, ForwardIterator last, const T& value, StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::equal_range");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -370,6 +392,7 @@ OutputIterator lower_bound(
   InputIterator values_last,
   OutputIterator output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -392,6 +415,7 @@ OutputIterator lower_bound(
   OutputIterator output,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::lower_bound");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -414,6 +438,7 @@ OutputIterator upper_bound(
   InputIterator values_last,
   OutputIterator output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -436,6 +461,7 @@ OutputIterator upper_bound(
   OutputIterator output,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::upper_bound");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -458,6 +484,7 @@ OutputIterator binary_search(
   InputIterator values_last,
   OutputIterator output)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -480,6 +507,7 @@ OutputIterator binary_search(
   OutputIterator output,
   StrictWeakOrdering comp)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::binary_search");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;

@@ -18,7 +18,6 @@
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <iostream>
 #include <random>
 #include <string>
 #include <type_traits>
@@ -199,26 +198,61 @@ cccl_type_info get_type_info()
   return info;
 }
 
+// TOOD: using more than than one `op` in the same TU will fail because
+// of the lack of name mangling. Ditto for all `get_*_op` functions.
 static std::string get_reduce_op(cccl_type_enum t)
 {
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ char op(char a, char b) { return a + b; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  char* a = reinterpret_cast<char*>(a_void); "
+             "  char* b = reinterpret_cast<char*>(b_void); "
+             "  char* out = reinterpret_cast<char*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ int op(int a, int b) { return a + b; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  int* a = reinterpret_cast<int*>(a_void); "
+             "  int* b = reinterpret_cast<int*>(b_void); "
+             "  int* out = reinterpret_cast<int*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ unsigned int op(unsigned int a, unsigned int b) { return a + b; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  unsigned int* a = reinterpret_cast<unsigned int*>(a_void); "
+             "  unsigned int* b = reinterpret_cast<unsigned int*>(b_void); "
+             "  unsigned int* out = reinterpret_cast<unsigned int*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ long long op(long long a, long long b) { return a + b; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  long long* a = reinterpret_cast<long long*>(a_void); "
+             "  long long* b = reinterpret_cast<long long*>(b_void); "
+             "  long long* out = reinterpret_cast<long long*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ unsigned long long op(unsigned long long a, unsigned long long b) { "
-             " return a + b; "
+      return "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  unsigned long long* a = reinterpret_cast<unsigned long long*>(a_void); "
+             "  unsigned long long* b = reinterpret_cast<unsigned long long*>(b_void); "
+             "  unsigned long long* out = reinterpret_cast<unsigned long long*>(out_void); "
+             "  *out = *a + *b; "
              "}";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ float op(float a, float b) { return a + b; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  float* a = reinterpret_cast<float*>(a_void); "
+             "  float* b = reinterpret_cast<float*>(b_void); "
+             "  float* out = reinterpret_cast<float*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ double op(double a, double b) { return a + b; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* b_void, void* out_void) { "
+             "  double* a = reinterpret_cast<double*>(a_void); "
+             "  double* b = reinterpret_cast<double*>(b_void); "
+             "  double* out = reinterpret_cast<double*>(out_void); "
+             "  *out = *a + *b; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -230,15 +264,30 @@ static std::string get_for_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ void op(char* a) {(*a)++;}";
+      return "extern \"C\" __device__ void op(void* a_void) { "
+             "  char* a = reinterpret_cast<char*>(a_void); "
+             "  (*a)++; "
+             "}";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ void op(int* a) {(*a)++;}";
+      return "extern \"C\" __device__ void op(void* a_void) { "
+             "  int* a = reinterpret_cast<int*>(a_void); "
+             "  (*a)++; "
+             "}";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ void op(unsigned int* a) {(*a)++;}";
+      return "extern \"C\" __device__ void op(void* a_void) { "
+             "  unsigned int* a = reinterpret_cast<unsigned int*>(a_void); "
+             "  (*a)++; "
+             "}";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ void op(long long* a) {(*a)++;}";
+      return "extern \"C\" __device__ void op(void* a_void) { "
+             "  long long* a = reinterpret_cast<long long*>(a_void); "
+             "  (*a)++; "
+             "}";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ void op(unsigned long long* a) {(*a)++;}";
+      return "extern \"C\" __device__ void op(void* a_void) { "
+             "  unsigned long long* a = reinterpret_cast<unsigned long long*>(a_void); "
+             "  (*a)++; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -250,26 +299,75 @@ static std::string get_merge_sort_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ bool op(char lhs, char rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  char* lhs = reinterpret_cast<char*>(lhs_void); "
+             "  char* rhs = reinterpret_cast<char*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT8:
-      return "extern \"C\" __device__ bool op(unsigned char lhs, unsigned char rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned char* lhs = reinterpret_cast<unsigned char*>(lhs_void); "
+             "  unsigned char* rhs = reinterpret_cast<unsigned char*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_INT16:
-      return "extern \"C\" __device__ bool op(short lhs, short rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  short* lhs = reinterpret_cast<short*>(lhs_void); "
+             "  short* rhs = reinterpret_cast<short*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT16:
-      return "extern \"C\" __device__ bool op(unsigned short lhs, unsigned short rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned short* lhs = reinterpret_cast<unsigned short*>(lhs_void); "
+             "  unsigned short* rhs = reinterpret_cast<unsigned short*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ bool op(int lhs, int rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  int* lhs = reinterpret_cast<int*>(lhs_void); "
+             "  int* rhs = reinterpret_cast<int*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ bool op(unsigned int lhs, unsigned int rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned int* lhs = reinterpret_cast<unsigned int*>(lhs_void); "
+             "  unsigned int* rhs = reinterpret_cast<unsigned int*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ bool op(long long lhs, long long rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  long long* lhs = reinterpret_cast<long long*>(lhs_void); "
+             "  long long* rhs = reinterpret_cast<long long*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ bool op(unsigned long long lhs, unsigned long long rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned long long* lhs = reinterpret_cast<unsigned long long*>(lhs_void); "
+             "  unsigned long long* rhs = reinterpret_cast<unsigned long long*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs < rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  float* lhs = reinterpret_cast<float*>(lhs_void); "
+             "  float* rhs = reinterpret_cast<float*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs < rhs; }";
-
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  double* lhs = reinterpret_cast<double*>(lhs_void); "
+             "  double* rhs = reinterpret_cast<double*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs < *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -281,25 +379,75 @@ static std::string get_unique_by_key_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ bool op(char lhs, char rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  char* lhs = reinterpret_cast<char*>(lhs_void); "
+             "  char* rhs = reinterpret_cast<char*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT8:
-      return "extern \"C\" __device__ bool op(unsigned char lhs, unsigned char rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned char* lhs = reinterpret_cast<unsigned char*>(lhs_void); "
+             "  unsigned char* rhs = reinterpret_cast<unsigned char*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_INT16:
-      return "extern \"C\" __device__ bool op(short lhs, short rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  short* lhs = reinterpret_cast<short*>(lhs_void); "
+             "  short* rhs = reinterpret_cast<short*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT16:
-      return "extern \"C\" __device__ bool op(unsigned short lhs, unsigned short rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned short* lhs = reinterpret_cast<unsigned short*>(lhs_void); "
+             "  unsigned short* rhs = reinterpret_cast<unsigned short*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ bool op(int lhs, int rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  int* lhs = reinterpret_cast<int*>(lhs_void); "
+             "  int* rhs = reinterpret_cast<int*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ bool op(unsigned int lhs, unsigned int rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned int* lhs = reinterpret_cast<unsigned int*>(lhs_void); "
+             "  unsigned int* rhs = reinterpret_cast<unsigned int*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ bool op(long long lhs, long long rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  long long* lhs = reinterpret_cast<long long*>(lhs_void); "
+             "  long long* rhs = reinterpret_cast<long long*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ bool op(unsigned long long lhs, unsigned long long rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  unsigned long long* lhs = reinterpret_cast<unsigned long long*>(lhs_void); "
+             "  unsigned long long* rhs = reinterpret_cast<unsigned long long*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ bool op(float lhs, float rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  float* lhs = reinterpret_cast<float*>(lhs_void); "
+             "  float* rhs = reinterpret_cast<float*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ bool op(double lhs, double rhs) { return lhs == rhs; }";
+      return "extern \"C\" __device__ void op(void* lhs_void, void* rhs_void, void* result_void) { "
+             "  double* lhs = reinterpret_cast<double*>(lhs_void); "
+             "  double* rhs = reinterpret_cast<double*>(rhs_void); "
+             "  bool* result = reinterpret_cast<bool*>(result_void); "
+             "  *result = *lhs == *rhs; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -311,21 +459,47 @@ static std::string get_unary_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ char op(char a) { return 2 * a; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  char* a = reinterpret_cast<char*>(a_void); "
+             "  char* result = reinterpret_cast<char*>(result_void); "
+             "  *result = 2 * *a; "
+             "}";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ int op(int a) { return 2 * a; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  int* a = reinterpret_cast<int*>(a_void); "
+             "  int* result = reinterpret_cast<int*>(result_void); "
+             "  *result = 2 * *a; "
+             "}";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ unsigned int op(unsigned int a) { return 2 * a; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  unsigned int* a = reinterpret_cast<unsigned int*>(a_void); "
+             "  unsigned int* result = reinterpret_cast<unsigned int*>(result_void); "
+             "  *result = 2 * *a; "
+             "}";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ long long op(long long a) { return 2 * a; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  long long* a = reinterpret_cast<long long*>(a_void); "
+             "  long long* result = reinterpret_cast<long long*>(result_void); "
+             "  *result = 2 * *a; "
+             "}";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ unsigned long long op(unsigned long long a) { "
-             " return 2 * a; "
+      return "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  unsigned long long* a = reinterpret_cast<unsigned long long*>(a_void); "
+             "  unsigned long long* result = reinterpret_cast<unsigned long long*>(result_void); "
+             "  *result = 2 * *a; "
              "}";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ float op(float a) { return 2 * a; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  float* a = reinterpret_cast<float*>(a_void); "
+             "  float* result = reinterpret_cast<float*>(result_void); "
+             "  *result = 2 * *a; "
+             "}";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ double op(double a) { return 2 * a; }";
+      return "extern \"C\" __device__ void op(void* a_void, void* result_void) { "
+             "  double* a = reinterpret_cast<double*>(a_void); "
+             "  double* result = reinterpret_cast<double*>(result_void); "
+             "  *result = 2 * *a; "
+             "}";
     default:
       throw std::runtime_error("Unsupported type");
   }
@@ -337,25 +511,55 @@ static std::string get_radix_sort_decomposer_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::CCCL_INT8:
-      return "extern \"C\" __device__ char* op(char* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  char* key = reinterpret_cast<char*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_UINT8:
-      return "extern \"C\" __device__ unsigned char* op(unsigned char* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  unsigned char* key = reinterpret_cast<unsigned char*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_INT16:
-      return "extern \"C\" __device__ short* op(short* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  short* key = reinterpret_cast<short*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_UINT16:
-      return "extern \"C\" __device__ unsigned short* op(unsigned short* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  unsigned short* key = reinterpret_cast<unsigned short*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_INT32:
-      return "extern \"C\" __device__ int* op(int* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  int* key = reinterpret_cast<int*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_UINT32:
-      return "extern \"C\" __device__ unsigned int* op(unsigned int* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  unsigned int* key = reinterpret_cast<unsigned int*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_INT64:
-      return "extern \"C\" __device__ long long* op(long long* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  long long* key = reinterpret_cast<long long*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_UINT64:
-      return "extern \"C\" __device__ unsigned long long* op(unsigned long long* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  unsigned long long* key = reinterpret_cast<unsigned long long*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_FLOAT32:
-      return "extern \"C\" __device__ float* op(float* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  float* key = reinterpret_cast<float*>(key_void); "
+             "  return key; "
+             "};";
     case cccl_type_enum::CCCL_FLOAT64:
-      return "extern \"C\" __device__ double* op(double* key) { return key; };";
+      return "extern \"C\" __device__ void* op(void* key_void) { "
+             "  double* key = reinterpret_cast<double*>(key_void); "
+             "  return key; "
+             "};";
 
     default:
       throw std::runtime_error("Unsupported type");
