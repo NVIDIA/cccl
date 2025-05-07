@@ -22,10 +22,9 @@ docker run --rm \
     fail_if_no_gpu && \
     source /home/coder/workspace/cccl/ci/test_python_common.sh && \
     list_environment && \
-    # Install the wheel from the artifact location \
-    ls /wheelhouse && \
-    ls /wheelhouse/cuda_cccl-*.whl && \
-    WHEEL_PATH="$(ls /wheelhouse/cuda_cccl-*.whl)" && \
-    run_tests_from_wheel
-
-    "cuda_cccl" "$WHEEL_PATH"'
+    # Install the wheel from the artifact location
+    ls -la /home/coder/workspace/wheelhouse && \
+    ls -la /home/coder/workspace/wheelhouse && \
+    ls -la /home/coder/workspace/wheelhouse/cuda_cccl-*.whl && \
+    WHEEL_PATH="$(ls /home/coder/workspace/wheelhouse/cuda_cccl-*.whl)" && \
+    run_tests_from_wheel "cuda_cccl" "$WHEEL_PATH"'
