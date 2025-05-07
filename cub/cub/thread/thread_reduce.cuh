@@ -295,7 +295,7 @@ inline constexpr bool enable_ternary_reduction_sm90_v<__nv_bfloat162, ReductionO
 template <typename T, typename ReductionOp>
 inline constexpr bool enable_ternary_reduction_sm50_v =
   _CUDA_VSTD::is_integral_v<T> && sizeof(T) <= 4
-  && (is_one_of_v<ReductionOp, _CUDA_VSTD::plus<>, _CUDA_VSTD::plus<T>> || is_cuda_std_bitwise_v<ReductionOp, T>);
+  && (is_cuda_std_plus_v<ReductionOp, T> || is_cuda_std_bitwise_v<ReductionOp, T>);
 
 /***********************************************************************************************************************
  * Internal Reduction Algorithms: Sequential, Binary, Ternary
