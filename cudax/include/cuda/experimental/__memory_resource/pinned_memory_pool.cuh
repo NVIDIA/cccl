@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
 
 #  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime.h>
@@ -105,6 +105,6 @@ public:
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 #endif // _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL

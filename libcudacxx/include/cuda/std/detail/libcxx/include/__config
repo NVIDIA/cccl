@@ -354,7 +354,7 @@ using char32_t = unsigned int;
 
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
-#  if (_CCCL_CUDACC_BELOW(12, 6) && _CCCL_COMPILER(NVRTC))
+#  if _CCCL_COMPILER(NVRTC, <, 12, 6)
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)       \
       using __base = __baseclass<__VA_ARGS__>;                                 \
       _CCCL_TEMPLATE(class... _Args)                                           \
@@ -369,7 +369,7 @@ using char32_t = unsigned int;
       using __base = __baseclass<__VA_ARGS__>;                           \
       using __base::__base;                                              \
       _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
-#  endif // !(_CCCL_CUDACC_BELOW(12,5) && _CCCL_COMPILER(NVRTC))
+#  endif // ^^^ no workaround ^^^
 
 #endif // __cplusplus
 
