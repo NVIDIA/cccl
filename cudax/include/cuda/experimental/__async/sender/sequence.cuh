@@ -49,7 +49,7 @@ private:
   };
 
   template <class _Zip>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
@@ -59,35 +59,37 @@ private:
     using __sndr2_t _CCCL_NODEBUG_ALIAS = typename __args_t::__sndr2_t;
     using __env_t _CCCL_NODEBUG_ALIAS   = env_of_t<__rcvr_t>;
 
-    _CUDAX_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
+    _CCCL_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
         , __opstate1_(__async::connect(static_cast<__sndr1_t&&>(__sndr1), __rcvr_ref{*this}))
         , __opstate2_(__async::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref{__rcvr_}))
     {}
 
-    _CUDAX_API void start() noexcept
+    _CCCL_IMMOVABLE_OPSTATE(__opstate);
+
+    _CCCL_API void start() noexcept
     {
       __async::start(__opstate1_);
     }
 
     template <class... _Values>
-    _CUDAX_API void set_value(_Values&&...) && noexcept
+    _CCCL_API void set_value(_Values&&...) && noexcept
     {
       __async::start(__opstate2_);
     }
 
     template <class _Error>
-    _CUDAX_API void set_error(_Error&& __error) && noexcept
+    _CCCL_API void set_error(_Error&& __error) && noexcept
     {
       __async::set_error(static_cast<__rcvr_t&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CUDAX_API void set_stopped() && noexcept
+    _CCCL_API void set_stopped() && noexcept
     {
       __async::set_stopped(static_cast<__rcvr_t&&>(__rcvr_));
     }
 
-    _CUDAX_API auto get_env() const noexcept -> __env_t
+    _CCCL_API auto get_env() const noexcept -> __env_t
     {
       return __async::get_env(__rcvr_);
     }
@@ -100,11 +102,11 @@ private:
   struct __fn
   {
     template <class _Sndr1, class _Sndr2>
-    _CUDAX_TRIVIAL_API constexpr auto operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const;
+    _CCCL_TRIVIAL_API constexpr auto operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const;
   };
 
 public:
-  _CUDAX_API static constexpr auto __apply() noexcept
+  _CCCL_API static constexpr auto __apply() noexcept
   {
     return __fn{};
   }
@@ -113,7 +115,7 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
   template <class _Sndr1, class _Sndr2>
-  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const;
 };
 
 template <class _Sndr1, class _Sndr2>
@@ -124,7 +126,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
   using __sndr2_t _CCCL_NODEBUG_ALIAS      = _Sndr2;
 
   template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures()
+  _CCCL_API static constexpr auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__completions1) = get_child_completion_signatures<_Self, _Sndr1, _Env...>())
     {
@@ -139,20 +141,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) &&
+  _CCCL_API auto connect(_Rcvr __rcvr) &&
   {
     using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, _Sndr1, _Sndr2>>>;
     return __opstate_t{static_cast<_Sndr1&&>(__sndr1_), static_cast<_Sndr2>(__sndr2_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const&
+  _CCCL_API auto connect(_Rcvr __rcvr) const&
   {
     using __opstate_t _CCCL_NODEBUG_ALIAS = __opstate<__zip<__args<_Rcvr, const _Sndr1&, const _Sndr2&>>>;
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr2>
+  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr2>
   {
     return __async::get_env(__sndr2_);
   }
@@ -164,14 +166,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
 };
 
 template <class _Sndr1, class _Sndr2>
-_CUDAX_TRIVIAL_API constexpr auto __seq_t::__fn::operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const
+_CCCL_TRIVIAL_API constexpr auto __seq_t::__fn::operator()(__ignore, _Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
   using __sndr_t _CCCL_NODEBUG_ALIAS = __seq_t::__sndr_t<_Sndr1, _Sndr2>;
   return __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
 }
 
 template <class _Sndr1, class _Sndr2>
-_CUDAX_TRIVIAL_API constexpr auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
+_CCCL_TRIVIAL_API constexpr auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr1>;
   return __dom_t::__apply(*this)(__ignore{}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2));

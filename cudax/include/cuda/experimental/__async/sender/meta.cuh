@@ -26,8 +26,6 @@
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/type_list.h>
 
-#include <cuda/experimental/__detail/config.cuh>
-
 #if __cpp_lib_three_way_comparison
 #  include <compare> // IWYU pragma: keep
 #endif
@@ -90,7 +88,7 @@ struct _WITH_COMPLETIONS
 
 struct __merror_base
 {
-  // _CUDAX_DEFAULTED_API virtual ~__merror_base() = default;
+  // _CCCL_HIDE_FROM_ABI virtual ~__merror_base() = default;
 
   _CCCL_HOST_DEVICE constexpr friend auto __ustdex_unhandled_error(void*) noexcept -> bool
   {

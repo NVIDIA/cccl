@@ -41,14 +41,14 @@ namespace cuda::experimental
 struct __basic_any_access
 {
   template <class _Interface>
-  _CUDAX_TRIVIAL_HOST_API static auto __make() noexcept -> basic_any<_Interface>
+  _CCCL_TRIVIAL_HOST_API static auto __make() noexcept -> basic_any<_Interface>
   {
     return basic_any<_Interface>{};
   }
 
   _CCCL_TEMPLATE(class _SrcCvAny, class _DstInterface)
   _CCCL_REQUIRES(__any_castable_to<_SrcCvAny, basic_any<_DstInterface>>)
-  _CUDAX_TRIVIAL_HOST_API static auto __cast_to(_SrcCvAny&& __from, basic_any<_DstInterface>& __to) noexcept(
+  _CCCL_TRIVIAL_HOST_API static auto __cast_to(_SrcCvAny&& __from, basic_any<_DstInterface>& __to) noexcept(
     noexcept(__to.__convert_from(static_cast<_SrcCvAny&&>(__from)))) -> void
   {
     static_assert(detail::__is_specialization_of<_CUDA_VSTD::remove_cvref_t<_SrcCvAny>, basic_any>);
@@ -57,7 +57,7 @@ struct __basic_any_access
 
   _CCCL_TEMPLATE(class _SrcCvAny, class _DstInterface)
   _CCCL_REQUIRES(__any_castable_to<_SrcCvAny*, basic_any<_DstInterface>>)
-  _CUDAX_TRIVIAL_HOST_API static auto
+  _CCCL_TRIVIAL_HOST_API static auto
   __cast_to(_SrcCvAny* __from, basic_any<_DstInterface>& __to) noexcept(noexcept(__to.__convert_from(__from))) -> void
   {
     static_assert(detail::__is_specialization_of<_CUDA_VSTD::remove_const_t<_SrcCvAny>, basic_any>);
@@ -65,19 +65,19 @@ struct __basic_any_access
   }
 
   template <class _Interface>
-  _CUDAX_TRIVIAL_HOST_API static auto __get_vptr(basic_any<_Interface> const& __self) noexcept -> __vptr_for<_Interface>
+  _CCCL_TRIVIAL_HOST_API static auto __get_vptr(basic_any<_Interface> const& __self) noexcept -> __vptr_for<_Interface>
   {
     return __self.__get_vptr();
   }
 
   template <class _Interface>
-  _CUDAX_TRIVIAL_HOST_API static auto __get_optr(basic_any<_Interface>& __self) noexcept -> void*
+  _CCCL_TRIVIAL_HOST_API static auto __get_optr(basic_any<_Interface>& __self) noexcept -> void*
   {
     return __self.__get_optr();
   }
 
   template <class _Interface>
-  _CUDAX_TRIVIAL_HOST_API static auto __get_optr(basic_any<_Interface> const& __self) noexcept -> void const*
+  _CCCL_TRIVIAL_HOST_API static auto __get_optr(basic_any<_Interface> const& __self) noexcept -> void const*
   {
     return __self.__get_optr();
   }

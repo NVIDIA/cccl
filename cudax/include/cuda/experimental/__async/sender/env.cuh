@@ -21,152 +21,23 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__functional/reference_wrapper.h>
+#include <cuda/std/__execution/env.h>
 
-#include <cuda/experimental/__async/sender/fwd.cuh>
-#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
 #include <cuda/experimental/__async/sender/queries.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
-#include <cuda/experimental/__async/sender/type_traits.cuh>
-#include <cuda/experimental/__async/sender/utility.cuh>
-
-#include <functional>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
-_CCCL_DIAG_PUSH
-
-// Suppress the warning: "definition of implicit copy constructor for 'env<>' is
-// deprecated because it has a user-declared copy assignment operator". We need to
-// suppress this warning rather than fix the code because defaulting or defining
-// the copy constructor would prevent aggregate initialization, which these types
-// depend on.
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunknown-warning-option")
-_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-copy")
-
 namespace cuda::experimental::__async
 {
-template <class _Ty>
-extern _Ty __unwrap_ref;
+using _CUDA_STD_EXEC::env;
+using _CUDA_STD_EXEC::env_of_t;
+using _CUDA_STD_EXEC::get_env;
+using _CUDA_STD_EXEC::prop;
 
-template <class _Ty>
-extern _Ty& __unwrap_ref<::std::reference_wrapper<_Ty>>;
-
-template <class _Ty>
-extern _Ty& __unwrap_ref<_CUDA_VSTD::reference_wrapper<_Ty>>;
-
-template <class _Ty>
-using __unwrap_reference_t _CCCL_NODEBUG_ALIAS = decltype(__unwrap_ref<_Ty>);
-
-template <class _Query, class _Value>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT prop
-{
-  _CCCL_NO_UNIQUE_ADDRESS _Query __query;
-  _CCCL_NO_UNIQUE_ADDRESS _Value __value;
-
-  _CUDAX_TRIVIAL_API constexpr auto query(_Query) const noexcept -> const _Value&
-  {
-    return __value;
-  }
-
-  auto operator=(const prop&) -> prop& = delete;
-};
-
-template <class _Query, class _Value>
-prop(_Query, _Value) -> prop<_Query, _Value>;
-
-template <class... _Envs>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT env
-{
-  __tuple<_Envs...> __envs_;
-
-  template <class _Query>
-  _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
-  {
-    // NOLINTNEXTLINE (modernize-avoid-c-arrays)
-    constexpr bool __flags[] = {__queryable_with<_Envs, _Query>..., false};
-    constexpr size_t __idx   = __async::__find_pos(__flags, __flags + sizeof...(_Envs));
-    if constexpr (__idx != __npos)
-    {
-      return __async::__cget<__idx>(__self.__envs_);
-    }
-  }
-
-  template <class _Query>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query>(declval<const env&>()));
-
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
-  _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
-  {
-    return env::__get_1st<_Query>(*this).query(__query);
-  }
-
-  auto operator=(const env&) -> env& = delete;
-};
-
-// partial specialization for two environments
-template <class _Env0, class _Env1>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
-{
-  _CCCL_NO_UNIQUE_ADDRESS _Env0 __env0_;
-  _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;
-
-  template <class _Query>
-  _CUDAX_TRIVIAL_API static constexpr decltype(auto) __get_1st(const env& __self) noexcept
-  {
-    if constexpr (__queryable_with<_Env0, _Query>)
-    {
-      return (__self.__env0_);
-    }
-    else
-    {
-      return (__self.__env1_);
-    }
-  }
-
-  template <class _Query>
-  using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query>(declval<const env&>()));
-
-  _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
-  _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
-    noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
-  {
-    return env::__get_1st<_Query>(*this).query(__query);
-  }
-
-  auto operator=(const env&) -> env& = delete;
-};
-
-template <class... _Envs>
-env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
-
-using empty_env CCCL_DEPRECATED_BECAUSE("please use env<> instead of empty_env") = env<>;
-
-struct get_env_t
-{
-  template <class _Ty>
-  using __env_of _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty>().get_env());
-
-  template <class _Ty>
-  _CUDAX_TRIVIAL_API auto operator()(_Ty&& __ty) const noexcept -> __env_of<_Ty&>
-  {
-    static_assert(noexcept(__ty.get_env()));
-    return __ty.get_env();
-  }
-
-  _CUDAX_TRIVIAL_API auto operator()(__ignore) const noexcept -> env<>
-  {
-    return {};
-  }
-};
-
-_CCCL_GLOBAL_CONSTANT get_env_t get_env{};
-
-template <class _Ty>
-using env_of_t _CCCL_NODEBUG_ALIAS = decltype(__async::get_env(declval<_Ty>()));
+using _CUDA_STD_EXEC::__nothrow_queryable_with;
+using _CUDA_STD_EXEC::__query_result_t;
+using _CUDA_STD_EXEC::__queryable_with;
 
 struct __not_a_scheduler
 {
@@ -198,8 +69,6 @@ using late_domain_of_t _CCCL_NODEBUG_ALIAS = __domain_of_t<__late_domain_env<_Sn
 
 } // namespace cuda::experimental::__async
 
-_CCCL_DIAG_POP
-
 #include <cuda/experimental/__async/sender/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_ASYNC_DETAIL_ENV
