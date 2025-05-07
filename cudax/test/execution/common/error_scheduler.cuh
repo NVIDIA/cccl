@@ -91,6 +91,8 @@ private:
 public:
   using scheduler_concept = cudax_async::scheduler_t;
 
+  _CCCL_HIDE_FROM_ABI error_scheduler() = default;
+
   _CCCL_HOST_DEVICE explicit error_scheduler(Error err)
       : _err(static_cast<Error&&>(err))
   {}

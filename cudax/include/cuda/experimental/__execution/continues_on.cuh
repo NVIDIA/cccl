@@ -32,6 +32,7 @@
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
@@ -169,18 +170,7 @@ private:
     connect_result_t<schedule_result_t<_Sch>, __rcvr_ref<__rcvr_t<_Rcvr, __result_t>>> __opstate2_;
   };
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class _Sch, class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   template <class _Sndr, class _Sch>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
@@ -291,17 +281,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
   }
 };
 
-template <class _Sch, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto continues_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
-{
-  return __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)};
-}
-
 template <class _Sndr, class _Sch>
 _CCCL_TRIVIAL_API constexpr auto continues_on_t::operator()(_Sndr __sndr, _Sch __sch) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
-  return __dom_t::__apply(*this)(static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr));
+  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+  return transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)});
 }
 
 template <class _Sch>

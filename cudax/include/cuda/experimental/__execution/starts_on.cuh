@@ -85,18 +85,7 @@ private:
     connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
   };
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class _Sch, class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
@@ -152,16 +141,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto starts_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
-{
-  return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
-}
-
-template <class _Sch, class _Sndr>
 _CCCL_TRIVIAL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Sch>; // see [exec.starts.on]
-  return __dom_t::__apply(*this)(static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr));
+  using __dom_t _CCCL_NODEBUG_ALIAS  = __domain_of_t<_Sch>; // see [exec.starts.on]
+  using __sndr_t _CCCL_NODEBUG_ALIAS = starts_on_t::__sndr_t<_Sch, _Sndr>;
+  return transform_sender(__dom_t{}, __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <class _Sch, class _Sndr>
