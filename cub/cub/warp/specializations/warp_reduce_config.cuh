@@ -35,8 +35,8 @@
 #include <cub/warp/warp_utils.cuh>
 
 #include <cuda/bit>
+#include <cuda/cmath>
 #include <cuda/std/__mdspan/extents.h>
-#include <cuda/std/bit>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -134,8 +134,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
   // Check logical mode
   if constexpr (logical_mode == multiple_reductions)
   {
-    static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{logical_size()});
-    static_assert(is_power_of_two, "Logical size must be a power of two with multiple reductions");
+    static_assert(::cuda::is_power_of_two(logical_size()),
+                  "Logical size must be a power of two with multiple reductions");
   }
   // Check segmented reduction with last position / result mode
   if constexpr (is_segmented)

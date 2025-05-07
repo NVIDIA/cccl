@@ -40,8 +40,8 @@
 #include <cub/warp/warp_utils.cuh> // logical_warp_id
 
 #include <cuda/bit> // cuda::bitmask
+#include <cuda/cmath> // has_single_bit
 #include <cuda/functional>
-#include <cuda/std/bit> // has_single_bit
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -261,7 +261,7 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
   {
     return valid_items.extent(0); // segmented limit
   }
-  else if constexpr (valid_items.rank_dynamic() == 0 && _CUDA_VSTD::has_single_bit(ValidItems))
+  else if constexpr (valid_items.rank_dynamic() == 0 && ::cuda::is_power_of_two(ValidItems))
   {
     const auto clamp   = 1u << step;
     const auto segmask = 0b11110u << (step + 8);

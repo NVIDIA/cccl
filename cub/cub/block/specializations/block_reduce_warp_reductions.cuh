@@ -82,7 +82,7 @@ struct BlockReduceWarpReductions
   static constexpr int LogicalWarpSize = (BlockThreads < warp_threads ? BlockThreads : warp_threads); // MSVC bug with
                                                                                                       // cuda::std::min
 
-  static constexpr bool IsPowerOfTwo = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpSize});
+  static constexpr bool IsPowerOfTwo = ::cuda::is_power_of_two(LogicalWarpSize);
 
   /// Whether or not the logical warp size evenly divides the thread block size
   static constexpr bool EvenWarpSize = (BlockThreads % LogicalWarpSize == 0);

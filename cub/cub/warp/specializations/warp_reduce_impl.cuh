@@ -118,7 +118,7 @@ template <typename T, typename ReductionOp, typename Config>
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    constexpr auto logical_size_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size});
+    constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size());
     input1                            = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input1, 0, mask);
   }
   return input1;
@@ -128,10 +128,10 @@ template <typename T, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_generic(T input, ReductionOp reduction_op, Config config)
 {
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
-  constexpr auto is_power_of_two                      = _CUDA_VSTD::has_single_bit(uint32_t{logical_size});
+  constexpr auto is_power_of_two                      = ::cuda::is_power_of_two(logical_size());
   constexpr auto log2_size                            = ::cuda::ilog2(logical_size * 2 - 1);
   constexpr uint32_t logical_size1                    = is_segmented ? detail::warp_threads : logical_size;
-  [[maybe_unused]] constexpr auto logical_size1_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size1});
+  [[maybe_unused]] constexpr auto logical_size1_round = ::cuda::next_power_of_two(logical_size1);
   const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
@@ -143,7 +143,7 @@ template <typename T, typename ReductionOp, typename Config>
     }
     else
     {
-      constexpr auto logical_size1_round = _CUDA_VSTD::bit_ceil(uint32_t{logical_size1});
+      constexpr auto logical_size1_round = ::cuda::next_power_of_two(logical_size1);
       auto limit                         = valid_items.extent(0) - !is_segmented;
       auto lane_dest                     = cub::detail::logical_lane_id<logical_size1>() + (1u << K);
       auto dest                          = ::min(lane_dest, limit);
@@ -254,7 +254,7 @@ template <typename T, typename ReductionOp, typename Config>
   using cub::detail::warp_reduce_redux_op;
   using cub::detail::warp_reduce_shuffle_op;
   using namespace _CUDA_VSTD;
-  check_warp_reduce_config(config);
+  cub::detail::check_warp_reduce_config(config);
   constexpr bool is_specialized_operator =
     is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
     || is_cuda_std_bitwise_v<ReductionOp, T>;

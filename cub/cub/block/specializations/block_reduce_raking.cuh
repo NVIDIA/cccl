@@ -49,6 +49,8 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
+#include <cuda/cmath>
+
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -107,7 +109,7 @@ struct BlockReduceRaking
   /// Whether or not accesses into smem are unguarded
   static constexpr bool RAKING_UNGUARDED = BlockRakingLayout::UNGUARDED;
 
-  static constexpr bool IsPowerOfTwo = _CUDA_VSTD::has_single_bit(uint32_t{RAKING_THREADS});
+  static constexpr bool IsPowerOfTwo = ::cuda::is_power_of_two(RAKING_THREADS);
 
   /// Shared memory storage layout type
   union _TempStorage

@@ -45,9 +45,9 @@
 #include <cub/warp/specializations/warp_reduce_config.cuh>
 #include <cub/warp/specializations/warp_reduce_impl.cuh>
 
+#include <cuda/cmath>
 #include <cuda/functional> // cuda::maximum
 #include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/bit> // has_single_bit
 #include <cuda/std/type_traits> // _CCCL_TEMPLATE
 
 CUB_NAMESPACE_BEGIN
@@ -145,10 +145,8 @@ class WarpReduce
   static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
                 "LogicalWarpThreads must be in the range [1, 32]");
 
-  static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpThreads});
-
   static constexpr auto logical_mode_default =
-    (is_power_of_two && LogicalWarpThreads < detail::warp_threads)
+    (::cuda::is_power_of_two(LogicalWarpThreads) && LogicalWarpThreads < detail::warp_threads)
       ? detail::ReduceLogicalMode::MultipleReductions
       : detail::ReduceLogicalMode::SingleReduction;
 
