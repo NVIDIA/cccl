@@ -58,9 +58,6 @@
 
 #include <cuda/std/__algorithm_>
 
-#include <cstdio>
-#include <iterator>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN

@@ -41,6 +41,7 @@ mismatch(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
          InputIterator1 last1,
          InputIterator2 first2)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");
   using thrust::system::detail::generic::mismatch;
   return mismatch(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2);
 } // end mismatch()
@@ -54,6 +55,7 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
   InputIterator2 first2,
   BinaryPredicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");
   using thrust::system::detail::generic::mismatch;
   return mismatch(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, pred);
 } // end mismatch()
@@ -61,6 +63,7 @@ _CCCL_HOST_DEVICE thrust::pair<InputIterator1, InputIterator2> mismatch(
 template <typename InputIterator1, typename InputIterator2>
 thrust::pair<InputIterator1, InputIterator2> mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -76,6 +79,7 @@ template <typename InputIterator1, typename InputIterator2, typename BinaryPredi
 thrust::pair<InputIterator1, InputIterator2>
 mismatch(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, BinaryPredicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::mismatch");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

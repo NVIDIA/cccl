@@ -61,8 +61,6 @@
 #include <cuda/std/functional>
 #include <cuda/std/type_traits>
 
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
@@ -1011,7 +1009,7 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
     FixedSizeSegmentedReduceKernel,
     DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
     return sizeof(AccumT);
   }

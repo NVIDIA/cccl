@@ -65,12 +65,12 @@ struct __with_property
   template <class...>
   struct __iproperty : interface<__iproperty>
   {
-    _CUDAX_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
+    _CCCL_HOST_API friend auto get_property([[maybe_unused]] const __iproperty& __obj, _Property)
       -> __property_result_t<_Property>
     {
       if constexpr (!_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)
       {
-        return __cudax::virtcall<&__get_property<__iproperty>>(&__obj);
+        return experimental::virtcall<&__get_property<__iproperty>>(&__obj);
       }
       else
       {
@@ -111,12 +111,12 @@ struct __ibasic_resource : interface<__ibasic_resource>
 {
   _CUDAX_PUBLIC_API void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return __cudax::virtcall<&__ibasic_resource::allocate>(this, __bytes, __alignment);
+    return experimental::virtcall<&__ibasic_resource::allocate>(this, __bytes, __alignment);
   }
 
   _CUDAX_PUBLIC_API void deallocate(void* __pv, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return __cudax::virtcall<&__ibasic_resource::deallocate>(this, __pv, __bytes, __alignment);
+    return experimental::virtcall<&__ibasic_resource::deallocate>(this, __pv, __bytes, __alignment);
   }
 
   template <class _Ty>
@@ -129,23 +129,24 @@ struct __ibasic_async_resource : interface<__ibasic_async_resource>
 {
   _CUDAX_PUBLIC_API void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    return __cudax::virtcall<&__allocate_async<__ibasic_async_resource>>(this, __bytes, __alignment, __stream);
+    return experimental::virtcall<&__allocate_async<__ibasic_async_resource>>(this, __bytes, __alignment, __stream);
   }
 
   _CUDAX_PUBLIC_API void* allocate_async(size_t __bytes, ::cuda::stream_ref __stream)
   {
-    return __cudax::virtcall<&__allocate_async<__ibasic_async_resource>>(
+    return experimental::virtcall<&__allocate_async<__ibasic_async_resource>>(
       this, __bytes, alignof(_CUDA_VSTD::max_align_t), __stream);
   }
 
   _CUDAX_PUBLIC_API void deallocate_async(void* __pv, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    return __cudax::virtcall<&__deallocate_async<__ibasic_async_resource>>(this, __pv, __bytes, __alignment, __stream);
+    return experimental::virtcall<&__deallocate_async<__ibasic_async_resource>>(
+      this, __pv, __bytes, __alignment, __stream);
   }
 
   _CUDAX_PUBLIC_API void deallocate_async(void* __pv, size_t __bytes, ::cuda::stream_ref __stream)
   {
-    return __cudax::virtcall<&__deallocate_async<__ibasic_async_resource>>(
+    return experimental::virtcall<&__deallocate_async<__ibasic_async_resource>>(
       this, __pv, __bytes, alignof(_CUDA_VSTD::max_align_t), __stream);
   }
 
@@ -186,7 +187,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wunused-but-set-parameter")
 // Given a list of properties and a basic_any vptr, build a _Resource_vtable
 // for the properties as cuda::mr::basic_resource_ref expects.
 template <class _VPtr, class... _Properties>
-_CUDAX_HOST_API auto __make_resource_vtable(_VPtr __vptr, _CUDA_VMR::_Resource_vtable<_Properties...>*) noexcept
+_CCCL_HOST_API auto __make_resource_vtable(_VPtr __vptr, _CUDA_VMR::_Resource_vtable<_Properties...>*) noexcept
   -> _CUDA_VMR::_Resource_vtable<_Properties...>
 {
   return {__vptr->__query_interface(__iproperty<_Properties>())->__fn_...};
@@ -217,10 +218,10 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
                  && (_CUDA_VSTD::derived_from<__self_t, __iprop<_Properties>> && ...))
   operator _CUDA_VMR::basic_resource_ref<_Alloc_type, _Properties...>()
   {
-    auto& __self = __cudax::basic_any_from(*this);
-    auto* __vptr = __cudax::virtcall<&__get_resource_vptr<__iresource_ref_conversions>>(this);
+    auto& __self = experimental::basic_any_from(*this);
+    auto* __vptr = experimental::virtcall<&__get_resource_vptr<__iresource_ref_conversions>>(this);
     auto* __vtag = static_cast<_CUDA_VMR::_Filtered_vtable<_Properties...>*>(nullptr);
-    auto __props = __cudax::__make_resource_vtable(__basic_any_access::__get_vptr(__self), __vtag);
+    auto __props = experimental::__make_resource_vtable(__basic_any_access::__get_vptr(__self), __vtag);
 
     return _CUDA_VMR::_Resource_ref_helper::_Construct<_Alloc_type, _Properties...>(
       __basic_any_access::__get_optr(__self),
@@ -253,10 +254,10 @@ template <class _Derived>
 struct __with_try_get_property
 {
   template <class _Property>
-  _CUDAX_HOST_API _CCCL_NODISCARD_FRIEND auto try_get_property(const _Derived& __self, _Property) noexcept
+  _CCCL_HOST_API _CCCL_NODISCARD_FRIEND auto try_get_property(const _Derived& __self, _Property) noexcept
     -> __try_property_result_t<_Property>
   {
-    auto __prop = __cudax::dynamic_any_cast<const __iproperty<_Property>*>(&__self);
+    auto __prop = experimental::dynamic_any_cast<const __iproperty<_Property>*>(&__self);
     if constexpr (_CUDA_VSTD::is_same_v<__property_result_t<_Property>, void>)
     {
       return __prop != nullptr;
@@ -292,14 +293,14 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::any_resource must contain at least one execution space "
                 "property!");
-  using __base_t = __cudax::basic_any<__cudax::__iresource<_Properties...>>;
+  using __base_t = experimental::basic_any<experimental::__iresource<_Properties...>>;
   using __base_t::interface;
 
 public:
   // any_async_resource is convertible to any_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
-  any_resource(__cudax::any_async_resource<_OtherProperties...> __other) noexcept
+  any_resource(experimental::any_async_resource<_OtherProperties...> __other) noexcept
       : __base_t(_CUDA_VSTD::move(__other.__base()))
   {}
 
@@ -325,7 +326,7 @@ private:
   template <class...>
   friend struct any_resource;
 
-  using __base_t = __cudax::basic_any<__cudax::__iasync_resource<_Properties...>>;
+  using __base_t = experimental::basic_any<experimental::__iasync_resource<_Properties...>>;
   using __base_t::interface;
 
   __base_t& __base() noexcept
@@ -349,14 +350,14 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::resource_ref must contain at least one execution space "
                 "property!");
-  using __base_t = __cudax::basic_any<__cudax::__iresource<_Properties...>&>;
+  using __base_t = experimental::basic_any<experimental::__iresource<_Properties...>&>;
   using __base_t::interface;
 
 public:
   // async_resource_ref is convertible to resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
-  resource_ref(__cudax::async_resource_ref<_OtherProperties...> __other) noexcept
+  resource_ref(experimental::async_resource_ref<_OtherProperties...> __other) noexcept
       : __base_t(__other.__base())
   {}
 
@@ -386,7 +387,7 @@ private:
   template <class...>
   friend struct resource_ref;
 
-  using __base_t = __cudax::basic_any<__cudax::__iasync_resource<_Properties...>&>;
+  using __base_t = experimental::basic_any<experimental::__iasync_resource<_Properties...>&>;
   using __base_t::interface;
 
   __base_t& __base() noexcept

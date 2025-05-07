@@ -15,9 +15,7 @@
 // template <class T>
 // using unwrap_ref_decay_t = typename unwrap_ref_decay<T>::type;
 
-// UNSUPPORTED: c++17
-
-// #include <cuda/std/functional>
+#include <cuda/std/functional>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

@@ -43,6 +43,7 @@ _CCCL_HOST_DEVICE OutputIterator gather(
   RandomAccessIterator input_first,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::gather");
   using thrust::system::detail::generic::gather;
   return gather(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), map_first, map_last, input_first, result);
@@ -62,6 +63,7 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
   RandomAccessIterator input_first,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::gather_if");
   using thrust::system::detail::generic::gather_if;
   return gather_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), map_first, map_last, stencil, input_first, result);
@@ -83,6 +85,7 @@ _CCCL_HOST_DEVICE OutputIterator gather_if(
   OutputIterator result,
   Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::gather_if");
   using thrust::system::detail::generic::gather_if;
   return gather_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -98,6 +101,7 @@ template <typename InputIterator, typename RandomAccessIterator, typename Output
 OutputIterator
 gather(InputIterator map_first, InputIterator map_last, RandomAccessIterator input_first, OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::gather");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -119,6 +123,7 @@ OutputIterator gather_if(
   RandomAccessIterator input_first,
   OutputIterator result)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::gather_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -148,6 +153,7 @@ OutputIterator gather_if(
   OutputIterator result,
   Predicate pred)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::gather_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
