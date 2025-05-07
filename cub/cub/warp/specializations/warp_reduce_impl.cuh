@@ -232,7 +232,7 @@ warp_reduce_recursive(Input input, ReductionOp reduction_op, Config warp_config)
   auto [high, low]         = split_integers(static_cast<unsigned_t>(input));
   auto high_reduction      = warp_reduce_dispatch(high, reduction_op, warp_config);
   auto low_reduction       = warp_reduce_dispatch(low, reduction_op, warp_config);
-  auto low_top_digits      = static_cast<uint32_t>(low >> 5); // low 27-bit, carry out
+  auto low_top_digits      = low >> 5; // low 27-bit, carry out
   auto carry_out           = warp_reduce_dispatch(low_top_digits, reduction_op, warp_config);
   auto result_high         = high_reduction + (carry_out >> (half_bits - 5));
   return merge_integers(result_high, low_reduction);
