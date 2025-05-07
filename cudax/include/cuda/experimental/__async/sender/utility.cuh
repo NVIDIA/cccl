@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,7 +28,6 @@
 
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
@@ -38,8 +37,8 @@ namespace cuda::experimental::__async
 _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 
 using __ignore _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // NOLINT: misc-unused-using-decls
-using __cudax::detail::__immovable;                          // NOLINT: misc-unused-using-decls
 using _CUDA_VSTD::__undefined;                               // NOLINT: misc-unused-using-decls
+using experimental::detail::__immovable;                     // NOLINT: misc-unused-using-decls
 
 struct __empty
 {};
@@ -50,7 +49,7 @@ struct [[deprecated]] __deprecated
 struct __nil
 {};
 
-_CUDAX_API constexpr auto __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept -> size_t
+_CCCL_API constexpr auto __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept -> size_t
 {
   size_t __max = 0;
   for (auto i : __il)
@@ -63,7 +62,7 @@ _CUDAX_API constexpr auto __maximum(_CUDA_VSTD::initializer_list<size_t> __il) n
   return __max;
 }
 
-_CUDAX_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
+_CCCL_API constexpr auto __find_pos(bool const* const __begin, bool const* const __end) noexcept -> size_t
 {
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
@@ -76,14 +75,14 @@ _CUDAX_API constexpr auto __find_pos(bool const* const __begin, bool const* cons
 }
 
 template <class _Ty, class... _Ts>
-_CUDAX_API constexpr auto __index_of() noexcept -> size_t
+_CCCL_API constexpr auto __index_of() noexcept -> size_t
 {
   constexpr bool __same[] = {_CUDA_VSTD::is_same_v<_Ty, _Ts>...};
   return __async::__find_pos(__same, __same + sizeof...(_Ts));
 }
 
 template <class _Ty, class _Uy = _Ty>
-_CUDAX_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
+_CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
 {
   constexpr bool __is_nothrow =                        //
     noexcept(_Ty(static_cast<_Ty&&>(__obj))) &&        //
@@ -96,7 +95,7 @@ _CUDAX_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> 
 }
 
 template <class _Ty>
-_CUDAX_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
+_CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
   constexpr bool __is_nothrow =                     //
     noexcept(_Ty(static_cast<_Ty&&>(__left))) &&    //
@@ -109,7 +108,7 @@ _CUDAX_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 }
 
 template <class _Ty>
-_CUDAX_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>
+_CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
 }

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,7 +32,6 @@
 #include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -45,17 +44,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t
 {
 private:
   template <class _Rcvr, class _Query>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
     _Rcvr __rcvr_;
 
-    _CUDAX_API explicit __opstate_t(_Rcvr __rcvr)
+    _CCCL_API explicit __opstate_t(_Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
-    _CUDAX_API void start() noexcept
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+
+    _CCCL_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
       // wrap it in a try-catch block and forward the exception to the
@@ -89,7 +90,7 @@ public:
   /// invokes the query with the receiver's environment and forwards the result
   /// to the receiver's `set_value` member.
   template <class _Query>
-  _CUDAX_TRIVIAL_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
+  _CCCL_TRIVIAL_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
 };
 
 template <class _Query>
@@ -100,7 +101,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 
   template <class _Self, class _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures()
+  _CCCL_API static constexpr auto get_completion_signatures()
   {
     if constexpr (!_CUDA_VSTD::__is_callable_v<_Query, _Env>)
     {
@@ -129,14 +130,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
+  _CCCL_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }
 };
 
 template <class _Query>
-_CUDAX_TRIVIAL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
+_CCCL_TRIVIAL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
 {
   return __sndr_t<_Query>{{}, __query};
 }

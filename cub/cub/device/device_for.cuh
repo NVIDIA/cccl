@@ -37,7 +37,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
 #include <cub/device/dispatch/dispatch_for_each_in_extents.cuh>
 #include <cub/util_namespace.cuh>
@@ -577,7 +576,7 @@ public:
   template <class ShapeT, class OpT>
   CUB_RUNTIME_FUNCTION static cudaError_t Bulk(ShapeT shape, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::Bulk");
     static_assert(::cuda::std::is_integral_v<ShapeT>, "ShapeT must be an integral type");
     using offset_t = ShapeT;
     return detail::for_each::dispatch_t<offset_t, OpT>::dispatch(static_cast<offset_t>(shape), op, stream);
@@ -650,7 +649,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachN");
     return ForEachNNoNVTX(first, num_items, op, stream);
   }
 
@@ -702,7 +701,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEach(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEach");
 
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
@@ -775,7 +774,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopyN(RandomAccessIteratorT first, NumItemsT num_items, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopyN");
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
 
@@ -830,7 +829,7 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachCopy(RandomAccessIteratorT first, RandomAccessIteratorT last, OpT op, cudaStream_t stream = {})
   {
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachCopy");
     using offset_t       = detail::it_difference_t<RandomAccessIteratorT>;
     const auto num_items = static_cast<offset_t>(::cuda::std::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
@@ -982,7 +981,7 @@ public:
     using extents_type = ::cuda::std::extents<IndexType, Extents...>;
     // TODO: check dimensions overflows
     // TODO: check tha arity of OpType is equal to sizeof...(extents_type)
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    _CCCL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
     return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
   }
 };

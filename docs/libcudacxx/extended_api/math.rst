@@ -11,6 +11,7 @@ Math
    math/round_up
    math/round_down
    math/ilog
+   math/ipow
    math/isqrt
    math/uabs
 
@@ -47,6 +48,11 @@ Math
      - Integer logarithm to the base 10
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`ipow <libcudacxx-extended-api-math-ipow>`
+     - Integer power
+     - CCCL 3.1.0
+     - CUDA 13.1
 
    * - :ref:`isqrt <libcudacxx-extended-api-math-isqrt>`
      - Integer square root

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,7 +28,6 @@
 
 #include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <new> // IWYU pragma: keep
 
@@ -38,26 +37,26 @@ namespace cuda::experimental::__async
 template <class _Ty>
 struct __lazy
 {
-  _CUDAX_API __lazy() noexcept {}
+  _CCCL_API __lazy() noexcept {}
 
-  _CUDAX_API ~__lazy() {}
+  _CCCL_API ~__lazy() {}
 
   template <class... _Ts>
-  _CUDAX_API auto construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>) -> _Ty&
+  _CCCL_API auto construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>) -> _Ty&
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_))) _Ty{static_cast<_Ts&&>(__ts)...};
     return *_CUDA_VSTD::launder(__value_);
   }
 
   template <class _Fn, class... _Ts>
-  _CUDAX_API auto construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>) -> _Ty&
+  _CCCL_API auto construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>) -> _Ty&
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_)))
       _Ty{static_cast<_Fn&&>(__fn)(static_cast<_Ts&&>(__ts)...)};
     return *_CUDA_VSTD::launder(__value_);
   }
 
-  _CUDAX_API void destroy() noexcept
+  _CCCL_API void destroy() noexcept
   {
     _CUDA_VSTD::destroy_at(&__value_);
   }
@@ -88,7 +87,7 @@ template <>
 struct __lazy_tupl<_CUDA_VSTD::index_sequence<>>
 {
   template <class _Fn, class _Self, class... _Us>
-  _CUDAX_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
+  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
@@ -101,21 +100,21 @@ struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__la
   template <size_t _Ny>
   using __at _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
 
-  _CUDAX_TRIVIAL_API __lazy_tupl() noexcept {}
+  _CCCL_TRIVIAL_API __lazy_tupl() noexcept {}
 
-  _CUDAX_API ~__lazy_tupl()
+  _CCCL_API ~__lazy_tupl()
   {
     ((__engaged_[_Idx] ? _CUDA_VSTD::destroy_at(__get<_Idx, _Ts>()) : void(0)), ...);
   }
 
   template <size_t _Ny, class _Ty>
-  _CUDAX_TRIVIAL_API _Ty* __get() noexcept
+  _CCCL_TRIVIAL_API _Ty* __get() noexcept
   {
     return reinterpret_cast<_Ty*>(this->__detail::__lazy_box<_Ny, _Ty>::__data_);
   }
 
   template <size_t _Ny, class... _Us>
-  _CUDAX_TRIVIAL_API __at<_Ny>& __emplace(_Us&&... __us) //
+  _CCCL_TRIVIAL_API __at<_Ny>& __emplace(_Us&&... __us) //
     noexcept(__nothrow_constructible<__at<_Ny>, _Us...>)
   {
     using _Ty _CCCL_NODEBUG_ALIAS = __at<_Ny>;
@@ -125,7 +124,7 @@ struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__la
   }
 
   template <class _Fn, class _Self, class... _Us>
-  _CUDAX_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+  _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>)
       -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>
   {

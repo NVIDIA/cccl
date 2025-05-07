@@ -43,17 +43,17 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_COMPILER(NVRTC)
-#  include <cuda/std/iterator>
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
-#  include <thrust/iterator/iterator_facade.h>
-
-#  include <iostream>
-#  include <iterator>
-#endif // !_CCCL_COMPILER(NVRTC)
-
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
+
+#include <thrust/iterator/iterator_facade.h>
+
+#include <cuda/std/iterator>
+#include <cuda/std/type_traits>
+
+#if !_CCCL_COMPILER(NVRTC)
+#  include <ostream>
+#endif // !_CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -228,7 +228,7 @@ public:
 
   /// ostream operator
 #if !_CCCL_COMPILER(NVRTC)
-  friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
+  friend ::std::ostream& operator<<(::std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }

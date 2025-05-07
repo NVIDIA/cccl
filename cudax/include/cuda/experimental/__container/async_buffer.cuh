@@ -132,8 +132,6 @@ public:
 
 private:
   __buffer_t __buf_;
-  size_type __size_    = 0; // initialized to 0 in case initialization of the elements might throw
-  __policy_t __policy_ = __policy_t::invalid_execution_policy;
 
   //! @brief Helper to check container is compatible with this async_buffer
   template <class _Range>
@@ -158,21 +156,6 @@ private:
     return const_cast<__resource_t&>(__buf_.get_memory_resource());
   }
 
-  //! @brief Replaces the content of the async_buffer with the sequence `[__first, __last)`
-  //! @param __first Iterator to the first element of the input sequence.
-  //! @param __last Iterator after the last element of the input sequence.
-  template <class _Iter>
-  _CCCL_HIDE_FROM_ABI void __assign_impl(const size_type __count, _Iter __first, _Iter __last)
-  {
-    if (__size_ < __count)
-    {
-      (void) __buf_.__replace_allocation(__count);
-    }
-
-    this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __count);
-    __size_ = __count;
-  }
-
   //! @brief Copies \p __count elements from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in
   //! the different memory spaces
   //! @param __first Pointer to the start of the input segment.
@@ -189,37 +172,16 @@ private:
       return;
     }
 
-    if constexpr (!_CUDA_VSTD::contiguous_iterator<_Iter>)
-    { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
-      // Currently only supported from host because no one should use non-contiguous data on device
-      auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
-      ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::copy<_Iter, pointer>, __first, __last, __temp);
-      // FIXME: Something is fishy here. We need to wait otherwise the data is not properly set.
-      // The test passes fine with compute-sanitizer but we really do not want to take the performance hit for this.
-      // See https://github.com/NVIDIA/cccl/issues/3814
-      __buf_.get_stream().sync();
-      _CCCL_TRY_CUDA_API(
-        ::cudaMemcpyAsync,
-        "cudax::async_buffer::__copy_cross: failed to copy data",
-        __dest,
-        __temp,
-        sizeof(_Tp) * __count,
-        ::cudaMemcpyDefault,
-        __buf_.get_stream().get());
-      // We need to free the temporary buffer in stream order to ensure the memory survives
-      ::cuda::experimental::host_launch(__buf_.get_stream(), _CUDA_VSTD::return_temporary_buffer<_Tp>, __temp);
-    }
-    else
-    {
-      _CCCL_TRY_CUDA_API(
-        ::cudaMemcpyAsync,
-        "cudax::async_buffer::__copy_cross: failed to copy data",
-        __dest,
-        _CUDA_VSTD::to_address(__first),
-        sizeof(_Tp) * __count,
-        ::cudaMemcpyDefault,
-        __buf_.get_stream().get());
-    }
+    static_assert(_CUDA_VSTD::contiguous_iterator<_Iter>, "Non contiguous iterators are not supported");
+    // TODO use batched memcpy for non-contiguous iterators, it allows to specify stream ordered access
+    _CCCL_TRY_CUDA_API(
+      ::cudaMemcpyAsync,
+      "cudax::async_buffer::__copy_cross: failed to copy data",
+      __dest,
+      _CUDA_VSTD::to_address(__first),
+      sizeof(_Tp) * __count,
+      ::cudaMemcpyDefault,
+      __buf_.get_stream().get());
   }
 
   //! @brief Value-initializes elements in the range `[__first, __first + __count)`.
@@ -273,20 +235,17 @@ public:
   //! @brief Copy-constructs from a async_buffer
   //! @param __other The other async_buffer.
   _CCCL_HIDE_FROM_ABI async_buffer(const async_buffer& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.__size_)
-      , __size_(__other.__size_)
-      , __policy_(__other.__policy_)
+      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
-      __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
+      __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
   }
 
   //! @brief Move-constructs from a async_buffer
-  //! @param __other The other async_buffer.
+  //! @param __other The other async_buffer. After move construction, the other buffer can only be assigned to or
+  //! destroyed.
   _CCCL_HIDE_FROM_ABI async_buffer(async_buffer&& __other) noexcept
       : __buf_(_CUDA_VSTD::move(__other.__buf_))
-      , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
-      , __policy_(_CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy))
   {}
 
   //! @brief Copy-constructs from a async_buffer with matching properties
@@ -294,22 +253,19 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const async_buffer<_Tp, _OtherProperties...>& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.__size_)
-      , __size_(__other.__size_)
-      , __policy_(__other.__policy_)
+      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
   {
     this->__copy_cross<const_pointer>(
-      __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.__size_);
+      __other.__unwrapped_begin(), __other.__unwrapped_end(), __unwrapped_begin(), __other.size());
   }
 
   //! @brief Move-constructs from a async_buffer with matching properties
-  //! @param __other The other async_buffer.
+  //! @param __other The other async_buffer. After move construction, the other buffer can only be assigned to or
+  //! destroyed.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_buffer(async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __buf_(_CUDA_VSTD::move(__other.__buf_))
-      , __size_(_CUDA_VSTD::exchange(__other.__size_, 0))
-      , __policy_(_CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy))
   {}
 
   //! @brief Constructs an empty async_buffer using an environment
@@ -350,8 +306,6 @@ public:
   //! At the destruction of the \c async_buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size, ::cuda::experimental::uninit_t)
       : __buf_(::cuda::experimental::get_memory_resource(__env), ::cuda::experimental::get_stream(__env), __size)
-      , __size_(__size)
-      , __policy_(__env.query(::cuda::experimental::execution::get_execution_policy))
   {}
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from the forward range
@@ -365,7 +319,7 @@ public:
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Iter __first, _Iter __last)
       : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::uninit)
   {
-    this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __size_);
+    this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __buf_.size());
   }
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from \p __ilist
@@ -375,7 +329,7 @@ public:
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _CUDA_VSTD::initializer_list<_Tp> __ilist)
       : async_buffer(__env, __ilist.size(), ::cuda::experimental::uninit)
   {
-    this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __size_);
+    this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
 
   //! @brief Constructs a async_buffer using a memory resource and an input range
@@ -390,7 +344,7 @@ public:
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
+      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __buf_.size());
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
@@ -405,7 +359,7 @@ public:
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
-      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
+      _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __buf_.size());
   }
 #endif // _CCCL_DOXYGEN_INVOKED
   //! @}
@@ -437,21 +391,21 @@ public:
   //! placeholder; attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI iterator end() noexcept
   {
-    return iterator{__buf_.data() + __size_};
+    return iterator{__buf_.data() + __buf_.size()};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the async_buffer. This element
   //! acts as a placeholder; attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator end() const noexcept
   {
-    return const_iterator{__buf_.data() + __size_};
+    return const_iterator{__buf_.data() + __buf_.size()};
   }
 
   //! @brief Returns an immutable iterator to the element following the last element of the async_buffer. This element
   //! acts as a placeholder; attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_iterator cend() const noexcept
   {
-    return const_iterator{__buf_.data() + __size_};
+    return const_iterator{__buf_.data() + __buf_.size()};
   }
 
   //! @brief Returns a reverse iterator to the first element of the reversed async_buffer. It corresponds to the last
@@ -534,47 +488,26 @@ public:
   //! placeholder; attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI pointer __unwrapped_end() noexcept
   {
-    return __buf_.data() + __size_;
+    return __buf_.data() + __buf_.size();
   }
 
   //! @brief Returns a const pointer to the element following the last element of the async_buffer. This element acts as
   //! a placeholder; attempting to access it results in undefined behavior.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_pointer __unwrapped_end() const noexcept
   {
-    return __buf_.data() + __size_;
+    return __buf_.data() + __buf_.size();
   }
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @}
 
   //! @addtogroup access
-  //! @{
-  //! @brief Returns a reference to the \p __n 'th element of the async_vector
-  //! @param __n The index of the element we want to access
-  //! @note Always synchronizes with the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI reference get(const size_type __n) noexcept
-  {
-    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
-    this->sync();
-    return begin()[__n];
-  }
-
-  //! @brief Returns a reference to the \p __n 'th element of the async_vector
-  //! @param __n The index of the element we want to access
-  //! @note Always synchronizes with the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reference get(const size_type __n) const noexcept
-  {
-    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get out of range!");
-    this->sync();
-    return begin()[__n];
-  }
-
   //! @brief Returns a reference to the \p __n 'th element of the async_vector
   //! @param __n The index of the element we want to access
   //! @note Does not synchronize with the stored stream
   [[nodiscard]] _CCCL_HIDE_FROM_ABI reference get_unsynchronized(const size_type __n) noexcept
   {
-    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get_unsynchronized out of range!");
+    _CCCL_ASSERT(__n < __buf_.size(), "cuda::experimental::async_buffer::get_unsynchronized out of range!");
     return begin()[__n];
   }
 
@@ -583,7 +516,7 @@ public:
   //! @note Does not synchronize with the stored stream
   [[nodiscard]] _CCCL_HIDE_FROM_ABI const_reference get_unsynchronized(const size_type __n) const noexcept
   {
-    _CCCL_ASSERT(__n < __size_, "cuda::experimental::async_vector::get_unsynchronized out of range!");
+    _CCCL_ASSERT(__n < __buf_.size(), "cuda::experimental::async_buffer::get_unsynchronized out of range!");
     return begin()[__n];
   }
 
@@ -594,14 +527,15 @@ public:
   //! @brief Returns the current number of elements stored in the async_buffer.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI size_type size() const noexcept
   {
-    return __size_;
+    return __buf_.size();
   }
 
   //! @brief Returns true if the async_buffer is empty.
   [[nodiscard]] _CCCL_HIDE_FROM_ABI bool empty() const noexcept
   {
-    return __size_ == 0;
+    return __buf_.size() == 0;
   }
+  //! @}
 
   //! @rst
   //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
@@ -613,7 +547,7 @@ public:
   }
 
   //! @brief Returns the stored stream
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref get_stream() const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr stream_ref get_stream() const noexcept
   {
     return __buf_.get_stream();
   }
@@ -621,7 +555,7 @@ public:
   //! @brief Replaces the stored stream
   //! @param __new_stream the new stream
   //! @note Always synchronizes with the old stream
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream(::cuda::stream_ref __new_stream)
+  _CCCL_HIDE_FROM_ABI constexpr void change_stream(stream_ref __new_stream)
   {
     __buf_.change_stream(__new_stream);
   }
@@ -630,108 +564,24 @@ public:
   //! @param __new_stream the new stream
   //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
   //! to ensure proper stream order going forward
-  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(stream_ref __new_stream) noexcept
   {
     __buf_.change_stream_unsynchronized(__new_stream);
   }
 
-  //! @brief Returns the execution policy
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr __policy_t get_execution_policy() const noexcept
+  //! @brief Move assignment operator
+  //! @param __other The other async_buffer. After move assignment, the other buffer can only be assigned to or
+  //! destroyed.
+  _CCCL_HIDE_FROM_ABI void operator=(async_buffer&& __other)
   {
-    return __policy_;
+    __buf_ = _CUDA_VSTD::move(__other.__buf_);
   }
-
-  //! @brief Replaces the currently used execution policy
-  //! @param __new_policy the new policy
-  _CCCL_HIDE_FROM_ABI constexpr void set_execution_policy(__policy_t __new_policy) noexcept
-  {
-    __policy_ = __new_policy;
-  }
-
-  //! @brief Synchronizes the currently stored stream
-  _CCCL_HIDE_FROM_ABI void sync() const
-  {
-    __buf_.get_stream().sync();
-  }
-
-  //! @}
-
-  //! @addtogroup assign
-  //! @{
-  //! @brief Replaces the content of the async_buffer with `__count` copies of `__value`
-  //! @param __count The number of elements to assign.
-  //! @param __value The element to be copied.
-  //! @note Neither frees not allocates memory if `__first == __last`.
-  _CCCL_HIDE_FROM_ABI void assign(const size_type __count, const _Tp& __value)
-  {
-    if (__size_ < __count)
-    {
-      (void) __buf_.__replace_allocation(__count);
-    }
-
-    this->__fill_n(__unwrapped_begin(), __count, __value);
-    __size_ = __count;
-  }
-
-  //! @brief Replaces the content of the async_buffer with the sequence `[__first, __last)`
-  //! @param __first Iterator to the first element of the input sequence.
-  //! @param __last Iterator after the last element of the input sequence.
-  //! @note Neither frees not allocates memory if `__first == __last`.
-  _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
-  _CCCL_HIDE_FROM_ABI void assign(_Iter __first, _Iter __last)
-  {
-    const auto __count = static_cast<size_type>(_CUDA_VSTD::distance(__first, __last));
-    this->__assign_impl(__count, __first, __last);
-  }
-
-  //! @brief Replaces the content of the async_buffer with the initializer_list \p __ilist
-  //! @param __ilist The initializer_list to be copied into this async_buffer.
-  //! @note Neither frees not allocates memory if `__ilist.size() == 0`.
-  _CCCL_HIDE_FROM_ABI void assign(_CUDA_VSTD::initializer_list<_Tp> __ilist)
-  {
-    const auto __count = static_cast<size_type>(__ilist.size());
-    this->__assign_impl(__count, __ilist.begin(), __ilist.end());
-  }
-
-  //! @brief Replaces the content of the async_buffer with the range \p __range
-  //! @param __range The range to be copied into this async_buffer.
-  //! @note Neither frees not allocates memory if `__range.size() == 0`.
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND
-                   _CUDA_VRANGES::sized_range<_Range>)
-  _CCCL_HIDE_FROM_ABI void assign_range(_Range&& __range)
-  {
-    const auto __count = _CUDA_VRANGES::size(__range);
-    using _Iter        = _CUDA_VRANGES::iterator_t<_Range>;
-    this->__assign_impl<_Iter>(__count, _CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range));
-  }
-
-#ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
-  //! @brief Replaces the content of the async_buffer with the range \p __range
-  //! @param __range The range to be copied into this async_buffer.
-  //! @note Neither frees nor allocates memory if `__range.size() == 0`.
-  _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(
-    !_CUDA_VRANGES::sized_range<_Range>))
-  _CCCL_HIDE_FROM_ABI void assign_range(_Range&& __range)
-  {
-    const auto __first = _CUDA_VRANGES::begin(__range);
-    const auto __last  = _CUDA_VRANGES::__unwrap_end(__range);
-    const auto __count = static_cast<size_type>(_CUDA_VRANGES::distance(__first, __last));
-
-    using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-    this->__assign_impl<_Iter>(__count, __first, __last);
-  }
-#endif // _CCCL_DOXYGEN_INVOKED
-  //! @}
 
   //! @brief Swaps the contents of a async_buffer with those of \p __other
   //! @param __other The other async_buffer.
   _CCCL_HIDE_FROM_ABI void swap(async_buffer& __other) noexcept
   {
     _CUDA_VSTD::swap(__buf_, __other.__buf_);
-    _CUDA_VSTD::swap(__size_, __other.__size_);
   }
 
   //! @brief Swaps the contents of two async_buffers
@@ -741,48 +591,13 @@ public:
   {
     __lhs.swap(__rhs);
   }
-  //! @}
 
-  //! @addtogroup comparison
-  //! @{
-
-  //! @brief Compares two async_buffers for equality
-  //! @param __lhs One async_buffer.
-  //! @param __rhs The other async_buffer.
-  //! @return true, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool operator==(const async_buffer& __lhs, const async_buffer& __rhs)
+  //! @brief Destroys the async_buffer, deallocates the buffer and destroys the memory resource
+  //! @warning After this explicit destroy call, the buffer can only be assigned to or destroyed.
+  _CCCL_HIDE_FROM_ABI void destroy()
   {
-    if constexpr (__is_host_only)
-    {
-      // need to wait here because `host_launch` does not return values, so we cannot easily put it in stream order
-      __lhs.sync();
-      __rhs.sync();
-      return _CUDA_VSTD::equal(
-        __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
-    }
-    else
-    {
-      ::cuda::experimental::__ensure_current_device __guard(__lhs.get_stream().get());
-      return (__lhs.size() == __rhs.size())
-          && thrust::equal(thrust::cuda::par_nosync.on(__lhs.get_stream().get()),
-                           __lhs.__unwrapped_begin(),
-                           __lhs.__unwrapped_end(),
-                           __rhs.__unwrapped_begin());
-    }
-    _CCCL_UNREACHABLE();
+    __buf_.destroy();
   }
-#if _CCCL_STD_VER <= 2017
-  //! @brief Compares two async_buffers for inequality
-  //! @param __lhs One async_buffer.
-  //! @param __rhs The other async_buffer.
-  //! @return false, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI bool operator!=(const async_buffer& __lhs, const async_buffer& __rhs)
-  {
-    return !(__lhs == __rhs);
-  }
-#endif // _CCCL_STD_VER <= 2017
-
-  //! @}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken
   //! @brief Forwards the passed properties
@@ -800,13 +615,15 @@ using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
 
 template <class _Tp, class... _TargetProperties, class... _SourceProperties>
 async_buffer<_Tp, _TargetProperties...> make_async_buffer(
-  const async_buffer<_Tp, _SourceProperties...>& __source,
+  stream_ref __stream,
   any_async_resource<_TargetProperties...> __mr,
-  cuda::stream_ref __stream)
+  const async_buffer<_Tp, _SourceProperties...>& __source)
 {
   env_t<_TargetProperties...> __env{__mr, __stream};
   async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), uninit};
-  __source.sync();
+
+  // We need some opt-out for the wait here, but I don't know how yet
+  __stream.wait(__source.get_stream());
 
   _CCCL_TRY_CUDA_API(
     ::cudaMemcpyAsync,
@@ -818,19 +635,6 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
     __stream.get());
 
   return __res;
-}
-
-template <class _Tp, class... _TargetProperties, class... _SourceProperties>
-async_buffer<_Tp, _TargetProperties...> make_async_buffer(
-  const async_buffer<_Tp, _SourceProperties...>& __source, any_async_resource<_TargetProperties...> __mr)
-{
-  return ::cuda::experimental::make_async_buffer(__source, __mr, __source.get_stream());
-}
-
-template <class _Tp, class... _SourceProperties>
-async_buffer<_Tp, _SourceProperties...> make_async_buffer(const async_buffer<_Tp, _SourceProperties...>& __source)
-{
-  return ::cuda::experimental::make_async_buffer(__source, __source.get_memory_resource(), __source.get_stream());
 }
 
 } // namespace cuda::experimental

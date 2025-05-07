@@ -247,16 +247,28 @@ public:
     return *this;
   }
 
+  //! @brief Destroys an \c uninitialized_async_buffer, deallocates the buffer in stream order on the stream that was
+  //! used to create the buffer and destroys the memory resource.
+  //! @warning destroy does not destroy any objects that may or may not reside within the buffer. It is the
+  //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
+  _CCCL_HIDE_FROM_ABI void destroy()
+  {
+    if (__buf_)
+    {
+      __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
+      __buf_   = nullptr;
+      __count_ = 0;
+    }
+    auto __tmp_mr = _CUDA_VSTD::move(__mr_);
+  }
+
   //! @brief Destroys an \c uninitialized_async_buffer and deallocates the buffer in stream order on the stream that was
   //! used to create the buffer.
   //! @warning The destructor does not destroy any objects that may or may not reside within the buffer. It is the
   //! user's responsibility to ensure that all objects within the buffer have been properly destroyed.
   _CCCL_HIDE_FROM_ABI ~uninitialized_async_buffer()
   {
-    if (__buf_)
-    {
-      __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
-    }
+    destroy();
   }
 
   //! @brief Returns an aligned pointer to the first element in the buffer

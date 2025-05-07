@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,7 +27,6 @@
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -36,9 +35,9 @@ namespace cuda::experimental::__async
 class _CCCL_TYPE_VISIBILITY_DEFAULT run_loop : __immovable
 {
 public:
-  _CUDAX_DEFAULTED_API run_loop() = default;
+  _CCCL_HIDE_FROM_ABI run_loop() = default;
 
-  _CUDAX_API void run() noexcept
+  _CCCL_API void run() noexcept
   {
     // execute work items until the __finishing_ flag is set:
     while (!__finishing_.load(_CUDA_VSTD::memory_order_acquire))
@@ -52,7 +51,7 @@ public:
       ;
   }
 
-  _CUDAX_API void finish() noexcept
+  _CCCL_API void finish() noexcept
   {
     if (!__finishing_.exchange(true, _CUDA_VSTD::memory_order_acq_rel))
     {
@@ -66,12 +65,12 @@ private:
   {
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;
 
-    _CUDAX_DEFAULTED_API __task() = default;
-    _CUDAX_TRIVIAL_API explicit __task(__execute_fn_t* __execute_fn) noexcept
+    _CCCL_HIDE_FROM_ABI __task() = default;
+    _CCCL_TRIVIAL_API explicit __task(__execute_fn_t* __execute_fn) noexcept
         : __execute_fn_(__execute_fn)
     {}
 
-    _CUDAX_API void __execute() noexcept
+    _CCCL_API void __execute() noexcept
     {
       (*__execute_fn_)(this);
     }
@@ -86,7 +85,7 @@ private:
     __atomic_intrusive_queue<&__task::__next_>* __queue_;
     _CCCL_NO_UNIQUE_ADDRESS _Rcvr __rcvr_;
 
-    _CUDAX_API static void __execute_impl(__task* __p) noexcept
+    _CCCL_API static void __execute_impl(__task* __p) noexcept
     {
       auto& __rcvr = static_cast<__opstate_t*>(__p)->__rcvr_;
       _CUDAX_TRY( //
@@ -107,13 +106,13 @@ private:
       )
     }
 
-    _CUDAX_API __opstate_t(__atomic_intrusive_queue<&__task::__next_>* __queue, _Rcvr __rcvr)
+    _CCCL_API __opstate_t(__atomic_intrusive_queue<&__task::__next_>* __queue, _Rcvr __rcvr)
         : __task{&__execute_impl}
         , __queue_{__queue}
         , __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
     {}
 
-    _CUDAX_API void start() & noexcept
+    _CCCL_API void start() & noexcept
     {
       __queue_->push(this);
     }
@@ -127,13 +126,13 @@ public:
       using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
       template <class _Rcvr>
-      _CUDAX_API auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
+      _CCCL_API auto connect(_Rcvr __rcvr) const noexcept -> __opstate_t<_Rcvr>
       {
         return {&__loop_->__queue_, static_cast<_Rcvr&&>(__rcvr)};
       }
 
       template <class _Self>
-      _CUDAX_API static constexpr auto get_completion_signatures() noexcept
+      _CCCL_API static constexpr auto get_completion_signatures() noexcept
       {
 #if _CCCL_HAS_EXCEPTIONS()
         return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>();
@@ -149,25 +148,25 @@ public:
       {
         run_loop* __loop_;
 
-        _CUDAX_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
+        _CCCL_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> scheduler
         {
           return __loop_->get_scheduler();
         }
 
-        _CUDAX_API auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
+        _CCCL_API auto query(get_completion_scheduler_t<set_stopped_t>) const noexcept -> scheduler
         {
           return __loop_->get_scheduler();
         }
       };
 
-      _CUDAX_API auto get_env() const noexcept -> __env_t
+      _CCCL_API auto get_env() const noexcept -> __env_t
       {
         return __env_t{__loop_};
       }
 
     private:
       friend class scheduler;
-      _CUDAX_API explicit __sndr_t(run_loop* __loop) noexcept
+      _CCCL_API explicit __sndr_t(run_loop* __loop) noexcept
           : __loop_(__loop)
       {}
 
@@ -176,11 +175,11 @@ public:
 
     friend run_loop;
 
-    _CUDAX_API explicit scheduler(run_loop* __loop) noexcept
+    _CCCL_API explicit scheduler(run_loop* __loop) noexcept
         : __loop_(__loop)
     {}
 
-    _CUDAX_API auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee
+    _CCCL_API auto query(get_forward_progress_guarantee_t) const noexcept -> forward_progress_guarantee
     {
       return forward_progress_guarantee::parallel;
     }
@@ -190,30 +189,30 @@ public:
   public:
     using scheduler_concept _CCCL_NODEBUG_ALIAS = scheduler_t;
 
-    [[nodiscard]] _CUDAX_API auto schedule() const noexcept -> __sndr_t
+    [[nodiscard]] _CCCL_API auto schedule() const noexcept -> __sndr_t
     {
       return __sndr_t{__loop_};
     }
 
-    [[nodiscard]] _CUDAX_API friend bool operator==(const scheduler& __a, const scheduler& __b) noexcept
+    [[nodiscard]] _CCCL_API friend bool operator==(const scheduler& __a, const scheduler& __b) noexcept
     {
       return __a.__loop_ == __b.__loop_;
     }
 
-    [[nodiscard]] _CUDAX_API friend bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
+    [[nodiscard]] _CCCL_API friend bool operator!=(const scheduler& __a, const scheduler& __b) noexcept
     {
       return __a.__loop_ != __b.__loop_;
     }
   };
 
-  [[nodiscard]] _CUDAX_API auto get_scheduler() noexcept -> scheduler
+  [[nodiscard]] _CCCL_API auto get_scheduler() noexcept -> scheduler
   {
     return scheduler{this};
   }
 
 private:
   // Returns true if any tasks were executed.
-  _CUDAX_API bool __execute_all() noexcept
+  _CCCL_API bool __execute_all() noexcept
   {
     // Wait until the queue has tasks to execute and then dequeue all of them.
     auto __queue = __queue_.pop_all();
@@ -230,7 +229,7 @@ private:
     return true;
   }
 
-  _CUDAX_API static void __noop_(__task*) noexcept {}
+  _CCCL_API static void __noop_(__task*) noexcept {}
 
   _CUDA_VSTD::atomic<bool> __finishing_{false};
   __atomic_intrusive_queue<&__task::__next_> __queue_{};

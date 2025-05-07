@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,8 +25,6 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__type_traits/type_list.h>
-
-#include <cuda/experimental/__detail/config.cuh>
 
 #if __cpp_lib_three_way_comparison
 #  include <compare> // IWYU pragma: keep
@@ -90,7 +88,7 @@ struct _WITH_COMPLETIONS
 
 struct __merror_base
 {
-  // _CUDAX_DEFAULTED_API virtual ~__merror_base() = default;
+  // _CCCL_HIDE_FROM_ABI virtual ~__merror_base() = default;
 
   _CCCL_HOST_DEVICE constexpr friend auto __ustdex_unhandled_error(void*) noexcept -> bool
   {

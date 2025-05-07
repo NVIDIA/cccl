@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,18 +24,18 @@
 #include <cuda/std/__cccl/unreachable.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_callable.h>
+#include <cuda/std/__utility/pod_tuple.h>
 
 #include <cuda/experimental/__async/sender/completion_signatures.cuh>
 #include <cuda/experimental/__async/sender/concepts.cuh>
 #include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__async/sender/exception.cuh>
 #include <cuda/experimental/__async/sender/rcvr_ref.cuh>
-#include <cuda/experimental/__async/sender/tuple.cuh>
 #include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__async/sender/variant.cuh>
 #include <cuda/experimental/__async/sender/visit.cuh>
-#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/sender/prologue.cuh>
 
@@ -70,13 +70,16 @@ private:
   using _SetTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__set_tag<_Disposition>());
 
   template <class...>
-  using __empty_tuple _CCCL_NODEBUG_ALIAS = __tuple<>;
+  using __empty_tuple _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<>;
 
   /// @brief Computes the type of a variant of tuples to hold the results of
   /// the predecessor sender.
   template <class _CvSndr, class _Env>
   using __results _CCCL_NODEBUG_ALIAS =
-    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Env>, _SetTag, __decayed_tuple, __variant>;
+    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Env>,
+                                   _SetTag,
+                                   _CUDA_VSTD::__decayed_tuple,
+                                   __variant>;
 
   template <class _Fn, class _Rcvr>
   struct __opstate_fn
@@ -101,7 +104,7 @@ private:
   /// @tparam _Rcvr The receiver connected to the `let_(value|error|stopped)`
   /// sender.
   template <class _Rcvr, class _CvSndr, class _Fn>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t : private __immovable
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
@@ -109,20 +112,22 @@ private:
     // Compute the type of the variant of operation states
     using __opstate_variant_t _CCCL_NODEBUG_ALIAS = __opstate2_t<_CvSndr, _Fn, _Rcvr>;
 
-    _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
+    _CCCL_API __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
       __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __fn_(static_cast<_Fn&&>(__fn))
         , __opstate1_(__async::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this}))
     {}
 
-    _CUDAX_API void start() noexcept
+    _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
+
+    _CCCL_API void start() noexcept
     {
       __async::start(__opstate1_);
     }
 
     template <class _Tag, class... _As>
-    _CUDAX_API void __complete(_Tag, _As&&... __as) noexcept
+    _CCCL_API void __complete(_Tag, _As&&... __as) noexcept
     {
       if constexpr (_Tag() == _SetTag())
       {
@@ -130,11 +135,12 @@ private:
           ({        //
             // Store the results so the lvalue refs we pass to the function
             // will be valid for the duration of the async op.
-            auto& __tupl = __result_.template __emplace<__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
+            auto& __tupl =
+              __result_.template __emplace<_CUDA_VSTD::__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
             // Call the function with the results and connect the resulting
             // sender, storing the operation state in __opstate2_.
             auto& __next_op = __opstate2_.__emplace_from(
-              __async::connect, __tupl.__apply(static_cast<_Fn&&>(__fn_), __tupl), __rcvr_ref{__rcvr_});
+              __async::connect, _CUDA_VSTD::__apply(static_cast<_Fn&&>(__fn_), __tupl), __rcvr_ref{__rcvr_});
             __async::start(__next_op);
           }),
           _CUDAX_CATCH(...) //
@@ -151,23 +157,23 @@ private:
     }
 
     template <class... _As>
-    _CUDAX_TRIVIAL_API void set_value(_As&&... __as) noexcept
+    _CCCL_TRIVIAL_API void set_value(_As&&... __as) noexcept
     {
       __complete(set_value_t(), static_cast<_As&&>(__as)...);
     }
 
     template <class _Error>
-    _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
+    _CCCL_TRIVIAL_API void set_error(_Error&& __error) noexcept
     {
       __complete(set_error_t(), static_cast<_Error&&>(__error));
     }
 
-    _CUDAX_TRIVIAL_API void set_stopped() noexcept
+    _CCCL_TRIVIAL_API void set_stopped() noexcept
     {
       __complete(set_stopped_t());
     }
 
-    _CUDAX_API auto get_env() const noexcept -> __env_t
+    _CCCL_API auto get_env() const noexcept -> __env_t
     {
       return __async::get_env(__rcvr_);
     }
@@ -183,7 +189,7 @@ private:
   struct __transform_args_fn
   {
     template <class... _Ts>
-    _CUDAX_API constexpr auto operator()() const
+    _CCCL_API constexpr auto operator()() const
     {
       if constexpr (!__decay_copyable<_Ts...>)
       {
@@ -216,7 +222,18 @@ private:
     }
   };
 
+  struct __fn
+  {
+    template <class _Fn, class _Sndr>
+    _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
+  };
+
 public:
+  _CCCL_API static constexpr auto __apply() noexcept
+  {
+    return __fn{};
+  }
+
   /// @brief The `let_(value|error|stopped)` sender.
   /// @tparam _Sndr The predecessor sender.
   /// @tparam _Fn The function to be called when the predecessor sender
@@ -228,10 +245,10 @@ public:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
 
   template <class _Sndr, class _Fn>
-  _CUDAX_API auto operator()(_Sndr __sndr, _Fn __fn) const -> __sndr_t<_Sndr, _Fn>;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Fn __fn) const;
 
   template <class _Fn>
-  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>;
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>;
 };
 
 template <__disposition_t _Disposition>
@@ -244,7 +261,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   _Sndr __sndr_;
 
   template <class _Self, class... _Env>
-  _CUDAX_API static constexpr auto get_completion_signatures()
+  _CCCL_API static constexpr auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -266,7 +283,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto
+  _CCCL_API auto
   connect(_Rcvr __rcvr) && noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Fn, _Rcvr>)
     -> __opstate_t<_Rcvr, _Sndr, _Fn>
   {
@@ -275,14 +292,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& noexcept(
+  _CCCL_API auto connect(_Rcvr __rcvr) const& noexcept(
     __nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>, const _Sndr&, const _Fn&, _Rcvr>)
     -> __opstate_t<_Rcvr, const _Sndr&, _Fn>
   {
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
   }
 
-  _CUDAX_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
   {
     return __async::get_env(__sndr_);
   }
@@ -296,13 +313,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
   _Fn __fn_;
 
   template <class _Sndr>
-  _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr) const -> __call_result_t<_LetTag, _Sndr, _Fn>
+  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const -> __call_result_t<_LetTag, _Sndr, _Fn>
   {
     return _LetTag()(static_cast<_Sndr&&>(__sndr), __fn_);
   }
 
   template <class _Sndr>
-  _CUDAX_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
+  _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
     -> __call_result_t<_LetTag, _Sndr, _Fn>
   {
     return _LetTag()(static_cast<_Sndr&&>(__sndr), __self.__fn_);
@@ -310,8 +327,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
 };
 
 template <__disposition_t _Disposition>
-template <class _Sndr, class _Fn>
-_CUDAX_API auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const -> __sndr_t<_Sndr, _Fn>
+template <class _Fn, class _Sndr>
+_CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
 {
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
@@ -324,8 +341,16 @@ _CUDAX_API auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const 
 }
 
 template <__disposition_t _Disposition>
+template <class _Sndr, class _Fn>
+_CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
+{
+  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
+  return __dom_t::__apply(*this)(static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr));
+}
+
+template <__disposition_t _Disposition>
 template <class _Fn>
-_CUDAX_TRIVIAL_API auto __let_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>
+_CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __closure_t<_Fn>
 {
   return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
 }
