@@ -90,8 +90,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
   constexpr int max_items = 1000000;
 
   // Number of items
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const int num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,
@@ -267,11 +268,12 @@ C2H_TEST("Device fixed size segmented reduce works with all device interfaces",
 
   const int max_items = 1 << 22;
 
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const segment_size_t segment_size = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)),
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)),
-    take(2, random(1 << 15, 1 << 20)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)),
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)),
+    take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   const int num_segments = max_items / segment_size;
   const int num_items    = num_segments * segment_size;
