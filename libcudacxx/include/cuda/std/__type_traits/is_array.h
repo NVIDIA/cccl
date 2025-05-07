@@ -47,7 +47,7 @@ inline constexpr bool is_array_v<_Tp[]> = true;
 template <class _Tp, size_t _Np>
 inline constexpr bool is_array_v<_Tp[_Np]> = true;
 
-template <class _Tp, size_t _Np>
+template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public bool_constant<is_array_v<_Tp>>
 {};
 
