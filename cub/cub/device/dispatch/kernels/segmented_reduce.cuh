@@ -270,7 +270,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     {
       if (lane_id == 0)
       {
-        *(d_out + global_segment_id) = init;
+        *(d_out + global_segment_id) = detail::reduce::unwrap_empty_problem_init(init);
       }
       return;
     }
