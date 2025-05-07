@@ -38,7 +38,7 @@
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t
 {
 private:
   template <class _Rcvr, class _Sndr1, class _Sndr2>
@@ -109,7 +109,7 @@ public:
 };
 
 template <class _Sndr1, class _Sndr2>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
   using __sndr1_t _CCCL_NODEBUG_ALIAS      = _Sndr1;
@@ -149,24 +149,23 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __seq_t::__sndr_t
     return execution::get_env(__sndr2_);
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS __seq_t __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;
   _CCCL_NO_UNIQUE_ADDRESS __ignore __ign_;
   __sndr1_t __sndr1_;
   __sndr2_t __sndr2_;
 };
 
 template <class _Sndr1, class _Sndr2>
-_CCCL_TRIVIAL_API constexpr auto __seq_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
+_CCCL_TRIVIAL_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS  = domain_for_t<_Sndr1>;
-  using __sndr_t _CCCL_NODEBUG_ALIAS = __seq_t::__sndr_t<_Sndr1, _Sndr2>;
+  using __sndr_t _CCCL_NODEBUG_ALIAS = sequence_t::__sndr_t<_Sndr1, _Sndr2>;
   return transform_sender(__dom_t{}, __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)});
 }
 
 template <class _Sndr1, class _Sndr2>
-inline constexpr size_t structured_binding_size<__seq_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
+inline constexpr size_t structured_binding_size<sequence_t::__sndr_t<_Sndr1, _Sndr2>> = 4;
 
-using sequence_t _CCCL_NODEBUG_ALIAS = __seq_t;
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 } // namespace cuda::experimental::execution
 
