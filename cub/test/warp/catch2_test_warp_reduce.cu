@@ -213,8 +213,11 @@ using arithmetic_type_list = c2h::type_list<
   int8_t, uint16_t, int32_t, int64_t,
   float, double,
   cuda::std::complex<float>, cuda::std::complex<double>,
-  short2, ushort2, float2,
-  ulonglong4, custom_t
+  short2, ushort2
+#if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
+   , float2
+#endif
+  , ulonglong4, custom_t
 #  if TEST_INT128_GENERATOR()
   , __int128_t
 #  endif
@@ -253,9 +256,13 @@ using min_max_type_list = c2h::type_list<
   float, double, custom_t
 #  if TEST_HALF_T()
   , __half
+  , __half2
 #  endif // TEST_HALF_T()
 #  if TEST_BF_T()
   , __nv_bfloat16
+#if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
+   , __nv_bfloat162
+#endif
 #  endif // TEST_BF_T()
   >;
 
