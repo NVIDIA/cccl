@@ -29,6 +29,12 @@ if ! command -v docker >/dev/null 2>&1; then
         chmod +x install.sh
         sudo  SOURCE_SOCKET=/var/run/docker.sock TARGET_SOCKET=/var/run/docker.sock MOBY=false ./install.sh || { echo "docker-outside-of-docker install failed"; exit 1; }
         cd -
+
+        # Install nvidia-container-toolkit
+        curl -s -L https://nvidia.github.io/libnvidia-container/stable/rpm/nvidia-container-toolkit.repo | \
+        sudo tee /etc/yum.repos.d/nvidia-container-toolkit.repo
+        sudo dnf-config-manager --enable nvidia-container-toolkit-experimental
+        sudo dnf install -y nvidia-container-toolkit
     fi
 fi
 
