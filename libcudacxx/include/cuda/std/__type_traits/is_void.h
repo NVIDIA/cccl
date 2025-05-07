@@ -33,7 +33,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : bool_constant<_CCCL_BUILTIN_IS_VO
 {};
 
 template <class _Tp>
-inline constexpr bool is_void_v = __is_void(_Tp); // is this right??
+inline constexpr bool is_void_v = _CCCL_BUILTIN_IS_VOID(_Tp);
 
 #else
 

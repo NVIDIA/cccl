@@ -25,11 +25,11 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public bool_constant<__is_abstract(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public bool_constant<_CCCL_BUILTIN_IS_ABSTRACT(_Tp)>
 {};
 
 template <class _Tp>
-inline constexpr bool is_abstract_v = __is_abstract(_Tp); // don't we want to rather use _CCCL_BUILTIN_IS_ABSTRACT here?
+inline constexpr bool is_abstract_v = _CCCL_BUILTIN_IS_ABSTRACT(_Tp);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -18,7 +18,7 @@
 #  pragma clang system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
-#endif // no system headerW
+#endif // no system header
 
 #include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/is_standard_layout.h>
