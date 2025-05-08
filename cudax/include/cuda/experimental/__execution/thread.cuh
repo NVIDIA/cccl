@@ -64,7 +64,7 @@ struct __thread_id
     return !(__self == __other);
   }
 };
-#else  // ^^^ cuda device compilation ^^^ / vvv host compilation vvv
+#else // ^^^ cuda device compilation ^^^ / vvv host compilation vvv
 using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
 #endif // ^^^ host compilation ^^^
 

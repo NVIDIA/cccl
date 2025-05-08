@@ -88,8 +88,8 @@ inline constexpr bool __nothrow_movable = true;
 
 template <class... _As>
 inline constexpr bool __nothrow_copyable = true;
-#else  // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
-       // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
+#else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 template <class _Fn, class... _As>
 using __nothrow_callable_ _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::enable_if_t<noexcept(declval<_Fn>()(declval<_As>()...))>;
 
