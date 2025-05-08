@@ -98,21 +98,21 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads)
     [[maybe_unused]] _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
     [[maybe_unused]] _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
 {
+  using cub::detail::for_each_in_extents::coordinate_at;
   using active_policy_t   = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type = typename ExtentType::index_type;
   using offset_t          = implicit_prom_t<extent_index_type>;
   constexpr auto stride   = offset_t{active_policy_t::block_threads};
   auto id                 = static_cast<offset_t>(threadIdx.x + blockIdx.x * active_policy_t::block_threads);
-  using cub::detail::for_each_in_extents::coordinate_at;
   for (auto i = id; i < cub::detail::size(extents); i += stride)
   {
     func(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
   }
 }
 
-template <typename ChainedPolicyT, typename Func, typename ExtentType, typename FastDivModArrayType, size_t... Ranks>
+template <typename Func, typename ExtentType, typename FastDivModArrayType, size_t... Ranks>
 CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
-  _CCCL_GRID_CONSTANT const Func func,
+  Func func,
   _CCCL_GRID_CONSTANT const ExtentType extents,
   _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
   _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
@@ -120,7 +120,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   using cub::detail::for_each_in_extents::coordinate_at;
   using extent_index_type = typename ExtentType::index_type;
   using offset_t          = implicit_prom_t<extent_index_type>;
-  auto block_threads      = static_cast<offset_t>(blockDim.x);
   auto stride             = static_cast<offset_t>(blockDim.x);
   auto id                 = static_cast<offset_t>(threadIdx.x + blockIdx.x * blockDim.x);
   for (auto i = id; i < cub::detail::size(extents); i += stride)
