@@ -27,7 +27,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_CONST) && !defined(_LIBCUDACXX_USE_IS_CONST_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_const : public integral_constant<bool, _CCCL_BUILTIN_IS_CONST(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_const : public bool_constant<_CCCL_BUILTIN_IS_CONST(_Tp)>
 {};
 
 template <class _Tp>
@@ -36,14 +36,14 @@ inline constexpr bool is_const_v = _CCCL_BUILTIN_IS_CONST(_Tp);
 #else // ^^^ _CCCL_BUILTIN_IS_CONST ^^^ / vvv !_CCCL_BUILTIN_IS_CONST vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_const : public false_type
-{};
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_const<_Tp const> : public true_type
-{};
+inline constexpr bool is_const_v = false;
 
 template <class _Tp>
-inline constexpr bool is_const_v = is_const<_Tp>::value;
+inline constexpr bool is_const_v<const _Tp> = true;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_const : public bool_constant<is_const_v<_Tp>>
+{};
 
 #endif // !_CCCL_BUILTIN_IS_CONST
 

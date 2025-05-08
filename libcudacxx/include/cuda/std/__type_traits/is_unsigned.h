@@ -29,12 +29,10 @@ _CCCL_DIAG_SUPPRESS_MSVC(4197) //  top-level volatile in cast is ignored
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// Before AppleClang 14, __is_unsigned returned true for enums with signed underlying type.
-#if defined(_CCCL_BUILTIN_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK) \
-  && !(defined(_LIBCUDACXX_APPLE_CLANG_VER) && _LIBCUDACXX_APPLE_CLANG_VER < 1400)
+#if defined(_CCCL_BUILTIN_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public integral_constant<bool, _CCCL_BUILTIN_IS_UNSIGNED(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public bool_constant<_CCCL_BUILTIN_IS_UNSIGNED(_Tp)>
 {};
 
 template <class _Tp>
@@ -42,28 +40,18 @@ inline constexpr bool is_unsigned_v = _CCCL_BUILTIN_IS_UNSIGNED(_Tp);
 
 #else
 
-template <class _Tp, bool = is_integral<_Tp>::value>
-struct __cccl_is_unsigned_impl : public bool_constant<(_Tp(0) < _Tp(-1))>
-{};
+template <class _Tp, bool = is_integral_v<_Tp>>
+inline constexpr bool __cccl_is_unsigned_helper_v = false;
 
 template <class _Tp>
-struct __cccl_is_unsigned_impl<_Tp, false> : public false_type
-{}; // floating point
-
-template <class _Tp, bool = is_arithmetic<_Tp>::value>
-struct __cccl_is_unsigned : public __cccl_is_unsigned_impl<_Tp>
-{};
+inline constexpr bool __cccl_is_unsigned_helper_v<_Tp, true> = _Tp(0) < _Tp(-1);
 
 template <class _Tp>
-struct __cccl_is_unsigned<_Tp, false> : public false_type
-{};
+inline constexpr bool is_unsigned_v = is_arithmetic_v<_Tp> && __cccl_is_unsigned_helper_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public __cccl_is_unsigned<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public bool_constant<is_unsigned_v<_Tp>>
 {};
-
-template <class _Tp>
-inline constexpr bool is_unsigned_v = is_unsigned<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK)
 

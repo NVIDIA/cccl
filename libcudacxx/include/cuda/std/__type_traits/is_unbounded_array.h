@@ -24,22 +24,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_unbounded_array : false_type
-{};
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_unbounded_array<_Tp[]> : true_type
-{};
-
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array : false_type
-{};
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array<_Tp[]> : true_type
-{};
+inline constexpr bool is_unbounded_array_v = false;
 
 template <class _Tp>
-inline constexpr bool is_unbounded_array_v = is_unbounded_array<_Tp>::value;
+inline constexpr bool is_unbounded_array_v<_Tp[]> = true;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array : bool_constant<is_unbounded_array_v<_Tp>>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

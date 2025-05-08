@@ -27,14 +27,19 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __is_reference_wrapper_impl : public false_type
-{};
+inline constexpr bool __cccl_is_reference_wrapper_v = false;
+
 template <class _Tp>
-struct __is_reference_wrapper_impl<reference_wrapper<_Tp>> : public true_type
-{};
+inline constexpr bool __cccl_is_reference_wrapper_v<reference_wrapper<_Tp>> = true;
+
 template <class _Tp>
-struct __is_reference_wrapper : public __is_reference_wrapper_impl<remove_cv_t<_Tp>>
-{};
+inline constexpr bool __cccl_is_reference_wrapper_v<const reference_wrapper<_Tp>> = true;
+
+template <class _Tp>
+inline constexpr bool __cccl_is_reference_wrapper_v<volatile reference_wrapper<_Tp>> = true;
+
+template <class _Tp>
+inline constexpr bool __cccl_is_reference_wrapper_v<const volatile reference_wrapper<_Tp>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

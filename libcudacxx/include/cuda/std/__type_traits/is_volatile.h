@@ -27,7 +27,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_VOLATILE) && !defined(_LIBCUDACXX_USE_IS_VOLATILE_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : : public integral_constant<bool, _CCCL_BUILTIN_IS_VOLATILE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : : public bool_constant<_CCCL_BUILTIN_IS_VOLATILE(_Tp)>
 {};
 
 template <class _Tp>
@@ -36,14 +36,14 @@ inline constexpr bool is_volatile_v = _CCCL_BUILTIN_IS_VOLATILE(_Tp);
 #else // ^^^ _CCCL_BUILTIN_IS_VOLATILE ^^^ / vvv !_CCCL_BUILTIN_IS_VOLATILE vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : public false_type
-{};
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile<_Tp volatile> : public true_type
-{};
+inline constexpr bool is_volatile_v = false;
 
 template <class _Tp>
-inline constexpr bool is_volatile_v = is_volatile<_Tp>::value;
+inline constexpr bool is_volatile_v<volatile _Tp> = true;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_volatile : public bool_constant<is_volatile_v<_Tp>>
+{};
 
 #endif // !_CCCL_BUILTIN_IS_VOLATILE
 

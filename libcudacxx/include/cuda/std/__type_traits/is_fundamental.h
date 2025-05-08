@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public integral_constant<bool, _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<_CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
 {};
 
 template <class _Tp>
@@ -39,12 +39,11 @@ inline constexpr bool is_fundamental_v = _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp);
 #else // ^^^ _CCCL_BUILTIN_IS_FUNDAMENTAL ^^^ / vvv !_CCCL_BUILTIN_IS_FUNDAMENTAL vvv
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental
-    : public integral_constant<bool, is_void<_Tp>::value || __is_nullptr_t<_Tp>::value || is_arithmetic<_Tp>::value>
-{};
+inline constexpr bool is_fundamental_v = is_void_v<_Tp> || is_null_pointer_v<_Tp> || is_arithmetic_v<_Tp>;
 
 template <class _Tp>
-inline constexpr bool is_fundamental_v = is_fundamental<_Tp>::value;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public bool_constant<is_fundamental_v<_Tp>>
+{};
 
 #endif // !_CCCL_BUILTIN_IS_FUNDAMENTAL
 
