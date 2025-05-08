@@ -64,8 +64,13 @@ struct get_max_from_counting_it_range_op
 template <typename IndexT>
 struct get_argmin_from_counting_it_range_op
 {
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT)
+  IndexT init_val;
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT end)
   {
+    if (begin == end)
+    {
+      return {1, init_val};
+    }
     return {0, begin};
   }
 };
@@ -73,8 +78,13 @@ struct get_argmin_from_counting_it_range_op
 template <typename IndexT>
 struct get_argmax_from_counting_it_range_op
 {
+  IndexT init_val;
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT end)
   {
+    if (begin == end)
+    {
+      return {1, init_val};
+    }
     return {static_cast<int>(end - begin - 1), end - 1};
   }
 };
@@ -416,7 +426,8 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
     using accum_t = ::cuda::std::pair<int, input_t>;
     using op_t    = cub::detail::arg_min;
 
-    auto compute_expected_op = get_argmin_from_counting_it_range_op<offset_t>{};
+    auto compute_expected_op =
+      get_argmin_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::max()};
 
     test_fixed_size_segmented_reduce<false, input_t, accum_t, op_t>(
       num_segments, compute_expected_op, device_segmented_argmin);
@@ -428,7 +439,8 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
     using accum_t = ::cuda::std::pair<int, input_t>;
     using op_t    = cub::detail::arg_max;
 
-    auto compute_expected_op = get_argmax_from_counting_it_range_op<offset_t>{};
+    auto compute_expected_op =
+      get_argmax_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::lowest()};
 
     test_fixed_size_segmented_reduce<false, input_t, accum_t, op_t>(
       num_segments, compute_expected_op, device_segmented_argmax);
