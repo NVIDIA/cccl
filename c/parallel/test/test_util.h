@@ -28,7 +28,7 @@
 #include <cccl/c/types.h>
 #include <nvrtc.h>
 
-static std::string inspect_sass(const void* cubin, size_t cubin_size)
+inline std::string inspect_sass(const void* cubin, size_t cubin_size)
 {
   namespace fs = std::filesystem;
 
@@ -78,7 +78,7 @@ static std::string inspect_sass(const void* cubin, size_t cubin_size)
   return sass;
 }
 
-static std::string compile(const std::string& source)
+inline std::string compile(const std::string& source)
 {
   // compile source to LTO-IR using nvrtc
 
@@ -201,7 +201,7 @@ cccl_type_info get_type_info()
 
 // TOOD: using more than than one `op` in the same TU will fail because
 // of the lack of name mangling. Ditto for all `get_*_op` functions.
-static std::string get_reduce_op(cccl_type_enum t)
+inline std::string get_reduce_op(cccl_type_enum t)
 {
   switch (t)
   {
@@ -260,7 +260,7 @@ static std::string get_reduce_op(cccl_type_enum t)
   return "";
 }
 
-static std::string get_for_op(cccl_type_enum t)
+inline std::string get_for_op(cccl_type_enum t)
 {
   switch (t)
   {
@@ -295,7 +295,7 @@ static std::string get_for_op(cccl_type_enum t)
   return "";
 }
 
-static std::string get_merge_sort_op(cccl_type_enum t)
+inline std::string get_merge_sort_op(cccl_type_enum t)
 {
   switch (t)
   {
@@ -375,7 +375,7 @@ static std::string get_merge_sort_op(cccl_type_enum t)
   return "";
 }
 
-static std::string get_unique_by_key_op(cccl_type_enum t)
+inline std::string get_unique_by_key_op(cccl_type_enum t)
 {
   switch (t)
   {
@@ -455,7 +455,7 @@ static std::string get_unique_by_key_op(cccl_type_enum t)
   return "";
 }
 
-static std::string get_unary_op(cccl_type_enum t)
+inline std::string get_unary_op(cccl_type_enum t)
 {
   switch (t)
   {
@@ -507,7 +507,7 @@ static std::string get_unary_op(cccl_type_enum t)
   return "";
 }
 
-static std::string get_radix_sort_decomposer_op(cccl_type_enum t)
+inline std::string get_radix_sort_decomposer_op(cccl_type_enum t)
 {
   switch (t)
   {
@@ -714,13 +714,13 @@ struct stateful_operation_t
   }
 };
 
-static operation_t make_operation(std::string_view name, const std::string& code)
+inline operation_t make_operation(std::string_view name, const std::string& code)
 {
   return operation_t{name, compile(code)};
 }
 
 template <class OpT>
-static stateful_operation_t<OpT> make_operation(std::string_view name, const std::string& code, OpT op)
+stateful_operation_t<OpT> make_operation(std::string_view name, const std::string& code, OpT op)
 {
   return {op, name, compile(code)};
 }
@@ -857,8 +857,9 @@ iterator_t<ValueT, random_access_iterator_state_t<ValueT>> make_random_access_it
   std::string advance_fn_name     = std::format("{0}advance", prefix);
   std::string dereference_fn_name = std::format("{0}dereference", prefix);
 
-  auto [iterator_state_def_src, advance_fn_def_src, dereference_fn_def_src] = make_random_access_iterator_sources(
-    kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name, transform);
+  const auto& [iterator_state_def_src, advance_fn_def_src, dereference_fn_def_src] =
+    make_random_access_iterator_sources(
+      kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name, transform);
 
   name_source_t iterator_state = {iterator_state_name, iterator_state_def_src};
   operation_t advance          = {advance_fn_name, advance_fn_def_src};
@@ -900,7 +901,7 @@ make_counting_iterator(std::string_view value_type, std::string_view prefix = ""
   std::string advance_fn_name     = std::format("{0}advance", prefix);
   std::string dereference_fn_name = std::format("{0}dereference", prefix);
 
-  auto [iterator_state_src, advance_fn_def_src, dereference_fn_def_src] =
+  const auto& [iterator_state_src, advance_fn_def_src, dereference_fn_def_src] =
     make_counting_iterator_sources(value_type, iterator_state_name, advance_fn_name, dereference_fn_name);
 
   name_source_t iterator_state = {iterator_state_name, iterator_state_src};
@@ -940,7 +941,7 @@ make_constant_iterator(std::string_view value_type, std::string_view prefix = ""
   std::string advance_fn_name     = std::format("{0}advance", prefix);
   std::string dereference_fn_name = std::format("{0}dereference", prefix);
 
-  auto [iterator_state_src, advance_fn_src, dereference_fn_src] =
+  const auto& [iterator_state_src, advance_fn_src, dereference_fn_src] =
     make_constant_iterator_sources(value_type, iterator_state_name, advance_fn_name, dereference_fn_name);
 
   name_source_t iterator_state = {iterator_state_name, iterator_state_src};
@@ -1000,7 +1001,7 @@ iterator_t<ValueT, random_access_iterator_state_t<ValueT>> make_reverse_iterator
   std::string advance_fn_name     = std::format("{0}advance", prefix);
   std::string dereference_fn_name = std::format("{0}dereference", prefix);
 
-  auto [iterator_state_src, advance_fn_src, dereference_fn_src] = make_reverse_iterator_sources(
+  const auto& [iterator_state_src, advance_fn_src, dereference_fn_src] = make_reverse_iterator_sources(
     kind, value_type, iterator_state_name, advance_fn_name, dereference_fn_name, transform);
 
   name_source_t iterator_state = {iterator_state_name, iterator_state_src};
@@ -1010,16 +1011,17 @@ iterator_t<ValueT, random_access_iterator_state_t<ValueT>> make_reverse_iterator
   return make_iterator<ValueT, random_access_iterator_state_t<ValueT>>(iterator_state, advance, dereference);
 }
 
-template <typename ValueT, typename BaseIteratorStateT, typename TransformerStateT>
-auto make_stateful_transform_input_iterator(
+inline std::tuple<std::string, std::string, std::string> make_stateful_transform_input_iterator_sources(
+  std::string_view transform_it_state_name,
+  std::string_view transform_it_advance_fn_name,
+  std::string_view transform_it_dereference_fn_name,
   std::string_view transformed_value_type,
-  name_source_t base_state,
+  name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
   name_source_t transform_state,
   name_source_t transform_op)
 {
-  static constexpr std::string_view transform_it_state_name     = "stateful_transform_iterator_state_t";
   static constexpr std::string_view transform_it_state_src_tmpl = R"XXX(
 /* Define state of stateful transform operation */
 {3}
@@ -1030,43 +1032,43 @@ struct {0} {{
   {2} functor_state;
 }};
 )XXX";
-  const std::string transform_it_state_src                      = std::format(
+
+  const std::string transform_it_state_src = std::format(
     transform_it_state_src_tmpl,
     /* 0 */ transform_it_state_name,
-    /* 1 */ base_state.name,
+    /* 1 */ base_it_state.name,
     /* 2 */ transform_state.name,
     /* 3 */ transform_state.def_src,
-    /* 4 */ base_state.def_src);
+    /* 4 */ base_it_state.def_src);
 
-  static constexpr std::string_view transform_it_advance_fn_name     = "advance_stateful_transform_it";
   static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
-  {3}
-  extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
-      {2}(&(transform_it_state->base_it_state), offset);
-  }}
-  )XXX";
-  const std::string transform_it_advance_fn_src                      = std::format(
+{3}
+extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
+    {2}(&(transform_it_state->base_it_state), offset);
+}}
+)XXX";
+
+  const std::string transform_it_advance_fn_src = std::format(
     transform_it_advance_fn_src_tmpl,
     /* 0 */ transform_it_advance_fn_name,
     /* 1 */ transform_it_state_name,
     /* 2 */ base_it_advance_fn.name,
     /* 3 */ base_it_advance_fn.def_src);
 
-  static constexpr std::string_view transform_it_deref_fn_name     = "dereference_stateful_transform_it";
-  static constexpr std::string_view transform_it_deref_fn_src_tmpl = R"XXX(
-  {5}
-  {6}
-  extern "C" __device__ {2} {0}({1} *transform_it_state) {{
-      return {3}(
-          &(transform_it_state->functor_state),
-          {4}(&(transform_it_state->base_it_state))
-      );
-  }}
-  )XXX";
+  static constexpr std::string_view transform_it_dereference_fn_src_tmpl = R"XXX(
+{5}
+{6}
+extern "C" __device__ {2} {0}({1} *transform_it_state) {{
+    return {3}(
+        &(transform_it_state->functor_state),
+        {4}(&(transform_it_state->base_it_state))
+    );
+}}
+)XXX";
 
-  const std::string transform_it_deref_fn_src = std::format(
-    transform_it_deref_fn_src_tmpl,
-    /* 0 */ transform_it_deref_fn_name /* name of transform's deref function */,
+  const std::string transform_it_dereference_fn_src = std::format(
+    transform_it_dereference_fn_src_tmpl,
+    /* 0 */ transform_it_dereference_fn_name /* name of transform's deref function */,
     /* 1 */ transform_it_state_name /* name of transform's state*/,
     /* 2 */ transformed_value_type /* function return type name */,
     /* 3 */ transform_op.name /* transformation functor function name */,
@@ -1074,24 +1076,54 @@ struct {0} {{
     /* 5 */ base_it_dereference_fn.def_src,
     /* 6 */ transform_op.def_src);
 
+  return std::make_tuple(transform_it_state_src, transform_it_advance_fn_src, transform_it_dereference_fn_src);
+}
+
+template <typename ValueT, typename BaseIteratorStateT, typename TransformerStateT>
+auto make_stateful_transform_input_iterator(
+  std::string_view transformed_value_type,
+  name_source_t base_it_state,
+  name_source_t base_it_advance_fn,
+  name_source_t base_it_dereference_fn,
+  name_source_t transform_state,
+  name_source_t transform_op)
+{
+  static constexpr std::string_view transform_it_state_name          = "stateful_transform_iterator_state_t";
+  static constexpr std::string_view transform_it_advance_fn_name     = "advance_stateful_transform_it";
+  static constexpr std::string_view transform_it_dereference_fn_name = "dereference_stateful_transform_it";
+
+  const auto& [transform_it_state_src, transform_it_advance_fn_src, transform_it_dereference_fn_src] =
+    make_stateful_transform_input_iterator_sources(
+      transform_it_state_name,
+      transform_it_advance_fn_name,
+      transform_it_dereference_fn_name,
+      transformed_value_type,
+      base_it_state,
+      base_it_advance_fn,
+      base_it_dereference_fn,
+      transform_state,
+      transform_op);
+
   using HostTransformStateT = stateful_transform_it_state<BaseIteratorStateT, TransformerStateT>;
   auto transform_it         = make_iterator<ValueT, HostTransformStateT>(
     {transform_it_state_name, transform_it_state_src},
     {transform_it_advance_fn_name, transform_it_advance_fn_src},
-    {transform_it_deref_fn_name, transform_it_deref_fn_src});
+    {transform_it_dereference_fn_name, transform_it_dereference_fn_src});
 
   return transform_it;
 }
 
-template <typename ValueT, typename BaseIteratorStateT>
-auto make_stateless_transform_input_iterator(
+/*! @brief Generate source code with definitions for state of transformed iterator and functions to operator on it */
+inline std::tuple<std::string, std::string, std::string> make_stateless_transform_input_iterator_sources(
+  std::string_view transform_it_state_name,
+  std::string_view transform_it_advance_fn_name,
+  std::string_view transform_it_dereference_fn_name,
   std::string_view transformed_value_type,
-  name_source_t base_state,
+  name_source_t base_it_state,
   name_source_t base_it_advance_fn,
   name_source_t base_it_dereference_fn,
   name_source_t transform_op)
 {
-  static constexpr std::string_view transform_it_state_name     = "stateless_transform_iterator_state_t";
   static constexpr std::string_view transform_it_state_src_tmpl = R"XXX(
 /* Define state of base iterator over whose values transformation is applied */
 {2}
@@ -1099,28 +1131,28 @@ struct {0} {{
   {1} base_it_state;
 }};
 )XXX";
-  const std::string transform_it_state_src                      = std::format(
+
+  const std::string transform_it_state_src = std::format(
     transform_it_state_src_tmpl,
     /* 0 */ transform_it_state_name,
-    /* 1 */ base_state.name,
-    /* 2 */ base_state.def_src);
+    /* 1 */ base_it_state.name,
+    /* 2 */ base_it_state.def_src);
 
-  static constexpr std::string_view transform_it_advance_fn_name     = "advance_stateless_transform_it";
   static constexpr std::string_view transform_it_advance_fn_src_tmpl = R"XXX(
 {3}
 extern "C" __device__ void {0}({1} *transform_it_state, unsigned long long offset) {{
     {2}(&(transform_it_state->base_it_state), offset);
 }}
 )XXX";
-  const std::string transform_it_advance_fn_src                      = std::format(
+
+  const std::string transform_it_advance_fn_src = std::format(
     transform_it_advance_fn_src_tmpl,
     /* 0 */ transform_it_advance_fn_name,
     /* 1 */ transform_it_state_name,
     /* 2 */ base_it_advance_fn.name,
     /* 3 */ base_it_advance_fn.def_src);
 
-  static constexpr std::string_view transform_it_deref_fn_name     = "dereference_stateless_transform_it";
-  static constexpr std::string_view transform_it_deref_fn_src_tmpl = R"XXX(
+  static constexpr std::string_view transform_it_dereference_fn_src_tmpl = R"XXX(
 {5}
 {6}
 extern "C" __device__ {2} {0}({1} *transform_it_state) {{
@@ -1130,15 +1162,41 @@ extern "C" __device__ {2} {0}({1} *transform_it_state) {{
 }}
 )XXX";
 
-  const std::string transform_it_deref_fn_src = std::format(
-    transform_it_deref_fn_src_tmpl,
-    /* 0 */ transform_it_deref_fn_name /* name of transform's deref function */,
+  const std::string transform_it_dereference_fn_src = std::format(
+    transform_it_dereference_fn_src_tmpl,
+    /* 0 */ transform_it_dereference_fn_name /* name of transform's deref function */,
     /* 1 */ transform_it_state_name /* name of transform's state*/,
     /* 2 */ transformed_value_type /* function return type name */,
     /* 3 */ transform_op.name /* transformation functor function name */,
     /* 4 */ base_it_dereference_fn.name /* deref function of base iterator */,
     /* 5 */ base_it_dereference_fn.def_src,
     /* 6 */ transform_op.def_src);
+
+  return std::make_tuple(transform_it_state_src, transform_it_advance_fn_src, transform_it_dereference_fn_src);
+}
+
+template <typename ValueT, typename BaseIteratorStateT>
+auto make_stateless_transform_input_iterator(
+  std::string_view transformed_value_type,
+  name_source_t base_it_state,
+  name_source_t base_it_advance_fn,
+  name_source_t base_it_dereference_fn,
+  name_source_t transform_op)
+{
+  static constexpr std::string_view transform_it_state_name      = "stateless_transform_iterator_state_t";
+  static constexpr std::string_view transform_it_advance_fn_name = "advance_stateless_transform_it";
+  static constexpr std::string_view transform_it_deref_fn_name   = "dereference_stateless_transform_it";
+
+  const auto& [transform_it_state_src, transform_it_advance_fn_src, transform_it_deref_fn_src] =
+    make_stateless_transform_input_iterator_sources(
+      transform_it_state_name,
+      transform_it_advance_fn_name,
+      transform_it_deref_fn_name,
+      transformed_value_type,
+      base_it_state,
+      base_it_advance_fn,
+      base_it_dereference_fn,
+      transform_op);
 
   using HostTransformStateT = stateless_transform_it_state<BaseIteratorStateT>;
   auto transform_it         = make_iterator<ValueT, HostTransformStateT>(
