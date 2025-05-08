@@ -56,7 +56,7 @@ inline constexpr int items_per_thread = 4;
 template <typename T>
 inline constexpr bool is_device_supported_type_v = true;
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
+#if TEST_HALF_T() && defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
 
 template <>
 inline constexpr bool is_device_supported_type_v<__nv_bfloat16> = false;
@@ -67,9 +67,9 @@ inline constexpr bool is_device_supported_type_v<__nv_bfloat162> = false;
 template <>
 inline constexpr bool is_device_supported_type_v<cuda::std::complex<__nv_bfloat16>> = false;
 
-#endif
+#endif // defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 800
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 530
+#if TEST_BF_T() && defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 530
 
 template <>
 inline constexpr bool is_device_supported_type_v<__half> = false;
@@ -80,7 +80,7 @@ inline constexpr bool is_device_supported_type_v<__half2> = false;
 template <>
 inline constexpr bool is_device_supported_type_v<cuda::std::complex<__half>> = false;
 
-#endif
+#endif // defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 530
 
 template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename Input, typename T, typename ReductionOp>
 __device__ void warp_reduce_function(Input& thread_data, T* output, ReductionOp reduction_op, int num_items = 0)
