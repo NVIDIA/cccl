@@ -629,11 +629,12 @@ extern "C" __device__ {2} {0}({1} *functor_state, {2} n) {{
   using HostTransformStateT = decltype(start_offsets_it.state);
 
   // end_offsets_it reuses advance/dereference definitions provided by start_offsets_it
-  constexpr std::string_view empty_src = "";
-  auto end_offsets_it                  = make_iterator<IndexT, HostTransformStateT>(
-    {start_offsets_it.state_name, empty_src},
-    {start_offsets_it.advance.name, empty_src},
-    {start_offsets_it.dereference.name, empty_src});
+  constexpr std::string_view reuse_prior_definitions = "";
+
+  auto end_offsets_it = make_iterator<IndexT, HostTransformStateT>(
+    {start_offsets_it.state_name, reuse_prior_definitions},
+    {start_offsets_it.advance.name, reuse_prior_definitions},
+    {start_offsets_it.dereference.name, reuse_prior_definitions});
 
   // Initialize the state of end_offset_it
   end_offsets_it.state.base_it_state.value = IndexT(0);
@@ -648,7 +649,8 @@ extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) 
   *out_tp = (*x1_tp) + (*x2_tp);
 }}
 )XXX";
-  const std::string binary_op_src                      = std::format(binary_op_src_tmpl, binary_op_name, data_ty_name);
+
+  const std::string binary_op_src = std::format(binary_op_src_tmpl, binary_op_name, data_ty_name);
 
   auto binary_op = make_operation(binary_op_name, binary_op_src);
 
