@@ -104,11 +104,11 @@ template <typename T, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_shuffle_op(T input, ReductionOp, Config config)
 {
   using namespace _CUDA_VSTD;
-  using Reduction1                                                             = generalize_operator_t<ReductionOp, T>;
+  using Reduction1 = generalize_operator_t<ReductionOp, T>;
+  using cast_t     = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
-  constexpr auto log2_size                                                     = ::cuda::ilog2(logical_size * 2 - 1);
+  constexpr auto log2_size                                                     = ::cuda::ceil_ilog2(logical_size());
   const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
-  using cast_t    = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
   auto input1     = static_cast<cast_t>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
@@ -118,8 +118,9 @@ template <typename T, typename ReductionOp, typename Config>
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size());
-    input1                            = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input1, 0, mask);
+    constexpr auto logical_size1      = is_segmented ? warp_threads : logical_size;
+    constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size1);
+    input1 = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input1, config.first_pos, mask);
   }
   return input1;
 }
@@ -129,35 +130,34 @@ template <typename T, typename ReductionOp, typename Config>
 {
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
   constexpr auto is_power_of_two                      = ::cuda::is_power_of_two(logical_size());
-  constexpr auto log2_size                            = ::cuda::ilog2(logical_size * 2 - 1);
-  constexpr uint32_t logical_size1                    = is_segmented ? detail::warp_threads : logical_size;
+  constexpr auto log2_size                            = ::cuda::ceil_ilog2(logical_size());
+  constexpr auto logical_size1                        = is_segmented ? warp_threads : logical_size;
   [[maybe_unused]] constexpr auto logical_size1_round = ::cuda::next_power_of_two(logical_size1);
   const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
-    _CUDA_VDEV::warp_shuffle_result<T> res;
+    _CUDA_VDEV::warp_shuffle_result<T> result;
     if constexpr (is_power_of_two && valid_items.rank_dynamic() == 0)
     {
-      res = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
+      result = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
     }
     else
     {
-      constexpr auto logical_size1_round = ::cuda::next_power_of_two(logical_size1);
-      auto limit                         = valid_items.extent(0) - !is_segmented;
-      auto lane_dest                     = cub::detail::logical_lane_id<logical_size1>() + (1u << K);
-      auto dest                          = ::min(lane_dest, limit);
-      res                                = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
-      res.pred                           = lane_dest <= limit;
+      auto limit     = valid_items.extent(0) - !is_segmented;
+      auto lane_dest = cub::detail::logical_lane_id<logical_size1>() + (1u << K);
+      auto dest      = ::min(lane_dest, limit);
+      result         = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
+      result.pred    = lane_dest <= limit;
     }
-    if (res.pred)
+    if (result.pred)
     {
-      input = reduction_op(input, res.data);
+      input = reduction_op(input, result.data);
     }
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    input = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, 0, mask);
+    input = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, config.first_pos, mask);
   }
   return input;
 }
@@ -171,7 +171,7 @@ template <typename T, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_dispatch(T, ReductionOp, Config);
 
 _CCCL_TEMPLATE(typename T, typename ReductionOp, typename Config)
-_CCCL_REQUIRES(is_cuda_std_bitwise_v<ReductionOp, T> _CCCL_AND(_CUDA_VSTD::is_integral_v<T>))
+_CCCL_REQUIRES(is_cuda_std_bitwise_v<ReductionOp, T>)
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
 warp_reduce_recursive(T input, ReductionOp reduction_op, Config warp_config)
 {
@@ -185,7 +185,7 @@ warp_reduce_recursive(T input, ReductionOp reduction_op, Config warp_config)
 }
 
 _CCCL_TEMPLATE(typename T, typename ReductionOp, typename Config)
-_CCCL_REQUIRES(is_cuda_minimum_maximum_v<ReductionOp, T> _CCCL_AND(_CUDA_VSTD::is_integral_v<T>))
+_CCCL_REQUIRES(is_cuda_minimum_maximum_v<ReductionOp, T>)
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static T
 warp_reduce_recursive(T input, ReductionOp reduction_op, Config warp_config)
 {
@@ -193,26 +193,27 @@ warp_reduce_recursive(T input, ReductionOp reduction_op, Config warp_config)
   using cub::detail::merge_integers;
   using cub::detail::split_integers;
   using cub::detail::warp_reduce_dispatch;
-  constexpr auto half_bits = __num_bits_v<T> / 2;
-  auto [high, low]         = split_integers(input);
-  auto high_result         = warp_reduce_dispatch(high, reduction_op, warp_config);
-  if (high_result == 0) // shortcut: input is in range [0, 2^N/2)
+  constexpr auto half_bits   = __num_bits_v<T> / 2;
+  using half_size_unsigned_t = __make_nbit_uint_t<half_bits>;
+  auto [high, low]           = split_integers(input);
+  auto high_result           = warp_reduce_dispatch(high, reduction_op, warp_config);
+  if (high_result == 0) // shortcut: input is in range [0, 2^N/2) -> perform the computation as unsigned
   {
-    return warp_reduce_dispatch(low, reduction_op, warp_config);
+    return warp_reduce_dispatch(static_cast<half_size_unsigned_t>(low), reduction_op, warp_config);
   }
-  if (is_unsigned_v<T> || high_result > 0) // >= 2^N/2 -> perform the computation as uint32_t
+  if (is_unsigned_v<T> || high_result > 0) // -> perform the computation as unsigned
   {
-    using half_size_unsigned_t = __make_nbit_uint_t<half_bits>;
-    constexpr auto identity    = identity_v<ReductionOp, half_size_unsigned_t>;
-    auto low_unsigned          = static_cast<half_size_unsigned_t>(low);
-    auto low_selected          = high_result == high ? low_unsigned : identity;
-    auto low_result            = warp_reduce_dispatch(low_selected, reduction_op, warp_config);
+    constexpr auto identity = identity_v<ReductionOp, half_size_unsigned_t>;
+    auto low_unsigned       = static_cast<half_size_unsigned_t>(low);
+    auto low_selected       = high_result == high ? low_unsigned : identity;
+    auto low_result         = warp_reduce_dispatch(low_selected, reduction_op, warp_config);
     return static_cast<T>(merge_integers(static_cast<half_size_unsigned_t>(high_result), low_result));
   }
-  // signed type and < 0
+  // signed type and input < 0
   using half_size_signed_t = __make_nbit_int_t<half_bits, true>;
   constexpr auto identity  = identity_v<ReductionOp, half_size_signed_t>;
-  auto low_selected        = high_result == high ? static_cast<half_size_signed_t>(low) : identity;
+  auto low_signed          = static_cast<half_size_signed_t>(low);
+  auto low_selected        = high_result == high ? low_signed : identity;
   auto low_result          = warp_reduce_dispatch(low_selected, reduction_op, warp_config);
   return merge_integers(static_cast<half_size_signed_t>(high_result), low_result);
 }
