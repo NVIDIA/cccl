@@ -431,11 +431,10 @@ public:
    *   type indicating whether or not SampleT is a 8b type
    */
   // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
-  template <
-    typename MaxPolicyT = typename ::cuda::std::_If<
-      ::cuda::std::is_void_v<PolicyHub>,
-      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
-      PolicyHub>::MaxPolicy>
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
+              PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -617,11 +616,10 @@ public:
    * @param is_byte_sample
    *   Marker type indicating whether or not SampleT is a 8b type
    */
-  template <
-    typename MaxPolicyT = typename ::cuda::std::_If<
-      ::cuda::std::is_void_v<PolicyHub>,
-      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
-      PolicyHub>::MaxPolicy>
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
+              PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -762,11 +760,10 @@ public:
    * @param is_byte_sample
    *   Marker type indicating whether or not SampleT is a 8b type
    */
-  template <
-    typename MaxPolicyT = typename ::cuda::std::_If<
-      ::cuda::std::is_void_v<PolicyHub>,
-      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
-      PolicyHub>::MaxPolicy>
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
+              PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -963,11 +960,10 @@ public:
    * @param is_byte_sample
    *   type indicating whether or not SampleT is a 8b type
    */
-  template <
-    typename MaxPolicyT = typename ::cuda::std::_If<
-      ::cuda::std::is_void_v<PolicyHub>,
-      detail::histogram::policy_hub<detail::it_value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
-      PolicyHub>::MaxPolicy>
+  template <typename MaxPolicyT = typename ::cuda::std::_If<
+              ::cuda::std::is_void_v<PolicyHub>,
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
+              PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
