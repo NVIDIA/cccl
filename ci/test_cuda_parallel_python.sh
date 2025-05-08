@@ -3,9 +3,7 @@
 set -euo pipefail
 
 # Get the Python version from the command line arguments -py-version=3.10
-#py_version=${2#*=}
-py_version=3.10
-HOST_WORKSPACE=$(pwd)
+py_version=${2#*=}
 
 echo "Python version: ${py_version}"
 echo "Docker socket: " $(ls /var/run/docker.sock)
