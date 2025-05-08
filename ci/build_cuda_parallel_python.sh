@@ -20,5 +20,5 @@ docker run --rm \
     source /etc/profile.d/enable_devtools.sh && \
     python -m pip wheel --no-deps . && \
     auditwheel repair cuda_parallel-*.whl --exclude libcuda.so.1 && \
-    mv cuda_cccl-*.whl wheelhouse/ && \
-    mv wheelhouse/*.whl /workspace/wheelhouse/'
+    mv cuda_cccl-*.whl /workspace/wheelhouse/ && \
+    mv wheelhouse/cuda_parallel-*.whl /workspace/wheelhouse/'
