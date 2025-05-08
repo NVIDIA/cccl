@@ -42,8 +42,6 @@
 #include <cuda/std/climits>
 #include <cuda/std/cmath>
 
-#include <cstdint>
-
 #ifndef __CUDACC__
 // disable zero checks
 #  define DISABLE_ZERO
@@ -90,7 +88,7 @@ template <class T>
 using vector_t = typename get_vector_type<T>::type;
 
 template <class T>
-std::size_t vector_size()
+auto vector_size()
 {
   return sizeof(vector_t<T>) / sizeof(T);
 }
@@ -832,7 +830,7 @@ public:
   }
 
   /// Returns the number of reference bins. Used for judging memory usage.
-  _CCCL_HOST _CCCL_FORCEINLINE static constexpr size_t number_of_reference_bins()
+  _CCCL_HOST _CCCL_FORCEINLINE static constexpr auto number_of_reference_bins()
   {
     return ::cuda::std::array<ftype, MAXINDEX + MAXFOLD>::size();
   }
