@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_COMPILER(MSVC) && !defined(__CUDA_ARCH__)
+#if _CCCL_COMPILER(MSVC) && !_CCCL_DEVICE_COMPILATION()
 #  define _CCCL_UNREACHABLE() __assume(0)
 #else
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()

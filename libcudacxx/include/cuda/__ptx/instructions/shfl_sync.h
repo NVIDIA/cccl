@@ -88,10 +88,9 @@ _CCCL_DEVICE static inline void __shfl_sync_checks(
   _CCCL_ASSERT((__clamp_segmask | 0b1111100011111) == 0b1111100011111,
                "clamp value + segmentation mask must use the bit positions [0:4] and [8:12]");
   _CCCL_ASSERT((__lane_mask & __activemask()) == __lane_mask, "lane mask must be a subset of the active mask");
-#  if __CUDA_ARCH__ >= 700
-  [[maybe_unused]] int __pred;
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __lane_mask, &__pred), "all active lanes must have the same lane mask");
-#  endif
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
+               ([[maybe_unused]] int __pred; _CCCL_ASSERT(__match_all_sync(__activemask(), __lane_mask, &__pred),
+                                                          "all active lanes must have the same lane mask");))
   _CCCL_ASSERT(_CUDA_VPTX::__shfl_sync_dst_lane(__shfl_mode, __lane_idx_offset, __clamp_segmask) & __lane_mask,
                "the destination lane must be a member of the lane mask");
 }

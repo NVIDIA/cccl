@@ -53,12 +53,12 @@ static_assert(cuda::std::indirect_strict_weak_order<GoodOrder<It1, It2>, It1, It
 static_assert(cuda::std::indirect_strict_weak_order<bool (*)(int, long), int*, long*>, "");
 
 TEST_DIAG_SUPPRESS_CLANG("-Wunneeded-internal-declaration")
-#ifndef __CUDA_ARCH__
+#if _CCCL_HOST_COMPILATION()
 auto lambda = [](int i, long j) {
   return i == j;
 };
 static_assert(cuda::std::indirect_strict_weak_order<decltype(lambda), int*, long*>, "");
-#endif
+#endif // _CCCL_HOST_COMPILATION()
 
 // Should fail when either of the iterators is not indirectly_readable
 #if TEST_STD_VER > 2017
