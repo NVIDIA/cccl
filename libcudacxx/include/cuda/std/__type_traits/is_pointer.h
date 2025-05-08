@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_POINTER) && !defined(_LIBCUDACXX_USE_IS_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public integral_constant<bool, _CCCL_BUILTIN_IS_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public bool_constant<_CCCL_BUILTIN_IS_POINTER(_Tp)>
 {};
 
 template <class _Tp>
@@ -37,18 +37,17 @@ inline constexpr bool is_pointer_v = _CCCL_BUILTIN_IS_POINTER(_Tp);
 #else
 
 template <class _Tp>
-struct __cccl_is_pointer : public false_type
-{};
-template <class _Tp>
-struct __cccl_is_pointer<_Tp*> : public true_type
-{};
+inline constexpr bool __cccl_is_pointer_helper_v = false;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public __cccl_is_pointer<remove_cv_t<_Tp>>
-{};
+inline constexpr bool __cccl_is_pointer_helper_v<_Tp*> = true;
 
 template <class _Tp>
-inline constexpr bool is_pointer_v = is_pointer<_Tp>::value;
+inline constexpr bool is_pointer_v = __cccl_is_pointer_helper_v<remove_cv_t<_Tp>>;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public bool_constant<is_pointer_v<_Tp>>
+{};
 
 #endif // defined(_CCCL_BUILTIN_IS_POINTER) && !defined(_LIBCUDACXX_USE_IS_POINTER_FALLBACK)
 

@@ -27,12 +27,11 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_arithmetic
-    : public integral_constant<bool, is_integral<_Tp>::value || is_floating_point<_Tp>::value>
-{};
+inline constexpr bool is_arithmetic_v = is_integral_v<_Tp> || is_floating_point_v<_Tp>;
 
 template <class _Tp>
-inline constexpr bool is_arithmetic_v = is_arithmetic<_Tp>::value;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_arithmetic : public bool_constant<is_arithmetic_v<_Tp>>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

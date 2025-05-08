@@ -385,9 +385,10 @@ struct DispatchUniqueByKey
       {
         // Get SM occupancy for unique_by_key_kernel
         int sweep_sm_occupancy;
-        error = CubDebug(MaxSmOccupancy(sweep_sm_occupancy, // out
-                                        sweep_kernel,
-                                        block_threads));
+        error = CubDebug(launcher_factory.MaxSmOccupancy(
+          sweep_sm_occupancy, // out
+          sweep_kernel,
+          block_threads));
         if (cudaSuccess != error)
         {
           break;

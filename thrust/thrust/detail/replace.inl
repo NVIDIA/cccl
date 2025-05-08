@@ -42,6 +42,7 @@ replace(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
         const T& old_value,
         const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace");
   using thrust::system::detail::generic::replace;
   return replace(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, old_value, new_value);
 } // end replace()
@@ -55,6 +56,7 @@ _CCCL_HOST_DEVICE void replace_if(
   Predicate pred,
   const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_if");
   using thrust::system::detail::generic::replace_if;
   return replace_if(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, pred, new_value);
 } // end replace_if()
@@ -69,6 +71,7 @@ _CCCL_HOST_DEVICE void replace_if(
   Predicate pred,
   const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_if");
   using thrust::system::detail::generic::replace_if;
   return replace_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, pred, new_value);
@@ -84,6 +87,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy(
   const T& old_value,
   const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy");
   using thrust::system::detail::generic::replace_copy;
   return replace_copy(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, old_value, new_value);
@@ -99,6 +103,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy_if");
   using thrust::system::detail::generic::replace_copy_if;
   return replace_copy_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, pred, new_value);
@@ -120,6 +125,7 @@ _CCCL_HOST_DEVICE OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy_if");
   using thrust::system::detail::generic::replace_copy_if;
   return replace_copy_if(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, stencil, result, pred, new_value);
@@ -129,6 +135,7 @@ template <typename InputIterator, typename OutputIterator, typename Predicate, t
 OutputIterator
 replace_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred, const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -149,6 +156,7 @@ OutputIterator replace_copy_if(
   Predicate pred,
   const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -167,6 +175,7 @@ template <typename InputIterator, typename OutputIterator, typename T>
 OutputIterator
 replace_copy(InputIterator first, InputIterator last, OutputIterator result, const T& old_value, const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_copy");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator>::type;
@@ -181,6 +190,7 @@ replace_copy(InputIterator first, InputIterator last, OutputIterator result, con
 template <typename ForwardIterator, typename Predicate, typename T>
 void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_if");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;
@@ -193,6 +203,7 @@ void replace_if(ForwardIterator first, ForwardIterator last, Predicate pred, con
 template <typename ForwardIterator, typename InputIterator, typename Predicate, typename T>
 void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred, const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace_if");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<ForwardIterator>::type;
@@ -207,6 +218,7 @@ void replace_if(ForwardIterator first, ForwardIterator last, InputIterator stenc
 template <typename ForwardIterator, typename T>
 void replace(ForwardIterator first, ForwardIterator last, const T& old_value, const T& new_value)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::replace");
   using thrust::system::detail::generic::select_system;
 
   using System = typename thrust::iterator_system<ForwardIterator>::type;

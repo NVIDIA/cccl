@@ -322,7 +322,8 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
 
   REQUIRE(CUDA_SUCCESS == cuInit(0));
   REQUIRE(CUDA_SUCCESS == cuDeviceGet(&device, 0));
-  REQUIRE(CUDA_SUCCESS == cuCtxCreate(&context, 0, device));
+  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRetain(&context, device));
+  REQUIRE(CUDA_SUCCESS == cuCtxSetCurrent(context));
   REQUIRE(CUDA_SUCCESS == cuModuleLoadDataEx(&module, code.get(), 0, 0, 0));
   REQUIRE(CUDA_SUCCESS == cuModuleGetFunction(&kernel, module, "kernel"));
 
@@ -365,5 +366,5 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_ptr));
   REQUIRE(CUDA_SUCCESS == cuMemFree(d_err));
   REQUIRE(CUDA_SUCCESS == cuModuleUnload(module));
-  REQUIRE(CUDA_SUCCESS == cuCtxDestroy(context));
+  REQUIRE(CUDA_SUCCESS == cuDevicePrimaryCtxRelease(device));
 }

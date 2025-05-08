@@ -123,26 +123,28 @@ C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
   using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
+  // Use c2h::adjust_seed_count to reduce the number of runs when using sanitizers:
   const int segment_size = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)), //
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)));
 
-  const int segments = GENERATE_COPY(take(2, random(1 << 0, 1 << 5)), //
-                                     take(2, random(1 << 5, 1 << 10)));
+  const int segments = GENERATE_COPY( //
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)));
 
   test_same_size_segments_derived<KeyT, ValueT>(segment_size, segments);
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -152,17 +154,18 @@ C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values
   const int max_items   = 1 << 22;
   const int max_segment = 6000;
 
+  // Use c2h::adjust_seed_count to reduce the number of runs when using sanitizers:
   const int segments = GENERATE_COPY(
-    take(2, random(1 << 0, 1 << 5)), //
-    take(2, random(1 << 5, 1 << 10)),
-    take(2, random(1 << 10, 1 << 15)),
-    take(2, random(1 << 15, 1 << 20)));
+    take(c2h::adjust_seed_count(2), random(1 << 0, 1 << 5)), //
+    take(c2h::adjust_seed_count(2), random(1 << 5, 1 << 10)),
+    take(c2h::adjust_seed_count(2), random(1 << 10, 1 << 15)),
+    take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   test_random_size_segments_derived<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck]",
          pair_types)
 {
   using PairT  = c2h::get<0, TestType>;
@@ -172,7 +175,8 @@ C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values"
   const int max_items   = 1 << 22;
   const int max_segment = 6000;
 
-  const int segments = GENERATE_COPY(take(2, random(1 << 15, 1 << 20)));
+  // Use c2h::adjust_seed_count to reduce the number of runs when using sanitizers:
+  const int segments = GENERATE_COPY(take(c2h::adjust_seed_count(2), random(1 << 15, 1 << 20)));
 
   test_random_size_segments_random<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
@@ -200,7 +204,7 @@ C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
 }
 
 C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
-         "[pairs][segmented][sort][device]",
+         "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
          all_offset_types)
 try
 {
@@ -255,7 +259,9 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
-C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
+C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments",
+         "[pairs][segmented][sort][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]",
+         all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs

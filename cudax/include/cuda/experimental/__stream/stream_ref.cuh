@@ -25,7 +25,6 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__detail/config.cuh>
 #include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
@@ -49,14 +48,14 @@ struct stream_ref : ::cuda::stream_ref
   //! @brief Wrap a native \c ::cudaStream_t in a \c stream_ref
   //!
   //! @post `this->get() == __stream`
-  _CUDAX_HOST_API constexpr stream_ref(value_type __stream) noexcept
+  _CCCL_HOST_API constexpr stream_ref(value_type __stream) noexcept
       : ::cuda::stream_ref{__stream}
   {}
 
   //! @brief Converting constructor from \c ::cuda::stream_ref
   //!
   //! @post `*this == __other`
-  _CUDAX_HOST_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
+  _CCCL_HOST_API constexpr stream_ref(const ::cuda::stream_ref& __other) noexcept
       : ::cuda::stream_ref(__other)
   {}
 
@@ -83,7 +82,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @return A new event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  [[nodiscard]] _CUDAX_HOST_API event record_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CCCL_HOST_API event record_event(event::flags __flags = event::flags::none) const
   {
     return event(*this, __flags);
   }
@@ -93,7 +92,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @return A new timed event that was recorded into this stream
   //!
   //! @throws cuda_error if event creation or record failed
-  [[nodiscard]] _CUDAX_HOST_API timed_event record_timed_event(event::flags __flags = event::flags::none) const
+  [[nodiscard]] _CCCL_HOST_API timed_event record_timed_event(event::flags __flags = event::flags::none) const
   {
     return timed_event(*this, __flags);
   }
@@ -105,7 +104,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @param __ev Event that this stream should wait for
   //!
   //! @throws cuda_error if inserting the dependency fails
-  _CUDAX_HOST_API void wait(event_ref __ev) const
+  _CCCL_HOST_API void wait(event_ref __ev) const
   {
     _CCCL_ASSERT(__ev.get() != nullptr, "cuda::experimental::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
@@ -118,7 +117,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @param __other Stream that this stream should wait for
   //!
   //! @throws cuda_error if inserting the dependency fails
-  _CUDAX_HOST_API void wait(stream_ref __other) const
+  _CCCL_HOST_API void wait(stream_ref __other) const
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
@@ -134,7 +133,7 @@ struct stream_ref : ::cuda::stream_ref
   //!
   //! Compared to `device()` member function the returned \c logical_device will
   //! hold a green context for streams created under one.
-  _CUDAX_HOST_API logical_device get_logical_device() const
+  _CCCL_HOST_API logical_device get_logical_device() const
   {
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
@@ -173,7 +172,7 @@ struct stream_ref : ::cuda::stream_ref
   //! returned
   //!
   //! @throws cuda_error if device check fails
-  _CUDAX_HOST_API device_ref get_device() const
+  _CCCL_HOST_API device_ref get_device() const
   {
     return get_logical_device().get_underlying_device();
   }

@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -27,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_FINAL)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public integral_constant<bool, _CCCL_BUILTIN_IS_FINAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public bool_constant<_CCCL_BUILTIN_IS_FINAL(_Tp)>
 {};
 
 template <class _Tp>
@@ -37,10 +38,12 @@ inline constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public false_type
-{};
+{
+  static_assert(__always_false_v<_Tp>, "is_final requires compiler support");
+};
 
 template <class _Tp>
-inline constexpr bool is_final_v = false;
+inline constexpr bool is_final_v = is_final<_Tp>::value;
 
 #endif // !_CCCL_BUILTIN_IS_FINAL
 

@@ -283,7 +283,7 @@ using __enable_if_bullet1 =
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
 using __enable_if_bullet2 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_function_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -292,7 +292,7 @@ template <class _Fp,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet3 =
   enable_if_t<is_member_function_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__is_reference_wrapper<_DecayA0>::value>;
+              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -304,7 +304,7 @@ using __enable_if_bullet4 =
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
 using __enable_if_bullet5 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_object_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -313,7 +313,7 @@ template <class _Fp,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet6 =
   enable_if_t<is_member_object_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__is_reference_wrapper<_DecayA0>::value>;
+              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 

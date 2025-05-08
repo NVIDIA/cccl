@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,20 +22,62 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/experimental/__async/sender/queries.cuh>
+#include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__stream/get_stream.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
+#include <cuda/experimental/__execution/prologue.cuh>
+
 namespace cuda::experimental
 {
+namespace execution
+{
+using _CUDA_STD_EXEC::env;
+using _CUDA_STD_EXEC::env_of_t;
+using _CUDA_STD_EXEC::get_env;
+using _CUDA_STD_EXEC::prop;
+
+using _CUDA_STD_EXEC::__nothrow_queryable_with;
+using _CUDA_STD_EXEC::__query_result_t;
+using _CUDA_STD_EXEC::__queryable_with;
+
+struct __not_a_scheduler
+{
+  using scheduler_concept _CCCL_NODEBUG_ALIAS = scheduler_t;
+};
+
+using __no_completion_scheduler_t _CCCL_NODEBUG_ALIAS =
+  prop<get_completion_scheduler_t<set_value_t>, __not_a_scheduler>;
+using __no_scheduler_t = prop<get_scheduler_t, __not_a_scheduler>;
+
+// First look in the sender's environment for a domain. If none is found, look
+// in the sender's (value) completion scheduler, if any.
+template <class _Sndr>
+using __early_domain_env _CCCL_NODEBUG_ALIAS =
+  env<env_of_t<_Sndr>, __completion_scheduler_of_t<env<env_of_t<_Sndr>, __no_completion_scheduler_t>>>;
+
+template <class _Sndr>
+using early_domain_of_t _CCCL_NODEBUG_ALIAS = __domain_of_t<__early_domain_env<_Sndr>>;
+
+// First look in the sender's environment for a domain. If none is found, look
+// in the sender's (value) completion scheduler, if any. Then look in _Env for a
+// domain. If none is found, look in the environment's scheduler, if any.
+template <class _Sndr, class _Env>
+using __late_domain_env _CCCL_NODEBUG_ALIAS =
+  env<__early_domain_env<_Sndr>, env<_Env, __scheduler_of_t<env<_Env, __no_scheduler_t>>>>;
+
+template <class _Sndr, class _Env>
+using late_domain_of_t _CCCL_NODEBUG_ALIAS = __domain_of_t<__late_domain_env<_Sndr, _Env>>;
+} // namespace execution
 
 template <class... _Properties>
 class env_t
@@ -70,8 +112,9 @@ public:
   //! properties we need
   template <class _Env>
   static constexpr bool __is_compatible_env =
-    __async::__queryable_with<_Env, get_memory_resource_t> && __async::__queryable_with<_Env, get_stream_t>
-    && __async::__queryable_with<_Env, execution::get_execution_policy_t>;
+    _CUDA_STD_EXEC::__queryable_with<_Env, get_memory_resource_t> //
+    && _CUDA_STD_EXEC::__queryable_with<_Env, get_stream_t>
+    && _CUDA_STD_EXEC::__queryable_with<_Env, execution::get_execution_policy_t>;
 
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
@@ -100,5 +143,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/experimental/__execution/epilogue.cuh>
 
 #endif //__CUDAX___EXECUTION_ENV_CUH

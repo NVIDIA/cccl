@@ -180,15 +180,15 @@ private:
         break;
       }
       case __memory_location_type::__host: {
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
         // Construct on NUMA node 0 only for now
         __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
         __pool_properties.location.id   = __id;
-#else // _CCCL_CUDACC_BELOW(12, 6)
+#else // _CCCL_CTK_BELOW(12, 6)
         _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
           "Host pinned memory pools are unavailable in this CUDA "
           "version");
-#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
         break;
       }
       default:

@@ -28,7 +28,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_INTEGRAL) && !defined(_LIBCUDACXX_USE_IS_INTEGRAL_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral : public integral_constant<bool, _CCCL_BUILTIN_IS_INTEGRAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral : public bool_constant<_CCCL_BUILTIN_IS_INTEGRAL(_Tp)>
 {};
 
 template <class _Tp>
@@ -37,74 +37,80 @@ inline constexpr bool is_integral_v = _CCCL_BUILTIN_IS_INTEGRAL(_Tp);
 #else // ^^^ _CCCL_BUILTIN_IS_INTEGRAL ^^^ / vvv !_CCCL_BUILTIN_IS_INTEGRAL vvv
 
 template <class _Tp>
-struct __cccl_is_integral : public false_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v = false;
+
 template <>
-struct __cccl_is_integral<bool> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<bool> = true;
+
+// char types
+
 template <>
-struct __cccl_is_integral<char> : public true_type
-{};
-template <>
-struct __cccl_is_integral<signed char> : public true_type
-{};
-template <>
-struct __cccl_is_integral<unsigned char> : public true_type
-{};
-template <>
-struct __cccl_is_integral<wchar_t> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<char> = true;
+
 #  if _CCCL_HAS_CHAR8_T()
 template <>
-struct __cccl_is_integral<char8_t> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<char8_t> = true;
 #  endif // _CCCL_HAS_CHAR8_T()
+
 template <>
-struct __cccl_is_integral<char16_t> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<char16_t> = true;
+
 template <>
-struct __cccl_is_integral<char32_t> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<char32_t> = true;
+
 template <>
-struct __cccl_is_integral<short> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<wchar_t> = true;
+
+// signed integer types
+
 template <>
-struct __cccl_is_integral<unsigned short> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<signed char> = true;
+
 template <>
-struct __cccl_is_integral<int> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<short> = true;
+
 template <>
-struct __cccl_is_integral<unsigned int> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<int> = true;
+
 template <>
-struct __cccl_is_integral<long> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<long> = true;
+
 template <>
-struct __cccl_is_integral<unsigned long> : public true_type
-{};
-template <>
-struct __cccl_is_integral<long long> : public true_type
-{};
-template <>
-struct __cccl_is_integral<unsigned long long> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<long long> = true;
+
 #  if _CCCL_HAS_INT128()
 template <>
-struct __cccl_is_integral<__int128_t> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<__int128_t> = true;
+#  endif // _CCCL_HAS_INT128()
+
+// unsigned integer types
+
 template <>
-struct __cccl_is_integral<__uint128_t> : public true_type
-{};
+inline constexpr bool __cccl_is_integral_helper_v<unsigned char> = true;
+
+template <>
+inline constexpr bool __cccl_is_integral_helper_v<unsigned short> = true;
+
+template <>
+inline constexpr bool __cccl_is_integral_helper_v<unsigned int> = true;
+
+template <>
+inline constexpr bool __cccl_is_integral_helper_v<unsigned long> = true;
+
+template <>
+inline constexpr bool __cccl_is_integral_helper_v<unsigned long long> = true;
+
+#  if _CCCL_HAS_INT128()
+template <>
+inline constexpr bool __cccl_is_integral_helper_v<__uint128_t> = true;
 #  endif // _CCCL_HAS_INT128()
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral
-    : public integral_constant<bool, __cccl_is_integral<remove_cv_t<_Tp>>::value>
-{};
+inline constexpr bool is_integral_v = __cccl_is_integral_helper_v<remove_cv_t<_Tp>>;
 
 template <class _Tp>
-inline constexpr bool is_integral_v = is_integral<_Tp>::value;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral : public bool_constant<is_integral_v<_Tp>>
+{};
 
 #endif // !_CCCL_BUILTIN_IS_INTEGRAL
 
