@@ -16,6 +16,5 @@ docker run --rm \
   bash -c '\
     python -m pip wheel --no-deps ../cuda_cccl && \
     python -m pip wheel --no-deps . && \
-    auditwheel repair cuda_cooperative-*.whl --exclude libcuda.so.1 && \
     mv cuda_cccl-*.whl wheelhouse/ && \
     mv wheelhouse/*.whl /workspace/wheelhouse/'

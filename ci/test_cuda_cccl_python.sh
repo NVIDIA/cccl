@@ -22,5 +22,6 @@ docker run --rm \
     fail_if_no_gpu && \
     source /workspace/cccl/ci/test_python_common.sh && \
     list_environment && \
-    python -m pip install /workspace/wheelhouse/*.whl && \
+    CUDA_CCCL_WHEEL_PATH="$(ls /workspace/wheelhouse/cuda_cccl-*.whl)" && \
+    python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]" && \
     pytest -n ${PARALLEL_LEVEL} -v tests/'
