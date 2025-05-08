@@ -60,7 +60,7 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-namespace rfa_detail
+namespace rfa
 {
 
 template <typename Float, int LEN>
@@ -978,7 +978,7 @@ struct rfa_float_transform_t
     return accum.conv();
   }
 };
-} // namespace rfa_detail
+} // namespace rfa
 
 } // namespace detail
 

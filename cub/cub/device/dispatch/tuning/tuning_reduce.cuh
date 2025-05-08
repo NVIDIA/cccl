@@ -266,7 +266,93 @@ struct policy_hub
 
   using MaxPolicy = Policy1000;
 };
+
 } // namespace reduce
+
+namespace rfa
+{
+/**
+ * @tparam AccumT
+ *   Accumulator data type
+ *
+ * OffsetT
+ *   Signed integer type for global offsets
+ *
+ * ReductionOpT
+ *   Binary reduction functor type having member
+ *   `auto operator()(const T &a, const U &b)`
+ */
+template <typename AccumT, typename OffsetT, typename ReductionOpT>
+struct policy_hub
+{
+  //---------------------------------------------------------------------------
+  // Architecture-specific tuning policies
+  //---------------------------------------------------------------------------
+
+  /// SM30
+  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
+  {
+    static constexpr int threads_per_block  = 256;
+    static constexpr int items_per_thread   = 20;
+    static constexpr int items_per_vec_load = 2;
+
+    // ReducePolicy (GTX670: 154.0 @ 48M 4B items)
+    using DeterministicReducePolicy =
+      AgentReducePolicy<threads_per_block,
+                        items_per_thread,
+                        AccumT,
+                        items_per_vec_load,
+                        BLOCK_REDUCE_WARP_REDUCTIONS,
+                        LOAD_DEFAULT>;
+
+    // SingleTilePolicy
+    using SingleTilePolicy = DeterministicReducePolicy;
+  };
+
+  /// SM35
+  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
+  {
+    static constexpr int threads_per_block  = 256;
+    static constexpr int items_per_thread   = 20;
+    static constexpr int items_per_vec_load = 4;
+
+    // ReducePolicy (GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B
+    // items)
+    using DeterministicReducePolicy =
+      AgentReducePolicy<threads_per_block,
+                        items_per_thread,
+                        AccumT,
+                        items_per_vec_load,
+                        BLOCK_REDUCE_WARP_REDUCTIONS,
+                        LOAD_LDG>;
+
+    // SingleTilePolicy
+    using SingleTilePolicy = DeterministicReducePolicy;
+  };
+
+  /// SM60
+  struct Policy600 : ChainedPolicy<600, Policy600, Policy350>
+  {
+    static constexpr int threads_per_block  = 256;
+    static constexpr int items_per_thread   = 16;
+    static constexpr int items_per_vec_load = 4;
+
+    // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
+    using DeterministicReducePolicy =
+      AgentReducePolicy<threads_per_block,
+                        items_per_thread,
+                        AccumT,
+                        items_per_vec_load,
+                        BLOCK_REDUCE_WARP_REDUCTIONS,
+                        LOAD_LDG>;
+
+    // SingleTilePolicy
+    using SingleTilePolicy = DeterministicReducePolicy;
+  };
+
+  using MaxPolicy = Policy600;
+};
+} // namespace rfa
 
 namespace fixed_size_segmented_reduce
 {

@@ -66,7 +66,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-namespace rfa_detail
+namespace rfa
 {
 
 template <typename ReductionOpT, typename InitT, typename InputIteratorT>
@@ -79,7 +79,7 @@ template <typename FloatType                                                    
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
 struct deterministic_sum_t
 {
-  using DeterministicAcc = detail::rfa_detail::ReproducibleFloatingAccumulator<FloatType>;
+  using DeterministicAcc = detail::rfa::ReproducibleFloatingAccumulator<FloatType>;
 
   _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
@@ -122,331 +122,7 @@ struct deterministic_sum_t
   }
 };
 
-} // namespace rfa_detail
-
-/**
- * @brief Deterministically Reduce region kernel entry point (multi-block). Computes privatized
- *        reductions, one per thread block in deterministic fashion
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items @iterator
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @tparam ReductionOpT
- *   Binary reduction functor type having member
- *   `auto operator()(const T &a, const U &b)`
- *
- * @tparam InitT
- *   Initial value type
- *
- * @tparam AccumT
- *   Accumulator type
- *
- * @param[in] d_in
- *   Pointer to the input sequence of data items
- *
- * @param[out] d_out
- *   Pointer to the output aggregate
- *
- * @param[in] num_items
- *   Total number of input data items
- *
- * @param[in] even_share
- *   Even-share descriptor for mapping an equal number of tiles onto each
- *   thread block
- *
- * @param[in] reduction_op
- *   Binary reduction functor
- */
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename AccumT,
-          typename TransformOpT>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)) void DeterministicDeviceReduceKernel(
-  InputIteratorT d_in,
-  AccumT* d_out,
-  OffsetT num_items,
-  ReductionOpT reduction_op,
-  TransformOpT transform_op,
-  const int reduce_grid_size)
-{
-  using BlockReduceT =
-    BlockReduce<AccumT,
-                ChainedPolicyT::ActivePolicy::DeterministicReducePolicy::BLOCK_THREADS,
-                ChainedPolicyT::ActivePolicy::DeterministicReducePolicy::BLOCK_ALGORITHM>;
-  // Shared memory storage
-  __shared__ typename BlockReduceT::TempStorage temp_storage;
-
-  using FloatType                 = typename AccumT::ftype;
-  constexpr int BinLength         = AccumT::MAXINDEX + AccumT::MAXFOLD;
-  constexpr auto ITEMS_PER_THREAD = ChainedPolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
-  constexpr auto BLOCK_THREADS    = ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS;
-  const int GRID_DIM              = reduce_grid_size;
-  const int tid                   = BLOCK_THREADS * blockIdx.x + threadIdx.x;
-
-  FloatType* shared_bins = detail::rfa_detail::get_shared_bin_array<FloatType, BinLength>();
-
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < BinLength; index += ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)
-  {
-    shared_bins[index] = detail::rfa_detail::RFA_bins<FloatType>::initialize_bins(index);
-  }
-
-  __syncthreads();
-
-  AccumT thread_aggregate{};
-  int count = 0;
-
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = tid; i < num_items; i += ITEMS_PER_THREAD * GRID_DIM * BLOCK_THREADS)
-  {
-    FloatType items[ITEMS_PER_THREAD] = {};
-    for (int j = 0; j < ITEMS_PER_THREAD; j++)
-    {
-      const int idx = i + j * GRID_DIM * BLOCK_THREADS;
-      if (idx < num_items)
-      {
-        items[j] = transform_op(d_in[idx]);
-      }
-    }
-    FloatType abs_max_val = fabs(items[0]);
-
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (auto j = 1; j < ITEMS_PER_THREAD; j++)
-    {
-      abs_max_val = fmax(fabs(items[j]), abs_max_val);
-    }
-
-    thread_aggregate.set_max_val(abs_max_val);
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (auto j = 0; j < ITEMS_PER_THREAD; j++)
-    {
-      thread_aggregate.unsafe_add(items[j]);
-      count++;
-      if (count >= thread_aggregate.endurance())
-      {
-        thread_aggregate.renorm();
-        count = 0;
-      }
-    }
-  }
-
-  AccumT block_aggregate = BlockReduceT(temp_storage).Reduce(thread_aggregate, [](AccumT lhs, AccumT rhs) -> AccumT {
-    AccumT rtn = lhs;
-    rtn += rhs;
-    return rtn;
-  });
-
-  // Output result
-  if (threadIdx.x == 0)
-  {
-    detail::uninitialized_copy_single(d_out + blockIdx.x, block_aggregate);
-  }
-}
-
-/**
- * @brief Deterministically Reduce a single tile kernel entry point (single-block). Can be used
- *        to aggregate privatized thread block reductions from a previous
- *        multi-block reduction pass.
- *
- * @tparam ChainedPolicyT
- *   Chained tuning policy
- *
- * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items @iterator
- *
- * @tparam OutputIteratorT
- *   Output iterator type for recording the reduced aggregate @iterator
- *
- * @tparam OffsetT
- *   Signed integer type for global offsets
- *
- * @tparam ReductionOpT
- *   Binary reduction functor type having member
- *   `T operator()(const T &a, const U &b)`
- *
- * @tparam InitT
- *   Initial value type
- *
- * @tparam AccumT
- *   Accumulator type
- *
- * @param[in] d_in
- *   Pointer to the input sequence of data items
- *
- * @param[out] d_out
- *   Pointer to the output aggregate
- *
- * @param[in] num_items
- *   Total number of input data items
- *
- * @param[in] reduction_op
- *   Binary reduction functor
- *
- * @param[in] init
- *   The initial value of the reduction
- */
-template <typename ChainedPolicyT,
-          typename InputIteratorT,
-          typename OutputIteratorT,
-          typename OffsetT,
-          typename ReductionOpT,
-          typename InitT,
-          typename AccumT,
-          typename TransformOpT = ::cuda::std::__identity>
-CUB_DETAIL_KERNEL_ATTRIBUTES
-__launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void DeterministicDeviceReduceSingleTileKernel(
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  OffsetT num_items,
-  ReductionOpT reduction_op,
-  InitT init,
-  TransformOpT transform_op)
-{
-  using BlockReduceT =
-    BlockReduce<AccumT,
-                ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS,
-                ChainedPolicyT::SingleTilePolicy::BLOCK_ALGORITHM>;
-  // Shared memory storage
-  __shared__ typename BlockReduceT::TempStorage temp_storage;
-
-  // Check if empty problem
-  if (num_items == 0)
-  {
-    if (threadIdx.x == 0)
-    {
-      *d_out = init;
-    }
-
-    return;
-  }
-
-  using FloatType         = typename AccumT::ftype;
-  constexpr int BinLength = AccumT::MAXINDEX + AccumT::MAXFOLD;
-
-  FloatType* shared_bins = detail::rfa_detail::get_shared_bin_array<FloatType, BinLength>();
-
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int index = threadIdx.x; index < BinLength;
-       index += ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS)
-  {
-    shared_bins[index] = detail::rfa_detail::RFA_bins<FloatType>::initialize_bins(index);
-  }
-
-  __syncthreads();
-
-  constexpr auto BLOCK_THREADS = ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS;
-
-  AccumT thread_aggregate{};
-
-  // Consume block aggregates of previous kernel
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = threadIdx.x; i < num_items; i += BLOCK_THREADS)
-  {
-    thread_aggregate += transform_op(d_in[i]);
-  }
-
-  AccumT block_aggregate = BlockReduceT(temp_storage).Reduce(thread_aggregate, reduction_op, num_items);
-  // Output result
-  if (threadIdx.x == 0)
-  {
-    detail::reduce::finalize_and_store_aggregate(d_out, reduction_op, init, block_aggregate);
-  }
-}
-
-/******************************************************************************
- * Policy
- ******************************************************************************/
-
-/**
- * @tparam AccumT
- *   Accumulator data type
- *
- * OffsetT
- *   Signed integer type for global offsets
- *
- * ReductionOpT
- *   Binary reduction functor type having member
- *   `auto operator()(const T &a, const U &b)`
- */
-template <typename AccumT, typename OffsetT, typename ReductionOpT>
-struct DeviceDeterministicReducePolicy
-{
-  //---------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //---------------------------------------------------------------------------
-
-  /// SM30
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 2;
-
-    // ReducePolicy (GTX670: 154.0 @ 48M 4B items)
-    using DeterministicReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_DEFAULT>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
-  };
-
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 4;
-
-    // ReducePolicy (GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B
-    // items)
-    using DeterministicReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_LDG>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
-  };
-
-  /// SM60
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy350>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 16;
-    static constexpr int items_per_vec_load = 4;
-
-    // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
-    using DeterministicReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_LDG>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
-  };
-
-  using MaxPolicy = Policy600;
-};
+} // namespace rfa
 
 /******************************************************************************
  * Single-problem dispatch
@@ -470,21 +146,21 @@ struct DeviceDeterministicReducePolicy
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename SelectedPolicy = DeviceDeterministicReducePolicy<
-            rfa_detail::AccumT<::cuda::std::plus<>, rfa_detail::InitT<OutputIteratorT, InputIteratorT>, InputIteratorT>,
-            OffsetT,
-            ::cuda::std::plus<>>,
-          typename InitT        = rfa_detail::InitT<OutputIteratorT, InputIteratorT>,
-          typename AccumT       = rfa_detail::AccumT<::cuda::std::plus<>, InitT, InputIteratorT>,
-          typename TransformOpT = ::cuda::std::__identity>
-struct DeterministicDispatchReduce : SelectedPolicy
+          typename InitT        = rfa::InitT<OutputIteratorT, InputIteratorT>,
+          typename AccumT       = rfa::AccumT<::cuda::std::plus<>, InitT, InputIteratorT>,
+          typename TransformOpT = ::cuda::std::__identity,
+          typename PolicyHub    = detail::rfa::policy_hub<
+               rfa::AccumT<::cuda::std::plus<>, rfa::InitT<OutputIteratorT, InputIteratorT>, InputIteratorT>,
+               OffsetT,
+               ::cuda::std::plus<>>>
+struct DispatchReduceDeterministic
 {
-  using deterministic_add_t = rfa_detail::deterministic_sum_t<AccumT>;
+  using deterministic_add_t = rfa::deterministic_sum_t<AccumT>;
   using ReductionOpT        = deterministic_add_t;
 
   using deterministic_accum_t = typename deterministic_add_t::DeterministicAcc;
 
-  using AcumFloatTransformT = detail::rfa_detail::rfa_float_transform_t<AccumT>;
+  using AcumFloatTransformT = detail::rfa::rfa_float_transform_t<AccumT>;
 
   using OutputIteratorTransformT = THRUST_NS_QUALIFIER::transform_output_iterator<AcumFloatTransformT, OutputIteratorT>;
   //---------------------------------------------------------------------------
@@ -526,7 +202,7 @@ struct DeterministicDispatchReduce : SelectedPolicy
   //---------------------------------------------------------------------------
 
   /// Constructor
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DeterministicDispatchReduce(
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduceDeterministic(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
@@ -778,13 +454,13 @@ struct DeterministicDispatchReduce : SelectedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using SingleTilePolicyT = typename ActivePolicyT::SingleTilePolicy;
-    using MaxPolicyT        = typename DeterministicDispatchReduce::MaxPolicy;
+    using MaxPolicyT        = typename PolicyHub::MaxPolicy;
 
     // Force kernel code-generation in all compiler passes
     if (num_items <= (SingleTilePolicyT::BLOCK_THREADS * SingleTilePolicyT::ITEMS_PER_THREAD))
     {
       return InvokeSingleTile<ActivePolicyT>(
-        DeterministicDeviceReduceSingleTileKernel<
+        detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
           InputIteratorT,
           OutputIteratorTransformT,
@@ -797,18 +473,18 @@ struct DeterministicDispatchReduce : SelectedPolicy
     else
     {
       return InvokePasses<ActivePolicyT>(
-        DeterministicDeviceReduceKernel<typename DeterministicDispatchReduce::MaxPolicy,
-                                        InputIteratorT,
-                                        OffsetT,
-                                        ReductionOpT,
-                                        deterministic_accum_t,
-                                        TransformOpT>,
-        DeterministicDeviceReduceSingleTileKernel<
+        detail::reduce::DeterministicDeviceReduceKernel<
+          MaxPolicyT,
+          InputIteratorT,
+          OffsetT,
+          ReductionOpT,
+          deterministic_accum_t,
+          TransformOpT>,
+        detail::reduce::DeterministicDeviceReduceSingleTileKernel<
           MaxPolicyT,
           deterministic_accum_t*,
           OutputIteratorTransformT,
-          int, // Always used with int
-               // offsets
+          int, // Always used with int offsets
           ReductionOpT,
           InitT,
           deterministic_accum_t>);
@@ -818,84 +494,6 @@ struct DeterministicDispatchReduce : SelectedPolicy
   //---------------------------------------------------------------------------
   // Dispatch entrypoints
   //---------------------------------------------------------------------------
-
-  /**
-   * @brief Internal dispatch routine for computing a device-wide reduction
-   *
-   * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
-   *
-   * @param[in,out] temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param[in] d_in
-   *   Pointer to the input sequence of data items
-   *
-   * @param[out] d_out
-   *   Pointer to the output aggregate
-   *
-   * @param[in] num_items
-   *   Total number of input items (i.e., length of `d_in`)
-   *
-   * @param[in] reduction_op
-   *   Binary reduction functor
-   *
-   * @param[in] init
-   *   The initial value of the reduction
-   *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within.
-   *   Default is stream<sub>0</sub>.
-   */
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchHelper(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorTransformT d_out,
-    OffsetT num_items,
-    deterministic_add_t reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    TransformOpT transform_op = {})
-  {
-    using MaxPolicyT = typename DeterministicDispatchReduce::MaxPolicy;
-
-    cudaError error = cudaSuccess;
-    do
-    {
-      // Get PTX version
-      int ptx_version = 0;
-      error           = CubDebug(PtxVersion(ptx_version));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Create dispatch functor
-      DeterministicDispatchReduce dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_in,
-        d_out,
-        num_items,
-        reduction_op,
-        init,
-        stream,
-        ptx_version,
-        transform_op);
-
-      // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
-  }
 
   /**
    * @brief Internal dispatch routine for computing a device-wide deterministic reduction
@@ -917,9 +515,6 @@ struct DeterministicDispatchReduce : SelectedPolicy
    * @param[in] num_items
    *   Total number of input items (i.e., length of `d_in`)
    *
-   * @param[in] reduction_op
-   *   Binary reduction functor
-   *
    * @param[in] init
    *   The initial value of the reduction
    *
@@ -933,14 +528,25 @@ struct DeterministicDispatchReduce : SelectedPolicy
     InputIteratorT d_in,
     OutputIteratorT d_out,
     OffsetT num_items,
-    rfa_detail::InitT<OutputIteratorT, InputIteratorT> init = {},
-    cudaStream_t stream                                     = {},
-    TransformOpT transform_op                               = {})
+    rfa::InitT<OutputIteratorT, InputIteratorT> init = {},
+    cudaStream_t stream                              = {},
+    TransformOpT transform_op                        = {})
   {
+    cudaError error = cudaSuccess;
+
+    // Get PTX version
+    int ptx_version = 0;
+    error           = CubDebug(PtxVersion(ptx_version));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+
     OutputIteratorTransformT d_out_transformed =
       THRUST_NS_QUALIFIER::make_transform_output_iterator(d_out, AcumFloatTransformT{});
 
-    return DispatchHelper(
+    // Create dispatch functor
+    DispatchReduceDeterministic dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -949,7 +555,12 @@ struct DeterministicDispatchReduce : SelectedPolicy
       deterministic_add_t{},
       init,
       stream,
+      ptx_version,
       transform_op);
+
+    // Dispatch to chained policy
+    error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
+    return error;
   }
 };
 } // namespace detail

@@ -73,11 +73,22 @@ void deterministic_sum(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using output_it_t = T*;
   using offset_t    = cub::detail::choose_offset_t<OffsetT>;
 
+  using init_t      = cub::detail::rfa::InitT<input_it_t, output_it_t>;
+  using accum_t     = cub::detail::rfa::AccumT<::cuda::std::plus<>, init_t, input_it_t>;
+  using transform_t = ::cuda::std::__identity;
+
+  using dispatch_t = cub::detail::DispatchReduceDeterministic<
+    input_it_t,
+    output_it_t,
+    offset_t,
+    init_t,
+    accum_t,
+    transform_t
 #if !TUNE_BASE
-  using dispatch_t = cub::detail::DeterministicDispatchReduce<input_it_t, output_it_t, offset_t, policy_hub_t>;
-#else
-  using dispatch_t = cub::detail::DeterministicDispatchReduce<input_it_t, output_it_t, offset_t>;
-#endif // TUNE_BASE
+    ,
+    policy_hub_t
+#endif
+    >;
 
   const auto elements       = static_cast<T>(state.get_int64("Elements{io}"));
   const bit_entropy entropy = str_to_entropy(state.get_string("Entropy"));

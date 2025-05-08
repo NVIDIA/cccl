@@ -63,7 +63,7 @@ CUB_RUNTIME_FUNCTION static cudaError_t DeterministicSum(
 
   using InitT = OutputT;
 
-  return cub::detail::DeterministicDispatchReduce<InputIteratorT, OutputIteratorT, OffsetT>::Dispatch(
+  return cub::detail::DispatchReduceDeterministic<InputIteratorT, OutputIteratorT, OffsetT>::Dispatch(
     d_temp_storage,
     temp_storage_bytes,
     d_in,
@@ -152,11 +152,17 @@ void deterministic_reduce_gpu(const int N)
 
   std::size_t temp_storage_bytes{};
 
+  using input_it_t  = decltype(d_input);
+  using output_it_t = decltype(output_p1.begin());
+  using init_t      = cub::detail::rfa::InitT<input_it_t, output_it_t>;
+  using accum_t     = cub::detail::rfa::AccumT<::cuda::std::plus<>, init_t, input_it_t>;
+  using transform_t = ::cuda::std::__identity;
+
   using deterministic_dispatch_t_p1 =
-    cub::detail::DeterministicDispatchReduce<decltype(d_input), decltype(output_p1.begin()), int, hub_t<4, 256>>;
+    cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, accum_t, transform_t, hub_t<1, 128>>;
 
   using deterministic_dispatch_t_p2 =
-    cub::detail::DeterministicDispatchReduce<decltype(d_input), decltype(output_p1.begin()), int, hub_t<2, 128>>;
+    cub::detail::DispatchReduceDeterministic<input_it_t, output_it_t, int, init_t, accum_t, transform_t, hub_t<2, 256>>;
 
   deterministic_dispatch_t_p1::Dispatch(nullptr, temp_storage_bytes, d_input, output_p1.begin(), num_items);
 
@@ -210,9 +216,9 @@ C2H_TEST("Deterministic Device reduce works with float and double on cpu", "[red
 
   c2h::host_vector<type> h_input = d_input;
 
-  cub::detail::rfa_detail::deterministic_sum_t<type> op{};
-  cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> h_res = std::accumulate(
-    h_input.begin(), h_input.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
+  cub::detail::rfa::deterministic_sum_t<type> op{};
+  cub::detail::rfa::ReproducibleFloatingAccumulator<type> h_res = std::accumulate(
+    h_input.begin(), h_input.end(), cub::detail::rfa::ReproducibleFloatingAccumulator<type>{}, op);
 
   auto h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
   REQUIRE(approx_eq(h_expected, h_res.conv()));
@@ -239,9 +245,9 @@ C2H_TEST("Deterministic Device reduce works with float and double on cpu and gpu
   c2h::gen(C2H_SEED(2), d_input, static_cast<type>(0.0f), static_cast<type>(1000.0f));
   c2h::host_vector<type> h_input = d_input;
 
-  cub::detail::rfa_detail::deterministic_sum_t<type> op{};
-  cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type> h_expected = std::accumulate(
-    h_input.begin(), h_input.end(), cub::detail::rfa_detail::ReproducibleFloatingAccumulator<type>{}, op);
+  cub::detail::rfa::deterministic_sum_t<type> op{};
+  cub::detail::rfa::ReproducibleFloatingAccumulator<type> h_expected = std::accumulate(
+    h_input.begin(), h_input.end(), cub::detail::rfa::ReproducibleFloatingAccumulator<type>{}, op);
 
   c2h::device_vector<type> d_output(1);
   const type* d_input_ptr = thrust::raw_pointer_cast(d_input.data());
