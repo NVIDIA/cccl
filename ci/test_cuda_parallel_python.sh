@@ -3,7 +3,10 @@
 set -euo pipefail
 
 # Get the Python version from the command line arguments -py-version=3.10
-py_version=${2#*=}
+#py_version=${2#*=}
+py_version=3.10
+HOST_WORKSPACE=$(pwd)
+
 echo "Python version: ${py_version}"
 echo "Docker socket: " $(ls /var/run/docker.sock)
 
@@ -20,10 +23,9 @@ docker run --rm \
     source /workspace/cccl/ci/build_common.sh && \
     print_environment_details && \
     fail_if_no_gpu && \
-    source /workspace/cccl/ci/test_python_common.sh && \
-    list_environment && \
     CUDA_CCCL_WHEEL_PATH="$(ls /workspace/wheelhouse/cuda_cccl-*.whl)" && \
     CUDA_PARALLEL_WHEEL_PATH="$(ls /workspace/wheelhouse/cuda_parallel-*.whl)" && \
     python -m pip install "${CUDA_CCCL_WHEEL_PATH}" && \
     python -m pip install "${CUDA_PARALLEL_WHEEL_PATH}[test]" && \
+    cd /workspace/cccl/python/cuda_parallel && \
     python -m pytest -n ${PARALLEL_LEVEL} -v tests/'

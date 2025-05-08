@@ -24,4 +24,5 @@ docker run --rm \
     list_environment && \
     CUDA_CCCL_WHEEL_PATH="$(ls /workspace/wheelhouse/cuda_cccl-*.whl)" && \
     python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]" && \
+    cd /workspace/cccl/python/cuda_cccl && \
     python -m pytest -n ${PARALLEL_LEVEL} -v tests/'

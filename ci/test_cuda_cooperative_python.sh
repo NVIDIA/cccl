@@ -26,4 +26,5 @@ docker run --rm \
     CUDA_COOPERATIVE_WHEEL_PATH="$(ls /workspace/wheelhouse/cuda_cooperative-*.whl)" && \
     python -m pip install "${CUDA_CCCL_WHEEL_PATH}" && \
     python -m pip install "${CUDA_COOPERATIVE_WHEEL_PATH}[test]" && \
+    cd /workspace/cccl/python/cuda_cooperative && \
     python -m pytest -n ${PARALLEL_LEVEL} -v tests/'
