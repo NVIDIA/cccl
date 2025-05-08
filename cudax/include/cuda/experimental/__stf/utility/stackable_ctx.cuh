@@ -306,8 +306,12 @@ public:
      *
      * head_offset is the offset of thread's current top context (-1 if none)
      */
-    int push(int head_offset, const _CUDA_VSTD::source_location& loc)
+    void push(const _CUDA_VSTD::source_location& loc)
     {
+      auto lock = get_write_lock();
+
+      int head_offset = get_head_offset();
+
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
 
@@ -371,14 +375,18 @@ public:
         }
       }
 
-      return node_offset;
+      // Update the current context head of the thread
+      set_head_offset(node_offset);
     }
 
     /**
      * @brief Terminate the current nested level and get back to the previous one
      */
-    int pop(int head_offset)
+    void pop()
     {
+      auto lock = get_write_lock();
+      int head_offset = get_head_offset();
+
       // fprintf(stderr, "stackable_ctx::pop() depth() was %ld\n", depth());
       _CCCL_ASSERT(nodes.size() > 0, "Calling pop while no context was pushed");
       _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid state");
@@ -453,7 +461,8 @@ public:
       // reused.
       node_tree.discard_node(head_offset);
 
-      return parent_offset;
+      // The parent becomes the current context of the thread
+      set_head_offset(parent_offset);
     }
 
     // Offset of the root context
@@ -703,19 +712,12 @@ public:
 
   void push(const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
-    auto lock    = pimpl->get_write_lock();
-    int head     = get_head_offset();
-    int new_head = pimpl->push(head, loc);
-    pimpl->set_head_offset(new_head);
+    pimpl->push(loc);
   }
 
   void pop()
   {
-    auto lock = pimpl->get_write_lock();
-
-    int head     = get_head_offset();
-    int new_head = pimpl->pop(head);
-    pimpl->set_head_offset(new_head);
+    pimpl->pop();
   }
 
   template <typename T>
