@@ -64,8 +64,6 @@ struct get_max_from_counting_it_range_op
 template <typename IndexT>
 struct get_argmin_from_counting_it_range_op
 {
-  IndexT init_val;
-
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT)
   {
     return {0, begin};
@@ -75,8 +73,6 @@ struct get_argmin_from_counting_it_range_op
 template <typename IndexT>
 struct get_argmax_from_counting_it_range_op
 {
-  IndexT init_val;
-
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<int, IndexT> operator()(IndexT begin, IndexT end)
   {
     return {static_cast<int>(end - begin - 1), end - 1};
@@ -301,7 +297,7 @@ struct dispatch_helper
 };
 
 // generic test for fixed size segmented reduce
-template <bool IS_REDUCE_ALGORITHM,
+template <bool IsReduceAlgorithm,
           typename InputT,
           typename AccumT,
           typename OpT,
@@ -323,6 +319,7 @@ void test_fixed_size_segmented_reduce(
 
   // Take one random segment size from each of the segment sizes
   const segment_size_t segment_size = GENERATE_COPY(
+    values({0}),
     take(1, random(1, small_segment_size)),
     take(1, random(small_segment_size, medium_segment_size)),
     take(1, random(medium_segment_size, medium_segment_size * 2)));
@@ -349,7 +346,7 @@ void test_fixed_size_segmented_reduce(
 
     // Run test
     const auto input_it = thrust::make_counting_iterator(InputT{});
-    if constexpr (IS_REDUCE_ALGORITHM)
+    if constexpr (IsReduceAlgorithm)
     {
       device_algorithm(input_it, check_result_it, num_segments, segment_size, OpT{}, InputT{0});
     }
@@ -419,8 +416,7 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
     using accum_t = ::cuda::std::pair<int, input_t>;
     using op_t    = cub::detail::arg_min;
 
-    auto compute_expected_op =
-      get_argmin_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::max()};
+    auto compute_expected_op = get_argmin_from_counting_it_range_op<offset_t>{};
 
     test_fixed_size_segmented_reduce<false, input_t, accum_t, op_t>(
       num_segments, compute_expected_op, device_segmented_argmin);
@@ -432,8 +428,7 @@ C2H_TEST("Device fixed size segmented reduce works with a very large number of s
     using accum_t = ::cuda::std::pair<int, input_t>;
     using op_t    = cub::detail::arg_max;
 
-    auto compute_expected_op =
-      get_argmax_from_counting_it_range_op<offset_t>{::cuda::std::numeric_limits<offset_t>::lowest()};
+    auto compute_expected_op = get_argmax_from_counting_it_range_op<offset_t>{};
 
     test_fixed_size_segmented_reduce<false, input_t, accum_t, op_t>(
       num_segments, compute_expected_op, device_segmented_argmax);
