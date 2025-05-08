@@ -26,21 +26,17 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-// MSVC is not able to compile Catch2 tests with many large type lists. Error:
-// error C3546: '...': there are no parameter packs available to expand in make_tuple_types.h:__make_tuple_types_flat
-#if !_CCCL_COMPILER(MSVC)
+#include <cub/device/device_for.cuh>
 
-#  include <cub/device/device_for.cuh>
+#include <thrust/detail/raw_pointer_cast.h>
 
-#  include <thrust/detail/raw_pointer_cast.h>
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
+#include <cuda/std/span>
 
-#  include <cuda/std/array>
-#  include <cuda/std/mdspan>
-#  include <cuda/std/span>
-
-#  include "c2h/catch2_test_helper.h"
-#  include "c2h/utility.h"
-#  include "catch2_test_launch_helper.h"
+#include "c2h/catch2_test_helper.h"
+#include "c2h/utility.h"
+#include "catch2_test_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -107,11 +103,11 @@ using index_types =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if _CCCL_HAS_INT128()
+#if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
-#  endif
+#endif
                  >;
 
 // int8_t/uint8_t are not enabled because they easily overflow
@@ -120,19 +116,23 @@ using index_types_dynamic =
                  uint16_t,
                  int32_t,
                  uint32_t
-#  if _CCCL_HAS_INT128()
+#if _CCCL_HAS_INT128()
                  ,
                  int64_t,
                  uint64_t
-#  endif
+#endif
                  >;
 
-using dimensions =
-  c2h::type_list<cuda::std::index_sequence<>,
-                 cuda::std::index_sequence<5>,
-                 cuda::std::index_sequence<5, 3>,
-                 cuda::std::index_sequence<5, 3, 4>,
-                 cuda::std::index_sequence<3, 2, 5, 4>>;
+using dimensions = c2h::type_list<
+// MSVC is not able to compile Catch2 tests with many large type lists. Error:
+// error C3546: '...': there are no parameter packs available to expand in make_tuple_types.h:__make_tuple_types_flat
+#if !_CCCL_COMPILER(MSVC)
+  cuda::std::index_sequence<>,
+#endif // !_CCCL_COMPILER(MSVC)
+  cuda::std::index_sequence<5>,
+  cuda::std::index_sequence<5, 3>,
+  cuda::std::index_sequence<5, 3, 4>,
+  cuda::std::index_sequence<3, 2, 5, 4>>;
 
 template <typename IndexType, size_t... Dimensions>
 auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
@@ -181,4 +181,41 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // !_CCCL_COMPILER(MSVC)
+#if TEST_LAUNCH == 0
+
+struct dynamic_policy_t
+{
+  struct for_policy_t
+  {
+    static constexpr int block_threads    = 0;
+    static constexpr int items_per_thread = 1;
+  };
+  // using MaxPolicy = for_policy_t;
+};
+
+C2H_TEST("DeviceForEachInExtents Dynamic Grid Config", "[ForEachInExtents][dynamic_grid]", index_types_dynamic)
+{
+  constexpr int rank = 3;
+  using index_type   = c2h::get<0, TestType>;
+  using data_t       = cuda::std::array<index_type, rank>;
+  using store_op_t   = LinearStore<index_type, rank>;
+  auto X             = GENERATE_COPY(take(3, random(2, 10)));
+  auto Y             = GENERATE_COPY(take(3, random(2, 10)));
+  auto Z             = GENERATE_COPY(take(3, random(2, 10)));
+  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
+  CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
+
+  cub::detail::for_each_in_extents::dispatch_t<cuda::std::dextents<index_type, 3>, store_op_t> dispatch{
+    ext, store_op_t{d_output_raw}, nullptr};
+  [[maybe_unused]] auto ret = dispatch.template Invoke<dynamic_policy_t>();
+  assert(dispatch.Invoke<dynamic_policy_t>() == cudaSuccess);
+
+  c2h::host_vector<data_t> h_output_gpu = d_output;
+  fill_linear(h_output, ext);
+  REQUIRE(h_output == h_output_gpu);
+}
+
+#endif // TEST_LAUNCH == 0
