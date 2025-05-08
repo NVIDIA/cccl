@@ -23,8 +23,5 @@ docker run --rm \
     source /home/coder/cccl/ci/test_python_common.sh && \
     list_environment && \
     # Install the wheel from the artifact location
-    ls -la /home/coder/wheelhouse && \
-    ls -la /home/coder/wheelhouse && \
-    ls -la /home/coder/wheelhouse/cuda_cccl-*.whl && \
     WHEEL_PATH="$(ls /home/coder/wheelhouse/cuda_cccl-*.whl)" && \
     run_tests_from_wheel "cuda_cccl" "$WHEEL_PATH"'

@@ -9,13 +9,11 @@ workflows:
   #
   override:
 # Only run python build and test jobs for testing
-    - {jobs: ['build_cuda_cccl'], project: 'python', py_version: '3.10'}
-    - {jobs: ['test_cuda_cccl'], project: 'python', gpu: 'rtx2080', ctk: '12.8', py_version: '3.10'}
-    # - {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.10'}
+    - {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.10'}
     #- {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.11'}
     #- {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.12'}
     #- {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.13'}
-    #- {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtx2080', py_version: '3.10'}
+    - {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtx2080', py_version: '3.10'}
     #- {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtx2080', py_version: '3.11'}
     #- {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtx2080', py_version: '3.12'}
     #- {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtx2080', py_version: '3.13'}
