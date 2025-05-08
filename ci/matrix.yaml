@@ -110,6 +110,9 @@ workflows:
     # NVHPC stdpar smoke tests
     - {jobs: ['build'], project: 'stdpar', std: 'all', ctk: '12.8', cxx: 'nvhpc', cpu: ['amd64', 'arm64']}
 
+  weekly:
+    - {jobs: ['compute_sanitizer'], project: 'cub', std: 'max', gpu: 'rtxa6000', sm: 'gpu', cmake_options: '-DCMAKE_CUDA_FLAGS=-lineinfo'}
+
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
     # GPU runners are not available on Windows.
@@ -196,7 +199,10 @@ jobs:
   # General:
   build:        { gpu: false }
   test:         { gpu: true, needs: 'build' }
+
   test_nobuild: { gpu: true, name: 'Test', invoke: { prefix: 'test' } }
+
+  compute_sanitizer: { gpu: true, name: 'ComputeSanitizer', needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer' } }
 
   # CCCL:
   infra: { gpu: true } # example project launches a kernel
@@ -218,6 +224,15 @@ jobs:
   # Limited build reduces the number of runtime test cases, available device memory, etc, and may be used
   # to reduce test runtime in limited environments.
   limited:    { name: "SmallGMem",   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-limited'} }
+  # Compute sanitizer jobs:
+  compute_mem_nolid:  { name: 'CSMem-TestGPU',       gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-memcheck  -no-lid'} }
+  compute_mem_lid0:   { name: 'CSMem-HostLaunch',    gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-memcheck  -lid0'} }
+  compute_race_nolid: { name: 'CSRace-TestGPU',      gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-racecheck -no-lid'} }
+  compute_race_lid0:  { name: 'CSRace-HostLaunch',   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-racecheck -lid0'} }
+  compute_init_nolid: { name: 'CSInit-TestGPU',      gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-initcheck -no-lid'} }
+  compute_init_lid0:  { name: 'CSInit-HostLaunch',   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-initcheck -lid0'} }
+  compute_sync_nolid: { name: 'CSSync-TestGPU',      gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-synccheck -no-lid'} }
+  compute_sync_lid0:  { name: 'CSSync-HostLaunch',   gpu: true, needs: 'build', invoke: { prefix: 'test', args: '-compute-sanitizer-synccheck -lid0'} }
 
   # Thrust:
   test_cpu: { name: 'TestCPU', gpu: false, needs: 'build', invoke: { prefix: 'test', args: '-cpu-only'} }
@@ -228,7 +243,7 @@ jobs:
   test_cuda_cooperative: { name: "cuda.cooperative", gpu: true }
   test_cuda_parallel:    { name: "cuda.parallel",    gpu: true }
 
-# Project have the following properties:
+# Projects have the following properties:
 #
 # Keys are project subdirectories names. These will also be used in script names.
 #
@@ -248,7 +263,17 @@ projects:
   cub:
     name: 'CUB'
     stds: [17, 20]
-    job_map: { test: ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'] }
+    job_map:
+      test: ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2']
+      compute_sanitizer:
+        - compute_mem_nolid
+        - compute_mem_lid0
+        - compute_race_nolid
+        - compute_race_lid0
+        - compute_init_nolid
+        - compute_init_lid0
+        - compute_sync_nolid
+        - compute_sync_lid0
   thrust:
     name: 'Thrust'
     stds: [17, 20]

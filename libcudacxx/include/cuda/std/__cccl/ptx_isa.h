@@ -31,13 +31,16 @@
  * https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release-notes
  */
 
-// PTX ISA 8.7 is available from CUDA 12.8
+// PTX ISA 8.8 is available from CUDA 12.9
 // The first define is for future major versions of CUDACC.
 // We make sure that these get the highest known PTX ISA version.
-// For clang cuda check https://github.com/llvm/llvm-project/blob/release/XX.x/clang/lib/Driver/ToolChains/Cuda.cpp
+// For clang cuda check https://github.com/llvm/llvm-project/blob/release/<VER>.x/clang/lib/Driver/ToolChains/Cuda.cpp
 // getNVPTXTargetFeatures
 #if _CCCL_CUDACC_AT_LEAST(13, 0)
-#  define __cccl_ptx_isa 870ULL
+#  define __cccl_ptx_isa 880ULL
+// PTX ISA 8.7 is available from CUDA 12.8, driver r570
+#elif _CCCL_CUDACC_AT_LEAST(12, 9)
+#  define __cccl_ptx_isa 880ULL
 // PTX ISA 8.7 is available from CUDA 12.8, driver r570
 #elif _CCCL_CUDACC_AT_LEAST(12, 8) && !_CCCL_CUDA_COMPILER(CLANG, <, 20)
 #  define __cccl_ptx_isa 870ULL
