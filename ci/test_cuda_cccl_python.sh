@@ -11,20 +11,20 @@ nvidia-smi
 
 # Run tests in the same container as the build
 docker run --rm \
-  --workdir /home/coder/workspace/cccl/python/cuda_cccl \
-  --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
+  --workdir /home/coder/cccl/python/cuda_cccl \
+  --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/ \
   -e NVIDIA_DISABLE_REQUIRE=true \
   --gpus device=${NVIDIA_VISIBLE_DEVICES} \
   rapidsai/citestwheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
-    source /home/coder/workspace/cccl/ci/build_common.sh && \
+    source /home/coder/cccl/ci/build_common.sh && \
     print_environment_details && \
     fail_if_no_gpu && \
-    source /home/coder/workspace/cccl/ci/test_python_common.sh && \
+    source /home/coder/cccl/ci/test_python_common.sh && \
     list_environment && \
     # Install the wheel from the artifact location
-    ls -la /home/coder/workspace/wheelhouse && \
-    ls -la /home/coder/workspace/wheelhouse && \
-    ls -la /home/coder/workspace/wheelhouse/cuda_cccl-*.whl && \
-    WHEEL_PATH="$(ls /home/coder/workspace/wheelhouse/cuda_cccl-*.whl)" && \
+    ls -la /home/coder/wheelhouse && \
+    ls -la /home/coder/wheelhouse && \
+    ls -la /home/coder/wheelhouse/cuda_cccl-*.whl && \
+    WHEEL_PATH="$(ls /home/coder/wheelhouse/cuda_cccl-*.whl)" && \
     run_tests_from_wheel "cuda_cccl" "$WHEEL_PATH"'
