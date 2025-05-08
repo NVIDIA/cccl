@@ -386,7 +386,7 @@ C2H_TEST("WarpReduce::Min/Max",
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
-  verify_results(h_out, d_out);
+  verify_results_exact(h_out, d_out);
 }
 
 C2H_TEST("WarpReduce::CustomSum", "[reduce][warp][generic][full]", logical_warp_threads)
@@ -481,7 +481,7 @@ C2H_TEST("WarpReduce::Min/Max Partial",
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads, valid_items);
-  verify_results(h_out, d_out);
+  verify_results_exact(h_out, d_out);
 }
 
 C2H_TEST("WarpReduce::CustomSum Partial", "[reduce][warp][predefined_op][partial]", logical_warp_threads)

@@ -346,4 +346,46 @@ C2H_VEC_TRAITS_OVERLOAD(double, double)
 #  undef REPEAT_TO_LIST_4
 #  undef REPEAT_TO_LIST
 
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 type traits
+
+template <typename T>
+inline constexpr bool is_vector2_type_v = false;
+
+template <>
+inline constexpr bool is_vector2_type_v<char2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<short2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<int2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<long2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<longlong2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<uchar2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<ushort2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<uint2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<ulong2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<ulonglong2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<float2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_v<double2> = true;
+
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
