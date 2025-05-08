@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/void_t.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class, class = void>
@@ -35,5 +37,7 @@ struct __is_transparent<_Tp, _Up, void_t<typename _Tp::is_transparent>> : true_t
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT

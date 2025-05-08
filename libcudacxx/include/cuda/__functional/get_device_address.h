@@ -30,6 +30,8 @@
 
 #include <nv/target>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the device address of the passed \c __device_object
@@ -54,5 +56,7 @@ template <class _Tp>
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _CUDA___GET_DEVICE_ADDRESS_H

@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum class __fp_format;
@@ -29,5 +31,7 @@ template <__fp_format _Fmt>
 class __cccl_fp;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___FWD_FP_H

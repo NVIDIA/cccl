@@ -36,6 +36,8 @@
 
 #include <nv/target>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -119,5 +121,7 @@ public:
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___EXCEPTION_CUDA_ERROR_H

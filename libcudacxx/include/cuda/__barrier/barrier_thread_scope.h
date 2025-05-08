@@ -27,6 +27,8 @@
 #include <cuda/std/__barrier/empty_completion.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <>
@@ -53,5 +55,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _CUDA___BARRIER_BARRIER_THREAD_SCOPE_H

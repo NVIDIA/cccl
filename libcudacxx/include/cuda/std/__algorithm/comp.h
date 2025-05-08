@@ -25,6 +25,8 @@
 #  include <cuda/std/__type_traits/predicate_traits.h>
 #endif // _LIBCUDACXX_HAS_STRING
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __equal_to
@@ -56,5 +58,7 @@ struct __less
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_COMP_H

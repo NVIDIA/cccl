@@ -25,6 +25,8 @@
 #  include <system_error>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -43,5 +45,7 @@ enum class errc
 #endif // _CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___SYSTEM_ERROR_ERRC_H

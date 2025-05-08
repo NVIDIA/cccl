@@ -389,10 +389,6 @@ Warning Suppression Macros
 +-----------------------------+--------------------------------------------+
 | ``_CCCL_DIAG_POP``          | Portable ``#pragma pop``                   |
 +-----------------------------+--------------------------------------------+
-| ``_CCCL_PUSH_MACROS``       | Push common msvc warning suppressions      |
-+-----------------------------+--------------------------------------------+
-| ``_CCCL_POP_MACROS``        | Pop common msvc warning suppressions       |
-+-----------------------------+--------------------------------------------+
 
 **Compiler-specific Suppression Macros**:
 

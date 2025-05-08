@@ -52,6 +52,8 @@
 #    include <debug/safe_iterator.h>
 #  endif
 
+#  include <cuda/std/__cccl/push_macros.h>
+
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp, class = void>
 struct __cccl_type_is_defined : _CUDA_VSTD::false_type
@@ -924,5 +926,7 @@ template <class _InputIterator>
 using __iter_value_type = typename iterator_traits<_InputIterator>::value_type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H

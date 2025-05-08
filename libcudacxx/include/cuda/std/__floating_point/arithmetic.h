@@ -25,6 +25,8 @@
 #include <cuda/std/__floating_point/native_type.h>
 #include <cuda/std/__floating_point/storage.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <__fp_format _Fmt>
@@ -48,5 +50,7 @@ template <class _Tp>
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_ARITHMETIC_H

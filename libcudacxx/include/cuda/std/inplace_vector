@@ -68,7 +68,7 @@
 #include <cuda/std/initializer_list>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/push_macros.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -2166,6 +2166,6 @@ erase_if(inplace_vector<_Tp, _Capacity>& __cont, _Pred __pred) noexcept(_CCCL_TR
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _CUDA_STD_INPLACE_VECTOR

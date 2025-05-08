@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __convert_to_integral(int __val)
@@ -95,5 +97,7 @@ __convert_to_integral(_Tp __val)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___UTILITY_CONVERT_TO_INTEGRAL_H

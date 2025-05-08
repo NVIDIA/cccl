@@ -22,7 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/dialect.h>
+
+#include <cuda/std/__cccl/push_macros.h>
 
 #ifdef __has_attribute
 #  define _CCCL_HAS_ATTRIBUTE(__x) __has_attribute(__x)
@@ -207,5 +210,7 @@
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict__
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // __CCCL_ATTRIBUTES_H

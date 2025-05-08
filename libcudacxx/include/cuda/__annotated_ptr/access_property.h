@@ -27,6 +27,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename>
@@ -157,5 +159,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY

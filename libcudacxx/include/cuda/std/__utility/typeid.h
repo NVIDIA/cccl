@@ -65,6 +65,8 @@
 // older versions of MSVC, we fall back to using the built-in typeid feature,
 // which is always available on MSVC, even when RTTI is disabled.
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #define _CCCL_STD_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_ONLY_SUPPORTS_TYPES<__VA_ARGS__>)
@@ -417,5 +419,7 @@ template <class _Tp>
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___UTILITY_TYPEID_H

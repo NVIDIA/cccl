@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/add_const.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_BUILTIN_STD_AS_CONST()
@@ -44,5 +46,7 @@ void as_const(const _Tp&&) = delete;
 #endif // _CCCL_HAS_BUILTIN_STD_AS_CONST()
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___UTILITY_AS_CONST_H

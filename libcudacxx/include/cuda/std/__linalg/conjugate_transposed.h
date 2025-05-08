@@ -32,6 +32,8 @@
 #include <cuda/std/__linalg/conjugated.h>
 #include <cuda/std/__linalg/transposed.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
@@ -47,5 +49,7 @@ conjugate_transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 } // end namespace linalg
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___LINALG_CONJUGATE_TRANSPOSED_HPP

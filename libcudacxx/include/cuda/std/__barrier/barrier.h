@@ -28,6 +28,8 @@
 #include <cuda/std/chrono>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_DIAG_PUSH
@@ -219,5 +221,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // __LIBCUDACXX___BARRIER_BARRIER_H

@@ -24,6 +24,8 @@
 #include <cuda/std/__fwd/char_traits.h>
 #include <cuda/std/__fwd/memory_resource.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if 0 // we don't support these features
@@ -75,5 +77,7 @@ class _CCCL_PREFERED_NAME(string)
 #endif // 0
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___FWD_STRING_H

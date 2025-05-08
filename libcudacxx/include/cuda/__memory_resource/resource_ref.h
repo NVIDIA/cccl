@@ -36,6 +36,8 @@
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
 
+#  include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 union _AnyResourceStorage
@@ -643,6 +645,8 @@ template <class... _Properties>
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
+
+#  include <cuda/std/__cccl/pop_macros.h>
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

@@ -43,8 +43,7 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/virtcall.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/push_macros.h>
 
 #if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
 // WAR for NVBUG #4924416
@@ -331,6 +330,6 @@ template <class _From, class _To>
 using iconvertible_to _CCCL_NODEBUG_ALIAS = typename __iconvertible_to<_From, _To>::template __interface_<>;
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_SEMIREGULAR_H

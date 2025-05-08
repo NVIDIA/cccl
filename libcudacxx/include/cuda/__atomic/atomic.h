@@ -23,6 +23,8 @@
 
 #include <cuda/std/atomic>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // atomic<T>
@@ -137,5 +139,7 @@ inline _CCCL_HOST_DEVICE void atomic_signal_fence(memory_order __m)
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _CUDA___ATOMIC_ATOMIC_H

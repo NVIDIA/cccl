@@ -213,7 +213,7 @@ template<class T>
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/push_macros.h>
 
 #if _CCCL_HAS_EXCEPTIONS()
 #  ifdef __cpp_lib_optional
@@ -1777,6 +1777,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, re
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX_OPTIONAL

@@ -141,21 +141,6 @@
 #  define _CCCL_MSVC_WARNINGS_PUSH \
     _CCCL_PRAGMA(warning(push)) _CCCL_PRAGMA(warning(disable : _CCCL_MSVC_DISABLED_WARNINGS))
 #  define _CCCL_MSVC_WARNINGS_POP _CCCL_PRAGMA(warning(pop))
-#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
-#  define _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_MSVC_WARNINGS_POP
 #endif // !_CCCL_COMPILER(MSVC)
-
-#if _CCCL_COMPILER(NVRTC)
-#  define _CCCL_PUSH_MACROS _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_POP_MACROS  _CCCL_MSVC_WARNINGS_POP
-#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
-#  define _CCCL_PUSH_MACROS         \
-    _CCCL_PRAGMA(push_macro("min")) \
-    _CCCL_PRAGMA(push_macro("max")) _CCCL_PRAGMA(push_macro("interface")) _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_POP_MACROS         \
-    _CCCL_PRAGMA(pop_macro("min")) \
-    _CCCL_PRAGMA(pop_macro("max")) _CCCL_PRAGMA(pop_macro("interface")) _CCCL_MSVC_WARNINGS_POP
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // __CCCL_DIAGNOSTIC_H

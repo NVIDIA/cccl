@@ -25,6 +25,8 @@
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -65,5 +67,7 @@ private:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___ITERATOR_MOVE_SENTINEL_H

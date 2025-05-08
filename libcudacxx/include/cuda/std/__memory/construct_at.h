@@ -47,6 +47,8 @@
 #    include <memory>
 #  endif // _CCCL_COMPILER(NVRTC)
 
+#  include <cuda/std/__cccl/push_macros.h>
+
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std
 {
@@ -236,5 +238,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_Forw
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H

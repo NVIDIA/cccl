@@ -31,8 +31,7 @@
 
 #include <cuda/experimental/__utility/basic_any.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/push_macros.h>
 
 namespace cuda::experimental
 {
@@ -930,6 +929,6 @@ auto make_any_async_resource(_Args&&... __args) -> any_async_resource<_Propertie
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_ANY_RESOURCE_H

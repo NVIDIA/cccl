@@ -25,6 +25,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _T1, class _T2 = _T1>
@@ -37,5 +39,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 exchange(_T1& __obj, _T2&& __new_value) 
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___UTILITY_EXCHANGE_H

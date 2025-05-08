@@ -18,16 +18,7 @@
 
 #define _CUDAX_ASYNC_PROLOGUE_INCLUDED
 
-_CCCL_PUSH_MACROS
-#ifdef min
-#  undef min
-#endif
-#ifdef max
-#  undef max
-#endif
-#ifdef interface
-#  undef interface
-#endif
+#include <cuda/std/__cccl/push_macros.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsubobject-linkage")

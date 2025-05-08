@@ -24,6 +24,8 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
+#include <cuda/std/__cccl/push_macros.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // MSVC requires an interesting workaround for a /permissive- bug
@@ -78,6 +80,9 @@ struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_bas
 #endif // _CCCL_COMPILER(MSVC)
 
 _CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
+
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H

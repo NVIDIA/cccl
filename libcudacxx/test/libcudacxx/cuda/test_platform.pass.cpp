@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "test_macros.h"
 #include <nv/target>
+
+#include "test_macros.h"
 
 #if !TEST_COMPILER(NVRTC)
 #  include <assert.h>
