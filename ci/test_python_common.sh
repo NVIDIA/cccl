@@ -17,7 +17,7 @@ function run_tests {
   rm -rf "${TEMP_VENV_DIR}"
   python -m venv "${TEMP_VENV_DIR}"
   . "${TEMP_VENV_DIR}/bin/activate"
-  echo 'cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
+  echo 'cuda-cccl @ file:///workspace/cccl/python/cuda_cccl' > /tmp/cuda-cccl_constraints.txt
   run_command "⚙️  Pip install ${module}" pip install -c /tmp/cuda-cccl_constraints.txt "${module}[test]"
   begin_group "⚙️ ${module} site-packages"
   pip freeze
@@ -40,7 +40,7 @@ function run_tests_from_wheel {
   rm -rf "${TEMP_VENV_DIR}"
   python -m venv "${TEMP_VENV_DIR}"
   . "${TEMP_VENV_DIR}/bin/activate"
-  run_command "⚙️  Pip install cuda-cccl" pip install file:///home/coder/cccl/python/cuda_cccl
+  run_command "⚙️  Pip install cuda-cccl" pip install file:///workspace/cccl/python/cuda_cccl
   run_command "⚙️  Pip install ${module}" pip install "${wheel_path}[test]"
   begin_group "⚙️ ${module} site-packages"
   pip freeze

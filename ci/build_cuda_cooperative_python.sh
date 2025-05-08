@@ -10,10 +10,12 @@ echo "Docker socket: " $(ls /var/run/docker.sock)
 # given the py_version build the wheel and output the artifact
 # to the artifacts directory
 docker run --rm \
-  --workdir /home/coder/workspace/cccl/python/cuda_cooperative \
-  --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/workspace \
+  --workdir /workspace/cccl/python/cuda_cooperative \
+  --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
+    python -m pip wheel --no-deps ../cuda_cccl && \
     python -m pip wheel --no-deps . && \
-    wheel_name=$(ls *.whl) && \
-    cp ${wheel_name} /home/coder/workspace/wheelhouse/'
+    auditwheel repair cuda_cooperative-*.whl --exclude libcuda.so.1 && \
+    mv cuda_cccl-*.whl wheelhouse/ && \
+    mv wheelhouse/*.whl /workspace/wheelhouse/'

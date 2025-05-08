@@ -11,17 +11,16 @@ nvidia-smi
 
 # Run tests in the same container as the build
 docker run --rm \
-  --workdir /home/coder/cccl/python/cuda_cooperative \
-  --mount type=bind,source=${HOST_WORKSPACE},target=/home/coder/ \
+  --workdir /workspace/cccl/python/cuda_cooperative \
+  --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
   -e NVIDIA_DISABLE_REQUIRE=true \
   --gpus device=${NVIDIA_VISIBLE_DEVICES} \
   rapidsai/citestwheel:cuda12.8.0-rockylinux8-py${py_version} \
   bash -c '\
-    source /home/coder/cccl/ci/build_common.sh && \
+    source /workspace/cccl/ci/build_common.sh && \
     print_environment_details && \
     fail_if_no_gpu && \
-    source /home/coder/cccl/ci/test_python_common.sh && \
+    source /workspace/cccl/ci/test_python_common.sh && \
     list_environment && \
-    # Install the wheel from the artifact location \
-    WHEEL_PATH="$(ls /home/coder/wheelhouse/cuda_cooperative-*.whl)" && \
-    run_tests_from_wheel "cuda_cooperative" "$WHEEL_PATH"'
+    python -m pip install /workspace/wheelhouse/*.whl && \
+    pytest -n ${PARALLEL_LEVEL} -v tests/'
