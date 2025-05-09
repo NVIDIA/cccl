@@ -28,7 +28,7 @@
 
 #include <nv/target>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -44,6 +44,6 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_IS_LOCAL_SMEM_BARRIER_H

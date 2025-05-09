@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -45,6 +45,6 @@ inline constexpr bool __cccl_is_reference_wrapper_v<const volatile reference_wra
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ENABLE_IF_H

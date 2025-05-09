@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -69,6 +69,6 @@ copy_n(_InputIterator __first, _Size __orig_n, _OutputIterator __result)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_COPY_N_H

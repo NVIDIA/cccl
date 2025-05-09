@@ -25,7 +25,7 @@
 #include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/dialect.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 #ifdef __has_attribute
 #  define _CCCL_HAS_ATTRIBUTE(__x) __has_attribute(__x)
@@ -211,6 +211,6 @@
 #  define _CCCL_RESTRICT __restrict__
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CCCL_ATTRIBUTES_H

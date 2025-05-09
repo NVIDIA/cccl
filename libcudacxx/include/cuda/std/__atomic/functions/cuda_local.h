@@ -32,7 +32,7 @@
 // detect automatic storage and error. Therefore, in CUDA < 12.3 compilers this
 // uses inline PTX to bypass __isLocal.
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -213,6 +213,6 @@ _CCCL_DEVICE bool __cuda_fetch_min_weak_if_local(volatile _Type* __ptr, _Type __
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_LOCAL_H

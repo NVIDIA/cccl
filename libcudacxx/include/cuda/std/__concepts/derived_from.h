@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -52,6 +52,6 @@ _CCCL_CONCEPT derived_from = _CCCL_FRAGMENT(__derived_from_, _Dp, _Bp);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_DERIVED_FROM_H

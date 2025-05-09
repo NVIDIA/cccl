@@ -31,7 +31,7 @@
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -78,6 +78,6 @@ upper_bound(_ForwardIterator __first, _ForwardIterator __last, const _Tp& __valu
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_UPPER_BOUND_H

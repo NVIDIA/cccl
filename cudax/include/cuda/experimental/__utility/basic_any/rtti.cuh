@@ -33,7 +33,7 @@
 
 #include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -247,6 +247,6 @@ template <class _SrcInterface, class _DstInterface>
 
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_RTTI_H

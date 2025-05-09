@@ -43,7 +43,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 // `tuple_size` and `tuple_element` reside in namespace std (https://eel.is/c++draft/dcl.struct.bind#4).
 // See https://github.com/NVIDIA/libcudacxx/issues/316 for a short discussion
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace std
 {
@@ -209,7 +209,7 @@ struct tuple_element<_Idx, const volatile _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>
 {};
 } // namespace std
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 _CCCL_DIAG_POP
 

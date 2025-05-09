@@ -32,7 +32,7 @@
 
 #include <nv/target>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -151,6 +151,6 @@ _CCCL_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
 
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_TABLES_H

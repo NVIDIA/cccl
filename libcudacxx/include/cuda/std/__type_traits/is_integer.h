@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/is_signed_integer.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -40,6 +40,6 @@ inline constexpr bool __cccl_is_cv_integer_v =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_INTEGER_H

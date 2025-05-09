@@ -33,7 +33,7 @@
 #  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/stream_ref>
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
@@ -122,7 +122,7 @@ _CCCL_CONCEPT __different_resource =
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

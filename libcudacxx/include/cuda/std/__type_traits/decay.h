@@ -29,7 +29,7 @@
 #include <cuda/std/__type_traits/remove_extent.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -78,6 +78,6 @@ using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_DECAY_H

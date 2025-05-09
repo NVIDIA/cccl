@@ -31,7 +31,7 @@
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/declval.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -299,6 +299,6 @@ _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_ACCESS_H

@@ -25,7 +25,7 @@
 #include <cuda/std/__algorithm/is_sorted_until.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -45,6 +45,6 @@ template <class _ForwardIterator>
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_IS_SORTED_H

@@ -38,7 +38,7 @@
 #    include <unistd.h>
 #  endif // __linux__
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 using __cccl_timespec_t = ::timespec;
 
@@ -177,7 +177,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanos
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_LIBCUDACXX_HAS_THREAD_API_PTHREAD
 

@@ -39,7 +39,7 @@
 #include <cuda/experimental/__utility/basic_any/rtti.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -301,6 +301,6 @@ _CUDAX_PUBLIC_API basic_any(_Interface<_Super> const*) //
 
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_PTR_H

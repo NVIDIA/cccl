@@ -22,7 +22,7 @@
 
 #include <cuda/std/__type_traits/remove_cv.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -54,6 +54,6 @@ inline constexpr bool __cccl_is_cv_signed_integer_v = __cccl_is_signed_integer_v
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SIGNED_INTEGER_H

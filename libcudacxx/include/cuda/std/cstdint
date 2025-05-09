@@ -126,7 +126,7 @@ using uintmax_t = uint64_t;
 #  define UINTMAX_C(X) ((::uintmax_t)(X))
 #endif // ^^^ _CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -173,6 +173,6 @@ using __cccl_uintmax_t = unsigned long long;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_CSTDINT

@@ -25,7 +25,7 @@
 #  include <cstdlib>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -91,6 +91,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT lldiv_t
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CSTDLIB_DIV_H

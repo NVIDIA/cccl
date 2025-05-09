@@ -36,7 +36,7 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -342,6 +342,6 @@ submdspan(const mdspan<_Tp, _Extents, _Layout, _Accessor>& __src, _Slices... __s
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_MAPPING_H

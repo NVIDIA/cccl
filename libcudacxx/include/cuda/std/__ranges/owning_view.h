@@ -34,7 +34,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -156,6 +156,6 @@ inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_OWNING_VIEW_H

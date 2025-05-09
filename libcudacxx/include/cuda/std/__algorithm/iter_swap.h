@@ -25,7 +25,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/swap.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -77,6 +77,6 @@ _CCCL_GLOBAL_CONSTANT auto iter_swap = __iter_swap::__fn{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_ITER_SWAP_H

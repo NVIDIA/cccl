@@ -21,8 +21,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 // This file tests that the respective header is includable on its own with a cuda compiler
 #include <cuda/${header}>
 
-#if defined(_CCCL_POP_MACROS_GUARD)
-#  error "missing <cuda/std/__cccl/pop_macros.h> after inclusion of <cuda/std/__cccl/push_macros.h>"
+#if defined(_CCCL_EPILOGUE_GUARD)
+#  error "missing <cuda/std/__cccl/epilogue.h> after inclusion of <cuda/std/__cccl/prologue.h>"
 #endif
 
 int main(int, char**) { return 0; }

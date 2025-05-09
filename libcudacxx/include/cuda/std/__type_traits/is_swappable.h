@@ -36,7 +36,7 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -198,6 +198,6 @@ inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H

@@ -23,7 +23,7 @@
 
 #include <cuda/std/__type_traits/common_type.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -53,6 +53,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_FUNCTIONAL_MAXIMUM_H

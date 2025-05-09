@@ -66,7 +66,7 @@
 #  include <utility>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -803,6 +803,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) 
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_PAIR_H

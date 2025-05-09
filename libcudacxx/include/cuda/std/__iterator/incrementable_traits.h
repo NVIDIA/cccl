@@ -36,7 +36,7 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -147,6 +147,6 @@ using iter_difference_t =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_INCREMENTABLE_TRAITS_H

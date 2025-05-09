@@ -31,7 +31,7 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -143,6 +143,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr to_chars_result to_chars(char*, char*, bool,
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CHARCONV_TO_CHARS_H

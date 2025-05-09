@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -57,6 +57,6 @@ using aligned_union_t _CCCL_NODEBUG_ALIAS = typename aligned_union<_Len, _Types.
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ALIGNED_UNION_H

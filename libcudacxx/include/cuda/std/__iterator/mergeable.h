@@ -26,7 +26,7 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/projected.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -67,6 +67,6 @@ _CCCL_CONCEPT mergeable = _CCCL_FRAGMENT(__mergeable_, _Input1, _Input2, _Output
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_MERGEABLE_H

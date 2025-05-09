@@ -13,10 +13,10 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/diagnostic.h>
 
-#if !defined(_CCCL_POP_MACROS_GUARD)
-#  error "cccl internal error: <cuda/std/__cccl/push_macros.h> must be included before <cuda/std/__cccl/pop_macros.h>"
+#if !defined(_CCCL_EPILOGUE_GUARD)
+#  error "cccl internal error: <cuda/std/__cccl/prologue.h> must be included before <cuda/std/__cccl/epilogue.h>"
 #endif
-#undef _CCCL_POP_MACROS_GUARD
+#undef _CCCL_EPILOGUE_GUARD
 
 // msvc warnings pop
 
@@ -28,7 +28,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(align)
 #  error \
-    "cccl internal error: macro `align` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `align` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_align)
 #  pragma pop_macro("align")
 #  undef _CCCL_POP_MACRO_align
@@ -36,7 +36,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(allocate)
 #  error \
-    "cccl internal error: macro `allocate` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `allocate` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_allocate)
 #  pragma pop_macro("allocate")
 #  undef _CCCL_POP_MACRO_allocate
@@ -44,7 +44,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(allocator)
 #  error \
-    "cccl internal error: macro `allocator` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `allocator` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_allocator)
 #  pragma pop_macro("allocator")
 #  undef _CCCL_POP_MACRO_allocator
@@ -52,7 +52,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(appdomain)
 #  error \
-    "cccl internal error: macro `appdomain` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `appdomain` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_appdomain)
 #  pragma pop_macro("appdomain")
 #  undef _CCCL_POP_MACRO_appdomain
@@ -60,7 +60,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(code_seg)
 #  error \
-    "cccl internal error: macro `code_seg` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `code_seg` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_code_seg)
 #  pragma pop_macro("code_seg")
 #  undef _CCCL_POP_MACRO_code_seg
@@ -68,7 +68,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(deprecated)
 #  error \
-    "cccl internal error: macro `deprecated` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `deprecated` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_deprecated)
 #  pragma pop_macro("deprecated")
 #  undef _CCCL_POP_MACRO_deprecated
@@ -76,7 +76,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(dllimport)
 #  error \
-    "cccl internal error: macro `dllimport` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `dllimport` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_dllimport)
 #  pragma pop_macro("dllimport")
 #  undef _CCCL_POP_MACRO_dllimport
@@ -84,7 +84,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(dllexport)
 #  error \
-    "cccl internal error: macro `dllexport` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `dllexport` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_dllexport)
 #  pragma pop_macro("dllexport")
 #  undef _CCCL_POP_MACRO_dllexport
@@ -92,7 +92,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(empty_bases)
 #  error \
-    "cccl internal error: macro `empty_bases` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `empty_bases` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_empty_bases)
 #  pragma pop_macro("empty_bases")
 #  undef _CCCL_POP_MACRO_empty_bases
@@ -100,7 +100,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(hybrid_patchable)
 #  error \
-    "cccl internal error: macro `hybrid_patchable` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `hybrid_patchable` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_hybrid_patchable)
 #  pragma pop_macro("hybrid_patchable")
 #  undef _CCCL_POP_MACRO_hybrid_patchable
@@ -108,7 +108,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(jitintrinsic)
 #  error \
-    "cccl internal error: macro `jitintrinsic` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `jitintrinsic` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_jitintrinsic)
 #  pragma pop_macro("jitintrinsic")
 #  undef _CCCL_POP_MACRO_jitintrinsic
@@ -116,7 +116,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(naked)
 #  error \
-    "cccl internal error: macro `naked` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `naked` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_naked)
 #  pragma pop_macro("naked")
 #  undef _CCCL_POP_MACRO_naked
@@ -124,7 +124,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(noalias)
 #  error \
-    "cccl internal error: macro `noalias` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `noalias` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_noalias)
 #  pragma pop_macro("noalias")
 #  undef _CCCL_POP_MACRO_noalias
@@ -132,7 +132,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(noinline)
 #  error \
-    "cccl internal error: macro `noinline` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `noinline` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_noinline)
 #  pragma pop_macro("noinline")
 #  undef _CCCL_POP_MACRO_noinline
@@ -140,7 +140,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(noreturn)
 #  error \
-    "cccl internal error: macro `noreturn` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `noreturn` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_noreturn)
 #  pragma pop_macro("noreturn")
 #  undef _CCCL_POP_MACRO_noreturn
@@ -148,7 +148,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(nothrow)
 #  error \
-    "cccl internal error: macro `nothrow` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `nothrow` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_nothrow)
 #  pragma pop_macro("nothrow")
 #  undef _CCCL_POP_MACRO_nothrow
@@ -156,7 +156,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(novtable)
 #  error \
-    "cccl internal error: macro `novtable` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `novtable` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_novtable)
 #  pragma pop_macro("novtable")
 #  undef _CCCL_POP_MACRO_novtable
@@ -164,7 +164,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(no_sanitize_address)
 #  error \
-    "cccl internal error: macro `no_sanitize_address` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `no_sanitize_address` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_no_sanitize_address)
 #  pragma pop_macro("no_sanitize_address")
 #  undef _CCCL_POP_MACRO_no_sanitize_address
@@ -172,7 +172,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(process)
 #  error \
-    "cccl internal error: macro `process` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `process` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_process)
 #  pragma pop_macro("process")
 #  undef _CCCL_POP_MACRO_process
@@ -180,7 +180,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(property)
 #  error \
-    "cccl internal error: macro `property` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `property` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_property)
 #  pragma pop_macro("property")
 #  undef _CCCL_POP_MACRO_property
@@ -188,7 +188,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(restrict)
 #  error \
-    "cccl internal error: macro `restrict` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `restrict` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_restrict)
 #  pragma pop_macro("restrict")
 #  undef _CCCL_POP_MACRO_restrict
@@ -196,7 +196,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(safebuffers)
 #  error \
-    "cccl internal error: macro `safebuffers` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `safebuffers` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_safebuffers)
 #  pragma pop_macro("safebuffers")
 #  undef _CCCL_POP_MACRO_safebuffers
@@ -204,7 +204,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(selectany)
 #  error \
-    "cccl internal error: macro `selectany` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `selectany` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_selectany)
 #  pragma pop_macro("selectany")
 #  undef _CCCL_POP_MACRO_selectany
@@ -212,7 +212,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(spectre)
 #  error \
-    "cccl internal error: macro `spectre` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `spectre` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_spectre)
 #  pragma pop_macro("spectre")
 #  undef _CCCL_POP_MACRO_spectre
@@ -220,7 +220,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(thread)
 #  error \
-    "cccl internal error: macro `thread` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `thread` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_thread)
 #  pragma pop_macro("thread")
 #  undef _CCCL_POP_MACRO_thread
@@ -228,7 +228,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(uuid)
 #  error \
-    "cccl internal error: macro `uuid` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `uuid` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_uuid)
 #  pragma pop_macro("uuid")
 #  undef _CCCL_POP_MACRO_uuid
@@ -238,7 +238,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(msvc)
 #  error \
-    "cccl internal error: macro `msvc` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `msvc` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_msvc)
 #  pragma pop_macro("msvc")
 #  undef _CCCL_POP_MACRO_msvc
@@ -246,7 +246,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(flatten)
 #  error \
-    "cccl internal error: macro `flatten` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `flatten` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_flatten)
 #  pragma pop_macro("flatten")
 #  undef _CCCL_POP_MACRO_flatten
@@ -254,7 +254,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(forceinline)
 #  error \
-    "cccl internal error: macro `forceinline` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `forceinline` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_forceinline)
 #  pragma pop_macro("forceinline")
 #  undef _CCCL_POP_MACRO_forceinline
@@ -262,7 +262,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(forceinline_calls)
 #  error \
-    "cccl internal error: macro `forceinline_calls` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `forceinline_calls` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_forceinline_calls)
 #  pragma pop_macro("forceinline_calls")
 #  undef _CCCL_POP_MACRO_forceinline_calls
@@ -270,7 +270,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(intrinsic)
 #  error \
-    "cccl internal error: macro `intrinsic` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `intrinsic` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_intrinsic)
 #  pragma pop_macro("intrinsic")
 #  undef _CCCL_POP_MACRO_intrinsic
@@ -278,7 +278,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(noinline)
 #  error \
-    "cccl internal error: macro `noinline` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `noinline` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_noinline)
 #  pragma pop_macro("noinline")
 #  undef _CCCL_POP_MACRO_noinline
@@ -286,7 +286,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(noinline_calls)
 #  error \
-    "cccl internal error: macro `noinline_calls` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `noinline_calls` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_noinline_calls)
 #  pragma pop_macro("noinline_calls")
 #  undef _CCCL_POP_MACRO_noinline_calls
@@ -294,7 +294,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(no_tls_guard)
 #  error \
-    "cccl internal error: macro `no_tls_guard` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `no_tls_guard` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_no_tls_guard)
 #  pragma pop_macro("no_tls_guard")
 #  undef _CCCL_POP_MACRO_no_tls_guard
@@ -304,7 +304,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(min)
 #  error \
-    "cccl internal error: macro `min` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `min` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_min)
 #  pragma pop_macro("min")
 #  undef _CCCL_POP_MACRO_min
@@ -312,7 +312,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(max)
 #  error \
-    "cccl internal error: macro `max` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `max` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_max)
 #  pragma pop_macro("max")
 #  undef _CCCL_POP_MACRO_max
@@ -320,7 +320,7 @@ _CCCL_MSVC_WARNINGS_POP
 
 #if defined(interface)
 #  error \
-    "cccl internal error: macro `interface` was redefined between <cuda/std/__cccl/push_macros.h> and <cuda/std/__cccl/pop_macros.h>"
+    "cccl internal error: macro `interface` was redefined between <cuda/std/__cccl/prologue.h> and <cuda/std/__cccl/epilogue.h>"
 #elif defined(_CCCL_POP_MACRO_interface)
 #  pragma pop_macro("interface")
 #  undef _CCCL_POP_MACRO_interface

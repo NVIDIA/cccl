@@ -31,7 +31,7 @@
 #  define _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp) _Tp&&
 #endif
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -140,7 +140,7 @@ using __copy_cvref_t = typename __apply_cvref_fn<_From>::template __call<_To>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #undef _CCCL_ADD_RVALUE_REFERENCE_WAR
 #undef _CCCL_ADD_LVALUE_REFERENCE_WAR

@@ -36,7 +36,7 @@
 #    include <cuda/std/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/cstdint>
 
-#    include <cuda/std/__cccl/push_macros.h>
+#    include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -86,7 +86,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
-#    include <cuda/std/__cccl/pop_macros.h>
+#    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
 #endif // _CCCL_CUDA_COMPILER

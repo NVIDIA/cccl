@@ -23,7 +23,7 @@
 
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -44,6 +44,6 @@ struct aligned_size_t
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_ALIGNED_SIZE_H

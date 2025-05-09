@@ -81,10 +81,10 @@ FixNamespaceComments: true
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
 IncludeCategories:
-  - Regex:           '^<cuda/std/__cccl/push_macros.h>'
+  - Regex:           '^<cuda/std/__cccl/prologue.h>'
     Priority:            0x7FFFFFFF
     SortPriority:        0x7FFFFFFF
-  - Regex:           '^<cuda/std/__cccl/pop_macros.h>'
+  - Regex:           '^<cuda/std/__cccl/epilogue.h>'
     Priority:            -0x7FFFFFFF
     SortPriority:        -0x7FFFFFFF
   - Regex:           '^<cuda/experimental/__execution/prologue.cuh>'

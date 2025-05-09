@@ -37,7 +37,7 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_NV_DIAG_SUPPRESS(1384) // warning: pointer converted to bool
 
@@ -257,6 +257,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_NV_DIAG_DEFAULT(1384)
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_COMMON_REFERENCE_H

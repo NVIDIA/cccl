@@ -30,7 +30,7 @@
 
 #include <nv/target>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -57,6 +57,6 @@ template <class _Tp>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___GET_DEVICE_ADDRESS_H

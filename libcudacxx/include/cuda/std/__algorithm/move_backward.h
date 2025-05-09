@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/pair.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -78,6 +78,6 @@ move_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MOVE_BACKWARD_H

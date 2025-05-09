@@ -28,7 +28,7 @@
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/__utility/declval.h>
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -151,7 +151,7 @@ using forward_property = __forward_property::__fn<_Derived, _Upstream>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

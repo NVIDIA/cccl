@@ -26,7 +26,7 @@
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -94,6 +94,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<monostate>
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_MONOSTATE_H

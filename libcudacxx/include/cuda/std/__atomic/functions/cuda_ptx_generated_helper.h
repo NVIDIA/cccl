@@ -32,7 +32,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -172,6 +172,6 @@ using __atomic_enable_if_not_native_minmax = enable_if_t<!_CCCL_TRAIT(is_integra
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_PTX_GENERATED_H

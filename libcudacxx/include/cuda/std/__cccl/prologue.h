@@ -10,11 +10,11 @@
 
 // NO include guards here (this file is included multiple times)
 
-#if defined(_CCCL_POP_MACROS_GUARD)
+#if defined(_CCCL_EPILOGUE_GUARD)
 #  error \
-    "cccl internal error: <cuda/std/__cccl/pop_macros.h> must be included before next <cuda/std/__cccl/push_macros.h> is reincluded"
+    "cccl internal error: <cuda/std/__cccl/epilogue.h> must be included before next <cuda/std/__cccl/prologue.h> is reincluded"
 #endif
-#define _CCCL_POP_MACROS_GUARD
+#define _CCCL_EPILOGUE_GUARD
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/diagnostic.h>

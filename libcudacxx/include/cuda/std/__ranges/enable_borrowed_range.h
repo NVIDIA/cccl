@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -36,6 +36,6 @@ inline constexpr bool enable_borrowed_range = false;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_ENABLE_BORROWED_RANGE_H

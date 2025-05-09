@@ -30,7 +30,7 @@
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_functions.cuh>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -153,6 +153,6 @@ _CCCL_TRIVIAL_HOST_API auto virtcall(_Interface<_Super...> const*, _Args&&...) /
 
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_VIRTCALL_H

@@ -30,7 +30,7 @@
 #include <cuda/std/__utility/to_underlying.h>
 #include <cuda/std/limits>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -99,6 +99,6 @@ round_down(const _Tp __a, const _Up __b) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___CMATH_ROUND_DOWN_H

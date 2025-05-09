@@ -24,7 +24,7 @@
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -33,6 +33,6 @@ _CCCL_CONCEPT __different_from = !same_as<remove_cvref_t<_Tp>, remove_cvref_t<_U
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_DIFFERENT_FROM_H

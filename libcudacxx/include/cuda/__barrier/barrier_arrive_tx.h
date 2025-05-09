@@ -33,7 +33,7 @@
 #    include <cuda/std/__atomic/scopes.h>
 #    include <cuda/std/cstdint>
 
-#    include <cuda/std/__cccl/push_macros.h>
+#    include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -90,7 +90,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
-#    include <cuda/std/__cccl/pop_macros.h>
+#    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
 #endif // _CCCL_CUDA_COMPILER

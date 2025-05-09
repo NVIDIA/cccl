@@ -24,7 +24,7 @@
 
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -52,6 +52,6 @@ accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOpe
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_ACCUMULATE_H

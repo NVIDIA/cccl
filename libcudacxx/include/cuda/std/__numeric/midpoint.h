@@ -33,7 +33,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -95,6 +95,6 @@ midpoint(_Fp __a, _Fp __b) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_MIDPOINT_H

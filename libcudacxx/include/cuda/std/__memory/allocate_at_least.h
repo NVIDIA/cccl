@@ -25,7 +25,7 @@
 #include <cuda/std/__memory/allocator_traits.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -76,6 +76,6 @@ __allocate_at_least(_Alloc& __alloc, size_t __n)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ALLOCATE_AT_LEAST_H

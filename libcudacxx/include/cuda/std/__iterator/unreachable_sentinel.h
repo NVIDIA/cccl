@@ -24,7 +24,7 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -83,6 +83,6 @@ _CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H

@@ -36,7 +36,7 @@
 #  error "Unknown Thread API"
 #endif // Unknown Thread API
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -100,6 +100,6 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __cccl_thread_poll_with_backoff(
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_H

@@ -23,7 +23,7 @@
 
 #include <cuda/std/__functional/unary_function.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -62,6 +62,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_UNARY_NEGATE_H

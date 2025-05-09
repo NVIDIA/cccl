@@ -42,7 +42,7 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -308,6 +308,6 @@ _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatib
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_CONCEPTS_H

@@ -84,7 +84,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     _LIBCUDACXX_SPECIALIZE_GET(__name##3, __base_type)           \
     _LIBCUDACXX_SPECIALIZE_GET(__name##4, __base_type)
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -232,7 +232,7 @@ _LIBCUDACXX_SPECIALIZE_GET(dim3, unsigned int)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR

@@ -27,7 +27,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/pair.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -136,6 +136,6 @@ minmax_element(_ForwardIterator __first, _ForwardIterator __last)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MINMAX_ELEMENT_H

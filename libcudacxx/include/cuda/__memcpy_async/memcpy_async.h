@@ -34,7 +34,7 @@
 #  include <cuda/std/__type_traits/void_t.h>
 #  include <cuda/std/cstddef>
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -163,7 +163,7 @@ memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_S
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_CUDA_COMPILER
 

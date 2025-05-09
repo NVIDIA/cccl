@@ -32,7 +32,7 @@
 
 #    include <nv/target>
 
-#    include <cuda/std/__cccl/push_macros.h>
+#    include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -52,7 +52,7 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#    include <cuda/std/__cccl/pop_macros.h>
+#    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
 #endif // _CCCL_CUDA_COMPILER

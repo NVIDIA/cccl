@@ -26,7 +26,7 @@
 #include <cuda/std/__atomic/types.h>
 #include <cuda/std/__thread/threading_support.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -60,6 +60,6 @@ _CCCL_HOST_DEVICE void __atomic_try_wait_slow_fallback(
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_WAIT_POLLING_H

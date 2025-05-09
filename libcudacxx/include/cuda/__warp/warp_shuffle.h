@@ -36,7 +36,7 @@
 
 #if __cccl_ptx_isa >= 600
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
@@ -246,7 +246,7 @@ warp_shuffle_xor(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constan
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cccl_ptx_isa >= 600
 #endif // _CUDA___WARP_WARP_SHUFFLE_H

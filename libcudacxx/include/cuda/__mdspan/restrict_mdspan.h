@@ -24,7 +24,7 @@
 #include <cuda/__mdspan/restrict_accessor.h>
 #include <cuda/std/mdspan>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -46,6 +46,6 @@ inline constexpr bool is_restrict_mdspan_v<_CUDA_VSTD::mdspan<_Tp, _Ep, _Lp, _Ap
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MDSPAN_RESTRICT_MDSPAN

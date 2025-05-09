@@ -30,7 +30,7 @@
 
 #  include <nv/target>
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -91,7 +91,7 @@ __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, 
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_CUDA_COMPILER
 

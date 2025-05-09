@@ -26,7 +26,7 @@
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -96,6 +96,6 @@ _CCCL_CONCEPT totally_ordered_with = _CCCL_FRAGMENT(__totally_ordered_with_, _Tp
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_TOTALLY_ORDERED_H

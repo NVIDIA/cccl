@@ -37,7 +37,7 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -151,6 +151,6 @@ _CCCL_GLOBAL_CONSTANT auto single = __single_view::__fn{};
 
 _LIBCUDACXX_END_NAMESPACE_VIEWS
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_SINGLE_VIEW_H

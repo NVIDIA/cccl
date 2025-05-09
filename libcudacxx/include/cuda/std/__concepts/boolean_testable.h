@@ -24,7 +24,7 @@
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__utility/forward.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -58,6 +58,6 @@ _CCCL_CONCEPT __boolean_testable = _CCCL_FRAGMENT(__boolean_testable_, _Tp);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_BOOLEAN_TESTABLE_H

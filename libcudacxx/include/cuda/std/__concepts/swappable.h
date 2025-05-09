@@ -37,7 +37,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
@@ -201,6 +201,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 _CCCL_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
 #endif // _CCCL_COMPILER(MSVC)
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H

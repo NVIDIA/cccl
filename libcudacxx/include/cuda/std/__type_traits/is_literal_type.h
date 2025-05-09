@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -54,6 +54,6 @@ _LIBCUDACXX_DEPRECATED inline constexpr bool is_literal_type_v = is_literal_type
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_LITERAL_TYPE

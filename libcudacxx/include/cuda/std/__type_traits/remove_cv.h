@@ -23,7 +23,7 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_volatile.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -52,6 +52,6 @@ using remove_cv_t _CCCL_NODEBUG_ALIAS = remove_volatile_t<remove_const_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_REMOVE_CV_H

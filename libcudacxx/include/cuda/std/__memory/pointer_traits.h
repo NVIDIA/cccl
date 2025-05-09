@@ -33,7 +33,7 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -255,6 +255,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(const _Pointer& __p) noexcep
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_POINTER_TRAITS_H

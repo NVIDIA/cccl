@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/is_standard_layout.h>
 #include <cuda/std/__type_traits/is_trivial.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -33,6 +33,6 @@ inline constexpr bool __cccl_is_char_like_type_v = is_standard_layout_v<_Tp> && 
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_CHAR_LIKE_TYPE_H

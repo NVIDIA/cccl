@@ -28,7 +28,7 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/climits>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -612,6 +612,6 @@ class numeric_limits<const volatile _Tp> : public numeric_limits<_Tp>
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___LIMITS_NUMERIC_LIMITS_H

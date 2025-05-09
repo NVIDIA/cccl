@@ -22,7 +22,7 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -50,6 +50,6 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_SUBRANGE_H

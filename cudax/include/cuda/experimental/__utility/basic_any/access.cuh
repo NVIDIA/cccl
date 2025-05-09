@@ -30,7 +30,7 @@
 #include <cuda/experimental/__utility/basic_any/conversions.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -84,6 +84,6 @@ struct __basic_any_access
 
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_ACCESS_H

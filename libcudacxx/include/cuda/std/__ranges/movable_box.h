@@ -35,7 +35,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/detail/libcxx/include/optional>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -405,6 +405,6 @@ struct __movable_box<_Tp, true> : __movable_box_base<_Tp>
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_MOVABLE_BOX_H

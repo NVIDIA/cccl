@@ -22,7 +22,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -46,6 +46,6 @@ inline constexpr bool has_virtual_destructor_v = has_virtual_destructor<_Tp>::va
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_HAS_VIRTUAL_DESTRUCTOR_H

@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/cstddef>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -55,6 +55,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public bool_constant<is_scalar_
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SCALAR_H

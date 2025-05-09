@@ -22,7 +22,7 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -72,6 +72,6 @@ inline constexpr bool disjunction_v = _Or<_Args...>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_DISJUNCTION_H

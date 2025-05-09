@@ -24,7 +24,7 @@
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -157,6 +157,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __exception_guard<_Rollback> __make_exceptio
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_EXCEPTION_GUARD_H

@@ -37,7 +37,7 @@
 #    include <sstream> // for std::basic_ostringstream
 #  endif // !_CCCL_COMPILER(NVRTC)
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 // This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
 namespace __cccl_internal
@@ -344,7 +344,7 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__nv_bfloa
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_HAS_NVBF16()
 

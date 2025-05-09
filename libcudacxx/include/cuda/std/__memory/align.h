@@ -25,7 +25,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
@@ -54,6 +54,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ALIGN_H

@@ -26,7 +26,7 @@
 #include <cuda/std/__iterator/next.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -247,6 +247,6 @@ template <class _ForwardIterator1, class _ForwardIterator2>
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_IS_PERMUTATION_H

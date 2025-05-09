@@ -34,7 +34,7 @@
 #    define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 #  endif // _CCCL_COMPILER(MSVC, <, 19, 24)
 
-#  include <cuda/std/__cccl/push_macros.h>
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -645,7 +645,7 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#  include <cuda/std/__cccl/pop_macros.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
 #  undef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 

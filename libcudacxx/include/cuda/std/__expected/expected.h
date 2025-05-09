@@ -62,7 +62,7 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1997,6 +1997,6 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXPECTED_EXPECTED_H

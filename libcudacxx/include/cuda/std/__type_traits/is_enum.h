@@ -32,7 +32,7 @@
 #include <cuda/std/__type_traits/is_union.h>
 #include <cuda/std/__type_traits/is_void.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -63,6 +63,6 @@ inline constexpr bool is_enum_v = is_enum<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_ENUM_H

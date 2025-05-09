@@ -28,7 +28,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -239,6 +239,6 @@ private:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___STRING_STRING_VIEW_H

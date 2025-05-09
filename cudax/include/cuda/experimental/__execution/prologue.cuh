@@ -18,7 +18,7 @@
 
 #define _CUDAX_ASYNC_PROLOGUE_INCLUDED
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsubobject-linkage")

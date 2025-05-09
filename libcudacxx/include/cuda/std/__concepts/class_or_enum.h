@@ -26,7 +26,7 @@
 #include <cuda/std/__type_traits/is_union.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -41,6 +41,6 @@ _CCCL_CONCEPT __workaround_52970 =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_CLASS_OR_ENUM_H

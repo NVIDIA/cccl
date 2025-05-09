@@ -28,7 +28,7 @@
 #include <cuda/std/__floating_point/storage.h>
 #include <cuda/std/__type_traits/always_false.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -134,6 +134,6 @@ inline constexpr bool __fp_is_overflow_handler_v<__fp_overflow_handler<_Kind>> =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_OVERFLOW_HANDLER_H

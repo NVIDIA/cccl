@@ -28,7 +28,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -205,6 +205,6 @@ _LIBCUDACXX_HIDE_FROM_ABI void memcpy_async(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ANNOTATED_PTR

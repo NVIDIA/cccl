@@ -45,7 +45,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -760,6 +760,6 @@ __is_multidimensional_index_in(const _Extents& __ext, _From... __values)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_EXTENTS_H

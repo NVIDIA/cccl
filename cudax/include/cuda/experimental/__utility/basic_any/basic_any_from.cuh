@@ -26,7 +26,7 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -92,6 +92,6 @@ template <class _CvInterface>
 using basic_any_from_t = _CUDA_VSTD::decay_t<cvref_basic_any_from_t<_CvInterface>>;
 } // namespace cuda::experimental
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_FROM_H

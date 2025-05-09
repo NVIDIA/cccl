@@ -26,7 +26,7 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/is_union.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -52,6 +52,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_object : public bool_constant<is_object_
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_OBJECT_H

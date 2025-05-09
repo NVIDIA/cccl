@@ -48,7 +48,7 @@
 #  include <cuda/std/detail/libcxx/include/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -464,6 +464,6 @@ struct pointer_traits<counted_iterator<_Iter>, enable_if_t<contiguous_iterator<_
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_COUNTED_ITERATOR_H

@@ -23,7 +23,7 @@
 #include <cuda/std/__semaphore/atomic_semaphore.h>
 #include <cuda/std/cstdint>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -46,6 +46,6 @@ using binary_semaphore = counting_semaphore<1>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___SEMAPHORE_COUNTING_SEMAPHORE_H

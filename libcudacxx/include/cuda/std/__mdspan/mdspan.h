@@ -59,7 +59,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -507,6 +507,6 @@ _CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_MDSPAN_H

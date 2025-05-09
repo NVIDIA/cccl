@@ -29,7 +29,7 @@
 #include <cuda/std/__atomic/wait/polling.h>
 #include <cuda/std/__type_traits/conditional.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -113,6 +113,6 @@ using __atomic_ref_impl =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_API_REFERENCE_H

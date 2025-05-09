@@ -23,7 +23,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 
-#include <cuda/std/__cccl/push_macros.h>
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -46,6 +46,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator fill_n(_OutputIterator __fir
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cccl/pop_macros.h>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_FILL_N_H
