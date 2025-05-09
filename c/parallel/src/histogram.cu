@@ -24,6 +24,11 @@
 #include <cccl/c/histogram.h>
 #include <nvrtc/ltoir_list_appender.h>
 
+// int32_t is generally faster. Depending on the number of samples we
+// instantiate the kernels below with int32 or int64, but we set this to int64
+// here because it's needed for host computation as well.
+using OffsetT = int64_t;
+
 struct samples_iterator_t;
 
 namespace histogram
@@ -69,6 +74,7 @@ struct histogram_kernel_source
     return build.init_kernel;
   }
 
+  template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
   CUkernel HistogramSweepKernel() const
   {
     return build.sweep_kernel;
@@ -92,7 +98,8 @@ histogram_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info sample_t, 
 
 std::string get_init_kernel_name(int num_active_channels, std::string_view sample_t, std::string_view offset_t)
 {
-  return std::format("cub::detail::DeviceHistogramInitKernel<{0}, {1}, {2}>", num_active_channels, sample_t, offset_t);
+  return std::format(
+    "cub::detail::histogram::DeviceHistogramInitKernel<{0}, {1}, {2}>", num_active_channels, sample_t, offset_t);
 }
 
 std::string get_sweep_kernel_name(
@@ -100,7 +107,7 @@ std::string get_sweep_kernel_name(
   int privatized_smem_bins,
   int num_channels,
   int num_active_channels,
-  cccl_iterator_t samples_it,
+  cccl_iterator_t d_samples,
   std::string_view counter_t,
   std::string_view level_t,
   std::string_view offset_t,
@@ -111,15 +118,15 @@ std::string get_sweep_kernel_name(
   check(nvrtcGetTypeName<samples_iterator_t>(&samples_iterator_name));
 
   const std::string samples_iterator_t =
-    samples_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(samples_it.value_type.type, true) //
+    d_samples.type == cccl_iterator_kind_t::CCCL_POINTER //
+      ? cccl_type_enum_to_name(d_samples.value_type.type, true) //
       : samples_iterator_name;
 
   const std::string transforms_t = std::format(
     "cub::detail::histogram::Transforms<{0}, {1}, {2}>",
     level_t,
     offset_t,
-    cccl_type_enum_to_name(samples_it.value_type.type));
+    cccl_type_enum_to_name(d_samples.value_type.type));
 
   std::string privatized_decode_op_t = std::format("{0}::PassThruTransform", transforms_t);
   std::string output_decode_op_t =
@@ -133,7 +140,7 @@ std::string get_sweep_kernel_name(
   }
 
   return std::format(
-    "cub::detail::DeviceHistogramSweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
+    "cub::detail::histogram::DeviceHistogramSweepKernel<{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}>",
     chained_policy_t,
     privatized_smem_bins,
     num_channels,
@@ -151,11 +158,11 @@ CUresult cccl_device_histogram_build(
   cccl_device_histogram_build_result_t* build_ptr,
   int num_channels,
   int num_active_channels,
-  cccl_iterator_t samples_it,
+  cccl_iterator_t d_samples,
   cccl_type_info counter_t,
   cccl_type_info level_t,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   bool is_evenly_segmented,
   int cc_major,
   int cc_minor,
@@ -171,13 +178,13 @@ CUresult cccl_device_histogram_build(
     const char* name = "test";
 
     const int cc           = cc_major * 10 + cc_minor;
-    const auto policy      = histogram::get_policy(cc, samples_it.value_type, num_active_channels);
-    const auto sample_cpp  = cccl_type_enum_to_name(samples_it.value_type.type);
+    const auto policy      = histogram::get_policy(cc, d_samples.value_type, num_active_channels);
+    const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
     const auto counter_cpp = cccl_type_enum_to_name(counter_t.type);
     const auto level_cpp   = cccl_type_enum_to_name(level_t.type);
 
     const std::string offset_cpp =
-      ((unsigned long long) (num_rows * row_stride_samples * samples_it.value_type.size) < (unsigned long long) INT_MAX)
+      ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
         ? "int"
         : "long long";
 
@@ -185,7 +192,7 @@ CUresult cccl_device_histogram_build(
     check(nvrtcGetTypeName<samples_iterator_t>(&samples_iterator_name));
 
     const std::string samples_iterator_src =
-      make_kernel_input_iterator(offset_cpp, samples_iterator_name, sample_cpp, samples_it);
+      make_kernel_input_iterator(offset_cpp, samples_iterator_name, sample_cpp, d_samples);
 
     constexpr std::string_view chained_policy_t = "device_histogram_policy";
 
@@ -217,8 +224,8 @@ struct {5} {{
 
     const std::string src = std::format(
       src_template,
-      samples_it.value_type.size, // 0
-      samples_it.value_type.alignment, // 1
+      d_samples.value_type.size, // 0
+      d_samples.value_type.alignment, // 1
       samples_iterator_src, // 2
       policy.block_threads, // 3
       policy.pixels_per_thread, // 4
@@ -236,7 +243,7 @@ struct {5} {{
     // information here.
     constexpr int privatized_smem_bins = 0;
 
-    const bool is_byte_sample = samples_it.value_type.size == 1;
+    const bool is_byte_sample = d_samples.value_type.size == 1;
 
     std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, sample_cpp, offset_cpp);
     std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
@@ -244,7 +251,7 @@ struct {5} {{
       privatized_smem_bins,
       num_channels,
       num_active_channels,
-      samples_it,
+      d_samples,
       counter_cpp,
       level_cpp,
       offset_cpp,
@@ -263,10 +270,6 @@ struct {5} {{
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    // Collect all LTO-IRs to be linked.
-    nvrtc_ltoir_list ltoir_list;
-    nvrtc_ltoir_list_appender appender{ltoir_list};
-
     nvrtc_link_result result =
       make_nvrtc_command_list()
         .add_program(nvrtc_translation_unit({src.c_str(), name}))
@@ -276,7 +279,6 @@ struct {5} {{
         .get_name({init_kernel_name, init_kernel_lowered_name})
         .get_name({sweep_kernel_name, sweep_kernel_lowered_name})
         .cleanup_program()
-        .add_link_list(ltoir_list)
         .finalize_program(num_lto_args, lopts);
 
     cuLibraryLoadData(&build_ptr->library, result.data.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
@@ -309,9 +311,9 @@ CUresult cccl_device_histogram_even_impl(
   cccl_iterator_t num_output_levels,
   cccl_iterator_t lower_level,
   cccl_iterator_t upper_level,
-  uint64_t num_row_pixels,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_row_pixels,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   CUstream stream)
 {
   if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
@@ -329,28 +331,61 @@ CUresult cccl_device_histogram_even_impl(
   bool pushed    = false;
   try
   {
+    std::cout << "1" << '\n';
     pushed = try_push_context();
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
+    constexpr int NUM_CHANNELS        = 1;
+    constexpr int NUM_ACTIVE_CHANNELS = 1;
+    indirect_arg_t d_output_histogram_elem{d_output_histograms};
+
+    ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
+      *static_cast<indirect_arg_t**>(&d_output_histogram_elem)};
+
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr;
+    // TODO: should we do this on the user provided stream?
+    check(static_cast<CUresult>(
+      cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToHost)));
+    std::cout << "2" << '\n';
+
+    // indirect_arg_t lower_level_elem{lower_level};
+    // ::cuda::std::array<indirect_arg_t, NUM_ACTIVE_CHANNELS> lower_level_arr{lower_level_elem};
+
+    // indirect_arg_t upper_level_elem{upper_level};
+    // ::cuda::std::array<indirect_arg_t, NUM_ACTIVE_CHANNELS> upper_level_arr{upper_level_elem};
+
+    indirect_arg_t lower_level_elem{lower_level};
+    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<double*>(&lower_level_elem)};
+
+    std::cout << "3" << '\n';
+
+    indirect_arg_t upper_level_elem{upper_level};
+    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<double*>(&upper_level_elem)};
+
+    std::cout << "4" << '\n';
+
     auto exec_status = cub::DispatchHistogram<
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
       indirect_arg_t,
       indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
+      double, // not indirect_arg_t because used on the host
+      OffsetT,
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
       histogram::histogram_kernel_source,
-      cub::detail::CudaDriverLauncherFactory>::
+      cub::detail::CudaDriverLauncherFactory,
+      indirect_arg_t,
+      cub::detail::histogram::Transforms<double, OffsetT, double>>::
       DispatchEven(
         d_temp_storage,
         *temp_storage_bytes,
-        d_output_histograms,
-        num_output_levels,
-        lower_level,
-        upper_level,
+        d_samples,
+        d_output_histogram_arr,
+        num_output_levels_arr,
+        lower_level_arr,
+        upper_level_arr,
         num_row_pixels,
         num_rows,
         row_stride_samples,
@@ -359,6 +394,7 @@ CUresult cccl_device_histogram_even_impl(
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {d_samples.value_type, build.num_active_channels});
+    std::cout << "5" << '\n';
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -388,9 +424,9 @@ CUresult cccl_device_histogram_even(
   cccl_iterator_t num_output_levels,
   cccl_iterator_t lower_level,
   cccl_iterator_t upper_level,
-  uint64_t num_row_pixels,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_row_pixels,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   CUstream stream)
 {
   auto histogram_impl = d_samples.value_type.size == 1 ? cccl_device_histogram_even_impl<::cuda::std::true_type>
@@ -420,9 +456,9 @@ CUresult cccl_device_histogram_range_impl(
   cccl_iterator_t d_output_histograms,
   cccl_iterator_t num_output_levels,
   cccl_iterator_t d_levels,
-  uint64_t num_row_pixels,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_row_pixels,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   CUstream stream)
 {
   if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
@@ -444,22 +480,42 @@ CUresult cccl_device_histogram_range_impl(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
+    constexpr int NUM_CHANNELS        = 1;
+    constexpr int NUM_ACTIVE_CHANNELS = 1;
+    indirect_arg_t d_output_histogram_elem{d_output_histograms};
+
+    ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
+      *static_cast<indirect_arg_t**>(&d_output_histogram_elem)};
+
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr;
+    cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToDevice);
+
+    // indirect_arg_t d_levels_elem{d_levels};
+    // ::cuda::std::array<const indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_levels_arr{
+    //   *static_cast<indirect_arg_t**>(&d_levels_elem)};
+
+    indirect_arg_t d_levels_elem{d_levels};
+    ::cuda::std::array<const double*, NUM_ACTIVE_CHANNELS> d_levels_arr{*static_cast<double**>(&d_levels_elem)};
+
     auto exec_status = cub::DispatchHistogram<
+      NUM_CHANNELS,
+      NUM_ACTIVE_CHANNELS,
       indirect_arg_t,
       indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
-      indirect_arg_t,
+      double, // not indirect_arg_t because used on the host
+      OffsetT,
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
       histogram::histogram_kernel_source,
-      cub::detail::CudaDriverLauncherFactory>::
+      cub::detail::CudaDriverLauncherFactory,
+      indirect_arg_t,
+      cub::detail::histogram::Transforms<double, OffsetT, double>>::
       DispatchRange(
         d_temp_storage,
         *temp_storage_bytes,
-        d_output_histograms,
-        num_output_levels,
-        d_levels,
+        d_samples,
+        d_output_histogram_arr,
+        num_output_levels_arr,
+        d_levels_arr,
         num_row_pixels,
         num_rows,
         row_stride_samples,
@@ -496,9 +552,9 @@ CUresult cccl_device_histogram_range(
   cccl_iterator_t d_output_histograms,
   cccl_iterator_t num_output_levels,
   cccl_iterator_t d_levels,
-  uint64_t num_row_pixels,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_row_pixels,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   CUstream stream)
 {
   auto histogram_impl = d_samples.value_type.size == 1 ? cccl_device_histogram_range_impl<::cuda::std::true_type>

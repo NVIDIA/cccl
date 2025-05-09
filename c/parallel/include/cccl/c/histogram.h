@@ -39,11 +39,11 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   cccl_device_histogram_build_result_t* build,
   int num_channels,
   int num_active_channels,
-  cccl_iterator_t samples_it,
+  cccl_iterator_t d_samples,
   cccl_type_info counter_t,
   cccl_type_info level_t,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   bool is_evenly_segmented,
   int cc_major,
   int cc_minor,
@@ -60,9 +60,9 @@ CCCL_C_API CUresult cccl_device_histogram_range(
   cccl_iterator_t d_output_histograms,
   cccl_iterator_t num_output_levels,
   cccl_iterator_t d_levels,
-  uint64_t num_row_pixels,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_row_pixels,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_histogram_even(
@@ -74,9 +74,9 @@ CCCL_C_API CUresult cccl_device_histogram_even(
   cccl_iterator_t num_output_levels,
   cccl_iterator_t lower_level,
   cccl_iterator_t upper_level,
-  uint64_t num_row_pixels,
-  uint64_t num_rows,
-  uint64_t row_stride_samples,
+  int64_t num_row_pixels,
+  int64_t num_rows,
+  int64_t row_stride_samples,
   CUstream stream);
 
 CCCL_C_API CUresult cccl_device_histogram_cleanup(cccl_device_histogram_build_result_t* bld_ptr);
