@@ -52,9 +52,8 @@
 #    include <debug/safe_iterator.h>
 #  endif
 
-#  include <cuda/std/__cccl/push_macros.h>
-
 #  if _CCCL_STD_VER >= 2020
+#    include <cuda/std/__cccl/push_macros.h>
 template <class _Tp, class = void>
 struct __cccl_type_is_defined : _CUDA_VSTD::false_type
 {};
@@ -69,9 +68,13 @@ namespace std
 struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct contiguous_iterator_tag>
 {};
 } // namespace std
+
+#    include <cuda/std/__cccl/pop_macros.h>
 #  endif // _CCCL_STD_VER >= 2020
 
 #endif // !_CCCL_COMPILER(NVRTC)
+
+#include <cuda/std/__cccl/push_macros.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
