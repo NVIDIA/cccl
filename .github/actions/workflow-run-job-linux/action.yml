@@ -68,6 +68,7 @@ runs:
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
         mkdir artifacts
+        mkdir wheelhouse
 
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash

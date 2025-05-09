@@ -6,7 +6,7 @@ cd "$(dirname "$0")/../python/cuda_cooperative"
 py_version=${2#*=}
 echo "Python version: ${py_version}"
 
-ls /
+ls -la /
 
 # Build the wheel and output to the wheelhouse directory
 python -m pip wheel --no-deps . && \
