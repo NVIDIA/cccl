@@ -74,10 +74,10 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #endif
 
 #ifndef CUB_DEFINE_SUB_POLICY_GETTER
-#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                                                                 \
-    CUB_RUNTIME_FUNCTION static constexpr detail::PolicyWrapper<typename StaticPolicyT::name##Policy> name() \
-    {                                                                                                        \
-      return detail::MakePolicyWrapper(typename StaticPolicyT::name##Policy());                              \
+#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                            \
+    CUB_RUNTIME_FUNCTION static constexpr auto name()                   \
+    {                                                                   \
+      return MakePolicyWrapper(typename StaticPolicyT::name##Policy()); \
     }
 #endif
 

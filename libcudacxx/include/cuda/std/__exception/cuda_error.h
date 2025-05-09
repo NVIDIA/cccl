@@ -22,9 +22,11 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_HAS_CUDA_COMPILER()
+#    include <cuda_runtime_api.h>
+#  endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/source_location>

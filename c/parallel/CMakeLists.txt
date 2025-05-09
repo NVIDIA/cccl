@@ -16,6 +16,8 @@ file(GLOB_RECURSE srcs
   "src/*.cu" "src/*.cpp"
 )
 
+cccl_get_json()
+
 add_library(cccl.c.parallel SHARED ${srcs})
 set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
 cccl_configure_target(cccl.c.parallel DIALECT 20)
@@ -42,9 +44,14 @@ target_link_libraries(cccl.c.parallel PRIVATE
   cccl.c.parallel.jit_template
   CUB::CUB
   Thrust::Thrust
+  nlohmann_json::nlohmann_json
 )
 target_compile_definitions(cccl.c.parallel PUBLIC CCCL_C_EXPERIMENTAL=1 _CUB_HAS_TRANSFORM_UBLKCP=0)
-target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1 CUB_DISABLE_CDP=1)
+target_compile_definitions(cccl.c.parallel PRIVATE
+  NVRTC_GET_TYPE_NAME=1
+  CUB_DISABLE_CDP=1
+  CUB_DEFINE_RUNTIME_POLICIES
+)
 target_compile_options(cccl.c.parallel PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
 target_include_directories(cccl.c.parallel PUBLIC "include")

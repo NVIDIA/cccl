@@ -14,6 +14,7 @@ set(_cccl_root ../..)
 include(${_cccl_root}/cmake/AppendOptionIfAvailable.cmake)
 include(${_cccl_root}/cmake/CCCLConfigureTarget.cmake)
 include(${_cccl_root}/cmake/CCCLBuildCompilerTargets.cmake)
+include(${_cccl_root}/cmake/CCCLGetDependencies.cmake)
 cccl_build_compiler_targets()
 
 set(CCCL_ENABLE_C ON)
