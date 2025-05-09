@@ -121,6 +121,16 @@ def make_host_cfunc(state_ptr_ty, fn):
 
 
 def test_large_num_segments():
+    """
+    This test builds input iterator as transformation
+    over counting iterator by a function
+    k -> (F(k + 1) - F(k)) % 7
+
+    Segmented reduction with fixed size is performed
+    using add modulo 7. Expected result is known to be
+    F(end_offset[k] + 1) - F(start_offset[k]) % 7
+    """
+
     def make_difference(idx: np.int64) -> np.int8:
         def Fu(idx: np.int64) -> np.int8:
             i8 = np.int8(idx % 5) + np.int8(idx % 3)
@@ -182,6 +192,20 @@ def test_large_num_segments():
 
 
 def test_large_num_segments3():
+    """
+    Test with large num_segments > INT_MAX
+
+    Input is constant iterator with value 1.
+
+    offset positions are computed as transformation
+    over counting iterator with `n -> sum(min + (k % p), k=0..n)`.
+    The closed form value of the sum is coded in `offset_value`
+    function.
+
+    Result of segmented reduction is known, and is
+    given by transformed iterator over counting iterator
+    transformed by `k -> min + (k % p)` function.
+    """
     input_it = iterators.ConstantIterator(np.int16(1))
 
     def offset_functor(m0: np.int64, p: np.int64):
@@ -192,7 +216,8 @@ def test_large_num_segments3():
 
             So segment lengths are periodic linearly
             increasing sequences, e.g,
-            [1, 2, ..., n - 2, n - 1, 1, 2, ....]
+            [min , min + 1, ..., min + p - 2,
+                min + p - 1, min, min +1 , ....]
             """
             q = n // p
             r = n - q * p
