@@ -27,6 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _T1, class _T2 = _T1>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 exchange(_T1& __obj, _T2&& __new_value) noexcept(
   is_nothrow_move_constructible<_T1>::value && is_nothrow_assignable<_T1&, _T2>::value)
