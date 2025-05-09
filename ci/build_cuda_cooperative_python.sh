@@ -8,6 +8,10 @@ echo "Python version: ${py_version}"
 
 ls -la /
 
+# Build the cccl wheel and copy it to the wheelhouse directory
+python -m pip wheel --no-deps ../cuda_cccl && \
+cp cuda_cccl-*.whl /wheelhouse/
+
 # Build the wheel and output to the wheelhouse directory
 python -m pip wheel --no-deps . && \
-cp *.whl /wheelhouse/
+cp cuda_cooperative-*.whl /wheelhouse/
