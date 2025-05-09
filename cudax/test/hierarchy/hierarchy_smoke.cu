@@ -149,7 +149,7 @@ struct basic_test_mixed
 
   void run()
   {
-    auto dims_mixed = cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims(dim3(8, 4, 2)));
+    constexpr auto dims_mixed = cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims(dim3(8, 4, 2)));
 
     test_host_dev(dims_mixed, *this);
     static_assert(dims_mixed.extents(cudax::thread, cudax::block) == block_size);

@@ -272,8 +272,7 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
     CHECK(a.interface() == _CCCL_TYPEID(iempty<>));
     CHECK(a.__in_situ() == true);
 
-    [[maybe_unused]]
-    immovable** p = cudax::any_cast<immovable*>(&a);
+    [[maybe_unused]] immovable** p = cudax::any_cast<immovable*>(&a);
     CHECK((p && *p == &im));
 
     int i    = 42;
@@ -490,7 +489,7 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
 
   SECTION("cudax::dynamic_any_cast")
   {
-    auto cast_to_derived_fn =
+    [[maybe_unused]] auto cast_to_derived_fn =
       [](auto&& arg) -> decltype(cudax::dynamic_any_cast<iderived<>>(static_cast<decltype(arg)>(arg))) {
       throw;
     };

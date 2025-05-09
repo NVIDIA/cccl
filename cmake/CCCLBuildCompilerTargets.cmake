@@ -31,13 +31,17 @@ function(cccl_build_compiler_interface interface_target cuda_compile_options cxx
   if (CCCL_TOPLEVEL_PROJECT AND
       CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA" AND
       NOT CMAKE_CUDA_HOST_COMPILER STREQUAL CMAKE_CXX_COMPILER)
-    message(FATAL_ERROR
-    "CCCL developer builds require that CMAKE_CUDA_HOST_COMPILER exactly matches "
-    "CMAKE_CXX_COMPILER when using nvcc:\n"
-    "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}\n"
-    "CMAKE_CUDA_HOST_COMPILER: ${CMAKE_CUDA_HOST_COMPILER}\n"
-    "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}\n"
-    )
+    if (CMAKE_CUDA_HOST_COMPILER STREQUAL "")
+      SET(CMAKE_CUDA_HOST_COMPILER CMAKE_CXX_COMPILER)
+    else()
+      message(FATAL_ERROR
+      "CCCL developer builds require that CMAKE_CUDA_HOST_COMPILER exactly matches "
+      "CMAKE_CXX_COMPILER when using nvcc:\n"
+      "CMAKE_CUDA_COMPILER: ${CMAKE_CUDA_COMPILER}\n"
+      "CMAKE_CUDA_HOST_COMPILER: ${CMAKE_CUDA_HOST_COMPILER}\n"
+      "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}\n"
+      )
+    endif()
   endif()
 
   add_library(${interface_target} INTERFACE)
