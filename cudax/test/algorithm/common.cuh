@@ -118,7 +118,8 @@ struct weird_buffer
     }
   };
 
-  _CCCL_NODISCARD_FRIEND transform_result __cudax_launch_transform(cuda::stream_ref, const weird_buffer& self) noexcept
+  _CCCL_NODISCARD_FRIEND friend transform_result
+  __cudax_launch_transform(cuda::stream_ref, const weird_buffer& self) noexcept
   {
     return {self.data, self.size};
   }

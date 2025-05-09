@@ -271,7 +271,7 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(equality_comparable<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(const __iterator& __x, const __iterator& __y)
     {
       return __x.__value_ == __y.__value_;
@@ -280,7 +280,7 @@ public:
 #if _CCCL_STD_VER <= 2017
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(equality_comparable<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(const __iterator& __x, const __iterator& __y)
     {
       return __x.__value_ != __y.__value_;
@@ -289,7 +289,7 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(totally_ordered<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator<(const __iterator& __x, const __iterator& __y)
     {
       return __x.__value_ < __y.__value_;
@@ -297,7 +297,7 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(totally_ordered<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator>(const __iterator& __x, const __iterator& __y)
     {
       return __y < __x;
@@ -305,7 +305,7 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(totally_ordered<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator<=(const __iterator& __x, const __iterator& __y)
     {
       return !(__y < __x);
@@ -313,14 +313,14 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(totally_ordered<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator>=(const __iterator& __x, const __iterator& __y)
     {
       return !(__x < __y);
     }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator<=>(const __iterator& __x, const __iterator& __y)
       requires totally_ordered<_Start> && three_way_comparable<_Start>
     {
@@ -330,7 +330,8 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(__advanceable<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator+(__iterator __i, difference_type __n)
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iterator
+    operator+(__iterator __i, difference_type __n)
     {
       __i += __n;
       return __i;
@@ -338,7 +339,8 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(__advanceable<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator+(difference_type __n, __iterator __i)
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iterator
+    operator+(difference_type __n, __iterator __i)
     {
       return __i + __n;
     }
@@ -356,7 +358,7 @@ public:
 
     _CCCL_TEMPLATE(class _Start2 = _Start)
     _CCCL_REQUIRES(__advanceable<_Start2>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr difference_type
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
     operator-(const __iterator& __x, const __iterator& __y)
     {
       if constexpr (__integer_like<_Start> && !__signed_integer_like<_Start>)
@@ -393,25 +395,25 @@ public:
         : __bound_sentinel_(_CUDA_VSTD::move(__bound_sentinel))
     {}
 
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ == __y.__bound_sentinel_;
     }
 #if _CCCL_STD_VER <= 2017
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(const __sentinel& __x, const __iterator& __y)
     {
       return __x.__bound_sentinel_ == __y.__value_;
     }
 
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ != __y.__bound_sentinel_;
     }
 
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(const __sentinel& __x, const __iterator& __y)
     {
       return __x.__bound_sentinel_ != __y.__value_;
@@ -420,7 +422,7 @@ public:
 
     _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
     _CCCL_REQUIRES(sized_sentinel_for<_BoundSentinel2, _Start>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Start>
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iter_difference_t<_Start>
     operator-(const __iterator& __x, const __sentinel& __y)
     {
       return __x.__value_ - __y.__bound_sentinel_;
@@ -428,7 +430,7 @@ public:
 
     _CCCL_TEMPLATE(class _BoundSentinel2 = _BoundSentinel)
     _CCCL_REQUIRES(sized_sentinel_for<_BoundSentinel2, _Start>)
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Start>
+    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iter_difference_t<_Start>
     operator-(const __sentinel& __x, const __iterator& __y)
     {
       return -(__y - __x);

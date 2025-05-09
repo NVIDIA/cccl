@@ -106,7 +106,7 @@ public:
    * \param rhs The second `stream_ref` to compare
    * \return true if equal, false if unequal
    */
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream == __rhs.__stream;
@@ -122,7 +122,7 @@ public:
    * \param rhs The second `stream_ref` to compare
    * \return true if unequal, false if equal
    */
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream != __rhs.__stream;
