@@ -291,9 +291,9 @@ struct launch_priority : public detail::launch_option
   static constexpr bool needs_attribute_space      = true;
   static constexpr bool is_relevant_on_dpevice     = false;
   static constexpr detail::launch_option_kind kind = detail::launch_option_kind::launch_priority;
-  unsigned int priority;
+  int priority;
 
-  launch_priority(unsigned int p) noexcept
+  launch_priority(int p) noexcept
       : priority(p)
   {}
 
