@@ -380,6 +380,8 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__container/*.cuh",
     "../../cudax/include/cuda/experimental/__device/*.cuh",
     "../../cudax/include/cuda/experimental/__event/*.cuh",
+    "../../cudax/include/cuda/experimental/graph.cuh",
+    "../../cudax/include/cuda/experimental/__graph/*.cuh",
     "../../cudax/include/cuda/experimental/__hierarchy/*.cuh",
     "../../cudax/include/cuda/experimental/__launch/*.cuh",
     "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
@@ -399,6 +401,10 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__stf/stream/*.cuh",
     "../../cudax/include/cuda/experimental/__stf/stream/internal/*.cuh",
     "../../cudax/include/cuda/experimental/__stf/stream/interfaces/*.cuh",
+]
+
+doxygen_exclude = [
+    "../../cudax/include/cuda/experimental/__graph/fwd.cuh",
 ]
 
 doxygen_predefined = [
