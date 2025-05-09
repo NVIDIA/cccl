@@ -258,10 +258,8 @@ struct DispatchUniqueByKey
 
   template <typename ActivePolicyT, typename InitKernelT, typename UniqueByKeySweepKernelT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t
-  Invoke(InitKernelT init_kernel, UniqueByKeySweepKernelT sweep_kernel, [[maybe_unused]] ActivePolicyT policy = {})
+  Invoke(InitKernelT init_kernel, UniqueByKeySweepKernelT sweep_kernel, ActivePolicyT policy = {})
   {
-    ActivePolicyT::lmao;
-    ActivePolicyT::UniqueByKeyPolicyT::lol;
     cudaError error = cudaSuccess;
     do
     {
@@ -272,22 +270,6 @@ struct DispatchUniqueByKey
       {
         break;
       }
-
-      using Policy = typename ActivePolicyT::UniqueByKeyPolicyT;
-      // using Policy = typename PolicyHub::MaxPolicy::UniqueByKeyPolicyT;
-
-      // Policy::whatever;
-      // PolicyHub::MaxPolicy::UniqueByKeyPolicyT::whatever;
-
-      using other_helper = cub::detail::vsmem_helper_default_fallback_policy_t<
-        Policy,
-        detail::unique_by_key::AgentUniqueByKey,
-        KeyInputIteratorT,
-        ValueInputIteratorT,
-        KeyOutputIteratorT,
-        ValueOutputIteratorT,
-        EqualityOpT,
-        OffsetT>;
 
       // Number of input tiles
       const auto block_threads = VSMemHelperT::template BlockThreads<
