@@ -67,8 +67,8 @@ runs:
         AWS_SESSION_TOKEN: "${{env.AWS_SESSION_TOKEN}}"
         AWS_SECRET_ACCESS_KEY: "${{env.AWS_SECRET_ACCESS_KEY}}"
       run: |
-        mkdir artifacts
-        mkdir wheelhouse
+        mkdir -p artifacts
+        mkdir -p wheelhouse
 
         cat <<'EOF' > ci.sh
         #! /usr/bin/env bash
