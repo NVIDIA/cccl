@@ -22,18 +22,33 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 
 #include <cuda/experimental/__execution/policy.cuh>
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__stream/get_stream.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
+#include <cuda/experimental/__execution/prologue.cuh>
+
 namespace cuda::experimental
 {
+namespace execution
+{
+using _CUDA_STD_EXEC::env;
+using _CUDA_STD_EXEC::env_of_t;
+using _CUDA_STD_EXEC::get_env;
+using _CUDA_STD_EXEC::prop;
+
+using _CUDA_STD_EXEC::__nothrow_queryable_with;
+using _CUDA_STD_EXEC::__query_result_t;
+using _CUDA_STD_EXEC::__queryable_with;
+} // namespace execution
 
 template <class... _Properties>
 class env_t
@@ -99,5 +114,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/experimental/__execution/epilogue.cuh>
 
 #endif //__CUDAX___EXECUTION_ENV_CUH

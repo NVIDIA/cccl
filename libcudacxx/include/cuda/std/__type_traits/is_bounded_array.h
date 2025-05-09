@@ -20,27 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cstddef/types.h>
 #include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_bounded_array : false_type
-{};
-template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_bounded_array<_Tp[_Np]> : true_type
-{};
+template <class _Tp>
+inline constexpr bool is_bounded_array_v = false;
 
-template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : false_type
-{};
 template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array<_Tp[_Np]> : true_type
-{};
+inline constexpr bool is_bounded_array_v<_Tp[_Np]> = true;
 
 template <class _Tp>
-inline constexpr bool is_bounded_array_v = is_bounded_array<_Tp>::value;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : public bool_constant<is_bounded_array_v<_Tp>>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

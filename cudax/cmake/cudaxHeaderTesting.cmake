@@ -21,8 +21,8 @@ function(cudax_add_header_test label definitions)
       GLOBS "cuda/experimental/*.cuh"
       EXCLUDES
         # The following internal headers are not required to compile independently:
-        "cuda/experimental/__async/sender/prologue.cuh"
-        "cuda/experimental/__async/sender/epilogue.cuh"
+        "cuda/experimental/__execution/prologue.cuh"
+        "cuda/experimental/__execution/epilogue.cuh"
         # STF headers are compiled separately:
         "cuda/experimental/stf.cuh"
         "cuda/experimental/__stf/*"

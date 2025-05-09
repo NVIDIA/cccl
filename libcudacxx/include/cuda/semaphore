@@ -11,10 +11,6 @@
 #ifndef _CUDA_SEMAPHORE
 #define _CUDA_SEMAPHORE
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
-#  error "CUDA synchronization primitives are only supported for sm_70 and up."
-#endif
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -24,6 +20,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#if _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
+#  error "CUDA synchronization primitives are only supported for sm_70 and up."
+#endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
 #include <cuda/__semaphore/counting_semaphore.h>
 #include <cuda/std/semaphore>

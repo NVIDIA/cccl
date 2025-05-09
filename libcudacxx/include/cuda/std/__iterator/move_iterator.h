@@ -92,6 +92,8 @@ template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #endif // _CCCL_NO_CONCEPTS
 
+_LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
+
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator : public __move_iter_category_base<_Iter>
 {
@@ -300,6 +302,7 @@ public:
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
+_LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(move_iterator)
 
 // Some compilers have issues determining _IsFancyPointer
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)

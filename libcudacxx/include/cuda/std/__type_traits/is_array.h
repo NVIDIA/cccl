@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public integral_constant<bool, _CCCL_BUILTIN_IS_ARRAY(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public bool_constant<_CCCL_BUILTIN_IS_ARRAY(_Tp)>
 {};
 
 template <class _Tp>
@@ -39,17 +39,17 @@ inline constexpr bool is_array_v = _CCCL_BUILTIN_IS_ARRAY(_Tp);
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public false_type
-{};
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array<_Tp[]> : public true_type
-{};
-template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array<_Tp[_Np]> : public true_type
-{};
+inline constexpr bool is_array_v = false;
 
 template <class _Tp>
-inline constexpr bool is_array_v = is_array<_Tp>::value;
+inline constexpr bool is_array_v<_Tp[]> = true;
+
+template <class _Tp, size_t _Np>
+inline constexpr bool is_array_v<_Tp[_Np]> = true;
+
+template <class _Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public bool_constant<is_array_v<_Tp>>
+{};
 
 #endif // defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 

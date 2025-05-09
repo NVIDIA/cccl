@@ -48,7 +48,8 @@ try
        {1, 32 * 1024},
        {128 * 1024, 256 * 1024},
        {target_copy_size, target_copy_size}}),
-    take(4,
+    // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+    take(c2h::adjust_seed_count(4),
          map(
            [](const std::vector<buffer_size_t>& chunk) {
              buffer_size_t lhs = chunk[0];
@@ -112,7 +113,8 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }
 
-C2H_TEST("DeviceMemcpy::Batched works for a very large buffer", "[memcpy]")
+C2H_TEST("DeviceMemcpy::Batched works for a very large buffer",
+         "[memcpy][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using data_t        = uint64_t;
@@ -143,7 +145,8 @@ catch (std::bad_alloc& e)
   std::cerr << "Caught bad_alloc: " << e.what() << std::endl;
 }
 
-C2H_TEST("DeviceMemcpy::Batched works for a very large number of buffer", "[memcpy]")
+C2H_TEST("DeviceMemcpy::Batched works for a very large number of buffer",
+         "[memcpy][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
 try
 {
   using src_ptr_t       = const cuda::std::uint8_t*;

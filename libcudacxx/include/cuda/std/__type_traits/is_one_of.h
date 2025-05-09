@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename T, typename... TArgs>
-inline constexpr bool __is_one_of_v = (_CCCL_TRAIT(is_same, T, TArgs) || ...);
+inline constexpr bool __is_one_of_v = (is_same_v<T, TArgs> || ...);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
