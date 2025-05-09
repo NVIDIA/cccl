@@ -16,6 +16,34 @@ from numba.cuda.cudaimpl import registry as cuda_lower_registry
 
 from cuda.parallel.experimental.iterators import _iterators
 
+__doc__ = """
+# Strided iterator in numba.cuda
+
+This work follows in the footsteps of https://github.com/gmarkall/numba-accelerated-udfs
+
+## Iterator
+
+To define an iterator in `cuda.parallel`, one needs to define a type describing mutable
+iterator state and two functions, `advance(state, distance)` and `dereference(state)`.
+
+Since `advance` should be able to mutate the `state`, the state is necessarily passed
+by reference, i.e., as a pointer to a structure.
+
+The structure needed by strided iterator is as follows:
+
+```
+     ("linear_id", types.int64),                      # mutable member
+     ("ptr", types.CPointer(value_type)),             # immutable members
+     ("shape", types.UniTuple(types.int64, ndim)),
+     ("strides", types.UniTuple(types.int64, ndim)),
+     ("ndim", types.int32),
+```
+
+The `advance` function increments `linear_id` by `distance` argument.
+The `dereference` function converts `linear_id` into offset using `shape` and
+`strides` arrays and returns `ptr[offset]`.
+"""
+
 
 @lru_cache
 def make_iterator_struct_class(ndim):
@@ -176,9 +204,56 @@ class NdArrayIterator(_iterators.IteratorBase):
     def advance(state_ref, distance):
         state_ref.linear_id = state_ref.linear_id + distance
 
+    @property
+    def dereference(self):
+        if self.cvalue.ndim == 1:
+            return self.dereference_1d
+        elif self.cvalue.ndim == 2:
+            return self.dereference_2d
+        else:
+            return self.dereference_nd
+
     @staticmethod
-    def dereference(state_ref):
-        state = state_ref[0]
+    def dereference_1d(state_ref):
+        """Specialization with no division"""
+        zero_ = numba.int32(0)
+        state = state_ref[zero_]
+        id_ = state.linear_id
+        strides_ = state.strides[zero_]
+        # offset_ has the same type as id_
+        offset_ = id_ * strides_
+        val = (state.ptr)[offset_]
+        return val
+
+    @staticmethod
+    def dereference_2d(state_ref):
+        """Specialization with unrolled loop"""
+        one_i32 = numba.int32(1)
+        zero_i32 = one_i32 - one_i32
+        state = state_ref[zero_i32]
+        id_ = state.linear_id
+        # init offset_ to zero of the same type as id_
+        zero_ = id_ - id_
+        shape_ = state.shape
+        strides_ = state.strides
+        sh_i = shape_[one_i32]
+        if sh_i > 0:
+            q_ = id_ // sh_i
+            r_ = id_ - q_ * sh_i
+        else:
+            q_ = id_
+            r_ = zero_  # make zero of the right type
+        offset_ = r_ * strides_[one_i32]
+        id_ = q_
+        offset_ = offset_ + id_ * strides_[zero_i32]
+        val = (state.ptr)[offset_]
+        return val
+
+    @staticmethod
+    def dereference_nd(state_ref):
+        """Dereference at offset computed from shape/strides"""
+        zero_i32 = numba.int32(0)
+        state = state_ref[zero_i32]
         id_ = state.linear_id
         # init offset_ to zero of the same type as id_
         zero_ = id_ - id_
@@ -199,7 +274,6 @@ class NdArrayIterator(_iterators.IteratorBase):
                     r_ = zero_  # make zero of the right type
                 offset_ = offset_ + r_ * strides_[bi_]
                 id_ = q_
-            zero_i32 = one_i32 - one_i32
             offset_ = offset_ + id_ * strides_[zero_i32]
         val = (state.ptr)[offset_]
         return val
