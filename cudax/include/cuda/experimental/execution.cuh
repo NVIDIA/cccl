@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,6 +25,7 @@
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/read_env.cuh>
 #include <cuda/experimental/__execution/run_loop.cuh>
+#include <cuda/experimental/__execution/schedule_from.cuh>
 #include <cuda/experimental/__execution/sequence.cuh>
 #include <cuda/experimental/__execution/start_detached.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>

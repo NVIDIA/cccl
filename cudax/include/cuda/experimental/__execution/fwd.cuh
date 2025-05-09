@@ -85,15 +85,43 @@ enum __disposition_t
   __stopped
 };
 
+// customization point objects:
 struct set_value_t;
 struct set_error_t;
 struct set_stopped_t;
 struct start_t;
 struct connect_t;
 struct schedule_t;
+
+// sender factory algorithms:
+struct just_t;
+struct just_error_t;
+struct just_stopped_t;
+struct just_from_t;
+struct just_from_error_t;
+struct just_from_stopped_t;
+struct read_env_t;
+
+// sender adaptor algorithms:
+struct let_value_t;
+struct let_error_t;
+struct let_stopped_t;
+struct then_t;
+struct upon_error_t;
+struct upon_stopped_t;
+struct when_all_t;
+struct conditional_t;
+struct sequence_t;
+struct write_env_t;
+struct starts_on_t;
+struct continues_on_t;
+struct schedule_from_t;
+
+// sender consumer algorithms:
 struct sync_wait_t;
 struct start_detached_t;
 
+// queries:
 struct get_allocator_t;
 struct get_stop_token_t;
 struct get_scheduler_t;
