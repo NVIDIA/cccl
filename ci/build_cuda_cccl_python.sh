@@ -7,6 +7,5 @@ py_version=${2#*=}
 echo "Python version: ${py_version}"
 
 # Build the wheel and output to the wheelhouse directory
-ls $HOST_WORKSPACE/
 python -m pip wheel --no-deps . && \
-mv *.whl $HOST_WORKSPACE/wheelhouse/
+mv *.whl /wheelhouse/
