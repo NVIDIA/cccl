@@ -218,7 +218,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   }
 };
 
-completion_signatures() -> completion_signatures<>;
+_CCCL_HOST_DEVICE completion_signatures() -> completion_signatures<>;
 
 template <class _Ty>
 _CCCL_CONCEPT __valid_completion_signatures = detail::__is_specialization_of<_Ty, completion_signatures>;
@@ -364,7 +364,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4913)
 #define _CUDAX_GET_COMPLSIGS(...) \
   _CUDA_VSTD::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
 
-#define _CUDAX_CHECKED_COMPLSIGS(...) (__VA_ARGS__, void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
+#define _CUDAX_CHECKED_COMPLSIGS(...) \
+  (static_cast<void>(__VA_ARGS__), void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
 
 struct _A_GET_COMPLETION_SIGNATURES_CUSTOMIZATION_RETURNED_A_TYPE_THAT_IS_NOT_A_COMPLETION_SIGNATURES_SPECIALIZATION
 {};

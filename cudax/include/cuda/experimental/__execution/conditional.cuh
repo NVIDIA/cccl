@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -56,9 +57,9 @@ namespace cuda::experimental::execution
 {
 struct _FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE;
 
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   template <class _Pred, class _Then, class _Else>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure;
 
@@ -71,7 +72,7 @@ private:
   }
 
   template <class... _As>
-  using __just_from_t _CCCL_NODEBUG_ALIAS = decltype(just_from(__cond_t::__mk_complete_fn(declval<_As>()...)));
+  using __just_from_t _CCCL_NODEBUG_ALIAS = decltype(just_from(conditional_t::__mk_complete_fn(declval<_As>()...)));
 
   template <class _Pred, class _Then, class _Else, class... _Env>
   struct __either_sig_fn
@@ -81,14 +82,14 @@ private:
     {
       if constexpr (!_CUDA_VSTD::__is_callable_v<_Pred, _As&...>)
       {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __cond_t),
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_IS_NOT_CALLABLE),
                                             _WITH_FUNCTION(_Pred),
                                             _WITH_ARGUMENTS(_As & ...)>();
       }
       else if constexpr (!_CUDA_VSTD::is_convertible_v<_CUDA_VSTD::__call_result_t<_Pred, _As&...>, bool>)
       {
-        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, __cond_t),
+        return invalid_completion_signature<_WHERE(_IN_ALGORITHM, conditional_t),
                                             _WHAT(_FUNCTION_MUST_RETURN_A_BOOLEAN_TESTABLE_VALUE),
                                             _WITH_FUNCTION(_Pred),
                                             _WITH_ARGUMENTS(_As & ...)>();
@@ -121,7 +122,7 @@ private:
     _CCCL_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __params_t&& __params)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __params_{static_cast<__params_t&&>(__params)}
-        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{*this})}
+        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{this})}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
@@ -134,19 +135,19 @@ private:
     template <class... _As>
     _CCCL_API void set_value(_As&&... __as) noexcept
     {
-      auto __just = just_from(__cond_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
+      auto __just = just_from(conditional_t::__mk_complete_fn(static_cast<_As&&>(__as)...));
       _CUDAX_TRY( //
         ({ //
           if (static_cast<_Pred&&>(__params_.pred)(__as...))
           {
-            auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __rcvr_ref{__rcvr_});
+            auto& __op = __ops_.__emplace_from(
+              connect, static_cast<_Then&&>(__params_.on_true)(__just), __rcvr_ref{_CUDA_VSTD::addressof(__rcvr_)});
             execution::start(__op);
           }
           else
           {
-            auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __rcvr_ref{__rcvr_});
+            auto& __op = __ops_.__emplace_from(
+              connect, static_cast<_Else&&>(__params_.on_false)(__just), __rcvr_ref{_CUDA_VSTD::addressof(__rcvr_)});
             execution::start(__op);
           }
         }),
@@ -194,10 +195,10 @@ public:
 };
 
 template <class _Pred, class _Then, class _Else, class _Sndr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t<__cond_t::__closure<_Pred, _Then, _Else>, _Sndr>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__closure<_Pred, _Then, _Else>, _Sndr>
 {
-  using __params_t _CCCL_NODEBUG_ALIAS = __cond_t::__closure<_Pred, _Then, _Else>;
-  _CCCL_NO_UNIQUE_ADDRESS __cond_t __tag_;
+  using __params_t _CCCL_NODEBUG_ALIAS = conditional_t::__closure<_Pred, _Then, _Else>;
+  _CCCL_NO_UNIQUE_ADDRESS conditional_t __tag_;
   __params_t __params_;
   _Sndr __sndr_;
 
@@ -233,7 +234,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t<__cond_t::__closure<_Pre
 };
 
 template <class _Pred, class _Then, class _Else>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
+struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure
 {
   _Pred pred;
   _Then on_true;
@@ -268,7 +269,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
+_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
   using __dom_t _CCCL_NODEBUG_ALIAS    = domain_for_t<_Sndr>;
   using __params_t _CCCL_NODEBUG_ALIAS = __closure<_Pred, _Then, _Else>;
@@ -277,16 +278,15 @@ _CCCL_TRIVIAL_API constexpr auto __cond_t::operator()(_Sndr __sndr, _Pred __pred
 }
 
 template <class _Pred, class _Then, class _Else>
-_CCCL_TRIVIAL_API constexpr auto __cond_t::operator()(_Pred __pred, _Then __then, _Else __else) const
+_CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Pred __pred, _Then __then, _Else __else) const
 {
   return __closure<_Pred, _Then, _Else>{
     static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
 }
 
 template <class _Params, class _Sndr>
-inline constexpr size_t structured_binding_size<__cond_t::__sndr_t<_Params, _Sndr>> = 3;
+inline constexpr size_t structured_binding_size<conditional_t::__sndr_t<_Params, _Sndr>> = 3;
 
-using conditional_t _CCCL_NODEBUG_ALIAS = __cond_t;
 _CCCL_GLOBAL_CONSTANT conditional_t conditional{};
 } // namespace cuda::experimental::execution
 

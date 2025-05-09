@@ -45,7 +45,7 @@ namespace cuda::experimental::execution
 /// sender.
 struct sync_wait_t
 {
-private:
+  _CUDAX_SEMI_PRIVATE :
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     run_loop* __loop_;
