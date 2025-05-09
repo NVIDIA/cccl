@@ -12,6 +12,7 @@
 #define __CUDAX_EXECUTION__
 
 // IWYU pragma: begin_exports
+#include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/conditional.cuh>
 #include <cuda/experimental/__execution/continues_on.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -31,6 +32,7 @@
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/then.cuh>
 #include <cuda/experimental/__execution/thread_context.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 #include <cuda/experimental/__execution/when_all.cuh>
 #include <cuda/experimental/__execution/write_env.cuh>

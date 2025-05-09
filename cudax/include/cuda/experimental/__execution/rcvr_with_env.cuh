@@ -54,7 +54,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
       noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
       -> __query_result_t<__1st_env_t<_Query>, _Query>
     {
-      return __env_t::__get_1st<_Query>(*this);
+      return __env_t::__get_1st<_Query>(*this).query(_Query{});
     }
 
     __rcvr_with_env_t const* __rcvr_;

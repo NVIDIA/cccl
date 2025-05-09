@@ -34,10 +34,9 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
-
-#include <nv/target>
 
 // include this last:
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -446,12 +445,15 @@ _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return __get_completion_signatures_helper<_Sndr>();
   }
+  else if constexpr (!__has_sender_transform<_Sndr, _Env...>)
+  {
+    return __get_completion_signatures_helper<_Sndr, _Env...>();
+  }
   else
   {
-    // BUGBUG TODO:
     // Apply a lazy sender transform if one exists before computing the completion signatures:
-    // using _NewSndr _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__late_domain_of_t<_Sndr, _Env>, _Sndr, _Env>;
-    using _NewSndr _CCCL_NODEBUG_ALIAS = _Sndr;
+    using _NewSndr _CCCL_NODEBUG_ALIAS =
+      _CUDA_VSTD::__call_result_t<transform_sender_t, domain_for_t<_Sndr, _Env...>, _Sndr, _Env...>;
     return __get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }

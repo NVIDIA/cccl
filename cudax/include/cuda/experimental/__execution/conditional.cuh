@@ -32,6 +32,7 @@
 #include <cuda/experimental/__execution/just_from.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
@@ -178,20 +179,9 @@ private:
     __next_ops_variant_t __ops_;
   };
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class _Params, class _Sndr>
-    _CCCL_API constexpr auto operator()(_Params __params, _Sndr __sndr) const;
-  };
-
 public:
   template <class _Pred, class _Then, class _Else>
   using params _CCCL_NODEBUG_ALIAS = __closure<_Pred, _Then, _Else>;
-
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
 
   template <class _Params, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
@@ -242,18 +232,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__sndr_t<__cond_t::__closure<_Pre
   }
 };
 
-template <class _Params, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto __cond_t::__fn::operator()(_Params __params, _Sndr __sndr) const
-{
-  if constexpr (!dependent_sender<_Sndr>)
-  {
-    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Params, _Sndr>>;
-    static_assert(__valid_completion_signatures<__completions>);
-  }
-
-  return __sndr_t<_Params, _Sndr>{{}, static_cast<_Params&&>(__params), static_cast<_Sndr&&>(__sndr)};
-}
-
 template <class _Pred, class _Then, class _Else>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
 {
@@ -264,13 +242,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
   template <class _Sndr>
   _CCCL_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure, _Sndr>
   {
+    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+
     if constexpr (!dependent_sender<_Sndr>)
     {
       using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<__closure, _Sndr>>;
       static_assert(__valid_completion_signatures<__completions>);
     }
 
-    return __sndr_t<__closure, _Sndr>{{}, static_cast<__closure&&>(*this), static_cast<_Sndr&&>(__sndr)};
+    return transform_sender(
+      __dom_t{}, __sndr_t<__closure, _Sndr>{{}, static_cast<__closure&&>(*this), static_cast<_Sndr&&>(__sndr)});
   }
 
   template <class _Sndr>
@@ -289,10 +270,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __cond_t::__closure
 template <class _Sndr, class _Pred, class _Then, class _Else>
 _CCCL_TRIVIAL_API constexpr auto __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
-  __closure<_Pred, _Then, _Else> __params{
-    static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
-  return __dom_t::__apply(*this)(static_cast<__closure<_Pred, _Then, _Else>&&>(__params), static_cast<_Sndr&&>(__sndr));
+  using __dom_t _CCCL_NODEBUG_ALIAS    = domain_for_t<_Sndr>;
+  using __params_t _CCCL_NODEBUG_ALIAS = __closure<_Pred, _Then, _Else>;
+  __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
+  return static_cast<__params_t&&>(__params).__mk_sender(static_cast<_Sndr&&>(__sndr));
 }
 
 template <class _Pred, class _Then, class _Else>
