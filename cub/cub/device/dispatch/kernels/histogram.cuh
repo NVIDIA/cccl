@@ -94,7 +94,6 @@ struct Transforms
 #ifdef CCCL_C_EXPERIMENTAL
 #  if _CCCL_HAS_INT128()
     using IntArithmeticT = __uint128_t;
-    ::cuda::std::_If <
 #  else
     using IntArithmeticT = uint64_t;
 #  endif
@@ -120,9 +119,9 @@ struct Transforms
       >;
 #endif // CCCL_C_EXPERIMENTAL
 
-      // Alias template that excludes __[u]int128 from the integral types
-      template <typename T>
-      using is_integral_excl_int128 =
+    // Alias template that excludes __[u]int128 from the integral types
+    template <typename T>
+    using is_integral_excl_int128 =
 #if _CCCL_HAS_INT128()
       ::cuda::std::_If<::cuda::std::is_same_v<T, __int128_t>&& ::cuda::std::is_same_v<T, __uint128_t>,
                        ::cuda::std::false_type,
