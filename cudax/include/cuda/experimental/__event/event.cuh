@@ -135,7 +135,7 @@ public:
     return _CUDA_VSTD::exchange(__event_, {});
   }
 
-  _CCCL_NODISCARD_FRIEND constexpr flags operator|(flags __lhs, flags __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
   {
     return static_cast<flags>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs));
   }

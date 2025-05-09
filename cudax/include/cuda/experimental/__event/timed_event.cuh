@@ -87,7 +87,8 @@ public:
   //! @return cuda::std::chrono::nanoseconds The elapsed time in nanoseconds.
   //!
   //! @note The elapsed time has a resolution of approximately 0.5 microseconds.
-  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::chrono::nanoseconds operator-(const timed_event& __end, const timed_event& __start)
+  _CCCL_NODISCARD_FRIEND friend _CUDA_VSTD::chrono::nanoseconds
+  operator-(const timed_event& __end, const timed_event& __start)
   {
     float __ms = 0.0f;
     _CCCL_TRY_CUDA_API(

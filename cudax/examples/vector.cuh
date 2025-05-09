@@ -118,20 +118,20 @@ private:
     __cv_vector& __v_;
   };
 
-  _CCCL_NODISCARD_FRIEND __action<detail::__param_kind::_inout>
+  _CCCL_NODISCARD_FRIEND friend __action<detail::__param_kind::_inout>
   __cudax_launch_transform(::cuda::stream_ref __str, vector& __v) noexcept
   {
     return __action<detail::__param_kind::_inout>{__str, __v};
   }
 
-  _CCCL_NODISCARD_FRIEND __action<detail::__param_kind::_in>
+  _CCCL_NODISCARD_FRIEND friend __action<detail::__param_kind::_in>
   __cudax_launch_transform(::cuda::stream_ref __str, const vector& __v) noexcept
   {
     return __action<detail::__param_kind::_in>{__str, __v};
   }
 
   template <detail::__param_kind _Kind>
-  _CCCL_NODISCARD_FRIEND __action<_Kind>
+  _CCCL_NODISCARD_FRIEND friend __action<_Kind>
   __cudax_launch_transform(::cuda::stream_ref __str, detail::__box<vector, _Kind> __b) noexcept
   {
     return __action<_Kind>{__str, __b.__val};

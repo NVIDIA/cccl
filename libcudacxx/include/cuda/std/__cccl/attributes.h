@@ -124,9 +124,9 @@
 
 // It always fails with clang
 #if _CCCL_COMPILER(CLANG)
-#  define _CCCL_NODISCARD_FRIEND friend
+#  define _CCCL_NODISCARD_FRIEND
 #else
-#  define _CCCL_NODISCARD_FRIEND [[nodiscard]] friend
+#  define _CCCL_NODISCARD_FRIEND [[nodiscard]]
 #endif
 
 // _CCCL_NO_CFI

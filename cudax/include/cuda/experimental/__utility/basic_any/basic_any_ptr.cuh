@@ -184,14 +184,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *static_cast<__void_ptr_t>(__get_optr()) == *static_cast<__void_ptr_t>(__other.__get_optr());
   }
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API auto operator==(basic_any const& __lhs, basic_any const& __rhs) noexcept -> bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API friend auto operator==(basic_any const& __lhs, basic_any const& __rhs) noexcept
+    -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__lhs.__get_optr()) == *static_cast<__void_ptr_t>(__rhs.__get_optr());
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API auto operator!=(basic_any const& __lhs, basic_any const& __rhs) noexcept
-    -> bool
+  _CCCL_NODISCARD_FRIEND _CCCL_TRIVIAL_HOST_API friend auto
+  operator!=(basic_any const& __lhs, basic_any const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }

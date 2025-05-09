@@ -47,27 +47,27 @@ struct host_only_type
 
   ~host_only_type() noexcept {}
 
-  _CCCL_NODISCARD_FRIEND bool operator==(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  _CCCL_NODISCARD_FRIEND friend bool operator==(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator!=(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  _CCCL_NODISCARD_FRIEND friend bool operator!=(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ != rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator<(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  _CCCL_NODISCARD_FRIEND friend bool operator<(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator<=(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  _CCCL_NODISCARD_FRIEND friend bool operator<=(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ <= rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator>(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  _CCCL_NODISCARD_FRIEND friend bool operator>(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ > rhs.val_;
   }
-  _CCCL_NODISCARD_FRIEND bool operator>=(const host_only_type& lhs, const host_only_type& rhs) noexcept
+  _CCCL_NODISCARD_FRIEND friend bool operator>=(const host_only_type& lhs, const host_only_type& rhs) noexcept
   {
     return lhs.val_ >= rhs.val_;
   }
@@ -113,27 +113,33 @@ struct device_only_type
 
   __device__ ~device_only_type() noexcept {}
 
-  __device__ _CCCL_NODISCARD_FRIEND bool operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  __device__ _CCCL_NODISCARD_FRIEND friend bool
+  operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  __device__ _CCCL_NODISCARD_FRIEND friend bool
+  operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ != rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  __device__ _CCCL_NODISCARD_FRIEND friend bool
+  operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  __device__ _CCCL_NODISCARD_FRIEND friend bool
+  operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ <= rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  __device__ _CCCL_NODISCARD_FRIEND friend bool
+  operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ > rhs.val_;
   }
-  __device__ _CCCL_NODISCARD_FRIEND bool operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  __device__ _CCCL_NODISCARD_FRIEND friend bool
+  operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ >= rhs.val_;
   }
