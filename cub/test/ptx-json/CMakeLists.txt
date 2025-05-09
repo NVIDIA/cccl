@@ -17,6 +17,14 @@ if(NOT is_20_available)
   return()
 endif()
 
+include(CheckIncludeFileCXX)
+check_include_file_cxx("format" _CCCL_PTX_JSON_TEST_HAS_FORMAT)
+mark_as_advanced(_CCCL_PTX_JSON_TEST_HAS_FORMAT)
+if(NOT _CCCL_PTX_JSON_TEST_HAS_FORMAT)
+  message(STATUS "Skipping ptx-json tests because <format> is not available.")
+  return()
+endif()
+
 cccl_get_json()
 
 add_executable(ptx-json-test-filter
