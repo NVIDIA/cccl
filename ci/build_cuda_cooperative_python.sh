@@ -10,4 +10,4 @@ ls /
 
 # Build the wheel and output to the wheelhouse directory
 python -m pip wheel --no-deps . && \
-mv *.whl /wheelhouse/
+cp *.whl /wheelhouse/
