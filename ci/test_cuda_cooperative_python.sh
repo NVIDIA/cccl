@@ -15,7 +15,7 @@ source "$(dirname "$0")/test_python_common.sh"
 list_environment
 
 # Install the wheel and run tests
-CUDA_COOPERATIVE_WHEEL_PATH="$(ls /workspace/wheelhouse/cuda_cooperative-*.whl)"
+CUDA_COOPERATIVE_WHEEL_PATH="$(ls $HOST_WORKSPACE/wheelhouse/cuda_cooperative-*.whl)"
 python -m pip install "${CUDA_COOPERATIVE_WHEEL_PATH}[test]"
 cd "$(dirname "$0")/../python/cuda_cooperative/tests/"
 python -m pytest -n ${PARALLEL_LEVEL} -v

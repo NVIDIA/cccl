@@ -15,7 +15,8 @@ source "$(dirname "$0")/test_python_common.sh"
 list_environment
 
 # Install the wheel and run tests
-CUDA_CCCL_WHEEL_PATH="$(ls /workspace/wheelhouse/cuda_cccl-*.whl)"
+ls $HOST_WORKSPACE/
+CUDA_CCCL_WHEEL_PATH="$(ls $HOST_WORKSPACE/wheelhouse/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]"
 cd "$(dirname "$0")/../python/cuda_cccl/tests/"
 python -m pytest -n ${PARALLEL_LEVEL} -v

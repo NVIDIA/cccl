@@ -8,4 +8,4 @@ echo "Python version: ${py_version}"
 
 # Build the wheel and output to the wheelhouse directory
 python -m pip wheel --no-deps . && \
-mv *.whl /workspace/wheelhouse/
+mv *.whl $HOST_WORKSPACE/wheelhouse/
