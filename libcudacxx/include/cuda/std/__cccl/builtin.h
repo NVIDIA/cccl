@@ -1322,7 +1322,7 @@
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #    endif
 #  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)
-#endif // defined(__cplusplus) && !defined(__CUDA_ARCH__)
+#endif // defined(__cplusplus)
 
 #ifndef _CCCL_HAS_BUILTIN_STD_MOVE
 #  define _CCCL_HAS_BUILTIN_STD_MOVE() 0
