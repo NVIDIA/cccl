@@ -10,4 +10,4 @@ echo "Python version: ${py_version}"
 CUDA_COOPERATIVE_WHEEL_PATH="$(ls /wheelhouse/cuda_cooperative-*.whl)"
 python -m pip install "${CUDA_COOPERATIVE_WHEEL_PATH}[test]"
 cd "$(dirname "$0")/../python/cuda_cooperative/tests/"
-python -m pytest -n ${PARALLEL_LEVEL} -v
+python -m pytest -n auto -v

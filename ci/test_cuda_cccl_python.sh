@@ -10,4 +10,4 @@ echo "Python version: ${py_version}"
 CUDA_CCCL_WHEEL_PATH="$(ls /wheelhouse/cuda_cccl-*.whl)"
 python -m pip install "${CUDA_CCCL_WHEEL_PATH}[test]"
 cd "$(dirname "$0")/../python/cuda_cccl/tests/"
-python -m pytest -n ${PARALLEL_LEVEL} -v
+python -m pytest -n auto -v
