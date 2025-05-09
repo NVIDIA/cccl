@@ -29,23 +29,3 @@ function run_tests {
 
   print_time_summary
 }
-
-function run_tests_from_wheel {
-  module=$1
-
-  pushd "../python/${module}" >/dev/null
-
-  wheel_path=$2
-  TEMP_VENV_DIR="/tmp/${module}_venv"
-  rm -rf "${TEMP_VENV_DIR}"
-  python -m venv "${TEMP_VENV_DIR}"
-  . "${TEMP_VENV_DIR}/bin/activate"
-  run_command "⚙️  Pip install cuda-cccl" pip install file:///workspace/cccl/python/cuda_cccl
-  run_command "⚙️  Pip install ${module}" pip install "${wheel_path}[test]"
-  begin_group "⚙️ ${module} site-packages"
-  pip freeze
-  end_group "⚙️ ${module} site-packages"
-  run_command "🚀  Pytest ${module}" pytest -n ${PARALLEL_LEVEL} -v ./tests
-  deactivate
-  print_time_summary
-}
