@@ -10,7 +10,6 @@ echo "Docker socket: " $(ls /var/run/docker.sock)
 docker run --rm -i \
   --workdir /workspace/cccl/python/cuda_parallel \
   --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
-  --mount type=bind,source=${PYENV_HELPER_PATH},target=/pyenv_helper.sh \
   --env py_version=${py_version} \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py3.10 \
   bash -c '\
