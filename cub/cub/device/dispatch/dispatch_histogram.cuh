@@ -366,7 +366,8 @@ template <int NUM_CHANNELS,
           typename KernelSource = detail::histogram::
             DeviceHistogramKernelSource<NUM_CHANNELS, NUM_ACTIVE_CHANNELS, SampleIteratorT, CounterT, OffsetT>,
           typename KernelLauncherFactory = detail::TripleChevronFactory,
-          typename SampleT = cub::detail::it_value_t<SampleIteratorT>> /// The sample value type of the input iterator
+          typename SampleT = cub::detail::it_value_t<SampleIteratorT>, /// The sample value type of the input iterator
+          typename TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>>
 struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
@@ -374,12 +375,6 @@ struct DispatchHistogram
                 "Active channels must be at most the number of total channels of the input samples");
 
 public:
-  //---------------------------------------------------------------------
-  // Types and constants
-  //---------------------------------------------------------------------
-
-  using TransformsT = detail::histogram::Transforms<LevelT, OffsetT, SampleT>;
-
   //---------------------------------------------------------------------
   // Dispatch entrypoints
   //---------------------------------------------------------------------
