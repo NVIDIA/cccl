@@ -1,10 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-PYENV_HELPER_PATH="$(dirname "$0")/pyenv_helper.sh"
-
-cd "$(dirname "$0")/../python/cuda_parallel"
-
 # Get the Python version from the command line arguments -py-version=3.10
 py_version=${2#*=}
 echo "Docker socket: " $(ls /var/run/docker.sock)
@@ -18,7 +14,7 @@ docker run --rm -i \
   --env py_version=${py_version} \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py3.10 \
   bash -c '\
-    source /pyenv_helper.sh && \
+    source /workspace/cccl/ci/pyenv_helper.sh && \
     setup_python_env "${py_version}" && \
     echo "Done setting up python env" && \
     python -m pip wheel --no-deps ../cuda_cccl && \
