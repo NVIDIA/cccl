@@ -47,8 +47,6 @@
 #    include <memory>
 #  endif // _CCCL_COMPILER(NVRTC)
 
-#  include <cuda/std/__cccl/push_macros.h>
-
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std
 {
@@ -68,6 +66,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* construct_at(_Tp* __location, _Args&&..
 } // namespace std
 #  endif // __cpp_lib_constexpr_dynamic_alloc
 #endif // _CCCL_STD_VER >= 2020
+
+#include <cuda/std/__cccl/push_macros.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

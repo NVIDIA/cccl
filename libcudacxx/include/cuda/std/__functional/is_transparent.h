@@ -38,6 +38,6 @@ struct __is_transparent<_Tp, _Up, void_t<typename _Tp::is_transparent>> : true_t
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_IS_TRANSPARENT

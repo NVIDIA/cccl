@@ -154,8 +154,6 @@ inline constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_se
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
 #include <cuda/std/__cccl/pop_macros.h>
 
 #endif // __LIBCUDACXX___ATOMIC_ORDER_H

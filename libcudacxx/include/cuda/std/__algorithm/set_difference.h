@@ -90,6 +90,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OutputIterator set_difference(
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_LIBCUDACXX_POP_MACROS
+#include <cuda/std/__cccl/pop_macros.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_SET_DIFFERENCE_H
