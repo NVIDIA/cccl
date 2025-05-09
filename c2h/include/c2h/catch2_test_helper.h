@@ -42,6 +42,7 @@
 
 #include <c2h/catch2_main.h>
 #include <c2h/device_policy.h>
+#include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
 #include <c2h/utility.h>
 #include <c2h/vector.h>
@@ -146,6 +147,29 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     auto vec_out = detail::to_vec(out);                                   \
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
   }
+
+// TODO: move to libcu++
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+#if TEST_HALF_T()
+
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half2 __x) noexcept
+{
+  return cuda::std::isnan(__x.x) || cuda::std::isnan(__x.y);
+}
+
+#endif // TEST_HALF_T()
+
+#if TEST_BF_T()
+
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_bfloat162 __x) noexcept
+{
+  return cuda::std::isnan(__x.x) || cuda::std::isnan(__x.y);
+}
+
+#endif // TEST_BF_T()
+
+_LIBCUDACXX_END_NAMESPACE_STD
 
 namespace detail
 {

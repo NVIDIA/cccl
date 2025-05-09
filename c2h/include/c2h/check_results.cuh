@@ -31,8 +31,8 @@
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
-#include "c2h/catch2_test_helper.h"
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
+#include <test_util.h>
 
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
@@ -141,11 +141,20 @@ void verify_results_exact(const c2h::host_vector<T>& expected_data, const c2h::h
   {
     return;
   }
+  if constexpr (is_vector2_fp_type_v<T>)
+  {
+    for (size_t i = 0; i < test_results.size(); ++i)
+    {
+      auto expected    = static_cast<float>(expected_data[i].x);
+      auto test_result = static_cast<float>(test_results[i].x);
+      REQUIRE(expected == test_result);
+    }
+  }
   if constexpr (is_vector2_type_v<T>)
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      REQUIRE_THAT(expected_data[i].x, detail::NaNEqualsRange(test_results[i].x));
+      REQUIRE(expected_data[i].x == test_results[i].x);
     }
   }
   else
@@ -158,5 +167,12 @@ template <typename T>
 void verify_results_exact(const c2h::host_vector<T>& expected_data, const c2h::device_vector<T>& test_results)
 {
   c2h::host_vector<T> test_results_host = test_results;
-  verify_results(expected_data, test_results_host);
+  if constexpr (is_vector2_type_v<T> || cuda::is_floating_point_v<T>)
+  {
+    verify_results_exact(expected_data, test_results_host);
+  }
+  else
+  {
+    verify_results(expected_data, test_results_host);
+  }
 }
