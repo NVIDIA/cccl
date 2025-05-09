@@ -11,7 +11,7 @@ echo "Docker socket: " $(ls /var/run/docker.sock)
 
 # given the py_version build the wheel and output the artifact
 # to the artifacts directory
-docker run --rm -it \
+docker run --rm -i \
   --workdir /workspace/cccl/python/cuda_parallel \
   --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
   --mount type=bind,source=${PYENV_HELPER_PATH},target=/pyenv_helper.sh \
