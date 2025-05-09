@@ -11,6 +11,7 @@
 #pragma once
 
 #include <cstdint>
+#include <stdexcept>
 #include <type_traits>
 
 #include <cccl/c/types.h>
@@ -91,6 +92,10 @@ struct indirect_iterator_t
           cccl_increment_t incr{.unsigned_offset = offset};
           (*host_advance_fn_p)(ptr, incr);
         }
+      }
+      else
+      {
+        throw std::runtime_error("Attempt to increment iterator from host, but host advance function is not defined");
       }
     }
   }
