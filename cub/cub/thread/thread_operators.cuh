@@ -52,6 +52,7 @@
 #include <cuda/functional> // cuda::maximum, cuda::minimum
 #include <cuda/std/cstdint> // cuda::std::uint32_t
 #include <cuda/std/functional> // cuda::std::plus
+#include <cuda/std/utility> // cuda::std::pair
 
 CUB_NAMESPACE_BEGIN
 
@@ -126,6 +127,45 @@ struct ArgMin
 
 namespace detail
 {
+
+/// @brief Arg max functor (keeps the value and offset of the first occurrence
+///        of the larger item)
+struct arg_max
+{
+  /// Boolean max operator, preferring the item having the smaller offset in
+  /// case of ties
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
+  operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
+  {
+    if ((b.second > a.second) || ((a.second == b.second) && (b.first < a.first)))
+    {
+      return b;
+    }
+
+    return a;
+  }
+};
+
+/// @brief Arg min functor (keeps the value and offset of the first occurrence
+///        of the smallest item)
+struct arg_min
+{
+  /// Boolean min operator, preferring the item having the smaller offset in
+  /// case of ties
+  template <typename T, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ::cuda::std::pair<OffsetT, T>
+  operator()(const ::cuda::std::pair<OffsetT, T>& a, const ::cuda::std::pair<OffsetT, T>& b) const
+  {
+    if ((b.second < a.second) || ((a.second == b.second) && (b.first < a.first)))
+    {
+      return b;
+    }
+
+    return a;
+  }
+};
+
 template <typename ScanOpT>
 struct ScanBySegmentOp
 {
