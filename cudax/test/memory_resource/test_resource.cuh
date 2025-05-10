@@ -7,7 +7,6 @@
 #include <cstdint>
 
 #include <cuda_runtime_api.h>
-
 #include <testing.cuh>
 
 using std::size_t;

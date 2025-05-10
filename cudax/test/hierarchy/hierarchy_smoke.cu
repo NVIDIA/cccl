@@ -11,9 +11,9 @@
 #include <iostream>
 
 #include <cooperative_groups.h>
+#include <host_device.cuh>
 
 #include "testing.cuh"
-#include <host_device.cuh>
 
 namespace cg = cooperative_groups;
 

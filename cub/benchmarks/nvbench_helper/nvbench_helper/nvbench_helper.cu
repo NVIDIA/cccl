@@ -20,9 +20,9 @@
 #include <type_traits>
 
 #include <curand.h>
+#include <nvbench_helper.cuh>
 
 #include "thrust/device_vector.h"
-#include <nvbench_helper.cuh>
 
 namespace
 {
