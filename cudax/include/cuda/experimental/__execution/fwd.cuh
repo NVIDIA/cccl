@@ -94,21 +94,33 @@ struct connect_t;
 struct schedule_t;
 
 // sender factory algorithms:
-struct just_t;
-struct just_error_t;
-struct just_stopped_t;
-struct just_from_t;
-struct just_from_error_t;
-struct just_from_stopped_t;
+template <__disposition_t>
+struct __just_t;
+using just_t         = __just_t<__value>;
+using just_error_t   = __just_t<__error>;
+using just_stopped_t = __just_t<__stopped>;
+
+template <__disposition_t>
+struct __just_from_t;
+using just_from_t         = __just_from_t<__value>;
+using just_error_from_t   = __just_from_t<__error>;
+using just_stopped_from_t = __just_from_t<__stopped>;
+
 struct read_env_t;
 
 // sender adaptor algorithms:
-struct let_value_t;
-struct let_error_t;
-struct let_stopped_t;
-struct then_t;
-struct upon_error_t;
-struct upon_stopped_t;
+template <__disposition_t>
+struct __let_t;
+using let_value_t   = __let_t<__value>;
+using let_error_t   = __let_t<__error>;
+using let_stopped_t = __let_t<__stopped>;
+
+template <__disposition_t>
+struct __upon_t;
+using then_t         = __upon_t<__value>;
+using upon_error_t   = __upon_t<__error>;
+using upon_stopped_t = __upon_t<__stopped>;
+
 struct when_all_t;
 struct conditional_t;
 struct sequence_t;
