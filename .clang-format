@@ -111,7 +111,7 @@ IncludeCategories:
   - Regex:           '^<[a-z_]*>$'
     Priority:            7
     SortPriority:        6
-  - Regex:           '^<[a-z_]*\.[a-z]>$'
+  - Regex:           '^<[a-z_]*\.[a-z]+>$'
     Priority:            8
     SortPriority:        7
   - Regex:           '^<cuda'
