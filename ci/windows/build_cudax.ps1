@@ -3,8 +3,8 @@ Param(
     [Parameter(Mandatory = $false)]
     [Alias("std")]
     [ValidateNotNullOrEmpty()]
-    [ValidateSet(20)]
-    [int]$CXX_STANDARD = 20,
+    [ValidateSet(17, 20)]
+    [int]$CXX_STANDARD = 17,
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
     [Alias("arch")]
