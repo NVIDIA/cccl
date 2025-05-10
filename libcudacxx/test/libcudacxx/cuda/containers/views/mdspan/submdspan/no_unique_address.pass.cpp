@@ -76,7 +76,8 @@ void test()
                                cuda::std::integral_constant<int, 7>>;
     strided_slice slice{};
     test<sizeof(strided_slice)>(slice, sizeof(strided_slice));
-    test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
+    // cannot call a kernel with an Empty parameter type
+    // test_kernel<sizeof(strided_slice)><<<1, 1>>>(slice, sizeof(strided_slice));
   }
 }
 

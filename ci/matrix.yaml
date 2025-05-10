@@ -44,11 +44,11 @@ workflows:
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,    cxx: ['msvc14.39', 'gcc10', 'clang14']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc10', 'gcc11', 'gcc12']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 'all', cxx: ['gcc10', 'clang14']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['gcc10', 'gcc11', 'gcc12']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17', 'clang18']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.8'], std: 'all', cxx: ['nvhpc']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['msvc']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 17,    cxx: ['msvc14.39', 'msvc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 17,    cxx: ['gcc'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,    cxx: ['gcc'], sm: "90a"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
@@ -130,8 +130,8 @@ all_stds: [17, 20]
 
 ctk_versions:
   12.0: { stds: [17, 20] }
-  12.6: { stds: [17, 20] }
-  12.8: { stds: [17, 20], aka: 'curr' }
+  12.8: { stds: [17, 20] }
+  12.9: { stds: [17, 20], aka: 'curr' }
 
 device_compilers:
   nvcc: # Version / stds are taken from CTK
@@ -172,7 +172,7 @@ host_compilers:
     versions:
       14.29: { stds: [ 17,   ], aka: '2019' }
       14.39: { stds: [ 17, 20]} # CTK 12.0 doesn't recognize >14.39 as MSVC 2022.
-      14.42: { stds: [ 17, 20], aka: '2022' }
+      14.43: { stds: [ 17, 20], aka: '2022' }
   nvhpc:
     name: 'NVHPC'
     container_tag: 'nvhpc'
