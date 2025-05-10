@@ -50,5 +50,8 @@
       }
     }
   },
-  "name": "cuda12.8-llvm16"
+  "name": "cuda12.8-llvm16",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  }
 }

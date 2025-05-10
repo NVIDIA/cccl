@@ -50,5 +50,8 @@
       }
     }
   },
-  "name": "cuda12.0-gcc8"
+  "name": "cuda12.0-gcc8",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  }
 }

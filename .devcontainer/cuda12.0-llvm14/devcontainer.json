@@ -50,5 +50,8 @@
       }
     }
   },
-  "name": "cuda12.0-llvm14"
+  "name": "cuda12.0-llvm14",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+  }
 }

@@ -8,6 +8,15 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+# Only run python build and test jobs for testing
+    - {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.10'}
+    #- {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.11'}
+    #- {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.12'}
+    #- {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.13'}
+    - {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtxa6000', py_version: '3.10'}
+    # - {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtxa6000', py_version: '3.11'}
+    #- {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtxa6000', py_version: '3.12'}
+    #- {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', gpu: 'rtxa6000', py_version: '3.13'}
 
   pull_request:
     # Old CTK/compiler
@@ -239,9 +248,12 @@ jobs:
   test_gpu: { name: 'TestGPU', gpu: true,  needs: 'build', invoke: { prefix: 'test', args: '-gpu-only'} }
 
   # Python:
-  test_cuda_cccl:        { name: "cuda.cccl",        gpu: true }
-  test_cuda_cooperative: { name: "cuda.cooperative", gpu: true }
-  test_cuda_parallel:    { name: "cuda.parallel",    gpu: true }
+  build_cuda_cccl:        { name: "Build cuda.cccl",        gpu: false }
+  build_cuda_cooperative: { name: "Build cuda.cooperative", gpu: false }
+  build_cuda_parallel:    { name: "Build cuda.parallel",    gpu: false }
+  test_cuda_cccl:         { name: "Test cuda.cccl",         gpu: true, needs: 'build_cuda_cccl' }
+  test_cuda_cooperative:  { name: "Test cuda.cooperative",  gpu: true, needs: 'build_cuda_cooperative' }
+  test_cuda_parallel:     { name: "Test cuda.parallel",     gpu: true, needs: 'build_cuda_parallel' }
 
 # Projects have the following properties:
 #
@@ -285,7 +297,9 @@ projects:
     stds: [17, 20]
   python:
     name: "Python"
-    job_map: { build: [], test: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'] }
+    job_map:
+      build: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel']
+      test:  ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel']
   cccl_c_parallel:
     name: 'CCCL C Parallel'
     stds: [20]
@@ -325,6 +339,8 @@ tags:
   # Project name (e.g. libcudacxx, cub, thrust, cccl)
   # See the `projects` map.
   project: { default: ['libcudacxx', 'cub', 'thrust'] }
+  # Python version for Python builds/tests
+  py_version: { required: false }
   # C++ standard
   # If set to 'all', all stds supported by the ctk/compilers/project are used.
   # If set to 'min', 'max', or 'minmax', the minimum, maximum, or both stds are used.

@@ -25,11 +25,16 @@ jobs:
     permissions:
       id-token: write
       contents: read
+    outputs:
+      producer_id: ${{ steps.set_id.outputs.id }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Set producer ID output
+        id: set_id
+        run: echo "id=${{ fromJSON(inputs.producers)[0].id }}" >> $GITHUB_OUTPUT
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
@@ -65,3 +70,4 @@ jobs:
           runner:  ${{ matrix.runner }}
           cuda:    ${{ matrix.cuda }}
           host:    ${{ matrix.host }}
+          producer_id : ${{ needs.producer.outputs.producer_id }}
