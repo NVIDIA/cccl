@@ -30,6 +30,8 @@
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/cstring>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // manipulated by PTX without any performance overhead
@@ -220,5 +222,7 @@ _CCCL_HOST_DEVICE inline auto __atomic_fetch_min_dispatch(_Sto* __a, _Up __val, 
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_TYPES_SMALL_H

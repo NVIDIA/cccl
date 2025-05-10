@@ -31,6 +31,8 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __bind_front_op
@@ -65,5 +67,7 @@ bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tup
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_BIND_FRONT_H

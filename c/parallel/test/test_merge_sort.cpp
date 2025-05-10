@@ -8,12 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda_runtime.h>
-
 #include <cstdint>
 #include <iostream>
 #include <optional>
 #include <string>
+
+#include <cuda_runtime.h>
 
 #include "algorithm_execution.h"
 #include "build_result_caching.h"

@@ -67,6 +67,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* construct_at(_Tp* __location, _Args&&..
 #  endif // __cpp_lib_constexpr_dynamic_alloc
 #endif // _CCCL_STD_VER >= 2020
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // There is a performance issue with placement new, where EDG based compiler insert a nullptr check that is superfluous
@@ -236,5 +238,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_Forw
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_CONSTRUCT_AT_H

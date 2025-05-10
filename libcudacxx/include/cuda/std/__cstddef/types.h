@@ -30,6 +30,8 @@
 #  endif // !offsetof
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_COMPILER(NVRTC)
@@ -44,5 +46,7 @@ using ::ptrdiff_t;
 using ::size_t;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CSTDDEF_TYPES_H

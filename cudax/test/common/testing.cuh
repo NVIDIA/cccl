@@ -15,12 +15,13 @@
 
 #include <cuda/experimental/launch.cuh>
 
+#include <nv/target>
+
 #include <exception> // IWYU pragma: keep
 #include <iostream>
 #include <sstream>
 
 #include <c2h/catch2_test_helper.h>
-#include <nv/target>
 
 namespace cuda::experimental::execution
 {

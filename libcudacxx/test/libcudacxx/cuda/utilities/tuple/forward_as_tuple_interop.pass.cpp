@@ -12,9 +12,9 @@
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
-#include <tuple>
-
 #include <nv/target>
+
+#include <tuple>
 
 constexpr bool test()
 {

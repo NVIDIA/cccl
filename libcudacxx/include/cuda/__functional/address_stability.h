@@ -29,6 +29,8 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! Trait telling whether a function object type F does not rely on the memory addresses of its arguments. The nested
@@ -123,5 +125,7 @@ _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS(_CUDA_VRANGES::greater_equal)
 #undef _LIBCUDACXX_MARK_RANGE_FUNCTOR_CAN_COPY_ARGUMENTS
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___FUNCTIONAL_ADDRESS_STABILITY_H

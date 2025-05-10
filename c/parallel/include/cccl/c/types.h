@@ -20,8 +20,9 @@
 #  define CCCL_C_API __attribute__((visibility("default")))
 #endif // !_WIN32
 
-#include <cccl/c/extern_c.h>
 #include <stddef.h>
+
+#include <cccl/c/extern_c.h>
 
 CCCL_C_EXTERN_C_BEGIN
 

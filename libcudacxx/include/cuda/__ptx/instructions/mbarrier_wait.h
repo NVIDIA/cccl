@@ -28,6 +28,8 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.15.16. Parallel Synchronization and Communication Instructions: mbarrier.test_wait/mbarrier.try_wait
@@ -38,5 +40,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 #include <cuda/__ptx/instructions/generated/mbarrier_try_wait_parity.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_MBARRIER_WAIT_H_

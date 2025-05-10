@@ -30,7 +30,7 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -75,6 +75,6 @@ constexpr _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_GCD_LCM_H

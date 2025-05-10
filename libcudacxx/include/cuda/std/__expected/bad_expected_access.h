@@ -33,6 +33,8 @@
 #  endif // !__cpp_lib_expected
 #endif // !_CCCL_HAS_EXCEPTIONS()
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_EXCEPTIONS()
@@ -119,5 +121,7 @@ template <class _Err, class _Arg>
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXPECTED_BAD_EXPECTED_ACCESS_H

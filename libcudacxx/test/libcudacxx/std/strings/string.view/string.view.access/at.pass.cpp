@@ -16,9 +16,10 @@
 #include <cuda/std/string_view>
 #include <cuda/std/type_traits>
 
+#include <nv/target>
+
 #include "literal.h"
 #include "test_macros.h"
-#include <nv/target>
 
 #if TEST_HAS_EXCEPTIONS()
 #  include <stdexcept>

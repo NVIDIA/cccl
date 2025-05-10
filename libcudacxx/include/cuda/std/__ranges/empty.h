@@ -25,6 +25,8 @@
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/size.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 // [range.prim.empty]
@@ -103,5 +105,7 @@ _CCCL_GLOBAL_CONSTANT auto empty = __empty::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_EMPTY_H

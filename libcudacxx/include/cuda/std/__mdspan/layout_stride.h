@@ -44,7 +44,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -610,6 +610,6 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H

@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // TODO: Clang incorrectly reports that __is_array is true for T[0].
@@ -54,5 +56,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public bool_constant<is_array_v<
 #endif // defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_ARRAY_H

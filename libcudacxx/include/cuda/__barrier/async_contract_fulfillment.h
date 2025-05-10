@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // Type only used for logging purpose
@@ -31,5 +33,7 @@ enum async_contract_fulfillment
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_ASYNC_CONTRACT_FULFILLMENT_H

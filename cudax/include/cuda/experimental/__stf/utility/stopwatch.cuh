@@ -20,12 +20,12 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime.h>
-
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <chrono>
 #include <thread>
+
+#include <cuda_runtime.h>
 
 namespace cuda::experimental::stf
 {

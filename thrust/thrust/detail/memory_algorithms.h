@@ -25,9 +25,9 @@
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/utility>
 
-#include <new>
-
 #include <nv/target>
+
+#include <new>
 
 THRUST_NAMESPACE_BEGIN
 

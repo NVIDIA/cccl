@@ -24,6 +24,8 @@
 
 #include <cuda/std/cstdlib> // ::exit
 
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 
@@ -65,5 +67,7 @@ _LIBCUDACXX_HIDE_FROM_ABI  terminate_handler get_terminate() noexcept
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXCEPTION_TERMINATE_H

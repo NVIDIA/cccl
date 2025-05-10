@@ -28,7 +28,7 @@
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__utility/move.h>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -83,6 +83,6 @@ min_element(_ForwardIterator __first, _ForwardIterator __last)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MIN_ELEMENT_H

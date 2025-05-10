@@ -27,6 +27,8 @@
 #include <cuda/barrier>
 #include <cuda/std/chrono>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // Forward declaration in barrier of pipeline
@@ -574,5 +576,7 @@ memcpy_async(void* __destination, void const* __source, _Size __size, pipeline<_
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA_PIPELINE

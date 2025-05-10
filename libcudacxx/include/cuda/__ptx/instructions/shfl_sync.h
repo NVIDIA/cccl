@@ -28,6 +28,8 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 #if __cccl_ptx_isa >= 600
@@ -267,5 +269,7 @@ template <typename _Tp>
 #endif // __cccl_ptx_isa >= 600
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_SHFL_SYNC_H

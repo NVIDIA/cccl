@@ -12,8 +12,9 @@
 
 #include <cuda/experimental/memory_resource.cuh>
 
-#include "test_resource.cuh"
 #include <testing.cuh>
+
+#include "test_resource.cuh"
 
 using device_resource = cuda::experimental::device_memory_resource;
 

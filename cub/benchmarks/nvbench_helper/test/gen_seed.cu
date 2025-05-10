@@ -28,8 +28,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
 
-#include <catch2/catch_template_test_macros.hpp>
 #include <nvbench_helper.cuh>
+
+#include <catch2/catch_template_test_macros.hpp>
 
 using types =
   nvbench::type_list<bool,

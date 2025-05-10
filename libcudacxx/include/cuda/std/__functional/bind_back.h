@@ -33,6 +33,8 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/tuple>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _NBound, class = make_index_sequence<_NBound>>
@@ -80,5 +82,7 @@ __bind_back(_Fn&& __f, _Args&&... __args) noexcept(noexcept(__bind_back_t<decay_
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_BIND_BACK_H

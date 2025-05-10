@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Use fold expressions when possible to implement __fold_and[_v] and
@@ -39,5 +41,7 @@ template <bool... _Preds>
 using __fold_or = bool_constant<bool((_Preds || ...))>; // cast to bool to avoid error from gcc < 8
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_FOLD_H

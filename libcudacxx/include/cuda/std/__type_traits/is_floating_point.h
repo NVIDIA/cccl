@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -45,5 +47,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public bool_constant<is
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_FLOATING_POINT_H

@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
@@ -46,5 +48,7 @@ inline constexpr bool is_nothrow_default_constructible_v = is_nothrow_constructi
 #endif // defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_NOTHROW_DEFAULT_CONSTRUCTIBLE_H

@@ -28,6 +28,8 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/void_t.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 struct view_base
@@ -69,5 +71,7 @@ inline constexpr bool
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_ENABLE_VIEW_H

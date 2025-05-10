@@ -32,6 +32,8 @@
 #include <cuda/std/__type_traits/is_union.h>
 #include <cuda/std/__type_traits/is_void.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
@@ -60,5 +62,7 @@ inline constexpr bool is_enum_v = is_enum<_Tp>::value;
 #endif // defined(_CCCL_BUILTIN_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_ENUM_H

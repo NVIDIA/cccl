@@ -34,9 +34,9 @@
 
 #include <cuda/std/utility> // for use of std::swap in the WAR below
 
-#include <stdexcept> // for std::runtime_error
-
 #include <nv/target>
+
+#include <stdexcept> // for std::runtime_error
 
 THRUST_NAMESPACE_BEGIN
 

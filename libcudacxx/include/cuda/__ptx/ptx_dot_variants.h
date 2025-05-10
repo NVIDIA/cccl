@@ -59,6 +59,8 @@
  *
  */
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#operation-types
@@ -222,5 +224,7 @@ template <int n>
 using n32_t = _CUDA_VSTD::integral_constant<int, n>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_DOT_VARIANTS_H_

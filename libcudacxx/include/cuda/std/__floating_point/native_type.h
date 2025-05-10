@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/cfloat>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <__fp_format _Fmt>
@@ -73,5 +75,7 @@ template <class _Tp>
 inline constexpr bool __fp_is_native_type_v = __is_std_fp_v<_Tp> || __is_ext_compiler_fp_v<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_NATIVE_TYPE_H

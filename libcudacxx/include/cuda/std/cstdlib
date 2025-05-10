@@ -21,14 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/__cstdlib/aligned_alloc.h>
 #include <cuda/std/__cstdlib/div.h>
 #include <cuda/std/__cstdlib/malloc.h>
 #include <cuda/std/version>
-
-_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_CSTDLIB

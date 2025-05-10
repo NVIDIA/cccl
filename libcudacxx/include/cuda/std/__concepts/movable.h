@@ -26,6 +26,8 @@
 #include <cuda/std/__concepts/swappable.h>
 #include <cuda/std/__type_traits/is_object.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -50,5 +52,7 @@ _CCCL_CONCEPT movable = _CCCL_FRAGMENT(_Movable_, _Tp);
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_MOVABLE_H

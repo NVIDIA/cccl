@@ -24,6 +24,8 @@
 
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator1, class _InputIterator2, class _Tp>
@@ -54,5 +56,7 @@ template <class _InputIterator1, class _InputIterator2, class _Tp, class _Binary
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_INNER_PRODUCT_H

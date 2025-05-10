@@ -37,7 +37,7 @@ struct timespec
 };
 #endif // _CCCL_COMPILER(NVRTC)
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -52,6 +52,7 @@ using ::timespec;
 
 #if defined(clock)
 #  pragma push_macro("clock")
+#  undef clock
 #  define _LIBCUDACXX_POP_CLOCK_MACRO
 #endif // clock
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI clock_t clock() noexcept
@@ -67,6 +68,7 @@ using ::timespec;
 
 #if defined(difftime)
 #  pragma push_macro("difftime")
+#  undef difftime
 #  define _LIBCUDACXX_POP_DIFFTIME_MACRO
 #endif // difftime
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr double difftime(time_t __end, time_t __start) noexcept
@@ -94,6 +96,7 @@ using ::timespec;
 
 #if defined(time)
 #  pragma push_macro("time")
+#  undef time
 #  define _LIBCUDACXX_POP_TIME_MACRO
 #endif // time
 _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
@@ -123,6 +126,7 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
 
 #if defined(timespec_get)
 #  pragma push_macro("timespec_get")
+#  undef timespec_get
 #  define _LIBCUDACXX_POP_TIMESPEC_GET_MACRO
 #endif // timespec_get
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI int timespec_get(timespec* __ts, int __base) noexcept
@@ -138,6 +142,6 @@ _LIBCUDACXX_HIDE_FROM_ABI time_t time(time_t* __v) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_CTIME

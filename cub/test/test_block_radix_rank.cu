@@ -40,8 +40,9 @@
 #include <iostream>
 #include <memory>
 
-#include "test_util.h"
 #include <stdio.h>
+
+#include "test_util.h"
 
 bool g_verbose = false;
 cub::CachingDeviceAllocator g_allocator(true);

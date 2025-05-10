@@ -4,6 +4,7 @@
 #include <thrust/device_vector.h>
 
 #include <nv/target>
+
 #include <unittest/unittest.h>
 
 struct Foo

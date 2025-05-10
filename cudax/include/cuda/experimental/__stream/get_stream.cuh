@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__cuda/api_wrapper.h>
@@ -30,6 +28,8 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__stream/stream.cuh>
+
+#include <cuda_runtime_api.h>
 
 namespace cuda::experimental
 {

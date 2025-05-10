@@ -51,6 +51,8 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -606,5 +608,7 @@ inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_conc
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_CONCEPTS_H

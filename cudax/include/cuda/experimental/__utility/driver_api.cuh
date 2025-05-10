@@ -11,9 +11,9 @@
 #ifndef _CUDAX__UTILITY_DRIVER_API
 #define _CUDAX__UTILITY_DRIVER_API
 
-#include <cuda.h>
-
 #include <cuda/std/__exception/cuda_error.h>
+
+#include <cuda.h>
 
 // Get the driver function by name using this macro
 #define CUDAX_GET_DRIVER_FUNCTION(function_name) \

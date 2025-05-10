@@ -23,6 +23,8 @@
 
 #include <cuda/__annotated_ptr/access_property.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Shape>
@@ -76,5 +78,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_APPLY_ACCESS_PROPERTY

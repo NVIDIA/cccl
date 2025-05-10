@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/promote.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Fp>
@@ -98,5 +100,7 @@ lerp(_A1 __a, _A2 __b, _A3 __t) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_LERP_H

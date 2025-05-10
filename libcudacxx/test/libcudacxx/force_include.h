@@ -14,7 +14,6 @@
 #define _LIBCUDACXX_FORCE_INCLUDE_H
 
 #include <cuda_runtime.h>
-
 #include <stdio.h>
 #include <stdlib.h>
 

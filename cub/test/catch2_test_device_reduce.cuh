@@ -36,6 +36,8 @@
 #include <cuda/__functional/maximum.h>
 #include <cuda/__functional/minimum.h>
 
+#include <nv/target>
+
 #include <iostream>
 #include <numeric>
 #include <type_traits>
@@ -44,7 +46,6 @@
 #include <c2h/custom_type.h>
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
-#include <nv/target>
 
 #if TEST_HALF_T()
 // Half support is provided by SM53+. We currently test against a few older architectures.

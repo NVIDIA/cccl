@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #define _LIBCUDACXX_CHECK_STORE_MEMORY_ORDER(__m)                                              \
@@ -151,5 +153,7 @@ inline constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_ac
 inline constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_ORDER_H

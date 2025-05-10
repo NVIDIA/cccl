@@ -51,6 +51,8 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
@@ -505,5 +507,7 @@ struct tuple_element<1, const _CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_SUBRANGE_H

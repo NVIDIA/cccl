@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_union.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __two
@@ -60,5 +62,7 @@ inline constexpr bool is_class_v = is_class<_Tp>::value;
 #endif // defined(_CCCL_BUILTIN_IS_CLASS) && !defined(_LIBCUDACXX_USE_IS_CLASS_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_CLASS_H

@@ -36,6 +36,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // We need to detect whether there is already a free function swap that would end up being ambiguous.
@@ -195,5 +197,7 @@ template <class _Tp>
 inline constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_SWAPPABLE_H

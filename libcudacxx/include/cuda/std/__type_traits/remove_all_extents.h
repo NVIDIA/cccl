@@ -22,6 +22,8 @@
 
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
@@ -58,5 +60,7 @@ using remove_all_extents_t _CCCL_NODEBUG_ALIAS = typename remove_all_extents<_Tp
 #endif // defined(_CCCL_BUILTIN_REMOVE_ALL_EXTENTS) && !defined(_LIBCUDACXX_USE_REMOVE_ALL_EXTENTS_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_REMOVE_ALL_EXTENTS_H

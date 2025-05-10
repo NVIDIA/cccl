@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum class __fp_conv_rank_order
@@ -95,5 +97,7 @@ inline constexpr bool __fp_is_implicit_conversion_v =
   || __fp_conv_rank_order_v<_From, _To> == __fp_conv_rank_order::__equal;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_CONVERSION_RANK_ORDER_H

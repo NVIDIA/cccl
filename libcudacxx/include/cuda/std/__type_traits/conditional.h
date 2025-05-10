@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <bool>
@@ -57,5 +59,7 @@ template <bool _Bp, class _If, class _Then>
 using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_CONDITIONAL_H

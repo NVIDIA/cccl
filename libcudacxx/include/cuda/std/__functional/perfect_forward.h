@@ -32,6 +32,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/tuple>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Op, class _Indices, class... _BoundArgs>
@@ -119,5 +121,7 @@ template <class _Op, class... _Args>
 using __perfect_forward = __perfect_forward_impl<_Op, index_sequence_for<_Args...>, _Args...>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_PERFECT_FORWARD_H

@@ -32,6 +32,8 @@
 
 #include <nv/target>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 /***********************************************************************
@@ -153,5 +155,7 @@ template <_CUDA_VSTD::size_t _Align, typename _Group>
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX__MEMCPY_ASYNC_DISPATCH_MEMCPY_ASYNC_H_

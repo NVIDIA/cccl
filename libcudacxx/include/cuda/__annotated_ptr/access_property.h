@@ -21,11 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/__annotated_ptr/access_property_encoding.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+
+#include <cuda_runtime_api.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -157,5 +159,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ACCESS_PROPERTY

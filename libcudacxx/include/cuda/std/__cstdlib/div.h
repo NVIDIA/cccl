@@ -25,6 +25,8 @@
 #  include <cstdlib>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // If available, use the host's div_t, ldiv_t, and lldiv_t types because the struct members order is
@@ -88,5 +90,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT lldiv_t
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CSTDLIB_DIV_H

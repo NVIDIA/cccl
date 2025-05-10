@@ -25,6 +25,8 @@
 #include <cuda/std/__floating_point/properties.h>
 #include <cuda/std/__fwd/fp.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __is_std_fp_v
@@ -164,5 +166,7 @@ template <class _Lhs, class _Rhs>
 inline constexpr bool __fp_is_subset_of_v = __fp_is_subset_v<__fp_format_of_v<_Lhs>, __fp_format_of_v<_Rhs>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_TRAITS_H

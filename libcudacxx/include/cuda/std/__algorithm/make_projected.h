@@ -31,6 +31,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Pred, class _Proj>
@@ -88,5 +90,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Pred& __make_projected(_Pred& __pred, _Proj
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MAKE_PROJECTED_H

@@ -34,6 +34,8 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -153,5 +155,7 @@ template <class _Rp>
 inline constexpr bool enable_borrowed_range<owning_view<_Rp>> = enable_borrowed_range<_Rp>;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_OWNING_VIEW_H

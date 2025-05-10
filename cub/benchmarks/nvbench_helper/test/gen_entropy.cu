@@ -36,9 +36,10 @@
 #include <algorithm>
 #include <array>
 
+#include <nvbench_helper.cuh>
+
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <nvbench_helper.cuh>
 
 template <class T>
 double get_expected_entropy(bit_entropy in_entropy)

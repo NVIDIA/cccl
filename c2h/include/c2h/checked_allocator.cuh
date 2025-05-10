@@ -27,8 +27,6 @@
 
 #pragma once
 
-#include <cuda_runtime_api.h>
-
 #include <thrust/device_allocator.h>
 #include <thrust/mr/new.h>
 #include <thrust/system/cuda/memory.h>
@@ -38,6 +36,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <new>
+
+#include <cuda_runtime_api.h>
 
 namespace c2h
 {

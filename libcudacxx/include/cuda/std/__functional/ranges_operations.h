@@ -24,6 +24,8 @@
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 struct equal_to
@@ -105,5 +107,7 @@ struct greater_equal
 };
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_RANGES_OPERATIONS_H

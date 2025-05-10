@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT in_place_t
@@ -69,5 +71,7 @@ template <class _Tp>
 using __is_inplace_index = __is_inplace_index_imp<remove_cvref_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_IN_PLACE_H

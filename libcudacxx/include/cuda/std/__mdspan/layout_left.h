@@ -41,6 +41,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Helper for lightweight test checking that one did pass a layout policy as LayoutPolicy template argument
@@ -309,5 +311,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_LAYOUT_LEFT_H

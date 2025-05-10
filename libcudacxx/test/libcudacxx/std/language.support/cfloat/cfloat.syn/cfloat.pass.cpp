@@ -14,8 +14,9 @@
 #include <cuda/std/cfloat>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include <nv/target>
+
+#include "test_macros.h"
 
 int main(int, char**)
 {

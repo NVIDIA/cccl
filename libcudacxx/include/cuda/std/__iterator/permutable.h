@@ -24,6 +24,8 @@
 #include <cuda/std/__iterator/concepts.h>
 #include <cuda/std/__iterator/iter_swap.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -46,5 +48,7 @@ _CCCL_CONCEPT permutable = _CCCL_FRAGMENT(__permutable_, _Iterator);
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_PERMUTABLE_H
