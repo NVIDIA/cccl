@@ -10,8 +10,9 @@
 
 #include <iostream>
 
-#include "testing.cuh"
 #include <cooperative_groups.h>
+
+#include "testing.cuh"
 #include <host_device.cuh>
 
 namespace cg = cooperative_groups;

@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/__annotated_ptr/access_property_encoding.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+
+#include <cuda_runtime_api.h>
 
 #include <cuda/std/__cccl/prologue.h>
 

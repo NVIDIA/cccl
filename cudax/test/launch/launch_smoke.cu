@@ -13,6 +13,7 @@
 #include <cuda/experimental/stream.cuh>
 
 #include <cooperative_groups.h>
+
 #include <testing.cuh>
 
 __managed__ bool kernel_run_proof = false;

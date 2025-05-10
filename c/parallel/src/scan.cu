@@ -22,6 +22,8 @@
 #include <string>
 #include <type_traits>
 
+#include <nvrtc.h>
+
 #include "cub/util_device.cuh"
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
@@ -31,7 +33,6 @@
 #include "util/scan_tile_state.h"
 #include "util/types.h"
 #include <cccl/c/scan.h>
-#include <nvrtc.h>
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 

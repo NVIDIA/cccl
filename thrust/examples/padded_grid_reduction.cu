@@ -10,8 +10,9 @@
 #include <cmath>
 #include <iomanip>
 
-#include "include/host_device.h"
 #include <float.h>
+
+#include "include/host_device.h"
 
 // This example computes the minimum and maximum values
 // over a padded grid.  The padded values are not considered

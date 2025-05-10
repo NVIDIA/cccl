@@ -33,9 +33,10 @@
 #    include <dispatch/dispatch.h>
 #  endif // __APPLE__
 #  if defined(__linux__)
+#    include <unistd.h>
+
 #    include <linux/futex.h>
 #    include <sys/syscall.h>
-#    include <unistd.h>
 #  endif // __linux__
 
 #  include <cuda/std/__cccl/prologue.h>

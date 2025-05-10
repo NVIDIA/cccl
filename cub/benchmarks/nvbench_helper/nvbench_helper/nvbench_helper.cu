@@ -19,8 +19,9 @@
 #include <random>
 #include <type_traits>
 
-#include "thrust/device_vector.h"
 #include <curand.h>
+
+#include "thrust/device_vector.h"
 #include <nvbench_helper.cuh>
 
 namespace

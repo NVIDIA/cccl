@@ -24,9 +24,10 @@
 
 #  include <cuda/std/chrono>
 
-#  include <cuda/std/__cccl/prologue.h>
 #  include <process.h>
 #  include <windows.h>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

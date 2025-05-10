@@ -23,9 +23,10 @@
 #include <type_traits>
 #include <vector>
 
+#include <nvrtc.h>
+
 #include <c2h/catch2_test_helper.h>
 #include <cccl/c/types.h>
-#include <nvrtc.h>
 
 static std::string inspect_sass(const void* cubin, size_t cubin_size)
 {
