@@ -39,14 +39,14 @@ using wstring_view = basic_string_view<wchar_t>;
 
 // clang-format off
 template <class _CharT, class _Traits>
-class _CCCL_PREFERED_NAME(string_view)
+class _CCCL_PREFERRED_NAME(string_view)
 #if _CCCL_HAS_CHAR8_T()
-_CCCL_PREFERED_NAME(u8string_view)
+_CCCL_PREFERRED_NAME(u8string_view)
 #endif // _CCCL_HAS_CHAR8_T()
-_CCCL_PREFERED_NAME(u16string_view)
-_CCCL_PREFERED_NAME(u32string_view)
+_CCCL_PREFERRED_NAME(u16string_view)
+_CCCL_PREFERRED_NAME(u32string_view)
 #if _CCCL_HAS_WCHAR_T()
-_CCCL_PREFERED_NAME(wstring_view)
+_CCCL_PREFERRED_NAME(wstring_view)
 #endif // _CCCL_HAS_WCHAR_T()
       basic_string_view;
 // clang-format on

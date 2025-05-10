@@ -186,12 +186,12 @@
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
 
-// _CCCL_PREFERED_NAME
+// _CCCL_PREFERRED_NAME
 
 #if _CCCL_HAS_ATTRIBUTE(__preferred_name__)
-#  define _CCCL_PREFERED_NAME(x) __attribute__((__preferred_name__(x)))
+#  define _CCCL_PREFERRED_NAME(x) __attribute__((__preferred_name__(x)))
 #else
-#  define _CCCL_PREFERED_NAME(x)
+#  define _CCCL_PREFERRED_NAME(x)
 #endif
 
 #if _CCCL_HAS_ATTRIBUTE(__require_constant_initialization__)
