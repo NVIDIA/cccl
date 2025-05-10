@@ -346,4 +346,92 @@ C2H_VEC_TRAITS_OVERLOAD(double, double)
 #  undef REPEAT_TO_LIST_4
 #  undef REPEAT_TO_LIST
 
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 type traits
+
+template <typename T>
+inline constexpr bool is_vector2_type_impl_v = false;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<char2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<short2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<int2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<long2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<longlong2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<uchar2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<ushort2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<uint2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<ulong2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<ulonglong2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<float2> = true;
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<double2> = true;
+
+#  if TEST_HALF_T()
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<__half2> = true;
+
+#  endif // TEST_HALF_T()
+
+#  if TEST_BF_T()
+
+template <>
+inline constexpr bool is_vector2_type_impl_v<__nv_bfloat162> = true;
+
+#  endif // TEST_BF_T()
+
+template <typename T>
+inline constexpr bool is_vector2_type_v = is_vector2_type_impl_v<cuda::std::remove_cv_t<T>>;
+
+//----------------------------------------------------------------------------------------------------------------------
+// vector2 floating point type traits
+
+template <typename T>
+inline constexpr bool is_vector2_fp_type_impl_v = false;
+
+template <>
+inline constexpr bool is_vector2_fp_type_impl_v<float2> = true;
+
+template <>
+inline constexpr bool is_vector2_fp_type_impl_v<double2> = true;
+
+#  if TEST_HALF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_impl_v<__half2> = true;
+
+#  endif // TEST_HALF_T()
+
+#  if TEST_BF_T()
+
+template <>
+inline constexpr bool is_vector2_fp_type_impl_v<__nv_bfloat162> = true;
+
+#  endif // TEST_BF_T()
+
+template <typename T>
+inline constexpr bool is_vector2_fp_type_v = is_vector2_fp_type_impl_v<cuda::std::remove_cv_t<T>>;
+
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA

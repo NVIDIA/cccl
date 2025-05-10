@@ -40,9 +40,9 @@
 #include <thrust/scan.h>
 #include <thrust/tabulate.h>
 
+#include <cuda/std/complex>
+#include <cuda/std/cstdint>
 #include <cuda/type_traits>
-
-#include <cstdint>
 
 #include <c2h/bfloat16.cuh>
 #include <c2h/custom_type.h>
@@ -134,6 +134,28 @@ struct random_to_item_t
   __device__ T operator()(float random_value)
   {
     return static_cast<T>((m_max - m_min) * random_value + m_min);
+  }
+};
+
+template <typename T>
+struct random_to_item_t<cuda::std::complex<T>, false>
+{
+  cuda::std::complex<T> m_min;
+  cuda::std::complex<T> m_max;
+
+  __host__ __device__ random_to_item_t(cuda::std::complex<T> min, cuda::std::complex<T> max)
+      : m_min(min)
+      , m_max(max)
+  {}
+
+  __device__ cuda::std::complex<T> operator()(cuda::std::complex<T> random_value)
+  {
+    return (m_max - m_min) * random_value + m_min;
+  }
+
+  __device__ cuda::std::complex<T> operator()(float random_value)
+  {
+    return (m_max - m_min) * cuda::std::complex<T>(random_value) + m_min;
   }
 };
 
@@ -274,17 +296,13 @@ void generator_t::operator()(seed_t seed, c2h::device_vector<T>& data, T min, T 
 template <typename T>
 struct count_to_item_t
 {
-  unsigned long long int n;
-
-  count_to_item_t(unsigned long long int n)
-      : n(n)
-  {}
+  uint64_t n;
 
   template <typename CounterT>
   __device__ T operator()(CounterT id)
   {
     // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
-    return static_cast<T>(static_cast<float>(static_cast<unsigned long long int>(id) % n));
+    return static_cast<T>(static_cast<float>(static_cast<uint64_t>(id) % n));
   }
 };
 
@@ -527,6 +545,8 @@ INSTANTIATE(__nv_fp8_e4m3);
 #endif // _CCCL_HAS_NVFP8()
 INSTANTIATE(float);
 INSTANTIATE(double);
+INSTANTIATE(cuda::std::complex<float>);
+INSTANTIATE(cuda::std::complex<double>);
 
 INSTANTIATE(bool);
 INSTANTIATE(char);
@@ -534,12 +554,23 @@ INSTANTIATE(char);
 #if TEST_HALF_T()
 INSTANTIATE(half_t);
 INSTANTIATE(__half);
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+INSTANTIATE(cuda::std::complex<__half>);
+#  endif
 #endif // TEST_HALF_T()
 
 #if TEST_BF_T()
 INSTANTIATE(bfloat16_t);
 INSTANTIATE(__nv_bfloat16);
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+INSTANTIATE(cuda::std::complex<__nv_bfloat16>);
+#  endif
 #endif // TEST_BF_T()
+
+#if TEST_INT128_GENERATOR()
+INSTANTIATE(__int128_t);
+INSTANTIATE(__uint128_t);
+#endif // TEST_INT128_GENERATOR()
 
 #undef INSTANTIATE_RND
 #undef INSTANTIATE_MOD
@@ -596,9 +627,7 @@ VEC_SPECIALIZATION(short, 2);
 VEC_SPECIALIZATION(short, 3);
 VEC_SPECIALIZATION(short, 4);
 
-// VEC_SPECIALIZATION(ushort, 2);
-// VEC_SPECIALIZATION(ushort, 3);
-// VEC_SPECIALIZATION(ushort, 4);
+VEC_SPECIALIZATION(ushort, 2);
 
 VEC_SPECIALIZATION(int, 2);
 VEC_SPECIALIZATION(int, 3);
@@ -631,6 +660,13 @@ VEC_SPECIALIZATION(float, 4);
 VEC_SPECIALIZATION(double, 2);
 VEC_SPECIALIZATION(double, 3);
 VEC_SPECIALIZATION(double, 4);
+
+#  if TEST_BF_T()
+VEC_SPECIALIZATION(__half, 2);
+#  endif // TEST_BF_T()
+#  if TEST_BF_T()
+VEC_SPECIALIZATION(__nv_bfloat16, 2);
+#  endif // TEST_BF_T()
 
 template <typename VecType, typename Type>
 struct vec_gen_t
