@@ -254,7 +254,7 @@ public:
         return children[offset];
       }
 
-      const size_t depth(int offset) const
+      size_t depth(int offset) const
       {
         int p = get_parent(offset);
         if (p == -1)
