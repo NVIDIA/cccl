@@ -311,7 +311,7 @@ public:
 
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
-      int head_offset = is_root?-1:get_head_offset();
+      int head_offset = is_root ? -1 : get_head_offset();
 
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
@@ -385,7 +385,7 @@ public:
      */
     void pop()
     {
-      auto lock = get_write_lock();
+      auto lock       = get_write_lock();
       int head_offset = get_head_offset();
 
       // fprintf(stderr, "stackable_ctx::pop() depth() was %ld\n", depth());
@@ -418,9 +418,9 @@ public:
 
       if (display_graph_stats)
       {
-	// When a graph context is finalized, a CUDA graph is created, we here
-	// retrieve some information about it, and relate it to the location in
-	// sources of the context push() call.
+        // When a graph context is finalized, a CUDA graph is created, we here
+        // retrieve some information about it, and relate it to the location in
+        // sources of the context push() call.
         executable_graph_cache_stat* stat = current_node.ctx.graph_get_cache_stat();
         _CCCL_ASSERT(stat, "");
 
