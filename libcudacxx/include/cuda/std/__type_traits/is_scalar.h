@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public integral_constant<bool, _CCCL_BUILTIN_IS_SCALAR(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public bool_constant<_CCCL_BUILTIN_IS_SCALAR(_Tp)>
 {};
 
 template <class _Tp>
@@ -42,27 +42,12 @@ inline constexpr bool is_scalar_v = _CCCL_BUILTIN_IS_SCALAR(_Tp);
 #else
 
 template <class _Tp>
-struct __is_block : false_type
-{};
-#  if defined(_LIBCUDACXX_HAS_EXTENSION_BLOCKS)
-template <class _Rp, class... _Args>
-struct __is_block<_Rp (^)(_Args...)> : true_type
-{};
-#  endif
+inline constexpr bool is_scalar_v =
+  is_arithmetic_v<_Tp> || is_member_pointer_v<_Tp> || is_pointer_v<_Tp> || is_null_pointer_v<_Tp> || is_enum_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar
-    : public integral_constant<bool,
-                               is_arithmetic<_Tp>::value || is_member_pointer<_Tp>::value || is_pointer<_Tp>::value
-                                 || __is_nullptr_t<_Tp>::value || __is_block<_Tp>::value || is_enum<_Tp>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public bool_constant<is_scalar_v<_Tp>>
 {};
-
-template <>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar<nullptr_t> : public true_type
-{};
-
-template <class _Tp>
-inline constexpr bool is_scalar_v = is_scalar<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 

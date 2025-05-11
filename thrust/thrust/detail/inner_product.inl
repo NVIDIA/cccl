@@ -42,6 +42,7 @@ _CCCL_HOST_DEVICE OutputType inner_product(
   InputIterator2 first2,
   OutputType init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inner_product");
   using thrust::system::detail::generic::inner_product;
   return inner_product(thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first1, last1, first2, init);
 } // end inner_product()
@@ -62,6 +63,7 @@ _CCCL_HOST_DEVICE OutputType inner_product(
   BinaryFunction1 binary_op1,
   BinaryFunction2 binary_op2)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inner_product");
   using thrust::system::detail::generic::inner_product;
   return inner_product(
     thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
@@ -76,6 +78,7 @@ _CCCL_HOST_DEVICE OutputType inner_product(
 template <typename InputIterator1, typename InputIterator2, typename OutputType>
 OutputType inner_product(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, OutputType init)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inner_product");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;
@@ -100,6 +103,7 @@ OutputType inner_product(
   BinaryFunction1 binary_op1,
   BinaryFunction2 binary_op2)
 {
+  _CCCL_NVTX_RANGE_SCOPE("thrust::inner_product");
   using thrust::system::detail::generic::select_system;
 
   using System1 = typename thrust::iterator_system<InputIterator1>::type;

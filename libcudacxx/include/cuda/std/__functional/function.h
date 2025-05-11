@@ -383,7 +383,7 @@ class __value_func<_Rp(_ArgTypes...)>
   using __func = __base<_Rp(_ArgTypes...)>;
   __func* __f_;
 
-  _LIBCUDACXX_NO_CFI static __func* __as_base(void* __p)
+  _CCCL_NO_CFI static __func* __as_base(void* __p)
   {
     return reinterpret_cast<__func*>(__p);
   }

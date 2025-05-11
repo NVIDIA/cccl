@@ -1,4 +1,5 @@
 import pytest
+
 from cuda import cccl
 
 

@@ -35,8 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 using ::free;
 using ::malloc;
 
-// We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if _CCCL_HAS_CUDA_COMPILER() && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#if _CCCL_CUDA_COMPILATION()
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __calloc_device(size_t __n, size_t __size) noexcept
 {
   void* __ptr{};
@@ -54,7 +53,7 @@ using ::malloc;
 
   return __ptr;
 }
-#endif // _CCCL_HAS_CUDA_COMPILER() && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#endif // _CCCL_CUDA_COMPILATION()
 
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI void* calloc(size_t __n, size_t __size) noexcept
 {

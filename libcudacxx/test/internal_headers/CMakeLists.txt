@@ -21,11 +21,6 @@ file(GLOB_RECURSE internal_headers
 # headers in `__cuda` are meant to come after the related "cuda" headers so they do not compile on their own
 list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 
-# mdspan is currently not supported on msvc outside of C++20
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "20")
-  list(FILTER internal_headers EXCLUDE REGEX "mdspan")
-endif()
-
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 

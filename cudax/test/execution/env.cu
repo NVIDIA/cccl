@@ -47,9 +47,9 @@ struct test_resource
 
 C2H_TEST("env_t is queryable for all properties we want", "[execution, env]")
 {
-  STATIC_REQUIRE(cudax::__async::__queryable_with<env_t, cudax::get_stream_t>);
-  STATIC_REQUIRE(cudax::__async::__queryable_with<env_t, cudax::get_memory_resource_t>);
-  STATIC_REQUIRE(cudax::__async::__queryable_with<env_t, cudax::execution::get_execution_policy_t>);
+  STATIC_REQUIRE(cuda::std::execution::__queryable_with<env_t, cudax::get_stream_t>);
+  STATIC_REQUIRE(cuda::std::execution::__queryable_with<env_t, cudax::get_memory_resource_t>);
+  STATIC_REQUIRE(cuda::std::execution::__queryable_with<env_t, cudax::execution::get_execution_policy_t>);
 }
 
 C2H_TEST("env_t is default constructible", "[execution, env]")

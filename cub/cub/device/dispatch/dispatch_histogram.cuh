@@ -64,10 +64,6 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <cstdio>
-#include <iterator>
-#include <limits>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN

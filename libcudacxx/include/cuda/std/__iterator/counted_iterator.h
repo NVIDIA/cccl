@@ -80,6 +80,8 @@ struct __counted_iterator_value_type<_Iter, enable_if_t<indirectly_readable<_Ite
   using value_type = iter_value_t<_Iter>;
 };
 
+_LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
+
 #if !defined(_CCCL_NO_CONCEPTS)
 template <input_or_output_iterator _Iter>
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
@@ -415,6 +417,7 @@ public:
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);
+_LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(counted_iterator)
 
 // Not a hidden friend because of MSVC
 _CCCL_TEMPLATE(class _Iter)

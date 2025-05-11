@@ -137,41 +137,40 @@ public:
   // Rank from the root
   _CCCL_HOST_DEVICE size_t rank([[maybe_unused]] int level, [[maybe_unused]] int root_level) const
   {
-#ifdef __CUDA_ARCH__
-    int tid = threadIdx.x;
-    int bid = blockIdx.x;
-    // config : ndevs    = launch_config[0]
-    //          nblocks  = launch_config[1]
-    //          nthreads = launch_config[2]
-    const int nblocks  = launch_config[1];
-    const int nthreads = launch_config[2];
+    NV_IF_ELSE_TARGET(
+      NV_IS_DEVICE,
+      (int tid = threadIdx.x; int bid = blockIdx.x;
+       // config : ndevs    = launch_config[0]
+       //          nblocks  = launch_config[1]
+       //          nthreads = launch_config[2]
+       const int nblocks  = launch_config[1];
+       const int nthreads = launch_config[2];
 
-    int global_id = tid + bid * nthreads + devid * nblocks * nthreads;
+       int global_id = tid + bid * nthreads + devid * nblocks * nthreads;
 
-    // An entry at level l represents a total of width[level] * width[level+1] ... * width[depth - 1] threads.
-    size_t level_effective_size      = 1;
-    size_t root_level_effective_size = 1;
+       // An entry at level l represents a total of width[level] * width[level+1] ... * width[depth - 1] threads.
+       size_t level_effective_size      = 1;
+       size_t root_level_effective_size = 1;
 
-    if constexpr (depth > 0)
-    {
-      for (size_t l = level + 1; l < depth; l++)
-      {
-        level_effective_size *= level_sizes[l];
-      }
+       if constexpr (depth > 0) {
+         for (size_t l = level + 1; l < depth; l++)
+         {
+           level_effective_size *= level_sizes[l];
+         }
 
-      for (size_t l = root_level + 1; l < depth; l++)
-      {
-        root_level_effective_size *= level_sizes[l];
-      }
-    }
+         for (size_t l = root_level + 1; l < depth; l++)
+         {
+           root_level_effective_size *= level_sizes[l];
+         }
+       }
 
-    return (global_id % root_level_effective_size) / level_effective_size;
-#else
-    return 0;
-#endif
+       return (global_id % root_level_effective_size)
+       / level_effective_size;),
+      (return 0;))
+    _CCCL_UNREACHABLE();
   }
 
-  _CCCL_HOST_DEVICE size_t size(int level, int root_level) const
+  _CCCL_HOST_DEVICE size_t size([[maybe_unused]] int level, [[maybe_unused]] int root_level) const
   {
     if constexpr (depth == 0)
     {
@@ -179,21 +178,16 @@ public:
     }
 
     assert(root_level < level);
-#ifndef __CUDA_ARCH__
-    ::std::ignore = level;
-    ::std::ignore = root_level;
-    return 1;
-#else
-    // Could have been : return level_prod_size[level]/level_prod_size[root_level];
-    // Divisions are probably more expensive.
-    size_t s = 1;
-    for (int l = root_level; l < level; l++)
-    {
-      s *= level_sizes[l + 1];
-    }
+    NV_IF_ELSE_TARGET(
+      NV_IS_HOST,
+      (return 1;),
+      (
+        // Could have been : return level_prod_size[level]/level_prod_size[root_level];
+        // Divisions are probably more expensive.
+        size_t s = 1; for (int l = root_level; l < level; l++) { s *= level_sizes[l + 1]; }
 
-    return s;
-#endif
+        return s;))
+    _CCCL_UNREACHABLE();
   }
 
   _CCCL_HOST_DEVICE size_t size(int level = int(depth) - 1) const
@@ -206,57 +200,49 @@ public:
     return rank(level, -1);
   }
 
-  _CCCL_HOST_DEVICE void sync(int level = 0)
+  _CCCL_HOST_DEVICE void sync([[maybe_unused]] int level = 0)
   {
     assert(level >= 0);
     assert(level < depth);
-#ifndef __CUDA_ARCH__
-    ::std::ignore = level;
-    return;
-#else
 
-    // Check that it is legal to synchronize (use a static assertion in the future)
-    assert(may_sync(level));
+    NV_IF_TARGET(
+      NV_IS_DEVICE,
+      (
+        // Check that it is legal to synchronize (use a static assertion in the future)
+        assert(may_sync(level));
 
-    // We compute the products of level_sizes and config in reversed order.
+        // We compute the products of level_sizes and config in reversed order.
 
-    // This is the number of threads to synchronize
-    size_t target_size = 1;
-    for (int l = level; l < depth; l++)
-    {
-      target_size *= level_sizes[l];
-    }
+        // This is the number of threads to synchronize
+        size_t target_size = 1;
+        for (int l = level; l < depth; l++) { target_size *= level_sizes[l]; }
 
-    // We then compute the number of threads for each of the different
-    // scopes (system, device, blocks) ... and compare with this number of
-    // threads
+        // We then compute the number of threads for each of the different
+        // scopes (system, device, blocks) ... and compare with this number of
+        // threads
 
-    // Test the different config levels
-    size_t block_scope_size = launch_config[2];
-    if (target_size == block_scope_size)
-    {
-      cooperative_groups::this_thread_block().sync();
-      return;
-    }
+        // Test the different config levels
+        size_t block_scope_size = launch_config[2];
+        if (target_size == block_scope_size) {
+          cooperative_groups::this_thread_block().sync();
+          return;
+        }
 
-    size_t device_scope_size = block_scope_size * launch_config[1];
-    if (target_size == device_scope_size)
-    {
-      cooperative_groups::this_grid().sync();
-      return;
-    }
+        size_t device_scope_size = block_scope_size * launch_config[1];
+        if (target_size == device_scope_size) {
+          cooperative_groups::this_grid().sync();
+          return;
+        }
 
-    size_t ndevs             = launch_config[0];
-    size_t system_scope_size = device_scope_size * ndevs;
-    if (target_size == system_scope_size)
-    {
-      cg_system.sync(devid, ndevs);
-      return;
-    }
+        size_t ndevs             = launch_config[0];
+        size_t system_scope_size = device_scope_size * ndevs;
+        if (target_size == system_scope_size) {
+          cg_system.sync(devid, ndevs);
+          return;
+        }
 
-    // Unsupported configuration
-    assert(0);
-#endif
+        // Unsupported configuration
+        assert(0);))
   }
 
   template <typename T, typename... Others>
@@ -326,33 +312,31 @@ public:
     // scopes (system, device, blocks) ... and compare with this number of
     // threads
 
-#ifdef __CUDA_ARCH__
-    size_t nelems = mem_sizes[level] / sizeof(T);
+    NV_IF_TARGET(
+      NV_IS_DEVICE,
+      (
+        size_t nelems = mem_sizes[level] / sizeof(T);
 
-    // Test the different config levels
-    size_t block_scope_size = launch_config[2];
-    if (target_size == block_scope_size)
-    {
-      // Use dynamic shared memory
-      extern __shared__ T dyn_buffer[];
-      return make_slice(&dyn_buffer[0], nelems);
-    }
+        // Test the different config levels
+        size_t block_scope_size = launch_config[2];
+        if (target_size == block_scope_size) {
+          // Use dynamic shared memory
+          extern __shared__ T dyn_buffer[];
+          return make_slice(&dyn_buffer[0], nelems);
+        }
 
-    size_t device_scope_size = block_scope_size * launch_config[1];
-    if (target_size == device_scope_size)
-    {
-      // Use device memory
-      return make_slice(static_cast<T*>(device_tmp), nelems);
-    }
+        size_t device_scope_size = block_scope_size * launch_config[1];
+        if (target_size == device_scope_size) {
+          // Use device memory
+          return make_slice(static_cast<T*>(device_tmp), nelems);
+        }
 
-    size_t ndevs             = launch_config[0];
-    size_t system_scope_size = device_scope_size * ndevs;
-    if (target_size == system_scope_size)
-    {
-      // Use system memory (managed memory)
-      return make_slice(static_cast<T*>(system_tmp), nelems);
-    }
-#endif
+        size_t ndevs             = launch_config[0];
+        size_t system_scope_size = device_scope_size * ndevs;
+        if (target_size == system_scope_size) {
+          // Use system memory (managed memory)
+          return make_slice(static_cast<T*>(system_tmp), nelems);
+        }))
 
     // Unsupported configuration : memory must be a scope boundaries
     assert(!"Unsupported configuration : memory must be a scope boundaries");
@@ -417,7 +401,7 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 namespace reserved
 {
 template <auto... spec>
@@ -523,7 +507,7 @@ UNITTEST("thread hierarchy inner sync")
   cuda_safe_call(cudaDeviceSynchronize());
 };
 
-#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && _CCCL_CUDA_COMPILATION()
 #endif // UNITTESTED_FILE
 
 } // end namespace cuda::experimental::stf

@@ -29,20 +29,20 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_VOID) && !defined(_LIBCUDACXX_USE_IS_VOID_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : integral_constant<bool, _CCCL_BUILTIN_IS_VOID(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : bool_constant<_CCCL_BUILTIN_IS_VOID(_Tp)>
 {};
 
 template <class _Tp>
-inline constexpr bool is_void_v = __is_void(_Tp);
+inline constexpr bool is_void_v = _CCCL_BUILTIN_IS_VOID(_Tp);
 
 #else
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : public is_same<remove_cv_t<_Tp>, void>
-{};
+inline constexpr bool is_void_v = is_same_v<remove_cv_t<_Tp>, void>;
 
 template <class _Tp>
-inline constexpr bool is_void_v = is_void<_Tp>::value;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_void : public bool_constant<is_void_v<_Tp>>
+{};
 
 #endif // defined(_CCCL_BUILTIN_IS_VOID) && !defined(_LIBCUDACXX_USE_IS_VOID_FALLBACK)
 

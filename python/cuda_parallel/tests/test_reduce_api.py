@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import pytest
+
 
 def test_device_reduce():
     # example-begin reduce-min
@@ -215,6 +217,7 @@ def test_reduce_struct_type():
     # example-end reduce-struct
 
 
+@pytest.mark.no_verify_sass(reason="LDL/STL instructions emitted for this test.")
 def test_reduce_struct_type_minmax():
     # example-begin reduce-minmax
     import cupy as cp

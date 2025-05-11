@@ -59,7 +59,7 @@ struct __murmur2_or_cityhash;
 template <class _Size>
 struct __murmur2_or_cityhash<_Size, 32>
 {
-  inline _Size operator()(const void* __key, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK;
+  inline _Size operator()(const void* __key, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow");
 };
 
 // murmur2
@@ -100,7 +100,7 @@ _Size __murmur2_or_cityhash<_Size, 32>::operator()(const void* __key, _Size __le
 template <class _Size>
 struct __murmur2_or_cityhash<_Size, 64>
 {
-  inline _Size operator()(const void* __key, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK;
+  inline _Size operator()(const void* __key, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow");
 
 private:
   // Some primes between 2^63 and 2^64.
@@ -124,7 +124,7 @@ private:
     return __val ^ (__val >> 47);
   }
 
-  static _Size __hash_len_16(_Size __u, _Size __v) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_16(_Size __u, _Size __v) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     const _Size __mul = 0x9ddfea08eb382d69ULL;
     _Size __a         = (__u ^ __v) * __mul;
@@ -135,7 +135,7 @@ private:
     return __b;
   }
 
-  static _Size __hash_len_0_to_16(const char* __s, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_0_to_16(const char* __s, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     if (__len > 8)
     {
@@ -161,7 +161,7 @@ private:
     return __k2;
   }
 
-  static _Size __hash_len_17_to_32(const char* __s, _Size __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_17_to_32(const char* __s, _Size __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     const _Size __a = __loadword<_Size>(__s) * __k1;
     const _Size __b = __loadword<_Size>(__s + 8);
@@ -173,8 +173,9 @@ private:
 
   // Return a 16-byte hash for 48 bytes.  Quick and dirty.
   // Callers do best to use "random-looking" values for a and b.
-  static pair<_Size, _Size> __weak_hash_len_32_with_seeds(
-    _Size __w, _Size __x, _Size __y, _Size __z, _Size __a, _Size __b) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static pair<_Size, _Size>
+  __weak_hash_len_32_with_seeds(_Size __w, _Size __x, _Size __y, _Size __z, _Size __a, _Size __b)
+    _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     __a += __w;
     __b             = __rotate(__b + __a + __z, 21);
@@ -186,8 +187,8 @@ private:
   }
 
   // Return a 16-byte hash for s[0] ... s[31], a, and b.  Quick and dirty.
-  static pair<_Size, _Size>
-  __weak_hash_len_32_with_seeds(const char* __s, _Size __a, _Size __b) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static pair<_Size, _Size> __weak_hash_len_32_with_seeds(const char* __s, _Size __a, _Size __b)
+    _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     return __weak_hash_len_32_with_seeds(
       __loadword<_Size>(__s),
@@ -199,7 +200,7 @@ private:
   }
 
   // Return an 8-byte hash for 33 to 64 bytes.
-  static _Size __hash_len_33_to_64(const char* __s, size_t __len) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
+  static _Size __hash_len_33_to_64(const char* __s, size_t __len) _CCCL_NO_SANITIZE("unsigned-integer-overflow")
   {
     _Size __z = __loadword<_Size>(__s + 24);
     _Size __a = __loadword<_Size>(__s) + (__len + __loadword<_Size>(__s + __len - 16)) * __k0;

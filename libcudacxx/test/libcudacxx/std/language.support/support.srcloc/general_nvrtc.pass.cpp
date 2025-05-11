@@ -82,7 +82,7 @@ __host__ __device__ void test()
   assert(global_source.line() != 0);
 
 // nvrtc only supports this in C++20
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 || _CCCL_COMPILER(NVRTC, >=, 12, 9)
   assert(global_source.column() != 0);
 #else
   assert(global_source.column() == 0);
@@ -93,7 +93,7 @@ __host__ __device__ void test()
   assert(compare_strings(global_source.file_name(), local.file_name()));
 
 // nvrtc only supports this in C++20
-#if TEST_STD_VER >= 2020
+#if TEST_STD_VER >= 2020 || _CCCL_COMPILER(NVRTC, >=, 12, 9)
   assert(local.line() == 2000);
 #else
   assert(global_source.line() == local.line());
