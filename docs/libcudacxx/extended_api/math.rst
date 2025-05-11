@@ -70,7 +70,7 @@ Math
      - Integer negation
      - CCCL 3.1.0
      - CUDA 13.1
-     
+
    * - :ref:`next_power_of_two <libcudacxx-extended-api-math-pow2>`
      - Next power of two
      - CCCL 3.1.0
