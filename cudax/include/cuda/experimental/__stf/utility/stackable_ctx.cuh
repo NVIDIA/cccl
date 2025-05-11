@@ -844,7 +844,7 @@ public:
   // depth if necessary. If this happens, we may update the task_dep objects to
   // reflect the actual logical data that needs to be used.
   template <typename... Pack>
-  void process_pack(int offset, const Pack&... pack) const
+  void process_pack([[maybe_unused]] int offset, const Pack&... pack) const
   {
     // This is a map of logical data, and the combined access modes
     ::std::vector<::std::pair<int, access_mode>> combined_accesses;
