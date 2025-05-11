@@ -1351,7 +1351,7 @@ class stackable_logical_data
       const auto& root_children = sctx.get_children_offsets(data_root_offset);
       for (auto c : root_children)
       {
-        if (c < impl_state->data_nodes.size() && impl_state->data_nodes[c].has_value())
+        if (c < int(impl_state->data_nodes.size()) && impl_state->data_nodes[c].has_value())
         {
           // Save the shared_ptr into the children contexts using the data
           sctx.get_node(c).retain_data(impl_state);
