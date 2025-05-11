@@ -285,10 +285,11 @@ struct {5} {{
     check(cuLibraryGetKernel(&build_ptr->init_kernel, build_ptr->library, init_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build_ptr->sweep_kernel, build_ptr->library, sweep_kernel_lowered_name.c_str()));
 
-    build_ptr->cc           = cc;
-    build_ptr->cubin        = (void*) result.data.release();
-    build_ptr->cubin_size   = result.size;
-    build_ptr->counter_type = counter_t;
+    build_ptr->cc                  = cc;
+    build_ptr->cubin               = (void*) result.data.release();
+    build_ptr->cubin_size          = result.size;
+    build_ptr->counter_type        = counter_t;
+    build_ptr->num_active_channels = num_active_channels;
   }
   catch (const std::exception& exc)
   {
