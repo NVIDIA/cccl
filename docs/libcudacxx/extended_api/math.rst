@@ -11,6 +11,8 @@ Math
    math/round_up
    math/round_down
    math/ilog
+   math/ipow
+   math/pow2
    math/isqrt
    math/uabs
 
@@ -48,8 +50,28 @@ Math
      - CCCL 3.0.0
      - CUDA 13.0
 
+   * - :ref:`ipow <libcudacxx-extended-api-math-ipow>`
+     - Integer power
+     - CCCL 3.1.0
+     - CUDA 13.1
+
+   * - :ref:`is_power_of_two <libcudacxx-extended-api-math-pow2>`
+     - If the value is a power of two
+     - CCCL 3.1.0
+     - CUDA 13.1
+
    * - :ref:`isqrt <libcudacxx-extended-api-math-isqrt>`
      - Integer square root
+     - CCCL 3.1.0
+     - CUDA 13.1
+
+   * - :ref:`next_power_of_two <libcudacxx-extended-api-math-pow2>`
+     - Next power of two
+     - CCCL 3.1.0
+     - CUDA 13.1
+
+   * - :ref:`prev_power_of_two <libcudacxx-extended-api-math-pow2>`
+     - Previous power of two
      - CCCL 3.1.0
      - CUDA 13.1
 

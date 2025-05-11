@@ -27,7 +27,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public integral_constant<bool, _CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public bool_constant<_CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
 {};
 
 template <class _Tp>

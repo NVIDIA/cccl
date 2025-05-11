@@ -47,16 +47,12 @@
 // for backward compatibility
 #include <cub/util_temporary_storage.cuh>
 
+#include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
+#include <cuda/std/array>
+#include <cuda/std/atomic>
+#include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
-
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cuda/std/__cuda/ensure_current_device.h> // IWYU pragma: export
-
-#  include <array>
-#  include <atomic>
-#  include <cassert>
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <nv/target>
 
@@ -165,12 +161,12 @@ struct PerDeviceAttributeCache
 
   struct DeviceEntry
   {
-    std::atomic<DeviceEntryStatus> flag;
+    ::cuda::std::atomic<DeviceEntryStatus> flag;
     DevicePayload payload;
   };
 
 private:
-  std::array<DeviceEntry, detail::max_devices> entries_;
+  ::cuda::std::array<DeviceEntry, detail::max_devices> entries_;
 
 public:
   /**
@@ -203,13 +199,13 @@ public:
     DeviceEntryStatus old_status = DeviceEntryEmpty;
 
     // First, check for the common case of the entry being ready.
-    if (flag.load(std::memory_order_acquire) != DeviceEntryReady)
+    if (flag.load(::cuda::std::memory_order_acquire) != DeviceEntryReady)
     {
       // Assume the entry is empty and attempt to lock it so we can fill
       // it by trying to set the state from `DeviceEntryReady` to
       // `DeviceEntryInitializing`.
       if (flag.compare_exchange_strong(
-            old_status, DeviceEntryInitializing, std::memory_order_acq_rel, std::memory_order_acquire))
+            old_status, DeviceEntryInitializing, ::cuda::std::memory_order_acq_rel, ::cuda::std::memory_order_acquire))
       {
         // We successfully set the state to `DeviceEntryInitializing`;
         // we have the lock and it's our job to initialize this entry
@@ -227,7 +223,7 @@ public:
         }
 
         // Release the lock by setting the state to `DeviceEntryReady`.
-        flag.store(DeviceEntryReady, std::memory_order_release);
+        flag.store(DeviceEntryReady, ::cuda::std::memory_order_release);
       }
 
       // If the `compare_exchange_weak` failed, then `old_status` has
@@ -240,7 +236,7 @@ public:
         // observe the entry status as `DeviceEntryReady`.
         do
         {
-          old_status = flag.load(std::memory_order_acquire);
+          old_status = flag.load(::cuda::std::memory_order_acquire);
         } while (old_status != DeviceEntryReady);
         // FIXME: Use `atomic::wait` instead when we have access to
         // host-side C++20 atomics. We could use libcu++, but it only
@@ -270,11 +266,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // in device code.
   // <nv/target> may provide an abstraction for this eventually. For now,
   // we have to keep this usage of __CUDA_ARCH__.
-#  if defined(_NVHPC_CUDA)
+#  if _CCCL_CUDA_COMPILER(NVHPC)
 #    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#  else
-#    define CUB_TEMP_GET_PTX __CUDA_ARCH__
-#  endif
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#    define CUB_TEMP_GET_PTX _CCCL_PTX_ARCH()
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
   cudaError_t result = cudaSuccess;
   NV_IF_TARGET(

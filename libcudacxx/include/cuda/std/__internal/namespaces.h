@@ -61,6 +61,20 @@
 #  define _LIBCUDACXX_END_NAMESPACE_FILESYSTEM } } } } }
 
 // Shorthands for different qualifiers
+  // Namespaces related to execution
+#  define _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION namespace cuda { namespace std { namespace execution { inline namespace _LIBCUDACXX_ABI_NAMESPACE {
+#  define _LIBCUDACXX_END_NAMESPACE_EXECUTION } } } }
+
+// Namespace to avoid name collisions with CPOs on clang-16 (see https://godbolt.org/z/9TadonrdM for example)
+#if _CCCL_COMPILER(CLANG, ==, 16)
+#  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE namespace __hidden {
+#  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS) } using __hidden::_CLASS;
+#else // ^^^ _CCCL_COMPILER(CLANG, ==, 16) ^^^ / vvv !_CCCL_COMPILER(CLANG, ==, 16) vvv
+#  define _LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
+#  define _LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(_CLASS)
+#endif // !_CCCL_COMPILER(CLANG, ==, 16)
+
+  // Shorthands for different qualifiers
 #  define _CUDA_VSTD_NOVERSION ::cuda::std
 #  define _CUDA_VSTD           ::cuda::std::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VRANGES        ::cuda::std::ranges::_LIBCUDACXX_ABI_NAMESPACE
@@ -68,6 +82,7 @@
 #  define _CUDA_VMR            ::cuda::mr::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VPTX           ::cuda::ptx::_LIBCUDACXX_ABI_NAMESPACE
 #  define _CUDA_VSTD_FS        ::cuda::std::__fs::filesystem::_LIBCUDACXX_ABI_NAMESPACE
+#  define _CUDA_STD_EXEC       ::cuda::std::execution::_LIBCUDACXX_ABI_NAMESPACE
 
 // clang-format on
 
