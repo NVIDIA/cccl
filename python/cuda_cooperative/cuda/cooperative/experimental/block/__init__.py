@@ -10,14 +10,20 @@ from cuda.cooperative.experimental.block._block_radix_sort import (
 )
 from cuda.cooperative.experimental.block._block_reduce import reduce, sum
 from cuda.cooperative.experimental.block._block_scan import (
+    exclusive_scan,
     exclusive_sum,
+    inclusive_scan,
     inclusive_sum,
+    scan,
 )
 
 __all__ = [
     "merge_sort_keys",
     "reduce",
     "sum",
+    "scan",
+    "exclusive_scan",
+    "inclusive_scan",
     "exclusive_sum",
     "inclusive_sum",
     "radix_sort_keys",

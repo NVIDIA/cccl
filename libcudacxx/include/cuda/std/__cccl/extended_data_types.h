@@ -23,7 +23,9 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/architecture.h>
+#include <cuda/std/__cccl/cuda_toolkit.h>
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
@@ -50,7 +52,7 @@
 #  define _CCCL_HAS_LONG_DOUBLE() 1
 #endif // !_CCCL_HAS_CUDA_COMPILER()
 
-#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CUDA_COMPILER() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+#if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (_CCCL_HAS_CTK() || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
                       && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #  undef _CCCL_HAS_NVFP16
 #  define _CCCL_HAS_NVFP16() 1
@@ -82,7 +84,7 @@
 #define _CCCL_HAS_NVFP6_E3M2() _CCCL_HAS_NVFP6()
 #define _CCCL_HAS_NVFP8_E4M3() _CCCL_HAS_NVFP8()
 #define _CCCL_HAS_NVFP8_E5M2() _CCCL_HAS_NVFP8()
-#define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CUDACC_AT_LEAST(12, 8))
+#define _CCCL_HAS_NVFP8_E8M0() (_CCCL_HAS_NVFP8() && _CCCL_CTK_AT_LEAST(12, 8))
 
 /***********************************************************************************************************************
  * FLOAT128
@@ -91,7 +93,7 @@
 #if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
 #  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) /*HOST COMPILERS*/
 #    if _CCCL_CUDA_COMPILER(NVHPC) \
-      || ((_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && __CUDA_ARCH__ >= 1000) /*DEVICE CODE*/
+      || ((_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && _CCCL_PTX_ARCH() >= 1000) /*DEVICE CODE*/
 #      undef _CCCL_HAS_FLOAT128
 #      define _CCCL_HAS_FLOAT128() 1
 #    endif // CUDA compiler

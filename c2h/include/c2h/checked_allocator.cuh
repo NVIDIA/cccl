@@ -51,18 +51,18 @@ struct memory_info
   bool override{false};
 };
 
-// If the environment variable CCCL_DEVICE_MEMORY_LIMIT is set, the total device memory
+// If the environment variable C2H_DEVICE_MEMORY_LIMIT is set, the total device memory
 // will be limited to this number of bytes.
 inline std::size_t get_device_memory_limit()
 {
-  static const char* override_str = std::getenv("CCCL_DEVICE_MEMORY_LIMIT");
+  static const char* override_str = std::getenv("C2H_DEVICE_MEMORY_LIMIT");
   static std::size_t result       = override_str ? static_cast<std::size_t>(std::atoll(override_str)) : 0;
   return result;
 }
 
 inline bool get_debug_checked_allocs()
 {
-  static const char* debug_checked_allocs = std::getenv("CCCL_DEBUG_CHECKED_ALLOC_FAILURES");
+  static const char* debug_checked_allocs = std::getenv("C2H_DEBUG_CHECKED_ALLOC_FAILURES");
   static bool result                      = debug_checked_allocs && (std::atoi(debug_checked_allocs) != 0);
   return result;
 }
@@ -112,7 +112,7 @@ inline cudaError_t check_free_device_memory(std::size_t bytes)
       if (info.override)
       {
         std::cerr
-          << "Available device memory has been limited (env var CCCL_DEVICE_MEMORY_LIMIT=" << get_device_memory_limit()
+          << "Available device memory has been limited (env var C2H_DEVICE_MEMORY_LIMIT=" << get_device_memory_limit()
           << ").\n";
       }
 

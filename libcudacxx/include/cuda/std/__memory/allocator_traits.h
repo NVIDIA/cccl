@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -300,9 +301,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 template <class _Tp>
 struct __is_default_allocator : false_type
 {};
-
-template <class>
-class allocator;
 
 template <class _Tp>
 struct __is_default_allocator<allocator<_Tp>> : true_type

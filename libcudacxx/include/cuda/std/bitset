@@ -28,10 +28,10 @@
 #include <cuda/std/__bit/reference.h>
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__string/char_traits.h>
 #include <cuda/std/__type_traits/is_char_like_type.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__string>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)
 #  include <cuda/std/string_view>
@@ -676,7 +676,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bitset(unsigned long long __v) noexcept
       : base(__v)
   {}
-  template <class _CharT, class = enable_if_t<_IsCharLikeType<_CharT>::value>>
+  template <class _CharT, class = enable_if_t<__cccl_is_char_like_type_v<_CharT>>>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit bitset(
     const _CharT* __str, size_t __n = static_cast<size_t>(-1), _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'))
   {

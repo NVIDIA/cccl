@@ -1378,12 +1378,12 @@ struct __no_narrowing_check
 
 struct __narrowing_check
 {
-  template <class _Dest, class _Source, class = void>
+  template <class _Dest, class _Source, bool = __cccl_internal::__is_non_narrowing_convertible<_Dest, _Source>::value>
   struct __narrowing_check_impl
   {};
 
   template <class _Dest, class _Source>
-  struct __narrowing_check_impl<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
+  struct __narrowing_check_impl<_Dest, _Source, true>
   {
     using type = type_identity<_Dest>;
   };

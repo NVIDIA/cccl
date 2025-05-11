@@ -286,7 +286,7 @@ SimpleUnitTest<TestSortAscendingKey,
                                 unittest::type_list<__int128_t, __uint128_t>
 #endif // _CCCL_HAS_INT128()
 // CTK 12.2 offers __host__ __device__ operators for __half and __nv_bfloat16, so we can use std::sort
-#if _CCCL_CUDACC_AT_LEAST(12, 2)
+#if _CCCL_CTK_AT_LEAST(12, 2)
 #  if _CCCL_HAS_NVFP16() || !defined(__CUDA_NO_HALF_OPERATORS__) && !defined(__CUDA_NO_HALF_CONVERSIONS__)
                                 ,
                                 unittest::type_list<__half>
@@ -295,6 +295,6 @@ SimpleUnitTest<TestSortAscendingKey,
                                 ,
                                 unittest::type_list<__nv_bfloat16>
 #  endif
-#endif // _CCCL_CUDACC_AT_LEAST(12, 2)
+#endif // _CCCL_CTK_AT_LEAST(12, 2)
                                 >>
   TestSortAscendingKeyMoreTypes;

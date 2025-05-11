@@ -361,7 +361,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
 
   if constexpr (_CCCL_TRAIT(is_array, _ValueType))
   {
-    static_assert(!__cccl_is_unbounded_array<_ValueType>::value,
+    static_assert(!is_unbounded_array_v<_ValueType>,
                   "arrays of unbounded arrays don't exist, but if they did we would mess up here");
 
     using _Element = remove_extent_t<_ValueType>;

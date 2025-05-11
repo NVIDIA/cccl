@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public integral_constant<bool, _CCCL_BUILTIN_IS_SIGNED(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public bool_constant<_CCCL_BUILTIN_IS_SIGNED(_Tp)>
 {};
 
 template <class _Tp>
@@ -39,28 +39,18 @@ inline constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
 
 #else
 
-template <class _Tp, bool = is_integral<_Tp>::value>
-struct __cccl_is_signed_impl : public bool_constant<(_Tp(-1) < _Tp(0))>
-{};
+template <class _Tp, bool = is_integral_v<_Tp>>
+inline constexpr bool __cccl_is_signed_helper_v = true;
 
 template <class _Tp>
-struct __cccl_is_signed_impl<_Tp, false> : public true_type
-{}; // floating point
-
-template <class _Tp, bool = is_arithmetic<_Tp>::value>
-struct __cccl_is_signed : public __cccl_is_signed_impl<_Tp>
-{};
+inline constexpr bool __cccl_is_signed_helper_v<_Tp, true> = _Tp(-1) < _Tp(0);
 
 template <class _Tp>
-struct __cccl_is_signed<_Tp, false> : public false_type
-{};
+inline constexpr bool is_signed_v = is_arithmetic_v<_Tp> && __cccl_is_signed_helper_v<_Tp>;
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public __cccl_is_signed<_Tp>
+struct is_signed : public bool_constant<is_signed_v<_Tp>>
 {};
-
-template <class _Tp>
-inline constexpr bool is_signed_v = is_signed<_Tp>::value;
 
 #endif // defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 

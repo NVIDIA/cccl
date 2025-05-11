@@ -92,8 +92,9 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,
@@ -278,8 +279,9 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
   constexpr offset_t max_items = 1000000;
 
   // Generate the input sizes to test for
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
   const offset_t num_items = GENERATE_COPY(
-    take(2, random(min_items, max_items)),
+    take(c2h::adjust_seed_count(2), random(min_items, max_items)),
     values({
       min_items,
       max_items,

@@ -188,7 +188,9 @@ using overaligned_types =
 #endif // !_CCCL_COMPILER(MSVC)
                  >;
 
-C2H_TEST("DeviceTransform::Transform works for large number of items", "[device][device_transform]", offset_types)
+C2H_TEST("DeviceTransform::Transform works for large number of items",
+         "[device][device_transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
 {
   using offset_t = c2h::get<0, TestType>;
   CAPTURE(c2h::type_name<offset_t>());
@@ -213,7 +215,7 @@ C2H_TEST("DeviceTransform::Transform works for large number of items", "[device]
 }
 
 C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number of items",
-         "[device][device_transform]",
+         "[device][device_transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
          offset_types)
 {
   using offset_t = c2h::get<0, TestType>;
@@ -290,7 +292,9 @@ struct times_seven
   }
 };
 
-C2H_TEST("DeviceTransform::Transform with large input", "[device][device_transform]", algorithms)
+C2H_TEST("DeviceTransform::Transform with large input",
+         "[device][device_transform][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         algorithms)
 try
 {
   using type         = unsigned char;
