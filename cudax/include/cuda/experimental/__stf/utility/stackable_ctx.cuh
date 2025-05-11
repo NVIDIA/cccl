@@ -284,8 +284,7 @@ public:
       display_graph_stats                 = (display_graph_stats_str && atoi(display_graph_stats_str) != 0);
 
       // Create the root node
-      int new_head = push(-1, _CUDA_VSTD::source_location::current());
-      set_head_offset(new_head);
+      push(_CUDA_VSTD::source_location::current(), true /* is_root */);
     }
 
     ~impl()
@@ -306,11 +305,13 @@ public:
      *
      * head_offset is the offset of thread's current top context (-1 if none)
      */
-    void push(const _CUDA_VSTD::source_location& loc)
+    void push(const _CUDA_VSTD::source_location& loc, bool is_root = false)
     {
       auto lock = get_write_lock();
 
-      int head_offset = get_head_offset();
+      // If we are creating the root context, we do not try to get some
+      // uninitialized thread-local value.
+      int head_offset = is_root?-1:get_head_offset();
 
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
