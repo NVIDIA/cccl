@@ -65,8 +65,8 @@
 #  define _CCCL_FORCEINLINE __inline__ __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER(MSVC)
 
-#if _CCCL_HAS_ATTRIBUTE(exclude_from_explicit_instantiation)
-#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((exclude_from_explicit_instantiation))
+#if _CCCL_HAS_ATTRIBUTE(__exclude_from_explicit_instantiation__)
+#  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((__exclude_from_explicit_instantiation__))
 #else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
 // NVCC complains mightily about being unable to inline functions if we use _CCCL_FORCEINLINE here
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
