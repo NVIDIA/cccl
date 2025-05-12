@@ -96,10 +96,10 @@ histogram_runtime_tuning_policy get_policy(int /*cc*/, cccl_type_info sample_t, 
   return {384, pixels_per_thread};
 }
 
-std::string get_init_kernel_name(int num_active_channels, std::string_view sample_t, std::string_view offset_t)
+std::string get_init_kernel_name(int num_active_channels, std::string_view counter_t, std::string_view offset_t)
 {
   return std::format(
-    "cub::detail::histogram::DeviceHistogramInitKernel<{0}, {1}, {2}>", num_active_channels, sample_t, offset_t);
+    "cub::detail::histogram::DeviceHistogramInitKernel<{0}, {1}, {2}>", num_active_channels, counter_t, offset_t);
 }
 
 std::string get_sweep_kernel_name(
@@ -241,11 +241,12 @@ struct {5} {{
     // TODO: This is tricky because we need to know the input to set this to a
     // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
     // information here.
-    constexpr int privatized_smem_bins = 0;
+    // constexpr int privatized_smem_bins = 0;
+    constexpr int privatized_smem_bins = 256;
 
     const bool is_byte_sample = d_samples.value_type.size == 1;
 
-    std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, sample_cpp, offset_cpp);
+    std::string init_kernel_name  = histogram::get_init_kernel_name(num_active_channels, counter_cpp, offset_cpp);
     std::string sweep_kernel_name = histogram::get_sweep_kernel_name(
       chained_policy_t,
       privatized_smem_bins,
@@ -332,24 +333,26 @@ CUresult cccl_device_histogram_even_impl(
   bool pushed    = false;
   try
   {
-    std::cout << "1" << '\n';
-    pushed = try_push_context();
+    using CounterT = int;
+    pushed         = try_push_context();
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
     constexpr int NUM_CHANNELS        = 1;
     constexpr int NUM_ACTIVE_CHANNELS = 1;
-    indirect_arg_t d_output_histogram_elem{d_output_histograms};
+    // indirect_arg_t d_output_histogram_elem{d_output_histograms};
 
-    ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
-      *static_cast<indirect_arg_t**>(&d_output_histogram_elem)};
+    // ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
+    //   *static_cast<indirect_arg_t**>(&d_output_histogram_elem)};
+
+    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
+      static_cast<CounterT*>(d_output_histograms.state)};
 
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr;
     // TODO: should we do this on the user provided stream?
     check(static_cast<CUresult>(
       cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToHost)));
-    std::cout << "2" << '\n';
 
     // indirect_arg_t lower_level_elem{lower_level};
     // ::cuda::std::array<indirect_arg_t, NUM_ACTIVE_CHANNELS> lower_level_arr{lower_level_elem};
@@ -357,28 +360,27 @@ CUresult cccl_device_histogram_even_impl(
     // indirect_arg_t upper_level_elem{upper_level};
     // ::cuda::std::array<indirect_arg_t, NUM_ACTIVE_CHANNELS> upper_level_arr{upper_level_elem};
 
-    indirect_arg_t lower_level_elem{lower_level};
-    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<double*>(&lower_level_elem)};
+    // indirect_arg_t lower_level_elem{lower_level};
+    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<double*>(lower_level.state)};
 
-    std::cout << "3" << '\n';
-
-    indirect_arg_t upper_level_elem{upper_level};
-    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<double*>(&upper_level_elem)};
-
-    std::cout << "4" << '\n';
+    // indirect_arg_t upper_level_elem{upper_level};
+    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<double*>(upper_level.state)};
 
     auto exec_status = cub::DispatchHistogram<
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
-      indirect_arg_t,
-      indirect_arg_t,
-      double, // not indirect_arg_t because used on the host
-      OffsetT,
+      indirect_arg_t, // SampleIteratorT
+      CounterT, // CounterT
+      double, // LevelT // not indirect_arg_t because used on the host
+      OffsetT, // OffsetT
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
       histogram::histogram_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
       indirect_arg_t,
-      cub::detail::histogram::Transforms<double, OffsetT, double>>::
+      cub::detail::histogram::Transforms<double, // LevelT
+                                         OffsetT, // OffsetT
+                                         float // SampleT
+                                         >>::
       DispatchEven(
         d_temp_storage,
         *temp_storage_bytes,
@@ -395,7 +397,6 @@ CUresult cccl_device_histogram_even_impl(
         {build},
         cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {d_samples.value_type, build.num_active_channels});
-    std::cout << "5" << '\n';
 
     error = static_cast<CUresult>(exec_status);
   }

@@ -19,10 +19,11 @@
 using sample_types = c2h::type_list<float>;
 
 using CounterT = int;
+using LevelT   = double;
 
 std::tuple<cccl_type_info, cccl_type_info> get_counter_and_level_types(cccl_type_info sample_t)
 {
-  cccl_type_info counter_t = get_type_info<int>();
+  cccl_type_info counter_t = get_type_info<CounterT>();
   cccl_type_info level_t;
   if (sample_t.type == CCCL_FLOAT32 || sample_t.type == CCCL_FLOAT64)
   {
@@ -32,6 +33,8 @@ std::tuple<cccl_type_info, cccl_type_info> get_counter_and_level_types(cccl_type
   {
     level_t = get_type_info<int>();
   }
+
+  level_t = get_type_info<LevelT>();
 
   return {counter_t, level_t};
 }
@@ -287,19 +290,37 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   int num_rows = 1;
 
   int num_levels = 7;
-  std::vector<int> d_num_levels{7};
-  std::vector<int> d_histogram(num_levels);
+  std::vector<int> d_num_levels{num_levels};
+  std::vector<CounterT> d_histogram(6);
 
-  float lower_level = 0.0;
-  float upper_level = 12.0;
-  std::vector<float> d_lower_level{lower_level};
-  std::vector<float> d_upper_level{upper_level};
+  LevelT lower_level = 0.0;
+  LevelT upper_level = 12.0;
+  std::vector<LevelT> d_lower_level{lower_level};
+  std::vector<LevelT> d_upper_level{upper_level};
 
   pointer_t<float> d_samples_ptr(d_samples);
-  pointer_t<int> d_histogram_ptr(d_histogram);
+  pointer_t<CounterT> d_histogram_ptr(d_histogram);
   pointer_t<int> d_num_levels_ptr(d_num_levels);
-  pointer_t<float> d_lower_level_ptr(d_lower_level);
-  pointer_t<float> d_upper_level_ptr(d_upper_level);
+  // pointer_t<double> d_lower_level_ptr(d_lower_level);
+  // pointer_t<double> d_upper_level_ptr(d_upper_level);
+
+  cccl_iterator_t d_lower_level_ptr{
+    sizeof(LevelT),
+    alignof(LevelT),
+    cccl_iterator_kind_t::CCCL_POINTER,
+    {},
+    {},
+    get_type_info<LevelT>(),
+    d_lower_level.data()};
+
+  cccl_iterator_t d_upper_level_ptr{
+    sizeof(LevelT),
+    alignof(LevelT),
+    cccl_iterator_kind_t::CCCL_POINTER,
+    {},
+    {},
+    get_type_info<LevelT>(),
+    d_upper_level.data()};
 
   size_t row_stride_samples = num_samples;
 
@@ -315,8 +336,8 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
 
   cudaDeviceSynchronize();
 
-  std::vector<int> d_histogram_out(d_histogram);
-  for (int i : d_histogram_out)
+  std::vector<CounterT> d_histogram_out(d_histogram_ptr);
+  for (CounterT i : d_histogram_out)
   {
     std::cout << i << '\n';
   }
@@ -359,7 +380,8 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
 //   //   }
 //   std::vector<CounterT> d_histogram(num_levels[0] - 1);
 
-//   const auto levels = setup_bin_levels_for_even<active_channels, level_type>(num_levels, max_level, max_level_count);
+//   const auto levels = setup_bin_levels_for_even<active_channels, level_type>(num_levels, max_level,
+//   max_level_count);
 
 //   const auto& lower_level = levels[0];
 //   const auto& upper_level = levels[1];
