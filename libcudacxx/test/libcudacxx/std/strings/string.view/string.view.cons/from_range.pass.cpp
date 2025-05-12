@@ -28,17 +28,26 @@
 template <class CharT>
 struct TestBase
 {
-  static constexpr auto range_data = TEST_STRLIT(CharT, "range_data");
-  static constexpr auto range_size = cuda::std::char_traits<CharT>::length(range_data);
-  static constexpr auto conv_data  = TEST_STRLIT(CharT, "conv_data");
+  __host__ __device__ static constexpr const CharT* range_data()
+  {
+    return TEST_STRLIT(CharT, "range_data");
+  }
+  __host__ __device__ static constexpr cuda::std::size_t range_size()
+  {
+    return cuda::std::char_traits<CharT>::length(range_data());
+  }
+  __host__ __device__ static constexpr const CharT* conv_data()
+  {
+    return TEST_STRLIT(CharT, "conv_data");
+  }
 
   __host__ __device__ constexpr const CharT* begin() const
   {
-    return range_data;
+    return range_data();
   }
   __host__ __device__ constexpr const CharT* end() const
   {
-    return range_data + range_size;
+    return range_data() + range_size();
   }
 };
 
@@ -50,10 +59,10 @@ __host__ __device__ constexpr void test_from_range()
 
   // 1. test construction from cuda::std::array
   {
-    cuda::std::array<CharT, TB::range_size> arr{};
+    cuda::std::array<CharT, TB::range_size()> arr{};
     for (cuda::std::size_t i = 0; i < arr.size(); ++i)
     {
-      arr[i] = TB::range_data[i];
+      arr[i] = TB::range_data()[i];
     }
     auto sv = SV(arr);
 
@@ -68,7 +77,7 @@ __host__ __device__ constexpr void test_from_range()
     {
       __host__ __device__ constexpr operator SV()
       {
-        return TB::conv_data;
+        return TB::conv_data();
       }
     };
 
@@ -77,7 +86,7 @@ __host__ __device__ constexpr void test_from_range()
 
     NonConstConversionOperator nc{};
     SV sv = nc;
-    assert(sv == TB::conv_data);
+    assert(sv == TB::conv_data());
   }
 
   // 3. test construction from a type with a const conversion operator
@@ -86,7 +95,7 @@ __host__ __device__ constexpr void test_from_range()
     {
       __host__ __device__ constexpr operator SV() const
       {
-        return TB::conv_data;
+        return TB::conv_data();
       }
     };
 
@@ -96,12 +105,12 @@ __host__ __device__ constexpr void test_from_range()
     {
       ConstConversionOperator cv{};
       SV sv = cv;
-      assert(sv == TB::conv_data);
+      assert(sv == TB::conv_data());
     }
     {
       const ConstConversionOperator cv{};
       SV sv = cv;
-      assert(sv == TB::conv_data);
+      assert(sv == TB::conv_data());
     }
   }
 
@@ -118,12 +127,12 @@ __host__ __device__ constexpr void test_from_range()
     {
       DeletedConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == TB::range_data);
+      assert(sv == TB::range_data());
     }
     {
       const DeletedConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == TB::range_data);
+      assert(sv == TB::range_data());
     }
   }
 
@@ -140,12 +149,12 @@ __host__ __device__ constexpr void test_from_range()
     {
       DeletedConstConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == TB::range_data);
+      assert(sv == TB::range_data());
     }
     {
       const DeletedConstConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == TB::range_data);
+      assert(sv == TB::range_data());
     }
   }
 
