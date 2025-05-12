@@ -265,18 +265,18 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     const int global_segment_id = bid * segments_per_small_block + sid_within_block;
 
     const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
-    // If empty segment, write out the initial value
-    if (segment_size == 0)
-    {
-      if (lane_id == 0)
-      {
-        *(d_out + global_segment_id) = detail::reduce::unwrap_empty_problem_init(init);
-      }
-      return;
-    }
 
     if (global_segment_id < num_segments)
     {
+      // If empty segment, write out the initial value
+      if (segment_size == 0)
+      {
+        if (lane_id == 0)
+        {
+          *(d_out + global_segment_id) = detail::reduce::unwrap_empty_problem_init(init);
+        }
+        return;
+      }
       // Consume input tiles
       AccumT warp_aggregate =
         AgentSmallReduceT(temp_storage.small_storage[sid_within_block], d_in + segment_begin, reduction_op)
