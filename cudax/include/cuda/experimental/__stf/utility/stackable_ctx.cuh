@@ -115,6 +115,9 @@ public:
           , alloc_adapters(mv(alloc_adapters))
       {}
 
+      ctx_node(ctx_node&&) noexcept            = default;
+      ctx_node& operator=(ctx_node&&) noexcept = default;
+
       // To avoid prematurely destroying data created in a nested context, we need to hold a reference to them
       //
       // This happens for example in this case where we want to defer the release
