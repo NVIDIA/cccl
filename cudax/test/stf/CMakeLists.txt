@@ -45,6 +45,7 @@ set(stf_test_sources
   local_stf/stackable_export.cu
   local_stf/stackable_export2.cu
   local_stf/stackable_move.cu
+  local_stf/stackable_nested.cu
   local_stf/stackable_threads.cu
   local_stf/stackable_token.cu
   local_stf/stackable_write_back.cu

@@ -112,7 +112,7 @@ public:
       ctx_node(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
           : ctx(mv(ctx))
           , support_stream(mv(support_stream))
-          , alloc_adapters(mv(alloc_adapters))
+          , alloc_adapters(mv(alloc_adapters)), refcnt(1)
       {}
 
       ctx_node(ctx_node&&) noexcept            = default;
@@ -153,6 +153,12 @@ public:
 
       // Where was the push() called ?
       _CUDA_VSTD::source_location callsite;
+
+      // When we call ctx.push() in a nested way, we do not actually create
+      // nested CUDA graphs, so the nested push/pop are no-ops, but we keep
+      // track of the number of users of a context node to properly implement
+      // the push/pop semantic
+      int refcnt;
 
     private:
       // If we want to keep the state of some logical data implementations until this node is popped
@@ -315,6 +321,25 @@ public:
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
       int head_offset = is_root ? -1 : get_head_offset();
+      int parent_depth = is_root ? -1 : int(node_tree.depth(head_offset));
+
+      if (parent_depth >= 1)
+      {
+        // If there is already a parent context node that is a CUDA graph,
+        // the push/pop section will use the same context node because there
+        // is currently no such thing as a nested CUDA graphs (child graph
+        // would not help much) and this simple strategy is good enough.
+        //
+        // There is no need to update the current head of the thread, but we
+        // increment the reference count of the context node.
+        _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid hierarchy");
+        auto& parent_node = nodes[head_offset].value();
+
+        // The parent node will perform all constructs in this push/pop scope.
+        parent_node.refcnt++;
+
+        return;
+      }
 
       // Select the offset of the new node
       int node_offset = node_tree.get_avail_entry();
@@ -337,14 +362,8 @@ public:
       }
       else
       {
-        // Get parent depth
-        int parent_depth = node_tree.depth(head_offset);
-        if (parent_depth >= 1)
-        {
-          fprintf(stderr, "stackable_ctx with depth > 2 is unimplemented yet\n");
-          abort();
-        }
-
+        // In the current implementation, depth > 1 is using a no-op for push/pop
+        _CCCL_ASSERT(parent_depth == 0, "invalid state");
         // Keep track of parenthood
         node_tree.set_parent(head_offset, node_offset);
 
@@ -396,6 +415,13 @@ public:
       _CCCL_ASSERT(nodes[head_offset].has_value(), "invalid state");
 
       auto& current_node = nodes[head_offset].value();
+
+      // If we have nested push/pop statements, the inner ctx.push() are just
+      // no-ops, we only really pop the context once all push/pop scopes using
+      // this ctx node are done.
+      current_node.refcnt--;
+      if (current_node.refcnt > 0)
+          return;
 
       const char* display_mem_stats_env = getenv("CUDASTF_DISPLAY_MEM_STATS");
       if (display_mem_stats_env && atoi(display_mem_stats_env) != 0)
@@ -1413,7 +1439,12 @@ class stackable_logical_data
         impl_state->data_nodes.resize(ctx_offset + 1);
       }
 
-      _CCCL_ASSERT(!impl_state->data_nodes[ctx_offset].has_value(), "already pushed");
+      if (impl_state->data_nodes[ctx_offset].has_value()) {
+          // If the logical data was already imported in this context, we just ensure the existing import was compatible
+          auto &existing_node = impl_state->data_nodes[ctx_offset].value();
+          _CCCL_ASSERT(access_mode_is_compatible(existing_node.effective_mode, m), "invalid access mode");
+          return;
+      }
       _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data must have been pushed");
 
       auto& to_node   = sctx.get_node(ctx_offset);
