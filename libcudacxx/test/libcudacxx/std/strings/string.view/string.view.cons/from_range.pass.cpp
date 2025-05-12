@@ -30,7 +30,10 @@ __host__ __device__ constexpr void test_from_range()
   using SV = cuda::std::basic_string_view<CharT>;
 
   constexpr auto range_data = TEST_STRLIT(CharT, "range_data");
-  constexpr auto conv_data  = TEST_STRLIT(CharT, "conv_data");
+  constexpr auto range_size = cuda::std::char_traits<CharT>::length(range_data);
+
+  constexpr auto conv_data = TEST_STRLIT(CharT, "conv_data");
+  constexpr auto conv_size = cuda::std::char_traits<CharT>::length(conv_data);
 
   // 1. test construction from cuda::std::array
   {
@@ -52,7 +55,7 @@ __host__ __device__ constexpr void test_from_range()
       }
       __host__ __device__ constexpr const CharT* end() const
       {
-        return range_data + 4;
+        return range_data + range_size;
       }
       __host__ __device__ constexpr operator SV()
       {
@@ -78,7 +81,7 @@ __host__ __device__ constexpr void test_from_range()
       }
       __host__ __device__ constexpr const CharT* end() const
       {
-        return range_data + 4;
+        return range_data + range_size;
       }
       __host__ __device__ constexpr operator SV() const
       {
@@ -111,7 +114,7 @@ __host__ __device__ constexpr void test_from_range()
       }
       __host__ __device__ constexpr const CharT* end() const
       {
-        return range_data + 4;
+        return range_data + range_size;
       }
       operator SV() = delete;
     };
@@ -141,7 +144,7 @@ __host__ __device__ constexpr void test_from_range()
       }
       __host__ __device__ constexpr const CharT* end() const
       {
-        return range_data + 4;
+        return range_data + range_size;
       }
       operator SV() const = delete;
     };
