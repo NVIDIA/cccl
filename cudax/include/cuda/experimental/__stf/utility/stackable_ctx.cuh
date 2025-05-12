@@ -112,7 +112,8 @@ public:
       ctx_node(context ctx, cudaStream_t support_stream, ::std::shared_ptr<stream_adapter> alloc_adapters)
           : ctx(mv(ctx))
           , support_stream(mv(support_stream))
-          , alloc_adapters(mv(alloc_adapters)), refcnt(1)
+          , alloc_adapters(mv(alloc_adapters))
+          , refcnt(1)
       {}
 
       ctx_node(ctx_node&&) noexcept            = default;
@@ -320,7 +321,7 @@ public:
 
       // If we are creating the root context, we do not try to get some
       // uninitialized thread-local value.
-      int head_offset = is_root ? -1 : get_head_offset();
+      int head_offset  = is_root ? -1 : get_head_offset();
       int parent_depth = is_root ? -1 : int(node_tree.depth(head_offset));
 
       if (parent_depth >= 1)
@@ -421,7 +422,9 @@ public:
       // this ctx node are done.
       current_node.refcnt--;
       if (current_node.refcnt > 0)
-          return;
+      {
+        return;
+      }
 
       const char* display_mem_stats_env = getenv("CUDASTF_DISPLAY_MEM_STATS");
       if (display_mem_stats_env && atoi(display_mem_stats_env) != 0)
@@ -1439,11 +1442,12 @@ class stackable_logical_data
         impl_state->data_nodes.resize(ctx_offset + 1);
       }
 
-      if (impl_state->data_nodes[ctx_offset].has_value()) {
-          // If the logical data was already imported in this context, we just ensure the existing import was compatible
-          auto &existing_node = impl_state->data_nodes[ctx_offset].value();
-          _CCCL_ASSERT(access_mode_is_compatible(existing_node.effective_mode, m), "invalid access mode");
-          return;
+      if (impl_state->data_nodes[ctx_offset].has_value())
+      {
+        // If the logical data was already imported in this context, we just ensure the existing import was compatible
+        auto& existing_node = impl_state->data_nodes[ctx_offset].value();
+        _CCCL_ASSERT(access_mode_is_compatible(existing_node.effective_mode, m), "invalid access mode");
+        return;
       }
       _CCCL_ASSERT(impl_state->data_nodes[parent_offset].has_value(), "parent data must have been pushed");
 
