@@ -1,0 +1,45 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+// constexpr decltype(auto) operator*();
+// constexpr decltype(auto) operator*() const
+//   requires dereferenceable<const I>;
+
+#include <cuda/iterator>
+
+#include "test_iterators.h"
+#include "test_macros.h"
+
+__host__ __device__ constexpr bool test()
+{
+  int buffer[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+
+  {
+    const int offset[] = {2};
+    cuda::permutation_iterator iter(random_access_iterator<int*>{buffer}, offset);
+    assert(*iter == buffer[*offset]);
+  }
+
+  {
+    const int offset[] = {2};
+    const cuda::permutation_iterator iter(random_access_iterator<int*>{buffer}, offset);
+    assert(*iter == buffer[*offset]);
+  }
+
+  return true;
+}
+
+int main(int, char**)
+{
+  test();
+  static_assert(test());
+
+  return 0;
+}
