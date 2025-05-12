@@ -36,23 +36,25 @@ __host__ __device__ constexpr void test_range_deduct()
 
   // 2. Test construction of a string_view from a custom type
   {
-    constexpr auto str = TEST_STRLIT(CharT, "foo");
     struct Widget
     {
-      const CharT* data_ = str;
+      __host__ __device__ static constexpr const CharT* data()
+      {
+        return TEST_STRLIT(CharT, "foo");
+      }
       __host__ __device__ constexpr contiguous_iterator<const CharT*> begin() const
       {
-        return contiguous_iterator<const CharT*>(data_);
+        return contiguous_iterator<const CharT*>(data());
       }
       __host__ __device__ constexpr contiguous_iterator<const CharT*> end() const
       {
-        return contiguous_iterator<const CharT*>(data_ + 3);
+        return contiguous_iterator<const CharT*>(data() + 3);
       }
     };
     cuda::std::basic_string_view bsv = cuda::std::basic_string_view(Widget());
     static_assert(cuda::std::is_same_v<decltype(bsv), cuda::std::basic_string_view<CharT>>);
     assert(bsv.size() == 3);
-    assert(bsv.data() == str);
+    assert(bsv.data() == Widget::data());
   }
 }
 
