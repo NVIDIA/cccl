@@ -56,7 +56,7 @@ template <class _Tp>
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
-  
+
 #endif // _CCCL_HAS_CTK()
 
 #endif // _CUDA___GET_DEVICE_ADDRESS_H
