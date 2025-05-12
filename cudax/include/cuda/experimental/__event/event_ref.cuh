@@ -137,7 +137,7 @@ public:
   //! @param __lhs The first `event_ref` to compare
   //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same `cudaEvent_t` object.
-  _CCCL_NODISCARD_FRIEND friend constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ == __rhs.__event_;
   }
@@ -150,7 +150,7 @@ public:
   //! @param __lhs The first `event_ref` to compare
   //! @param __rhs The second `event_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different `cudaEvent_t` objects.
-  _CCCL_NODISCARD_FRIEND friend constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(event_ref __lhs, event_ref __rhs) noexcept
   {
     return __lhs.__event_ != __rhs.__event_;
   }

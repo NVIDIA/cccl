@@ -136,7 +136,7 @@ public:
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  _CCCL_NODISCARD_FRIEND friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
+  [[nodiscard]] friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
   {
     return static_cast<flags>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs));
   }
