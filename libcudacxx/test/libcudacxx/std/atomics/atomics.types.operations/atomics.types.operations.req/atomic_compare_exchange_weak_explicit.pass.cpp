@@ -27,10 +27,11 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
+#include <cmpxchg_loop.h>
+
 #include "atomic_helpers.h"
 #include "cuda_space_selector.h"
 #include "test_macros.h"
-#include <cmpxchg_loop.h>
 
 template <class T, template <typename, typename> class Selector, cuda::thread_scope>
 struct TestFn

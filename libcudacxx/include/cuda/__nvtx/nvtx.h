@@ -46,6 +46,8 @@
 #  ifdef NVTX3_CPP_DEFINITIONS_V1_0
 #    include <cuda/std/optional>
 
+#    include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 namespace detail
@@ -90,6 +92,8 @@ struct NVTXCCCLDomain
 #  endif // NVTX3_CPP_DEFINITIONS_V1_0
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #else // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE)
 #  define _CCCL_NVTX_RANGE_SCOPE_IF(condition, name)

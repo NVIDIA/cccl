@@ -35,8 +35,9 @@
 
 #include <cub/util_allocator.cuh>
 
-#include "test_util.h"
 #include <stdio.h>
+
+#include "test_util.h"
 
 using namespace cub;
 

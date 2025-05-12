@@ -23,6 +23,8 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Ep, size_t _Sp = 0>
@@ -36,5 +38,7 @@ template <size_t _Ep, size_t _Sp = 0>
 using __make_tuple_indices_t = typename __make_tuple_indices<_Ep, _Sp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_INDICES_H

@@ -31,6 +31,8 @@
 #include <cuda/std/cstdlib>
 #include <cuda/std/cstring> // memmove
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -135,5 +137,7 @@ copy(_InputIterator __first, _InputIterator __last, _OutputIterator __result)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_COPY_H

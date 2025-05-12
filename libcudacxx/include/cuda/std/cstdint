@@ -23,8 +23,6 @@
 
 #include <cuda/std/version>
 
-_CCCL_PUSH_MACROS
-
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstdint>
 #else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
@@ -128,6 +126,8 @@ using uintmax_t = uint64_t;
 #  define UINTMAX_C(X) ((::uintmax_t)(X))
 #endif // ^^^ _CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 using ::int16_t;
@@ -173,6 +173,6 @@ using __cccl_uintmax_t = unsigned long long;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_CSTDINT

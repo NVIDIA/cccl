@@ -31,6 +31,8 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/cmp.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <class _Tp, class _Ep>
@@ -99,5 +101,7 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND _CUDA_VSTD::__cccl
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_IPOW

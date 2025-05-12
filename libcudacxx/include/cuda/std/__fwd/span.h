@@ -23,6 +23,8 @@
 
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 inline constexpr size_t dynamic_extent = static_cast<size_t>(-1);
@@ -30,5 +32,7 @@ template <typename _Tp, size_t _Extent = dynamic_extent>
 class span;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_SPAN_H

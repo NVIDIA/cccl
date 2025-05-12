@@ -69,7 +69,7 @@
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 #include <cuda/experimental/__utility/select_execution_space.cuh>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 //! @file The \c async_buffer class provides a container of contiguous memory
 namespace cuda::experimental
@@ -663,6 +663,6 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__CONTAINER_ASYNC_BUFFER__

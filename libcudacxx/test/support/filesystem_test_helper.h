@@ -11,11 +11,12 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h> // for ftruncate
+
 #include "filesystem_include.h"
 #include "format_string.h"
 #include "rapid-cxx-test.h"
 #include "test_macros.h"
-#include <unistd.h> // for ftruncate
 
 // static test helpers
 

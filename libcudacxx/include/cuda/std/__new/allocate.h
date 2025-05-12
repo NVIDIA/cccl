@@ -34,6 +34,8 @@
 #  define _LIBCUDACXX_HAS_SIZED_DEALLOCATION() 1
 #endif
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_overaligned_for_new(size_t __align) noexcept
@@ -118,5 +120,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_deallocate_unsized(void* __ptr, [[maybe_un
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NEW_ALLOCATE_H

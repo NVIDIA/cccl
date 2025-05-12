@@ -1,12 +1,12 @@
 
-#include <cuda_runtime.h>
-
 #include <cstdint>
 #include <cstdlib>
 #include <iostream> // std::cerr
 #include <numeric>
 #include <optional> // std::optional
 #include <string>
+
+#include <cuda_runtime.h>
 
 #include "algorithm_execution.h"
 #include "build_result_caching.h"

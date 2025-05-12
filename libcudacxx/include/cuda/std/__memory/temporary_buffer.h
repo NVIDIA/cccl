@@ -33,6 +33,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -84,5 +86,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_TEMPORARY_BUFFER_H

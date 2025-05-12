@@ -55,6 +55,8 @@
 #    include <function>
 #  endif // !_CCCL_HAS_EXCEPTIONS()
 
+#  include <cuda/std/__cccl/prologue.h>
+
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_function_call()
 {
 #  if _CCCL_HAS_EXCEPTIONS()
@@ -1267,6 +1269,8 @@ _LIBCUDACXX_HIDE_FROM_ABI void swap(function<_Rp(_ArgTypes...)>& __x, function<_
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 

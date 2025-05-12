@@ -53,6 +53,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class _Int>
@@ -578,5 +580,7 @@ _CCCL_GLOBAL_CONSTANT auto iota = __iota::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_VIEWS
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_IOTA_VIEW_H

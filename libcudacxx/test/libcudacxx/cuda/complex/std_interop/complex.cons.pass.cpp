@@ -12,10 +12,11 @@
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
 
+#include <nv/target>
+
 #include <complex>
 
 #include "test_macros.h"
-#include <nv/target>
 
 template <class T, class U>
 void test_construction()

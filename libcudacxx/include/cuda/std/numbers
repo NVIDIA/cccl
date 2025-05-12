@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/version>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -327,5 +329,7 @@ inline constexpr double phi        = __numbers<double>::__phi();
 } // namespace numbers
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_NUMBERS

@@ -32,6 +32,8 @@
 
 #  include <nv/target>
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief Returns the device address of the passed \c __device_object
@@ -52,6 +54,8 @@ template <class _Tp>
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_HAS_CTK()
 

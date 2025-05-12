@@ -29,6 +29,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Fn, class... _Args>
@@ -113,5 +115,7 @@ _CCCL_REQUIRES(is_constructible_v<decay_t<_Fn>, _Fn> _CCCL_AND is_move_construct
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_NOT_FN_H

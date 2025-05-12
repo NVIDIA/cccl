@@ -20,8 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
 
@@ -29,6 +27,8 @@
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <cuda_runtime_api.h>
 
 namespace cuda::experimental
 {

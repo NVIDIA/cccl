@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/is_enum.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_UNDERLYING_TYPE) && !defined(_LIBCUDACXX_USE_UNDERLYING_TYPE_FALLBACK)
@@ -58,5 +60,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT underlying_type
 #endif // !_CCCL_BUILTIN_UNDERLYING_TYPE
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_UNDERLYING_TYPE_H

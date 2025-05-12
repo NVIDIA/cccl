@@ -10,9 +10,9 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
+#include <nvrtc.h>
 
 #include "nvrtcc_common.h"
-#include <nvrtc.h>
 
 struct ExecutionConfig
 {

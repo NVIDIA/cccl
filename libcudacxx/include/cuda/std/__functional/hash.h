@@ -40,6 +40,8 @@
 
 #ifndef __cuda_std__
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Size>
@@ -640,6 +642,8 @@ using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
   __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 

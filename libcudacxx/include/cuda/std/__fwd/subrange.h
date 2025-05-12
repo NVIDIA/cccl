@@ -22,6 +22,8 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 enum class _CCCL_TYPE_VISIBILITY_DEFAULT subrange_kind : bool
@@ -47,5 +49,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT subrange;
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_SUBRANGE_H

@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_CORRESPONDING_MEMBER)
@@ -35,5 +37,7 @@ is_corresponding_member(_M1 _S1::* __m1_ptr, _M2 _S2::* __m2_ptr) noexcept
 #endif // _CCCL_BUILTIN_IS_CORRESPONDING_MEMBER
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_CORRESPONDING_MEMBER_H

@@ -12,6 +12,7 @@
 #define _CUDAX__STREAM_STREAM
 
 #include <cuda/std/detail/__config>
+
 #include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)

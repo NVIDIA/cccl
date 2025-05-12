@@ -23,6 +23,8 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE)
@@ -37,5 +39,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_layout_compatible : bool_constant<is_lay
 #endif // _CCCL_BUILTIN_IS_LAYOUT_COMPATIBLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_LAYOUT_COMPATIBLE_H

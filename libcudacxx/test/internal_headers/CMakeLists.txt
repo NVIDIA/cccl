@@ -18,6 +18,9 @@ file(GLOB_RECURSE internal_headers
   ${libcudacxx_SOURCE_DIR}/include/cuda/std/__*/*.h
 )
 
+# Exclude <cuda/std/__cccl/(prologue|epilogue).h> from the test
+list(FILTER internal_headers EXCLUDE REGEX "__cccl/(prologue|epilogue)\.h")
+
 # headers in `__cuda` are meant to come after the related "cuda" headers so they do not compile on their own
 list(FILTER internal_headers EXCLUDE REGEX "__cuda/*")
 

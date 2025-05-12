@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #if !_CCCL_COMPILER(NVRTC)
 #  include <climits>
 #else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
@@ -59,7 +57,5 @@ _CCCL_PUSH_MACROS
 #  define LLONG_MAX  0x7fffffffffffffffLL
 #  define ULLONG_MAX 0xffffffffffffffffUL
 #endif // _CCCL_COMPILER(NVRTC)
-
-_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_CLIMITS

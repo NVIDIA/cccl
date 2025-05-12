@@ -22,6 +22,8 @@
 
 #include <cuda/std/__algorithm/copy.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _ForwardIterator, class _OutputIterator>
@@ -32,5 +34,7 @@ rotate_copy(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterato
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_ROTATE_COPY_H

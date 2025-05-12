@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cfloat>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 enum class __fp_format
@@ -154,5 +156,7 @@ template <__fp_format _Fmt>
 inline constexpr __fp_format __fp_format_of_v<__cccl_fp<_Fmt>> = _Fmt;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FLOATING_POINT_FORMAT_H

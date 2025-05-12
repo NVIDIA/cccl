@@ -23,6 +23,8 @@
 
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace __begin
@@ -124,5 +126,7 @@ _CCCL_GLOBAL_CONSTANT auto cend = __cend::__fn{};
 } // namespace __cpo
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ACCESS_H

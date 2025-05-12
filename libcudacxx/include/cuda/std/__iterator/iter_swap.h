@@ -30,6 +30,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 // [iter.cust.swap]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -155,5 +157,7 @@ inline constexpr bool __noexcept_swappable<_I1, _I2, enable_if_t<indirectly_swap
   noexcept(_CUDA_VRANGES::iter_swap(_CUDA_VSTD::declval<_I1&>(), _CUDA_VSTD::declval<_I2&>()));
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ITER_SWAP_H
