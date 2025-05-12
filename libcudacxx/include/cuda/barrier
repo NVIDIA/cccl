@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
+#if _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
-#endif // __CUDA_ARCH__ < 700
+#endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
 #include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>

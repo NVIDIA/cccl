@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/neg.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -68,8 +69,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 {
   if (__cnt < 0)
   {
-    // todo: replace with cuda::__neg when available
-    __cnt = static_cast<int>((~static_cast<unsigned>(__cnt) + 1) % numeric_limits<_Tp>::digits);
+    __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
     return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);
   }
   return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
@@ -81,8 +81,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 {
   if (__cnt < 0)
   {
-    // todo: replace with cuda::__neg when available
-    __cnt = static_cast<int>((~static_cast<unsigned>(__cnt) + 1) % numeric_limits<_Tp>::digits);
+    __cnt = static_cast<int>(static_cast<unsigned>(::cuda::neg(__cnt)) % numeric_limits<_Tp>::digits);
     return _CUDA_VSTD::__cccl_rotl_impl(__v, __cnt);
   }
   return _CUDA_VSTD::__cccl_rotr_impl(__v, __cnt);

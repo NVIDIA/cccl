@@ -32,6 +32,7 @@
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
@@ -222,18 +223,7 @@ private:
     }
   };
 
-  struct __fn
-  {
-    template <class _Fn, class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   /// @brief The `let_(value|error|stopped)` sender.
   /// @tparam _Sndr The predecessor sender.
   /// @tparam _Fn The function to be called when the predecessor sender
@@ -327,9 +317,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
 };
 
 template <__disposition_t _Disposition>
-template <class _Fn, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
+template <class _Sndr, class _Fn>
+_CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
+  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)
@@ -337,15 +328,7 @@ _CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::__fn::operator()(_Fn __f
     using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Sndr, _Fn>>;
     static_assert(__valid_completion_signatures<__completions>);
   }
-  return __sndr_t<_Sndr, _Fn>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)};
-}
-
-template <__disposition_t _Disposition>
-template <class _Sndr, class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
-{
-  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
-  return __dom_t::__apply(*this)(static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr));
+  return transform_sender(__dom_t{}, __sndr_t<_Sndr, _Fn>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <__disposition_t _Disposition>
