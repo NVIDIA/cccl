@@ -113,27 +113,27 @@ struct device_only_type
 
   __device__ ~device_only_type() noexcept {}
 
-  __device__ [[nodiscard]] friend bool operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator==(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ == rhs.val_;
   }
-  __device__ [[nodiscard]] friend bool operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator!=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ != rhs.val_;
   }
-  __device__ [[nodiscard]] friend bool operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator<(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ < rhs.val_;
   }
-  __device__ [[nodiscard]] friend bool operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator<=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ <= rhs.val_;
   }
-  __device__ [[nodiscard]] friend bool operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator>(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ > rhs.val_;
   }
-  __device__ [[nodiscard]] friend bool operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
+  [[nodiscard]] __device__ friend bool operator>=(const device_only_type& lhs, const device_only_type& rhs) noexcept
   {
     return lhs.val_ >= rhs.val_;
   }
