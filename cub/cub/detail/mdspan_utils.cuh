@@ -43,7 +43,7 @@
 #include <cuda/std/cstddef> // size_t
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits> // make_unsigned_t
-#include <cuda/std/utility> // _CUDA_VSTD::index_sequence
+#include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
 
