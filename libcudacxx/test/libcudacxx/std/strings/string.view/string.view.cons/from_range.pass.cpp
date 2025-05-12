@@ -15,6 +15,7 @@
 
 #include <cuda/std/array>
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/iterator>
 #include <cuda/std/ranges>
 #include <cuda/std/string_view>
@@ -25,19 +26,35 @@
 #include "test_range.h"
 
 template <class CharT>
+struct TestBase
+{
+  static constexpr auto range_data = TEST_STRLIT(CharT, "range_data");
+  static constexpr auto range_size = cuda::std::char_traits<CharT>::length(range_data);
+  static constexpr auto conv_data  = TEST_STRLIT(CharT, "conv_data");
+
+  __host__ __device__ constexpr const CharT* begin() const
+  {
+    return range_data;
+  }
+  __host__ __device__ constexpr const CharT* end() const
+  {
+    return range_data + range_size;
+  }
+};
+
+template <class CharT>
 __host__ __device__ constexpr void test_from_range()
 {
   using SV = cuda::std::basic_string_view<CharT>;
-
-  constexpr auto range_data = TEST_STRLIT(CharT, "range_data");
-  constexpr auto range_size = cuda::std::char_traits<CharT>::length(range_data);
-
-  constexpr auto conv_data = TEST_STRLIT(CharT, "conv_data");
-  constexpr auto conv_size = cuda::std::char_traits<CharT>::length(conv_data);
+  using TB = TestBase<CharT>;
 
   // 1. test construction from cuda::std::array
   {
-    cuda::std::array<CharT, 4> arr{range_data[0], range_data[1], range_data[2], range_data[3]};
+    cuda::std::array<CharT, TB::range_size> arr{};
+    for (cuda::std::size_t i = 0; i < arr.size(); ++i)
+    {
+      arr[i] = TB::range_data[i];
+    }
     auto sv = SV(arr);
 
     static_assert(cuda::std::is_same_v<decltype(sv), SV>);
@@ -47,19 +64,11 @@ __host__ __device__ constexpr void test_from_range()
 
   // 2. test construction from a type with a non-const conversion operator
   {
-    struct NonConstConversionOperator
+    struct NonConstConversionOperator : TB
     {
-      __host__ __device__ constexpr const CharT* begin() const
-      {
-        return range_data;
-      }
-      __host__ __device__ constexpr const CharT* end() const
-      {
-        return range_data + range_size;
-      }
       __host__ __device__ constexpr operator SV()
       {
-        return conv_data;
+        return TB::conv_data;
       }
     };
 
@@ -67,25 +76,17 @@ __host__ __device__ constexpr void test_from_range()
     static_assert(!cuda::std::is_convertible_v<const NonConstConversionOperator&, SV>);
 
     NonConstConversionOperator nc{};
-    SV sv = NonConstConversionOperator{};
-    assert(sv == conv_data);
+    SV sv = nc;
+    assert(sv == TB::conv_data);
   }
 
   // 3. test construction from a type with a const conversion operator
   {
-    struct ConstConversionOperator
+    struct ConstConversionOperator : TB
     {
-      __host__ __device__ constexpr const CharT* begin() const
-      {
-        return range_data;
-      }
-      __host__ __device__ constexpr const CharT* end() const
-      {
-        return range_data + range_size;
-      }
       __host__ __device__ constexpr operator SV() const
       {
-        return conv_data;
+        return TB::conv_data;
       }
     };
 
@@ -95,27 +96,19 @@ __host__ __device__ constexpr void test_from_range()
     {
       ConstConversionOperator cv{};
       SV sv = cv;
-      assert(sv == conv_data);
+      assert(sv == TB::conv_data);
     }
     {
       const ConstConversionOperator cv{};
       SV sv = cv;
-      assert(sv == conv_data);
+      assert(sv == TB::conv_data);
     }
   }
 
   // 4. test construction from a type with a deleted conversion operator
   {
-    struct DeletedConversionOperator
+    struct DeletedConversionOperator : TB
     {
-      __host__ __device__ constexpr const CharT* begin() const
-      {
-        return range_data;
-      }
-      __host__ __device__ constexpr const CharT* end() const
-      {
-        return range_data + range_size;
-      }
       operator SV() = delete;
     };
 
@@ -125,27 +118,19 @@ __host__ __device__ constexpr void test_from_range()
     {
       DeletedConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == range_data);
+      assert(sv == TB::range_data);
     }
     {
       const DeletedConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == range_data);
+      assert(sv == TB::range_data);
     }
   }
 
   // 5. test construction from a type with a deleted const conversion operator
   {
-    struct DeletedConstConversionOperator
+    struct DeletedConstConversionOperator : TB
     {
-      __host__ __device__ constexpr const CharT* begin() const
-      {
-        return range_data;
-      }
-      __host__ __device__ constexpr const CharT* end() const
-      {
-        return range_data + range_size;
-      }
       operator SV() const = delete;
     };
 
@@ -155,12 +140,12 @@ __host__ __device__ constexpr void test_from_range()
     {
       DeletedConstConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == range_data);
+      assert(sv == TB::range_data);
     }
     {
       const DeletedConstConversionOperator cv{};
       SV sv = SV(cv);
-      assert(sv == range_data);
+      assert(sv == TB::range_data);
     }
   }
 
@@ -264,7 +249,6 @@ void test_exceptions()
       char* data() const
       {
         throw 42;
-        return nullptr;
       }
     };
     try
@@ -298,7 +282,6 @@ void test_exceptions()
       cuda::std::size_t size() const
       {
         throw 42;
-        return 0;
       }
     };
     try
