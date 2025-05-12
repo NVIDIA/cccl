@@ -17,9 +17,8 @@
 
 // using sample_types = c2h::type_list<std::int8_t, std::uint16_t, std::int32_t, std::uint64_t, float, double>;
 using sample_types = c2h::type_list<float>;
-
-using CounterT = int;
-using LevelT   = double;
+using CounterT     = int;
+using LevelT       = double;
 
 std::tuple<cccl_type_info, cccl_type_info> get_counter_and_level_types(cccl_type_info sample_t)
 {

@@ -27,7 +27,9 @@
 // int32_t is generally faster. Depending on the number of samples we
 // instantiate the kernels below with int32 or int64, but we set this to int64
 // here because it's needed for host computation as well.
-using OffsetT = int64_t;
+using OffsetT  = int64_t;
+using LevelT   = double;
+using CounterT = int;
 
 struct samples_iterator_t;
 
@@ -333,8 +335,7 @@ CUresult cccl_device_histogram_even_impl(
   bool pushed    = false;
   try
   {
-    using CounterT = int;
-    pushed         = try_push_context();
+    pushed = try_push_context();
 
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
@@ -371,13 +372,13 @@ CUresult cccl_device_histogram_even_impl(
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t, // SampleIteratorT
       CounterT, // CounterT
-      double, // LevelT // not indirect_arg_t because used on the host
+      LevelT, // LevelT // not indirect_arg_t because used on the host
       OffsetT, // OffsetT
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
       histogram::histogram_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
       indirect_arg_t,
-      cub::detail::histogram::Transforms<double, // LevelT
+      cub::detail::histogram::Transforms<LevelT, // LevelT
                                          OffsetT, // OffsetT
                                          float // SampleT
                                          >>::
