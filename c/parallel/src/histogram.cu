@@ -31,8 +31,7 @@ using OffsetT = int64_t;
 // Largest type we support for now. Tricky to make this an indirect_arg_t since
 // we are passing in cuda::std::arrays holding the values of the levels which
 // are used to do host computation.
-using LevelT   = double;
-using CounterT = int;
+using LevelT = double;
 
 struct samples_iterator_t;
 
@@ -345,13 +344,9 @@ CUresult cccl_device_histogram_even_impl(
 
     constexpr int NUM_CHANNELS        = 1;
     constexpr int NUM_ACTIVE_CHANNELS = 1;
-    // indirect_arg_t d_output_histogram_elem{d_output_histograms};
 
-    // ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
-    //   *static_cast<indirect_arg_t**>(&d_output_histogram_elem)};
-
-    ::cuda::std::array<CounterT*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
-      static_cast<CounterT*>(d_output_histograms.state)};
+    ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
+      static_cast<indirect_arg_t*>(d_output_histograms.state)};
 
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr;
     // TODO: should we do this on the user provided stream?
@@ -368,7 +363,7 @@ CUresult cccl_device_histogram_even_impl(
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t, // SampleIteratorT
-      CounterT, // CounterT
+      indirect_arg_t, // CounterT
       LevelT, // LevelT // not indirect_arg_t because used on the host
       OffsetT, // OffsetT
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>,

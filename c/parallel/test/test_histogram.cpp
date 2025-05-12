@@ -17,32 +17,18 @@
 
 // using sample_types = c2h::type_list<std::int8_t, std::uint16_t, std::int32_t, std::uint64_t, float, double>;
 using sample_types = c2h::type_list<float>;
-using CounterT     = int;
 using LevelT       = double;
 
-std::tuple<cccl_type_info, cccl_type_info> get_counter_and_level_types(cccl_type_info sample_t)
-{
-  cccl_type_info counter_t = get_type_info<CounterT>();
-  cccl_type_info level_t;
-  if (sample_t.type == CCCL_FLOAT32 || sample_t.type == CCCL_FLOAT64)
-  {
-    level_t = sample_t;
-  }
-  else
-  {
-    level_t = get_type_info<int>();
-  }
+constexpr int num_channels        = 1;
+constexpr int num_active_channels = 1;
 
-  level_t = get_type_info<LevelT>();
-
-  return {counter_t, level_t};
-}
-
-void build_histogram(cccl_device_histogram_build_result_t* build,
-                     cccl_iterator_t d_samples,
-                     uint64_t num_rows,
-                     uint64_t row_stride_samples,
-                     bool is_evenly_segmented)
+void build_histogram(
+  cccl_device_histogram_build_result_t* build,
+  cccl_iterator_t d_samples,
+  cccl_type_info counter_t,
+  uint64_t num_rows,
+  uint64_t row_stride_samples,
+  bool is_evenly_segmented)
 {
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, 0);
@@ -55,10 +41,7 @@ void build_histogram(cccl_device_histogram_build_result_t* build,
   const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
   const char* ctk_path        = TEST_CTK_PATH;
 
-  constexpr int num_channels        = 1;
-  constexpr int num_active_channels = 1;
-
-  const auto [counter_t, level_t] = get_counter_and_level_types(d_samples.value_type);
+  cccl_type_info level_t = get_type_info<LevelT>();
 
   REQUIRE(
     CUDA_SUCCESS
@@ -87,6 +70,7 @@ void build_histogram(cccl_device_histogram_build_result_t* build,
 void histogram_even(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
+  cccl_type_info counter_t,
   cccl_iterator_t num_output_levels,
   cccl_iterator_t lower_level,
   cccl_iterator_t upper_level,
@@ -95,7 +79,7 @@ void histogram_even(
   int64_t row_stride_samples)
 {
   cccl_device_histogram_build_result_t build;
-  build_histogram(&build, d_samples, num_rows, row_stride_samples, true);
+  build_histogram(&build, d_samples, counter_t, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -138,6 +122,7 @@ void histogram_even(
 void histogram_range(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
+  cccl_type_info counter_t,
   cccl_iterator_t num_output_levels,
   cccl_iterator_t d_levels,
   int64_t num_row_pixels,
@@ -145,7 +130,7 @@ void histogram_range(
   int64_t row_stride_samples)
 {
   cccl_device_histogram_build_result_t build;
-  build_histogram(&build, d_samples, num_rows, row_stride_samples, true);
+  build_histogram(&build, d_samples, counter_t, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -283,6 +268,8 @@ auto to_array_of_ptrs(std::array<c2h::device_vector<T>, N>& in)
 
 C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", sample_types)
 {
+  using CounterT = int;
+
   int num_samples = 10;
   std::vector<float> d_samples{2.2, 6.1, 7.1, 2.9, 3.5, 0.3, 2.9, 2.1, 6.1, 999.5};
 
@@ -290,7 +277,8 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
 
   int num_levels = 7;
   std::vector<int> d_num_levels{num_levels};
-  std::vector<CounterT> d_histogram(6);
+  std::vector<CounterT> d_single_histogram(6, 0);
+  pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
 
   LevelT lower_level = 0.0;
   LevelT upper_level = 12.0;
@@ -298,7 +286,6 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   std::vector<LevelT> d_upper_level{upper_level};
 
   pointer_t<float> d_samples_ptr(d_samples);
-  pointer_t<CounterT> d_histogram_ptr(d_histogram);
   pointer_t<int> d_num_levels_ptr(d_num_levels);
   // pointer_t<double> d_lower_level_ptr(d_lower_level);
   // pointer_t<double> d_upper_level_ptr(d_upper_level);
@@ -325,7 +312,8 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
 
   histogram_even(
     d_samples_ptr,
-    d_histogram_ptr,
+    d_single_histogram_ptr,
+    get_type_info<CounterT>(),
     d_num_levels_ptr,
     d_lower_level_ptr,
     d_upper_level_ptr,
@@ -335,7 +323,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
 
   cudaDeviceSynchronize();
 
-  std::vector<CounterT> d_histogram_out(d_histogram_ptr);
+  std::vector<CounterT> d_histogram_out(d_single_histogram_ptr);
   for (CounterT i : d_histogram_out)
   {
     std::cout << i << '\n';
