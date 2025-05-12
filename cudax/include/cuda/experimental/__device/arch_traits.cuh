@@ -26,6 +26,8 @@
 
 #include <cuda/experimental/__device/attributes.cuh>
 
+#include <nv/target>
+
 namespace cuda::experimental
 {
 
@@ -428,15 +430,49 @@ public:
 };
 
 //! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
-_CCCL_DEVICE constexpr inline arch_traits_t current_arch()
+_CCCL_DEVICE inline arch_traits_t current_arch()
 {
-  // fixme: this doesn't work with nvc++ -cuda
-#ifdef __CUDA_ARCH__
-  return arch_traits(__CUDA_ARCH__);
-#else
-  // Should be unreachable in __device__ function
-  return arch_traits_t{};
-#endif
+  // The NV_DISPATCH_TARGET cannot handle all of the cases, so we need to split it up
+  NV_DISPATCH_TARGET(
+    NV_IS_EXACTLY_SM_35,
+    (return arch_traits(350);),
+    NV_IS_EXACTLY_SM_37,
+    (return arch_traits(370);),
+    NV_IS_EXACTLY_SM_50,
+    (return arch_traits(500);),
+    NV_IS_EXACTLY_SM_52,
+    (return arch_traits(520);),
+    NV_IS_EXACTLY_SM_53,
+    (return arch_traits(530);),
+    NV_IS_EXACTLY_SM_60,
+    (return arch_traits(600);),
+    NV_IS_EXACTLY_SM_61,
+    (return arch_traits(610);),
+    NV_IS_EXACTLY_SM_62,
+    (return arch_traits(620);),
+    NV_IS_EXACTLY_SM_70,
+    (return arch_traits(700);),
+    NV_IS_EXACTLY_SM_72,
+    (return arch_traits(720);),
+    NV_IS_EXACTLY_SM_75,
+    (return arch_traits(750);),
+    NV_IS_EXACTLY_SM_80,
+    (return arch_traits(800);),
+    NV_ANY_TARGET,
+    ())
+  NV_DISPATCH_TARGET(
+    NV_IS_EXACTLY_SM_86,
+    (return arch_traits(860);),
+    NV_IS_EXACTLY_SM_87,
+    (return arch_traits(870);),
+    NV_IS_EXACTLY_SM_89,
+    (return arch_traits(890);),
+    NV_IS_EXACTLY_SM_90,
+    (return arch_traits(900);),
+    NV_IS_EXACTLY_SM_100,
+    (return arch_traits(1000);),
+    NV_ANY_TARGET,
+    (return arch_traits_t{};))
 }
 
 namespace detail
