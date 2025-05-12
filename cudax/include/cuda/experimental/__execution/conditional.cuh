@@ -243,13 +243,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure
   _CCCL_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure, _Sndr>
   {
     using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
-
+    // If the incoming sender is non-dependent, we can check the completion signatures of
+    // the composed sender immediately.
     if constexpr (!dependent_sender<_Sndr>)
     {
-      using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<__closure, _Sndr>>;
-      static_assert(__valid_completion_signatures<__completions>);
+      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<__closure, _Sndr>>());
     }
-
     return transform_sender(
       __dom_t{}, __sndr_t<__closure, _Sndr>{{}, static_cast<__closure&&>(*this), static_cast<_Sndr&&>(__sndr)});
   }
