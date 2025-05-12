@@ -359,16 +359,10 @@ CUresult cccl_device_histogram_even_impl(
       cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToHost)));
 
     // indirect_arg_t lower_level_elem{lower_level};
-    // ::cuda::std::array<indirect_arg_t, NUM_ACTIVE_CHANNELS> lower_level_arr{lower_level_elem};
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<LevelT*>(lower_level.state)};
 
     // indirect_arg_t upper_level_elem{upper_level};
-    // ::cuda::std::array<indirect_arg_t, NUM_ACTIVE_CHANNELS> upper_level_arr{upper_level_elem};
-
-    // indirect_arg_t lower_level_elem{lower_level};
-    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<double*>(lower_level.state)};
-
-    // indirect_arg_t upper_level_elem{upper_level};
-    ::cuda::std::array<double, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<double*>(upper_level.state)};
+    ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<LevelT*>(upper_level.state)};
 
     auto exec_status = cub::DispatchHistogram<
       NUM_CHANNELS,
