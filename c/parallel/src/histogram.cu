@@ -27,7 +27,10 @@
 // int32_t is generally faster. Depending on the number of samples we
 // instantiate the kernels below with int32 or int64, but we set this to int64
 // here because it's needed for host computation as well.
-using OffsetT  = int64_t;
+using OffsetT = int64_t;
+// Largest type we support for now. Tricky to make this an indirect_arg_t since
+// we are passing in cuda::std::arrays holding the values of the levels which
+// are used to do host computation.
 using LevelT   = double;
 using CounterT = int;
 
