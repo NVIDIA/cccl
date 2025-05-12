@@ -40,11 +40,11 @@ __host__ __device__ constexpr void test_range_deduct()
     struct Widget
     {
       const CharT* data_ = str;
-      contiguous_iterator<const CharT*> begin() const
+      __host__ __device__ constexpr contiguous_iterator<const CharT*> begin() const
       {
         return contiguous_iterator<const CharT*>(data_);
       }
-      contiguous_iterator<const CharT*> end() const
+      __host__ __device__ constexpr contiguous_iterator<const CharT*> end() const
       {
         return contiguous_iterator<const CharT*>(data_ + 3);
       }

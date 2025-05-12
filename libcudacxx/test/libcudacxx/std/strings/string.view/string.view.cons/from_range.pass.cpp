@@ -61,7 +61,7 @@ __host__ __device__ constexpr void test_from_range()
     };
 
     static_assert(cuda::std::is_constructible_v<SV, NonConstConversionOperator>);
-    static_assert(!cuda::std::is_constructible_v<SV, const NonConstConversionOperator&>);
+    static_assert(!cuda::std::is_convertible_v<const NonConstConversionOperator&, SV>);
 
     NonConstConversionOperator nc{};
     SV sv = NonConstConversionOperator{};
@@ -121,12 +121,12 @@ __host__ __device__ constexpr void test_from_range()
 
     {
       DeletedConversionOperator cv{};
-      SV sv = cv;
+      SV sv = SV(cv);
       assert(sv == range_data);
     }
     {
       const DeletedConversionOperator cv{};
-      SV sv = cv;
+      SV sv = SV(cv);
       assert(sv == range_data);
     }
   }
@@ -151,12 +151,12 @@ __host__ __device__ constexpr void test_from_range()
 
     {
       DeletedConstConversionOperator cv{};
-      SV sv = cv;
+      SV sv = SV(cv);
       assert(sv == range_data);
     }
     {
       const DeletedConstConversionOperator cv{};
-      SV sv = cv;
+      SV sv = SV(cv);
       assert(sv == range_data);
     }
   }
@@ -208,8 +208,14 @@ __host__ __device__ constexpr void test_from_range()
   {
     struct WithStringViewConversionOperator
     {
-      __host__ __device__ constexpr const CharT* begin() const;
-      __host__ __device__ constexpr const CharT* end() const;
+      __host__ __device__ constexpr const CharT* begin() const
+      {
+        return nullptr;
+      }
+      __host__ __device__ constexpr const CharT* end() const
+      {
+        return nullptr;
+      }
       __host__ __device__ constexpr operator SV() const
       {
         return {};

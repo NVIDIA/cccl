@@ -70,9 +70,21 @@ __host__ __device__ constexpr bool test()
 template <class CharT>
 struct ThrowingSentinel
 {
-  friend bool operator==(const CharT*, ThrowingSentinel) noexcept
+  friend bool operator==(const CharT*, const ThrowingSentinel&) noexcept
   {
     return true;
+  }
+  friend bool operator!=(const CharT*, const ThrowingSentinel&) noexcept
+  {
+    return false;
+  }
+  friend bool operator==(const ThrowingSentinel&, const CharT*) noexcept
+  {
+    return true;
+  }
+  friend bool operator!=(const ThrowingSentinel&, const CharT*) noexcept
+  {
+    return false;
   }
   friend cuda::std::iter_difference_t<const CharT*> operator-(const CharT*, ThrowingSentinel) noexcept
   {
@@ -83,6 +95,7 @@ struct ThrowingSentinel
     throw 42;
   }
 };
+static_assert(cuda::std::sized_sentinel_for<ThrowingSentinel<char>, const char*>);
 
 template <class CharT>
 void test_from_iter_sentinel_exceptions()

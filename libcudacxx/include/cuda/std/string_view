@@ -64,20 +64,10 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
-template <class _Range, class _CharT, class _Traits>
-concept __cccl_has_basic_sv_conv_operator =
-  requires(remove_cvref_t<_Range>& __d) { __d.operator _CUDA_VSTD::basic_string_view<_CharT, _Traits>(); };
-#else // ^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
-template <class _Range, class _CharT, class _Traits>
-_CCCL_CONCEPT_FRAGMENT(
-  __cccl_has_basic_sv_conv_operator_impl,
-  requires(_Range& __d)(typename(decltype(__d.operator _CUDA_VSTD::basic_string_view<_CharT, _Traits>()))));
-
 template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
-  _CCCL_FRAGMENT(__cccl_has_basic_sv_conv_operator_impl, remove_cvref_t<_Range>, _CharT, _Traits);
-#endif // _CCCL_NO_CONCEPTS
+  _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits), remove_cvref_t<_Range>& __d)(
+    (__d.operator _CUDA_VSTD::basic_string_view<_CharT, _Traits>()));
 
 template <class _CharT, class _Traits>
 class basic_string_view
@@ -151,7 +141,7 @@ public:
       _CCCL_AND _CUDA_VRANGES::contiguous_range<_Range> _CCCL_AND _CUDA_VRANGES::sized_range<_Range> _CCCL_AND
         is_same_v<_CUDA_VRANGES::range_value_t<_Range>, _CharT> _CCCL_AND(!is_convertible_v<_Range, const _CharT*>)
           _CCCL_AND(!__cccl_has_basic_sv_conv_operator<_Range, _CharT, _Traits>))
-  constexpr explicit _LIBCUDACXX_HIDE_FROM_ABI basic_string_view(_Range&& __r)
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr basic_string_view(_Range&& __r)
       : __data_{_CUDA_VRANGES::data(__r)}
       , __size_{_CUDA_VRANGES::size(__r)}
   {}
@@ -746,7 +736,7 @@ _CCCL_HOST_DEVICE basic_string_view(_It, _End) -> basic_string_view<iter_value_t
 
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
-_CCCL_HOST_DEVICE basic_string_view(_Range) -> basic_string_view<_CUDA_VRANGES::range_value_t<_Range>>;
+_CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<_CUDA_VRANGES::range_value_t<_Range>>;
 
 // operator <<
 
