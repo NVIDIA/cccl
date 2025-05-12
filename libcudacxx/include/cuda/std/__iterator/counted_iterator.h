@@ -236,7 +236,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2 = _Iter)
   _CCCL_REQUIRES(random_access_iterator<_I2>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr counted_iterator
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr counted_iterator
   operator+(iter_difference_t<_I2> __n, const counted_iterator& __x)
   {
     return __x + __n;
@@ -310,20 +310,20 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ == __rhs.__count_;
   }
 
 #if _CCCL_STD_VER <= 2017
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
   {
     return __lhs.__count_ == __rhs.__count_;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const counted_iterator& __lhs, const counted_iterator& __rhs) noexcept
   {
     return __lhs.__count_ != __rhs.__count_;
@@ -331,33 +331,33 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ != __rhs.__count_;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const counted_iterator& __lhs, default_sentinel_t) noexcept
   {
     return __lhs.__count_ == 0;
   }
 
 #if _CCCL_STD_VER <= 2017
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(default_sentinel_t, const counted_iterator& __lhs) noexcept
   {
     return __lhs.__count_ == 0;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const counted_iterator& __lhs, default_sentinel_t) noexcept
   {
     return __lhs.__count_ != 0;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(default_sentinel_t, const counted_iterator& __lhs) noexcept
   {
     return __lhs.__count_ != 0;
@@ -367,7 +367,7 @@ public:
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr strong_ordering
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr strong_ordering
   operator<=>(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __rhs.__count_ <=> __lhs.__count_;
@@ -376,7 +376,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ < __rhs.__count_;
@@ -384,7 +384,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ <= __rhs.__count_;
@@ -392,7 +392,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ > __rhs.__count_;
@@ -400,7 +400,7 @@ public:
 
   _CCCL_TEMPLATE(class _I2)
   _CCCL_REQUIRES(common_with<_I2, _Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(const counted_iterator& __lhs, const counted_iterator<_I2>& __rhs) noexcept
   {
     return __lhs.__count_ >= __rhs.__count_;

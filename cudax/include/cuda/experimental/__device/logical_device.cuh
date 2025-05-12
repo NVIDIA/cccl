@@ -100,7 +100,7 @@ public:
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the same logical device
-  _CCCL_NODISCARD_FRIEND bool operator==(logical_device __lhs, logical_device __rhs) noexcept
+  [[nodiscard]] friend bool operator==(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx == __rhs.__ctx;
   }
@@ -111,7 +111,7 @@ public:
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the different logical device
-  _CCCL_NODISCARD_FRIEND bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
+  [[nodiscard]] friend bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx != __rhs.__ctx;
   }

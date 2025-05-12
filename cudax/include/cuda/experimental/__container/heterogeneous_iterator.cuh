@@ -295,16 +295,18 @@ public:
     return __temp;
   }
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Advance a \c heterogeneous_iterator
   //! @param __count The number of elements to advance.
   //! @param __other A heterogeneous_iterator.
   //! @return \p __other advanced by \p __count
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr heterogeneous_iterator
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr heterogeneous_iterator
   operator+(const difference_type __count, heterogeneous_iterator __other) noexcept
   {
     __other += __count;
     return __other;
   }
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Advance a \c heterogeneous_iterator by the negative value of \p __count
   //! @param __count The number of elements to advance.
@@ -335,40 +337,41 @@ public:
     return static_cast<difference_type>(this->__ptr_ - __other.__ptr_);
   }
 
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Equality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if both heterogeneous_iterator point to the same element
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ == __rhs.__ptr_;
   }
-#  if _CCCL_STD_VER <= 2017
+#    if _CCCL_STD_VER <= 2017
   //! @brief Inequality comparison between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
   //! @return false, if both heterogeneous_iterator point to the same element
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ != __rhs.__ptr_;
   }
-#  endif // _CCCL_STD_VER <= 2017
+#    endif // _CCCL_STD_VER <= 2017
 
-#  if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::strong_ordering
+#    if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr _CUDA_VSTD::strong_ordering
   operator<=>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <=> __rhs.__ptr_;
   }
-#  else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
+#    else // ^^^ _LIBCUDACXX_HAS_SPACESHIP_OPERATOR() ^^^ /  vvv !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR() vvv
   //! @brief Less than relation between two heterogeneous_iterator
   //! @param __lhs A heterogeneous_iterator.
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then the address of the one pointed to
   //! by \p __rhs
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ < __rhs.__ptr_;
@@ -378,7 +381,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is less then or equal to the address of the one
   //! pointed to by \p __rhs
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ <= __rhs.__ptr_;
@@ -388,7 +391,7 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then the address of the one
   //! pointed to by \p __rhs
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ > __rhs.__ptr_;
@@ -398,12 +401,13 @@ public:
   //! @param __rhs Another heterogeneous_iterator.
   //! @return true, if the address of the element pointed to by \p __lhs is greater then or equal to the address of the
   //! one pointed to by \p __rhs
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(const heterogeneous_iterator& __lhs, const heterogeneous_iterator& __rhs) noexcept
   {
     return __lhs.__ptr_ >= __rhs.__ptr_;
   }
-#  endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#    endif // !_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer __unwrap() const noexcept
   {

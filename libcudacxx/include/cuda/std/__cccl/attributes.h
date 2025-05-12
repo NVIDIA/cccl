@@ -120,15 +120,6 @@
 #  define _CCCL_PURE
 #endif
 
-// _CCCL_NODISCARD_FRIEND
-
-// It always fails with clang
-#if _CCCL_COMPILER(CLANG)
-#  define _CCCL_NODISCARD_FRIEND friend
-#else
-#  define _CCCL_NODISCARD_FRIEND [[nodiscard]] friend
-#endif
-
 // _CCCL_NO_CFI
 
 #if !_CCCL_COMPILER(GCC)

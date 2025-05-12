@@ -420,7 +420,6 @@ doxygen_predefined = [
   "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
-  "_CCCL_NODISCARD_FRIEND=",
   "_CCCL_STD_VER=2020",
   "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",

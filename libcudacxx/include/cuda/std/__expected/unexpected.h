@@ -145,7 +145,7 @@ public:
   // [expected.un.eq]
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() == __rhs.error())))
   {
@@ -154,7 +154,7 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() != __rhs.error())))
   {
