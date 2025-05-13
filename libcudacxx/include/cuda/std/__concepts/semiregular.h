@@ -24,6 +24,8 @@
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -46,5 +48,7 @@ _CCCL_CONCEPT semiregular = _CCCL_FRAGMENT(__semiregular_, _Tp);
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_SEMIREGULAR_H

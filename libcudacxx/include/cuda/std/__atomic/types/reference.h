@@ -24,6 +24,8 @@
 #include <cuda/std/__atomic/types/base.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Reference is compatible with __atomic_base_tag and uses the default dispatch
@@ -65,5 +67,7 @@ struct __atomic_ref_storage
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ATOMIC_TYPES_REFERENCE_H

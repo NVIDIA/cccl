@@ -68,7 +68,7 @@ namespace detail
 #    define THRUST_DETAIL_KERNEL_ATTRIBUTES CCCL_DETAIL_KERNEL_ATTRIBUTES
 #  endif
 
-#  if defined(__CUDA_ARCH__) || defined(_NVHPC_CUDA)
+#  if _CCCL_DEVICE_COMPILATION()
 template <class Agent, class... Args>
 THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_THREADS) _kernel_agent(Args... args)
 {
@@ -85,7 +85,7 @@ THRUST_DETAIL_KERNEL_ATTRIBUTES void __launch_bounds__(Agent::ptx_plan::BLOCK_TH
   Agent::entry(args..., vshmem);
 }
 
-#  else
+#  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 template <class, class... Args>
 THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
 {}
@@ -93,7 +93,7 @@ THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent(Args... args)
 template <class, class... Args>
 THRUST_DETAIL_KERNEL_ATTRIBUTES void _kernel_agent_vshmem(char*, Args... args)
 {}
-#  endif
+#  endif // ^^^ !_CCCL_DEVICE_COMPILATION() ^^^
 
 template <class Agent>
 struct AgentLauncher : Agent

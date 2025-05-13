@@ -36,12 +36,12 @@
 #include <stdio.h>
 
 // For the CUDA runtime routines (prefixed with "cuda_")
-#include <cuda_runtime.h>
-
 #include <cuda/std/span>
 
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/stream.cuh>
+
+#include <cuda_runtime.h>
 
 #include "vector.cuh"
 

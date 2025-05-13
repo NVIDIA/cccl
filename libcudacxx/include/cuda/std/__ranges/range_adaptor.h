@@ -35,6 +35,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 // CRTP base that one can derive from in order to be considered a range adaptor closure
@@ -106,5 +108,7 @@ class range_adaptor_closure : public __range_adaptor_closure<_Tp>
 {};
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_RANGE_ADAPTOR_H

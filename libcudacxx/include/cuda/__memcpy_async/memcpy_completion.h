@@ -38,6 +38,8 @@
 
 #include <nv/target>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // This struct contains functions to defer the completion of a barrier phase
@@ -162,5 +164,7 @@ struct __memcpy_completion_impl
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MEMCPY_ASYNC_MEMCPY_COMPLETION_H

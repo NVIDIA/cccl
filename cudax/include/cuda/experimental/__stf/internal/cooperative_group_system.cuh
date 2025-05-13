@@ -103,25 +103,20 @@ private:
 #if _CCCL_CUDA_COMPILATION()
   _CCCL_DEVICE unsigned char load_arrived(unsigned char* arrived) const
   {
-#  if __CUDA_ARCH__ < 700
-    return *(volatile unsigned char*) arrived;
-#  else
-    unsigned int result;
-    asm volatile("ld.acquire.sys.global.u8 %0, [%1];" : "=r"(result) : "l"(arrived) : "memory");
-    return result;
-#  endif
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_70,
+      (unsigned int result; asm volatile("ld.acquire.sys.global.u8 %0, [%1];" : "=r"(result) : "l"(arrived) : "memory");
+       return result;),
+      (return *(volatile unsigned char*) arrived;))
+    _CCCL_UNREACHABLE();
   }
 
   _CCCL_DEVICE void store_arrived(unsigned char* arrived, unsigned char val) const
   {
-#  if __CUDA_ARCH__ < 700
-    *(volatile unsigned char*) arrived = val;
-#  else
-    unsigned int reg_val = val;
-    asm volatile("st.release.sys.global.u8 [%1], %0;" ::"r"(reg_val) "l"(arrived) : "memory");
-    // Avoids compiler warnings from unused variable val.
-    (void) (reg_val = reg_val);
-#  endif
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
+                      ([[maybe_unused]] unsigned int reg_val = val;
+                       asm volatile("st.release.sys.global.u8 [%1], %0;" ::"r"(reg_val) "l"(arrived) : "memory");),
+                      (*(volatile unsigned char*) arrived = val;))
   }
 #endif // _CCCL_CUDA_COMPILATION()
 };

@@ -45,7 +45,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/span>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -611,7 +611,7 @@ public:
 
   // Comparison operator
   template <class _OtherIndexType, size_t... _OtherExtents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const extents& __lhs, const extents<_OtherIndexType, _OtherExtents...>& __rhs) noexcept
   {
     if constexpr (rank() != sizeof...(_OtherExtents))
@@ -640,7 +640,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherIndexType, size_t... _OtherExtents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const extents& __lhs, const extents<_OtherIndexType, _OtherExtents...>& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -760,6 +760,6 @@ __is_multidimensional_index_in(const _Extents& __ext, _From... __values)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_EXTENTS_H

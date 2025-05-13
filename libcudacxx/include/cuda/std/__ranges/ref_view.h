@@ -37,6 +37,8 @@
 #include <cuda/std/__type_traits/is_object.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 template <class _Range>
@@ -113,5 +115,7 @@ template <class _Tp>
 inline constexpr bool enable_borrowed_range<ref_view<_Tp>> = true;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_REF_VIEW_H

@@ -17,10 +17,11 @@
 #include <string>
 #include <vector>
 
+#include <stdio.h>
+
 #include "nvrtcc_build.h"
 #include "nvrtcc_run.h"
 #include "utils/platform.h"
-#include <stdio.h>
 
 ArgList nvrtcArguments;
 ArgList ignoredArguments;

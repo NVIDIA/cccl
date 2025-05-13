@@ -8,18 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda_runtime.h>
-
 #include <algorithm>
 #include <iostream> // std::cerr
 #include <optional> // std::optional
 #include <string>
 
+#include <cuda_runtime.h>
+#include <stdint.h>
+
 #include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/for.h>
-#include <stdint.h>
 
 using BuildResultT = cccl_device_for_build_result_t;
 
@@ -214,7 +214,7 @@ C2H_TEST("for works with iterators", "[for]")
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
 
   iterator_t<int, constant_iterator_state_t<int>> input_it = make_iterator<int, constant_iterator_state_t<int>>(
-    "struct constant_iterator_state_t { int value; };\n",
+    {"constant_iterator_state_t", "struct constant_iterator_state_t { int value; };\n"},
     {"in_advance", "extern \"C\" __device__ void in_advance(constant_iterator_state_t*, unsigned long long) {}"},
     {"in_dereference",
      "extern \"C\" __device__ int in_dereference(constant_iterator_state_t* state) { \n"

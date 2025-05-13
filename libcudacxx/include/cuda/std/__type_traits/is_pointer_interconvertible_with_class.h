@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS)
@@ -35,5 +37,7 @@ is_pointer_interconvertible_with_class(_Mp _Sp::* __m_ptr) noexcept
 #endif // _CCCL_BUILTIN_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_POINTER_INTERCONVERTIBLE_WITH_CLASS_H

@@ -135,10 +135,12 @@ public:
     return _CUDA_VSTD::exchange(__event_, {});
   }
 
-  _CCCL_NODISCARD_FRIEND constexpr flags operator|(flags __lhs, flags __rhs) noexcept
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  [[nodiscard]] friend constexpr flags operator|(flags __lhs, flags __rhs) noexcept
   {
     return static_cast<flags>(static_cast<unsigned int>(__lhs) | static_cast<unsigned int>(__rhs));
   }
+#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   // Use `event::from_native_handle(e)` to construct an owning `event`

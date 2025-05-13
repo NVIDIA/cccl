@@ -18,10 +18,11 @@
 #include <cuda/experimental/execution.cuh>
 
 // Then include the test helpers
+#include <nv/target>
+
 #include "common/checked_receiver.cuh"
 #include "common/utility.cuh"
 #include "testing.cuh"
-#include <nv/target>
 
 namespace
 {

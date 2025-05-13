@@ -10,9 +10,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda.h>
-
 #include <cub/util_device.cuh>
+
+#include <cuda.h>
 
 CUB_NAMESPACE_BEGIN
 

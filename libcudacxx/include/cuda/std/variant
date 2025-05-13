@@ -20,10 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #include <cuda/std/detail/libcxx/include/variant>
-
-_CCCL_POP_MACROS
 
 #endif //_CUDA_STD_VARIANT

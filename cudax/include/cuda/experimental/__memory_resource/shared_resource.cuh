@@ -184,7 +184,7 @@ struct shared_resource
   //! @param __lhs The first \c shared_resource
   //! @param __rhs The other \c shared_resource
   //! @return Checks whether the objects refer to resources that compare equal.
-  _CCCL_NODISCARD_FRIEND bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
+  [[nodiscard]] friend bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
   {
     if (__lhs.__control_block == __rhs.__control_block)
     {
@@ -203,7 +203,7 @@ struct shared_resource
   //! @param __lhs The first \c shared_resource
   //! @param __rhs The other \c shared_resource
   //! @return Checks whether the objects refer to resources that compare unequal.
-  _CCCL_NODISCARD_FRIEND bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
+  [[nodiscard]] friend bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
   {
     return !(__lhs == __rhs);
   }
@@ -216,7 +216,7 @@ struct shared_resource
   //! @brief Forwards the stateful properties
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND(has_property<_Resource, _Property>))
-  _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
+  [[nodiscard]] friend __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
   {
     return get_property(__self.__control_block->__resource, _Property{});
   }

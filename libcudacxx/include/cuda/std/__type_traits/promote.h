@@ -26,6 +26,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -155,5 +157,7 @@ template <class _A1, class _A2 = void, class _A3 = void>
 using __promote_t _CCCL_NODEBUG_ALIAS = typename __promote<_A1, _A2, _A3>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_PROMOTE_H

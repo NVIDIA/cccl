@@ -60,6 +60,7 @@ public:
     return __id_;
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `device_ref`s for equality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -68,12 +69,12 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ == __rhs.__id_;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Compares two `device_ref`s for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -82,11 +83,12 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different device ordinal
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] constexpr friend bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ != __rhs.__id_;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Retrieve the specified attribute for the device
   //!

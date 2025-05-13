@@ -24,6 +24,8 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // MSVC requires an interesting workaround for a /permissive- bug
@@ -41,7 +43,7 @@ struct __unreachable_base
 {
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const unreachable_sentinel_t&, const _Iter&) noexcept
   {
     return false;
@@ -49,21 +51,21 @@ struct __unreachable_base
 #if _CCCL_STD_VER < 2020
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const _Iter&, const unreachable_sentinel_t&) noexcept
   {
     return false;
   }
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const unreachable_sentinel_t&, const _Iter&) noexcept
   {
     return true;
   }
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(weakly_incrementable<_Iter>)
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const _Iter&, const unreachable_sentinel_t&) noexcept
   {
     return true;
@@ -78,6 +80,9 @@ struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_bas
 #endif // _CCCL_COMPILER(MSVC)
 
 _CCCL_GLOBAL_CONSTANT unreachable_sentinel_t unreachable_sentinel{};
+
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_UNREACHABLE_SENTINEL_H

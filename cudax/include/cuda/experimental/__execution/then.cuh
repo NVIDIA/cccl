@@ -34,6 +34,7 @@
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
@@ -41,11 +42,6 @@
 
 namespace cuda::experimental::execution
 {
-// Forward-declate the then and upon_* algorithm tag types:
-struct then_t;
-struct upon_error_t;
-struct upon_stopped_t;
-
 // Map from a disposition to the corresponding tag types:
 namespace __detail
 {
@@ -98,7 +94,8 @@ using __completion _CCCL_NODEBUG_ALIAS = __completion_<__call_result_t<_Fn, _Ts.
 } // namespace __upon
 
 template <__disposition_t _Disposition>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(then_t) _CCCL_PREFERRED_NAME(upon_error_t)
+  _CCCL_PREFERRED_NAME(upon_stopped_t) __upon_t
 {
 private:
   using _UponTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__upon_tag<_Disposition>());
@@ -212,18 +209,7 @@ private:
     }
   };
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class _Fn, class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   template <class _Fn, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
@@ -316,25 +302,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
 };
 
 template <__disposition_t _Disposition>
-template <class _Fn, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
+template <class _Sndr, class _Fn>
+_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
+  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)
   {
-    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Fn, _Sndr>>;
-    static_assert(__valid_completion_signatures<__completions>);
+    __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Fn, _Sndr>>());
   }
-  return __sndr_t<_Fn, _Sndr>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)};
-}
-
-template <__disposition_t _Disposition>
-template <class _Sndr, class _Fn>
-_CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
-{
-  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
-  return __dom_t::__apply(*this)(static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr));
+  return transform_sender(__dom_t{}, __sndr_t<_Fn, _Sndr>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <__disposition_t _Disposition>
@@ -345,23 +323,16 @@ _CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Fn __fn) co
 }
 
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<__upon_t<__value>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<then_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<__upon_t<__error>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<upon_error_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<__upon_t<__stopped>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<upon_stopped_t::__sndr_t<_Sndr, _Fn>> = 3;
 
-_CCCL_GLOBAL_CONSTANT struct then_t : __upon_t<__value>
-{
-} then{};
+_CCCL_GLOBAL_CONSTANT auto then         = then_t{};
+_CCCL_GLOBAL_CONSTANT auto upon_error   = upon_error_t{};
+_CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
 
-_CCCL_GLOBAL_CONSTANT struct upon_error_t : __upon_t<__error>
-{
-} upon_error{};
-
-_CCCL_GLOBAL_CONSTANT struct upon_stopped_t : __upon_t<__stopped>
-{
-} upon_stopped{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -288,8 +288,6 @@ Usage example:
 +----------------------------------+------------------------------------------------------------------------------+
 | ``_CCCL_NO_UNIQUE_ADDRESS``      | Portable ``[[no_unique_address]]`` attribute                                 |
 +----------------------------------+------------------------------------------------------------------------------+
-| ``_CCCL_NODISCARD_FRIEND``       | Portable ``[[nodiscard]]`` attribute for ``friend`` functions (before C++17) |
-+----------------------------------+------------------------------------------------------------------------------+
 | ``CCCL_DEPRECATED``              | Portable ``[[deprecated]]`` attribute (before C++14)                         |
 +----------------------------------+------------------------------------------------------------------------------+
 | ``CCCL_DEPRECATED_BECAUSE(MSG)`` | Portable ``[[deprecated]]`` attribute with custom message (before C++14)     |
@@ -388,10 +386,6 @@ Warning Suppression Macros
 | ``_CCCL_DIAG_PUSH``         | Portable ``#pragma push``                  |
 +-----------------------------+--------------------------------------------+
 | ``_CCCL_DIAG_POP``          | Portable ``#pragma pop``                   |
-+-----------------------------+--------------------------------------------+
-| ``_CCCL_PUSH_MACROS``       | Push common msvc warning suppressions      |
-+-----------------------------+--------------------------------------------+
-| ``_CCCL_POP_MACROS``        | Pop common msvc warning suppressions       |
 +-----------------------------+--------------------------------------------+
 
 **Compiler-specific Suppression Macros**:

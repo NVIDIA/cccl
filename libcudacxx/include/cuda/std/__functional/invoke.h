@@ -42,6 +42,8 @@
 
 // TODO: Disentangle the type traits and _CUDA_VSTD::invoke properly
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __any
@@ -283,7 +285,7 @@ using __enable_if_bullet1 =
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
 using __enable_if_bullet2 =
-  enable_if_t<is_member_function_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_function_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -292,7 +294,7 @@ template <class _Fp,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet3 =
   enable_if_t<is_member_function_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__is_reference_wrapper<_DecayA0>::value>;
+              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -304,7 +306,7 @@ using __enable_if_bullet4 =
 
 template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
 using __enable_if_bullet5 =
-  enable_if_t<is_member_object_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_object_pointer<_DecayFp>::value && __cccl_is_reference_wrapper_v<_DecayA0>>;
 
 template <class _Fp,
           class _A0,
@@ -313,7 +315,7 @@ template <class _Fp,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet6 =
   enable_if_t<is_member_object_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-              && !__is_reference_wrapper<_DecayA0>::value>;
+              && !__cccl_is_reference_wrapper_v<_DecayA0>>;
 
 // __invoke forward declarations
 
@@ -450,7 +452,7 @@ template <class _Fp, class... _Args>
 struct __invoke_of
     : public enable_if<__invokable<_Fp, _Args...>::value, typename __invokable_r<void, _Fp, _Args...>::_Result>
 {
-#if defined(__NVCC__) && defined(__CUDACC_EXTENDED_LAMBDA__) && !defined(__CUDA_ARCH__)
+#if _CCCL_CUDA_COMPILER(NVCC) && defined(__CUDACC_EXTENDED_LAMBDA__) && !_CCCL_DEVICE_COMPILATION()
 #  if _CCCL_CUDACC_BELOW(12, 3)
   static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
                 "Attempt to use an extended __device__ lambda in a context "
@@ -552,5 +554,7 @@ template <typename Invokable, typename InputT, typename InitT = InputT>
 using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invokable, InitT, InputT>::type>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_INVOKE_H

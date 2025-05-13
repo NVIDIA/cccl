@@ -8,12 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda_runtime.h>
-
 #include <cstdint>
 #include <iostream>
 #include <optional>
 #include <string>
+
+#include <cuda_runtime.h>
 
 #include "algorithm_execution.h"
 #include "build_result_caching.h"
@@ -341,7 +341,7 @@ C2H_TEST("DeviceMergeSort::SortKeys works with output iterators", "[merge_sort]"
   operation_t op = make_operation("op", get_merge_sort_op(get_type_info<TestType>().type));
   iterator_t<TestType, random_access_iterator_state_t> output_keys_it =
     make_iterator<TestType, random_access_iterator_state_t>(
-      "struct random_access_iterator_state_t { int* d_input; };\n",
+      {"random_access_iterator_state_t", "struct random_access_iterator_state_t { int* d_input; };\n"},
       {"advance",
        "extern \"C\" __device__ void advance(random_access_iterator_state_t* state, unsigned long long offset) {\n"
        "  state->d_input += offset;\n"

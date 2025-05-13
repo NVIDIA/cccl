@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT>
@@ -41,5 +43,7 @@ struct char_traits<wchar_t>;
 #endif // _CCCL_HAS_WCHAR_T()
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_CHAR_TRAITS_H

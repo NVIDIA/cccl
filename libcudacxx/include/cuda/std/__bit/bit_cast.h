@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 #include <cuda/std/cstring>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_BIT_CAST)
@@ -69,5 +71,7 @@ _CCCL_DIAG_POP
 #endif // !_CCCL_BUILTIN_BIT_CAST
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_BIT_CAST_H

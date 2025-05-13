@@ -27,6 +27,7 @@
 #include <cuda/std/optional>
 #include <cuda/std/tuple>
 
+#include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
@@ -130,53 +131,45 @@ private:
     int i{}; // so that structured bindings kinda work
   };
 
-  // This is the actual default sync_wait implementation.
-  struct __fn
-  {
-    template <class _Sndr>
-    _CCCL_HOST_API auto operator()(_Sndr&& __sndr) const
-    {
-      using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t>;
-
-      if constexpr (!__valid_completion_signatures<__completions>)
-      {
-        return __bad_sync_wait<__completions>::__result();
-      }
-      else
-      {
-        using __values _CCCL_NODEBUG_ALIAS = __value_types<__completions, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
-        _CUDA_VSTD::optional<__values> __result{};
-        __state_t<__values> __state{&__result, {}, {}};
-
-        // Launch the sender with a continuation that will fill in a variant
-        using __rcvr   = typename __state_t<__values>::__rcvr_t;
-        auto __opstate = execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr{&__state});
-        execution::start(__opstate);
-
-        // Wait for the variant to be filled in, and process any work that
-        // may be delegated to this thread.
-        __state.__loop_.run();
-
-        if (__state.__eptr_)
-        {
-          ::std::rethrow_exception(__state.__eptr_);
-        }
-
-        return __result; // uses NRVO to "return" the result
-      }
-    }
-
-    template <class _Sndr, class _Env>
-    _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
-    {
-      return (*this)(execution::write_env(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)));
-    }
-  };
-
 public:
-  _CCCL_HOST_API static constexpr auto __apply() noexcept
+  // This is the actual default sync_wait implementation.
+  template <class _Sndr>
+  _CCCL_HOST_API static auto apply_sender(_Sndr&& __sndr)
   {
-    return __fn{};
+    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t>;
+
+    if constexpr (!__valid_completion_signatures<__completions>)
+    {
+      return __bad_sync_wait<__completions>::__result();
+    }
+    else
+    {
+      using __values _CCCL_NODEBUG_ALIAS = __value_types<__completions, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+      _CUDA_VSTD::optional<__values> __result{};
+      __state_t<__values> __state{&__result, {}, {}};
+
+      // Launch the sender with a continuation that will fill in a variant
+      using __rcvr   = typename __state_t<__values>::__rcvr_t;
+      auto __opstate = execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr{&__state});
+      execution::start(__opstate);
+
+      // Wait for the variant to be filled in, and process any work that
+      // may be delegated to this thread.
+      __state.__loop_.run();
+
+      if (__state.__eptr_)
+      {
+        ::std::rethrow_exception(__state.__eptr_);
+      }
+
+      return __result; // uses NRVO to "return" the result
+    }
+  }
+
+  template <class _Sndr, class _Env>
+  _CCCL_HOST_API static auto apply_sender(_Sndr&& __sndr, _Env&& __env)
+  {
+    return apply_sender(execution::write_env(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)));
   }
 
   // clang-format off
@@ -206,18 +199,11 @@ public:
   ///         `cudaError_t`.
   /// @throws error otherwise
   // clang-format on
-  template <class _Sndr>
-  _CCCL_HOST_API auto operator()(_Sndr&& __sndr) const
+  template <class _Sndr, class... _Env>
+  _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&&... __env) const
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
-    return __dom_t::__apply(*this)(static_cast<_Sndr&&>(__sndr));
-  }
-
-  template <class _Sndr, class _Env>
-  _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
-  {
-    using __dom_t _CCCL_NODEBUG_ALIAS = late_domain_of_t<_Sndr, _Env>;
-    return __dom_t::__apply(*this)(static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
+    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr, _Env...>;
+    return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)...);
   }
 };
 

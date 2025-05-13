@@ -32,6 +32,8 @@
 #include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/__utility/to_underlying.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
@@ -118,5 +120,7 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___CMATH_CEIL_DIV_H

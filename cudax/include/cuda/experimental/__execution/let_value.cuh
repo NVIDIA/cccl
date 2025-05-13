@@ -32,6 +32,7 @@
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
@@ -43,11 +44,6 @@ namespace cuda::experimental::execution
 {
 // Declare types to use for diagnostics:
 struct _FUNCTION_MUST_RETURN_A_SENDER;
-
-// Forward-declate the let_* algorithm tag types:
-struct let_value_t;
-struct let_error_t;
-struct let_stopped_t;
 
 // Map from a disposition to the corresponding tag types:
 namespace __detail
@@ -63,7 +59,8 @@ extern __fn_t<let_stopped_t>* __let_tag<__stopped, _Void>;
 } // namespace __detail
 
 template <__disposition_t _Disposition>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(let_value_t) _CCCL_PREFERRED_NAME(let_error_t)
+  _CCCL_PREFERRED_NAME(let_stopped_t) __let_t
 {
 private:
   using _LetTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__let_tag<_Disposition>());
@@ -222,18 +219,7 @@ private:
     }
   };
 
-  struct __fn
-  {
-    template <class _Fn, class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Fn __fn, _Sndr __sndr) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   /// @brief The `let_(value|error|stopped)` sender.
   /// @tparam _Sndr The predecessor sender.
   /// @tparam _Fn The function to be called when the predecessor sender
@@ -327,25 +313,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
 };
 
 template <__disposition_t _Disposition>
-template <class _Fn, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::__fn::operator()(_Fn __fn, _Sndr __sndr) const
-{
-  // If the incoming sender is non-dependent, we can check the completion
-  // signatures of the composed sender immediately.
-  if constexpr (!dependent_sender<_Sndr>)
-  {
-    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Sndr, _Fn>>;
-    static_assert(__valid_completion_signatures<__completions>);
-  }
-  return __sndr_t<_Sndr, _Fn>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)};
-}
-
-template <__disposition_t _Disposition>
 template <class _Sndr, class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
-  return __dom_t::__apply(*this)(static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr));
+  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+  // If the incoming sender is non-dependent, we can check the completion signatures of
+  // the composed sender immediately.
+  if constexpr (!dependent_sender<_Sndr>)
+  {
+    __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Sndr, _Fn>>());
+  }
+  return transform_sender(__dom_t{}, __sndr_t<_Sndr, _Fn>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <__disposition_t _Disposition>
@@ -356,23 +334,16 @@ _CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Fn __fn) con
 }
 
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<__let_t<__value>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<let_value_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<__let_t<__error>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<let_error_t::__sndr_t<_Sndr, _Fn>> = 3;
 template <class _Sndr, class _Fn>
-inline constexpr size_t structured_binding_size<__let_t<__stopped>::__sndr_t<_Sndr, _Fn>> = 3;
+inline constexpr size_t structured_binding_size<let_stopped_t::__sndr_t<_Sndr, _Fn>> = 3;
 
-_CCCL_GLOBAL_CONSTANT struct let_value_t : __let_t<__value>
-{
-} let_value{};
+_CCCL_GLOBAL_CONSTANT auto let_value   = let_value_t{};
+_CCCL_GLOBAL_CONSTANT auto let_error   = let_error_t{};
+_CCCL_GLOBAL_CONSTANT auto let_stopped = let_stopped_t{};
 
-_CCCL_GLOBAL_CONSTANT struct let_error_t : __let_t<__error>
-{
-} let_error{};
-
-_CCCL_GLOBAL_CONSTANT struct let_stopped_t : __let_t<__stopped>
-{
-} let_stopped{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

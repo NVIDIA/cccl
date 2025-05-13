@@ -62,6 +62,8 @@
 
 #define _LIBCUDACXX_ATOMIC_IS_LOCK_FREE(size) (size <= 8)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
@@ -85,5 +87,7 @@ struct __atomic_is_always_lock_free
 #endif // defined(_LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __LIBCUDACXX___ATOMIC_PLATFORM_H

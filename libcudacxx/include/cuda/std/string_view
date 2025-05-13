@@ -59,7 +59,7 @@
 #  include <iosfwd>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -566,7 +566,7 @@ public:
 
   // operator ==
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     if (__lhs.__size_ != __rhs.__size_)
@@ -577,7 +577,7 @@ public:
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     if (__lhs.__size_ != __rhs.__size_)
@@ -588,7 +588,7 @@ public:
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs == __rhs;
@@ -596,21 +596,21 @@ public:
 
   // operator !=
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -618,21 +618,21 @@ public:
 
   // operator <
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
@@ -640,21 +640,21 @@ public:
 
   // operator >
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
@@ -662,21 +662,21 @@ public:
 
   // operator <=
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
@@ -684,21 +684,21 @@ public:
 
   // operator >=
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
@@ -798,6 +798,6 @@ _CCCL_DIAG_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_STRING_VIEW

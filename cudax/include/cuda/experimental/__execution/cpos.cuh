@@ -23,7 +23,9 @@
 
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -100,19 +102,34 @@ struct start_t
 // connect
 struct connect_t
 {
-  template <class _Sndr, class _Rcvr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr&& __sndr, _Rcvr&& __rcvr) const
-    noexcept(noexcept(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr))))
-      -> decltype(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr)))
+  template <class _Sndr, class _Rcvr, class _Domain = domain_for_t<_Sndr, env_of_t<_Rcvr>>>
+  _CCCL_TRIVIAL_API static constexpr auto __do_transform(_Sndr&& __sndr, _Rcvr __rcvr) noexcept(
+    noexcept(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr)))) -> decltype(auto)
+  {
+    return transform_sender(_Domain{}, static_cast<_Sndr&&>(__sndr), get_env(__rcvr));
+  }
+
+  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
+  _CCCL_REQUIRES((!__has_sender_transform<_Sndr, env_of_t<_Rcvr>>) )
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+    noexcept(noexcept(declval<_Sndr>().connect(declval<_Rcvr>()))) -> decltype(auto)
   {
     return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
+  }
+
+  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
+  _CCCL_REQUIRES(__has_sender_transform<_Sndr, env_of_t<_Rcvr>>)
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+    noexcept(noexcept(__do_transform(declval<_Sndr>(), __rcvr).connect(declval<_Rcvr>()))) -> decltype(auto)
+  {
+    return __do_transform(static_cast<_Sndr&&>(__sndr), __rcvr).connect(static_cast<_Rcvr&&>(__rcvr));
   }
 };
 
 struct schedule_t
 {
   template <class _Sch>
-  _CCCL_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept -> decltype(static_cast<_Sch&&>(__sch).schedule())
+  _CCCL_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept -> decltype(declval<_Sch>().schedule())
   {
     static_assert(noexcept(static_cast<_Sch&&>(__sch).schedule()));
     return static_cast<_Sch&&>(__sch).schedule();

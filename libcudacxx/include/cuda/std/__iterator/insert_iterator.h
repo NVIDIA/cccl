@@ -27,6 +27,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Container>
@@ -97,5 +99,7 @@ inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_INSERT_ITERATOR_H

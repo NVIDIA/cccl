@@ -24,11 +24,15 @@
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/empty_completion.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <thread_scope _Sco, class _CompletionF = _CUDA_VSTD::__empty_completion>
 class barrier;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___FWD_BARRIER_H

@@ -46,7 +46,7 @@
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -676,7 +676,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bitset(unsigned long long __v) noexcept
       : base(__v)
   {}
-  template <class _CharT, class = enable_if_t<_IsCharLikeType<_CharT>::value>>
+  template <class _CharT, class = enable_if_t<__cccl_is_char_like_type_v<_CharT>>>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit bitset(
     const _CharT* __str, size_t __n = static_cast<size_t>(-1), _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'))
   {
@@ -1021,6 +1021,6 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, const bitset<_Size>& __x);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_BITSET

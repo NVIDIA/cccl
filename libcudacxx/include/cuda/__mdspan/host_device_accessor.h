@@ -38,6 +38,8 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Accessor>
@@ -178,11 +180,11 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
-#if _CCCL_COMPILER(NVHPC)
+#if _CCCL_HOST_COMPILATION()
     __check_host_pointer(__p);
-#elif defined(__CUDA_ARCH__)
+#else // ^^^ _CCCL_HOST_COMPILATION() ^^^ // vvv !_CCCL_HOST_COMPILATION() vvv
     static_assert(false, "cuda::__host_accessor cannot be used in DEVICE code");
-#endif
+#endif // !_CCCL_HOST_COMPILATION()
     return _Accessor::access(__p, __i);
   }
 
@@ -300,9 +302,9 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const
     noexcept(__is_access_noexcept)
   {
-#if !_CCCL_COMPILER(NVHPC) && !defined(__CUDA_ARCH__)
+#if _CCCL_HOST_COMPILATION()
     __prevent_host_instantiation();
-#endif
+#endif // _CCCL_HOST_COMPILATION()
     return _Accessor::access(__p, __i);
   }
 
@@ -447,5 +449,7 @@ template <template <typename> class _TClass, typename _Accessor>
 inline constexpr bool is_device_accessible_v<_TClass<_Accessor>> = is_device_accessible_v<_Accessor>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MDSPAN_HOST_DEVICE_ACCESSOR

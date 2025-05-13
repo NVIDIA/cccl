@@ -19,6 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct unexpect_t
@@ -29,5 +31,7 @@ struct unexpect_t
 _CCCL_GLOBAL_CONSTANT unexpect_t unexpect{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXPECTED_UNEXPECT_H

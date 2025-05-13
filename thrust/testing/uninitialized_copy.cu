@@ -3,6 +3,7 @@
 #include <thrust/uninitialized_copy.h>
 
 #include <nv/target>
+
 #include <unittest/unittest.h>
 
 template <typename InputIterator, typename ForwardIterator>

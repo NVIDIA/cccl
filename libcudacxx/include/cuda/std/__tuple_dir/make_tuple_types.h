@@ -32,6 +32,8 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __make_tuple_types<_Tuple<_Types...>, _Ep, _Sp>::type is a
@@ -90,5 +92,7 @@ template <class _Tp, size_t _Ep = tuple_size<remove_reference_t<_Tp>>::value, si
 using __make_tuple_types_t = typename __make_tuple_types<_Tp, _Ep, _Sp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TUPLE_MAKE_TUPLE_TYPES_H

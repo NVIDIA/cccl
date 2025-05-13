@@ -39,6 +39,8 @@
 #  include <math.h>
 #endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // hypot
@@ -205,5 +207,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, _A1) _CCCL_AND _CCCL_TRAIT(is_arithmet
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_HYPOT_H

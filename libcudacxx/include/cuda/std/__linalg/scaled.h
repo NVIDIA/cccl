@@ -35,6 +35,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/mdspan>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
@@ -126,5 +128,7 @@ scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, 
 } // end namespace linalg
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___LINALG_SCALED_HPP

@@ -12,9 +12,10 @@
 
 #include <cuda/pipeline>
 
+#include <cooperative_groups.h>
+
 #include "cuda_space_selector.h"
 #include "large_type.h"
-#include <cooperative_groups.h>
 
 template <cuda::thread_scope scope, uint8_t PipelineStages>
 __host__ __device__ cuda::pipeline<scope> get_pipeline(cuda::pipeline_shared_state<scope, PipelineStages>* pipe_state)

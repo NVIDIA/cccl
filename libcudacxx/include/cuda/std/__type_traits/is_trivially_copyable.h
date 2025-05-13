@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_scalar.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_COPYABLE_FALLBACK)
@@ -48,5 +50,7 @@ inline constexpr bool is_trivially_copyable_v = is_trivially_copyable<_Tp>::valu
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_COPYABLE_FALLBACK)
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_TRIVIALLY_COPYABLE_H

@@ -44,7 +44,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -574,7 +574,7 @@ public:
     && _OtherMapping::is_always_strided();
 
   template <class _OtherMapping>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__can_compare<_OtherMapping>)
   {
@@ -583,7 +583,7 @@ public:
 
 #if _CCCL_STD_VER <= 2017
   template <class _OtherMapping>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((!__mdspan_detail::__is_mapping_of<layout_stride, _OtherMapping>)
                                   && __can_compare<_OtherMapping>)
@@ -591,14 +591,14 @@ public:
     return __op_eq(__rhs, __lhs);
   }
   template <class _OtherMapping, class _Extents2 = _Extents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator!=(const mapping& __lhs, const _OtherMapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(__can_compare<_OtherMapping>)
   {
     return !__op_eq(__lhs, __rhs);
   }
   template <class _OtherMapping, class _Extents2 = _Extents>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator!=(const _OtherMapping& __lhs, const mapping& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)((!__mdspan_detail::__is_mapping_of<layout_stride, _OtherMapping>)
                                   && __can_compare<_OtherMapping>)
@@ -610,6 +610,6 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MDSPAN_LAYOUT_STRIDE_H

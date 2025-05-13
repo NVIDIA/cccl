@@ -24,7 +24,7 @@
 
 #  include <cuda/std/chrono>
 
-_CCCL_PUSH_MACROS
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -34,7 +34,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanos
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 

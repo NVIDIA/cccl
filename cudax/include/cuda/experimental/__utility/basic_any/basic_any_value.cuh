@@ -43,8 +43,7 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -516,6 +515,6 @@ private:
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_VALUE_H

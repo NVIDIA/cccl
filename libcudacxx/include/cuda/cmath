@@ -25,6 +25,7 @@
 #include <cuda/__cmath/ilog.h>
 #include <cuda/__cmath/ipow.h>
 #include <cuda/__cmath/isqrt.h>
+#include <cuda/__cmath/neg.h>
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__cmath/round_down.h>
 #include <cuda/__cmath/round_up.h>

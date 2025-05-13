@@ -33,12 +33,13 @@
 #    include <dispatch/dispatch.h>
 #  endif // __APPLE__
 #  if defined(__linux__)
+#    include <unistd.h>
+
 #    include <linux/futex.h>
 #    include <sys/syscall.h>
-#    include <unistd.h>
 #  endif // __linux__
 
-_CCCL_PUSH_MACROS
+#  include <cuda/std/__cccl/prologue.h>
 
 using __cccl_timespec_t = ::timespec;
 
@@ -177,7 +178,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanos
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_LIBCUDACXX_HAS_THREAD_API_PTHREAD
 

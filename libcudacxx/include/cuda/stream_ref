@@ -48,11 +48,13 @@ private:
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/std/cstddef>
+
+#include <cuda_runtime_api.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -106,7 +108,7 @@ public:
    * \param rhs The second `stream_ref` to compare
    * \return true if equal, false if unequal
    */
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream == __rhs.__stream;
@@ -122,7 +124,7 @@ public:
    * \param rhs The second `stream_ref` to compare
    * \return true if unequal, false if equal
    */
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const stream_ref& __lhs, const stream_ref& __rhs) noexcept
   {
     return __lhs.__stream != __rhs.__stream;
@@ -197,5 +199,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA_STREAM_REF

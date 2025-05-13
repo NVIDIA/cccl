@@ -22,6 +22,8 @@
 
 #include <cuda/std/__utility/convert_to_integral.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -40,5 +42,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _InputIterator for_each_n(_InputIterator __f
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_FOR_EACH_N_H
