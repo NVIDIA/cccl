@@ -15,8 +15,7 @@
 #include "test_util.h"
 #include <cccl/c/histogram.h>
 
-// using sample_types = c2h::type_list<std::int8_t, std::uint16_t, std::int32_t, std::uint64_t, float, double>;
-using sample_types = c2h::type_list<float>;
+using sample_types = c2h::type_list<std::int8_t, std::uint16_t, std::int32_t, std::uint64_t, float, double>;
 using LevelT       = double;
 
 constexpr int num_channels        = 1;
@@ -338,7 +337,7 @@ struct bit_and_anything
   }
 };
 
-C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", sample_types)
+C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", sample_types)
 {
   using CounterT = int;
   using sample_t = c2h::get<0, TestType>;
@@ -353,8 +352,7 @@ C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", sample_
   constexpr int channels        = 1;
   constexpr int active_channels = 1;
 
-  // const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
-  const auto padding_bytes     = static_cast<offset_t>(size_t{0});
+  const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
   const offset_t row_pitch     = width * channels * sizeof(sample_t) + padding_bytes;
   const auto num_levels        = generate_level_counts_to_test<active_channels>(max_level_count);
   const offset_t total_samples = height * (row_pitch / sizeof(sample_t));
