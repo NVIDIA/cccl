@@ -354,10 +354,8 @@ CUresult cccl_device_histogram_even_impl(
     check(static_cast<CUresult>(
       cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToHost)));
 
-    // indirect_arg_t lower_level_elem{lower_level};
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<LevelT*>(lower_level.state)};
 
-    // indirect_arg_t upper_level_elem{upper_level};
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<LevelT*>(upper_level.state)};
 
     auto exec_status = cub::DispatchHistogram<
@@ -365,7 +363,7 @@ CUresult cccl_device_histogram_even_impl(
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t, // SampleIteratorT
       indirect_arg_t, // CounterT
-      LevelT, // LevelT // not indirect_arg_t because used on the host
+      LevelT, // not indirect_arg_t because used on the host
       OffsetT, // OffsetT
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
       histogram::histogram_kernel_source,
@@ -481,30 +479,30 @@ CUresult cccl_device_histogram_range_impl(
     indirect_arg_t d_output_histogram_elem{d_output_histograms};
 
     ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
-      *static_cast<indirect_arg_t**>(&d_output_histogram_elem)};
+      static_cast<indirect_arg_t*>(d_output_histograms.state)};
 
     ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr;
-    cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToDevice);
+    cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToHost);
 
     // indirect_arg_t d_levels_elem{d_levels};
     // ::cuda::std::array<const indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_levels_arr{
     //   *static_cast<indirect_arg_t**>(&d_levels_elem)};
 
-    indirect_arg_t d_levels_elem{d_levels};
-    ::cuda::std::array<const double*, NUM_ACTIVE_CHANNELS> d_levels_arr{*static_cast<double**>(&d_levels_elem)};
+    // indirect_arg_t d_levels_elem{d_levels};
+    ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels_arr{static_cast<LevelT*>(d_levels.state)};
 
     auto exec_status = cub::DispatchHistogram<
       NUM_CHANNELS,
       NUM_ACTIVE_CHANNELS,
       indirect_arg_t,
       indirect_arg_t,
-      double, // not indirect_arg_t because used on the host
+      LevelT, // not indirect_arg_t because used on the host
       OffsetT,
       histogram::dynamic_histogram_policy_t<&histogram::get_policy>,
       histogram::histogram_kernel_source,
       cub::detail::CudaDriverLauncherFactory,
       indirect_arg_t,
-      cub::detail::histogram::Transforms<double, OffsetT, double>>::
+      cub::detail::histogram::Transforms<LevelT, OffsetT, float>>::
       DispatchRange(
         d_temp_storage,
         *temp_storage_bytes,

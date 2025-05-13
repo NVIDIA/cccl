@@ -269,6 +269,34 @@ auto to_array_of_ptrs(std::array<c2h::device_vector<T>, N>& in)
   return r;
 }
 
+template <size_t ActiveChannels, typename LevelT>
+auto setup_bin_levels_for_range(const std::vector<int>& num_levels, LevelT max_level, int max_level_count)
+  -> std::vector<std::vector<LevelT>>
+{
+  // TODO(bgruber): eventually, we could just pick random levels for each channel
+
+  const auto min_bin_width = max_level / (max_level_count - 1);
+  REQUIRE(min_bin_width > 0);
+
+  std::vector<std::vector<LevelT>> levels(ActiveChannels);
+  for (size_t c = 0; c < ActiveChannels; ++c)
+  {
+    levels[c].resize(num_levels[c]);
+    const int num_bins        = num_levels[c] - 1;
+    const auto min_hist_width = num_bins * min_bin_width;
+    const auto lower_level    = (max_level / 2 - min_hist_width / 2);
+    for (int l = 0; l < num_levels[c]; ++l)
+    {
+      levels[c][l] = static_cast<LevelT>(lower_level + l * min_bin_width);
+      if (l > 0)
+      {
+        REQUIRE(levels[c][l - 1] < levels[c][l]);
+      }
+    }
+  }
+  return levels;
+}
+
 C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
 {
   using CounterT = int;
@@ -493,3 +521,123 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     }
   }
 }
+
+// C2H_TEST("DeviceHistogram::HistogramRange basic use", "[histogram][device]", sample_types)
+// {
+//   using CounterT = int;
+//   using sample_t = c2h::get<0, TestType>;
+//   using offset_t = int;
+
+//   const auto max_level       = LevelT{sizeof(sample_t) == 1 ? 126 : 1024};
+//   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;
+
+//   offset_t width  = 1920;
+//   offset_t height = 1080;
+
+//   constexpr int channels        = 1;
+//   constexpr int active_channels = 1;
+
+//   // const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
+//   const auto padding_bytes     = static_cast<offset_t>(size_t{0});
+//   const offset_t row_pitch     = width * channels * sizeof(sample_t) + padding_bytes;
+//   const auto num_levels        = generate_level_counts_to_test<active_channels>(max_level_count);
+//   const offset_t total_samples = height * (row_pitch / sizeof(sample_t));
+
+//   std::vector<int64_t> samples_gen = generate<int64_t>(total_samples);
+//   std::vector<sample_t> h_samples(total_samples);
+//   for (int i = 0; i < total_samples; i++)
+//   {
+//     h_samples[i] = static_cast<sample_t>(samples_gen[i]);
+//   }
+//   // c2h::device_vector<sample_t> d_samples;
+//   // d_samples.resize(total_samples);
+//   // int entropy_reduction = 0;
+
+//   // if (entropy_reduction >= 0)
+//   // {
+//   //   c2h::gen(C2H_SEED(1), d_samples, sample_t{0}, static_cast<sample_t>(max_level));
+//   //   if (entropy_reduction > 0)
+//   //   {
+//   //     c2h::device_vector<sample_t> tmp(d_samples.size());
+//   //     for (int i = 0; i < entropy_reduction; ++i)
+//   //     {
+//   //       c2h::gen(C2H_SEED(1), tmp);
+//   //       thrust::transform(
+//   //         c2h::device_policy, d_samples.cbegin(), d_samples.cend(), tmp.cbegin(), d_samples.begin(),
+//   //         bit_and_anything{});
+//   //     }
+//   //   }
+//   // }
+
+//   // auto h_samples = c2h::host_vector<sample_t>(d_samples);
+
+//   //   ::cuda::std::array<c2h::device_vector<CounterT>, active_channels> d_histogram;
+
+//   //   for (size_t c = 0; c < active_channels; ++c)
+//   //   {
+//   //     d_histogram[c].resize(num_levels[c] - 1);
+//   //   }
+
+//   std::vector<CounterT> d_single_histogram(num_levels[0] - 1, 0);
+
+//   auto h_levels = setup_bin_levels_for_range<active_channels, LevelT>(num_levels, max_level, max_level_count);
+
+//   // Compute reference result
+//   const auto sample_to_bin_index = [&](int channel, sample_t sample) {
+//     const auto* l  = h_levels[channel].data();
+//     const auto n   = static_cast<int>(h_levels[channel].size());
+//     const auto* ub = std::upper_bound(l, l + n, static_cast<LevelT>(sample));
+//     return ub == l /* sample smaller than first bin */ ? n : static_cast<int>(std::distance(l, ub) - 1);
+//   };
+//   auto h_histogram = compute_reference_result<channels, CounterT, active_channels>(
+//     h_samples, sample_to_bin_index, num_levels, width, height, row_pitch);
+
+//   // Compute result and verify
+//   {
+//     pointer_t<sample_t> sample_ptr(h_samples);
+//     pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
+
+//     pointer_t<int> num_levels_ptr(num_levels);
+
+//     // cccl_iterator_t levels_ptr{
+//     //   sizeof(LevelT),
+//     //   alignof(LevelT),
+//     //   cccl_iterator_kind_t::CCCL_POINTER,
+//     //   {},
+//     //   {},
+//     //   get_type_info<LevelT>(),
+//     //   h_levels[0].data()};
+//     pointer_t<LevelT> levels_ptr(h_levels[0]);
+
+//     if constexpr (active_channels == 1 && channels == 1)
+//     {
+//       histogram_range(
+//         sample_ptr,
+//         d_single_histogram_ptr,
+//         get_type_info<CounterT>(),
+//         num_levels_ptr,
+//         num_levels[0],
+//         levels_ptr,
+//         width,
+//         height,
+//         row_pitch / sizeof(sample_t));
+//     }
+//     else
+//     {
+//       //   // new API entry-point
+//       //   multi_histogram_even<channels, active_channels>(
+//       //     sample_ptr,
+//       //     to_array_of_ptrs(d_histogram),
+//       //     num_levels,
+//       //     cast_if_half(lower_level),
+//       //     cast_if_half(upper_level),
+//       //     width,
+//       //     height,
+//       //     row_pitch);
+//     }
+//     for (size_t c = 0; c < active_channels; ++c)
+//     {
+//       CHECK(h_histogram[c] == std::vector<CounterT>(d_single_histogram_ptr));
+//     }
+//   }
+// }
