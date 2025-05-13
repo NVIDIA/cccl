@@ -398,6 +398,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
     std_str = ("C++" + str(matrix_job["std"]) + " ") if "std" in matrix_job else ""
     cpu_str = matrix_job["cpu"]
     gpu_str = (", " + matrix_job["gpu"].upper()) if job_info["gpu"] else ""
+    py_version = (
+        (", py" + matrix_job["py_version"]) if "py_version" in matrix_job else ""
+    )
     cuda_compile_arch = (
         (" sm{" + str(matrix_job["sm"]) + "}") if "sm" in matrix_job else ""
     )
@@ -415,7 +418,9 @@ def generate_dispatch_job_name(matrix_job, job_type):
         else ""
     )
 
-    return f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}){extra_info}"
+    return (
+        f"[{config_tag}] {job_info['name']}({cpu_str}{gpu_str}{py_version}){extra_info}"
+    )
 
 
 def generate_dispatch_job_runner(matrix_job, job_type):
