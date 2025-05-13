@@ -30,7 +30,7 @@ public:
       : cnt(cnt)
       , batch_size(batch_size)
       , df(mv(df))
-      , ctx(ctx)
+      , ctx(mv(ctx))
   {}
 
   // Create a batch operation that computes fun(start), fun(start+1), ... f(end-1)
@@ -44,7 +44,7 @@ public:
       ::std::apply(
         [&deps](auto&&... args) {
           // Call the method on each tuple element
-          (deps.push_back(args), ...);
+          (deps.push_back(::std::forward<decltype(args)>(args)), ...);
         },
         df(i));
     }
@@ -106,22 +106,6 @@ public:
   }
 
 private:
-  // Helper function to apply a lambda to each element of the tuple with its index
-  template <typename Tuple, typename F, size_t... Is>
-  auto tuple_transform_impl(Tuple&& t, F&& f, ::std::index_sequence<Is...>)
-  {
-    // Apply the lambda 'f' to each element and its index
-    return ::std::make_tuple(f(::std::get<Is>(t), Is)...);
-  }
-
-  // function to transform the tuple with a lambda
-  template <typename Tuple, typename F>
-  auto tuple_transform(Tuple&& t, F&& f)
-  {
-    constexpr size_t N = ::std::tuple_size<std::decay_t<Tuple>>::value;
-    return tuple_transform_impl(::std::forward<Tuple>(t), ::std::forward<F>(f), ::std::make_index_sequence<N>{});
-  }
-
   size_t cnt;
   size_t batch_size;
   ::std::function<::std::tuple<task_dep<Deps>...>(size_t)> df;

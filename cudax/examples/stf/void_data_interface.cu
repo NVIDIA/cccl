@@ -23,8 +23,8 @@ int main()
 {
   context ctx;
 
-  auto token = ctx.logical_data(shape_of<void_interface>());
-  ctx.task(token.write())->*[](cudaStream_t, auto) {
+  auto token = ctx.token();
+  ctx.task(token.write())->*[](cudaStream_t) {
 
   };
 
@@ -32,7 +32,7 @@ int main()
   auto token2 = ctx.logical_data(sync);
 
   auto token3 = ctx.token();
-  ctx.task(token2.write(), token.read())->*[](cudaStream_t, auto, auto) {
+  ctx.task(token2.write(), token.read())->*[](cudaStream_t) {
 
   };
 

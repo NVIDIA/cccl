@@ -163,9 +163,9 @@ public:
         delete w;
       };
 
-      constexpr bool fun_invocable_task_deps = reserved::is_tuple_invocable_v<Fun, decltype(payload)>;
+      constexpr bool fun_invocable_task_deps = reserved::is_applicable_v<Fun, decltype(payload)>;
       constexpr bool fun_invocable_task_non_void_deps =
-        reserved::is_tuple_invocable_with_filtered<Fun, decltype(payload)>::value;
+        reserved::is_applicable_v<Fun, remove_void_interface_t<decltype(payload)>>;
 
       static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
                     "Incorrect lambda function signature in host_launch.");
@@ -176,7 +176,7 @@ public:
       }
       else if constexpr (fun_invocable_task_non_void_deps)
       {
-        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface_types(mv(w->second)));
+        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface(mv(w->second)));
       }
     };
 

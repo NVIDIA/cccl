@@ -63,7 +63,7 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
-  auto explode_args = [&](auto&&... data) {
+  auto const explode_args = [&](auto&&... data) {
     CUDASTF_NO_DEVICE_STACK
     auto const explode_coords = [&](auto&&... coords) {
       f(::std::forward<decltype(coords)>(coords)..., ::std::forward<decltype(data)>(data)...);
@@ -88,13 +88,13 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
  * is a monostate
  */
 template <typename Oi, typename Ai>
-struct get_owning_container_of
+struct owning_container_of
 {
   using type = typename owning_container_of<Ai>::type; // Default case
 };
 
 template <typename Ai>
-struct get_owning_container_of<::std::monostate, Ai>
+struct owning_container_of<::std::monostate, Ai>
 {
   using type = ::std::monostate;
 };
@@ -124,7 +124,7 @@ class redux_vars
   {
     static_assert(sizeof...(Ai) == sizeof...(Oi), "Tuples must be of the same size");
 
-    using type = ::cuda::std::tuple<typename get_owning_container_of<typename Oi::first_type, Ai>::type...>;
+    using type = ::cuda::std::tuple<typename owning_container_of<typename Oi::first_type, Ai>::type...>;
   };
 
 public:
@@ -407,7 +407,7 @@ template <typename context, typename exec_place_t, typename shape_t, typename pa
 class parallel_for_scope
 {
   // using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
-  using deps_tup_t = reserved::remove_void_interface_from_tuple_t<::std::tuple<typename deps_ops_t::dep_type...>>;
+  using deps_tup_t = reserved::remove_void_interface_from_pack_t<typename deps_ops_t::dep_type...>;
 
   /**
    * @brief Retrieves instances from a tuple of dependency operations, filtering out `void_interface`.
@@ -536,14 +536,13 @@ public:
       t.set_symbol(symbol);
     }
 
-    cudaEvent_t start_event, end_event;
-
     const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
 
     nvtx_range nr(t.get_symbol().c_str());
     t.start();
 
     int device = -1;
+    cudaEvent_t start_event, end_event;
 
     SCOPE(exit)
     {

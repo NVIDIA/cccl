@@ -371,6 +371,20 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
   }
 }
 
+/**
+ * @brief Applies a transformation to each element of a tuple, optionally passing the index.
+ *
+ * Iterates over the elements of a tuple and applies the provided functor `f` to each element.
+ * If `f` is invocable with both the index and the element (`f(index, element)`), that form is used.
+ * Otherwise, it falls back to `f(element)`. The index is a compile-time constant of type
+ * `std::integral_constant<std::size_t, i>`, where `i` is the index of the element in the tuple.
+ *
+ * @tparam Tuple The type of the input tuple.
+ * @tparam F The type of the transformation functor.
+ * @param t The input tuple to transform.
+ * @param f The transformation functor. Must be invocable with either `f(element)` or `f(index, element)`.
+ * @return A new tuple containing the results of applying `f` to each element of `t`.
+ */
 template <typename Tuple, typename F>
 constexpr auto tuple_transform(Tuple&& t, F&& f)
 {
