@@ -8,6 +8,11 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    - {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.12'}
+    - {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', py_version: '3.12'}
+    - {jobs: ['build_cuda_cccl', 'build_cuda_cooperative', 'build_cuda_parallel'], project: 'python', py_version: '3.13'}
+    - {jobs: ['test_cuda_cccl', 'test_cuda_cooperative', 'test_cuda_parallel'], project: 'python', py_version: '3.13'}
+
 # Only run python build and test jobs for testing
 # TODO: for 3.9, we need a newer build of pynvjitlink
   pull_request:
