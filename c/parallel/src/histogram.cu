@@ -163,6 +163,7 @@ CUresult cccl_device_histogram_build(
   int num_channels,
   int num_active_channels,
   cccl_iterator_t d_samples,
+  int num_output_levels_val,
   cccl_type_info counter_t,
   cccl_type_info level_t,
   int64_t num_rows,
@@ -245,8 +246,8 @@ struct {5} {{
     // TODO: This is tricky because we need to know the input to set this to a
     // value greater than 0 (see dispatch_histogram.cuh), but we don't have this
     // information here.
-    // constexpr int privatized_smem_bins = 0;
-    constexpr int privatized_smem_bins = 256;
+    const int privatized_smem_bins =
+      num_output_levels_val - 1 > cub::detail::histogram::Transforms<int, int, int>::MAX_PRIVATIZED_SMEM_BINS ? 0 : 256;
 
     const bool is_byte_sample = d_samples.value_type.size == 1;
 

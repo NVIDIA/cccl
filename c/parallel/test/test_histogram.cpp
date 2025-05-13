@@ -25,6 +25,7 @@ constexpr int num_active_channels = 1;
 void build_histogram(
   cccl_device_histogram_build_result_t* build,
   cccl_iterator_t d_samples,
+  int num_output_levels_val,
   cccl_type_info counter_t,
   uint64_t num_rows,
   uint64_t row_stride_samples,
@@ -50,6 +51,7 @@ void build_histogram(
       num_channels,
       num_active_channels,
       d_samples,
+      num_output_levels_val,
       counter_t,
       level_t,
       num_rows,
@@ -72,6 +74,7 @@ void histogram_even(
   cccl_iterator_t d_output_histograms,
   cccl_type_info counter_t,
   cccl_iterator_t num_output_levels,
+  int num_output_levels_val,
   cccl_iterator_t lower_level,
   cccl_iterator_t upper_level,
   int64_t num_row_pixels,
@@ -79,7 +82,7 @@ void histogram_even(
   int64_t row_stride_samples)
 {
   cccl_device_histogram_build_result_t build;
-  build_histogram(&build, d_samples, counter_t, num_rows, row_stride_samples, true);
+  build_histogram(&build, d_samples, num_output_levels_val, counter_t, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -124,13 +127,14 @@ void histogram_range(
   cccl_iterator_t d_output_histograms,
   cccl_type_info counter_t,
   cccl_iterator_t num_output_levels,
+  int num_output_levels_val,
   cccl_iterator_t d_levels,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples)
 {
   cccl_device_histogram_build_result_t build;
-  build_histogram(&build, d_samples, counter_t, num_rows, row_stride_samples, true);
+  build_histogram(&build, d_samples, num_output_levels_val, counter_t, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -224,7 +228,7 @@ auto setup_bin_levels_for_even(const std::vector<int>& num_levels, LevelT max_le
 
 template <int Channels, typename CounterT, size_t ActiveChannels, typename SampleT, typename TransformOp, typename OffsetT>
 auto compute_reference_result(
-  const c2h::host_vector<SampleT>& h_samples,
+  const std::vector<SampleT>& h_samples,
   const TransformOp& sample_to_bin_index,
   const std::vector<int>& num_levels,
   OffsetT width,
@@ -266,7 +270,7 @@ auto to_array_of_ptrs(std::array<c2h::device_vector<T>, N>& in)
   return r;
 }
 
-C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", sample_types)
+C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]", sample_types)
 {
   using CounterT = int;
 
@@ -287,8 +291,6 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
 
   pointer_t<float> d_samples_ptr(d_samples);
   pointer_t<int> d_num_levels_ptr(d_num_levels);
-  // pointer_t<double> d_lower_level_ptr(d_lower_level);
-  // pointer_t<double> d_upper_level_ptr(d_upper_level);
 
   cccl_iterator_t d_lower_level_ptr{
     sizeof(LevelT),
@@ -315,6 +317,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     d_single_histogram_ptr,
     get_type_info<CounterT>(),
     d_num_levels_ptr,
+    num_levels,
     d_lower_level_ptr,
     d_upper_level_ptr,
     num_samples,
@@ -330,119 +333,180 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
   }
 }
 
-// C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", sample_types)
-// {
-//   using sample_t   = c2h::get<0, TestType>;
-//   using level_type = cuda::std::conditional_t<cuda::is_floating_point_v<sample_t>, sample_t, int>;
-//   using offset_t   = int;
+struct bit_and_anything
+{
+  template <typename T>
+  _CCCL_HOST_DEVICE auto operator()(const T& a, const T& b) const -> T
+  {
+    using U = typename cub::Traits<T>::UnsignedBits;
+    return ::cuda::std::bit_cast<T>(static_cast<U>(::cuda::std::bit_cast<U>(a) & ::cuda::std::bit_cast<U>(b)));
+  }
+};
 
-//   const auto max_level       = level_type{sizeof(sample_t) == 1 ? 126 : 1024};
-//   const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;
+C2H_TEST("DeviceHistogram::Histogram* basic use", "[histogram][device]", sample_types)
+{
+  using CounterT = int;
+  using sample_t = c2h::get<0, TestType>;
+  using offset_t = int;
 
-//   offset_t width  = 1920;
-//   offset_t height = 1080;
+  const auto max_level       = LevelT{sizeof(sample_t) == 1 ? 126 : 1024};
+  const auto max_level_count = (sizeof(sample_t) == 1 ? 126 : 1024) + 1;
 
-//   constexpr int channels        = 1;
-//   constexpr int active_channels = 1;
+  offset_t width  = 1920;
+  offset_t height = 1080;
 
-//   // const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
-//   const auto padding_bytes     = static_cast<offset_t>(size_t{0});
-//   const offset_t row_pitch     = width * channels * sizeof(sample_t) + padding_bytes;
-//   const auto num_levels        = generate_level_counts_to_test<active_channels>(max_level_count);
-//   const offset_t total_samples = height * (row_pitch / sizeof(sample_t));
+  constexpr int channels        = 1;
+  constexpr int active_channels = 1;
 
-//   std::cout
-//     << "total samples "
-//     << total
+  // const auto padding_bytes     = static_cast<offset_t>(GENERATE(size_t{0}, 13 * sizeof(sample_t)));
+  const auto padding_bytes     = static_cast<offset_t>(size_t{0});
+  const offset_t row_pitch     = width * channels * sizeof(sample_t) + padding_bytes;
+  const auto num_levels        = generate_level_counts_to_test<active_channels>(max_level_count);
+  const offset_t total_samples = height * (row_pitch / sizeof(sample_t));
 
-//          std::vector<sample_t>
-//            d_samples(total_samples);
-//   auto h_samples = c2h::host_vector<sample_t>(d_samples);
+  std::vector<int64_t> samples_gen = generate<int64_t>(total_samples);
+  std::vector<sample_t> h_samples(total_samples);
+  for (int i = 0; i < total_samples; i++)
+  {
+    h_samples[i] = static_cast<sample_t>(samples_gen[i]);
+  }
+  // c2h::device_vector<sample_t> d_samples;
+  // d_samples.resize(total_samples);
+  // int entropy_reduction = 0;
 
-//   //   ::cuda::std::array<c2h::device_vector<CounterT>, active_channels> d_histogram;
+  // if (entropy_reduction >= 0)
+  // {
+  //   c2h::gen(C2H_SEED(1), d_samples, sample_t{0}, static_cast<sample_t>(max_level));
+  //   if (entropy_reduction > 0)
+  //   {
+  //     c2h::device_vector<sample_t> tmp(d_samples.size());
+  //     for (int i = 0; i < entropy_reduction; ++i)
+  //     {
+  //       c2h::gen(C2H_SEED(1), tmp);
+  //       thrust::transform(
+  //         c2h::device_policy, d_samples.cbegin(), d_samples.cend(), tmp.cbegin(), d_samples.begin(),
+  //         bit_and_anything{});
+  //     }
+  //   }
+  // }
 
-//   //   for (size_t c = 0; c < active_channels; ++c)
-//   //   {
-//   //     d_histogram[c].resize(num_levels[c] - 1);
-//   //   }
-//   std::vector<CounterT> d_histogram(num_levels[0] - 1);
+  // auto h_samples = c2h::host_vector<sample_t>(d_samples);
 
-//   const auto levels = setup_bin_levels_for_even<active_channels, level_type>(num_levels, max_level,
-//   max_level_count);
+  //   ::cuda::std::array<c2h::device_vector<CounterT>, active_channels> d_histogram;
 
-//   const auto& lower_level = levels[0];
-//   const auto& upper_level = levels[1];
+  //   for (size_t c = 0; c < active_channels; ++c)
+  //   {
+  //     d_histogram[c].resize(num_levels[c] - 1);
+  //   }
 
-//   // Compute reference result
-//   auto fp_scales = ::cuda::std::array<level_type, active_channels>{}; // only used when LevelT is floating point
-//   std::ignore    = fp_scales; // casting to void was insufficient. TODO(bgruber): use [[maybe_unsued]] in C++17
-//   for (size_t c = 0; c < active_channels; ++c)
-//   {
-//     if constexpr (!std::is_integral<level_type>::value)
-//     {
-//       fp_scales[c] =
-//         static_cast<level_type>(num_levels[c] - 1) / static_cast<level_type>(upper_level[c] - lower_level[c]);
-//     }
-//   }
+  std::cout << "num levels " << num_levels[0] << '\n';
+  std::vector<CounterT> d_single_histogram(num_levels[0] - 1, 0);
 
-//   auto sample_to_bin_index = [&](int channel, sample_t sample) {
-//     using common_t             = ::cuda::std::common_type_t<level_type, sample_t>;
-//     const auto n               = num_levels[channel];
-//     const auto max             = static_cast<common_t>(upper_level[channel]);
-//     const auto min             = static_cast<common_t>(lower_level[channel]);
-//     const auto promoted_sample = static_cast<common_t>(sample);
-//     if (promoted_sample < min || promoted_sample >= max)
-//     {
-//       return n; // out of range
-//     }
-//     if constexpr (::cuda::std::is_integral<level_type>::value)
-//     {
-//       // Accurate bin computation following the arithmetic we guarantee in the HistoEven docs
-//       return static_cast<int>(
-//         static_cast<uint64_t>(promoted_sample - min) * static_cast<uint64_t>(n - 1) / static_cast<uint64_t>(max -
-//         min));
-//     }
-//     else
-//     {
-//       return static_cast<int>((sample - min) * fp_scales[channel]);
-//     }
-//     _CCCL_UNREACHABLE();
-//   };
-//   auto h_histogram = compute_reference_result<channels, CounterT, active_channels>(
-//     h_samples, sample_to_bin_index, num_levels, width, height, row_pitch);
+  auto levels = setup_bin_levels_for_even<active_channels, LevelT>(num_levels, max_level, max_level_count);
 
-//   // Compute result and verify
-//   {
-//     pointer_t<sample_t> sample_ptr(d_samples);
-//     pointer_t<CounterT> histogram_ptr(d_histogram);
-//     pointer_t<int> num_levels_ptr(num_levels);
-//     pointer_t<level_type> lower_level_ptr(lower_level);
-//     pointer_t<level_type> upper_level_ptr(upper_level);
-//     for (int i : num_levels)
-//     {
-//       std::cout << i << '\n';
-//     }
-//     if constexpr (active_channels == 1 && channels == 1)
-//     {
-//       histogram_even(
-//         sample_ptr, histogram_ptr, num_levels_ptr, lower_level_ptr, upper_level_ptr, total_samples, 1, row_pitch);
-//     }
-//     else
-//     {
-//       //   // new API entry-point
-//       //   multi_histogram_even<channels, active_channels>(
-//       //     sample_ptr,
-//       //     to_array_of_ptrs(d_histogram),
-//       //     num_levels,
-//       //     cast_if_half(lower_level),
-//       //     cast_if_half(upper_level),
-//       //     width,
-//       //     height,
-//       //     row_pitch);
-//     }
-//   }
-//   for (size_t c = 0; c < active_channels; ++c)
-//   {
-//     CHECK(h_histogram[c] == d_histogram);
-//   }
-// }
+  auto& lower_level = levels[0];
+  auto& upper_level = levels[1];
+
+  std::cout << "lower_level " << lower_level[0] << '\n';
+  std::cout << "upper_level " << upper_level[0] << '\n';
+
+  // Compute reference result
+  auto fp_scales = ::cuda::std::array<LevelT, active_channels>{}; // only used when LevelT is floating point
+  std::ignore    = fp_scales; // casting to void was insufficient. TODO(bgruber): use [[maybe_unsued]] in C++17
+  for (size_t c = 0; c < active_channels; ++c)
+  {
+    if constexpr (!std::is_integral<LevelT>::value)
+    {
+      fp_scales[c] = static_cast<LevelT>(num_levels[c] - 1) / static_cast<LevelT>(upper_level[c] - lower_level[c]);
+    }
+  }
+
+  auto sample_to_bin_index = [&](int channel, sample_t sample) {
+    using common_t             = ::cuda::std::common_type_t<LevelT, sample_t>;
+    const auto n               = num_levels[channel];
+    const auto max             = static_cast<common_t>(upper_level[channel]);
+    const auto min             = static_cast<common_t>(lower_level[channel]);
+    const auto promoted_sample = static_cast<common_t>(sample);
+    if (promoted_sample < min || promoted_sample >= max)
+    {
+      return n; // out of range
+    }
+    if constexpr (::cuda::std::is_integral<LevelT>::value)
+    {
+      // Accurate bin computation following the arithmetic we guarantee in the HistoEven docs
+      return static_cast<int>(
+        static_cast<uint64_t>(promoted_sample - min) * static_cast<uint64_t>(n - 1) / static_cast<uint64_t>(max - min));
+    }
+    else
+    {
+      return static_cast<int>((sample - min) * fp_scales[channel]);
+    }
+    _CCCL_UNREACHABLE();
+  };
+  auto h_histogram = compute_reference_result<channels, CounterT, active_channels>(
+    h_samples, sample_to_bin_index, num_levels, width, height, row_pitch);
+
+  // Compute result and verify
+  {
+    pointer_t<sample_t> sample_ptr(h_samples);
+    pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
+
+    pointer_t<int> num_levels_ptr(num_levels);
+
+    cccl_iterator_t d_lower_level_ptr{
+      sizeof(LevelT),
+      alignof(LevelT),
+      cccl_iterator_kind_t::CCCL_POINTER,
+      {},
+      {},
+      get_type_info<LevelT>(),
+      lower_level.data()};
+
+    cccl_iterator_t d_upper_level_ptr{
+      sizeof(LevelT),
+      alignof(LevelT),
+      cccl_iterator_kind_t::CCCL_POINTER,
+      {},
+      {},
+      get_type_info<LevelT>(),
+      upper_level.data()};
+
+    for (int i : num_levels)
+    {
+      std::cout << i << '\n';
+    }
+    if constexpr (active_channels == 1 && channels == 1)
+    {
+      std::cout << "total samples " << total_samples << '\n';
+      std::cout << "row pitch " << row_pitch << '\n';
+      histogram_even(
+        sample_ptr,
+        d_single_histogram_ptr,
+        get_type_info<CounterT>(),
+        num_levels_ptr,
+        num_levels[0],
+        d_lower_level_ptr,
+        d_upper_level_ptr,
+        total_samples,
+        1,
+        row_pitch);
+    }
+    else
+    {
+      //   // new API entry-point
+      //   multi_histogram_even<channels, active_channels>(
+      //     sample_ptr,
+      //     to_array_of_ptrs(d_histogram),
+      //     num_levels,
+      //     cast_if_half(lower_level),
+      //     cast_if_half(upper_level),
+      //     width,
+      //     height,
+      //     row_pitch);
+    }
+  }
+  for (size_t c = 0; c < active_channels; ++c)
+  {
+    CHECK(h_histogram[c] == d_single_histogram);
+  }
+}

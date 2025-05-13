@@ -40,6 +40,7 @@ CCCL_C_API CUresult cccl_device_histogram_build(
   int num_channels,
   int num_active_channels,
   cccl_iterator_t d_samples,
+  int num_output_levels_val,
   cccl_type_info counter_t,
   cccl_type_info level_t,
   int64_t num_rows,
