@@ -28,6 +28,8 @@
 #include <cuda/experimental/__algorithm/common.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -149,4 +151,7 @@ void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // __CUDAX_ALGORITHM_COPY

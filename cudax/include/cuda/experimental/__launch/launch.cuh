@@ -19,6 +19,8 @@
 
 #include <cuda_runtime.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -270,4 +272,7 @@ void launch(::cuda::stream_ref stream,
 
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__LAUNCH_LAUNCH

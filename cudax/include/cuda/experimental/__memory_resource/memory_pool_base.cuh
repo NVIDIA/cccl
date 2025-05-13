@@ -33,6 +33,8 @@
 
 #include <cuda/experimental/__stream/internal_streams.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 //! @file
 //! The \c __memory_pool_base class provides a wrapper around a `cudaMempool_t`.
 namespace cuda::experimental
@@ -415,5 +417,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE

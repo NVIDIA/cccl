@@ -16,6 +16,8 @@
 
 #include <cuda/experimental/__hierarchy/hierarchy_levels.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -219,4 +221,7 @@ _CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
 
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__HIERARCHY_LEVEL_DIMENSIONS

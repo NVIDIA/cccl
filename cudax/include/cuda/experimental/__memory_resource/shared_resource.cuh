@@ -29,6 +29,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -254,5 +256,7 @@ auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H

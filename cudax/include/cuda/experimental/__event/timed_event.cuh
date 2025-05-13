@@ -31,6 +31,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 //! @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
@@ -103,5 +105,7 @@ private:
   {}
 };
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX_TIMED_EVENT_DETAIL_H

@@ -51,6 +51,8 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
@@ -523,5 +525,7 @@ _CCCL_GLOBAL_CONSTANT auto transform = __transform::__fn{};
 _LIBCUDACXX_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_TRANSFORM_VIEW_H
