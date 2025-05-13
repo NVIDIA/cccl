@@ -36,7 +36,7 @@ Examples
 
 See Also
 --------
-- `CUDA dim3 documentation <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dim3>`_
+`CUDA dim3 documentation <https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#dim3>`_
 """
 
 DtypeType = Union[str, type, "np.number", "np.dtype", "numba.types.Type"]
@@ -63,8 +63,9 @@ Examples
 
 See Also
 --------
-- :mod:`numpy`
-- :mod:`numba.types`
+`NumPy Data Types <https://numpy.org/doc/stable/user/basics.types.html>`_
+
+`Numba Data Types <https://numba.pydata.org/numba-doc/dev/reference/types.html>`_
 """
 
 # Type alias for scan operators.
