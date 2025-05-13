@@ -128,6 +128,10 @@ class IteratorBase:
         return self.kind_
 
     @property
+    def host_advance(self):
+        return None
+
+    @property
     def ltoirs(self) -> Dict[str, bytes]:
         if self._ltoirs is None:
             abi_suffix = _get_abi_suffix(self.kind)
@@ -269,12 +273,13 @@ class RawPointer(IteratorBase):
         )
 
     @property
+    def host_advance(self):
+        """Raw pointer"""
+        return self.input_advance
+
+    @property
     def advance(self):
-        return (
-            RawPointer.input_advance
-            if self.iterator_io is IteratorIOKind.INPUT
-            else RawPointer.output_advance
-        )
+        return RawPointer.input_advance
 
     @property
     def dereference(self):
@@ -291,10 +296,6 @@ class RawPointer(IteratorBase):
     @staticmethod
     def input_dereference(state):
         return state[0][0]
-
-    @staticmethod
-    def output_advance(state, distance):
-        state[0] = state[0] + distance
 
     @staticmethod
     def output_dereference(state, x):
@@ -349,6 +350,10 @@ class CacheModifiedPointer(IteratorBase):
         )
 
     @property
+    def host_advance(self):
+        return self.input_advance
+
+    @property
     def advance(self):
         return self.input_advance
 
@@ -384,6 +389,10 @@ class ConstantIterator(IteratorBase):
             value_type=value_type,
             iterator_io=IteratorIOKind.INPUT,
         )
+
+    @property
+    def host_advance(self):
+        return self.input_advance
 
     @property
     def advance(self):
@@ -423,6 +432,10 @@ class CountingIterator(IteratorBase):
         )
 
     @property
+    def host_advance(self):
+        return self.input_advance
+
+    @property
     def advance(self):
         return self.input_advance
 
@@ -432,7 +445,7 @@ class CountingIterator(IteratorBase):
 
     @staticmethod
     def input_advance(state, distance):
-        state[0] += distance
+        state[0] = state[0] + distance
 
     @staticmethod
     def input_dereference(state):
@@ -483,6 +496,10 @@ def make_reverse_iterator(
             )
 
         @property
+        def host_advance(self):
+            return self.input_output_advance
+
+        @property
         def advance(self):
             return self.input_output_advance
 
@@ -517,6 +534,7 @@ def make_transform_iterator(it, op: Callable):
     if hasattr(it, "__cuda_array_interface__"):
         it = pointer(it, numba.from_dtype(it.dtype))
 
+    it_host_advance = it.host_advance
     it_advance = cuda.jit(it.advance, device=True)
     it_dereference = cuda.jit(it.dereference, device=True)
     op = cuda.jit(op, device=True)
@@ -549,6 +567,10 @@ def make_transform_iterator(it, op: Callable):
             self.kind_ = self.__class__.iterator_kind_type(
                 (value_type, self._it.kind, self._op), state_type
             )
+
+        @property
+        def host_advance(self):
+            return it_host_advance
 
         @property
         def advance(self):
