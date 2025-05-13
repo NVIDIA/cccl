@@ -65,7 +65,7 @@ public:
   //! @brief Construct a new `event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr event(uninit_t) noexcept
+  explicit constexpr event(no_init_t) noexcept
       : event_ref(::cudaEvent_t{})
   {}
 

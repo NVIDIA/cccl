@@ -43,7 +43,7 @@ template <typename Config, typename Kernel, typename... Args>
 [[nodiscard]] cudaError_t
 launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, const Args&... args)
 {
-  static_assert(!::cuda::std::is_same_v<decltype(conf.dims), uninit_t>,
+  static_assert(!::cuda::std::is_same_v<decltype(conf.dims), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
   cudaLaunchConfig_t config{};
   cudaError_t status                      = cudaSuccess;

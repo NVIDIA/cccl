@@ -78,7 +78,7 @@ struct stream : stream_ref
   //!
   //! @post `stream()` returns an invalid stream handle
   // Can't be constexpr because __invalid_stream isn't
-  explicit stream(uninit_t) noexcept
+  explicit stream(no_init_t) noexcept
       : stream_ref(detail::__invalid_stream)
   {}
 
