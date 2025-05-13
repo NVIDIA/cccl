@@ -270,7 +270,7 @@ auto to_array_of_ptrs(std::array<c2h::device_vector<T>, N>& in)
   return r;
 }
 
-C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]", sample_types)
+C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
 {
   using CounterT = int;
 
@@ -325,10 +325,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]", samp
     row_stride_samples);
 
   std::vector<CounterT> d_histogram_out(d_single_histogram_ptr);
-  for (CounterT i : d_histogram_out)
-  {
-    std::cout << i << '\n';
-  }
+  CHECK(d_histogram_out == std::vector{1, 5, 0, 3, 0, 0});
 }
 
 struct bit_and_anything
