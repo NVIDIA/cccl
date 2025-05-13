@@ -99,6 +99,11 @@ file(GLOB_RECURSE test_srcs
   catch2_test_*.cu
 )
 
+# nvtx headers contain a variable named `module`, which breaks nvc++ as that is a keyword
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND NOT "${CMAKE_CXX_STANDARD}" MATCHES "17")
+  list(FILTER test_srcs EXCLUDE REGEX "test_nvtx*")
+endif()
+
 ## _cub_is_catch2_test
 #
 # If the test_src contains the substring "catch2_test_", `result_var` will
