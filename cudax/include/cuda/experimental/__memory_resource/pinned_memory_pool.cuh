@@ -107,8 +107,8 @@ public:
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_CTK_AT_LEAST(12, 6)
+#  include <cuda/std/__cccl/epilogue.h>
 
-#include <cuda/std/__cccl/epilogue.h>
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
 
 #endif // _CUDAX__MEMORY_RESOURCE_PINNED_MEMORY_POOL
