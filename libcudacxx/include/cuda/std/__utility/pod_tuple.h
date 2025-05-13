@@ -80,6 +80,8 @@
 _CCCL_PP_REPEAT_REVERSE(_CCCL_TUPL_UNROLL_LIMIT, _CCCL_DEFINE_TUPLE)
 */
 
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunknown-warning-option") // "unknown warning group '-Wc++26-extensions'"
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions") // "pack indexing is a C++26 extension"
@@ -755,5 +757,7 @@ using __tuple_element_t _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::__remove_rval
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDA_STD___UTILITY_POD_TUPLE_H

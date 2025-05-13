@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CMATH_UNEGATE_H
-#define _CUDA___CMATH_UNEGATE_H
+#ifndef _CUDA___CMATH_NEG_H
+#define _CUDA___CMATH_NEG_H
 
 #include <cuda/std/detail/__config>
 
@@ -24,6 +24,8 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integer.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -40,4 +42,6 @@ _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp>)
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA___CMATH_UNEGATE_H
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___CMATH_NEG_H

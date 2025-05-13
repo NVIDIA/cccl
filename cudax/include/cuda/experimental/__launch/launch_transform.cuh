@@ -26,6 +26,8 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -121,4 +123,7 @@ using kernel_arg_t = _CUDA_VSTD::decay_t<__kernel_transform_result_t<__launch_tr
 } // namespace cuda::experimental
 
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // !_CUDAX__LAUNCH_LAUNCH_TRANSFORM

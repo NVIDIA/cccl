@@ -17,6 +17,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -657,4 +659,7 @@ _CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>&
 
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__LAUNCH_CONFIGURATION

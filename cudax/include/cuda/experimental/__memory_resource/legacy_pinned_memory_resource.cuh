@@ -34,6 +34,8 @@
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 //! @file
 //! The \c legacy_pinned_memory_resource class provides a memory resource that allocates pinned memory.
 namespace cuda::experimental
@@ -116,5 +118,7 @@ static_assert(_CUDA_VMR::resource_with<legacy_pinned_memory_resource, device_acc
 static_assert(_CUDA_VMR::resource_with<legacy_pinned_memory_resource, host_accessible>, "");
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_LEGACY_PINNED_MEMORY_RESOURCE_H

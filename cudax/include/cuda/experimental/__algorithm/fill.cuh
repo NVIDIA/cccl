@@ -26,6 +26,8 @@
 #include <cuda/experimental/__algorithm/common.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -92,4 +94,7 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // __CUDAX_ALGORITHM_FILL

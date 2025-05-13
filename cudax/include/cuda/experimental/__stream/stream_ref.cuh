@@ -30,6 +30,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -179,5 +181,7 @@ struct stream_ref : ::cuda::stream_ref
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__STREAM_STREAM_REF

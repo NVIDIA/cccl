@@ -265,25 +265,22 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     const int global_segment_id = bid * segments_per_small_block + sid_within_block;
 
     const auto segment_begin = static_cast<::cuda::std::int64_t>(global_segment_id) * segment_size;
-    // If empty segment, write out the initial value
-    if (segment_size == 0)
-    {
-      if (lane_id == 0)
-      {
-        *(d_out + global_segment_id) = init;
-      }
-      return;
-    }
 
     if (global_segment_id < num_segments)
     {
+      // If empty segment, write out the initial value
+      if (segment_size == 0)
+      {
+        if (lane_id == 0)
+        {
+          *(d_out + global_segment_id) = detail::reduce::unwrap_empty_problem_init(init);
+        }
+        return;
+      }
       // Consume input tiles
       AccumT warp_aggregate =
         AgentSmallReduceT(temp_storage.small_storage[sid_within_block], d_in + segment_begin, reduction_op)
           .ConsumeRange({}, static_cast<int>(segment_size));
-
-      // Normalize as needed
-      NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
 
       if (lane_id == 0)
       {
@@ -306,9 +303,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
         AgentMediumReduceT(temp_storage.medium_storage[sid_within_block], d_in + segment_begin, reduction_op)
           .ConsumeRange({}, static_cast<int>(segment_size));
 
-      // Normalize as needed
-      NormalizeReductionOutput(warp_aggregate, segment_begin, d_in);
-
       if (lane_id == 0)
       {
         finalize_and_store_aggregate(d_out + global_segment_id, reduction_op, init, warp_aggregate);
@@ -322,9 +316,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
     // Consume input tiles
     AccumT block_aggregate = AgentReduceT(temp_storage.large_storage, d_in + segment_begin, reduction_op)
                                .ConsumeRange({}, static_cast<int>(segment_size));
-
-    // Normalize as needed
-    NormalizeReductionOutput(block_aggregate, segment_begin, d_in);
 
     if (tid == 0)
     {

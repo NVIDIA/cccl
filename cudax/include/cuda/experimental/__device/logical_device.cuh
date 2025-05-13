@@ -24,6 +24,8 @@
 #include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__green_context/green_ctx.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 struct __logical_device_access;
@@ -140,5 +142,7 @@ struct __logical_device_access
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE_REF

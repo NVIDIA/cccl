@@ -23,6 +23,8 @@
 
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 namespace detail
@@ -69,5 +71,7 @@ struct uninit_t
 
 _CCCL_GLOBAL_CONSTANT uninit_t uninit{};
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_UTILITY_H

@@ -24,6 +24,8 @@
 
 #include <cuda_runtime.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -313,4 +315,7 @@ inline constexpr size_t structured_binding_size<__kernel_t::__sndr_t<_Config, _F
 } // namespace cuda::experimental
 
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__LAUNCH_LAUNCH

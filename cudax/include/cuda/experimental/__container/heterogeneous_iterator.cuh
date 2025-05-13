@@ -33,6 +33,8 @@
 
 #include <cuda/experimental/__utility/select_execution_space.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file The \c heterogeneous_iterator class is an iterator that provides typed execution space safety.
@@ -439,5 +441,7 @@ struct pointer_traits<::cuda::experimental::heterogeneous_iterator<_Tp, _Propert
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__CONTAINERS_HETEROGENEOUS_ITERATOR_CUH

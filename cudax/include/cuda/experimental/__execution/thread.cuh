@@ -30,6 +30,8 @@
 #  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) {_CCCL_PP_EXPAND _FOR_HOST}
 #endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 
+#include <cuda/experimental/__execution/prologue.cuh>
+
 namespace cuda::experimental::execution
 {
 #if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
@@ -79,5 +81,7 @@ inline _CCCL_API void __this_thread_yield() noexcept
   _CUDAX_FOR_HOST_OR_DEVICE((::std::this_thread::yield();), (void();))
 }
 } // namespace cuda::experimental::execution
+
+#include <cuda/experimental/__execution/epilogue.cuh>
 
 #endif

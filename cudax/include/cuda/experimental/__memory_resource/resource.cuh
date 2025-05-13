@@ -25,6 +25,8 @@
 
 #include <cuda/experimental/__utility/basic_any/semiregular.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -61,5 +63,7 @@ _CCCL_REQUIRES(__comparable_resources<_Resource, _OtherResource>)
 #endif // _CCCL_STD_VER <= 2017
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDAX__MEMORY_RESOURCE_RESOURCE_CUH

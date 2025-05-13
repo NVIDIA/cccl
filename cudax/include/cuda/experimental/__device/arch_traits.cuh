@@ -26,6 +26,8 @@
 
 #include <cuda/experimental/__device/attributes.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -475,5 +477,7 @@ namespace detail
 } // namespace detail
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_ARCH_TRAITS
