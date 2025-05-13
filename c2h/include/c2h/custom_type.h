@@ -69,7 +69,7 @@ class less_comparable_t
 {
   // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
-  char workaround_msvc;
+  char workaround_msvc{};
 
 public:
   friend __host__ __device__ bool operator<(const CustomType& lhs, const CustomType& rhs)
@@ -83,7 +83,7 @@ class greater_comparable_t
 {
   // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
-  char workaround_msvc;
+  char workaround_msvc{};
 
 public:
   friend __host__ __device__ bool operator>(const CustomType& lhs, const CustomType& rhs)
@@ -97,7 +97,7 @@ class lexicographical_less_comparable_t
 {
   // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
-  char workaround_msvc;
+  char workaround_msvc{};
 
 public:
   friend __host__ __device__ bool operator<(const CustomType& lhs, const CustomType& rhs)
@@ -111,7 +111,7 @@ class lexicographical_greater_comparable_t
 {
   // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
-  char workaround_msvc;
+  char workaround_msvc{};
 
 public:
   friend __host__ __device__ bool operator>(const CustomType& lhs, const CustomType& rhs)
@@ -125,7 +125,7 @@ class equal_comparable_t
 {
   // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
-  char workaround_msvc;
+  char workaround_msvc{};
 
 public:
   friend __host__ __device__ bool operator==(const CustomType& lhs, const CustomType& rhs)
@@ -144,7 +144,7 @@ class subtractable_t
 {
   // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
-  char workaround_msvc;
+  char workaround_msvc{};
 
 public:
   friend __host__ __device__ CustomType operator-(const CustomType& lhs, const CustomType& rhs)
@@ -163,7 +163,7 @@ class accumulateable_t
 {
   // The CUDA compiler follows the IA64 ABI for class layout, while the
   // Microsoft host compiler does not.
-  char workaround_msvc;
+  char workaround_msvc{};
 
 public:
   friend __host__ __device__ CustomType operator+(const CustomType& lhs, const CustomType& rhs)
