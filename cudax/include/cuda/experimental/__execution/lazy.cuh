@@ -31,6 +31,8 @@
 
 #include <new> // IWYU pragma: keep
 
+#include <cuda/experimental/__execution/prologue.cuh>
+
 namespace cuda::experimental::execution
 {
 /// @brief A lazy type that can be used to delay the construction of a type.
@@ -154,5 +156,7 @@ template <class... _Ts>
 using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<__decay_t<_Ts>...>;
 
 } // namespace cuda::experimental::execution
+
+#include <cuda/experimental/__execution/epilogue.cuh>
 
 #endif

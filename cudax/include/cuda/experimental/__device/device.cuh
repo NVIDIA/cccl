@@ -31,6 +31,8 @@
 
 #include <cuda.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 namespace detail
@@ -157,5 +159,7 @@ namespace detail
 } // namespace detail
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE

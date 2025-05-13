@@ -31,6 +31,8 @@
 #  include <cuda/experimental/__memory_resource/memory_pool_base.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
 
+#  include <cuda/std/__cccl/prologue.h>
+
 //! @file
 //! The \c pinned_memory_pool class provides a wrapper around a `cudaMempool_t`.
 namespace cuda::experimental
@@ -104,6 +106,8 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_CTK_AT_LEAST(12, 6)
 

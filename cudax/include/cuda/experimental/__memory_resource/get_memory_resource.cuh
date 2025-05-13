@@ -27,6 +27,8 @@
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -66,5 +68,7 @@ struct get_memory_resource_t
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDAX__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH

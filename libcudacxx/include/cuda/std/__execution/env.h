@@ -88,6 +88,8 @@
 //! A callable object for retrieving the environment associated with an object.
 //!
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_EXECUTION
 
 namespace __detail
@@ -361,5 +363,7 @@ template <class _Ty>
 using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(declval<_Ty>()));
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDA_STD___EXECUTION_ENV_H

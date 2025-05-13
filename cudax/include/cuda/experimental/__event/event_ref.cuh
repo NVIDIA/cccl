@@ -32,6 +32,8 @@
 
 #include <cuda/experimental/__utility/driver_api.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 class event;
@@ -157,5 +159,7 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 };
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX_EVENT_REF_DETAIL_H
