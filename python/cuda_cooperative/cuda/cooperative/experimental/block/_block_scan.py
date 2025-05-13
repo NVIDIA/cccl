@@ -121,12 +121,12 @@ def scan(
     and ``inclusive_scan``.
 
     :param dtype: Supplies the data type of the input and output arrays.
-    :type  dtype: DtypeType
+    :type  dtype: :py:data:`DtypeType <cuda.cooperative.experimental._typing.DtypeType>`
 
     :param threads_per_block: Supplies the number of threads in the block,
         either as an integer for a 1D block or a tuple of two or three integers
         for a 2D or 3D block, respectively.
-    :type  threads_per_block: DimType
+    :type  threads_per_block: :py:data:`DimType <cuda.cooperative.experimental._typing.DimType>`
 
     :param items_per_thread: Supplies the number of items partitioned onto each
         thread.
@@ -142,7 +142,7 @@ def scan(
 
     :param scan_op: Supplies the scan operator to use for the block-wide scan.
         The default is the sum operator (``+``).
-    :type  scan_op: ScanOpType, optional
+    :type  scan_op: :py:data:`ScanOpType <cuda.cooperative.experimental._typing.ScanOpType>`
 
     :param block_prefix_callback_op: Optionally supplies a callable that will be
         invoked by the first warp of threads in a block with the block aggregate
@@ -700,12 +700,12 @@ def exclusive_sum(
         ``{ [0, 1, 2, 3], [4, 5, 6, 7], ..., [508, 509, 510, 511] }``.
 
     :param dtype: Supplies the data type of the input and output arrays.
-    :type  dtype: DtypeType
+    :type  dtype: :py:data:`DtypeType <cuda.cooperative.experimental._typing.DtypeType>`
 
     :param threads_per_block: Supplies the number of threads in the block,
         either as an integer for a 1D block or a tuple of two or three integers
         for a 2D or 3D block, respectively.
-    :type  threads_per_block: DimType
+    :type  threads_per_block: :py:data:`DimType <cuda.cooperative.experimental._typing.DimType>`
 
     :param items_per_thread: Supplies the number of items partitioned onto each
         thread.
@@ -766,12 +766,12 @@ def inclusive_sum(
     scan operator.
 
     :param dtype: Supplies the data type of the input and output arrays.
-    :type  dtype: DtypeType
+    :type  dtype: :py:data:`DtypeType <cuda.cooperative.experimental._typing.DtypeType>`
 
     :param threads_per_block: Supplies the number of threads in the block,
         either as an integer for a 1D block or a tuple of two or three integers
         for a 2D or 3D block, respectively.
-    :type  threads_per_block: DimType
+    :type  threads_per_block: :py:data:`DimType <cuda.cooperative.experimental._typing.DimType>`
 
     :param items_per_thread: Supplies the number of items partitioned onto each
         thread.
@@ -831,15 +831,15 @@ def exclusive_scan(
     operator.
 
     :param dtype: Supplies the data type of the input and output arrays.
-    :type  dtype: DtypeType
+    :type  dtype: :py:data:`DtypeType <cuda.cooperative.experimental._typing.DtypeType>`
 
     :param threads_per_block: Supplies the number of threads in the block,
         either as an integer for a 1-D block or a tuple of two or three
         integers for a 2-D or 3-D block, respectively.
-    :type  threads_per_block: DimType
+    :type  threads_per_block: :py:data:`DimType <cuda.cooperative.experimental._typing.DimType>`
 
     :param scan_op: Supplies the scan operator to use for the block-wide scan.
-    :type  scan_op: ScanOpType
+    :type  scan_op: :py:data:`ScanOpType <cuda.cooperative.experimental._typing.ScanOpType>`
 
     :param initial_value: Optionally supplies the initial value to use for the
         block-wide scan.  If a non-None value is supplied, ``prefix_op`` must
@@ -923,15 +923,15 @@ def inclusive_scan(
     operator.
 
     :param dtype: Supplies the data type of the input and output arrays.
-    :type  dtype: DtypeType
+    :type  dtype: :py:data:`DtypeType <cuda.cooperative.experimental._typing.DtypeType>`
 
     :param threads_per_block: Supplies the number of threads in the block,
         either as an integer for a 1-D block or a tuple of two or three
         integers for a 2-D or 3-D block, respectively.
-    :type  threads_per_block: DimType
+    :type  threads_per_block: :py:data:`DimType <cuda.cooperative.experimental._typing.DimType>`
 
     :param scan_op: Supplies the scan operator to use for the block-wide scan.
-    :type  scan_op: ScanOpType
+    :type  scan_op: :py:data:`ScanOpType <cuda.cooperative.experimental._typing.ScanOpType>`
 
     :param initial_value: Optionally supplies the initial value to use for the
         block-wide scan.  If a non-None value is supplied, ``prefix_op`` must
