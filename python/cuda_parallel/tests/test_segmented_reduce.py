@@ -111,15 +111,6 @@ def test_segmented_reduce_struct_type():
     np.testing.assert_equal(expected["g"], d_out.get()["g"])
 
 
-def make_host_cfunc(state_ptr_ty, fn):
-    import numba
-
-    sig = numba.void(state_ptr_ty, numba.int64)
-    c_advance_fn = numba.cfunc(sig)(fn)
-
-    return c_advance_fn.ctypes
-
-
 def test_large_num_segments():
     """
     This test builds input iterator as transformation
@@ -170,10 +161,10 @@ def test_large_num_segments():
     )
 
     # band-aid solution for setting of host advance function
-    f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
-    alg.start_offsets_in_cccl.host_advance_fn = f1
-    f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
-    alg.end_offsets_in_cccl.host_advance_fn = f2
+    # f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
+    # alg.start_offsets_in_cccl.host_advance_fn = f1
+    # f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
+    # alg.end_offsets_in_cccl.host_advance_fn = f2
 
     temp_storage_bytes = alg(
         None, input_it, res, num_segments, start_offsets, end_offsets, h_init
@@ -249,10 +240,10 @@ def test_large_num_segments3():
     )
 
     # band-aid solution for setting of host advance function
-    f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
-    alg.start_offsets_in_cccl.host_advance_fn = f1
-    f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
-    alg.end_offsets_in_cccl.host_advance_fn = f2
+    # f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
+    # alg.start_offsets_in_cccl.host_advance_fn = f1
+    # f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
+    # alg.end_offsets_in_cccl.host_advance_fn = f2
 
     temp_storage_bytes = alg(
         None, input_it, res, num_segments, start_offsets, end_offsets, h_init
