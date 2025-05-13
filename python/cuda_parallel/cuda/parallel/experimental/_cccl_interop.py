@@ -341,3 +341,22 @@ def call_build(build_impl_fn: Callable, *args, **kwargs):
         _check_compile_result(cubin)
 
     return result
+
+
+def _make_host_cfunc(state_ptr_ty, fn):
+    sig = numba.void(state_ptr_ty, numba.int64)
+    c_advance_fn = numba.cfunc(sig)(fn)
+
+    return c_advance_fn.ctypes
+
+
+def cccl_iterator_set_host_advance(cccl_it: Iterator, array_or_iterator):
+    if cccl_it.is_kind_iterator():
+        it = array_or_iterator
+        fn_impl = it.host_advance
+        if fn_impl is not None:
+            cccl_it.host_advance_fn = _make_host_cfunc(it.numba_type, fn_impl)
+        else:
+            raise ValueError(
+                f"Iterator of type {type(it)} does not provide definition of host_advance function"
+            )
