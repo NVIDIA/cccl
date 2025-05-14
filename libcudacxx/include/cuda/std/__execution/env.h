@@ -156,6 +156,7 @@ struct __basic_query : __basic_query<_Query>
 
   using __basic_query<_Query>::operator();
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__ignore_t) const noexcept(__is_nothrow)
     -> decltype(_DefaultFn{}())
   {
@@ -167,6 +168,7 @@ struct __basic_query : __basic_query<_Query>
 template <class _Query>
 struct __basic_query<_Query, void>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const
     noexcept(__nothrow_queryable_with<_Env, _Query>) -> __query_result_t<_Env, _Query>
@@ -274,6 +276,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env
   //! @param __query The query object to be passed to the environment's `query` method.
   //! @return The result of the `query` method on the first environment that satisfies the query type.
   //! @throws noexcept If the query operation is noexcept for the resolved environment and query type.
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
@@ -313,6 +316,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
   template <class _Query>
   using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(env::__get_1st<_Query>(declval<const env&>()));
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Query)
   _CCCL_REQUIRES(__queryable_with<__1st_env_t<_Query>, _Query>)
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query __query) const
@@ -344,6 +348,7 @@ struct get_env_t
   template <class _Ty>
   using __env_of _CCCL_NODEBUG_ALIAS = decltype(declval<_Ty>().get_env());
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Ty>
   [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const _Ty& __ty) const noexcept -> __env_of<const _Ty&>
   {
