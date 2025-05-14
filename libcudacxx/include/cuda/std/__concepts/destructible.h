@@ -28,6 +28,8 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_COMPILER(MSVC)
@@ -68,5 +70,7 @@ _CCCL_CONCEPT destructible = __destructible<_Tp>;
 #endif // !_CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_DESTRUCTIBLE_H

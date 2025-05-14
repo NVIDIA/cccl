@@ -20,9 +20,10 @@
 #include <cstdint>
 #include <unordered_map>
 
+#include <testing.cuh>
+
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
-#include <testing.cuh>
 
 struct other_property
 {};

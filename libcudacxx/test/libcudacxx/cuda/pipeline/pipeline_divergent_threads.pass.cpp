@@ -16,13 +16,13 @@
 
 // comes last to take the ABI version
 #include <cuda_pipeline.h>
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 #include <cooperative_groups/memcpy_async.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)
 TEST_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero

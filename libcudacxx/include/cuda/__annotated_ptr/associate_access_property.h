@@ -27,6 +27,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -119,5 +121,7 @@ template <typename _Tp, typename _Property>
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_ASSOCIATE_ACCESS_PROPERTY

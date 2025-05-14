@@ -25,6 +25,8 @@
 #include <cuda/std/__functional/operations.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _OutputIterator, class _Tp, class _BinaryOp>
@@ -58,5 +60,7 @@ exclusive_scan(_InputIterator __first, _InputIterator __last, _OutputIterator __
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_EXCLUSIVE_SCAN_H

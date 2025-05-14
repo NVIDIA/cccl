@@ -21,12 +21,12 @@
 #ifdef __CUDACC__
 
 // use CUDA's high-resolution timers when possible
-#  include <cuda_runtime_api.h>
-
 #  include <thrust/system/cuda/error.h>
 #  include <thrust/system_error.h>
 
 #  include <string>
+
+#  include <cuda_runtime_api.h>
 
 void cuda_safe_call(cudaError_t error, const std::string& message = "")
 {

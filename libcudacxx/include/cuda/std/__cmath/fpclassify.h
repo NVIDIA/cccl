@@ -34,6 +34,8 @@
 #  include <math.h>
 #endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_COMPILER(NVRTC)
 #  ifndef FP_NAN
 #    define FP_NAN 0
@@ -199,5 +201,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Tp))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CMATH_FPCLASSIFY_H

@@ -8,18 +8,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda_runtime.h>
-
 #include <algorithm>
 #include <iostream> // std::cerr
 #include <optional> // std::optional
 #include <string>
 
+#include <cuda_runtime.h>
+#include <stdint.h>
+
 #include "algorithm_execution.h"
 #include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/for.h>
-#include <stdint.h>
 
 using BuildResultT = cccl_device_for_build_result_t;
 

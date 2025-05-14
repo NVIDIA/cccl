@@ -25,6 +25,8 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integral.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
 enum class byte : unsigned char
@@ -105,5 +107,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer to_integer(byte __b) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CSTDDEF_BYTE_H

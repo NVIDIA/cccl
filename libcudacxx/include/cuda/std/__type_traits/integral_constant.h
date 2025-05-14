@@ -20,6 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, _Tp __v>
@@ -54,5 +56,7 @@ using bool_constant = integral_constant<bool, __b>;
 #define _LIBCUDACXX_BOOL_CONSTANT(__b) bool_constant<(__b)>
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_INTEGRAL_CONSTANT_H

@@ -27,6 +27,8 @@
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace cuda::experimental
@@ -102,4 +104,7 @@ struct [[maybe_unused]] __ensure_current_device
 };
 } // namespace cuda::experimental
 #endif // _CCCL_DOXYGEN_INVOKED
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__UTILITY_ENSURE_CURRENT_DEVICE

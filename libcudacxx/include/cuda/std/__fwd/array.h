@@ -22,11 +22,15 @@
 
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, size_t _Size>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT array;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_ARRAY_H

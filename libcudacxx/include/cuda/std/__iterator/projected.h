@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _It, class _Proj, class = void>
@@ -53,5 +55,7 @@ _CCCL_REQUIRES(indirectly_readable<_It> _CCCL_AND indirectly_regular_unary_invoc
 using projected = typename __projected_impl<_It, _Proj>::__type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_PROJECTED_H

@@ -30,6 +30,8 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
@@ -153,5 +155,7 @@ using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>, 
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ITER_MOVE_H

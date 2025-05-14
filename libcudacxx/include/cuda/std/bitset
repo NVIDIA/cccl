@@ -46,7 +46,7 @@
 #  include <cuda/std/string>
 #endif // _LIBCUDACXX_HAS_STRING
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1021,6 +1021,6 @@ operator<<(basic_ostream<_CharT, _Traits>& __os, const bitset<_Size>& __x);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_BITSET

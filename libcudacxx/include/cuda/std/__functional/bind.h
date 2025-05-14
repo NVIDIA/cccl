@@ -46,6 +46,8 @@
 #  include <cuda/std/cstddef>
 #  include <cuda/std/tuple>
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -342,6 +344,8 @@ bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cuda_std__
 

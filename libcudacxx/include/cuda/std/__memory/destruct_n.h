@@ -26,6 +26,8 @@
 #include <cuda/std/__type_traits/is_trivially_destructible.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __destruct_n
@@ -83,5 +85,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_DESTRUCT_N_H

@@ -503,8 +503,7 @@ _CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
     // signatures of the composed sender immediately.
     if constexpr (((!dependent_sender<_Sndrs>) && ...))
     {
-      using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Sndrs...>>;
-      static_assert(__valid_completion_signatures<__completions>);
+      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Sndrs...>>());
     }
     return transform_sender(__dom_t{}, __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}});
   }
