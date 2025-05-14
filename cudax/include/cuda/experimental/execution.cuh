@@ -30,6 +30,7 @@
 #include <cuda/experimental/__execution/start_detached.cuh>
 #include <cuda/experimental/__execution/starts_on.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
+#include <cuda/experimental/__execution/stream_context.cuh>
 #include <cuda/experimental/__execution/sync_wait.cuh>
 #include <cuda/experimental/__execution/then.cuh>
 #include <cuda/experimental/__execution/thread_context.cuh>
