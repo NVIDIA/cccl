@@ -7,7 +7,6 @@ setup_python_env() {
     if ! command -v pyenv &> /dev/null; then
         rm -f /pyenv
         curl -fsSL https://pyenv.run | bash
-        echo "Installing pyenv"
     fi
 
     # Always set up pyenv environment
@@ -16,9 +15,6 @@ setup_python_env() {
     eval "$(pyenv init - bash)"
 
     # Using pyenv, install the Python version
-    echo $py_version
-    which pyenv
     PYENV_DEBUG=1 pyenv install -v "${py_version}"
-    echo "Done installing pyenv"
     pyenv local "${py_version}"
 }

@@ -5,8 +5,11 @@ set -euo pipefail
 py_version=${2#*=}
 echo "Docker socket: " $(ls /var/run/docker.sock)
 
-# given the py_version build the wheel and output the artifact
-# to the artifacts directory
+
+# cuda_parallel must be built in a container that can produce manylinux wheels,
+# and has the CUDA toolkit installed. We use the rapidsai/ci-wheel image for this.
+# These images don't come with a new enough version of gcc installed, so that
+# must be installed manually.
 docker run --rm -i \
   --workdir /workspace/python/cuda_parallel \
   --mount type=bind,source=${HOST_WORKSPACE},target=/workspace/ \
