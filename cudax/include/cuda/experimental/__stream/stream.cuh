@@ -30,6 +30,8 @@
 #include <cuda/experimental/__stream/stream_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -76,7 +78,7 @@ struct stream : stream_ref
   //!
   //! @post `stream()` returns an invalid stream handle
   // Can't be constexpr because __invalid_stream isn't
-  explicit stream(uninit_t) noexcept
+  explicit stream(no_init_t) noexcept
       : stream_ref(detail::__invalid_stream)
   {}
 
@@ -155,5 +157,7 @@ private:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__STREAM_STREAM

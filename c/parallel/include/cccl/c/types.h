@@ -17,7 +17,7 @@
 #if defined(_WIN32)
 #  define CCCL_C_API __declspec(dllexport)
 #else // ^^^ _WIN32 ^^^ / vvv !_WIN32 vvv
-#  define CCCL_C_API __attribute__((visibility("default")))
+#  define CCCL_C_API __attribute__((__visibility__("default")))
 #endif // !_WIN32
 
 #include <stddef.h>

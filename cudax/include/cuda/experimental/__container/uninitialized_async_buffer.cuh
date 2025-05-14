@@ -35,6 +35,8 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file
@@ -383,5 +385,7 @@ using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, device
 } // namespace cuda::experimental
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_ASYNC_BUFFER_H

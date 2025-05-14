@@ -31,6 +31,8 @@
 
 #include <cuda_runtime_api.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -81,5 +83,7 @@ struct get_stream_t
 _CCCL_GLOBAL_CONSTANT auto get_stream = get_stream_t{};
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__STREAM_GET_STREAM
