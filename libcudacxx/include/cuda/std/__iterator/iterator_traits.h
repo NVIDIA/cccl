@@ -53,6 +53,7 @@
 #  endif
 
 #  if _CCCL_STD_VER >= 2020
+#    include <cuda/std/__cccl/prologue.h>
 template <class _Tp, class = void>
 struct __cccl_type_is_defined : _CUDA_VSTD::false_type
 {};
@@ -67,9 +68,13 @@ namespace std
 struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct contiguous_iterator_tag>
 {};
 } // namespace std
+
+#    include <cuda/std/__cccl/epilogue.h>
 #  endif // _CCCL_STD_VER >= 2020
 
 #endif // !_CCCL_COMPILER(NVRTC)
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -924,5 +929,7 @@ template <class _InputIterator>
 using __iter_value_type = typename iterator_traits<_InputIterator>::value_type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_ITERATOR_TRAITS_H

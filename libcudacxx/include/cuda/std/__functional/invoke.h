@@ -42,6 +42,8 @@
 
 // TODO: Disentangle the type traits and _CUDA_VSTD::invoke properly
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __any
@@ -552,5 +554,7 @@ template <typename Invokable, typename InputT, typename InitT = InputT>
 using __accumulator_t = typename decay<typename _CUDA_VSTD::__invoke_of<Invokable, InitT, InputT>::type>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_INVOKE_H

@@ -223,6 +223,10 @@ completion_signatures() -> completion_signatures<>;
 template <class _Ty>
 _CCCL_CONCEPT __valid_completion_signatures = detail::__is_specialization_of<_Ty, completion_signatures>;
 
+template <class... _Sigs>
+_CCCL_API constexpr void __assert_valid_completion_signatures(completion_signatures<_Sigs...>)
+{}
+
 template <class _Derived>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __compile_time_error // : ::std::exception
 {

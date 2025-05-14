@@ -18,4 +18,4 @@
 #undef _CUDAX_ASYNC_PROLOGUE_INCLUDED
 
 _CCCL_DIAG_POP
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>

@@ -47,6 +47,8 @@
 
 #include <cuda/std/__algorithm_>
 
+#include <nv/target>
+
 #include <cfloat>
 #include <cmath>
 #include <cstddef>
@@ -60,7 +62,6 @@
 #include "mersenne.h"
 #include <c2h/extended_types.h>
 #include <c2h/test_util_vec.h>
-#include <nv/target>
 
 /******************************************************************************
  * Type conversion macros

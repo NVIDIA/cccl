@@ -42,6 +42,8 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4848)
@@ -101,23 +103,23 @@ public:
       return __end_;
     }
 
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(const iterator_t<_Base>& __x, const __sentinel& __y)
     {
       return __x == __y.__end_ || !_CUDA_VSTD::invoke(*__y.__pred_, *__x);
     }
 #if _CCCL_STD_VER <= 2017
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(const __sentinel& __x, const iterator_t<_Base>& __y)
     {
       return __y == __x.__end_ || !_CUDA_VSTD::invoke(*__x.__pred_, *__y);
     }
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(const iterator_t<_Base>& __x, const __sentinel& __y)
     {
       return __x != __y.__end_ && _CUDA_VSTD::invoke(*__y.__pred_, *__x);
     }
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(const __sentinel& __x, const iterator_t<_Base>& __y)
     {
       return __y != __x.__end_ && _CUDA_VSTD::invoke(*__x.__pred_, *__y);
@@ -125,7 +127,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
     template <bool _OtherConst = !_Const>
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
@@ -133,21 +135,21 @@ public:
     }
 #if _CCCL_STD_VER <= 2017
     template <bool _OtherConst = !_Const>
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __y == __x.__end_ || !_CUDA_VSTD::invoke(*__x.__pred_, *__y);
     }
     template <bool _OtherConst = !_Const>
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator!=(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __x != __y.__end_ && _CUDA_VSTD::invoke(*__y.__pred_, *__x);
     }
     template <bool _OtherConst = !_Const>
-    _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
     operator!=(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
       _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
@@ -255,5 +257,7 @@ _CCCL_GLOBAL_CONSTANT auto take_while = __take_while::__fn{};
 _LIBCUDACXX_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_TAKE_WHILE_VIEW_H

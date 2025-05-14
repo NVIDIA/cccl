@@ -22,6 +22,8 @@
 
 #include <cuda/std/__fwd/char_traits.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT, class _Traits = char_traits<_CharT>>
@@ -51,5 +53,7 @@ _CCCL_PREFERRED_NAME(wstring_view)
       basic_string_view;
 // clang-format on
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_STRING_VIEW_H

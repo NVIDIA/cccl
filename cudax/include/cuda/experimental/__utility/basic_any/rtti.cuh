@@ -29,12 +29,11 @@
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_ptrs.cuh>
 
-#include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
-
 #include <nv/target>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <typeinfo> // IWYU pragma: keep (for std::bad_cast)
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -248,6 +247,6 @@ template <class _SrcInterface, class _DstInterface>
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_RTTI_H

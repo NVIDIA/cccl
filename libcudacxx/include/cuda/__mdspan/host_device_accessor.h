@@ -38,6 +38,8 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _Accessor>
@@ -447,5 +449,7 @@ template <template <typename> class _TClass, typename _Accessor>
 inline constexpr bool is_device_accessible_v<_TClass<_Accessor>> = is_device_accessible_v<_Accessor>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MDSPAN_HOST_DEVICE_ACCESSOR

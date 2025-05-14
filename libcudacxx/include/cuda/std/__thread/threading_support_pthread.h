@@ -29,16 +29,14 @@
 #  include <pthread.h>
 #  include <sched.h>
 #  include <semaphore.h>
-#  if defined(__APPLE__)
-#    include <dispatch/dispatch.h>
-#  endif // __APPLE__
 #  if defined(__linux__)
+#    include <unistd.h>
+
 #    include <linux/futex.h>
 #    include <sys/syscall.h>
-#    include <unistd.h>
 #  endif // __linux__
 
-_CCCL_PUSH_MACROS
+#  include <cuda/std/__cccl/prologue.h>
 
 using __cccl_timespec_t = ::timespec;
 
@@ -55,13 +53,8 @@ using __cccl_condvar_t = pthread_cond_t;
 #  define _LIBCUDACXX_CONDVAR_INITIALIZER PTHREAD_COND_INITIALIZER
 
 // Semaphore
-#  if defined(__APPLE__)
-using __cccl_semaphore_t = dispatch_semaphore_t;
-#    define _LIBCUDACXX_SEMAPHORE_MAX numeric_limits<long>::max()
-#  else // ^^^ __APPLE__ ^^^ / vvv !__APPLE__ vvv
 using __cccl_semaphore_t = sem_t;
-#    define _LIBCUDACXX_SEMAPHORE_MAX SEM_VALUE_MAX
-#  endif // !__APPLE__
+#  define _LIBCUDACXX_SEMAPHORE_MAX SEM_VALUE_MAX
 
 // Execute once
 using __cccl_exec_once_flag = pthread_once_t;
@@ -102,37 +95,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __cccl_timespec_t __cccl_to_timespec(const _CUDA_VSTD:
 }
 
 // Semaphore
-#  if defined(__APPLE__)
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_semaphore_init(__cccl_semaphore_t* __sem, int __init)
-{
-  return (*__sem = dispatch_semaphore_create(__init)) != nullptr;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_semaphore_destroy(__cccl_semaphore_t* __sem)
-{
-  dispatch_release(*__sem);
-  return true;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_semaphore_post(__cccl_semaphore_t* __sem)
-{
-  dispatch_semaphore_signal(*__sem);
-  return true;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_semaphore_wait(__cccl_semaphore_t* __sem)
-{
-  return dispatch_semaphore_wait(*__sem, DISPATCH_TIME_FOREVER) == 0;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool
-__cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, _CUDA_VSTD::chrono::nanoseconds const& __ns)
-{
-  return dispatch_semaphore_wait(*__sem, dispatch_time(DISPATCH_TIME_NOW, __ns.count())) == 0;
-}
-
-#  else // ^^^ __APPLE__ ^^^ / vvv !__APPLE__ vvv
 
 _LIBCUDACXX_HIDE_FROM_ABI bool __cccl_semaphore_init(__cccl_semaphore_t* __sem, int __init)
 {
@@ -161,8 +123,6 @@ __cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, _CUDA_VSTD::chrono::nanos
   return sem_timedwait(__sem, &__ts) == 0;
 }
 
-#  endif // !__APPLE__
-
 _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield()
 {
   sched_yield();
@@ -177,7 +137,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanos
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // !_LIBCUDACXX_HAS_THREAD_API_PTHREAD
 

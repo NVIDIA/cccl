@@ -23,6 +23,8 @@
 #include <cuda/std/__type_traits/always_false.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_FINAL)
@@ -48,5 +50,7 @@ inline constexpr bool is_final_v = is_final<_Tp>::value;
 #endif // !_CCCL_BUILTIN_IS_FINAL
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_FINAL_H

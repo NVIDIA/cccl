@@ -22,6 +22,8 @@
 
 #include <cuda/std/__type_traits/integral_constant.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -32,5 +34,7 @@ template <class _Tp>
 inline constexpr bool is_abstract_v = _CCCL_BUILTIN_IS_ABSTRACT(_Tp);
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_ABSTRACT_H

@@ -29,6 +29,8 @@
 
 #include <vector>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 namespace detail
@@ -229,5 +231,7 @@ inline const arch_traits_t& device_ref::get_arch_traits() const
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_ALL_DEVICES

@@ -8,12 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda_runtime.h>
-
 #include <algorithm>
 #include <optional> // std::optional
 #include <string>
 #include <vector>
+
+#include <cuda_runtime.h>
 
 #include "algorithm_execution.h"
 #include "build_result_caching.h"

@@ -24,6 +24,8 @@
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -31,5 +33,7 @@ using ::cuda::mr::device_accessible;
 using ::cuda::mr::host_accessible;
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDAX__MEMORY_RESOURCE_PROPERTIES_CUH

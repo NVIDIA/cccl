@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -35,5 +37,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_null_pointer : public bool_constant<is_n
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_NULL_POINTER_H
