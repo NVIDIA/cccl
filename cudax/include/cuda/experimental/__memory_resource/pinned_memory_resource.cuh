@@ -98,7 +98,7 @@ public:
   //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
 
-  using __default_queries = _CUDA_VSTD::__type_list<device_accessible, host_accessible>;
+  using default_queries = properties_list<device_accessible, host_accessible>;
 #  endif // _CCCL_DOXYGEN_INVOKED
 };
 

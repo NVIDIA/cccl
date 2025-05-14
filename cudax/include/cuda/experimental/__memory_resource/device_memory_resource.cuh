@@ -107,7 +107,7 @@ public:
   //! @relates device_memory_resource
   friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
 
-  using __default_queries = _CUDA_VSTD::__type_list<device_accessible>;
+  using default_queries = properties_list<device_accessible>;
 #endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");

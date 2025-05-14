@@ -640,16 +640,7 @@ template <class _Tp>
 using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
 
 template <class _Tp, class _PropsList>
-struct __buffer_type_for_props_t;
-
-template <class _Tp, class... _Props>
-struct __buffer_type_for_props_t<_Tp, _CUDA_VSTD::__type_list<_Props...>>
-{
-  using type = async_buffer<_Tp, _Props...>;
-};
-
-template <class _Tp, class _PropsList>
-using __buffer_type_for_props = __buffer_type_for_props_t<_Tp, _PropsList>::type;
+using __buffer_type_for_props = _CUDA_VSTD::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
 
 template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
@@ -684,7 +675,7 @@ _CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_quer
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
 {
   using __buffer_type =
-    __buffer_type_for_props<_Tp, typename _CUDA_VSTD::remove_reference_t<_Resource>::__default_queries>;
+    __buffer_type_for_props<_Tp, typename _CUDA_VSTD::remove_reference_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   auto __res = __buffer_type{__env, __source.size(), uninit};
 
