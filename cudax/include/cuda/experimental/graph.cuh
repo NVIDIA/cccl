@@ -15,8 +15,7 @@
 #include <cuda/experimental/__graph/depends_on.cuh>
 #include <cuda/experimental/__graph/fwd.cuh>
 #include <cuda/experimental/__graph/graph.cuh>
-#include <cuda/experimental/__graph/graph_exec.cuh>
-#include <cuda/experimental/__graph/graph_node.cuh>
+#include <cuda/experimental/__graph/graph_builder.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__graph/graph_node_type.cuh>
 // IWYU pragma: end_exports

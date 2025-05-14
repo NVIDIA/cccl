@@ -22,96 +22,43 @@
 #endif // no system header
 
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__memory/unique_ptr.h>
-#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/exchange.h>
-#include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/array>
-#include <cuda/std/cstddef>
-#include <cuda/std/span>
 
-#include <cuda/experimental/__graph/graph_exec.cuh>
-#include <cuda/experimental/__graph/graph_node.cuh>
+#include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda_runtime_api.h>
 
-#include <cuda/experimental/__execution/prologue.cuh>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-//! \brief An owning wrapper type for a cudaGraph_t handle
+//! \brief An owning wrapper for a cudaGraphExec_t handle
 //!
-//! The `graph` class provides a high-level interface for creating, managing, and
-//! manipulating CUDA graphs. It ensures proper resource management and simplifies the
-//! process of working with CUDA graph APIs.
+//! The `graph` class provides a safe and convenient interface for managing
+//! the lifecycle of a `cudaGraphExec_t` object, ensuring proper cleanup and
+//! resource management. It supports move semantics, resource release, and
+//! launch of the CUDA graph.
 //!
-//! Features:
-//! - Supports construction, destruction, and copying of CUDA graphs.
-//! - Provides methods for adding nodes and dependencies to the graph.
-//! - Allows instantiation of the graph into an executable form.
-//! - Ensures proper cleanup of CUDA resources.
-//!
-//! Usage:
-//! - Create an instance of `graph` to represent a CUDA graph.
-//! - Use the `add` methods to add nodes and dependencies to the graph.
-//! - Instantiate the graph using the `instantiate` method to obtain an executable graph.
-//! - Use the `reset` method to release resources when the graph is no longer needed.
-//!
-//! Thread Safety:
-//! - This class is not thread-safe. Concurrent access to the same `graph` object must be
-//!   synchronized externally.
-//!
-//! Exception Safety:
-//! - Methods that interact with CUDA APIs may throw ``cuda::std::cuda_error`` if the
-//!   underlying CUDA operation fails.
-//! - Move operations leave the source object in a valid but unspecified state.
+//! \note The `graph` object is not directly constructible. One is obtained
+//!       by calling the `instantiate()` method on a `graph_builder` object.
+//! \sa cuda::experimental::graph_builder
 //!
 //! \rst
 //! .. _cudax-graph-graph:
 //! \endrst
 struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
 {
-  //! \brief Constructs a new, empty CUDA graph.
-  //! \throws cuda::std::cuda_error if `cudaGraphCreate` fails.
-  _CCCL_HOST_API graph()
-  {
-    _CCCL_TRY_CUDA_API(cudaGraphCreate, "cudaGraphCreate failed", &__graph_, 0);
-  }
-
-  /// Disallow construction from an `int`, e.g., `0`.
-  graph(int) = delete;
-
-  /// Disallow construction from `nullptr`.
-  graph(_CUDA_VSTD::nullptr_t) = delete;
-
-  //! \brief Constructs an uninitialized CUDA graph.
-  //! \throws None
-  _CCCL_HOST_API constexpr graph(uninit_t) noexcept {}
-
   //! \brief Move constructor for `graph`.
   //! \param __other The `graph` object to move from.
   //! \note After the move, the source object is left in the empty state.
-  //! \throws None
   //! \post `__other.get() == nullptr`
   _CCCL_HOST_API constexpr graph(graph&& __other) noexcept
-      : __graph_{_CUDA_VSTD::exchange(__other.__graph_, nullptr)}
+      : __exec_{_CUDA_VSTD::exchange(__other.__exec_, nullptr)}
   {}
 
-  //! \brief Copy constructor for `graph`.
-  //! \param __other The `graph` object to copy from.
-  //! \throws cuda::std::cuda_error if `cudaGraphClone` fails.
-  //! \post `get() == __other.get()`
-  _CCCL_HOST_API constexpr graph(const graph& __other)
-  {
-    if (__other.__graph_)
-    {
-      _CCCL_TRY_CUDA_API(cudaGraphClone, "cudaGraphClone failed", &__graph_, __other.__graph_);
-    }
-  }
-
   //! \brief Destructor for `graph`.
-  //! \details Ensures proper cleanup of the CUDA graph object.
+  //! \details Ensures proper cleanup of the CUDA graph execution object.
   //! \throws None
   _CCCL_HOST_API _CCCL_CONSTEXPR_CXX20 ~graph()
   {
@@ -122,8 +69,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
   //! \param __other The `graph` object to move from.
   //! \return A reference to the current object.
   //! \note After the move, the source object is left in the empty state.
-  //! \post `__other.get() == nullptr`
   //! \throws None
+  //! \post `__other.get() == nullptr`
   _CCCL_HOST_API constexpr auto operator=(graph&& __other) noexcept -> graph&
   {
     swap(__other);
@@ -131,236 +78,76 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph
     return *this;
   }
 
-  //! \brief Copy assignment operator for `graph`.
-  //! \param __other The `graph` object to copy from.
-  //! \return A reference to the current object.
-  //! \post `get() == __other.get()`
-  //! \throws cuda::std::cuda_error if `cudaGraphClone` fails.
-  _CCCL_HOST_API _CCCL_CONSTEXPR_CXX20 auto operator=(const graph& __other) -> graph&
-  {
-    operator=(graph(__other));
-    return *this;
-  }
-
-  //! \brief Compares two `graph` objects for equality.
-  //!
-  //! \param __lhs The left-hand side `graph` object to compare.
-  //! \param __rhs The right-hand side `graph` object to compare.
-  //! \return `true` if both `graph` objects are equal, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool operator==(const graph& __lhs, const graph& __rhs) noexcept
-  {
-    return __lhs.__graph_ == __rhs.__graph_;
-  }
-
-  //! \brief Compares two `graph` objects for inequality.
-  //!
-  //! \param __lhs The left-hand side `graph` object to compare.
-  //! \param __rhs The right-hand side `graph` object to compare.
-  //! \return `true` if both `graph` objects are not equal, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool operator!=(const graph& __lhs, const graph& __rhs) noexcept
-  {
-    return !(__lhs == __rhs);
-  }
-
-  //! \brief Test whether a `graph` object is null.
-  //! \return `true` if `__rhs` is null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool operator==(_CUDA_VSTD::nullptr_t, const graph& __rhs) noexcept
-  {
-    return !static_cast<bool>(__rhs);
-  }
-
-  //! \brief Test whether a `graph` object is null.
-  //! \return `true` if `__rhs` is null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool operator==(const graph& __lhs, _CUDA_VSTD::nullptr_t) noexcept
-  {
-    return !static_cast<bool>(__lhs);
-  }
-
-  //! \brief Test whether a `graph` object is not null.
-  //! \return `true` if `__rhs` is not null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool operator!=(_CUDA_VSTD::nullptr_t, const graph& __rhs) noexcept
-  {
-    return static_cast<bool>(__rhs);
-  }
-
-  //! \brief Test whether a `graph` object is not null.
-  //! \return `true` if `__lhs` is not null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool operator!=(const graph& __lhs, _CUDA_VSTD::nullptr_t) noexcept
-  {
-    return static_cast<bool>(__lhs);
-  }
-
-  //! \brief Checks if the graph node reference is valid.
-  //!
-  //! \details This operator allows the graph node reference to be used in a
-  //! boolean context to determine if it is valid. A valid graph node reference
-  //! is one where the internal node pointer is not `nullptr`.
-  //!
-  //! \return `true` if the internal node pointer is not `nullptr`, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_API explicit constexpr operator bool() const noexcept
-  {
-    return __graph_ != nullptr;
-  }
-
-  //! \brief Checks if the graph is not null.
-  //! \return `true` if the internal graph handle is null, otherwise `false`.
-  [[nodiscard]] _CCCL_HOST_API constexpr auto operator!() const noexcept -> bool
-  {
-    return !static_cast<bool>(*this);
-  }
-
   //! \brief Swaps the contents of this `graph` with another.
   //! \param __other The `graph` object to swap with.
   //! \throws None
   _CCCL_HOST_API constexpr void swap(graph& __other) noexcept
   {
-    _CUDA_VSTD::swap(__graph_, __other.__graph_);
+    _CUDA_VSTD::swap(__exec_, __other.__exec_);
   }
 
-  //! \brief Retrieves the underlying CUDA graph object.
-  //! \return The `cudaGraph_t` handle.
+  //! \brief Retrieves the underlying CUDA graph execution object.
+  //! \return The `cudaGraphExec_t` handle.
   //! \throws None
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get() const noexcept -> cudaGraphExec_t
   {
-    return __graph_;
+    return __exec_;
   }
 
-  //! \brief Releases ownership of the CUDA graph object.
-  //! \return The `cudaGraph_t` handle, leaving this object in a null state.
+  //! \brief Releases ownership of the CUDA graph execution object.
+  //! \return The `cudaGraphExec_t` handle, leaving this object in a null state.
   //! \throws None
   //! \post `get() == nullptr`
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraph_t
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto release() noexcept -> cudaGraphExec_t
   {
-    return _CUDA_VSTD::exchange(__graph_, nullptr);
+    return _CUDA_VSTD::exchange(__exec_, nullptr);
   }
 
-  //! \brief Resets the `graph` object, destroying the underlying CUDA graph object.
-  //! \throws cuda::std::cuda_error if `cudaGraphDestroy` fails.
+  //! \brief Resets the `graph` object, destroying the underlying CUDA graph execution object.
+  //! \throws cuda::std::cuda_error if `cudaGraphExecDestroy` fails.
   //! \post `get() == nullptr`
   _CCCL_HOST_API constexpr void reset() noexcept
   {
-    if (auto __graph = _CUDA_VSTD::exchange(__graph_, nullptr))
+    if (auto __exec = _CUDA_VSTD::exchange(__exec_, nullptr))
     {
-      _CCCL_ASSERT_CUDA_API(cudaGraphDestroy, "cudaGraphDestroy failed", __graph);
+      _CCCL_ASSERT_CUDA_API(cudaGraphExecDestroy, "cudaGraphDestroy failed", __exec);
     }
   }
 
-  //! \brief Constructs a `graph` object from a native CUDA graph handle.
-  //! \param __graph The native CUDA graph handle to construct the `graph` object from.
+  //! \brief Constructs a `graph` object from a native CUDA graph execution handle.
+  //! \param __exec The native CUDA graph execution handle to construct the `graph` object from.
   //! \throws None
-  //! \post `get() == __graph`
-  [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20 auto from_native_handle(cudaGraph_t __graph) noexcept
+  //! \post `get() == __exec`
+  [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20 auto from_native_handle(cudaGraphExec_t __exec) noexcept
     -> graph
   {
-    return graph{__graph};
+    return graph{__exec};
   }
 
-  //! \brief Adds a new root node to the graph.
-  //! \tparam _Node The type of the node to add.
-  //! \param __node The descriptor of the node to add to the graph.
-  //! \return A `graph_node_ref` representing the added node. The graph object owns the
-  //! new node.
-  //! \throws cuda::std::cuda_error if adding the node fails.
-  template <class _Node>
-  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto add(_Node __node) -> graph_node_ref
+  //! \brief Launches the CUDA graph execution object on the specified stream.
+  //! \param __stream The stream on which to launch the graph.
+  //! \throws cuda::std::cuda_error if `cudaGraphLaunch` fails.
+  _CCCL_HOST_API void launch(stream_ref __stream)
   {
-    // assert that the node descriptor is not returning an owning graph_node object, which
-    // would cause this function to return a dangling reference.
-    static_assert(_CUDA_VSTD::_IsSame<decltype(__node.__add_to_graph(__graph_)), graph_node_ref>::value,
-                  "node descriptors must return a graph_node_ref");
-    return __node.__add_to_graph(__graph_);
-  }
-
-  //! \brief Adds a new node to the graph with specified dependencies.
-  //!
-  //! This function creates a new node in the graph and establishes dependencies
-  //! between the newly created node and the provided dependency nodes.
-  //!
-  //! \tparam _Node The type of the node to be added.
-  //! \tparam _Extent The extent of the span representing the dependencies.
-  //!
-  //! \param __node The descriptor of the node to be added to the graph.
-  //! \param __deps An array of `cudaGraphNode_t` handles representing the dependencies of
-  //! the new node. Each node in this span will become a dependency of the newly created
-  //! node.
-  //!
-  //! \return A `graph_node_ref` object representing the newly created node in the graph.
-  //! The graph object owns the new node.
-  //!
-  //! \throws cuda::std::cuda_error If the CUDA API call `cudaGraphAddDependencies` fails.
-  //!
-  //! \details
-  //! - The function first creates a new node in the graph using the provided `_Node` object.
-  //! - It initializes an array of "dependant" nodes, where all dependant nodes correspond
-  //!   to the newly created node.
-  //! - The function then uses the CUDA API `cudaGraphAddDependencies` to establish the
-  //!   dependencies between the newly created node and the nodes provided in the `__deps`
-  //!   span.
-  //! - If the number of dependencies is small, a stack-allocated buffer is used;
-  //!   otherwise, a dynamically allocated array is used to store the dependant nodes.
-  template <class _Node, size_t _Np>
-  _CCCL_HOST_API constexpr auto add(_Node __node, _CUDA_VSTD::array<cudaGraphNode_t, _Np> __deps) -> graph_node_ref
-  {
-    return add(_CCCL_MOVE(__node), _CUDA_VSTD::span{__deps});
-  }
-
-  //! \overload
-  template <class _Node, size_t _Extent>
-  _CCCL_HOST_API constexpr auto add(_Node __node, _CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps) -> graph_node_ref
-  {
-    // Add the new node
-    auto __new_node = add(_CCCL_MOVE(__node));
-    __new_node.depends_on(__deps);
-    return __new_node;
-  }
-
-  //! \brief Instantiates the CUDA graph into a `graph_exec` object.
-  //! \return A `graph_exec` object representing the instantiated graph.
-  //! \throws cuda::std::cuda_error if `cudaGraphInstantiate` fails.
-  _CCCL_HOST_API auto instantiate() -> graph_exec
-  {
-    _CCCL_ASSERT(__graph_ != nullptr, "cannot instantiate a NULL graph");
-    graph_exec __exec;
-    _CCCL_TRY_CUDA_API(
-      cudaGraphInstantiate,
-      "cudaGraphInstantiate failed",
-      &__exec.__exec_, // output
-      __graph_, // graph to instantiate
-      0); // flags
-    return __exec;
+    _CCCL_TRY_CUDA_API(cudaGraphLaunch, "cudaGraphLaunch failed", __exec_, __stream.get());
   }
 
 private:
-  //! \brief Constructs a `graph` object from a native CUDA graph handle.
-  //! \param __graph The native CUDA graph handle to construct the `graph` object from.
+  friend struct graph_builder;
+
+  _CCCL_HIDE_FROM_ABI graph() = default;
+
+  //! \brief Constructs a `graph` object from a native CUDA graph execution handle.
+  //! \param __exec The native CUDA graph execution handle to construct the `graph` object from.
   //! \throws None
-  _CCCL_HOST_API explicit constexpr graph(cudaGraph_t __graph) noexcept
-      : __graph_{__graph}
+  _CCCL_HOST_API explicit constexpr graph(cudaGraphExec_t __exec) noexcept
+      : __exec_{__exec}
   {}
 
-  //! \brief Adds this graph as a child graph to the parent graph.
-  //! \param __parent The parent graph to which this graph will be added.
-  //! \return A `graph_node_ref` representing the added child graph.
-  //! \throws cuda::std::cuda_error if `cudaGraphAddChildGraphNode` fails.
-  [[nodiscard]] _CCCL_HOST_API auto __add_to_graph(cudaGraph_t __parent) -> graph_node_ref
-  {
-    graph_node_ref __child;
-    __child.__graph_ = __graph_;
-    _CCCL_ASSERT_CUDA_API(
-      cudaGraphAddChildGraphNode,
-      "cudaGraphAddChildGraphNode failed",
-      &__child.__node_, // output
-      __parent, // graph to which we are adding the child graph
-      nullptr, // dependencies
-      0, // number of dependencies
-      __graph_); // the child graph to add
-    return __child;
-  }
-
-  cudaGraph_t __graph_{};
+  cudaGraphExec_t __exec_ = nullptr; //!< The underlying CUDA graph execution handle.
 };
 } // namespace cuda::experimental
 
-#include <cuda/experimental/__execution/epilogue.cuh>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_GRAPH_GRAPH

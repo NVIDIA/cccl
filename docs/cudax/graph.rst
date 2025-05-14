@@ -17,15 +17,12 @@ This library is under construction and not yet ready for production use.
    :widths: 25 45 30
    :header-rows: 0
 
-   * - :ref:`<cuda/experimental/graph.cuh> <cudax-graph-graph>`
-     - Graph class
-     - cudax 2.9.0 / CCCL 2.9.0
-   * - :ref:`<cuda/experimental/graph.cuh> <cudax-graph-graph-node>`
-     - Graph node class
+   * - :ref:`<cuda/experimental/graph.cuh> <cudax-graph-graph-builder>`
+     - Class `cuda::experimental::graph_builder`: An owning wrapper for a `cudaGraph_t` object.
      - cudax 2.9.0 / CCCL 2.9.0
    * - :ref:`<cuda/experimental/graph.cuh> <cudax-graph-graph-node-ref>`
-     - Graph node reference class
+     - Class `cuda::experimental::graph_node_ref`: A non-owning wrapper for a `cudaGraphNode_t` object.
      - cudax 2.9.0 / CCCL 2.9.0
-   * - :ref:`<cuda/experimental/graph.cuh> <cudax-graph-graph-exec>`
-     - Graph executable class
+   * - :ref:`<cuda/experimental/graph.cuh> <cudax-graph-graph>`
+     - Class `cuda::experimental::graph`: An owning wrapper for a `cudaGraphExec_t` object.
      - cudax 2.9.0 / CCCL 2.9.0

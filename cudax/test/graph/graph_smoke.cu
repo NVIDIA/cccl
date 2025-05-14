@@ -15,47 +15,44 @@
 #include <testing.cuh>
 #include <utility.cuh>
 
-namespace cuda::experimental
-{
 namespace
 {
 
 // Empty node descriptor for testing
 struct empty_node_descriptor
 {
-  graph_node_ref __add_to_graph(cudaGraph_t graph) const
+  cuda::experimental::graph_node_ref __add_to_graph(cudaGraph_t graph, _CUDA_VSTD::span<cudaGraphNode_t> deps) const
   {
     cudaGraphNode_t node;
-    _CCCL_TRY_CUDA_API(cudaGraphAddEmptyNode, "cudaGraphAddEmptyNode failed", &node, graph, nullptr, 0);
-    return graph_node_ref{node, graph};
+    _CCCL_TRY_CUDA_API(cudaGraphAddEmptyNode, "cudaGraphAddEmptyNode failed", &node, graph, deps.data(), deps.size());
+    return cuda::experimental::graph_node_ref{node, graph};
   }
 };
 
 } // namespace
-} // namespace cuda::experimental
 
 C2H_TEST("can default construct a graph and destroy it", "[graph]")
 {
-  cuda::experimental::graph g;
+  cuda::experimental::graph_builder g;
   CUDAX_REQUIRE(g.get() != nullptr);
 }
 
 C2H_TEST("can create an empty node in a graph", "[graph]")
 {
-  cuda::experimental::graph g;
-  auto node = g.add(cuda::experimental::empty_node_descriptor{});
+  cuda::experimental::graph_builder g;
+  auto node = g.add(empty_node_descriptor{});
   CUDAX_REQUIRE(node.get() != nullptr);
   CUDAX_REQUIRE(node.type() == cuda::experimental::graph_node_type::empty);
 }
 
 C2H_TEST("can create multiple nodes and establish dependencies", "[graph]")
 {
-  cuda::experimental::graph g;
+  cuda::experimental::graph_builder g;
 
   // Create three empty nodes
-  auto node1 = g.add(cuda::experimental::empty_node_descriptor{});
-  auto node2 = g.add(cuda::experimental::empty_node_descriptor{});
-  auto node3 = g.add(cuda::experimental::empty_node_descriptor{});
+  auto node1 = g.add(empty_node_descriptor{});
+  auto node2 = g.add(empty_node_descriptor{});
+  auto node3 = g.add(empty_node_descriptor{});
 
   // Set up dependencies: node3 depends on node1 and node2
   node3.depends_on(node1, node2);
@@ -73,11 +70,11 @@ C2H_TEST("can create multiple nodes and establish dependencies", "[graph]")
 
 C2H_TEST("can instantiate and launch a graph", "[graph]")
 {
-  cuda::experimental::graph g;
+  cuda::experimental::graph_builder g;
 
   // Create a simple graph with two nodes
-  auto node1 = g.add(cuda::experimental::empty_node_descriptor{});
-  auto node2 = g.add(cuda::experimental::empty_node_descriptor{});
+  auto node1 = g.add(empty_node_descriptor{});
+  auto node2 = g.add(empty_node_descriptor{});
   node2.depends_on(node1);
 
   // Instantiate the graph
@@ -94,11 +91,11 @@ C2H_TEST("can instantiate and launch a graph", "[graph]")
 
 C2H_TEST("graph_node_ref comparison operators work correctly", "[graph]")
 {
-  cuda::experimental::graph g;
+  cuda::experimental::graph_builder g;
 
   // Create two nodes
-  auto node1 = g.add(cuda::experimental::empty_node_descriptor{});
-  auto node2 = g.add(cuda::experimental::empty_node_descriptor{});
+  auto node1 = g.add(empty_node_descriptor{});
+  auto node2 = g.add(empty_node_descriptor{}, cuda::experimental::depends_on(node1.get()));
 
   // Test equality operators
   CUDAX_REQUIRE(node1 == node1);
@@ -116,11 +113,11 @@ C2H_TEST("graph_node_ref comparison operators work correctly", "[graph]")
 
 C2H_TEST("graph_node_ref can be swapped", "[graph]")
 {
-  cuda::experimental::graph g;
+  cuda::experimental::graph_builder g;
 
   // Create two nodes
-  auto node1 = g.add(cuda::experimental::empty_node_descriptor{});
-  auto node2 = g.add(cuda::experimental::empty_node_descriptor{});
+  auto node1 = g.add(empty_node_descriptor{});
+  auto node2 = g.add(empty_node_descriptor{}, cuda::experimental::depends_on(node1));
 
   // Store original handles
   auto node1_handle = node1.get();
@@ -136,10 +133,10 @@ C2H_TEST("graph_node_ref can be swapped", "[graph]")
 
 C2H_TEST("graph_node_ref can be copied", "[graph]")
 {
-  cuda::experimental::graph g;
+  cuda::experimental::graph_builder g;
 
   // Create a node
-  auto node1        = g.add(cuda::experimental::empty_node_descriptor{});
+  auto node1        = g.add(empty_node_descriptor{});
   auto node1_handle = node1.get();
 
   // Move construct a new node
@@ -150,9 +147,8 @@ C2H_TEST("graph_node_ref can be copied", "[graph]")
   CUDAX_REQUIRE(node1.get() == node1_handle);
 
   // Test move assignment
-  auto node3        = g.add(cuda::experimental::empty_node_descriptor{});
-  auto node3_handle = node3.get();
-  node3             = std::move(node2);
+  auto node3 = g.add(empty_node_descriptor{});
+  node3      = std::move(node2);
 
   // Verify the source node is still valid (moving a node ref does not zero out the source)
   CUDAX_REQUIRE(node3.get() == node1_handle);

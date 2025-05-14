@@ -25,19 +25,19 @@
 
 #include <cuda_runtime_api.h>
 
-#include <cuda/experimental/__execution/prologue.cuh>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT graph;
-struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_node;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_node_ref;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT graph;
 
 template <class... _Nodes>
 _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
   -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>;
 } // namespace cuda::experimental
 
-#include <cuda/experimental/__execution/epilogue.cuh>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_GRAPH_FWD

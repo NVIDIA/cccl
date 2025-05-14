@@ -13,8 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/detail/libcxx/include/__config"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -27,18 +25,16 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__ranges/size.h>
-#include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/span>
 
-#include <cuda/experimental/__graph/depends_on.cuh>
 #include <cuda/experimental/__graph/fwd.cuh>
 #include <cuda/experimental/__graph/graph_node_type.cuh>
 
 #include <cuda_runtime_api.h>
 
-#include <cuda/experimental/__execution/prologue.cuh>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -215,7 +211,7 @@ struct graph_node_ref
   //! - If the number of dependencies is small, a stack-allocated buffer is used; otherwise,
   //!   a dynamically allocated array is used to store the dependant nodes.
   template <size_t _Extent>
-  _CCCL_HOST_API constexpr void depends_on(_CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps)
+  _CCCL_HOST_API _CCCL_CONSTEXPR_CXX23 void depends_on(_CUDA_VSTD::span<cudaGraphNode_t, _Extent> __deps)
   {
     _CCCL_ASSERT(__node_ != nullptr, "cannot add dependencies to a null graph node");
     if (!__deps.empty())
@@ -223,12 +219,11 @@ struct graph_node_ref
       // Initialize an array of "dependant" nodes that correspond to the dependencies. All
       // dependant nodes are __node_; thus, each node in __deps becomes a dependency of the
       // newly created node.
+      using __src_arr_t = _CUDA_VSTD::unique_ptr<cudaGraphNode_t[], void (*)(cudaGraphNode_t*) noexcept>;
       cudaGraphNode_t __small_buffer[_Extent == _CUDA_VSTD::dynamic_extent ? 4 : _Extent];
       bool const __is_small = __deps.size() <= _CUDA_VRANGES::size(__small_buffer);
-      auto const [__buffer, __deleter] =
-        __is_small ? _CUDA_VSTD::__pair{__small_buffer, &__noop_deleter}
-                   : _CUDA_VSTD::__pair{::new cudaGraphNode_t[__deps.size()], &__array_deleter};
-      _CUDA_VSTD::unique_ptr<cudaGraphNode_t[], decltype(__deleter)> __src_arr{__buffer, __deleter};
+      auto const __src_arr  = __is_small ? __src_arr_t{__small_buffer, &__noop_deleter}
+                                         : __src_arr_t{::new cudaGraphNode_t[__deps.size()], &__array_deleter};
       _CUDA_VSTD::fill(__src_arr.get(), __src_arr.get() + __deps.size(), __node_);
 
       // Add the dependencies using __src_arr array and the span of dependencies.
@@ -243,8 +238,15 @@ struct graph_node_ref
   }
 
 private:
-  friend struct graph;
-  friend struct graph_node;
+  friend struct graph_builder;
+
+  template <class... _Nodes>
+  friend _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&...) noexcept
+    -> _CUDA_VSTD::array<cudaGraphNode_t, sizeof...(_Nodes)>;
+
+  _CCCL_TRIVIAL_HOST_API explicit constexpr graph_node_ref(cudaGraphNode_t __node) noexcept
+      : __node_{__node}
+  {}
 
   _CCCL_HOST_API static constexpr void __noop_deleter(cudaGraphNode_t*) noexcept {}
   _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20_ALLOCATION void __array_deleter(cudaGraphNode_t* __ptr) noexcept
@@ -252,11 +254,11 @@ private:
     delete[] __ptr;
   }
 
-  cudaGraphNode_t __node_{}; ///< The CUDA graph node.
-  cudaGraph_t __graph_{}; ///< The CUDA graph containing the node.
+  cudaGraphNode_t __node_ = nullptr; ///< The CUDA graph node.
+  cudaGraph_t __graph_    = nullptr; ///< The CUDA graph containing the node.
 };
 } // namespace cuda::experimental
 
-#include <cuda/experimental/__execution/epilogue.cuh>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_GRAPH_GRAPH_NODE_REF

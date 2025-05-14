@@ -23,7 +23,7 @@
 
 #include <cuda_runtime_api.h>
 
-#include <cuda/experimental/__execution/prologue.cuh>
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -98,6 +98,6 @@ enum class graph_node_type : int
 
 } // namespace cuda::experimental
 
-#include <cuda/experimental/__execution/epilogue.cuh>
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_GRAPH_GRAPH_NODE_TYPE
