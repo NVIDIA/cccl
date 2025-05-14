@@ -180,10 +180,10 @@ C2H_TEST("make_async_buffer variants", "[container][async_buffer]")
   static_assert(_CUDA_VMR::resource_with<typename decltype(buf3)::__resource_t, other_property>);
   static_assert(!_CUDA_VMR::resource_with<typename decltype(buf3)::__resource_t, cuda::mr::host_accessible>);
 
-  auto buf4 = cudax::make_async_buffer<int, cuda::mr::device_accessible>(input.get_stream(), any_res, input);
+  auto buf4 = cudax::make_async_buffer<int, cuda::mr::device_accessible>(input.get_stream(), {any_res}, input);
   CUDAX_CHECK(equal_range(buf4));
   static_assert(_CUDA_VMR::resource_with<typename decltype(buf4)::__resource_t, cuda::mr::device_accessible>);
-  static_assert(_CUDA_VMR::resource_with<typename decltype(buf4)::__resource_t, other_property>);
+  static_assert(!_CUDA_VMR::resource_with<typename decltype(buf4)::__resource_t, other_property>);
   static_assert(!_CUDA_VMR::resource_with<typename decltype(buf4)::__resource_t, cuda::mr::host_accessible>);
 
   // from a resource reference
