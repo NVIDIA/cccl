@@ -640,7 +640,7 @@ template <class _Tp>
 using async_host_buffer = async_buffer<_Tp, _CUDA_VMR::host_accessible>;
 
 template <class _Tp, class _PropsList>
-using __buffer_type_for_props = _CUDA_VSTD::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
+using __buffer_type_for_props = typename _CUDA_VSTD::remove_reference_t<_PropsList>::template rebind<async_buffer, _Tp>;
 
 template <typename _BufferTo, typename _BufferFrom>
 void __copy_cross_buffers(stream_ref __stream, _BufferTo& __to, const _BufferFrom& __from)
