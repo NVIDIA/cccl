@@ -38,6 +38,9 @@ struct indirect_arg_t
   }
 };
 
+template <typename U>
+concept Increment64 = std::is_integral_v<U> && sizeof(U) == sizeof(int64_t);
+
 struct indirect_iterator_t
 {
   void* ptr;
@@ -66,7 +69,7 @@ struct indirect_iterator_t
     return ptr;
   }
 
-  template <typename U, std::enable_if_t<std::is_integral_v<U> && sizeof(U) == sizeof(int64_t), int> = 0>
+  template <Increment64 U>
   void operator+=(U offset)
   {
     if (value_size)
