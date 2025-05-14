@@ -6,7 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: apple-clang-9
 // <chrono>
 
 // template <class Duration> class hh_mm_ss;
