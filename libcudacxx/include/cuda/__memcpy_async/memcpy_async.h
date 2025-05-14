@@ -22,17 +22,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__barrier/aligned_size.h>
-#include <cuda/__barrier/async_contract_fulfillment.h>
-#include <cuda/__barrier/barrier.h>
-#include <cuda/__barrier/barrier_block_scope.h>
-#include <cuda/__barrier/barrier_thread_scope.h>
-#include <cuda/__memcpy_async/memcpy_async_barrier.h>
-#include <cuda/std/__atomic/scopes.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/cstddef>
+#if _CCCL_HAS_CUDA_COMPILER()
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/__barrier/aligned_size.h>
+#  include <cuda/__barrier/async_contract_fulfillment.h>
+#  include <cuda/__barrier/barrier.h>
+#  include <cuda/__barrier/barrier_block_scope.h>
+#  include <cuda/__barrier/barrier_thread_scope.h>
+#  include <cuda/__memcpy_async/memcpy_async_barrier.h>
+#  include <cuda/std/__atomic/scopes.h>
+#  include <cuda/std/__type_traits/void_t.h>
+#  include <cuda/std/cstddef>
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -161,6 +163,8 @@ memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_S
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 #endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_H_
