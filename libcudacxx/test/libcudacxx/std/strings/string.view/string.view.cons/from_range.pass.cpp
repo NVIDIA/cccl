@@ -59,11 +59,7 @@ __host__ __device__ constexpr void test_from_range()
 
   // 1. test construction from cuda::std::array
   {
-    cuda::std::array<CharT, TB::range_size()> arr{};
-    for (cuda::std::size_t i = 0; i < arr.size(); ++i)
-    {
-      arr[i] = TB::range_data()[i];
-    }
+    cuda::std::array<CharT, 3> arr{TEST_CHARLIT(CharT, 'f'), TEST_CHARLIT(CharT, 'o'), TEST_CHARLIT(CharT, 'o')};
     auto sv = SV(arr);
 
     static_assert(cuda::std::is_same_v<decltype(sv), SV>);
@@ -115,6 +111,10 @@ __host__ __device__ constexpr void test_from_range()
   }
 
   // 4. test construction from a type with a deleted conversion operator
+  // disabled for nvc++ with char16_t and char32_t, see nvbug 5277567
+#if _CCCL_COMPILER(NVHPC)
+  if constexpr (!cuda::std::is_same_v<CharT, char16_t> && !cuda::std::is_same_v<CharT, char32_t>)
+#endif // _CCCL_COMPILER(NVHPC)
   {
     struct DeletedConversionOperator : TB
     {
@@ -137,6 +137,10 @@ __host__ __device__ constexpr void test_from_range()
   }
 
   // 5. test construction from a type with a deleted const conversion operator
+  // disabled for nvc++ with char16_t and char32_t, see nvbug 5277567
+#if _CCCL_COMPILER(NVHPC)
+  if constexpr (!cuda::std::is_same_v<CharT, char16_t> && !cuda::std::is_same_v<CharT, char32_t>)
+#endif // _CCCL_COMPILER(NVHPC)
   {
     struct DeletedConstConversionOperator : TB
     {
