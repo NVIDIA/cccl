@@ -231,6 +231,12 @@ public:
 
     // nvtx_range r("optimize");
 
+    // This is a list of shared_ptr to events, we want to sort by events
+    // ID, not by addresses of the ptr
+    ::std::sort(payload.begin(), payload.end(), [](auto& a, auto& b) {
+       return *a < *b;
+    });
+
     // All items will have the same (derived) event type as the type of the front element.
     // If the type of the event does not implement a factorize method, a
     // false value is returned (eg. with cudaGraphs)
@@ -238,12 +244,8 @@ public:
 
     if (!factorized)
     {
-      // This is a list of shared_ptr to events, we want to sort by events
-      // ID, not by addresses of the ptr
-      ::std::sort(payload.begin(), payload.end(), [](auto& a, auto& b) {
-        return *a < *b;
-      });
-      auto new_end = unstable_unique(payload.begin(), payload.end(), [](auto& a, auto& b) {
+      // Note that the list was already sorted above so we can call unique directly
+      auto new_end = ::std::unique(payload.begin(), payload.end(), [](auto& a, auto& b) {
         return *a == *b;
       });
       // Erase the "undefined" elements at the end of the container
