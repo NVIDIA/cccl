@@ -26,6 +26,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Helper class to allocate memory using an Allocator in an exception safe
@@ -92,5 +94,7 @@ private:
 _CCCL_NV_DIAG_DEFAULT(2659)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ALLOCATION_GUARD_H

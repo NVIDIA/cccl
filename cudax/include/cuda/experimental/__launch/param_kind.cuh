@@ -25,6 +25,8 @@
 
 #include <cuda/experimental/__detail/utility.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 namespace detail
@@ -81,5 +83,7 @@ _CCCL_GLOBAL_CONSTANT detail::__out_t out{};
 _CCCL_GLOBAL_CONSTANT detail::__inout_t inout{};
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__LAUNCH_PARAM_KIND

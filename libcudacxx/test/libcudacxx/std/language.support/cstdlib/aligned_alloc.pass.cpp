@@ -16,8 +16,9 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include <nv/target>
+
+#include "test_macros.h"
 
 TEST_DIAG_SUPPRESS_MSVC(4324) // padding was added at the end of a structure because of an alignment specifier
 

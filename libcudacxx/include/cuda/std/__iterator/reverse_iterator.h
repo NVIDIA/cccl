@@ -52,6 +52,8 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Iter, class = void>
@@ -68,6 +70,8 @@ template <class _Iter, class _Iter2>
 inline constexpr bool __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
   is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
   && noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
+
+_LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Iter>
@@ -249,6 +253,8 @@ public:
     return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
 };
+
+_LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(reverse_iterator)
 
 template <class _Iter>
 struct __is_reverse_iterator : false_type
@@ -603,5 +609,7 @@ struct __unwrap_iter_impl<__unconstrained_reverse_iterator<__unconstrained_rever
 #endif // _CCCL_STD_VER > 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_REVERSE_ITERATOR_H

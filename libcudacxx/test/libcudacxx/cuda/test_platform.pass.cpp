@@ -8,8 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "test_macros.h"
 #include <nv/target>
+
+#include "test_macros.h"
 
 #if !TEST_COMPILER(NVRTC)
 #  include <assert.h>
@@ -20,7 +21,7 @@
 
 __host__ __device__ void test()
 {
-  constexpr int arch_val = _CCCL_PTX_ARCH;
+  constexpr int arch_val = _CCCL_PTX_ARCH();
 
   // This test ensures that the fallthrough cases are not invoked.
   // SM_80 would imply that SM_72 is available, yet it should not be expanded by the macro

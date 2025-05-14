@@ -73,8 +73,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-#include "test_macros.h"
 #include <cmpxchg_loop.h>
+
+#include "test_macros.h"
 #if !TEST_COMPILER(MSVC)
 #  include "placement_new.h"
 #endif // !TEST_COMPILER(MSVC)

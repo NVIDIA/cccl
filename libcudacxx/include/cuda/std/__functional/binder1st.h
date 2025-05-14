@@ -23,6 +23,8 @@
 
 #include <cuda/std/__functional/unary_function.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
@@ -67,5 +69,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #endif // defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_BINDER1ST_H

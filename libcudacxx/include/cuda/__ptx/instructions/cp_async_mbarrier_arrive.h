@@ -28,11 +28,15 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 #include <cuda/__ptx/instructions/generated/cp_async_mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/generated/cp_async_mbarrier_arrive_noinc.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_CP_ASYNC_MBARRIER_ARRIVE_H_

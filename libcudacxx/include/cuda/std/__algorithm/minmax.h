@@ -27,6 +27,8 @@
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/initializer_list>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_EXEC_CHECK_DISABLE
@@ -63,5 +65,7 @@ template <class _Tp>
 #endif // _LIBCUDACXX_CXX03_LANG
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MINMAX_H

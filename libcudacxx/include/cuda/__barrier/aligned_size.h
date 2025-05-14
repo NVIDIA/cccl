@@ -23,6 +23,8 @@
 
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <_CUDA_VSTD::size_t _Alignment>
@@ -41,5 +43,7 @@ struct aligned_size_t
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_ALIGNED_SIZE_H

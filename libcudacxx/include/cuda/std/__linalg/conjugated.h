@@ -36,6 +36,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/mdspan>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
@@ -132,5 +134,7 @@ conjugated(mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAc
 } // end namespace linalg
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP

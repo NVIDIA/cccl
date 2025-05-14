@@ -32,6 +32,8 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -82,5 +84,7 @@ _CCCL_CONCEPT __pair_like = _CCCL_REQUIRES_EXPR((_Tp)) //
 #endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TUPLE_TUPLE_LIKE_H

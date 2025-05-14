@@ -19,6 +19,8 @@
 #include <string_view> // std::string_view
 #include <type_traits> // std::is_same_v
 
+#include <stdio.h> // printf
+
 #include "kernels/iterators.h"
 #include "kernels/operators.h"
 #include "util/context.h"
@@ -29,7 +31,6 @@
 #include <cccl/c/types.h> // cccl_type_info
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
-#include <stdio.h> // printf
 
 struct op_wrapper;
 struct device_segmented_reduce_policy;

@@ -7,8 +7,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
-
-// UNSUPPORTED: pre-sm-70
 // NVRTC does not do host side testing
 // UNSUPPORTED: nvrtc
 

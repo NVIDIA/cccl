@@ -11,8 +11,9 @@
 #include <cuda/experimental/container.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
-#include "test_resource.cuh"
 #include <testing.cuh>
+
+#include "test_resource.cuh"
 
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource]", big_resource, small_resource)
 {

@@ -31,6 +31,8 @@
 
 #include <nv/target>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
@@ -51,5 +53,7 @@ __try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_complet
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_TRY_GET_BARRIER_HANDLE_H

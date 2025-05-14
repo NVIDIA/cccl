@@ -31,7 +31,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -111,6 +111,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_CMP_H

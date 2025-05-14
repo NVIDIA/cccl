@@ -31,6 +31,8 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char __to_chars_value_to_char(int __v, int __base) noexcept
@@ -140,5 +142,7 @@ to_chars(char* __first, char* __last, char __value, int __base = 10) noexcept
 _LIBCUDACXX_HIDE_FROM_ABI constexpr to_chars_result to_chars(char*, char*, bool, int = 10) noexcept = delete;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CHARCONV_TO_CHARS_H

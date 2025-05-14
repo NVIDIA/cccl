@@ -27,6 +27,8 @@
 #include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if CUDART_VERSION >= 12050
 namespace cuda::experimental
 {
@@ -85,4 +87,7 @@ private:
 };
 } // namespace cuda::experimental
 #endif // CUDART_VERSION >= 12050
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX

@@ -24,6 +24,8 @@
 #include <cuda/__mdspan/restrict_accessor.h>
 #include <cuda/std/mdspan>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _ElementType,
@@ -43,5 +45,7 @@ template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
 inline constexpr bool is_restrict_mdspan_v<_CUDA_VSTD::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_restrict_accessor_v<_Ap>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MDSPAN_RESTRICT_MDSPAN

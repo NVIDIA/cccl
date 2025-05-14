@@ -32,13 +32,15 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#include <array>
 #include <numeric>
+
+#include <test_util.h>
 
 #include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
 #include <c2h/operator.cuh>
-#include <test_util.h>
 
 /***********************************************************************************************************************
  * Constants

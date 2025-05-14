@@ -20,11 +20,12 @@
 #include <string_view>
 #include <utility>
 
+#include <errno.h>
+#include <unistd.h>
+
 #include "test_allocator.h"
 #include "test_macros.h"
-#include <errno.h>
 #include <sys/wait.h>
-#include <unistd.h>
 
 #ifndef _LIBCUDACXX_VERSION
 #  error "This header may only be used for libc++ tests"

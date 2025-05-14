@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_ARRAY_EXTENT) && !defined(_LIBCUDACXX_USE_ARRAY_EXTENT_FALLBACK)
@@ -60,5 +62,7 @@ inline constexpr size_t extent_v = extent<_Tp, _Ip>::value;
 #endif // !_CCCL_BUILTIN_ARRAY_EXTENT
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_EXTENT_H

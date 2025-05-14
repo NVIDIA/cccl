@@ -33,6 +33,8 @@
 #  include <iterator>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_COMPILER(MSVC)
@@ -111,5 +113,7 @@ using __select_traits =
 #endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_PRIMARY_TEMPLATE_H

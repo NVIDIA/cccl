@@ -20,8 +20,8 @@
 #include "unique_ptr_test_helper.h"
 
 #if !TEST_COMPILER(NVRTC) // no dynamic initialization
-_LIBCUDACXX_SAFE_STATIC cuda::std::unique_ptr<int> global_static_unique_ptr_single(nullptr);
-_LIBCUDACXX_SAFE_STATIC cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime(nullptr);
+_CCCL_CONSTINIT cuda::std::unique_ptr<int> global_static_unique_ptr_single(nullptr);
+_CCCL_CONSTINIT cuda::std::unique_ptr<int[]> global_static_unique_ptr_runtime(nullptr);
 #endif // TEST_COMPILER(NVRTC)
 
 struct NonDefaultDeleter
@@ -75,7 +75,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX23 void test_sfinae()
   }
 }
 
-#ifndef __CUDACC__
+#if !_CCCL_CUDA_COMPILATION()
 DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
   {
     doIncompleteTypeTest(0, nullptr);
@@ -94,7 +94,7 @@ DEFINE_AND_RUN_IS_INCOMPLETE_TEST({
   }
   checkNumIncompleteTypeAlive(0);
 })
-#endif // __CUDACC__
+#endif // !_CCCL_CUDA_COMPILATION()
 
 __host__ __device__ TEST_CONSTEXPR_CXX23 bool test()
 {

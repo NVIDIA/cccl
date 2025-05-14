@@ -24,6 +24,8 @@
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __exception_guard is a helper class for writing code with the strong exception guarantee.
@@ -154,5 +156,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __exception_guard<_Rollback> __make_exceptio
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_EXCEPTION_GUARD_H

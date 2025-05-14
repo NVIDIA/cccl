@@ -27,6 +27,8 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 _CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& __b)
@@ -35,6 +37,8 @@ _CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_s
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_HAS_CUDA_COMPILER()
 

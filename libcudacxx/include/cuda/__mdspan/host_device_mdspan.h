@@ -24,6 +24,8 @@
 #include <cuda/__mdspan/host_device_accessor.h>
 #include <cuda/std/mdspan>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <typename _ElementType,
@@ -55,5 +57,7 @@ template <typename _Tp, typename _Ep, typename _Lp, typename _Ap>
 inline constexpr bool is_device_accessible_v<_CUDA_VSTD::mdspan<_Tp, _Ep, _Lp, _Ap>> = is_device_accessible_v<_Ap>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___MDSPAN_HOST_DEVICE_MDSPAN

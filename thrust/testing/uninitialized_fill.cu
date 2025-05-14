@@ -3,6 +3,7 @@
 #include <thrust/uninitialized_fill.h>
 
 #include <nv/target>
+
 #include <unittest/unittest.h>
 
 template <typename ForwardIterator, typename T>

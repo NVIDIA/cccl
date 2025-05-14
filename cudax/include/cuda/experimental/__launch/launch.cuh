@@ -10,14 +10,16 @@
 
 #ifndef _CUDAX__LAUNCH_LAUNCH
 #define _CUDAX__LAUNCH_LAUNCH
-#include <cuda_runtime.h>
-
 #include <cuda/std/__exception/cuda_error.h>
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__launch/configuration.cuh>
 #include <cuda/experimental/__launch/launch_transform.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <cuda_runtime.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
@@ -270,4 +272,7 @@ void launch(::cuda::stream_ref stream,
 
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__LAUNCH_LAUNCH

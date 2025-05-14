@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-25 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,6 +25,8 @@
 #include <cuda/std/__functional/perfect_forward.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/forward.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -48,7 +50,7 @@ struct __compose_op
 template <class _Fn1, class _Fn2>
 struct __compose_t : __perfect_forward<__compose_op, _Fn1, _Fn2>
 {
-  using __perfect_forward<__compose_op, _Fn1, _Fn2>::__perfect_forward;
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__compose_t, __perfect_forward, __compose_op, _Fn1, _Fn2);
 };
 
 template <class _Fn1, class _Fn2>
@@ -61,5 +63,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __compose(_Fn1&& __f1, _Fn2&& __f2) noe
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_COMPOSE_H

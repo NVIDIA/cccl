@@ -42,6 +42,8 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -91,6 +93,8 @@ _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _
 template <class _Iter>
 inline constexpr bool __noexcept_move_iter_iter_move = noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
 #endif // _CCCL_NO_CONCEPTS
+
+_LIBCUDACXX_BEGIN_HIDDEN_FRIEND_NAMESPACE
 
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator : public __move_iter_category_base<_Iter>
@@ -300,6 +304,7 @@ public:
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
+_LIBCUDACXX_END_HIDDEN_FRIEND_NAMESPACE(move_iterator)
 
 // Some compilers have issues determining _IsFancyPointer
 #if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
@@ -390,5 +395,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter> make_move_iterator(_Ite
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H

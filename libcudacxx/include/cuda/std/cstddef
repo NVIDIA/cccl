@@ -21,12 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #include <cuda/std/__cstddef/byte.h>
 #include <cuda/std/__cstddef/types.h>
 #include <cuda/std/version>
-
-_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_CSTDDEF

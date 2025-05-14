@@ -63,6 +63,8 @@ __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_sta
   // "Compute" tile aggregate
   MessageT tile_aggregate = tile_data[tile_idx];
 
+  __syncthreads();
+
   if (tile_idx == 0)
   {
     // There are no blocks to look back to, immediately set the inclusive state
@@ -125,7 +127,8 @@ C2H_TEST("Decoupled look-back works with various message types", "[decoupled loo
   using scan_tile_state_t = cub::ScanTileState<message_t>;
 
   constexpr int max_tiles = 1024 * 1024;
-  const int num_tiles     = GENERATE_COPY(take(10, random(1, max_tiles)));
+  // Use c2h::adjust_seed_count to reduce the number of runs when using sanitizers:
+  const int num_tiles = GENERATE_COPY(take(c2h::adjust_seed_count(10), random(1, max_tiles)));
 
   c2h::device_vector<message_t> tile_data(num_tiles);
   message_t* d_tile_data = thrust::raw_pointer_cast(tile_data.data());

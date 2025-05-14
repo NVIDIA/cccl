@@ -8,9 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: pre-sm-70
-// UNSUPPORTED: !nvcc
-
 #include "utils.h"
 
 __host__ __device__ __noinline__ void test_access_property_fail()

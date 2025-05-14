@@ -25,10 +25,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+
 #include <cuda.h>
 #include <cuda_runtime.h>
-
-#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 namespace cuda::experimental::stf
 {

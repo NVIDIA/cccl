@@ -28,6 +28,8 @@
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
@@ -132,5 +134,7 @@ struct make_signed
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_MAKE_SIGNED_H

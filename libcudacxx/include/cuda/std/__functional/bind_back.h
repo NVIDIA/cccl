@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-25 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,6 +33,8 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/tuple>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _NBound, class = make_index_sequence<_NBound>>
@@ -59,7 +61,8 @@ struct __bind_back_op<_NBound, index_sequence<_Ip...>>
 template <class _Fn, class _BoundArgs>
 struct __bind_back_t : __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>
 {
-  using __perfect_forward<__bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs>::__perfect_forward;
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+    __bind_back_t, __perfect_forward, __bind_back_op<tuple_size_v<_BoundArgs>>, _Fn, _BoundArgs);
 };
 
 template <class _Fn,
@@ -79,5 +82,7 @@ __bind_back(_Fn&& __f, _Args&&... __args) noexcept(noexcept(__bind_back_t<decay_
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_BIND_BACK_H

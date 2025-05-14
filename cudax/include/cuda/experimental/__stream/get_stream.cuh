@@ -21,16 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
+
+#include <cuda_runtime_api.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -82,5 +83,7 @@ struct get_stream_t
 _CCCL_GLOBAL_CONSTANT auto get_stream = get_stream_t{};
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__STREAM_GET_STREAM

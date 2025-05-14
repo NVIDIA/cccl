@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda.h>
-
 #include <cuda/experimental/__device/arch_traits.cuh>
 #include <cuda/experimental/__device/attributes.cuh>
 #include <cuda/experimental/__device/device_ref.cuh>
@@ -30,6 +28,10 @@
 
 #include <cassert>
 #include <mutex>
+
+#include <cuda.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -157,5 +159,7 @@ namespace detail
 } // namespace detail
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE

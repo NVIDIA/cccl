@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__fwd/allocator.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__memory/pointer_traits.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -38,7 +39,7 @@
 #include <cuda/std/cstring>
 #include <cuda/std/limits>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _CCCL_NV_DIAG_SUPPRESS(1215)
 
@@ -300,9 +301,6 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 template <class _Tp>
 struct __is_default_allocator : false_type
 {};
-
-template <class>
-class allocator;
 
 template <class _Tp>
 struct __is_default_allocator<allocator<_Tp>> : true_type
@@ -566,6 +564,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_NV_DIAG_DEFAULT(1215)
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ALLOCATOR_TRAITS_H

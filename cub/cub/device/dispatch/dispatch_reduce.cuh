@@ -60,8 +60,6 @@
 
 #include <cuda/std/functional>
 
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::reduce
@@ -997,6 +995,26 @@ struct DispatchSegmentedReduce
 namespace detail::reduce
 {
 
+// @brief Functor to generate a key-value pair from an index and value
+template <typename Iterator, typename OutputValueT>
+struct generate_idx_value
+{
+private:
+  Iterator it;
+  int segment_size;
+
+public:
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
+      : it(it)
+      , segment_size(segment_size)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
+  {
+    return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
+  }
+};
+
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -1010,7 +1028,7 @@ struct DeviceFixedSizeSegmentedReduceKernelSource
     FixedSizeSegmentedReduceKernel,
     DeviceFixedSizeSegmentedReduceKernel<MaxPolicyT, InputIteratorT, OutputIteratorT, OffsetT, ReductionOpT, InitT, AccumT>)
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t AccumSize()
+  CUB_RUNTIME_FUNCTION static constexpr ::cuda::std::size_t AccumSize()
   {
     return sizeof(AccumT);
   }

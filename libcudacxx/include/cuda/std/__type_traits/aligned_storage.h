@@ -25,6 +25,8 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -141,5 +143,7 @@ _CREATE_ALIGNED_STORAGE_SPECIALIZATION(0x4000);
 #undef _CREATE_ALIGNED_STORAGE_SPECIALIZATION
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_ALIGNED_STORAGE_H

@@ -26,6 +26,8 @@
 
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 //! @brief The default alignment by a cudaMalloc{...} call
@@ -63,6 +65,8 @@ inline constexpr bool __contains_execution_space_property =
   __is_host_accessible<_Properties...> || __is_device_accessible<_Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

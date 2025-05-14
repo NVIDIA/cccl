@@ -146,17 +146,13 @@ public:
 
     while (true)
     {
-#if defined(__CUDA_ARCH__)
-      uint32_t prev = atomicCAS(&addr[slot].key, reserved::kEmpty, key);
-#else
-      uint32_t prev = addr[slot].key;
-#endif
+      uint32_t prev;
+      NV_IF_ELSE_TARGET(
+        NV_IS_DEVICE, (prev = atomicCAS(&addr[slot].key, reserved::kEmpty, key);), (prev = addr[slot].key;))
       if (prev == reserved::kEmpty || prev == key)
       {
         addr[slot].value = value;
-#if !defined(__CUDA_ARCH__)
-        addr[slot].key = key;
-#endif
+        NV_IF_TARGET(NV_IS_HOST, (addr[slot].key = key;))
         // printf("INSERT VALUE %d key %d at slot %d\n", value, key, slot);
         return;
       }

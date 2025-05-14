@@ -26,6 +26,8 @@
 #include <cuda/std/__new_>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // __builtin_new_allocator -- A non-templated helper for allocating and
@@ -79,5 +81,7 @@ struct __builtin_new_allocator
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_BUILTIN_NEW_ALLOCATOR_H

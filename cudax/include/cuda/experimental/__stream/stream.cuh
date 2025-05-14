@@ -12,6 +12,7 @@
 #define _CUDAX__STREAM_STREAM
 
 #include <cuda/std/detail/__config>
+
 #include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -28,6 +29,8 @@
 #include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -154,5 +157,7 @@ private:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__STREAM_STREAM
