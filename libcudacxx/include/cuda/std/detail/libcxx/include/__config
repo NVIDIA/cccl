@@ -55,7 +55,7 @@ extern "C++" {
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
 #  endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
 
-#  if _CCCL_CUDA_COMPILATION()
+#  if _CCCL_HAS_CUDA_COMPILER()
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
 #  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
@@ -164,9 +164,9 @@ extern "C++" {
 // #  endif // _CCCL_CUDACC_BELOW(12, 2)
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_CUDA_COMPILATION()
+#  if _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
-#  endif
+#  endif // _CCCL_HAS_CUDA_COMPILER() || _CCCL_COMPILER(NVHPC)
 
 #  if (!defined(_LIBCUDACXX_HAS_C_ATOMIC_IMP) && !defined(_LIBCUDACXX_HAS_GCC_ATOMIC_IMP) \
        && !_LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP())

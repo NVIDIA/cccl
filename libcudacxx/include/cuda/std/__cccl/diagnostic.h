@@ -90,7 +90,7 @@
 #endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) && !_CCCL_COMPILER(MSVC)
 
 // Enable us to selectively silence cuda compiler warnings
-#if _CCCL_CUDA_COMPILATION()
+#if _CCCL_HAS_CUDA_COMPILER()
 #  if _CCCL_CUDA_COMPILER(CLANG)
 #    define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #    define _CCCL_NV_DIAG_DEFAULT(_WARNING)
@@ -114,10 +114,10 @@
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(diag_default _WARNING)
 #    endif // !_CCCL_COMPILER(GCC)
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
-#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
+#else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
 #  define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
-#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
+#endif // ^^^ !_CCCL_HAS_CUDA_COMPILER() ^^^
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_HAS_PRAGMA_MSVC_WARNING
