@@ -111,7 +111,7 @@ def test_segmented_reduce_struct_type():
     np.testing.assert_equal(expected["g"], d_out.get()["g"])
 
 
-def test_large_num_segments():
+def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     """
     This test builds input iterator as transformation
     over counting iterator by a function
@@ -122,13 +122,15 @@ def test_large_num_segments():
     F(end_offset[k] + 1) - F(start_offset[k]) % 7
     """
 
-    def make_difference(idx: np.int64) -> np.int8:
-        def Fu(idx: np.int64) -> np.int8:
-            i8 = np.int8(idx % 5) + np.int8(idx % 3)
-            f = (i8 * (i8 + 1)) % 7
+    def make_difference(idx: np.int64) -> np.uint8:
+        p = np.uint8(7)
+
+        def Fu(idx: np.int64) -> np.uint8:
+            i8 = np.uint8(idx % 5) + np.uint8(idx % 3)
+            f = (i8 * (i8 + 1)) % p
             return f
 
-        return (Fu(idx + 1) - Fu(idx)) % 7
+        return (Fu(idx + 1) - Fu(idx)) % p
 
     input_it = iterators.TransformIterator(
         iterators.CountingIterator(np.int64(0)), make_difference
@@ -149,22 +151,19 @@ def test_large_num_segments():
     end_offsets = start_offsets + 1
 
     num_segments = (2**15 + 2**3) * 2**16
-    res = cp.full(num_segments, fill_value=-1, dtype=cp.int8)
+    try:
+        res = cp.full(num_segments, fill_value=127, dtype=cp.uint8)
+    except cp.cuda.memory.OutOfMemoryError:
+        pytest.skip("Insufficient memory to run the large number of segments test")
     assert res.size == num_segments
 
-    def my_add(a, b):
-        return (a + b) % 7
+    def my_add(a: np.uint8, b: np.uint8) -> np.uint8:
+        return (a + b) % np.uint8(7)
 
-    h_init = np.zeros(tuple(), dtype=np.int8)
+    h_init = np.zeros(tuple(), dtype=np.uint8)
     alg = algorithms.segmented_reduce(
         input_it, res, start_offsets, end_offsets, my_add, h_init
     )
-
-    # band-aid solution for setting of host advance function
-    # f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
-    # alg.start_offsets_in_cccl.host_advance_fn = f1
-    # f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
-    # alg.end_offsets_in_cccl.host_advance_fn = f2
 
     temp_storage_bytes = alg(
         None, input_it, res, num_segments, start_offsets, end_offsets, h_init
@@ -175,14 +174,38 @@ def test_large_num_segments():
         d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
     )
 
-    iota = cp.arange(
-        (num_segments + 1) * segment_size, step=segment_size, dtype=cp.int64
-    )
-    i = cp.asarray(iota % 5, dtype=cp.int8) + cp.asarray(iota % 3, dtype=cp.int8)
-    assert cp.all(res == cp.diff(i * (i + 1) % 7) % 7)
+    # Validation
+
+    def get_expected_value(k: np.int64) -> np.uint8:
+        i = np.uint8(k % 5) + np.uint8(k % 3)
+        k1 = (k % 15) + (segment_size % 15)
+        i1 = np.uint8(k1 % 5) + np.uint8(k1 % 3)
+        p = np.uint8(7)
+        v1 = np.uint8((i1 * (i1 + 1)) % p)
+        v = np.uint8((i * (i + 1)) % p)
+        return (v1 + (p - v)) % p
+
+    # reset the iterator since it has been mutated by being incremented on host
+    start_offsets.cvalue = type(start_offsets.cvalue)(offset0)
+    expected = iterators.TransformIterator(start_offsets, get_expected_value)
+
+    def cmp_op(a: np.uint8, b: np.uint8) -> np.uint8:
+        return np.uint8(1) if (a == b) else np.uint8(0)
+
+    validate = cp.zeros(2**20, dtype=np.uint8)
+    cmp_fn = algorithms.binary_transform(res, expected, validate, cmp_op)
+
+    id = 0
+    while id < res.size:
+        id_next = min(id + validate.size, res.size)
+        num_items = id_next - id
+        cmp_fn(res[id:], expected + id, validate, num_items)
+        assert id == (expected + id).cvalue.value
+        assert cp.all(validate[:num_items].view(np.bool_))
+        id = id_next
 
 
-def test_large_num_segments3():
+def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     """
     Test with large num_segments > INT_MAX
 
@@ -231,19 +254,16 @@ def test_large_num_segments3():
         return a + b
 
     num_segments = (2**15 + 2**3) * 2**16
-    res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
+    try:
+        res = cp.full(num_segments, fill_value=-1, dtype=cp.int16)
+    except cp.cuda.memory.OutOfMemoryError:
+        pytest.skip("Insufficient memory to run the large number of segments test")
     assert res.size == num_segments
 
     h_init = np.zeros(tuple(), dtype=np.int16)
     alg = algorithms.segmented_reduce(
         input_it, res, start_offsets, end_offsets, _plus, h_init
     )
-
-    # band-aid solution for setting of host advance function
-    # f1 = make_host_cfunc(start_offsets.numba_type, start_offsets._it.advance)
-    # alg.start_offsets_in_cccl.host_advance_fn = f1
-    # f2 = make_host_cfunc(end_offsets.numba_type, end_offsets._it._it.advance)
-    # alg.end_offsets_in_cccl.host_advance_fn = f2
 
     temp_storage_bytes = alg(
         None, input_it, res, num_segments, start_offsets, end_offsets, h_init
@@ -254,5 +274,26 @@ def test_large_num_segments3():
         d_temp_storage, input_it, res, num_segments, start_offsets, end_offsets, h_init
     )
 
-    expected = cp.tile(cp.arange(m0, p + m0, dtype=cp.int16), (res.size + p - 1) // p)
-    assert cp.all(res == expected[: res.size])
+    # Validation
+
+    def get_expected_value(k: np.int64) -> np.int16:
+        return np.int16(m0 + (k % p))
+
+    expected = iterators.TransformIterator(
+        iterators.CountingIterator(np.int64(0)), get_expected_value
+    )
+
+    def cmp_op(a: np.int16, b: np.int16) -> np.uint8:
+        return np.uint8(1) if (a == b) else np.uint8(0)
+
+    validate = cp.zeros(2**20, dtype=np.uint8)
+    cmp_fn = algorithms.binary_transform(res, expected, validate, cmp_op)
+
+    id = 0
+    while id < res.size:
+        id_next = min(id + validate.size, res.size)
+        num_items = id_next - id
+        cmp_fn(res[id:], expected + id, validate, num_items)
+        assert id == (expected + id).cvalue.value
+        assert cp.all(validate[:num_items].view(np.bool_))
+        id = id_next
