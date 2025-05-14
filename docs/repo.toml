@@ -433,6 +433,8 @@ doxygen_predefined = [
   "_CUDA_VSTD=cuda::std",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
+  "_CCCL_CONSTEXPR_CXX20=constexpr",
+  "_CCCL_CONSTEXPR_CXX23=constexpr",
   "_CCCL_DIAG_PUSH=",
   "_CCCL_DIAG_POP=",
   "_CCCL_DIAG_SUPPRESS_CLANG(x)=",

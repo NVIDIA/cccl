@@ -29,9 +29,9 @@
 
 namespace cuda::experimental
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder;
-struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_node_ref;
-struct _CCCL_TYPE_VISIBILITY_DEFAULT graph;
+struct graph_builder;
+struct graph_node_ref;
+struct graph;
 
 template <class... _Nodes>
 _CCCL_TRIVIAL_HOST_API constexpr auto depends_on(const _Nodes&... __nodes) noexcept
