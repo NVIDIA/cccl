@@ -161,6 +161,9 @@ public:
       // the push/pop semantic
       int refcnt;
 
+      // The async resource handle used in this context
+      ::std::optional<async_resources_handle> async_handle;
+
     private:
       // If we want to keep the state of some logical data implementations until this node is popped
       ::std::vector<::std::shared_ptr<stackable_logical_data_impl_state_base>> retained_data;
@@ -374,13 +377,22 @@ public:
         // Get a stream from previous context (we haven't pushed the new one yet)
         cudaStream_t stream = parent_node.ctx.pick_stream();
 
-        // These resources are not destroyed when we pop, so we create it only if needed
-        while (int(async_handles.size()) < node_offset + 1)
-        {
-          async_handles.emplace_back();
+        // We use an optional to either use an existing handle from the stack
+        // of handles associated to that execution place, or create one if
+        // there is none available, but we do not want to create a new async
+        // handle if we are not going to use it.
+        ::std::optional<async_resources_handle> handle;
+
+        auto &handle_stack = async_handles[parent_node.ctx.current_exec_place()];
+        if (handle_stack.empty()) {
+            handle.emplace();
+        }
+        else {
+            handle = mv(handle_stack.top());
+            handle_stack.pop();
         }
 
-        auto gctx = graph_ctx(stream, async_handles[node_offset]);
+        auto gctx = graph_ctx(stream, handle.value());
 
         // Useful for tools
         gctx.set_parent_ctx(parent_node.ctx);
@@ -392,6 +404,9 @@ public:
         gctx.update_uncached_allocator(wrapper->allocator());
 
         nodes[node_offset].emplace(gctx, stream, wrapper);
+
+        // Save the async handle to reuse it later if necessary
+        nodes[node_offset]->async_handle = mv(handle);
 
         if (display_graph_stats)
         {
@@ -447,6 +462,10 @@ public:
 
       // Ensure everything is finished in the context
       current_node.ctx.finalize();
+
+      // Make the async resource handle reusable on this execution place
+      auto &handle_stack = async_handles[current_node.ctx.current_exec_place()];
+      handle_stack.push(mv(current_node.async_handle.value()));
 
       if (display_graph_stats)
       {
@@ -659,9 +678,10 @@ public:
 
     ::std::unordered_map<::std::thread::id, int> head_map;
 
-    // Handles to retain some asynchronous states, we maintain it separately
-    // from nodes because we keep its entries even when we pop a level
-    ::std::vector<async_resources_handle> async_handles;
+    // Handles to retain some asynchronous states. This saves previously
+    // instantiated graphs, or stream pools for example. We have a stack of
+    // handles per execution place.
+    ::std::map<exec_place, ::std::stack<async_resources_handle>> async_handles;
 
     bool display_graph_stats;
 
