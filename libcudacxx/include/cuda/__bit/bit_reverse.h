@@ -62,7 +62,7 @@ template <typename _Tp>
 
 #endif // defined(_CCCL_BUILTIN_BITREVERSE32)
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr _Tp __bit_reverse_device(_Tp __value) noexcept
@@ -94,7 +94,7 @@ template <typename _Tp>
   _CCCL_UNREACHABLE();
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __bit_reverse_generic(_Tp __value) noexcept

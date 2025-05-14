@@ -56,11 +56,11 @@ _LIBCUDACXX_HIDE_FROM_ABI void __atomic_notify_all(_Tp const volatile*, _Sco)
 template <typename _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI bool __nonatomic_compare_equal(_Tp const& __lhs, _Tp const& __rhs)
 {
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
   return __lhs == __rhs;
-#else
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
   return _CUDA_VSTD::memcmp(&__lhs, &__rhs, sizeof(_Tp)) == 0;
-#endif
+#endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 }
 
 template <typename _Tp, typename _Sco>

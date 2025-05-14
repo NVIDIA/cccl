@@ -62,8 +62,7 @@ static_assert(fp_conv_rank_order_v<float, __nv_fp4_e2m1> == fp_conv_rank_order::
 static_assert(fp_conv_rank_order_v<double, float> == fp_conv_rank_order::__greater);
 static_assert(fp_conv_rank_order_v<double, double> == fp_conv_rank_order::__equal);
 #if _CCCL_HAS_LONG_DOUBLE()
-static_assert(fp_conv_rank_order_v<double, long double>
-              == (long_double_is_double ? fp_conv_rank_order::__equal : fp_conv_rank_order::__less));
+static_assert(fp_conv_rank_order_v<double, long double> == fp_conv_rank_order::__less);
 #endif // _CCCL_HAS_LONG_DOUBLE()
 #if _CCCL_HAS_NVFP16()
 static_assert(fp_conv_rank_order_v<double, __half> == fp_conv_rank_order::__greater);
