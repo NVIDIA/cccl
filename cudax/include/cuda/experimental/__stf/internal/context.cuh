@@ -888,7 +888,7 @@ public:
   epoch(Ctx& ctx)
       : task_dep<void_interface, ::std::monostate, false>(ctx.token().read())
       , increment([&]() {
-        ctx.task(this->as_mode(access_mode::rw))->*[](cudaStream_t, auto) {};
+        ctx.task(this->as_mode(access_mode::rw))->*[](cudaStream_t) {};
       })
   {}
 
@@ -907,12 +907,14 @@ public:
   }
 
   /**
-   * @brief Postfix increment operator (disabled).
+   * @brief Postfix increment operator.
    *
-   * This operator is intentionally disabled to enforce use of the prefix version.
-   * Attempting to use it results in a compile-time error.
+   * This operator intentionally returns `void` instead of the previous copy of the epoch object
+   * for efficiency reasons.
    */
-  epoch operator++(int) = delete;
+  void operator++(int) {
+    increment();
+  }
 
 private:
   ::std::function<void()> increment;
