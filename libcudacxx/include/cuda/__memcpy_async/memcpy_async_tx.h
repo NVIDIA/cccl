@@ -57,6 +57,11 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
 
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__dest) % _Alignment == 0,
+               "destination pointer must be aligned to the specified alignment");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__src) % _Alignment == 0,
+               "source pointer must be aligned to the specified alignment");
+
   _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(__isShared(__dest), "dest must point to shared memory.");
   _CCCL_ASSERT(__isGlobal(__src), "src must point to global memory.");

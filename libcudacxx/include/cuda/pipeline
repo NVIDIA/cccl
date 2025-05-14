@@ -26,6 +26,7 @@
 #include <cuda/atomic>
 #include <cuda/barrier>
 #include <cuda/std/chrono>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -499,7 +500,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_pipeline(
   _CUDA_VSTD::uint32_t __allowed_completions = _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
   // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-  constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
+  constexpr _CUDA_VSTD::size_t __size_align = __get_size_align_v<_Size>;
   constexpr _CUDA_VSTD::size_t __align      = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
   // Cast to char pointers. We don't need the type for alignment anymore and
   // erasing the types reduces the number of instantiations of down-stream
@@ -521,11 +522,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   return __memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
 }
 
-template <typename _Group,
-          class _Type,
-          std::size_t _Alignment,
-          thread_scope _Scope,
-          std::size_t _Larger_alignment = (alignof(_Type) > _Alignment) ? alignof(_Type) : _Alignment>
+template <typename _Group, class _Type, std::size_t _Alignment, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Type* __destination,
@@ -533,6 +530,10 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   pipeline<_Scope>& __pipeline)
 {
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__destination) % _Alignment == 0,
+               "destination pointer must be aligned to the specified alignment");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__source) % _Alignment == 0,
+               "source pointer must be aligned to the specified alignment");
   return __memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
 }
 
@@ -559,6 +560,10 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   pipeline<_Scope>& __pipeline)
 {
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__destination) % _Alignment == 0,
+               "destination pointer must be aligned to the specified alignment");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__source) % _Alignment == 0,
+               "source pointer must be aligned to the specified alignment");
   return __memcpy_async_pipeline(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __pipeline);
 }

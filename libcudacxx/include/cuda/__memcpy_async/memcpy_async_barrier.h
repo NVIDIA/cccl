@@ -42,30 +42,24 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 /***********************************************************************
  * cuda::memcpy_async dispatch helper functions
  *
- * - __get_size_align struct to determine the alignment from a size type.
+ * - __get_size_align_v get the alignment from a size type.
  ***********************************************************************/
 
-// The __get_size_align struct provides a way to query the guaranteed
+// The __get_size_align provides a way to query the guaranteed
 // "alignment" of a provided size. In this case, an n-byte aligned size means
 // that the size is a multiple of n.
 //
 // Use as follows:
-// static_assert(__get_size_align<size_t>::align == 1)
-// static_assert(__get_size_align<aligned_size_t<n>>::align == n)
+// static_assert(__get_size_align_v<size_t> == 1)
+// static_assert(__get_size_align_v<aligned_size_t<n>> == n)
 
 // Default impl: always returns 1.
-template <typename, typename = void>
-struct __get_size_align
-{
-  static constexpr int align = 1;
-};
+template <class, class = void>
+inline constexpr _CUDA_VSTD::size_t __get_size_align_v = 1;
 
 // aligned_size_t<n> overload: return n.
-template <typename T>
-struct __get_size_align<T, _CUDA_VSTD::void_t<decltype(T::align)>>
-{
-  static constexpr int align = T::align;
-};
+template <class _Tp>
+inline constexpr _CUDA_VSTD::size_t __get_size_align_v<_Tp, _CUDA_VSTD::void_t<decltype(_Tp::align)>> = _Tp::align;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -99,7 +93,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
       : _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
   // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-  constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
+  constexpr _CUDA_VSTD::size_t __size_align = __get_size_align_v<_Size>;
   constexpr _CUDA_VSTD::size_t __align      = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
   // Cast to char pointers. We don't need the type for alignment anymore and
   // erasing the types reduces the number of instantiations of down-stream
