@@ -51,15 +51,6 @@ struct shared_resource
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "");
 
-  //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
-  //! that has been constructed with arguments \c __args. The \c _Resource object is
-  //! dynamically allocated with \c new.
-  //! @param __args The arguments to be passed to the \c _Resource constructor.
-  template <class... _Args>
-  explicit shared_resource(_Args&&... __args)
-      : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
-  {}
-
   //! @brief Copy-constructs a \c shared_resource object resulting in an copy that shares
   //! ownership of the wrapped resource with \c __other.
   //! @param __other The \c shared_resource object to copy from.
@@ -223,6 +214,9 @@ struct shared_resource
     return get_property(__self.__control_block->__resource, _Property{});
   }
 
+  template <class _Res, class... _Args>
+  friend auto make_shared_resource(_Args&&... __args) -> shared_resource<_Res>;
+
 private:
   // Use a custom shared_ptr implementation because (a) we don't need to support weak_ptr so we only
   // need one pointer, not two, and (b) this implementation can work on device also.
@@ -233,6 +227,14 @@ private:
   };
 
   _Control_block* __control_block;
+
+  //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
+  //! that has been constructed with arguments \c __args. The \c _Resource object is
+  //! dynamically allocated with \c new.
+  //! @param __args The arguments to be passed to the \c _Resource constructor.
+  explicit shared_resource(_Control_block* __control_block)
+      : __control_block(__control_block)
+  {}
 };
 
 //! @rst
@@ -252,7 +254,8 @@ template <class _Resource, class... _Args>
 auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
-  return shared_resource<_Resource>{_CUDA_VSTD::forward<_Args>(__args)...};
+  return shared_resource<_Resource>{
+    new typename shared_resource<_Resource>::_Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1}};
 }
 
 } // namespace cuda::experimental
