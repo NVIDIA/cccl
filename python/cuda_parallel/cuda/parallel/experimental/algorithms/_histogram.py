@@ -19,6 +19,7 @@ def make_cache_key(
     d_histogram: DeviceArrayLike,
     d_num_output_levels: DeviceArrayLike,
     h_levels: np.ndarray,
+    num_samples: int,
 ):
     d_samples_key = (
         d_samples.kind if isinstance(d_samples, IteratorBase) else get_dtype(d_samples)
@@ -28,7 +29,13 @@ def make_cache_key(
     d_num_output_levels_key = get_dtype(d_num_output_levels)
     d_levels_key = h_levels.dtype
 
-    return (d_samples_key, d_histogram_key, d_num_output_levels_key, d_levels_key)
+    return (
+        d_samples_key,
+        d_histogram_key,
+        d_num_output_levels_key,
+        d_levels_key,
+        num_samples,
+    )
 
 
 class _Histogram:
@@ -48,13 +55,14 @@ class _Histogram:
         d_histogram: DeviceArrayLike,
         h_num_output_levels: np.ndarray,
         h_levels: np.ndarray,
+        num_samples: int,
     ):
         num_channels = 1
         num_active_channels = 1
         is_evenly_segmented = True
         self.num_rows = 1
         num_levels = h_num_output_levels[0]
-        row_stride_samples = num_levels
+        row_stride_samples = num_samples
 
         self.d_samples_cccl = cccl.to_cccl_iter(d_samples)
         self.d_histogram_cccl = cccl.to_cccl_iter(d_histogram)
@@ -125,5 +133,8 @@ def histogram(
     d_histogram: DeviceArrayLike,
     h_num_output_levels: np.ndarray,
     h_levels: np.ndarray,
+    num_samples: int,
 ):
-    return _Histogram(d_samples, d_histogram, h_num_output_levels, h_levels)
+    return _Histogram(
+        d_samples, d_histogram, h_num_output_levels, h_levels, num_samples
+    )
