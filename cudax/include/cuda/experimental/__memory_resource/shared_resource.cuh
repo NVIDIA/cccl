@@ -57,8 +57,7 @@ struct shared_resource : __copy_default_queries<_Resource>
   //! that has been constructed with arguments \c __args. The \c _Resource object is
   //! dynamically allocated with \c new.
   //! @param __args The arguments to be passed to the \c _Resource constructor.
-  _CCCL_TEMPLATE(class... _Args)
-  _CCCL_REQUIRES((sizeof...(_Args) != 1 || !_CUDA_VSTD::is_same_v<shared_resource, _CUDA_VSTD::decay_t<_Args>...>) )
+  template <class... _Args>
   explicit shared_resource(_Args&&... __args)
       : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
   {}

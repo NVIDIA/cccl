@@ -23,6 +23,7 @@
 
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/std/__type_traits/decay.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -46,8 +47,8 @@ template <class... _T>
 inline constexpr bool __is_queries_list<properties_list<_T...>> = true;
 
 template <typename _Tp>
-_CCCL_CONCEPT __has_default_queries = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(
-  requires(__is_queries_list<typename _CUDA_VSTD::remove_reference_t<_Tp>::default_queries>));
+_CCCL_CONCEPT __has_default_queries =
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(__is_queries_list<typename _CUDA_VSTD::decay_t<_Tp>::default_queries>));
 
 template <typename _Resource, bool _HasDefaultQueries = __has_default_queries<_Resource>>
 struct __copy_default_queries;

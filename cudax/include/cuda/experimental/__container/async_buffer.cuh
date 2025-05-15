@@ -674,8 +674,7 @@ _CCCL_TEMPLATE(class _Tp, class _Resource, class... _SourceProperties)
 _CCCL_REQUIRES(_CUDA_VMR::async_resource<_Resource> _CCCL_AND __has_default_queries<_Resource>)
 auto make_async_buffer(stream_ref __stream, _Resource&& __mr, const async_buffer<_Tp, _SourceProperties...>& __source)
 {
-  using __buffer_type =
-    __buffer_type_for_props<_Tp, typename _CUDA_VSTD::remove_reference_t<_Resource>::default_queries>;
+  using __buffer_type = __buffer_type_for_props<_Tp, typename _CUDA_VSTD::decay_t<_Resource>::default_queries>;
   typename __buffer_type::__env_t __env{__mr, __stream};
   auto __res = __buffer_type{__env, __source.size(), uninit};
 

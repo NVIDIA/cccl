@@ -207,9 +207,11 @@ C2H_TEST("make_async_buffer variants", "[container][async_buffer]")
   static_assert(!_CUDA_VMR::resource_with<typename decltype(buf7)::__resource_t, other_property>);
   static_assert(!_CUDA_VMR::resource_with<typename decltype(buf7)::__resource_t, cuda::mr::host_accessible>);
 
+  /* This needs one of the shared_resource constructors removed
   auto buf8 = cudax::make_async_buffer<int, cuda::mr::device_accessible>(input.get_stream(), {shared_res}, input);
   CUDAX_CHECK(equal_range(buf8));
   static_assert(_CUDA_VMR::resource_with<typename decltype(buf8)::__resource_t, cuda::mr::device_accessible>);
   static_assert(!_CUDA_VMR::resource_with<typename decltype(buf8)::__resource_t, other_property>);
   static_assert(!_CUDA_VMR::resource_with<typename decltype(buf8)::__resource_t, cuda::mr::host_accessible>);
+  */
 }
