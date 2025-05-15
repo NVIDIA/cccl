@@ -603,11 +603,11 @@ public:
     };
   }
 
-  void change_epoch()
+  void change_stage()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     payload->*[](auto& self) {
-      self.change_epoch();
+      self.change_stage();
     };
   }
 

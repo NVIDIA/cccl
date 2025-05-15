@@ -219,7 +219,7 @@ protected:
     _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER(MSVC)
 
-    virtual size_t epoch() const
+    virtual size_t stage() const
     {
       return size_t(-1);
     }
@@ -766,9 +766,9 @@ public:
     return pimpl->stream_to_event_list(stream, mv(event_symbol));
   }
 
-  size_t epoch() const
+  size_t stage() const
   {
-    return pimpl->epoch();
+    return pimpl->stage();
   }
 
   ::std::string to_string() const

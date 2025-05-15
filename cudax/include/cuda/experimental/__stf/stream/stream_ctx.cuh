@@ -587,12 +587,12 @@ public:
   }
 
   // no-op : so that we can use the same code with stream_ctx and graph_ctx
-  void change_epoch()
+  void change_stage()
   {
     auto& dot = *get_dot();
     if (dot.is_tracing())
     {
-      dot.change_epoch();
+      dot.change_stage();
     }
   }
 
