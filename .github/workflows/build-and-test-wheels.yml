@@ -1,1 +1,12 @@
 # this is a placeholder
+name: Build and Test Wheels
+
+on:
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  placeholder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print Hello
+        run: echo "Hello! This is a placeholder workflow."
