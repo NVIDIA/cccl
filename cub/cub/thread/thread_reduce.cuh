@@ -546,7 +546,7 @@ _CCCL_REQUIRES((!cub::internal::enable_generic_simd_reduction<Input, ReductionOp
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
 ThreadReduceSimd(const Input& input, ReductionOp) -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
-  assert(false);
+  _CCCL_VERIFY(false, "ThreadReduceSimd: Should never be reached");
   return input[0];
 }
 
