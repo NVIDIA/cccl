@@ -234,7 +234,7 @@ public:
     // This is a list of shared_ptr to events, we want to sort by events
     // ID, not by addresses of the ptr
     ::std::sort(payload.begin(), payload.end(), [](auto& a, auto& b) {
-       return *a < *b;
+      return *a < *b;
     });
 
     // All items will have the same (derived) event type as the type of the front element.
