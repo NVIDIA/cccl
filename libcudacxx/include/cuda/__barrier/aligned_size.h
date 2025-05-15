@@ -48,6 +48,12 @@ struct aligned_size_t
   }
 };
 
+template <class, class = void>
+inline constexpr _CUDA_VSTD::size_t __get_size_align_v = 1;
+
+template <class _Tp>
+inline constexpr _CUDA_VSTD::size_t __get_size_align_v<_Tp, _CUDA_VSTD::void_t<decltype(_Tp::align)>> = _Tp::align;
+
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>

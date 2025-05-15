@@ -29,6 +29,7 @@
 #    include <cuda/__barrier/async_contract_fulfillment.h>
 #    include <cuda/__barrier/barrier_block_scope.h>
 #    include <cuda/__barrier/barrier_native_handle.h>
+#    include <cuda/__memcpy_async/check_preconditions.h>
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
@@ -56,11 +57,9 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
+  static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");
 
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__dest) % _Alignment == 0,
-               "destination pointer must be aligned to the specified alignment");
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__src) % _Alignment == 0,
-               "source pointer must be aligned to the specified alignment");
+  ::cuda::__memcpy_async_check_pre(__dest, __src, __size);
 
   _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(__isShared(__dest), "dest must point to shared memory.");

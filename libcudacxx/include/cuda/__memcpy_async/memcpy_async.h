@@ -29,6 +29,7 @@
 #  include <cuda/__barrier/barrier.h>
 #  include <cuda/__barrier/barrier_block_scope.h>
 #  include <cuda/__barrier/barrier_thread_scope.h>
+#  include <cuda/__memcpy_async/check_preconditions.h>
 #  include <cuda/__memcpy_async/memcpy_async_barrier.h>
 #  include <cuda/std/__atomic/scopes.h>
 #  include <cuda/std/__type_traits/void_t.h>
@@ -105,10 +106,8 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   barrier<_Sco, _CompF>& __barrier)
 {
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__destination) % _Alignment == 0,
-               "destination pointer must be aligned to the specified alignment");
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__source) % _Alignment == 0,
-               "source pointer must be aligned to the specified alignment");
+  static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");
+  ::cuda::__memcpy_async_check_pre(__destination, __source, __size);
   return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
@@ -116,6 +115,7 @@ template <class _Tp, typename _Size, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(_Tp* __destination, _Tp const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
+  ::cuda::__memcpy_async_check_pre(__destination, __source, __size);
   return __memcpy_async_barrier(__single_thread_group{}, __destination, __source, __size, __barrier);
 }
 
@@ -127,6 +127,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _CUDA_VSTD::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
+  ::cuda::__memcpy_async_check_pre(__destination, __source, __size);
   return __memcpy_async_barrier(__group, __destination, __source, __size, __barrier);
 }
 
@@ -138,6 +139,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _CUDA_VSTD::size_t __size,
   barrier<_Sco, _CompF>& __barrier)
 {
+  ::cuda::__memcpy_async_check_pre(__destination, __source, __size);
   return __memcpy_async_barrier(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __barrier);
 }
@@ -150,10 +152,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   barrier<_Sco, _CompF>& __barrier)
 {
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__destination) % _Alignment == 0,
-               "destination pointer must be aligned to the specified alignment");
-  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__source) % _Alignment == 0,
-               "source pointer must be aligned to the specified alignment");
+  ::cuda::__memcpy_async_check_pre(__destination, __source, __size);
   return __memcpy_async_barrier(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __barrier);
 }
@@ -162,6 +161,7 @@ template <typename _Size, thread_scope _Sco, typename _CompF>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(void* __destination, void const* __source, _Size __size, barrier<_Sco, _CompF>& __barrier)
 {
+  ::cuda::__memcpy_async_check_pre(__destination, __source, __size);
   return __memcpy_async_barrier(
     __single_thread_group{},
     reinterpret_cast<char*>(__destination),
