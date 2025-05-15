@@ -165,7 +165,7 @@ CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t d_levels,
+  cccl_value_t d_levels,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -186,7 +186,7 @@ CUresult cccl_device_histogram_build(
     const auto policy      = histogram::get_policy(cc, d_samples.value_type, num_active_channels);
     const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
     const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
-    const auto level_cpp   = cccl_type_enum_to_name(d_levels.value_type.type);
+    const auto level_cpp   = cccl_type_enum_to_name(d_levels.type.type);
 
     const std::string offset_cpp =
       ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
@@ -315,18 +315,15 @@ CUresult cccl_device_histogram_even_impl(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t num_output_levels,
-  cccl_iterator_t lower_level,
-  cccl_iterator_t upper_level,
+  cccl_value_t num_output_levels,
+  cccl_value_t lower_level,
+  cccl_value_t upper_level,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
 {
-  if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
-      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type
-      || cccl_iterator_kind_t::CCCL_POINTER != lower_level.type
-      || cccl_iterator_kind_t::CCCL_POINTER != upper_level.type)
+  if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type)
   {
     fflush(stderr);
     printf("\nERROR in cccl_device_histogram_even(): histogram parameters must be pointers (except for d_samples)\n ");
@@ -348,14 +345,8 @@ CUresult cccl_device_histogram_even_impl(
 
     ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
       static_cast<indirect_arg_t*>(d_output_histograms.state)};
-
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr;
-    // TODO: should we do this on the user provided stream?
-    check(static_cast<CUresult>(
-      cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToHost)));
-
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr{*static_cast<int*>(num_output_levels.state)};
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> lower_level_arr{*static_cast<LevelT*>(lower_level.state)};
-
     ::cuda::std::array<LevelT, NUM_ACTIVE_CHANNELS> upper_level_arr{*static_cast<LevelT*>(upper_level.state)};
 
     auto exec_status = cub::DispatchHistogram<
@@ -415,9 +406,9 @@ CUresult cccl_device_histogram_even(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t num_output_levels,
-  cccl_iterator_t lower_level,
-  cccl_iterator_t upper_level,
+  cccl_value_t num_output_levels,
+  cccl_value_t lower_level,
+  cccl_value_t upper_level,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
@@ -448,16 +439,14 @@ CUresult cccl_device_histogram_range_impl(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t num_output_levels,
-  cccl_iterator_t d_levels,
+  cccl_value_t num_output_levels,
+  cccl_value_t d_levels,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
 {
-  if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
-      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type
-      || cccl_iterator_kind_t::CCCL_POINTER != d_levels.type)
+  if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type)
   {
     fflush(stderr);
     printf("\nERROR in cccl_device_histogram_even(): histogram parameters must be pointers (except for d_samples)\n ");
@@ -481,14 +470,7 @@ CUresult cccl_device_histogram_range_impl(
     ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
       static_cast<indirect_arg_t*>(d_output_histograms.state)};
 
-    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr;
-    cudaMemcpy(num_output_levels_arr.data(), num_output_levels.state, sizeof(int), cudaMemcpyDeviceToHost);
-
-    // indirect_arg_t d_levels_elem{d_levels};
-    // ::cuda::std::array<const indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_levels_arr{
-    //   *static_cast<indirect_arg_t**>(&d_levels_elem)};
-
-    // indirect_arg_t d_levels_elem{d_levels};
+    ::cuda::std::array<int, NUM_ACTIVE_CHANNELS> num_output_levels_arr{*static_cast<int*>(num_output_levels.state)};
     ::cuda::std::array<const LevelT*, NUM_ACTIVE_CHANNELS> d_levels_arr{static_cast<LevelT*>(d_levels.state)};
 
     auto exec_status = cub::DispatchHistogram<
@@ -544,8 +526,8 @@ CUresult cccl_device_histogram_range(
   size_t* temp_storage_bytes,
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t num_output_levels,
-  cccl_iterator_t d_levels,
+  cccl_value_t num_output_levels,
+  cccl_value_t d_levels,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
