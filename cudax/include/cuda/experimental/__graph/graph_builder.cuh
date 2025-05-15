@@ -38,6 +38,14 @@
 
 #include <cuda/std/__cccl/prologue.h>
 
+// work around breathe "_CUDAX_CONSTEXPR_FRIEND friend" bug.
+// See: https://github.com/breathe-doc/breathe/issues/916
+#if defined(_CCCL_DOXYGEN_INVOKED)
+#  define _CUDAX_CONSTEXPR_FRIEND friend
+#else
+#  define _CUDAX_CONSTEXPR_FRIEND constexpr friend
+#endif
+
 namespace cuda::experimental
 {
 //! \brief An owning wrapper type for a cudaGraph_t handle
@@ -153,7 +161,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \param __lhs The left-hand side `graph_builder` object to compare.
   //! \param __rhs The right-hand side `graph_builder` object to compare.
   //! \return `true` if both `graph_builder` objects are equal, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
   operator==(const graph_builder& __lhs, const graph_builder& __rhs) noexcept
   {
     return __lhs.__graph_ == __rhs.__graph_;
@@ -164,7 +172,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \param __lhs The left-hand side `graph_builder` object to compare.
   //! \param __rhs The right-hand side `graph_builder` object to compare.
   //! \return `true` if both `graph_builder` objects are not equal, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
   operator!=(const graph_builder& __lhs, const graph_builder& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -172,7 +180,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 
   //! \brief Test whether a `graph_builder` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
   operator==(_CUDA_VSTD::nullptr_t, const graph_builder& __rhs) noexcept
   {
     return !static_cast<bool>(__rhs);
@@ -180,7 +188,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 
   //! \brief Test whether a `graph_builder` object is null.
   //! \return `true` if `__rhs` is null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
   operator==(const graph_builder& __lhs, _CUDA_VSTD::nullptr_t) noexcept
   {
     return !static_cast<bool>(__lhs);
@@ -188,7 +196,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 
   //! \brief Test whether a `graph_builder` object is not null.
   //! \return `true` if `__rhs` is not null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
   operator!=(_CUDA_VSTD::nullptr_t, const graph_builder& __rhs) noexcept
   {
     return static_cast<bool>(__rhs);
@@ -196,7 +204,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 
   //! \brief Test whether a `graph_builder` object is not null.
   //! \return `true` if `__lhs` is not null, `false` otherwise.
-  [[nodiscard]] _CCCL_HOST_API friend constexpr bool
+  [[nodiscard]] _CCCL_HOST_API _CUDAX_CONSTEXPR_FRIEND bool
   operator!=(const graph_builder& __lhs, _CUDA_VSTD::nullptr_t) noexcept
   {
     return static_cast<bool>(__lhs);
