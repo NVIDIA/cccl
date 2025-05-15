@@ -70,7 +70,7 @@ void build_histogram(
 void histogram_even(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t num_output_levels,
+  cccl_value_t num_output_levels,
   int num_output_levels_val,
   cccl_value_t lower_level,
   cccl_value_t upper_level,
@@ -123,7 +123,7 @@ void histogram_even(
 void histogram_range(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t num_output_levels,
+  cccl_value_t num_output_levels,
   int num_output_levels_val,
   cccl_value_t d_levels,
   int64_t num_row_pixels,
@@ -314,6 +314,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   LevelT upper_level = 12.0;
 
   pointer_t<float> d_samples_ptr(d_samples);
+  value_t<int> num_levels_val{num_levels};
   pointer_t<int> d_num_levels_ptr(d_num_levels);
 
   value_t<LevelT> lower_level_val{lower_level};
@@ -324,7 +325,7 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   histogram_even(
     d_samples_ptr,
     d_single_histogram_ptr,
-    d_num_levels_ptr,
+    num_levels_val,
     num_levels,
     lower_level_val,
     upper_level_val,
@@ -449,7 +450,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
     pointer_t<sample_t> sample_ptr(h_samples);
     pointer_t<CounterT> d_single_histogram_ptr(d_single_histogram);
 
-    pointer_t<int> num_levels_ptr(num_levels);
+    value_t<int> num_levels_val{num_levels[0]};
     value_t<LevelT> lower_level_val{lower_level[0]};
     value_t<LevelT> upper_level_val{upper_level[0]};
 
@@ -458,7 +459,7 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
       histogram_even(
         sample_ptr,
         d_single_histogram_ptr,
-        num_levels_ptr,
+        num_levels_val,
         num_levels[0],
         lower_level_val,
         upper_level_val,
