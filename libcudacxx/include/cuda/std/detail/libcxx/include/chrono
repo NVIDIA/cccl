@@ -3549,8 +3549,8 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wliteral-suffix")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wuser-defined-literals")
 _CCCL_DIAG_SUPPRESS_NVHPC(lit_suffix_no_underscore)
-_CCCL_DIAG_SUPPRESS_MSVC(4455)
-_CCCL_NV_DIAG_SUPPRESS(2506)
+_CCCL_DIAG_SUPPRESS_MSVC(4455) // literal suffix identifiers that do not start with an underscore are reserved
+_CCCL_NV_DIAG_SUPPRESS(2506) // a user-provided literal suffix must begin with "_"
 
 // Suffixes for duration literals [time.duration.literals]
 inline namespace literals
