@@ -25,7 +25,8 @@ void build_histogram(
   cccl_device_histogram_build_result_t* build,
   cccl_iterator_t d_samples,
   int num_output_levels_val,
-  cccl_type_info counter_t,
+  cccl_iterator_t d_output_histograms,
+  cccl_iterator_t d_levels,
   uint64_t num_rows,
   uint64_t row_stride_samples,
   bool is_evenly_segmented)
@@ -41,8 +42,6 @@ void build_histogram(
   const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
   const char* ctk_path        = TEST_CTK_PATH;
 
-  cccl_type_info level_t = get_type_info<LevelT>();
-
   REQUIRE(
     CUDA_SUCCESS
     == cccl_device_histogram_build(
@@ -51,8 +50,8 @@ void build_histogram(
       num_active_channels,
       d_samples,
       num_output_levels_val,
-      counter_t,
-      level_t,
+      d_output_histograms,
+      d_levels,
       num_rows,
       row_stride_samples,
       is_evenly_segmented,
@@ -71,7 +70,6 @@ void build_histogram(
 void histogram_even(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_type_info counter_t,
   cccl_iterator_t num_output_levels,
   int num_output_levels_val,
   cccl_iterator_t lower_level,
@@ -81,7 +79,8 @@ void histogram_even(
   int64_t row_stride_samples)
 {
   cccl_device_histogram_build_result_t build;
-  build_histogram(&build, d_samples, num_output_levels_val, counter_t, num_rows, row_stride_samples, true);
+  build_histogram(
+    &build, d_samples, num_output_levels_val, d_output_histograms, lower_level, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -124,7 +123,6 @@ void histogram_even(
 void histogram_range(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
-  cccl_type_info counter_t,
   cccl_iterator_t num_output_levels,
   int num_output_levels_val,
   cccl_iterator_t d_levels,
@@ -133,7 +131,8 @@ void histogram_range(
   int64_t row_stride_samples)
 {
   cccl_device_histogram_build_result_t build;
-  build_histogram(&build, d_samples, num_output_levels_val, counter_t, num_rows, row_stride_samples, true);
+  build_histogram(
+    &build, d_samples, num_output_levels_val, d_output_histograms, d_levels, num_rows, row_stride_samples, true);
 
   size_t temp_storage_bytes = 0;
   REQUIRE(
@@ -342,7 +341,6 @@ C2H_TEST("DeviceHistogram::HistogramEven API usage", "[histogram][device]")
   histogram_even(
     d_samples_ptr,
     d_single_histogram_ptr,
-    get_type_info<CounterT>(),
     d_num_levels_ptr,
     num_levels,
     d_lower_level_ptr,
@@ -493,7 +491,6 @@ C2H_TEST("DeviceHistogram::HistogramEven basic use", "[histogram][device]", samp
       histogram_even(
         sample_ptr,
         d_single_histogram_ptr,
-        get_type_info<CounterT>(),
         num_levels_ptr,
         num_levels[0],
         d_lower_level_ptr,

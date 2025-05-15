@@ -164,8 +164,8 @@ CUresult cccl_device_histogram_build(
   int num_active_channels,
   cccl_iterator_t d_samples,
   int num_output_levels_val,
-  cccl_type_info counter_t,
-  cccl_type_info level_t,
+  cccl_iterator_t d_output_histograms,
+  cccl_iterator_t d_levels,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -185,8 +185,8 @@ CUresult cccl_device_histogram_build(
     const int cc           = cc_major * 10 + cc_minor;
     const auto policy      = histogram::get_policy(cc, d_samples.value_type, num_active_channels);
     const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
-    const auto counter_cpp = cccl_type_enum_to_name(counter_t.type);
-    const auto level_cpp   = cccl_type_enum_to_name(level_t.type);
+    const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
+    const auto level_cpp   = cccl_type_enum_to_name(d_levels.value_type.type);
 
     const std::string offset_cpp =
       ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
@@ -294,7 +294,7 @@ struct {5} {{
     build_ptr->cc                  = cc;
     build_ptr->cubin               = (void*) result.data.release();
     build_ptr->cubin_size          = result.size;
-    build_ptr->counter_type        = counter_t;
+    build_ptr->counter_type        = d_output_histograms.value_type;
     build_ptr->num_active_channels = num_active_channels;
   }
   catch (const std::exception& exc)
