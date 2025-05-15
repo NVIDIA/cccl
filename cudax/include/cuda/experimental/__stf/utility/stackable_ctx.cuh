@@ -383,7 +383,7 @@ public:
         // handle if we are not going to use it.
         ::std::optional<async_resources_handle> handle;
 
-        auto &handle_stack = async_handles[parent_node.ctx.current_exec_place()];
+        auto &handle_stack = async_handles[parent_node.ctx.default_exec_place()];
         if (handle_stack.empty()) {
             handle.emplace();
         }
@@ -464,7 +464,7 @@ public:
       current_node.ctx.finalize();
 
       // Make the async resource handle reusable on this execution place
-      auto &handle_stack = async_handles[current_node.ctx.current_exec_place()];
+      auto &handle_stack = async_handles[current_node.ctx.default_exec_place()];
       handle_stack.push(mv(current_node.async_handle.value()));
 
       if (display_graph_stats)
