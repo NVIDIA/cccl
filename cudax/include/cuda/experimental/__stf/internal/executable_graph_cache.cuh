@@ -76,6 +76,15 @@ public:
   size_t update_cnt      = 0;
   size_t nnodes          = 0;
   size_t nedges          = 0;
+
+  executable_graph_cache_stat& operator+=(const executable_graph_cache_stat& other)
+  {
+    instantiate_cnt += other.instantiate_cnt;
+    update_cnt += other.update_cnt;
+    nnodes += other.nnodes;
+    nedges += other.nedges;
+    return *this;
+  }
 };
 
 class executable_graph_cache
