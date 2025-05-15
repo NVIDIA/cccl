@@ -10,11 +10,11 @@
 
 #pragma once
 
-#include <cuda.h>
-
 #include <iostream>
 #include <optional>
 #include <string>
+
+#include <cuda.h>
 
 #include "test_util.h"
 #include <c2h/catch2_test_helper.h>

@@ -33,6 +33,8 @@
 
 #include <cuda/experimental/__stream/internal_streams.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 //! @file
 //! The \c __memory_pool_base class provides a wrapper around a `cudaMempool_t`.
 namespace cuda::experimental
@@ -180,15 +182,15 @@ private:
         break;
       }
       case __memory_location_type::__host: {
-#if _CCCL_CUDACC_AT_LEAST(12, 6)
+#if _CCCL_CTK_AT_LEAST(12, 6)
         // Construct on NUMA node 0 only for now
         __pool_properties.location.type = ::cudaMemLocationTypeHostNuma;
         __pool_properties.location.id   = __id;
-#else // _CCCL_CUDACC_BELOW(12, 6)
+#else // _CCCL_CTK_BELOW(12, 6)
         _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
           "Host pinned memory pools are unavailable in this CUDA "
           "version");
-#endif // _CCCL_CUDACC_AT_LEAST(12, 6)
+#endif // _CCCL_CTK_AT_LEAST(12, 6)
         break;
       }
       default:
@@ -382,26 +384,26 @@ public:
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
   //! @returns true if the stored ``cudaMemPool_t`` is equal to \p __rhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ == __rhs;
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ == __lhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ != __rhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ != __lhs;
   }
@@ -415,5 +417,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE

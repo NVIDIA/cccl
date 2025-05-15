@@ -72,9 +72,9 @@ C2H_TEST("when_all completes when children complete", "[when_all]")
 {
   impulse_scheduler sched;
   bool called{false};
-  auto snd = cudax_async::when_all(cudax_async::just(11) | cudax_async::continue_on(sched),
-                                   cudax_async::just(13) | cudax_async::continue_on(sched),
-                                   cudax_async::just(17) | cudax_async::continue_on(sched))
+  auto snd = cudax_async::when_all(cudax_async::just(11) | cudax_async::continues_on(sched),
+                                   cudax_async::just(13) | cudax_async::continues_on(sched),
+                                   cudax_async::just(17) | cudax_async::continues_on(sched))
            | cudax_async::then([&](int a, int b, int c) {
                called = true;
                return a + b + c;
@@ -104,7 +104,7 @@ C2H_TEST("when_all terminates with error if one child terminates with error", "[
 {
   error_scheduler sched{42};
   auto snd = cudax_async::when_all(
-    cudax_async::just(2), cudax_async::just(5) | cudax_async::continue_on(sched), cudax_async::just(7));
+    cudax_async::just(2), cudax_async::just(5) | cudax_async::continues_on(sched), cudax_async::just(7));
   auto op = cudax_async::connect(std::move(snd), checked_error_receiver{42});
   cudax_async::start(op);
 }
@@ -113,7 +113,7 @@ C2H_TEST("when_all terminates with stopped if one child is cancelled", "[when_al
 {
   stopped_scheduler sched;
   auto snd = cudax_async::when_all(
-    cudax_async::just(2), cudax_async::just(5) | cudax_async::continue_on(sched), cudax_async::just(7));
+    cudax_async::just(2), cudax_async::just(5) | cudax_async::continues_on(sched), cudax_async::just(7));
   auto op = cudax_async::connect(std::move(snd), checked_stopped_receiver{});
   cudax_async::start(op);
 }
@@ -128,11 +128,11 @@ C2H_TEST("when_all cancels remaining children if error is detected", "[when_all]
   bool called3{false};
   bool cancelled{false};
   auto snd = cudax_async::when_all(
-    cudax_async::start_on(sched, cudax_async::just()) | cudax_async::then([&] {
+    cudax_async::starts_on(sched, cudax_async::just()) | cudax_async::then([&] {
       called1 = true;
     }),
-    cudax_async::start_on(sched, cudax_async::just(5) | cudax_async::continue_on(err_sched)),
-    cudax_async::start_on(sched, cudax_async::just()) | cudax_async::then([&] {
+    cudax_async::starts_on(sched, cudax_async::just(5) | cudax_async::continues_on(err_sched)),
+    cudax_async::starts_on(sched, cudax_async::just()) | cudax_async::then([&] {
       called3 = true;
     }) | cudax_async::let_stopped([&] {
       cancelled = true;
@@ -160,11 +160,11 @@ C2H_TEST("when_all cancels remaining children if cancel is detected", "[when_all
   bool called3{false};
   bool cancelled{false};
   auto snd = cudax_async::when_all(
-    cudax_async::start_on(sched, cudax_async::just()) | cudax_async::then([&] {
+    cudax_async::starts_on(sched, cudax_async::just()) | cudax_async::then([&] {
       called1 = true;
     }),
-    cudax_async::start_on(sched, cudax_async::just(5) | cudax_async::continue_on(stopped_sched)),
-    cudax_async::start_on(sched, cudax_async::just()) | cudax_async::then([&] {
+    cudax_async::starts_on(sched, cudax_async::just(5) | cudax_async::continues_on(stopped_sched)),
+    cudax_async::starts_on(sched, cudax_async::just()) | cudax_async::then([&] {
       called3 = true;
     }) | cudax_async::let_stopped([&] {
       cancelled = true;

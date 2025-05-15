@@ -21,14 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #include <cuda/std/__charconv/chars_format.h>
 #include <cuda/std/__charconv/from_chars_result.h>
 #include <cuda/std/__charconv/to_chars.h>
 #include <cuda/std/__charconv/to_chars_result.h>
 #include <cuda/std/version>
-
-_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_NEW

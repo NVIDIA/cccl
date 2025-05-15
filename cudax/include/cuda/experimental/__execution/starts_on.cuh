@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_START_ON
-#define __CUDAX_ASYNC_DETAIL_START_ON
+#ifndef __CUDAX_ASYNC_DETAIL_STARTS_ON
+#define __CUDAX_ASYNC_DETAIL_STARTS_ON
 
 #include <cuda/std/detail/__config>
 
@@ -48,7 +48,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __sch_env_t
   }
 };
 
-struct start_on_t
+struct starts_on_t
 {
 private:
   template <class _Rcvr, class _Sch, class _CvSndr>
@@ -85,18 +85,7 @@ private:
     connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
   };
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class _Sch, class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   template <class _Sch, class _Sndr>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
@@ -105,10 +94,10 @@ public:
 };
 
 template <class _Sch, class _Sndr>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS start_on_t __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS starts_on_t __tag_;
   _Sch __sch_;
   _Sndr __sndr_;
 
@@ -152,22 +141,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT start_on_t::__sndr_t
 };
 
 template <class _Sch, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto start_on_t::__fn::operator()(_Sch __sch, _Sndr __sndr) const
+_CCCL_TRIVIAL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
-  return __sndr_t<_Sch, _Sndr>{{}, __sch, __sndr};
+  using __dom_t _CCCL_NODEBUG_ALIAS  = __domain_of_t<_Sch>; // see [exec.starts.on]
+  using __sndr_t _CCCL_NODEBUG_ALIAS = starts_on_t::__sndr_t<_Sch, _Sndr>;
+  return transform_sender(__dom_t{}, __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <class _Sch, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const
-{
-  using __dom_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Sch>; // see [exec.starts.on]
-  return __dom_t::__apply(*this)(static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr));
-}
+inline constexpr size_t structured_binding_size<starts_on_t::__sndr_t<_Sch, _Sndr>> = 3;
 
-template <class _Sch, class _Sndr>
-inline constexpr size_t structured_binding_size<start_on_t::__sndr_t<_Sch, _Sndr>> = 3;
-
-_CCCL_GLOBAL_CONSTANT start_on_t start_on{};
+_CCCL_GLOBAL_CONSTANT starts_on_t starts_on{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename, typename _Tp>
@@ -70,5 +72,7 @@ inline constexpr bool is_assignable_v = is_assignable<_Tp, _Arg>::value;
 #endif // defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_ASSIGNABLE_H

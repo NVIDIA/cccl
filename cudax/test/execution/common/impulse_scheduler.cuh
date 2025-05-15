@@ -19,7 +19,7 @@
 
 #include "testing.cuh" // IWYU pragma: keep
 
-#if !defined(__CUDA_ARCH__)
+#if _CCCL_HOST_COMPILATION()
 
 namespace
 {
@@ -201,4 +201,4 @@ public:
 };
 } // namespace
 
-#endif
+#endif // _CCCL_HOST_COMPILATION()

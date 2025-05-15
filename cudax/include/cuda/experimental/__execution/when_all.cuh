@@ -42,6 +42,7 @@
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
@@ -380,18 +381,7 @@ private:
   template <class... _Ts>
   using __decay_all _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list<_CUDA_VSTD::decay_t<_Ts>...>;
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class... _Sndrs>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   template <class... _Sndrs>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
@@ -495,34 +485,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<
 };
 
 template <class... _Sndrs>
-_CCCL_TRIVIAL_API constexpr auto when_all_t::__fn::operator()(_Sndrs... __sndrs) const
-{
-  // If the incoming senders are non-dependent, we can check the completion
-  // signatures of the composed sender immediately.
-  if constexpr (((!dependent_sender<_Sndrs>) && ...))
-  {
-    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Sndrs...>>;
-    static_assert(__valid_completion_signatures<__completions>);
-  }
-  return __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}};
-}
-
-template <class... _Sndrs>
 _CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
 {
   if constexpr (sizeof...(_Sndrs) == 0)
   {
     return __sndr_t{};
   }
-  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>)
+  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>)
   {
-    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>,
+    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>,
                   "when_all: all child senders must have the same domain");
   }
   else
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<early_domain_of_t<_Sndrs>...>;
-    return __dom_t::__apply(*this)(static_cast<_Sndrs&&>(__sndrs)...);
+    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<domain_for_t<_Sndrs>...>;
+    // If the incoming senders are non-dependent, we can check the completion
+    // signatures of the composed sender immediately.
+    if constexpr (((!dependent_sender<_Sndrs>) && ...))
+    {
+      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Sndrs...>>());
+    }
+    return transform_sender(__dom_t{}, __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}});
   }
 }
 

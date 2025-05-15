@@ -26,6 +26,8 @@
 
 #include <cuda/experimental/__device/device_ref.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -712,5 +714,7 @@ struct __device_attrs
 } // namespace detail
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_ATTRIBUTES_

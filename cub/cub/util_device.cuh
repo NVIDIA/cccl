@@ -266,11 +266,11 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // in device code.
   // <nv/target> may provide an abstraction for this eventually. For now,
   // we have to keep this usage of __CUDA_ARCH__.
-#  if defined(_NVHPC_CUDA)
+#  if _CCCL_CUDA_COMPILER(NVHPC)
 #    define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#  else
-#    define CUB_TEMP_GET_PTX __CUDA_ARCH__
-#  endif
+#  else // ^^^ _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVHPC) vvv
+#    define CUB_TEMP_GET_PTX _CCCL_PTX_ARCH()
+#  endif // ^^^ !_CCCL_CUDA_COMPILER(NVHPC) ^^^
 
   cudaError_t result = cudaSuccess;
   NV_IF_TARGET(

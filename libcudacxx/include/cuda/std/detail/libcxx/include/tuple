@@ -191,7 +191,7 @@ template <class... Types>
 #  include <cuda/std/compare>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -1373,6 +1373,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) __apply_tuple_impl(_Fn&& __f,
 
     _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX_TUPLE

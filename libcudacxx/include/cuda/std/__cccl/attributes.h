@@ -22,7 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/diagnostic.h>
 #include <cuda/std/__cccl/dialect.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 #ifdef __has_attribute
 #  define _CCCL_HAS_ATTRIBUTE(__x) __has_attribute(__x)
@@ -120,15 +123,6 @@
 #  define _CCCL_PURE
 #endif
 
-// _CCCL_NODISCARD_FRIEND
-
-// It always fails with clang
-#if _CCCL_COMPILER(CLANG)
-#  define _CCCL_NODISCARD_FRIEND friend
-#else
-#  define _CCCL_NODISCARD_FRIEND [[nodiscard]] friend
-#endif
-
 // _CCCL_NO_CFI
 
 #if !_CCCL_COMPILER(GCC)
@@ -186,12 +180,12 @@
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #endif // _CCCL_HAS_ATTRIBUTE_NO_UNIQUE_ADDRESS() && _CCCL_COMPILER(CLANG)
 
-// _CCCL_PREFERED_NAME
+// _CCCL_PREFERRED_NAME
 
 #if _CCCL_HAS_ATTRIBUTE(__preferred_name__)
-#  define _CCCL_PREFERED_NAME(x) __attribute__((__preferred_name__(x)))
+#  define _CCCL_PREFERRED_NAME(x) __attribute__((__preferred_name__(x)))
 #else
-#  define _CCCL_PREFERED_NAME(x)
+#  define _CCCL_PREFERRED_NAME(x)
 #endif
 
 #if _CCCL_HAS_ATTRIBUTE(__require_constant_initialization__)
@@ -207,5 +201,7 @@
 #else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict__
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CCCL_ATTRIBUTES_H

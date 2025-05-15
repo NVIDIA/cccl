@@ -36,6 +36,8 @@
 
 #if __cccl_ptx_isa >= 600
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 template <typename _Tp>
@@ -105,10 +107,10 @@ template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(_CUDA_VSTD::has_single_bit(uint32_t{_Width}) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
-#  if __CUDA_ARCH__ >= 700
-  [[maybe_unused]] int __pred1;
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred1), "all active lanes must have the same delta");
-#  endif
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    ([[maybe_unused]] int __pred1;
+     _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred1), "all active lanes must have the same delta");))
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
@@ -154,10 +156,10 @@ template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(_CUDA_VSTD::has_single_bit(uint32_t{_Width}) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
-#  if __CUDA_ARCH__ >= 700
-  [[maybe_unused]] int __pred1;
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred1), "all active lanes must have the same delta");
-#  endif
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_70,
+    ([[maybe_unused]] int __pred1;
+     _CCCL_ASSERT(__match_all_sync(__activemask(), __delta, &__pred1), "all active lanes must have the same delta");))
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__delta == 0, "delta must be 0 when Width == 1");
@@ -203,10 +205,9 @@ template <int _Width = 32, typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<
                 "non-void pointers are not allowed to prevent bug-prone code");
   static_assert(_CUDA_VSTD::has_single_bit(uint32_t{_Width}) && _Width >= 1 && _Width <= __warp_size,
                 "_Width must be a power of 2 and less or equal to the warp size");
-#  if __CUDA_ARCH__ >= 700
-  [[maybe_unused]] int __pred1;
-  _CCCL_ASSERT(__match_all_sync(__activemask(), __xor_mask, &__pred1), "all active lanes must have the same delta");
-#  endif
+  NV_IF_TARGET(NV_PROVIDES_SM_70,
+               ([[maybe_unused]] int __pred1; _CCCL_ASSERT(__match_all_sync(__activemask(), __xor_mask, &__pred1),
+                                                           "all active lanes must have the same delta");))
   if constexpr (_Width == 1)
   {
     _CCCL_ASSERT(__xor_mask == 0, "delta must be 0 when Width == 1");
@@ -243,6 +244,8 @@ warp_shuffle_xor(const _Tp& __data, int __src_lane, _CUDA_VSTD::integral_constan
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // __cccl_ptx_isa >= 600
 #endif // _CUDA___WARP_WARP_SHUFFLE_H

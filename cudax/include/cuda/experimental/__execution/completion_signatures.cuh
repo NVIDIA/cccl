@@ -34,10 +34,9 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
-
-#include <nv/target>
 
 // include this last:
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -224,6 +223,10 @@ completion_signatures() -> completion_signatures<>;
 template <class _Ty>
 _CCCL_CONCEPT __valid_completion_signatures = detail::__is_specialization_of<_Ty, completion_signatures>;
 
+template <class... _Sigs>
+_CCCL_API constexpr void __assert_valid_completion_signatures(completion_signatures<_Sigs...>)
+{}
+
 template <class _Derived>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __compile_time_error // : ::std::exception
 {
@@ -365,7 +368,8 @@ _CCCL_DIAG_SUPPRESS_MSVC(4913)
 #define _CUDAX_GET_COMPLSIGS(...) \
   _CUDA_VSTD::remove_reference_t<_Sndr>::template get_completion_signatures<__VA_ARGS__>()
 
-#define _CUDAX_CHECKED_COMPLSIGS(...) (__VA_ARGS__, void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
+#define _CUDAX_CHECKED_COMPLSIGS(...) \
+  (static_cast<void>(__VA_ARGS__), void(), execution::__checked_complsigs<decltype(__VA_ARGS__)>())
 
 struct _A_GET_COMPLETION_SIGNATURES_CUSTOMIZATION_RETURNED_A_TYPE_THAT_IS_NOT_A_COMPLETION_SIGNATURES_SPECIALIZATION
 {};
@@ -446,12 +450,15 @@ _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return __get_completion_signatures_helper<_Sndr>();
   }
+  else if constexpr (!__has_sender_transform<_Sndr, _Env...>)
+  {
+    return __get_completion_signatures_helper<_Sndr, _Env...>();
+  }
   else
   {
-    // BUGBUG TODO:
     // Apply a lazy sender transform if one exists before computing the completion signatures:
-    // using _NewSndr _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__late_domain_of_t<_Sndr, _Env>, _Sndr, _Env>;
-    using _NewSndr _CCCL_NODEBUG_ALIAS = _Sndr;
+    using _NewSndr _CCCL_NODEBUG_ALIAS =
+      _CUDA_VSTD::__call_result_t<transform_sender_t, domain_for_t<_Sndr, _Env...>, _Sndr, _Env...>;
     return __get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }

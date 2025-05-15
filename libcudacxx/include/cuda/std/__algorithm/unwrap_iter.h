@@ -28,6 +28,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // TODO: Change the name of __unwrap_iter_impl to something more appropriate
@@ -88,5 +90,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _OrigIter __rewrap_iter(_OrigIter __orig_ite
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_UNWRAP_ITER_H

@@ -22,6 +22,8 @@
 
 #include <cuda/__memory_resource/properties.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 namespace cuda::experimental
 {
@@ -43,5 +45,7 @@ inline constexpr _ExecutionSpace __select_execution_space =
 } // namespace cuda::experimental
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__UTILITY_SELECT_EXECUTION_SPACE_CUH

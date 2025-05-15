@@ -24,6 +24,7 @@
 #include <cuda/std/__exception/terminate.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__execution/apply_sender.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
@@ -86,27 +87,19 @@ private:
     }
   };
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class _Sndr>
-    _CCCL_API auto operator()(_Sndr __sndr) const
-    {
-      execution::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
-    }
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
+  template <class _Sndr>
+  _CCCL_API static auto apply_sender(_Sndr __sndr)
   {
-    return __fn{};
+    execution::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
   }
 
   /// run detached.
   template <class _Sndr>
   _CCCL_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = early_domain_of_t<_Sndr>;
-    __dom_t::__apply (*this)(static_cast<_Sndr&&>(__sndr));
+    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+    execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr));
   }
 };
 

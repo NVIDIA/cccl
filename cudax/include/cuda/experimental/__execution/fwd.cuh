@@ -21,10 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
+#include <cuda/experimental/__execution/visit.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -63,11 +66,7 @@ inline constexpr bool __is_scheduler = __type_valid_v<__scheduler_concept_t, _Ty
 struct stream_domain;
 struct dependent_sender_error;
 
-struct default_domain
-{
-  template <class _Tag>
-  _CCCL_API static constexpr auto __apply(_Tag) noexcept;
-};
+struct default_domain;
 
 template <class... _Sigs>
 struct completion_signatures;
@@ -86,14 +85,80 @@ enum __disposition_t
   __stopped
 };
 
+// customization point objects:
 struct set_value_t;
 struct set_error_t;
 struct set_stopped_t;
 struct start_t;
 struct connect_t;
 struct schedule_t;
-struct get_env_t;
+
+// sender factory algorithms:
+template <__disposition_t>
+struct __just_t;
+using just_t         = __just_t<__value>;
+using just_error_t   = __just_t<__error>;
+using just_stopped_t = __just_t<__stopped>;
+
+template <__disposition_t>
+struct __just_from_t;
+using just_from_t         = __just_from_t<__value>;
+using just_error_from_t   = __just_from_t<__error>;
+using just_stopped_from_t = __just_from_t<__stopped>;
+
+struct read_env_t;
+
+// sender adaptor algorithms:
+template <__disposition_t>
+struct __let_t;
+using let_value_t   = __let_t<__value>;
+using let_error_t   = __let_t<__error>;
+using let_stopped_t = __let_t<__stopped>;
+
+template <__disposition_t>
+struct __upon_t;
+using then_t         = __upon_t<__value>;
+using upon_error_t   = __upon_t<__error>;
+using upon_stopped_t = __upon_t<__stopped>;
+
+struct when_all_t;
+struct conditional_t;
+struct sequence_t;
+struct write_env_t;
+struct starts_on_t;
+struct continues_on_t;
+struct schedule_from_t;
+
+// sender consumer algorithms:
 struct sync_wait_t;
+struct start_detached_t;
+
+// queries:
+struct get_allocator_t;
+struct get_stop_token_t;
+struct get_scheduler_t;
+struct get_delegation_scheduler_t;
+template <class _Tag>
+struct get_completion_scheduler_t;
+struct get_forward_progress_guarantee_t;
+struct get_domain_t;
+
+namespace __detail
+{
+struct __get_tag
+{
+  template <class _Tag, class... _Child>
+  _CCCL_TRIVIAL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const
+    -> _Tag
+  {
+    return _Tag{};
+  }
+};
+} // namespace __detail
+
+template <class _Sndr>
+using tag_of_t _CCCL_NODEBUG_ALIAS =
+  decltype(visit(declval<__detail::__get_tag&>(), declval<_Sndr>(), declval<int&>()));
 
 namespace __detail
 {
