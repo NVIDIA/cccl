@@ -61,7 +61,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       CHECK(mr2 == mr4); // pointers compare equal, no call to TestResource::operator==
       CHECK(this->counts == expected);
 
-      cudax::shared_resource mr5{cuda::std::in_place_type<TestResource>, 42, this};
+      cudax::shared_resource mr5{cuda::std::in_place_type<TestResource>, TestResource{42, this}};
       ++expected.object_count;
       ++expected.move_count;
       CHECK(mr4 == mr5); // pointers are not equal, calls TestResource::operator==

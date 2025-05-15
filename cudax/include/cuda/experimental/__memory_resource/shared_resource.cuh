@@ -224,9 +224,6 @@ struct shared_resource
     return get_property(__self.__control_block->__resource, _Property{});
   }
 
-  template <class _Res, class... _Args>
-  friend auto make_shared_resource(_Args&&... __args) -> shared_resource<_Res>;
-
 private:
   // Use a custom shared_ptr implementation because (a) we don't need to support weak_ptr so we only
   // need one pointer, not two, and (b) this implementation can work on device also.
@@ -237,14 +234,6 @@ private:
   };
 
   _Control_block* __control_block;
-
-  //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
-  //! that has been constructed with arguments \c __args. The \c _Resource object is
-  //! dynamically allocated with \c new.
-  //! @param __args The arguments to be passed to the \c _Resource constructor.
-  explicit shared_resource(_Control_block* __control_block)
-      : __control_block(__control_block)
-  {}
 };
 
 //! @rst
