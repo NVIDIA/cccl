@@ -339,7 +339,7 @@ public:
   // Inherit constructors from basic_any
   using __base_t::__base_t;
 
-  using __default_queries = _CUDA_VSTD::__type_list<_Properties...>;
+  using default_queries = properties_list<_Properties...>;
 };
 
 //! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
@@ -374,7 +374,7 @@ public:
   // Inherit other constructors from basic_any
   using __base_t::__base_t;
 
-  using __default_queries = _CUDA_VSTD::__type_list<_Properties...>;
+  using default_queries = properties_list<_Properties...>;
 };
 
 //! @brief Type erased wrapper around a `async_resource` that satisfies \tparam _Properties
