@@ -129,6 +129,10 @@ public:
     return sub_places[i];
   }
 
+  exec_place_grid as_grid() {
+      return make_grid(sub_places);
+  }
+
 private:
   /** @brief Compute the subplaces of a place at the specified granularity (scope) into the sub_places vector */
   void compute_subplaces(async_resources_handle& handle, const exec_place& place, place_partition_scope scope)
