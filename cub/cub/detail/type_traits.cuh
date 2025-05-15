@@ -57,9 +57,6 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-template <typename Invokable, typename... Args>
-using invoke_result_t = _CUDA_VSTD::invoke_result_t<Invokable, Args...>;
-
 template <typename T, typename... TArgs>
 inline constexpr bool is_one_of_v = (_CCCL_TRAIT(_CUDA_VSTD::is_same, T, TArgs) || ...);
 
