@@ -27,6 +27,6 @@ docker run --rm -i \
     python -m pip wheel --no-deps . && \
     python -m pip install patchelf auditwheel && \
     python --version && \
+    python -m auditwheel repair cuda_cccl-*.whl --exclude libcuda.so.1 && \
     python -m auditwheel repair cuda_parallel-*.whl --exclude libcuda.so.1 && \
-    mv cuda_cccl-*.whl /workspace/cccl/wheelhouse && \
-    mv wheelhouse/cuda_parallel-*.whl /workspace/cccl/wheelhouse/'
+    mv wheelhouse/*.whl /workspace/cccl/wheelhouse/'
