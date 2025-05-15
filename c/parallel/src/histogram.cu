@@ -165,7 +165,7 @@ CUresult cccl_device_histogram_build(
   cccl_iterator_t d_samples,
   int num_output_levels_val,
   cccl_iterator_t d_output_histograms,
-  cccl_iterator_t d_levels,
+  cccl_value_t d_levels,
   int64_t num_rows,
   int64_t row_stride_samples,
   bool is_evenly_segmented,
@@ -186,7 +186,7 @@ CUresult cccl_device_histogram_build(
     const auto policy      = histogram::get_policy(cc, d_samples.value_type, num_active_channels);
     const auto sample_cpp  = cccl_type_enum_to_name(d_samples.value_type.type);
     const auto counter_cpp = cccl_type_enum_to_name(d_output_histograms.value_type.type);
-    const auto level_cpp   = cccl_type_enum_to_name(d_levels.value_type.type);
+    const auto level_cpp   = cccl_type_enum_to_name(d_levels.type.type);
 
     const std::string offset_cpp =
       ((unsigned long long) (num_rows * row_stride_samples * d_samples.value_type.size) < (unsigned long long) INT_MAX)
@@ -316,17 +316,15 @@ CUresult cccl_device_histogram_even_impl(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
   cccl_iterator_t num_output_levels,
-  cccl_iterator_t lower_level,
-  cccl_iterator_t upper_level,
+  cccl_value_t lower_level,
+  cccl_value_t upper_level,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
 {
   if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
-      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type
-      || cccl_iterator_kind_t::CCCL_POINTER != lower_level.type
-      || cccl_iterator_kind_t::CCCL_POINTER != upper_level.type)
+      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type)
   {
     fflush(stderr);
     printf("\nERROR in cccl_device_histogram_even(): histogram parameters must be pointers (except for d_samples)\n ");
@@ -416,8 +414,8 @@ CUresult cccl_device_histogram_even(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
   cccl_iterator_t num_output_levels,
-  cccl_iterator_t lower_level,
-  cccl_iterator_t upper_level,
+  cccl_value_t lower_level,
+  cccl_value_t upper_level,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
@@ -449,15 +447,14 @@ CUresult cccl_device_histogram_range_impl(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
   cccl_iterator_t num_output_levels,
-  cccl_iterator_t d_levels,
+  cccl_value_t d_levels,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
   CUstream stream)
 {
   if (cccl_iterator_kind_t::CCCL_POINTER != d_output_histograms.type
-      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type
-      || cccl_iterator_kind_t::CCCL_POINTER != d_levels.type)
+      || cccl_iterator_kind_t::CCCL_POINTER != num_output_levels.type)
   {
     fflush(stderr);
     printf("\nERROR in cccl_device_histogram_even(): histogram parameters must be pointers (except for d_samples)\n ");
@@ -545,7 +542,7 @@ CUresult cccl_device_histogram_range(
   cccl_iterator_t d_samples,
   cccl_iterator_t d_output_histograms,
   cccl_iterator_t num_output_levels,
-  cccl_iterator_t d_levels,
+  cccl_value_t d_levels,
   int64_t num_row_pixels,
   int64_t num_rows,
   int64_t row_stride_samples,
