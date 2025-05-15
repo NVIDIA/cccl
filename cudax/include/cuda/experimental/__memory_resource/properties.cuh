@@ -49,6 +49,19 @@ template <typename _Tp>
 _CCCL_CONCEPT __has_default_queries = _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(
   requires(__is_queries_list<typename _CUDA_VSTD::remove_reference_t<_Tp>::default_queries>));
 
+template <typename _Resource, bool _HasDefaultQueries = __has_default_queries<_Resource>>
+struct __copy_default_queries;
+
+template <typename _Resource>
+struct __copy_default_queries<_Resource, true>
+{
+  using default_queries = typename _Resource::default_queries;
+};
+
+template <typename _Resource>
+struct __copy_default_queries<_Resource, false>
+{};
+
 } // namespace cuda::experimental
 
 #include <cuda/std/__cccl/epilogue.h>
