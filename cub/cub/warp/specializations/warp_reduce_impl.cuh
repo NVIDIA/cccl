@@ -283,8 +283,9 @@ template <typename T, typename ReductionOp, typename Config>
   // [Min/Max]: __half, __half2, __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, T> && (is_any_half_v<T> || is_any_bfloat16_v<T>) )
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_shuffle_op(input, reduction_op, config);))
-    _CCCL_UNREACHABLE(); // "__half is not supported before SM80"
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (return warp_reduce_shuffle_op(input, reduction_op, config);),
+                      (return warp_reduce_generic(input, reduction_op, config);))
   }
   // [Min/Max]: short2, ushort2
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, T> && is_any_short2_v<T> && __cccl_ptx_isa >= 800)
@@ -318,16 +319,18 @@ template <typename T, typename ReductionOp, typename Config>
       auto ret          = warp_reduce_dispatch(float2_value, reduction_op, config);
       return unsafe_bitcast<T>(ret);
     }
-    auto real = warp_reduce_dispatch(input.real(), reduction_op, config);
-    auto img  = warp_reduce_dispatch(input.imag(), reduction_op, config);
-    return T{real, img};
+    else
+    { // double
+      auto real = warp_reduce_dispatch(input.real(), reduction_op, config);
+      auto img  = warp_reduce_dispatch(input.imag(), reduction_op, config);
+      return T{real, img};
+    }
   }
   // [Plus]: __half, __half2
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_any_half_v<T>)
   {
     NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);));
-    // TODO: _CCCL_ASSERT(false, "half is not supported before SM53");
-    _CCCL_UNREACHABLE();
+    _CCCL_UNREACHABLE(); // half is not supported before SM53
   }
   // [Plus]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_any_bfloat16_v<T>)

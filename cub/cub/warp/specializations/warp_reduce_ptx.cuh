@@ -137,9 +137,10 @@ namespace detail
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::std::plus Instantiations
 
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, add.f32)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, uint32_t, add.u32)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, int, add.s32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, add.f32)
+_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, double, add.f64)
 
 #if _CCCL_HAS_NVFP16() && __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
 _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, float2, add.f32x2)
@@ -160,15 +161,18 @@ _CUB_SHFL_DOWN_OP_16BIT(_CUDA_VSTD::plus<>, __nv_bfloat16, add.bf16)
 _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, __nv_bfloat162, add.bf16x2)
 #endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 900
 
-_CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, double, add.f64)
-
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::maximum/minimum Instantiations
 
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, int, max.s32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, uint32_t, max.u32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, float, max.f32)
+_CUB_SHFL_DOWN_OP_64BIT(::cuda::maximum<>, double, max.f64)
+
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, int, min.s32)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, uint32_t, min.u32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, float, min.f32)
+_CUB_SHFL_DOWN_OP_64BIT(::cuda::minimum<>, double, min.f64)
 
 #if __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, short2, max.s16x2)
@@ -192,7 +196,7 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __nv_bfloat162, min.bf16x2)
 
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __nv_bfloat16, max.bf16)
 _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __nv_bfloat162, max.bf16x2)
-#endif // _CCCL_HAS_NVBF16() //&& CUB_PTX_ARCH >= 800
+#endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
 
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::std::bit_and/bit_or/bit_xor Instantiations
