@@ -25,7 +25,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      auto mr = cudax::make_shared_resource<TestResource>(42, this);
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
     }
@@ -42,7 +42,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      auto mr = cudax::make_shared_resource<TestResource>(42, this);
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
 
@@ -51,7 +51,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       CHECK(mr == mr2); // pointers compare equal, no call to TestResource::operator==
       CHECK(this->counts == expected);
 
-      cudax::shared_resource<TestResource> mr3(mr);
+      cudax::shared_resource mr3{mr};
       CHECK(this->counts == expected);
       CHECK(mr == mr3); // pointers compare equal, no call to TestResource::operator==
       CHECK(this->counts == expected);
@@ -61,10 +61,10 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       CHECK(mr2 == mr4); // pointers compare equal, no call to TestResource::operator==
       CHECK(this->counts == expected);
 
-      cudax::shared_resource<TestResource> mr5{cudax::make_shared_resource<TestResource>(TestResource{42, this})};
+      cudax::shared_resource mr5{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       ++expected.move_count;
-      CHECK(mr3 == mr5); // pointers are not equal, calls TestResource::operator==
+      CHECK(mr4 == mr5); // pointers are not equal, calls TestResource::operator==
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
@@ -81,7 +81,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      auto mr = cudax::make_shared_resource<TestResource>(42, this);
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
 
@@ -106,7 +106,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   {
     Counts expected{};
     {
-      auto mr = cudax::make_shared_resource<TestResource>(42, this);
+      cudax::shared_resource mr{cuda::std::in_place_type<TestResource>, 42, this};
       ++expected.object_count;
       CHECK(this->counts == expected);
 
@@ -135,7 +135,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     {
       bytes(42 * sizeof(int));
       cudax::uninitialized_buffer<int, cudax::host_accessible> buffer{
-        cudax::make_shared_resource<TestResource>(42, this), 42};
+        cudax::shared_resource<TestResource>(cuda::std::in_place_type<TestResource>, 42, this), 42};
       ++expected.object_count;
       ++expected.allocate_count;
       CHECK(this->counts == expected);

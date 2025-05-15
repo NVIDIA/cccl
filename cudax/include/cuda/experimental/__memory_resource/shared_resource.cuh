@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
@@ -50,6 +51,15 @@ template <class _Resource>
 struct shared_resource
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "");
+
+  //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
+  //! that has been constructed with arguments \c __args. The \c _Resource object is
+  //! dynamically allocated with \c new.
+  //! @param __args The arguments to be passed to the \c _Resource constructor.
+  template <class... _Args>
+  explicit shared_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args)
+      : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
+  {}
 
   //! @brief Copy-constructs a \c shared_resource object resulting in an copy that shares
   //! ownership of the wrapped resource with \c __other.
@@ -254,8 +264,7 @@ template <class _Resource, class... _Args>
 auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
-  return shared_resource<_Resource>{
-    new typename shared_resource<_Resource>::_Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1}};
+  return shared_resource<_Resource>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
 }
 
 } // namespace cuda::experimental
