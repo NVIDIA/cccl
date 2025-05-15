@@ -7,9 +7,9 @@ workflows:
   # override:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
+  override:
 
-# Only run python build and test jobs for testing
-# TODO: for 3.9, we need a newer build of pynvjitlink
+
   pull_request:
     # Old CTK/compiler
     - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang14', 'msvc2019']}
