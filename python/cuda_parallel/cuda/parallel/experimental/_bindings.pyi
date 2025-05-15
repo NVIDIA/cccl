@@ -381,3 +381,33 @@ class DeviceBinaryTransform:
         num_items: int,
         stream,
     ) -> None: ...
+
+# ---------------
+# DeviceHistogram
+# ---------------
+
+class DeviceHistogramBuildResult:
+    def __init__(
+        self,
+        num_channels: int,
+        num_active_channels: int,
+        d_samples: Iterator,
+        num_levels: int,
+        d_histogram: Iterator,
+        d_levels: Value,
+        num_rows: int,
+        row_stride_samples: int,
+        is_evenly_segmented: bool,
+    ): ...
+    def compute_even(
+        self,
+        d_samples: Iterator,
+        d_histogram: Iterator,
+        d_num_output_levels: Iterator,
+        d_lower_level: Value,
+        d_upper_level: Value,
+        num_row_pixels: int,
+        num_rows: int,
+        row_stride_samples: int,
+        stream,
+    ) -> None: ...
