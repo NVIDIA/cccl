@@ -18,13 +18,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
-      - uses: aws-actions/configure-aws-credentials@v4
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
           aws-region: us-east-2
-          role-duration-seconds: 43200 # 12h
+          role-duration-seconds: 43200 # 12 hours
       - name: Create CI script
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
