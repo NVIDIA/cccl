@@ -226,9 +226,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 };
 

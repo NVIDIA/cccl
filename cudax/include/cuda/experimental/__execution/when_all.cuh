@@ -482,6 +482,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
+  {
+    if constexpr (sizeof...(_Sndrs) == 0)
+    {
+      return prop{get_domain, default_domain{}};
+    }
+    else
+    {
+      using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<domain_for_t<_Sndrs>...>;
+      return prop{get_domain, __dom_t{}};
+    }
+    _CCCL_UNREACHABLE();
+  }
 };
 
 template <class... _Sndrs>

@@ -285,9 +285,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 };
 
