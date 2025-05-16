@@ -41,162 +41,68 @@ jobs:
       id-token: write
       contents: read
 
-  # build-cooperative:
-  #   name: Build Cooperative Wheels
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       python-version: ['3.10', '3.11', '3.12', '3.13']
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         persist-credentials: false
+  build-cuda-cooperative:
+    name: Build CUDA Cooperative Wheels
+    uses: ./.github/workflows/run-ci-script.yml
+    with:
+      script-command: ci/build_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
+      python-version: ${{ matrix.python-version }}
+      upload-artifact: true
+      upload-artifact-name: wheel-cuda-cooperative-${{ matrix.python-version }}
+      upload-artifact-path: ${{github.event.repository.name}}/wheelhouse/
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    permissions:
+      id-token: write
+      contents: read
 
-  #     - name: Create CI script
-  #       run: |
-  #         cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
-  #         #! /usr/bin/env bash
-  #         set -eo pipefail
+  test-cuda-cooperative:
+    name: Test CUDA Cooperative Wheels
+    needs: build-cuda-cooperative
+    uses: ./.github/workflows/run-ci-script.yml
+    with:
+      script-command: ci/test_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
+      python-version: ${{ matrix.python-version }}
+      needs-artifact: true
+      artifact-name: wheel-cuda-cooperative-${{ matrix.python-version }}
+      artifact-path: ${{github.event.repository.name}}/wheelhouse/
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    permissions:
+      id-token: write
+      contents: read
 
-  #         ci/build_cuda_cooperative_python.sh;
-  #         EOF
+  build-cuda-parallel:
+    name: Build CUDA Parallel Wheels
+    uses: ./.github/workflows/run-ci-script.yml
+    with:
+      script-command: ci/build_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
+      python-version: ${{ matrix.python-version }}
+      upload-artifact: true
+      upload-artifact-name: wheel-cuda-parallel-${{ matrix.python-version }}
+      upload-artifact-path: ${{github.event.repository.name}}/wheelhouse/
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    permissions:
+      id-token: write
+      contents: read
 
-  #         chmod +x "$RUNNER_TEMP/ci.sh"
-
-  #     - name: Run build script
-  #       env:
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #       run: |
-  #         .devcontainer/launch.sh \
-  #           --docker \
-  #           --host gcc13 \
-  #           --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-  #           -- /ci.sh
-
-  #     - name: Upload wheel artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: wheel-cooperative-${{ matrix.python-version }}
-  #         path: dist/*.whl
-  #         retention-days: 1
-
-  # build-parallel:
-  #   name: Build Parallel Wheels
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       python-version: ['3.10', '3.11', '3.12', '3.13']
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         persist-credentials: false
-
-  #     - name: Create CI script
-  #       run: |
-  #         cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
-  #         #! /usr/bin/env bash
-  #         set -eo pipefail
-
-  #         ci/build_cuda_parallel_python.sh;
-  #         EOF
-
-  #         chmod +x "$RUNNER_TEMP/ci.sh"
-
-  #     - name: Run build script
-  #       env:
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #       run: |
-  #         .devcontainer/launch.sh \
-  #           --docker \
-  #           --host gcc13 \
-  #           --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-  #           -- /ci.sh
-
-  #     - name: Upload wheel artifact
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: wheel-parallel-${{ matrix.python-version }}
-  #         path: dist/*.whl
-  #         retention-days: 1
-
-  # test-cooperative:
-  #   name: Test Cooperative Wheels
-  #   needs: build-cooperative
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       python-version: ['3.10', '3.11', '3.12', '3.13']
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         persist-credentials: false
-
-  #     - name: Download wheel artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: wheel-cooperative-${{ matrix.python-version }}
-  #         path: dist
-
-  #     - name: Create CI script
-  #       run: |
-  #         cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
-  #         #! /usr/bin/env bash
-  #         set -eo pipefail
-
-  #         ci/test_cuda_cooperative_python.sh;
-  #         EOF
-
-  #         chmod +x "$RUNNER_TEMP/ci.sh"
-
-  #     - name: Run test script
-  #       env:
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #       run: |
-  #         .devcontainer/launch.sh \
-  #           --docker \
-  #           --host gcc13 \
-  #           --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-  #           -- /ci.sh
-
-  # test-parallel:
-  #   name: Test Parallel Wheels
-  #   needs: build-parallel
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       python-version: ['3.10', '3.11', '3.12', '3.13']
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         persist-credentials: false
-
-  #     - name: Download wheel artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: wheel-parallel-${{ matrix.python-version }}
-  #         path: dist
-
-  #     - name: Create CI script
-  #       run: |
-  #         cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
-  #         #! /usr/bin/env bash
-  #         set -eo pipefail
-
-  #         ci/test_cuda_parallel_python.sh;
-  #         EOF
-
-  #         chmod +x "$RUNNER_TEMP/ci.sh"
-
-  #     - name: Run test script
-  #       env:
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #       run: |
-  #         .devcontainer/launch.sh \
-  #           --docker \
-  #           --host gcc13 \
-  #           --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-  #           -- /ci.sh
+  test-cuda-parallel:
+    name: Test CUDA Parallel Wheels
+    needs: build-cuda-parallel
+    uses: ./.github/workflows/run-ci-script.yml
+    with:
+      script-command: ci/test_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
+      python-version: ${{ matrix.python-version }}
+      needs-artifact: true
+      artifact-name: wheel-cuda-parallel-${{ matrix.python-version }}
+      artifact-path: ${{github.event.repository.name}}/wheelhouse/
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    permissions:
+      id-token: write
+      contents: read
