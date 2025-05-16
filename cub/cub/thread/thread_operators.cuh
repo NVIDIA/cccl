@@ -540,7 +540,6 @@ inline constexpr bool is_cuda_operator_v =
 template <typename Op, typename>
 struct GeneralizeOperator
 {
-  static_assert(is_cuda_operator_v<Op>);
   using type = Op;
 };
 
@@ -582,6 +581,19 @@ struct GeneralizeOperator<::cuda::minimum<T>, T>
 
 template <typename Op, typename T>
 using generalize_operator_t = typename GeneralizeOperator<Op, T>::type;
+
+template <typename T, typename Operator>
+[[nodiscard]] constexpr _CCCL_DEVICE _CCCL_FORCEINLINE auto generalize_operator(Operator op)
+{
+  if constexpr (is_cuda_operator_v<Operator, T>)
+  {
+    return generalize_operator_t<Operator, T>{};
+  }
+  else
+  {
+    return op;
+  }
+}
 
 //----------------------------------------------------------------------------------------------------------------------
 // Identity

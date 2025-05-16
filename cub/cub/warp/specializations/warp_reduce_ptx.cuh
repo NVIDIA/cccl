@@ -313,8 +313,7 @@ template <typename T, typename ReductionOp, typename Config>
   using namespace _CUDA_VSTD;
 #if __cccl_ptx_isa >= 860
   static_assert(is_same_v<T, float> && is_cuda_minimum_maximum_v<ReductionOp, T>);
-  using ReductionOp1 = generalize_operator_t<ReductionOp, T>;
-  const auto mask    = cub::detail::redux_lane_mask(config);
+  const auto mask = cub::detail::redux_lane_mask(config);
   NV_IF_TARGET(NV_PROVIDES_SM_100,
                (return cub::detail::redux_sm100a_ptx(ReductionOp1{}, value, mask);),
                (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a();))

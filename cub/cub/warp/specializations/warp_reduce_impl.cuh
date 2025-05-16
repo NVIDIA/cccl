@@ -98,8 +98,7 @@ template <typename T, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_shuffle_op(T input, ReductionOp, Config config)
 {
   using namespace _CUDA_VSTD;
-  using Reduction1 = generalize_operator_t<ReductionOp, T>;
-  using cast_t     = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
+  using cast_t = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
   constexpr auto log2_size                                                     = ::cuda::ceil_ilog2(logical_size());
   const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
@@ -108,7 +107,7 @@ template <typename T, typename ReductionOp, typename Config>
   for (int K = 0; K < log2_size; K++)
   {
     auto shuffle_mask = cub::detail::reduce_shuffle_bound_mask(K, logical_size, valid_items, is_segmented);
-    input1            = cub::detail::shfl_down_op(Reduction1{}, input1, 1u << K, shuffle_mask, mask);
+    input1            = cub::detail::shfl_down_op(ReductionOp{}, input1, 1u << K, shuffle_mask, mask);
   }
   if constexpr (result_mode == all_lanes_result)
   {
@@ -256,6 +255,9 @@ template <typename T, typename ReductionOp, typename Config>
   [[maybe_unused]] constexpr bool is_small_integer = is_integral_v<T> && sizeof(T) <= sizeof(uint32_t);
   constexpr auto logical_warp_size                 = config.logical_size;
   auto valid_items                                 = config.valid_items;
+  // generalize_operator() is fundamental to avoid slow fallback with the recursive implementation,
+  // matching PTX shuffle_op, and integer promotion calls
+  auto reduction_op1 = generalize_operator<T>(reduction_op);
   // early exit for threads outside the range with dynamic number of valid items
   if (!config.is_segmented && valid_items.rank_dynamic() == 1
       && logical_lane_id(logical_warp_size) >= valid_items.extent(0))
@@ -267,10 +269,10 @@ template <typename T, typename ReductionOp, typename Config>
   {
     if constexpr (is_same_v<T, float> && __cccl_ptx_isa >= 860)
     {
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::redux_sm100a(reduction_op, input, config);))
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::redux_sm100a(reduction_op1, input, config);))
     }
-    auto input_int  = floating_point_to_comparable_int(reduction_op, input);
-    auto result_int = warp_reduce_dispatch(input_int, reduction_op, config);
+    auto input_int  = floating_point_to_comparable_int(reduction_op1, input);
+    auto result_int = warp_reduce_dispatch(input_int, reduction_op1, config);
     auto result_rev = comparable_int_to_floating_point(result_int); // reverse
     return unsafe_bitcast<T>(result_rev);
   }
@@ -278,15 +280,15 @@ template <typename T, typename ReductionOp, typename Config>
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, T> && (is_any_half_v<T> || is_any_bfloat16_v<T>) )
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
-                      (return warp_reduce_shuffle_op(input, reduction_op, config);),
-                      (return warp_reduce_generic(input, reduction_op, config);))
+                      (return warp_reduce_shuffle_op(input, reduction_op1, config);),
+                      (return warp_reduce_generic(input, reduction_op1, config);))
   }
   // [Min/Max]: short2, ushort2
   else if constexpr (is_cuda_minimum_maximum_v<ReductionOp, T> && is_any_short2_v<T> && __cccl_ptx_isa >= 800)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      (return warp_reduce_shuffle_op(input, reduction_op, config);),
-                      (return warp_reduce_generic(input, reduction_op, config);))
+                      (return warp_reduce_shuffle_op(input, reduction_op1, config);),
+                      (return warp_reduce_generic(input, reduction_op1, config);))
   }
   // [Plus]: any complex
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && __is_complex_v<T>)
@@ -295,7 +297,7 @@ template <typename T, typename ReductionOp, typename Config>
     if constexpr (is_half_v<typename T::value_type>)
     {
       auto half2_value = unsafe_bitcast<__half2>(input);
-      auto ret         = warp_reduce_dispatch(half2_value, reduction_op, config);
+      auto ret         = warp_reduce_dispatch(half2_value, reduction_op1, config);
       return unsafe_bitcast<T>(ret);
     }
 #endif // _CCCL_HAS_NVFP16()
@@ -303,53 +305,53 @@ template <typename T, typename ReductionOp, typename Config>
     if constexpr (is_bfloat16_v<typename T::value_type>)
     {
       auto bfloat2_value = unsafe_bitcast<__nv_bfloat162>(input);
-      auto ret           = warp_reduce_dispatch(bfloat2_value, reduction_op, config);
+      auto ret           = warp_reduce_dispatch(bfloat2_value, reduction_op1, config);
       return unsafe_bitcast<T>(ret);
     }
 #endif // _CCCL_HAS_NVBF16()
     if constexpr (is_same_v<typename T::value_type, float>)
     {
       auto float2_value = unsafe_bitcast<float2>(input);
-      auto ret          = warp_reduce_dispatch(float2_value, reduction_op, config);
+      auto ret          = warp_reduce_dispatch(float2_value, reduction_op1, config);
       return unsafe_bitcast<T>(ret);
     }
     else
     { // double
-      auto real = warp_reduce_dispatch(input.real(), reduction_op, config);
-      auto img  = warp_reduce_dispatch(input.imag(), reduction_op, config);
+      auto real = warp_reduce_dispatch(input.real(), reduction_op1, config);
+      auto img  = warp_reduce_dispatch(input.imag(), reduction_op1, config);
       return T{real, img};
     }
   }
   // [Plus]: __half, __half2
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_any_half_v<T>)
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op, config);));
+    NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle_op(input, reduction_op1, config);));
     _CCCL_UNREACHABLE(); // half is not supported before SM53
   }
   // [Plus]: __nv_bfloat16, __nv_bfloat162
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_any_bfloat16_v<T>)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      (return warp_reduce_shuffle_op(input, reduction_op, config);),
-                      (return warp_reduce_generic(input, reduction_op, config);));
+                      (return warp_reduce_shuffle_op(input, reduction_op1, config);),
+                      (return warp_reduce_generic(input, reduction_op1, config);));
   }
   // [Plus]: float2
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_same_v<T, float2>)
   {
     if constexpr (__cccl_ptx_isa >= 860)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_100, (return warp_reduce_shuffle_op(input, reduction_op, config);))
+      NV_IF_TARGET(NV_PROVIDES_SM_100, (return warp_reduce_shuffle_op(input, reduction_op1, config);))
     }
-    auto x = warp_reduce_shuffle_op(input.x, reduction_op, config);
-    auto y = warp_reduce_shuffle_op(input.y, reduction_op, config);
+    auto x = warp_reduce_shuffle_op(input.x, reduction_op1, config);
+    auto y = warp_reduce_shuffle_op(input.y, reduction_op1, config);
     return float2{x, y};
   }
   // [Plus]: short2, ushort2
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_any_short2_v<T> && __cccl_ptx_isa >= 800)
   {
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      (return warp_reduce_shuffle_op(input, reduction_op, config);),
-                      (return warp_reduce_generic(input, reduction_op, config);));
+                      (return warp_reduce_shuffle_op(input, reduction_op1, config);),
+                      (return warp_reduce_generic(input, reduction_op1, config);));
   }
   // [Plus/Min/Max]: small integrals (int8, uint8, int16, uint16, int32, uint32)
   // [Plus]:         float, double
@@ -359,18 +361,18 @@ template <typename T, typename ReductionOp, typename Config>
                   "Bitwise reduction operations are only supported for unsigned integral types.");
     if constexpr (is_integral_v<T>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_redux_op(input, reduction_op, config);));
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_redux_op(input, reduction_op1, config);));
     }
-    return warp_reduce_shuffle_op(input, reduction_op, config);
+    return warp_reduce_shuffle_op(input, reduction_op1, config);
   }
   else
   {
     // [Plus/Min/Max]: large integrals (int64, uint64, int128, uint128)
     if constexpr (is_specialized_operator && is_integral_v<T>)
     {
-      NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op, config);));
+      NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op1, config);));
     }
-    return warp_reduce_generic(input, reduction_op, config);
+    return warp_reduce_generic(input, reduction_op1, config);
   }
 }
 
