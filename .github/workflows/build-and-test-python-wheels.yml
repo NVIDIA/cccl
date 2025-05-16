@@ -14,6 +14,9 @@ jobs:
     with:
       script-command: ci/build_cuda_cccl_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
+      upload-artifact: true
+      upload-artifact-name: wheel-cccl-${{ matrix.python-version }}
+      upload-artifact-path: ${{github.event.repository.name}}/wheelhouse/
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']

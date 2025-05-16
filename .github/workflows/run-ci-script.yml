@@ -24,6 +24,19 @@ on:
         required: false
         type: string
         description: 'Path to download the artifact to'
+      upload-artifact:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether to upload the wheel artifact'
+      upload-artifact-name:
+        required: false
+        type: string
+        description: 'Name for the uploaded artifact'
+      upload-artifact-path:
+        required: false
+        type: string
+        description: 'Path to upload the artifact from'
 
 jobs:
   run-script:
@@ -104,4 +117,13 @@ jobs:
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
             --env "HOST_WORKSPACE=${{github.workspace}}" \
-            -- /ci.sh 
+            -- /ci.sh
+
+      - name: Upload wheel artifact
+        if: ${{ inputs.upload-artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.upload-artifact-name }}
+          path: ${{ inputs.upload-artifact-path }}
+          retention-days: 1
+        continue-on-error: true 
