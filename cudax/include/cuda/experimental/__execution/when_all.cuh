@@ -86,16 +86,17 @@ private:
 
     __state_t& __state_;
 
-    _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
+    [[nodiscard]] _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }
 
-    // TODO: only forward the "forwarding" queries
-    template <class _Tag>
-    _CCCL_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query>)
+    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>)
+      -> __query_result_t<env_of_t<__rcvr_t>, _Query>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Tag());
+      return execution::get_env(__state_.__rcvr_).query(_Query());
     }
   };
 

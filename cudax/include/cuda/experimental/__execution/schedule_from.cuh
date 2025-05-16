@@ -220,9 +220,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t::__sndr_t
     }
 
     _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<_Sndr, _Query>)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
     [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-      -> __query_result_t<_Query, env_of_t<_Sndr>>
+      -> __query_result_t<env_of_t<_Sndr>, _Query>
     {
       return execution::get_env(__sndr_->__sndr_).query(_Query{});
     }
