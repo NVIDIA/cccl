@@ -41,14 +41,14 @@ jobs:
       id-token: write
       contents: read
 
-  build-cuda-cooperative:
-    name: Build CUDA Cooperative Wheels
+  build-cooperative:
+    name: Build Cooperative Wheels
     uses: ./.github/workflows/run-ci-script.yml
     with:
       script-command: ci/build_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       upload-artifact: true
-      upload-artifact-name: wheel-cuda-cooperative-${{ matrix.python-version }}
+      upload-artifact-name: wheel-cooperative-${{ matrix.python-version }}
       upload-artifact-path: ${{github.event.repository.name}}/wheelhouse/
     strategy:
       matrix:
@@ -57,16 +57,17 @@ jobs:
       id-token: write
       contents: read
 
-  test-cuda-cooperative:
-    name: Test CUDA Cooperative Wheels
-    needs: build-cuda-cooperative
+  test-cooperative:
+    name: Test Cooperative Wheels
+    needs: build-cooperative
     uses: ./.github/workflows/run-ci-script.yml
     with:
       script-command: ci/test_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       needs-artifact: true
-      artifact-name: wheel-cuda-cooperative-${{ matrix.python-version }}
+      artifact-name: wheel-cooperative-${{ matrix.python-version }}
       artifact-path: ${{github.event.repository.name}}/wheelhouse/
+      runner: linux-amd64-gpu-rtxa6000-latest-1
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
@@ -74,14 +75,14 @@ jobs:
       id-token: write
       contents: read
 
-  build-cuda-parallel:
-    name: Build CUDA Parallel Wheels
+  build-parallel:
+    name: Build Parallel Wheels
     uses: ./.github/workflows/run-ci-script.yml
     with:
       script-command: ci/build_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       upload-artifact: true
-      upload-artifact-name: wheel-cuda-parallel-${{ matrix.python-version }}
+      upload-artifact-name: wheel-parallel-${{ matrix.python-version }}
       upload-artifact-path: ${{github.event.repository.name}}/wheelhouse/
     strategy:
       matrix:
@@ -90,16 +91,17 @@ jobs:
       id-token: write
       contents: read
 
-  test-cuda-parallel:
-    name: Test CUDA Parallel Wheels
-    needs: build-cuda-parallel
+  test-parallel:
+    name: Test Parallel Wheels
+    needs: build-parallel
     uses: ./.github/workflows/run-ci-script.yml
     with:
       script-command: ci/test_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
       needs-artifact: true
-      artifact-name: wheel-cuda-parallel-${{ matrix.python-version }}
+      artifact-name: wheel-parallel-${{ matrix.python-version }}
       artifact-path: ${{github.event.repository.name}}/wheelhouse/
+      runner: linux-amd64-gpu-rtxa6000-latest-1
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']

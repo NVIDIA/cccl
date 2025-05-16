@@ -37,11 +37,16 @@ on:
         required: false
         type: string
         description: 'Path to upload the artifact from'
+      runner:
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+        description: 'The runner to use for this job'
 
 jobs:
   run-script:
     name: Run CI Script
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     permissions:
       id-token: write
       contents: read
