@@ -21,6 +21,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          path: ${{github.event.repository.name}}
           persist-credentials: false
       - name: Get AWS credentials for sccache bucket
         uses: aws-actions/configure-aws-credentials@v4
@@ -88,6 +89,7 @@ jobs:
           path: ${{github.event.repository.name}}/wheelhouse/
           retention-days: 1
         continue-on-error: true
+  
 
   # build-cooperative:
   #   name: Build Cooperative Wheels
@@ -183,8 +185,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          path: ${{github.event.repository.name}}
           persist-credentials: false
-
 
       - name: Get AWS credentials for sccache bucket
         uses: aws-actions/configure-aws-credentials@v4
