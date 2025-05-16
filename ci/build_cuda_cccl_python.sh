@@ -12,3 +12,6 @@ setup_python_env "${py_version}"
 # Build the wheel and output to the wheelhouse directory
 cd /home/coder/cccl/python/cuda_cccl
 python -m pip wheel --no-deps . && cp *.whl /home/coder/cccl/wheelhouse
+
+echo "Wheels: "
+ls /home/coder/cccl/wheelhouse
