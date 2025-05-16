@@ -11,6 +11,9 @@ jobs:
   build-cccl:
     name: Build CCCL Wheels
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
@@ -169,6 +172,9 @@ jobs:
 
   test-cccl:
     name: Test CCCL Wheels
+    permissions:
+      id-token: write
+      contents: read
     needs: build-cccl
     runs-on: ubuntu-latest
     strategy:
@@ -179,6 +185,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+
+
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
 
       - name: Download wheel artifact
         uses: actions/download-artifact@v4
@@ -198,6 +212,23 @@ jobs:
 
           chmod +x "$RUNNER_TEMP/ci.sh"
 
+          mkdir -p .aws
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=$AWS_ACCESS_KEY_ID
+          aws_session_token=$AWS_SESSION_TOKEN
+          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
       - name: Run test script
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
@@ -207,6 +238,18 @@ jobs:
             --cuda 12.8 \
             --host gcc13 \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
+            --env "CI=$CI" \
+            --env "AWS_ROLE_ARN=" \
+            --env "COMMAND=$COMMAND" \
+            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "GITHUB_ENV=$GITHUB_ENV" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_PATH=$GITHUB_PATH" \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
             -- /ci.sh
 
   # test-cooperative:
