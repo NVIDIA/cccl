@@ -10,86 +10,33 @@ defaults:
 jobs:
   build-cccl:
     name: Build CCCL Wheels
-    runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
+    uses: ./.github/workflows/run-ci-script.yml
+    with:
+      script-command: ci/build_cuda_cccl_python.sh -py-version ${{ matrix.python-version }}
+      python-version: ${{ matrix.python-version }}
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          path: ${{github.event.repository.name}}
-          persist-credentials: false
-      - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
-          aws-region: us-east-2
-          role-duration-seconds: 43200 # 12 hours
-      - name: Create CI script
-        run: |
-          cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
-          #! /usr/bin/env bash
-          set -eo pipefail
+    permissions:
+      id-token: write
+      contents: read
 
-          ci/build_cuda_cccl_python.sh -py-version ${{ matrix.python-version }};
-          EOF
-
-          chmod +x "$RUNNER_TEMP/ci.sh"
-
-          mkdir -p .aws
-
-          cat <<EOF > .aws/config
-          [default]
-          bucket=rapids-sccache-devs
-          region=us-east-2
-          EOF
-
-          cat <<EOF > .aws/credentials
-          [default]
-          aws_access_key_id=$AWS_ACCESS_KEY_ID
-          aws_session_token=$AWS_SESSION_TOKEN
-          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
-          EOF
-
-          chmod 0600 .aws/credentials
-          chmod 0664 .aws/config
-
-      - name: Run build script
-        env:
-          PYTHON_VERSION: ${{ matrix.python-version }}
-        run: |
-          ${{github.event.repository.name}}/.devcontainer/launch.sh \
-            --docker \
-            --cuda 12.8 \
-            --host gcc13 \
-            --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-            --env "CI=$CI" \
-            --env "AWS_ROLE_ARN=" \
-            --env "SCCACHE_IDLE_TIMEOUT=0" \
-            --env "GITHUB_ENV=$GITHUB_ENV" \
-            --env "GITHUB_SHA=$GITHUB_SHA" \
-            --env "GITHUB_PATH=$GITHUB_PATH" \
-            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
-            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
-            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
-            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
-            --env "HOST_WORKSPACE=${{github.workspace}}" \
-            -- /ci.sh
-
-      - name: Upload wheel artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheel-cccl-${{ matrix.python-version }}
-          path: ${{github.event.repository.name}}/wheelhouse/
-          retention-days: 1
-        continue-on-error: true
-  
+  test-cccl:
+    name: Test CCCL Wheels
+    needs: build-cccl
+    uses: ./.github/workflows/run-ci-script.yml
+    with:
+      script-command: ci/test_cuda_cccl_python.sh -py-version ${{ matrix.python-version }}
+      python-version: ${{ matrix.python-version }}
+      needs-artifact: true
+      artifact-name: wheel-cccl-${{ matrix.python-version }}
+      artifact-path: ${{github.event.repository.name}}/wheelhouse/
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12', '3.13']
+    permissions:
+      id-token: write
+      contents: read
 
   # build-cooperative:
   #   name: Build Cooperative Wheels
@@ -170,87 +117,6 @@ jobs:
   #         name: wheel-parallel-${{ matrix.python-version }}
   #         path: dist/*.whl
   #         retention-days: 1
-
-  test-cccl:
-    name: Test CCCL Wheels
-    permissions:
-      id-token: write
-      contents: read
-    needs: build-cccl
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13']
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          path: ${{github.event.repository.name}}
-          persist-credentials: false
-
-      - name: Get AWS credentials for sccache bucket
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
-          aws-region: us-east-2
-          role-duration-seconds: 43200 # 12 hours
-
-      - name: Download wheel artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: wheel-cccl-${{ matrix.python-version }}
-          path: ${{github.event.repository.name}}/wheelhouse/
-          continue-on-error: true
-
-      - name: Create CI script
-        run: |
-          cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
-          #! /usr/bin/env bash
-          set -eo pipefail
-
-          ci/test_cuda_cccl_python.sh -py-version ${{ matrix.python-version }};
-          EOF
-
-          chmod +x "$RUNNER_TEMP/ci.sh"
-
-          mkdir -p .aws
-          cat <<EOF > .aws/config
-          [default]
-          bucket=rapids-sccache-devs
-          region=us-east-2
-          EOF
-
-          cat <<EOF > .aws/credentials
-          [default]
-          aws_access_key_id=$AWS_ACCESS_KEY_ID
-          aws_session_token=$AWS_SESSION_TOKEN
-          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
-          EOF
-
-          chmod 0600 .aws/credentials
-          chmod 0664 .aws/config
-
-      - name: Run test script
-        env:
-          PYTHON_VERSION: ${{ matrix.python-version }}
-        run: |
-          ${{github.event.repository.name}}/.devcontainer/launch.sh \
-            --docker \
-            --cuda 12.8 \
-            --host gcc13 \
-            --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
-            --env "CI=$CI" \
-            --env "AWS_ROLE_ARN=" \
-            --env "SCCACHE_IDLE_TIMEOUT=0" \
-            --env "GITHUB_ENV=$GITHUB_ENV" \
-            --env "GITHUB_SHA=$GITHUB_SHA" \
-            --env "GITHUB_PATH=$GITHUB_PATH" \
-            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
-            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
-            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
-            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
-            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
-            -- /ci.sh
 
   # test-cooperative:
   #   name: Test Cooperative Wheels
