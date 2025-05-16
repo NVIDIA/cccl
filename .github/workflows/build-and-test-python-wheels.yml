@@ -18,6 +18,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
 
       - name: Create CI script
