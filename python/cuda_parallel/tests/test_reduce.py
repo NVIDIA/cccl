@@ -31,8 +31,14 @@ def type_to_problem_sizes(dtype):
         raise ValueError("Unsupported dtype")
 
 
+def get_mark(dt, log_size):
+    if log_size + np.log2(np.dtype(dt).itemsize) < 21:
+        return tuple()
+    return pytest.mark.large
+
+
 dtype_size_pairs = [
-    (dt, 2**log_size)
+    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
     for dt in [np.uint8, np.uint16, np.uint32, np.uint64]
     for log_size in type_to_problem_sizes(dt)
 ]
