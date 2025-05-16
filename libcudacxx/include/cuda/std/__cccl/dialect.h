@@ -85,6 +85,19 @@
 #  define _CCCL_NO_THREE_WAY_COMPARISON
 #endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 
+// Some compilers turn on pack indexing in pre-C++26 code. We want to use it if it is
+// available.
+#if !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
+#  define _CCCL_NO_PACK_INDEXING
+#endif // !defined(__cpp_pack_indexing) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(CLANG, <, 20)
+
+#if _CCCL_STD_VER <= 2017 || __cpp_consteval < 201811L
+#  define _CCCL_NO_CONSTEVAL
+#  define _CCCL_CONSTEVAL constexpr
+#else
+#  define _CCCL_CONSTEVAL consteval
+#endif
+
 ///////////////////////////////////////////////////////////////////////////////
 // Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,10 +106,17 @@
 #define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 
 // We need to treat host and device separately
-#if defined(__CUDA_ARCH__)
+#if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 #  define _CCCL_GLOBAL_CONSTANT inline constexpr
-#endif // __CUDA_ARCH__
+#endif // !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)
+
+#if _CCCL_STD_VER >= 2020 && __cpp_constinit >= 201907L
+#  define _CCCL_CONSTINIT constinit
+#else // ^^^ has constinit ^^^ / vvv no constinit vvv
+#  define _CCCL_CONSTINIT _CCCL_REQUIRE_CONSTANT_INITIALIZATION
+#endif // ^^^ no constinit ^^^
 
 #endif // __CCCL_DIALECT_H

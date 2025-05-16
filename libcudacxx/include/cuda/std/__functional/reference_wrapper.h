@@ -22,11 +22,14 @@
 
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/weak_result_type.h>
+#include <cuda/std/__fwd/reference_wrapper.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -104,5 +107,7 @@ template <class _Tp>
 void cref(const _Tp&&) = delete;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_REFERENCE_WRAPPER_H

@@ -22,6 +22,8 @@
 
 #include <cuda/std/__system_error/errc.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT from_chars_result
@@ -34,13 +36,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT from_chars_result
     return ec == errc{};
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
   {
     return __lhs.ptr == __rhs.ptr && __lhs.ec == __rhs.ec;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const from_chars_result& __lhs, const from_chars_result& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -48,5 +50,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT from_chars_result
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CHARCONV_FROM_CHARS_RESULT_H

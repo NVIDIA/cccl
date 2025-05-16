@@ -267,7 +267,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 #ifdef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_OPERATIONS
 #  ifndef LIBCUDACXX_ENABLE_SIMPLIFIED_COMPLEX_MULTIPLICATION
@@ -1594,6 +1594,8 @@ _CCCL_DIAG_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
+#include <cuda/std/__cccl/epilogue.h>
+
 #if _LIBCUDACXX_HAS_NVFP16()
 #  include <cuda/std/__complex/nvfp16.h>
 #endif // _LIBCUDACXX_HAS_NVFP16()
@@ -1604,7 +1606,5 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #undef _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL
 #undef _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG
-
-_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX_COMPLEX

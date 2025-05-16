@@ -6,14 +6,12 @@ import re
 import tempfile
 from collections import namedtuple
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import Union
+
+import numba
+import numpy as np
 
 from ._typing import DimType
-
-# Import for type checking only
-if TYPE_CHECKING:
-    import numba
-    import numpy as np
 
 version = namedtuple("version", ("major", "minor"))
 code = namedtuple("code", ("kind", "version", "data"))

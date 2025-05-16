@@ -65,6 +65,8 @@
 // older versions of MSVC, we fall back to using the built-in typeid feature,
 // which is always available on MSVC, even when RTTI is disabled.
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #define _CCCL_STD_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_ONLY_SUPPORTS_TYPES<__VA_ARGS__>)
@@ -218,13 +220,13 @@ struct __type_info_ptr_
 
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __type_info_ref_ operator*() const noexcept;
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_;
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return !(__a == __b);
@@ -275,13 +277,13 @@ struct __type_info
     return __type_info_ptr_{__pfn_};
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(__type_info const& __a, __type_info const& __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_ || __a.__pfn_().__name_ == __b.__pfn_().__name_;
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(__type_info const& __a, __type_info const& __b) noexcept
   {
     return !(__a == __b);
@@ -372,14 +374,14 @@ struct __type_info
   //   return ;
   // }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend constexpr bool
   operator==(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return &__lhs == &__rhs || __lhs.__name_ == __rhs.__name_;
   }
 
 #  if _CCCL_STD_VER <= 2017
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend constexpr bool
   operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -417,5 +419,7 @@ template <class _Tp>
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_TYPEID_H

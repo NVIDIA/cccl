@@ -24,6 +24,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 ////////////////////////////////////////////////////////////////////////////////
 // _CCCL_TEMPLATE
 // Usage:
@@ -266,5 +268,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
     }                                                                                                 \
     }
 #endif // _CCCL_NO_CONCEPTS ^^^
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA___CONCEPTS

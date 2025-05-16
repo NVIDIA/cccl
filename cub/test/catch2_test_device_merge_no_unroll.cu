@@ -16,9 +16,10 @@
 
 #include <algorithm>
 
+#include <test_util.h>
+
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
-#include <test_util.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

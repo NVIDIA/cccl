@@ -175,7 +175,8 @@ static std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_s
 C2H_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(max_items / 2, max_items)));
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
@@ -191,7 +192,8 @@ C2H_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][d
 C2H_TEST("Device radix descending sort works with custom i128_t", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(max_items / 2, max_items)));
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
@@ -222,7 +224,8 @@ C2H_TEST("Device radix descending sort works with custom i128_t", "[radix][sort]
 C2H_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(max_items / 2, max_items)));
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
@@ -262,7 +265,8 @@ C2H_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][so
 C2H_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(max_items / 2, max_items)));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
@@ -291,7 +295,8 @@ C2H_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][devic
 C2H_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(max_items / 2, max_items)));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
@@ -332,15 +337,16 @@ C2H_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][
 C2H_TEST("Device radix descending sort works with bits of custom i128_t", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(1, random(max_items / 2, max_items)));
+
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items      = GENERATE_COPY(take(c2h::adjust_seed_count(1), random(max_items / 2, max_items)));
+  const int begin_bit      = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(0, 120)));
+  const int end_bit        = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(begin_bit, 128)));
+  const bool is_descending = GENERATE(false, true);
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
   c2h::gen(C2H_SEED(2), in_keys);
-
-  const int begin_bit      = GENERATE_COPY(take(4, random(0, 120)));
-  const int end_bit        = GENERATE_COPY(take(4, random(begin_bit, 128)));
-  const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_keys(in_keys, is_descending, begin_bit, end_bit);
 
@@ -370,7 +376,12 @@ C2H_TEST("Device radix descending sort works with bits of custom i128_t", "[radi
 C2H_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(1, random(max_items / 2, max_items)));
+
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items      = GENERATE_COPY(take(c2h::adjust_seed_count(1), random(max_items / 2, max_items)));
+  const int begin_bit      = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(0, 120)));
+  const int end_bit        = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(begin_bit, 128)));
+  const bool is_descending = GENERATE(false, true);
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
@@ -379,10 +390,6 @@ C2H_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[r
   c2h::device_vector<value> out_values(num_items);
   c2h::gen(C2H_SEED(2), in_keys);
   c2h::gen(C2H_SEED(1), in_values);
-
-  const int begin_bit      = GENERATE_COPY(take(4, random(0, 120)));
-  const int end_bit        = GENERATE_COPY(take(4, random(begin_bit, 128)));
-  const bool is_descending = GENERATE(false, true);
 
   auto reference = reference_sort_pairs(in_keys, in_values, is_descending, begin_bit, end_bit);
 
@@ -418,7 +425,10 @@ C2H_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[r
 C2H_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items = GENERATE_COPY(take(c2h::adjust_seed_count(1), random(max_items / 2, max_items)));
+  const int begin_bit = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(0, 120)));
+  const int end_bit   = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(begin_bit, 128)));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
@@ -429,8 +439,6 @@ C2H_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
 
   cub::DoubleBuffer<key> keys(d_keys_1, d_keys_2);
 
-  const int begin_bit      = GENERATE_COPY(take(4, random(0, 120)));
-  const int end_bit        = GENERATE_COPY(take(4, random(begin_bit, 128)));
   const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_keys(keys_1, is_descending, begin_bit, end_bit);
@@ -450,7 +458,11 @@ C2H_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
 C2H_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
-  const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
+  // Use c2h::adjust_seed_count to reduce runtime on sanitizers.
+  const int num_items      = GENERATE_COPY(take(c2h::adjust_seed_count(1), random(max_items / 2, max_items)));
+  const int begin_bit      = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(0, 120)));
+  const int end_bit        = GENERATE_COPY(take(c2h::adjust_seed_count(4), random(begin_bit, 128)));
+  const bool is_descending = GENERATE(false, true);
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
@@ -468,10 +480,6 @@ C2H_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix
 
   cub::DoubleBuffer<key> keys(d_keys_1, d_keys_2);
   cub::DoubleBuffer<value> values(d_values_1, d_values_2);
-
-  const int begin_bit      = GENERATE_COPY(take(4, random(0, 120)));
-  const int end_bit        = GENERATE_COPY(take(4, random(begin_bit, 128)));
-  const bool is_descending = GENERATE(false, true);
 
   auto reference_keys = reference_sort_pairs(keys_1, values_1, is_descending, begin_bit, end_bit);
 

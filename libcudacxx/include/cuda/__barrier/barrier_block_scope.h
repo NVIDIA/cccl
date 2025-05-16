@@ -44,6 +44,8 @@
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
 #endif // _CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // Needed for pipeline.arrive_on
@@ -446,5 +448,7 @@ public:
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_BARRIER_BLOCK_SCOPE_H

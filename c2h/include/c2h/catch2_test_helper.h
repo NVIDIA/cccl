@@ -272,22 +272,29 @@ struct Catch::StringMaker<cudaError>
 
 #define C2H_TEST_STR(a) #a
 
-namespace detail
+namespace c2h
 {
-inline std::size_t adjust_seed_count(std::size_t requested)
+
+inline std::size_t get_override_seed_count()
 {
   // Setting this environment variable forces a fixed number of seeds to be generated, regardless of the requested
   // count. Set to 1 to reduce redundant, expensive testing when using sanitizers, etc.
-  static const char* override_str = std::getenv("CCCL_SEED_COUNT_OVERRIDE");
-  static int override             = override_str ? std::atoi(override_str) : 0;
-  return override_str ? override : requested;
+  static const char* override_str = std::getenv("C2H_SEED_COUNT_OVERRIDE");
+  static const int override_seeds = override_str ? std::atoi(override_str) : 0;
+  return override_seeds;
 }
-} // namespace detail
+
+inline std::size_t adjust_seed_count(std::size_t requested)
+{
+  static std::size_t override_seeds = get_override_seed_count();
+  return override_seeds != 0 ? override_seeds : requested;
+}
+} // namespace c2h
 
 #define C2H_SEED(N)                                                                         \
   c2h::seed_t                                                                               \
   {                                                                                         \
-    GENERATE_COPY(take(detail::adjust_seed_count(N),                                        \
+    GENERATE_COPY(take(c2h::adjust_seed_count(N),                                           \
                        random(::cuda::std::numeric_limits<unsigned long long int>::min(),   \
                               ::cuda::std::numeric_limits<unsigned long long int>::max()))) \
   }

@@ -26,6 +26,8 @@
 
 #include <cuda/experimental/__device/attributes.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -430,6 +432,7 @@ public:
 //! @brief Provides architecture traits of the architecture matching __CUDA_ARCH__ macro
 _CCCL_DEVICE constexpr inline arch_traits_t current_arch()
 {
+  // fixme: this doesn't work with nvc++ -cuda
 #ifdef __CUDA_ARCH__
   return arch_traits(__CUDA_ARCH__);
 #else
@@ -474,5 +477,7 @@ namespace detail
 } // namespace detail
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_ARCH_TRAITS

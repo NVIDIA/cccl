@@ -32,6 +32,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_VIEWS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__all)
@@ -89,5 +91,7 @@ using all_t = enable_if_t<_CUDA_VRANGES::viewable_range<_Range>, decltype(_CUDA_
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_VIEWS
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_ALL_H

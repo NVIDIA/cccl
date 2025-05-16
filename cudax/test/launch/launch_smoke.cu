@@ -123,7 +123,7 @@ struct launch_transform_to_int_convertible
     }
   };
 
-  _CCCL_NODISCARD_FRIEND int_convertible
+  [[nodiscard]] friend int_convertible
   __cudax_launch_transform(::cuda::stream_ref stream, launch_transform_to_int_convertible self) noexcept
   {
     return int_convertible(stream.get(), self.value_);

@@ -218,22 +218,22 @@ function build_preset() {
     local preset_dir="${BUILD_DIR}/${PRESET}"
     local sccache_json="${preset_dir}/sccache_stats.json"
 
-    source "./sccache_stats.sh" "start"
+    source "./sccache_stats.sh" "start" || :
 
     pushd .. > /dev/null
     run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
     status=$?
     popd > /dev/null
 
-    sccache --show-adv-stats --stats-format=json > "${sccache_json}"
+    sccache --show-adv-stats --stats-format=json > "${sccache_json}" || :
 
-    minimal_sccache_stats=$(source "./sccache_stats.sh" "end")
+    minimal_sccache_stats=$(source "./sccache_stats.sh" "end" || :)
 
     # Only print detailed stats in actions workflow
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         begin_group "💲 sccache stats"
         echo "${minimal_sccache_stats}"
-        sccache -s
+        sccache -s || :
         end_group
 
         begin_group "🥷 ninja build times"

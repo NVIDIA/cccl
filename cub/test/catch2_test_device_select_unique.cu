@@ -271,7 +271,8 @@ C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]")
+C2H_TEST("DeviceSelect::Unique works for very large number of items",
+         "[device][select_unique][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::int64_t;

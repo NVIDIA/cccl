@@ -25,13 +25,13 @@
  *
  ******************************************************************************/
 
-#include <cuda.h>
-
 #include <string>
 
-#include <c2h/catch2_test_helper.h>
+#include <cuda.h>
 #include <nvrtc.h>
 #include <nvrtc_args.h>
+
+#include <c2h/catch2_test_helper.h>
 
 TEST_CASE("Test nvrtc", "[test][nvrtc]")
 {

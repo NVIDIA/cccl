@@ -9,6 +9,7 @@ CUDA Experimental
 
    container
    memory_resource
+   graph
    stf
    ${repo_docs_api_path}/cudax_api
 
@@ -19,6 +20,7 @@ Specifically, ``cudax`` provides:
    - :ref:`uninitialized storage <cudax-containers-uninitialized-buffer>`
    - :ref:`an owning type erased memory resource <cudax-memory-resource-any-async-resource>`
    - :ref:`stream-ordered memory resources <cudax-memory-resource-async>`
+   - :ref:`graph functionality <cudax-graph>`
    - dimensions description functionality
    - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`
 

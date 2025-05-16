@@ -30,6 +30,8 @@
 
 #include <cuda/std/__type_traits/void_t.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Layout policy with a mapping which corresponds to Fortran-style array layouts
@@ -65,5 +67,7 @@ inline constexpr bool
 } // namespace __mdspan_detail
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FWD_MDSPAN_H

@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4312) // warning C4312: 'type cast': conversion from '_Tp' to '_Tp *' of greater size
 
@@ -35,7 +37,7 @@ using ::std::addressof;
 #elif defined(_CCCL_BUILTIN_ADDRESSOF)
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_NO_CFI constexpr _Tp* addressof(_Tp& __x) noexcept
 {
   return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
@@ -43,7 +45,7 @@ template <class _Tp>
 #else
 
 template <class _Tp>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI _CCCL_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
   return reinterpret_cast<_Tp*>(const_cast<char*>(&reinterpret_cast<const volatile char&>(__x)));
 }
@@ -56,5 +58,7 @@ _Tp* addressof(const _Tp&&) noexcept = delete;
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_ADDRESSOF_H

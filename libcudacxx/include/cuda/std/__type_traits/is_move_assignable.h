@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/add_rvalue_reference.h>
 #include <cuda/std/__type_traits/is_assignable.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -35,5 +37,7 @@ template <class _Tp>
 inline constexpr bool is_move_assignable_v = is_move_assignable<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_MOVE_ASSIGNABLE_H

@@ -1,3 +1,4 @@
+import copy
 import ctypes
 import operator
 import uuid
@@ -193,7 +194,7 @@ class IteratorBase:
             self.value_type,
             self.iterator_io,
         )
-        out.ltoirs = self.ltoirs
+        out.ltoirs = copy.copy(self.ltoirs)
         return out
 
 
@@ -622,7 +623,11 @@ def _replace_duplicate_values(*ds, replacement_value):
 
 def scrub_duplicate_ltoirs(*maybe_iterators: Any) -> tuple[Any, ...]:
     """
-    Scrub duplicate `ltoirs` from iterators in the provided sequence.
+    Given a sequence of iterators and/or other objects, return a new sequence
+    with duplicate LTOIRs removed from iterators.
+
+    Note that a copy of the iterators is made, so the original iterators
+    are not modified.
 
     If the sequence contains iterators with duplicate advance/dereference
     ltoirs, those are set to the empty byte string b"". This pre-processing
@@ -636,7 +641,10 @@ def scrub_duplicate_ltoirs(*maybe_iterators: Any) -> tuple[Any, ...]:
     ltoirs = _replace_duplicate_values(
         *(it.ltoirs for it in iterators), replacement_value=b""
     )
-    for it, ltoir in zip(iterators, ltoirs):
-        it.ltoirs = ltoir
+    for iterator, ltoir in zip(iterators, ltoirs):
+        iterator.ltoirs = ltoir
 
-    return maybe_iterators
+    it = iter(iterators)
+    return tuple(
+        next(it) if isinstance(arg, IteratorBase) else arg for arg in maybe_iterators
+    )

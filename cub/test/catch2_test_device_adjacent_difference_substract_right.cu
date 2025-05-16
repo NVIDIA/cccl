@@ -319,7 +319,8 @@ struct check_difference
   }
 };
 
-C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes", "[device][adjacent_difference]")
+C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with large indexes",
+         "[device][adjacent_difference][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
 {
   constexpr cuda::std::size_t num_items = 1ll << 33;
   c2h::device_vector<int> error(1);

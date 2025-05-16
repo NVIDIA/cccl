@@ -225,3 +225,33 @@ def test_binary_transform_with_stream(cuda_stream):
     expected = binary_transform_host(d_in1.get(), d_in2.get(), op)
 
     np.testing.assert_allclose(expected, got, rtol=1e-5)
+
+
+def test_transform_reuse_input_iterator():
+    def op(a, b):
+        return a + b
+
+    d_in1 = iterators.CountingIterator(np.int32(0))
+    d_in2 = iterators.CountingIterator(np.int32(1))
+
+    num_items = 1024
+    d_out = cp.empty(num_items, dtype=np.int32)
+
+    binary_transform_device(d_in1, d_in2, d_out, num_items, op)
+
+    got = d_out.get()
+    expected = np.arange(1, 2 * num_items + 1, step=2, dtype=np.int32)
+
+    np.testing.assert_allclose(expected, got)
+
+    # Reusing the second input iterator should work.
+    # This is to test that the iterator is not modified by LTOIR scrubbing,
+    # which is correctly done on a copy of the iterator.
+    def op2(a):
+        return a + 1
+
+    unary_transform_device(d_in2, d_out, num_items, op2)
+    got = d_out.get()
+    expected = np.arange(1, num_items + 1, dtype=np.int32) + 1
+
+    np.testing.assert_allclose(expected, got)

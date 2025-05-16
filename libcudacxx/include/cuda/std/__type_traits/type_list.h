@@ -48,6 +48,8 @@
 #  endif
 #endif
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -448,7 +450,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(CLANG, <, 20)
+#  if !defined(_CCCL_NO_PACK_INDEXING)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
@@ -1061,5 +1063,7 @@ using __type_iota =
 #endif // _CCCL_DOXYGEN_INVOKED
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_LIST_H

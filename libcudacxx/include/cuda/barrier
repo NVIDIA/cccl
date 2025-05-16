@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
+#if _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 #  error "CUDA synchronization primitives are only supported for sm_70 and up."
-#endif // __CUDA_ARCH__ < 700
+#endif // _CCCL_DEVICE_COMPILATION() && _CCCL_PTX_ARCH() < 700 && !_CCCL_CUDA_COMPILER(NVHPC)
 
 #include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>
@@ -47,6 +47,8 @@
 // (the typedef):
 struct CUtensorMap_st;
 typedef struct CUtensorMap_st CUtensorMap;
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 
@@ -254,5 +256,7 @@ inline _CCCL_DEVICE void cp_async_bulk_wait_group_read()
 #endif // __cccl_lib_experimental_ctk12_cp_async_exposure
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_BARRIER

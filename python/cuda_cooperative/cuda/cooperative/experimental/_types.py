@@ -251,15 +251,6 @@ class Constant:
         return self.val
 
 
-class DependentFunction:
-    def __init__(self, dep, op):
-        self.dep = dep
-        self.op = op
-
-    def resolve(self, template_arguments):
-        return template_arguments[self.dep]
-
-
 class StatefulFunction:
     def __init__(self, op, dtype):
         self.op = op
@@ -380,7 +371,7 @@ class StatelessOperator:
         return False
 
 
-class DependentOperator:
+class DependentPythonOperator:
     def __init__(self, ret_dtype, arg_dtypes, op):
         self.ret_dtype = ret_dtype
         self.arg_dtypes = arg_dtypes
@@ -442,6 +433,39 @@ class DependentOperator:
             return StatelessOperator(mangled_name, ret_cpp_type, arg_cpp_types, ltoir)
 
 
+class CxxFunction(Parameter):
+    def __init__(self, cpp, func_dtype):
+        super().__init__()
+        self.cpp = cpp
+        self.func_dtype = func_dtype
+
+    def __repr__(self) -> str:
+        return f"CxxFunction(cpp={self.cpp})"
+
+    def mangled_name(self):
+        return f"F{internal_mangle_cpp(self.cpp)}"
+
+    def dtype(self):
+        return self.func_dtype
+
+    def is_provided_by_user(self):
+        return False
+
+
+class DependentCxxOperator:
+    def __init__(self, dep: Dependency, cpp: str):
+        self.dep = dep
+        self.cpp = cpp
+
+    def specialize(self, template_arguments):
+        dtype = self.dep.resolve(template_arguments)
+        dtype_cpp = numba_type_to_cpp(dtype)
+        source = f"<{self.dep.dep}>"
+        target = f"<{dtype_cpp}>"
+        cpp = self.cpp.replace(source, target)
+        return CxxFunction(cpp=f"{cpp}{{}}", func_dtype=dtype)
+
+
 class DependentArray(Parameter):
     def __init__(self, value_dtype, size, is_output=False):
         self.value_dtype = value_dtype
@@ -465,6 +489,32 @@ class TemplateParameter:
 
     def __repr__(self) -> str:
         return f"{self.name}"
+
+
+def internal_mangle_cpp(cpp_name: str):
+    """
+    Substitutes non-alphanumeric characters in a C++ name with underscores,
+    such that they can be used as valid, unique identifiers in C code.  This
+    is for internal use only, and does not comport with C++ ABI name mangling.
+
+    :param cpp_name: Supplies a C++ name to be mangled.
+    :type cpp_name: str
+
+    :return: Returns the mangled C++ name with non-alphanumeric characters
+    substituted with underscores.
+    :rtype: str
+
+    Example
+    -------
+
+    .. code-block:: python
+
+        >>> mangle("std::vector<int>")
+        'std_vector_int_'
+        >>> mangle("::cuda::std::min<::cuda::std::uint32_t>{}")
+        '__cuda__std__min__cuda__std__uint32_t__'
+    """
+    return re.sub(r"[^a-zA-Z0-9]", "_", cpp_name)
 
 
 def mangle_symbol(name, template_parameters):
@@ -533,7 +583,7 @@ class Algorithm:
         template_list = ", ".join(template_list)
 
         # '::cuda::std::int32_t, 32' -> __cuda__std__int32_t__32
-        mangle = re.sub(r"[^a-zA-Z0-9]", "_", template_list)
+        mangle = internal_mangle_cpp(template_list)
 
         specialized_parameters = []
         for method in self.parameters:
@@ -652,6 +702,8 @@ class Algorithm:
                     func_decls.append(param.wrap_decl(name))
                     param_args.append(name)
                     param_decls.append(param.cpp_decl(name))
+                elif isinstance(param, CxxFunction):
+                    param_args.append(param.cpp)
                 else:
                     name = f"param_{pid}"
                     param_decls.append(param.cpp_decl(name))
@@ -726,6 +778,8 @@ class Algorithm:
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
+        # N.B. Uncomment this to immediately print generated source to stdout.
+        # print(src)
         _, lto_fn = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="lto")
         lto_irs.append(lto_fn)
         return lto_irs
@@ -744,6 +798,15 @@ class Algorithm:
         if len(self.template_parameters):
             raise ValueError("Cannot generate codegen for a template")
 
+        def ignore_param(param):
+            # Stateless operators and C++ functions do not require any
+            # additional argument handling or code generation, so we can
+            # safely ignore them during this code gen phase.
+            ignore = isinstance(param, StatelessOperator) or isinstance(
+                param, CxxFunction
+            )
+            return ignore
+
         def intrinsic_impl(*args):
             def codegen(context, builder, sig, args):
                 types = []
@@ -751,59 +814,61 @@ class Algorithm:
                 ret = None
                 arg_id = 0
                 for param in method:
-                    if not isinstance(param, StatelessOperator):
-                        dtype = param.dtype()
-                        if isinstance(param, StatefulOperator):
-                            arg = args[arg_id]
-                            state_ptr = cgutils.create_struct_proxy(dtype)(
-                                context, builder, arg
-                            ).data
+                    if ignore_param(param):
+                        continue
+
+                    dtype = param.dtype()
+                    if isinstance(param, StatefulOperator):
+                        arg = args[arg_id]
+                        state_ptr = cgutils.create_struct_proxy(dtype)(
+                            context, builder, arg
+                        ).data
+                        void_ptr = builder.bitcast(
+                            state_ptr, ir.PointerType(ir.IntType(8))
+                        )
+                        types.append(ir.PointerType(ir.IntType(8)))
+                        arguments.append(void_ptr)
+                    elif isinstance(param, Reference):
+                        if param.is_output:
+                            ptr = cgutils.alloca_once(
+                                builder, context.get_value_type(dtype)
+                            )
                             void_ptr = builder.bitcast(
-                                state_ptr, ir.PointerType(ir.IntType(8))
+                                ptr, ir.PointerType(ir.IntType(8))
                             )
                             types.append(ir.PointerType(ir.IntType(8)))
                             arguments.append(void_ptr)
-                        elif isinstance(param, Reference):
-                            if param.is_output:
-                                ptr = cgutils.alloca_once(
-                                    builder, context.get_value_type(dtype)
-                                )
-                                void_ptr = builder.bitcast(
-                                    ptr, ir.PointerType(ir.IntType(8))
-                                )
-                                types.append(ir.PointerType(ir.IntType(8)))
-                                arguments.append(void_ptr)
-                                ret = ptr
-                            else:
-                                arg = args[arg_id]
-                                ptr = cgutils.alloca_once_value(builder, arg)
-                                data_type = context.get_value_type(dtype)
-                                void_ptr = builder.bitcast(
-                                    ptr, ir.PointerType(ir.IntType(8))
-                                )
-                                types.append(ir.PointerType(ir.IntType(8)))
-                                arguments.append(void_ptr)
-                        elif isinstance(param, Array) or isinstance(param, Pointer):
-                            if param.is_output:
-                                raise ValueError("Output arrays not supported")
-                            arg = args[arg_id]
-                            data_type = context.get_value_type(dtype.dtype)
-                            types.append(ir.PointerType(data_type))
-                            arguments.append(
-                                cgutils.create_struct_proxy(dtype)(
-                                    context, builder, arg
-                                ).data
-                            )
+                            ret = ptr
                         else:
-                            if param.is_output:
-                                raise ValueError("Output values not supported")
                             arg = args[arg_id]
+                            ptr = cgutils.alloca_once_value(builder, arg)
                             data_type = context.get_value_type(dtype)
-                            types.append(data_type)
-                            arguments.append(arg)
+                            void_ptr = builder.bitcast(
+                                ptr, ir.PointerType(ir.IntType(8))
+                            )
+                            types.append(ir.PointerType(ir.IntType(8)))
+                            arguments.append(void_ptr)
+                    elif isinstance(param, Array) or isinstance(param, Pointer):
+                        if param.is_output:
+                            raise ValueError("Output arrays not supported")
+                        arg = args[arg_id]
+                        data_type = context.get_value_type(dtype.dtype)
+                        types.append(ir.PointerType(data_type))
+                        arguments.append(
+                            cgutils.create_struct_proxy(dtype)(
+                                context, builder, arg
+                            ).data
+                        )
+                    else:
+                        if param.is_output:
+                            raise ValueError("Output values not supported")
+                        arg = args[arg_id]
+                        data_type = context.get_value_type(dtype)
+                        types.append(data_type)
+                        arguments.append(arg)
 
-                        if not param.is_output:
-                            arg_id += 1
+                    if not param.is_output:
+                        arg_id += 1
 
                 function_type = ir.FunctionType(ir.VoidType(), types)
                 function = cgutils.get_or_insert_function(
@@ -817,13 +882,15 @@ class Algorithm:
             params = []
             ret = numba.types.void
             for param in method:
-                if not isinstance(param, StatelessOperator):
-                    if param.is_output:
-                        if ret is not numba.types.void:
-                            raise ValueError("Multiple output parameters not supported")
-                        ret = param.dtype()
-                    else:
-                        params.append(param.dtype())
+                if ignore_param(param):
+                    continue
+
+                if param.is_output:
+                    if ret is not numba.types.void:
+                        raise ValueError("Multiple output parameters not supported")
+                    ret = param.dtype()
+                else:
+                    params.append(param.dtype())
 
             return signature(ret, *params), codegen
 

@@ -315,7 +315,9 @@ C2H_TEST("DevicePartition::If works with a different output type", "[device][par
   REQUIRE(reference == out);
 }
 
-C2H_TEST("DevicePartition::If works for very large number of items", "[device][partition_if]", offset_types)
+C2H_TEST("DevicePartition::If works for very large number of items",
+         "[device][partition_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]",
+         offset_types)
 try
 {
   using type     = std::int64_t;
