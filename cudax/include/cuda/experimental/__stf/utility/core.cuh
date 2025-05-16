@@ -372,6 +372,36 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
 }
 
 /**
+ * @brief Applies a transformation to each element of a tuple, optionally passing the index.
+ *
+ * Iterates over the elements of a tuple and applies the provided functor `f` to each element.
+ * If `f` is invocable with both the index and the element (`f(index, element)`), that form is used.
+ * Otherwise, it falls back to `f(element)`. The index is a compile-time constant of type
+ * `std::integral_constant<std::size_t, i>`, where `i` is the index of the element in the tuple.
+ *
+ * @tparam Tuple The type of the input tuple.
+ * @tparam F The type of the transformation functor.
+ * @param t The input tuple to transform.
+ * @param f The transformation functor. Must be invocable with either `f(element)` or `f(index, element)`.
+ * @return A new tuple containing the results of applying `f` to each element of `t`.
+ */
+template <typename Tuple, typename F>
+constexpr auto tuple_transform(Tuple&& t, F&& f)
+{
+  constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
+  return make_tuple_indexwise<n>([&](auto j) {
+    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    {
+      return f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+    }
+    else
+    {
+      return f(::std::get<j>(::std::forward<Tuple>(t)));
+    }
+  });
+}
+
+/**
  * @brief Iterates over the elements of a tuple, applying a given function object to each element.
  *
  * The function `each_in_tuple` accepts a tuple and a callable object `f`. If `f` accepts two parameters, it is invoked
