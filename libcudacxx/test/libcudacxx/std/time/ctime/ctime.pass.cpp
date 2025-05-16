@@ -13,32 +13,30 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-// Undefine macros that conflict with the tested symbols
-
-#if defined(clock)
-#  undef clock
-#endif // clock
-
-#if defined(difftime)
-#  undef difftime
-#endif // difftime
-
-#if defined(time)
-#  undef time
-#endif // time
-
-#if defined(timespec_get)
-#  undef timespec_get
-#endif // timespec_get
-
 #ifndef TIME_UTC
 #  error TIME_UTC not defined
 #endif
 
+#ifndef CCCL_CLOCKS_PER_SEC
+#  error CCCL_CLOCKS_PER_SEC not defined
+#endif
+
 static_assert(TIME_UTC != 0);
+
+__host__ __device__ cuda::std::clock_t ref_clocks_per_sec()
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return CLOCKS_PER_SEC;), (return 1'000'000'000;));
+}
 
 __host__ __device__ bool test()
 {
+  // CCCL_CLOCKS_PER_SEC
+
+  {
+    static_assert(cuda::std::is_same_v<cuda::std::clock_t, decltype(CCCL_CLOCKS_PER_SEC)>);
+    assert(CCCL_CLOCKS_PER_SEC == ref_clocks_per_sec());
+  }
+
   // struct timespec
 
   {

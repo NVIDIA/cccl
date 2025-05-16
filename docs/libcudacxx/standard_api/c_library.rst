@@ -80,3 +80,10 @@ Any Standard C++ header not listed below is omitted.
      - CCCL 3.0.0
      - CUDA 13.0
      - `\<cstring\> <https://en.cppreference.com/w/cpp/header/cstring>`_
+
+   * - ``<cuda/std/ctime>``
+     - Provides ``clock``, ``difftime``, ``time`` and ``timespec_get`` functions
+     - Defines ``CCCL_CLOCKS_PER_SEC`` alternative to ``CLOCKS_PER_SEC`` working in both host and device code
+     - CCCL 3.1.0
+     - CUDA 13.1
+     - `\<ctime\> <https://en.cppreference.com/w/cpp/header/ctime>`_
