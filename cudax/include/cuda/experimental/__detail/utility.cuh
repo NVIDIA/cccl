@@ -23,6 +23,8 @@
 
 #include <cuda/std/__utility/declval.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 namespace detail
@@ -62,12 +64,17 @@ using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
 
 using _CUDA_VSTD::declval;
 
-struct uninit_t
+struct no_init_t
 {
-  explicit uninit_t() = default;
+  explicit no_init_t() = default;
 };
 
-_CCCL_GLOBAL_CONSTANT uninit_t uninit{};
+_CCCL_GLOBAL_CONSTANT no_init_t no_init{};
+
+using uninit_t CCCL_DEPRECATED_BECAUSE("Use cuda::experimental::no_init_t instead") = no_init_t;
+_CCCL_GLOBAL_CONSTANT no_init_t uninit{};
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_UTILITY_H

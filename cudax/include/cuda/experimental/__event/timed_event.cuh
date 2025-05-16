@@ -31,6 +31,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__event/event.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 //! @brief An owning wrapper for a `cudaEvent_t` with timing enabled.
@@ -50,8 +52,8 @@ public:
   //! @brief Construct a new `timed_event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr timed_event(uninit_t) noexcept
-      : event(uninit)
+  explicit constexpr timed_event(no_init_t) noexcept
+      : event(no_init)
   {}
 
   timed_event(timed_event&&) noexcept            = default;
@@ -103,5 +105,7 @@ private:
   {}
 };
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX_TIMED_EVENT_DETAIL_H

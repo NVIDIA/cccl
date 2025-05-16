@@ -100,12 +100,12 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   cudax::stream stream{};
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
 
-  cudax::async_device_buffer<type> a{env, num_items, cudax::uninit};
-  cudax::async_device_buffer<type> b{env, num_items, cudax::uninit};
+  cudax::async_device_buffer<type> a{env, num_items, cudax::no_init};
+  cudax::async_device_buffer<type> b{env, num_items, cudax::no_init};
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), a.begin(), a.end());
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), b.begin(), b.end());
 
-  cudax::async_device_buffer<type> result{env, num_items, cudax::uninit};
+  cudax::async_device_buffer<type> result{env, num_items, cudax::no_init};
 
   transform_many_with_alg<alg>(
     ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});

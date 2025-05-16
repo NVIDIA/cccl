@@ -56,10 +56,10 @@ int main()
   // An environment we use to pass all necessary information to the containers
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
 
-  // Allocate the two inputs and output, but do not zero initialize via `cudax::uninit`
-  cudax::async_device_buffer<float> A{env, numElements, cudax::uninit};
-  cudax::async_device_buffer<float> B{env, numElements, cudax::uninit};
-  cudax::async_device_buffer<float> C{env, numElements, cudax::uninit};
+  // Allocate the two inputs and output, but do not zero initialize via `cudax::no_init`
+  cudax::async_device_buffer<float> A{env, numElements, cudax::no_init};
+  cudax::async_device_buffer<float> B{env, numElements, cudax::no_init};
+  cudax::async_device_buffer<float> C{env, numElements, cudax::no_init};
 
   // Fill both vectors on stream using a random number generator
   thrust::generate(policy, A.begin(), A.end(), generator{42});

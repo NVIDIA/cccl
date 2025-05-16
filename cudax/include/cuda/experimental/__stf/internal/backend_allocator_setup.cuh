@@ -64,6 +64,10 @@ void backend_ctx_set_default_allocator(ctx_impl_t& i, block_allocator_untyped& u
     {
       i.default_allocator = allocators_create_and_attach<cached_block_allocator>(i, uncached);
     }
+    else if (default_alloc_str == "cached_fifo")
+    {
+      i.default_allocator = allocators_create_and_attach<cached_block_allocator_fifo>(i, uncached);
+    }
     else if (default_alloc_str == "pooled")
     {
       i.default_allocator = allocators_create_and_attach<pooled_allocator>(i);

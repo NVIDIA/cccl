@@ -5,10 +5,6 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
-// UNSUPPORTED: c++17
-// UNSUPPORTED: clang-5, clang-6, clang-7
-// UNSUPPORTED: apple-clang-6, apple-clang-7, apple-clang-8, apple-clang-9
-// UNSUPPORTED: apple-clang-10.0.0
 
 // <chrono>
 // class day;
@@ -29,7 +25,7 @@ int main(int, char**)
     static_assert(noexcept(4d));
     static_assert(cuda::std::is_same_v<day, decltype(4d)>);
 
-    static_assert(7d == day(7), "");
+    static_assert(7d == day(7));
     day d1 = 4d;
     assert(d1 == day(4));
   }
@@ -39,7 +35,7 @@ int main(int, char**)
     static_assert(noexcept(4d));
     static_assert(cuda::std::is_same_v<cuda::std::chrono::day, decltype(4d)>);
 
-    static_assert(7d == cuda::std::chrono::day(7), "");
+    static_assert(7d == cuda::std::chrono::day(7));
 
     cuda::std::chrono::day d1 = 4d;
     assert(d1 == cuda::std::chrono::day(4));
