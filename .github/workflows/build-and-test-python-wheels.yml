@@ -40,6 +40,17 @@ jobs:
             --cuda 12.8 \
             --host gcc13 \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
+            --env "CI=$CI" \
+            --env "GITHUB_ENV=$GITHUB_ENV" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_PATH=$GITHUB_PATH" \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+            --env "HOST_WORKSPACE=${{github.workspace}}" \
             -- /ci.sh
 
       - name: Upload wheel artifact
