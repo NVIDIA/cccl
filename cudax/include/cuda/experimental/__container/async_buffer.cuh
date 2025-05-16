@@ -272,7 +272,7 @@ public:
   //! @param __env The environment providing the needed information
   //! @note No memory is allocated.
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env)
-      : async_buffer(__env, 0, ::cuda::experimental::uninit)
+      : async_buffer(__env, 0, ::cuda::experimental::no_init)
   {}
 
   //! @brief Constructs a async_buffer of size \p __size using a memory resource and value-initializes \p __size
@@ -281,7 +281,7 @@ public:
   //! @param __size The size of the async_buffer. Defaults to zero
   //! @note If `__size == 0` then no memory is allocated.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size)
-      : async_buffer(__env, __size, ::cuda::experimental::uninit)
+      : async_buffer(__env, __size, ::cuda::experimental::no_init)
   {
     this->__value_initialize_n(__unwrapped_begin(), __size);
   }
@@ -293,7 +293,7 @@ public:
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size, const _Tp& __value)
-      : async_buffer(__env, __size, ::cuda::experimental::uninit)
+      : async_buffer(__env, __size, ::cuda::experimental::no_init)
   {
     this->__fill_n(__unwrapped_begin(), __size, __value);
   }
@@ -304,7 +304,8 @@ public:
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
   //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
   //! At the destruction of the \c async_buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
-  _CCCL_HIDE_FROM_ABI explicit async_buffer(const __env_t& __env, const size_type __size, ::cuda::experimental::uninit_t)
+  _CCCL_HIDE_FROM_ABI explicit async_buffer(
+    const __env_t& __env, const size_type __size, ::cuda::experimental::no_init_t)
       : __buf_(::cuda::experimental::get_memory_resource(__env), ::cuda::experimental::get_stream(__env), __size)
   {}
 
@@ -317,7 +318,7 @@ public:
   _CCCL_TEMPLATE(class _Iter)
   _CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Iter __first, _Iter __last)
-      : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::uninit)
+      : async_buffer(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::no_init)
   {
     this->__copy_cross<_Iter>(__first, __last, __unwrapped_begin(), __buf_.size());
   }
@@ -327,7 +328,7 @@ public:
   //! @param __ilist The initializer_list being copied into the async_buffer.
   //! @note If `__ilist.size() == 0` then no memory is allocated
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _CUDA_VSTD::initializer_list<_Tp> __ilist)
-      : async_buffer(__env, __ilist.size(), ::cuda::experimental::uninit)
+      : async_buffer(__env, __ilist.size(), ::cuda::experimental::no_init)
   {
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __buf_.size());
   }
@@ -340,7 +341,7 @@ public:
   _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND
                    _CUDA_VRANGES::sized_range<_Range>)
   _CCCL_HIDE_FROM_ABI async_buffer(const __env_t& __env, _Range&& __range)
-      : async_buffer(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::uninit)
+      : async_buffer(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::no_init)
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
@@ -355,7 +356,7 @@ public:
       : async_buffer(
           __env,
           static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))),
-          ::cuda::experimental::uninit)
+          ::cuda::experimental::no_init)
   {
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
     this->__copy_cross<_Iter>(
@@ -644,7 +645,7 @@ async_buffer<_Tp, _TargetProperties...> make_async_buffer(
   const async_buffer<_Tp, _SourceProperties...>& __source)
 {
   env_t<_TargetProperties...> __env{__mr, __stream};
-  async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), uninit};
+  async_buffer<_Tp, _TargetProperties...> __res{__env, __source.size(), no_init};
 
   // We need some opt-out for the wait here, but I don't know how yet
   __stream.wait(__source.get_stream());

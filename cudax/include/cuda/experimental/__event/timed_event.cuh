@@ -52,8 +52,8 @@ public:
   //! @brief Construct a new `timed_event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr timed_event(uninit_t) noexcept
-      : event(uninit)
+  explicit constexpr timed_event(no_init_t) noexcept
+      : event(no_init)
   {}
 
   timed_event(timed_event&&) noexcept            = default;
