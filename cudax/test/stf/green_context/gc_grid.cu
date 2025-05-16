@@ -40,14 +40,22 @@ int main()
   auto where =
     exec_place::all_devices().partition_by_scope(ctx.async_resources(), place_partition_scope::green_context);
 
+  comm_matrix_tracer tr;
+  tr.init(where.size());
+
   for (int iter = 0; iter < NITER; iter++)
   {
     ctx.parallel_for(blocked_partition(), where, handle_X.shape(), handle_X.rw(), handle_Y.read())
-        ->*[] __device__(size_t i, auto x, auto y) {
-              x(i) += y(i);
+        ->*[tr] __device__(size_t i, auto x, auto y) {
+              x(i) += (y((i+n-1) % n) + y((i+n+1) % n))/2;
+              tr.mark_access(pos4(i), shape(x), blocked_partition(), 1);
+              tr.mark_access(pos4((i+n-1) % n), shape(y), blocked_partition(), 1);
+              tr.mark_access(pos4((i+n+1) % n), shape(y), blocked_partition(), 1);
             };
   }
 
   ctx.finalize();
+
+  tr.dump();
 #endif // CUDA_VERSION < 12040
 }
