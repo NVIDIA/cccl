@@ -20,7 +20,11 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: false
-
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12h
       - name: Create CI script
         run: |
           cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
@@ -32,6 +36,24 @@ jobs:
 
           chmod +x "$RUNNER_TEMP/ci.sh"
 
+          mkdir -p .aws
+
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=$AWS_ACCESS_KEY_ID
+          aws_session_token=$AWS_SESSION_TOKEN
+          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
       - name: Run build script
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
@@ -42,6 +64,9 @@ jobs:
             --host gcc13 \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             --env "CI=$CI" \
+            --env "AWS_ROLE_ARN=" \
+            --env "COMMAND=$COMMAND" \
+            --env "SCCACHE_IDLE_TIMEOUT=0" \
             --env "GITHUB_ENV=$GITHUB_ENV" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_PATH=$GITHUB_PATH" \
