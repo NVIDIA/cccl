@@ -55,14 +55,7 @@ _CCCL_GLOBAL_CONSTANT struct forwarding_query_t
       static_assert(noexcept(_Tag().query(*this)));
       return _Tag().query(*this);
     }
-    else if constexpr (_CUDA_VSTD::derived_from<_Tag, forwarding_query_t>)
-    {
-      return true;
-    }
-    else
-    {
-      return false;
-    }
+    return _CUDA_VSTD::derived_from<_Tag, forwarding_query_t>;
   }
 } forwarding_query{};
 
