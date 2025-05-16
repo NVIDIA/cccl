@@ -37,6 +37,7 @@ jobs:
         run: |
           .devcontainer/launch.sh \
             --docker \
+            --cuda 12.8 \
             --host gcc13 \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
@@ -166,6 +167,7 @@ jobs:
         run: |
           .devcontainer/launch.sh \
             --docker \
+            --cuda 12.8 \
             --host gcc13 \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             -- /ci.sh
