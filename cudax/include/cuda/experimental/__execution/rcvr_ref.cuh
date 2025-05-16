@@ -34,18 +34,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
   using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
   _Rcvr& __rcvr_;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class... _As>
   _CCCL_TRIVIAL_API void set_value(_As&&... __as) noexcept
   {
     static_cast<_Rcvr&&>(__rcvr_).set_value(static_cast<_As&&>(__as)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Error>
   _CCCL_TRIVIAL_API void set_error(_Error&& __err) noexcept
   {
     static_cast<_Rcvr&&>(__rcvr_).set_error(static_cast<_Error&&>(__err));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TRIVIAL_API void set_stopped() noexcept
   {
     static_cast<_Rcvr&&>(__rcvr_).set_stopped();

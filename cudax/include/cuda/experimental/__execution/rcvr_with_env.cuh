@@ -49,6 +49,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
     template <class _Query>
     using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class _Query>
     _CCCL_TRIVIAL_API constexpr auto query(_Query) const
       noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
