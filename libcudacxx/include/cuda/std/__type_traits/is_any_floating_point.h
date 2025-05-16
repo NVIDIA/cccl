@@ -29,8 +29,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-inline constexpr bool __is_any_floating_point_v =
-  _CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
+inline constexpr bool __is_any_floating_point_v = is_floating_point_v<_Tp> || __is_extended_floating_point_v<_Tp>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
