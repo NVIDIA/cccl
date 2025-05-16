@@ -34,7 +34,7 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
-          ci/build_cuda_cccl_python.sh -py-version=${{ matrix.python-version }};
+          ci/build_cuda_cccl_python.sh -py-version ${{ matrix.python-version }};
           EOF
 
           chmod +x "$RUNNER_TEMP/ci.sh"
@@ -206,7 +206,7 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
-          ci/test_cuda_cccl_python.sh -py-version=${{ matrix.python-version }};
+          ci/test_cuda_cccl_python.sh -py-version ${{ matrix.python-version }};
           EOF
 
           chmod +x "$RUNNER_TEMP/ci.sh"
