@@ -62,7 +62,7 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
-          .devcontainer/launch.sh \
+          ${{github.event.repository.name}}/.devcontainer/launch.sh \
             --docker \
             --cuda 12.8 \
             --host gcc13 \
@@ -234,7 +234,7 @@ jobs:
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
         run: |
-          .devcontainer/launch.sh \
+          ${{github.event.repository.name}}/.devcontainer/launch.sh \
             --docker \
             --cuda 12.8 \
             --host gcc13 \
