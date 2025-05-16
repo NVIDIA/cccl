@@ -89,6 +89,10 @@ public:
              __detail::__msg_storage __msg_buffer = {}) noexcept
       : ::std::runtime_error(__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
   {}
+
+  cuda_error(const char* __msg)
+      : ::std::runtime_error(__msg)
+  {}
 };
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
