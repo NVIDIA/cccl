@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.06-cpp-llvm16-cuda12.8",
+  "image": "rapidsai/devcontainers:25.06-cpp-gcc9-cuda12.9",
   "hostRequirements": {
     "gpu": "optional"
   },
@@ -14,11 +14,11 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.8-llvm16",
-    "CCCL_CUDA_VERSION": "12.8",
-    "CCCL_HOST_COMPILER": "llvm",
-    "CCCL_HOST_COMPILER_VERSION": "16",
-    "CCCL_BUILD_INFIX": "cuda12.8-llvm16",
+    "DEVCONTAINER_NAME": "cuda12.9-gcc9",
+    "CCCL_CUDA_VERSION": "12.9",
+    "CCCL_HOST_COMPILER": "gcc",
+    "CCCL_HOST_COMPILER_VERSION": "9",
+    "CCCL_BUILD_INFIX": "cuda12.9-gcc9",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -52,7 +52,7 @@
       }
     }
   },
-  "name": "cuda12.8-llvm16",
+  "name": "cuda12.9-gcc9",
   "features": {
     "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
       "moby": false
