@@ -390,7 +390,7 @@ template <class _Child, class... _Env>
 _CCCL_API constexpr auto when_all_t::__child_completions()
 {
   using __env_t _CCCL_NODEBUG_ALIAS = prop<get_stop_token_t, inplace_stop_token>;
-  _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, _FWD_ENV_T<_Env>>...>())
+  _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, __fwd_env_t<_Env>>...>())
   {
     if constexpr (__completions.count(set_value) > 1)
     {

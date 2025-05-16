@@ -79,7 +79,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   _CCCL_API static constexpr auto get_completion_signatures()
   {
     using _Child _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
-    return execution::get_completion_signatures<_Child, env<const _Env&, _FWD_ENV_T<_Env2>>...>();
+    return execution::get_completion_signatures<_Child, env<const _Env&, __fwd_env_t<_Env2>>...>();
   }
 
   template <class _Rcvr>

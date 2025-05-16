@@ -89,7 +89,7 @@ private:
   /// the second operation state.
   template <class _CvSndr, class _Fn, class _Rcvr>
   using __opstate2_t _CCCL_NODEBUG_ALIAS =
-    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _FWD_ENV_T<env_of_t<_Rcvr>>>,
+    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, __fwd_env_t<env_of_t<_Rcvr>>>,
                                    _SetTag,
                                    __opstate_fn<_Fn, _Rcvr>::template __call,
                                    __variant>;
@@ -104,7 +104,7 @@ private:
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __opstate_t
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
-    using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
+    using __env_t _CCCL_NODEBUG_ALIAS                 = __fwd_env_t<env_of_t<_Rcvr>>;
 
     // Compute the type of the variant of operation states
     using __opstate_variant_t _CCCL_NODEBUG_ALIAS = __opstate2_t<_CvSndr, _Fn, _Rcvr>;
@@ -170,9 +170,9 @@ private:
       __complete(set_stopped_t());
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
     {
-      return execution::get_env(__rcvr_);
+      return __fwd_env(execution::get_env(__rcvr_));
     }
 
     _Rcvr __rcvr_;

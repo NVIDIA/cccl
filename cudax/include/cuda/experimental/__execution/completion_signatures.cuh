@@ -463,14 +463,10 @@ _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures()
   }
 }
 
-// BUGBUG TODO
-template <class _Env>
-using _FWD_ENV_T _CCCL_NODEBUG_ALIAS = _Env;
-
 template <class _Parent, class _Child, class... _Env>
 _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_child_completion_signatures()
 {
-  return get_completion_signatures<__copy_cvref_t<_Parent, _Child>, _FWD_ENV_T<_Env>...>();
+  return get_completion_signatures<__copy_cvref_t<_Parent, _Child>, __fwd_env_t<_Env>...>();
 }
 
 #undef _CUDAX_GET_COMPLSIGS

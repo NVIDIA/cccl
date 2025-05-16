@@ -107,7 +107,7 @@ private:
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __params_t _CCCL_NODEBUG_ALIAS              = __closure<_Pred, _Then, _Else>;
-    using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
+    using __env_t _CCCL_NODEBUG_ALIAS                 = __fwd_env_t<env_of_t<_Rcvr>>;
 
     template <class... _As>
     using __opstate_t _CCCL_NODEBUG_ALIAS = //
@@ -168,9 +168,9 @@ private:
       execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
     {
-      return get_env(__rcvr_);
+      return __fwd_env(execution::get_env(__rcvr_));
     }
 
     _Rcvr __rcvr_;
