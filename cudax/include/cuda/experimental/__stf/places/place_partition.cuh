@@ -252,7 +252,7 @@ private:
 
 // Deferred implementation because we need place_partition
 template <typename... Args>
-auto exec_place::partition(Args&&... args)
+auto exec_place::partition_by_scope(Args&&... args)
 {
   return place_partition(*this, ::std::forward<Args>(args)...).as_grid();
 }

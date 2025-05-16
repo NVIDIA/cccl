@@ -630,7 +630,7 @@ public:
   static exec_place_grid repeat(const exec_place& e, size_t cnt);
 
   template <typename... Args>
-  auto partition(Args&&... args);
+  auto partition_by_scope(Args&&... args);
 
   /**
    * @brief Execute lambda on this place.
