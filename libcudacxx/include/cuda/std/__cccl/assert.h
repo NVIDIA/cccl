@@ -84,6 +84,28 @@ _CCCL_HOST_DEVICE
     ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
 #endif // !MSVC STL
 
+//! We want to pass the information what we expect to the compiler. However, many compiler warn about side effects.
+//! We can happily drop those warnings because otherwise the expression wouldnt even be evaluated
+#if _CCCL_COMPILER(NVHPC)
+#  define _CCCL_ASSERT_ASSUME_HOST(expression) \
+    _CCCL_DIAG_PUSH _CCCL_DIAG_SUPPRESS_NVHPC(assume_expression_discarded) _CCCL_ASSUME(expression) _CCCL_DIAG_POP
+#elif _CCCL_COMPILER(CLANG)
+#  define _CCCL_ASSERT_ASSUME_HOST(expression) \
+    _CCCL_DIAG_PUSH _CCCL_DIAG_SUPPRESS_CLANG("-Wassume") _CCCL_ASSUME(expression) _CCCL_DIAG_POP
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_ASSERT_ASSUME_HOST(expression) \
+    _CCCL_DIAG_PUSH _CCCL_DIAG_SUPPRESS_MSVC(4557) _CCCL_ASSUME(expression) _CCCL_DIAG_POP
+#else // other compilers
+#  define _CCCL_ASSERT_ASSUME_HOST(expression) _CCCL_ASSUME(expression)
+#endif // other compilers
+
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  define _CCCL_ASSERT_ASSUME_DEVICE(expression) \
+    _CCCL_DIAG_PUSH _CCCL_DIAG_SUPPRESS_CLANG("-Wassume") _CCCL_ASSUME(expression) _CCCL_DIAG_POP
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
+#  define _CCCL_ASSERT_ASSUME_DEVICE(expression) _CCCL_ASSUME(expression)
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
+
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc
 //! _CCCL_ASSERT_IMPL_DEVICE should never be used directly
 #if _CCCL_COMPILER(NVRTC)
@@ -103,21 +125,21 @@ _CCCL_HOST_DEVICE
 #elif _CCCL_CUDA_COMPILATION()
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
-#  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) ((void) 0)
+#  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) _CCCL_ASSERT_ASSUME_HOST(expression)
 #endif // !_CCCL_CUDA_COMPILATION()
 
 //! _CCCL_ASSERT_HOST is enabled conditionally depending on CCCL_ENABLE_HOST_ASSERTIONS
 #ifdef CCCL_ENABLE_HOST_ASSERTIONS
 #  define _CCCL_ASSERT_HOST(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #else // ^^^ CCCL_ENABLE_HOST_ASSERTIONS ^^^ / vvv !CCCL_ENABLE_HOST_ASSERTIONS vvv
-#  define _CCCL_ASSERT_HOST(expression, message) ((void) 0)
+#  define _CCCL_ASSERT_HOST(expression, message) _CCCL_ASSERT_ASSUME_HOST(expression)
 #endif // !CCCL_ENABLE_HOST_ASSERTIONS
 
 //! _CCCL_ASSERT_DEVICE is enabled conditionally depending on CCCL_ENABLE_DEVICE_ASSERTIONS
 #ifdef CCCL_ENABLE_DEVICE_ASSERTIONS
 #  define _CCCL_ASSERT_DEVICE(expression, message) _CCCL_ASSERT_IMPL_DEVICE(expression, message)
 #else // ^^^ CCCL_ENABLE_DEVICE_ASSERTIONS ^^^ / vvv !CCCL_ENABLE_DEVICE_ASSERTIONS vvv
-#  define _CCCL_ASSERT_DEVICE(expression, message) ((void) 0)
+#  define _CCCL_ASSERT_DEVICE(expression, message) _CCCL_ASSERT_ASSUME_DEVICE(expression)
 #endif // !CCCL_ENABLE_DEVICE_ASSERTIONS
 
 //! _CCCL_VERIFY is enabled unconditionally and reserved for critical checks that are required to always be on
@@ -128,7 +150,7 @@ _CCCL_HOST_DEVICE
 #  if defined(CCCL_ENABLE_HOST_ASSERTIONS) || defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 #    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_HOST(expression, message)
 #  else
-#    define _CCCL_ASSERT(expression, message) ((void) 0)
+#    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_ASSUME_HOST(expression)
 #  endif
 #elif _CCCL_CUDA_COMPILATION()
 #  if _CCCL_DEVICE_COMPILATION()

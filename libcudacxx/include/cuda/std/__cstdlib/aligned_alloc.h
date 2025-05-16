@@ -44,7 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 __aligned_alloc_host([[maybe_unused]] size_t __nbytes, [[maybe_unused]] size_t __align) noexcept
 {
 #  if _CCCL_OS(WINDOWS)
-  _CCCL_ASSERT(false, "Use of aligned_alloc in host code is not supported on WIndows");
+  _CCCL_VERIFY(false, "Use of aligned_alloc in host code is not supported on Windows");
   return nullptr;
 #  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
   return ::aligned_alloc(__align, __nbytes);

@@ -153,7 +153,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
   auto __log10_approx                 = static_cast<int>(__log2);
   if constexpr (sizeof(_Tp) <= sizeof(uint32_t))
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_32bit())}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < static_cast<int>(_CUDA_VSTD::tuple_size_v<decltype(__power_of_10_32bit())>),
+                 "out of bounds");
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, uint32_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
@@ -166,14 +167,16 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int ilog10(_Tp __t) noexcept
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_64bit())}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < static_cast<int>(_CUDA_VSTD::tuple_size_v<decltype(__power_of_10_64bit())>),
+                 "out of bounds");
     // +1 is not needed here
     __log10_approx += static_cast<uint64_t>(__t) >= __power_of_10_64bit()[__log10_approx];
   }
 #if _CCCL_HAS_INT128()
   else
   {
-    _CCCL_ASSERT(__log10_approx < int{_CUDA_VSTD::size(__power_of_10_128bit())}, "out of bounds");
+    _CCCL_ASSERT(__log10_approx < static_cast<int>(_CUDA_VSTD::tuple_size_v<decltype(__power_of_10_128bit())>),
+                 "out of bounds");
     if constexpr (_CUDA_VSTD::is_same_v<_Tp, __uint128_t>)
     {
       // don't replace +1 with >= because wraparound behavior is needed here
