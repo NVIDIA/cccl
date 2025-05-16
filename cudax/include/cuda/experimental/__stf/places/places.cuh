@@ -228,7 +228,11 @@ public:
 
     if (is_green_ctx())
     {
-      return "green ctx";
+      // Convert the green context opaque object to a string
+      ::std::ostringstream oss;
+      oss << gc_view->g_ctx;
+      ::std::string g_ctx_str = oss.str();
+      return "green ctx dev(" + ::std::to_string(gc_view->devid) + "):" + g_ctx_str;
     }
 
     if (is_composite())
