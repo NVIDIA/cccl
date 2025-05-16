@@ -1,7 +1,7 @@
 name: Build and Test Python Wheels
 
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
   test:
