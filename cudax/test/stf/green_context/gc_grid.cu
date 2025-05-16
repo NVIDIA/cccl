@@ -37,7 +37,7 @@ int main()
   auto handle_X = ctx.logical_data(make_slice(&X[0], n));
   auto handle_Y = ctx.logical_data(make_slice(&Y[0], n));
 
-  auto where = place_partition(ctx.async_resources(), exec_place::all_devices(), place_partition_scope::green_context).as_grid();
+  auto where = exec_place::all_devices().partition(ctx.async_resources(), place_partition_scope::green_context);
 
   for (int iter = 0; iter < NITER; iter++)
   {

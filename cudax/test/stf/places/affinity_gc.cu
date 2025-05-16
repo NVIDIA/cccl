@@ -20,7 +20,7 @@ int main()
   return 0;
 #else
   async_resources_handle handle;
-  for (auto p : place_partition(handle, exec_place::current_device(), place_partition_scope::green_context))
+  for (auto p : place_partition(exec_place::current_device(), handle, place_partition_scope::green_context))
   {
     _CCCL_ASSERT(p.affine_data_place().is_green_ctx(), "expected a green context");
 
