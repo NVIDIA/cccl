@@ -88,7 +88,7 @@ template <typename _Tp>
 }
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 template <typename _Tp>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE int __cccl_popcount_impl_device(_Tp __v) noexcept
 {
@@ -101,7 +101,7 @@ template <typename _Tp>
     return static_cast<int>(::__popcll(__v));
   }
 }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 template <typename _Tp>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popcount_impl(_Tp __v) noexcept

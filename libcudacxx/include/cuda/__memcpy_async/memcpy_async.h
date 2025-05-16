@@ -165,6 +165,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_HAS_CUDA_COMPILER()
 
 #endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_H_

@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_HAS_CUDA_COMPILER || _CCCL_CUDA_COMPILER(CLANG)
+#if !_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(CLANG)
 #  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#endif // !_CCCL_CUDA_COMPILATION() || _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
