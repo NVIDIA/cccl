@@ -3,6 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from ._histogram import histogram as histogram
 from ._merge_sort import merge_sort as merge_sort
 from ._radix_sort import DoubleBuffer, SortOrder
 from ._radix_sort import radix_sort as radix_sort
@@ -25,4 +26,5 @@ __all__ = [
     "SortOrder",
     "binary_transform",
     "unary_transform",
+    "histogram",
 ]
