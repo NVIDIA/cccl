@@ -231,25 +231,9 @@ extern "C" _CCCL_DEVICE float redux_min_max_sync_is_not_supported_before_sm100a(
     }
 
 _CUB_REDUX_FLOAT_OP(::cuda::minimum<>, min)
-_CUB_REDUX_FLOAT_OP(::cuda::minimum<float>, min)
 _CUB_REDUX_FLOAT_OP(::cuda::maximum<>, max)
-_CUB_REDUX_FLOAT_OP(::cuda::maximum<float>, max)
 
 #endif // __cccl_ptx_isa >= 860
-
-template <typename T, typename ReductionOp>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T redux_sm100a(ReductionOp reduction_op, T value, uint32_t mask)
-{
-  using namespace _CUDA_VSTD;
-#if __cccl_ptx_isa >= 860
-  static_assert(is_same_v<T, float> && is_cuda_minimum_maximum_v<ReductionOp, T>);
-  NV_IF_TARGET(NV_PROVIDES_SM_100,
-               (return cub::detail::redux_sm100a_ptx(reduction_op, value, mask);),
-               (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a();))
-#else
-  static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
-#endif // __cccl_ptx_isa >= 860
-}
 
 //----------------------------------------------------------------------------------------------------------------------
 // Generation of Shuffle / Ballot Mask
@@ -318,6 +302,25 @@ template <typename Config>
     constexpr auto base_mask = ::cuda::bitmask(0, logical_size); // must be constexpr
     return base_mask << shift;
   }
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+// PTX Redux SM100
+
+template <typename T, typename ReductionOp, typename Config>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T redux_sm100a(ReductionOp, T value, Config config)
+{
+  using namespace _CUDA_VSTD;
+#if __cccl_ptx_isa >= 860
+  static_assert(is_same_v<T, float> && is_cuda_minimum_maximum_v<ReductionOp, T>);
+  using ReductionOp1 = generalize_operator_t<ReductionOp, T>;
+  const auto mask    = cub::detail::redux_lane_mask(config);
+  NV_IF_TARGET(NV_PROVIDES_SM_100,
+               (return cub::detail::redux_sm100a_ptx(ReductionOp1{}, value, mask);),
+               (return cub::detail::redux_min_max_sync_is_not_supported_before_sm100a();))
+#else
+  static_assert(__always_false_v<T>, "redux.sync.min/max.f32  requires PTX ISA >= 860");
+#endif // __cccl_ptx_isa >= 860
 }
 
 } // namespace detail

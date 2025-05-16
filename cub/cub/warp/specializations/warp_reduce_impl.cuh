@@ -57,41 +57,35 @@ namespace detail
  **********************************************************************************************************************/
 
 template <typename T, typename ReductionOp, typename Config>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_redux_op(T input, ReductionOp reduction_op, Config config)
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_redux_op(T input, ReductionOp, Config config)
 {
   using namespace _CUDA_VSTD;
+  static_assert(is_integral_v<T> && sizeof(T) <= sizeof(uint32_t));
   const auto mask = cub::detail::redux_lane_mask(config);
-  if constexpr (is_integral_v<T>)
+  using cast_t    = _If<is_signed_v<T>, int, uint32_t>;
+  if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
   {
-    using cast_t = _If<is_signed_v<T>, int, uint32_t>;
-    if constexpr (is_cuda_std_bit_and_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_and_sync(mask, input));
-    }
-    else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_or_sync(mask, input));
-    }
-    else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
-    {
-      return static_cast<T>(__reduce_xor_sync(mask, input));
-    }
-    else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
-    {
-      return __reduce_add_sync(mask, static_cast<cast_t>(input));
-    }
-    else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
-    {
-      return __reduce_min_sync(mask, static_cast<cast_t>(input));
-    }
-    else if constexpr (is_cuda_maximum_v<ReductionOp, T>)
-    {
-      return __reduce_max_sync(mask, static_cast<cast_t>(input));
-    }
+    return static_cast<T>(__reduce_and_sync(mask, input));
   }
-  else if constexpr (is_same_v<T, float> && is_cuda_minimum_maximum_v<ReductionOp, T>)
+  else if constexpr (is_cuda_std_bit_or_v<ReductionOp, T>)
   {
-    return cub::detail::redux_sm100a(reduction_op, input, mask);
+    return static_cast<T>(__reduce_or_sync(mask, input));
+  }
+  else if constexpr (is_cuda_std_bit_xor_v<ReductionOp, T>)
+  {
+    return static_cast<T>(__reduce_xor_sync(mask, input));
+  }
+  else if constexpr (is_cuda_std_plus_v<ReductionOp, T>)
+  {
+    return __reduce_add_sync(mask, static_cast<cast_t>(input));
+  }
+  else if constexpr (is_cuda_minimum_v<ReductionOp, T>)
+  {
+    return __reduce_min_sync(mask, static_cast<cast_t>(input));
+  }
+  else if constexpr (is_cuda_maximum_v<ReductionOp, T>)
+  {
+    return __reduce_max_sync(mask, static_cast<cast_t>(input));
   }
   else
   {
@@ -120,7 +114,7 @@ template <typename T, typename ReductionOp, typename Config>
   {
     constexpr auto logical_size1      = is_segmented ? warp_threads : logical_size;
     constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size1);
-    input1 = _CUDA_VDEV::warp_shuffle_idx<logical_size_round>(input1, config.first_pos, mask);
+    input1 = _CUDA_DEVICE::warp_shuffle_idx<logical_size_round>(input1, config.first_pos, mask);
   }
   return input1;
 }
@@ -137,17 +131,17 @@ template <typename T, typename ReductionOp, typename Config>
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
-    _CUDA_VDEV::warp_shuffle_result<T> result;
+    _CUDA_DEVICE::warp_shuffle_result<T> result;
     if constexpr (is_power_of_two && valid_items.rank_dynamic() == 0)
     {
-      result = _CUDA_VDEV::warp_shuffle_down(input, 1u << K, mask, logical_size);
+      result = _CUDA_DEVICE::warp_shuffle_down(input, 1u << K, mask, logical_size);
     }
     else
     {
       auto limit     = valid_items.extent(0) - !is_segmented;
       auto lane_dest = cub::detail::logical_lane_id<logical_size1>() + (1u << K);
       auto dest      = ::min(lane_dest, limit);
-      result         = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
+      result         = _CUDA_DEVICE::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
       result.pred    = lane_dest <= limit;
     }
     if (result.pred)
@@ -157,7 +151,7 @@ template <typename T, typename ReductionOp, typename Config>
   }
   if constexpr (result_mode == all_lanes_result)
   {
-    input = _CUDA_VDEV::warp_shuffle_idx<logical_size1_round>(input, config.first_pos, mask);
+    input = _CUDA_DEVICE::warp_shuffle_idx<logical_size1_round>(input, config.first_pos, mask);
   }
   return input;
 }
@@ -273,7 +267,7 @@ template <typename T, typename ReductionOp, typename Config>
   {
     if constexpr (is_same_v<T, float> && __cccl_ptx_isa >= 860)
     {
-      NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return warp_reduce_redux_op(input, reduction_op, config);));
+      NV_IF_TARGET(NV_HAS_FEATURE_SM_100a, (return cub::detail::redux_sm100a(reduction_op, input, config);))
     }
     auto input_int  = floating_point_to_comparable_int(reduction_op, input);
     auto result_int = warp_reduce_dispatch(input_int, reduction_op, config);
@@ -340,14 +334,15 @@ template <typename T, typename ReductionOp, typename Config>
                       (return warp_reduce_generic(input, reduction_op, config);));
   }
   // [Plus]: float2
-  else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_same_v<T, float2> && __cccl_ptx_isa >= 860)
+  else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_same_v<T, float2>)
   {
-    NV_IF_ELSE_TARGET(
-      NV_PROVIDES_SM_100,
-      (return warp_reduce_shuffle_op(input, reduction_op, config);),
-      (auto x = warp_reduce_shuffle_op(input.x, reduction_op, config);
-       auto y = warp_reduce_shuffle_op(input.y, reduction_op, config);
-       return float2{x, y};))
+    if constexpr (__cccl_ptx_isa >= 860)
+    {
+      NV_IF_TARGET(NV_PROVIDES_SM_100, (return warp_reduce_shuffle_op(input, reduction_op, config);))
+    }
+    auto x = warp_reduce_shuffle_op(input.x, reduction_op, config);
+    auto y = warp_reduce_shuffle_op(input.y, reduction_op, config);
+    return float2{x, y};
   }
   // [Plus]: short2, ushort2
   else if constexpr (is_cuda_std_plus_v<ReductionOp, T> && is_any_short2_v<T> && __cccl_ptx_isa >= 800)
