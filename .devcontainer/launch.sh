@@ -224,6 +224,7 @@ launch_docker() {
 
     if test -n "${SSH_AUTH_SOCK:-}" && test -e "${SSH_AUTH_SOCK:-}"; then
         ENV_VARS+=(--env "SSH_AUTH_SOCK=/tmp/ssh-auth-sock")
+        ENV_VARS+=(--env "HOST_WORKSPACE=$(pwd)")
         MOUNTS+=(--mount "source=${SSH_AUTH_SOCK},target=/tmp/ssh-auth-sock,type=bind")
     fi
 
@@ -231,6 +232,9 @@ launch_docker() {
     if test -v volumes && test ${#volumes[@]} -gt 0; then
         MOUNTS+=("${volumes[@]}")
     fi
+
+    # mount /var/run/docker.sock
+    MOUNTS+=(--mount "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind")
 
     # Append user-provided envvars
     if test -v env_vars && test ${#env_vars[@]} -gt 0; then
