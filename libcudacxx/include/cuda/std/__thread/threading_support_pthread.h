@@ -22,8 +22,10 @@
 
 #if defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
 
+#  include <cuda/std/__utility/cmp.h>
 #  include <cuda/std/chrono>
 #  include <cuda/std/climits>
+#  include <cuda/std/ctime>
 
 #  include <errno.h>
 #  include <pthread.h>
@@ -37,8 +39,6 @@
 #  endif // __linux__
 
 #  include <cuda/std/__cccl/prologue.h>
-
-using __cccl_timespec_t = ::timespec;
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -73,23 +73,23 @@ using __cccl_tls_key = pthread_key_t;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC
 
-_LIBCUDACXX_HIDE_FROM_ABI __cccl_timespec_t __cccl_to_timespec(const _CUDA_VSTD::chrono::nanoseconds& __ns)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr timespec
+__cccl_to_timespec(const _CUDA_VSTD::chrono::nanoseconds& __ns)
 {
-  using namespace chrono;
-  seconds __s = duration_cast<seconds>(__ns);
-  __cccl_timespec_t __ts;
-  using ts_sec                  = decltype(__ts.tv_sec);
-  constexpr ts_sec __ts_sec_max = numeric_limits<ts_sec>::max();
+  constexpr auto __ts_sec_max = numeric_limits<time_t>::max();
 
-  if (__s.count() < __ts_sec_max)
+  timespec __ts{};
+  const auto __s = _CUDA_VSTD::chrono::duration_cast<chrono::seconds>(__ns);
+
+  if (_CUDA_VSTD::cmp_less(__s.count(), __ts_sec_max))
   {
-    __ts.tv_sec  = static_cast<ts_sec>(__s.count());
+    __ts.tv_sec  = static_cast<time_t>(__s.count());
     __ts.tv_nsec = static_cast<decltype(__ts.tv_nsec)>((__ns - __s).count());
   }
   else
   {
     __ts.tv_sec  = __ts_sec_max;
-    __ts.tv_nsec = 999999999; // (10^9 - 1)
+    __ts.tv_nsec = 999'999'999;
   }
   return __ts;
 }
@@ -119,7 +119,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __cccl_semaphore_wait(__cccl_semaphore_t* __sem)
 _LIBCUDACXX_HIDE_FROM_ABI bool
 __cccl_semaphore_wait_timed(__cccl_semaphore_t* __sem, _CUDA_VSTD::chrono::nanoseconds const& __ns)
 {
-  __cccl_timespec_t __ts = __cccl_to_timespec(__ns);
+  const auto __ts = __cccl_to_timespec(__ns);
   return sem_timedwait(__sem, &__ts) == 0;
 }
 
@@ -130,7 +130,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield()
 
 _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns)
 {
-  __cccl_timespec_t __ts = __cccl_to_timespec(__ns);
+  auto __ts = __cccl_to_timespec(__ns);
   while (nanosleep(&__ts, &__ts) == -1 && errno == EINTR)
     ;
 }
