@@ -1,7 +1,7 @@
 name: Build and Test Python Wheels
 
 on:
-  push
+  push:
 
 defaults:
   run:
