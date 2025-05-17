@@ -102,7 +102,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   _Sndr __sndr_;
 
   template <class _Env>
-  using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, _FWD_ENV_T<_Env>>;
+  using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, __fwd_env_t<_Env>>;
 
   template <class _Self, class... _Env>
   _CCCL_API static constexpr auto get_completion_signatures()
@@ -113,7 +113,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
       auto(__sndr_completions) = execution::get_completion_signatures<__child_sndr, __env_t<_Env>...>())
     {
       _CUDAX_LET_COMPLETIONS(
-        auto(__sch_completions) = execution::get_completion_signatures<__sch_sndr, _FWD_ENV_T<_Env>...>())
+        auto(__sch_completions) = execution::get_completion_signatures<__sch_sndr, __fwd_env_t<_Env>...>())
       {
         return __sndr_completions + transform_completion_signatures(__sch_completions, __swallow_transform());
       }
@@ -134,9 +134,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
     return __opstate_t<_Rcvr, _Sch, const _Sndr&>{__sch_, static_cast<_Rcvr&&>(__rcvr), __sndr_};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 };
 
