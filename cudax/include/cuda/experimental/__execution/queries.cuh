@@ -66,6 +66,7 @@ _CCCL_CONCEPT __forwarding_query = _CCCL_REQUIRES_EXPR((_Tag))(forwarding_query(
 // get_allocator
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
   {
@@ -90,6 +91,7 @@ _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 // get_stop_token
 _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
   {
@@ -118,6 +120,7 @@ using stop_token_of_t _CCCL_NODEBUG_ALIAS = __decay_t<__call_result_t<get_stop_t
 template <class _Tag>
 struct get_completion_scheduler_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_completion_scheduler_t>)
   [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
@@ -144,6 +147,7 @@ using __completion_scheduler_of_t _CCCL_NODEBUG_ALIAS =
 // get_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_scheduler_t>)
   [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
@@ -166,6 +170,7 @@ using __scheduler_of_t _CCCL_NODEBUG_ALIAS = __decay_t<__call_result_t<get_sched
 // get_delegation_scheduler
 _CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__queryable_with<_Env, get_delegation_scheduler_t>)
   [[nodiscard]] _CCCL_API auto operator()(const _Env& __env) const noexcept
@@ -193,6 +198,7 @@ enum class forward_progress_guarantee
 // This query is not a forwarding query.
 _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
   [[nodiscard]] _CCCL_API auto operator()(const _Sch& __sch) const noexcept
   {
@@ -212,6 +218,7 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 // get_domain
 _CCCL_GLOBAL_CONSTANT struct get_domain_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Env>
   [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
   {

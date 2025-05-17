@@ -159,12 +159,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   _CCCL_API constexpr auto apply(_Fn __fn) const -> _CUDA_VSTD::__call_result_t<_Fn, _Sigs*...>
   {
     return __fn(static_cast<_Sigs*>(nullptr)...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn>
   [[nodiscard]]
   _CCCL_API constexpr auto filter(_Fn __fn) const -> __concat_completion_signatures_t<__completion_if<_Fn, _Sigs>...>
@@ -190,6 +192,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Transform, class _Reduce>
   [[nodiscard]]
   _CCCL_API constexpr auto transform_reduce(_Transform __transform, _Reduce __reduce) const
@@ -414,6 +417,7 @@ inline constexpr bool __has_get_completion_signatures<_Sndr, _Env> =
 struct _COULD_NOT_DETERMINE_COMPLETION_SIGNATURES_FOR_THIS_SENDER
 {};
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Sndr, class... _Env>
 _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __get_completion_signatures_helper()
 {
@@ -721,12 +725,14 @@ struct __decay_transform
 template <class _Fn, class... _As>
 using __meta_call_result_t _CCCL_NODEBUG_ALIAS = decltype(declval<_Fn>().template operator()<_As...>());
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ay, class... _As, class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __transform_expr(const _Fn& __fn) -> __meta_call_result_t<const _Fn&, _Ay, _As...>
 {
   return __fn.template operator()<_Ay, _As...>();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __transform_expr(const _Fn& __fn) -> __call_result_t<const _Fn&>
 {
