@@ -10,7 +10,9 @@
 
 #ifndef _CUDAX__LAUNCH_LAUNCH
 #define _CUDAX__LAUNCH_LAUNCH
+
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/pod_tuple.h>
 #include <cuda/stream_ref>
@@ -45,8 +47,7 @@ __global__ void kernel_launcher_no_config(Kernel kernel_fn, Args... args)
 }
 
 template <typename Config, typename Kernel, typename... Args>
-[[nodiscard]] cudaError_t
-launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, const Args&... args)
+[[nodiscard]] cudaError_t launch_impl(::cuda::stream_ref stream, Config conf, Kernel* kernel_fn, Args&&... args)
 {
   static_assert(!::cuda::std::is_same_v<decltype(conf.dims), no_init_t>,
                 "Can't launch a configuration without hierarchy dimensions");
@@ -80,7 +81,7 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
   }
 
   // TODO lower to cudaLaunchKernelExC?
-  return cudaLaunchKernelEx(&config, kernel_fn, args...);
+  return cudaLaunchKernelEx(&config, kernel_fn, _CUDA_VSTD::forward<Args>(args)...);
 }
 } // namespace __detail
 
@@ -203,6 +204,8 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(kernel_config<Dimensions, Config...>, ExpArgs...),
             ActArgs&&... args)
 {
+  static_assert(sizeof...(ExpArgs) == sizeof...(ActArgs),
+                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
   __ensure_current_device __dev_setter(stream);
   cudaError_t status = __detail::launch_impl(
     stream, //
@@ -262,6 +265,8 @@ void launch(::cuda::stream_ref stream,
             void (*kernel)(ExpArgs...),
             ActArgs&&... args)
 {
+  static_assert(sizeof...(ExpArgs) == sizeof...(ActArgs),
+                "Number of kernel function arguments and number of arguments passed to the kernel function must match");
   __ensure_current_device __dev_setter(stream);
   cudaError_t status = __detail::launch_impl(
     stream, //

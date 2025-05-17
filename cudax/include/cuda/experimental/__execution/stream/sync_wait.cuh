@@ -92,7 +92,7 @@ struct stream_domain::__apply_t<sync_wait_t>
     return __status;
   }
 
-  _CCCL_API static auto __to_cuda_error(__ignore) noexcept
+  _CCCL_API static auto __to_cuda_error(_CUDA_VSTD::__ignore_t) noexcept
   {
     return cudaErrorUnknown;
   }
@@ -157,7 +157,7 @@ public:
     using __values_t  = __value_types<__sigs_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
     using __opstate_t = connect_result_t<_Sndr, __rcvr_t<__values_t>>;
 
-    auto __stream = get_stream(get_completion_scheduler<set_value_t>(get_env(__sndr)));
+    auto __stream = get_stream(get_env(__sndr));
     __storage_registry_context __context{__stream};
 
     const auto __state_id   = __context.__reserve_for<__state_ex_t<__values_t>>();

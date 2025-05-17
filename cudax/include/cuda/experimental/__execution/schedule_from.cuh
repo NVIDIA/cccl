@@ -153,7 +153,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
 
   using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_stopped_t>;
 
-  using __complete_fn _CCCL_NODEBUG_ALIAS = void (*)(void*) noexcept;
+  struct __send_result_fn
+  {
+    template <class _Rcvr, class _Tag, class... _As>
+    _CCCL_API void operator()(_Rcvr& __rcvr, _Tag, _As&&... __args) const noexcept
+    {
+      _Tag()(static_cast<_Rcvr&&>(__rcvr), static_cast<_As&&>(__args)...);
+    }
+  };
+
+  template <class _Rcvr>
+  struct __send_result_visitor
+  {
+    template <class _Tuple>
+    _CCCL_API void operator()(_Tuple&& __tuple) const noexcept
+    {
+      _CUDA_VSTD::__apply(__send_result_fn{}, static_cast<_Tuple&&>(__tuple), __rcvr_);
+    }
+
+    _Rcvr& __rcvr_;
+  };
 
   template <class _Rcvr, class _Result>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
@@ -161,7 +180,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
     using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
     _Rcvr __rcvr_;
     _Result __result_;
-    __complete_fn __complete_;
 
     template <class _Tag, class... _As>
     _CCCL_API void operator()(_Tag, _As&... __as) noexcept
@@ -189,16 +207,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
           }) //
         )
       }
-      __complete_ = +[](void* __ptr) noexcept {
-        auto& __self = *static_cast<__rcvr_t*>(__ptr);
-        auto& __tupl = *static_cast<__tupl_t*>(__self.__result_.__ptr());
-        _CUDA_VSTD::__apply(__self, __tupl);
-      };
     }
 
     _CCCL_API void set_value() noexcept
     {
-      __complete_(this);
+      _Result::__visit(__send_result_visitor<_Rcvr>{__rcvr_}, __result_);
     }
 
     template <class _Error>
@@ -229,7 +242,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
                                           __env_t>::template __transform_q<_CUDA_VSTD::__decayed_tuple, __variant>;
 
     _CCCL_API __opstate_t(_CvSndr&& __sndr, _Sch __sch, _Rcvr __rcvr)
-        : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}, nullptr}
+        : __rcvr_{static_cast<_Rcvr&&>(__rcvr), {}}
         , __opstate1_{execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this))}
         , __opstate2_{execution::connect(schedule(__sch), __ref_rcvr(__rcvr_))}
     {}
@@ -263,7 +276,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
 
     [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
     {
-      return __fwd_env(execution::get_env(__rcvr_.__rcvr));
+      return __fwd_env(execution::get_env(__rcvr_.__rcvr_));
     }
 
     __rcvr_t<_Rcvr, __result_t> __rcvr_;

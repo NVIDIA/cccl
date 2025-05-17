@@ -23,10 +23,12 @@
 
 // IWYU pragma: begin_exports
 #include <cuda/experimental/__execution/stream/context.cuh>
+#include <cuda/experimental/__execution/stream/continues_on.cuh>
 #include <cuda/experimental/__execution/stream/domain.cuh>
 #include <cuda/experimental/__execution/stream/launch.cuh>
 #include <cuda/experimental/__execution/stream/storage_registry.cuh>
 #include <cuda/experimental/__execution/stream/sync_wait.cuh>
+#include <cuda/experimental/__execution/stream/then.cuh>
 // IWYU pragma: end_exports
 
 #endif //__CUDAX_EXECUTION_STREAM_CONTEXT

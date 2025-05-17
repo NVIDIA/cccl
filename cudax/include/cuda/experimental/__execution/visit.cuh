@@ -23,6 +23,7 @@
 
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
+#include <cuda/std/__type_traits/is_aggregate.h>
 
 #include <cuda/experimental/__execution/type_traits.cuh>
 
@@ -42,9 +43,40 @@ inline constexpr size_t structured_binding_size = __builtin_structured_binding_s
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_structured_binding_size) ^^^ /
       // vvv !_CCCL_HAS_BUILTIN(__builtin_structured_binding_size) vvv
 
+struct __any_t
+{
+  template <class _Ty>
+  operator _Ty&&();
+};
+
+template <class _First, class _Second>
+using __second_t = _Second;
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-field-initializers")
+
+// use the "magic tuple" trick to get the arity of a structured binding
+template <class _Ty, bool = _CUDA_VSTD::is_aggregate_v<_Ty>>
+struct __arity_of_t
+{
+  template <class _Self = __arity_of_t, class... _Ts>
+  _CCCL_API auto operator()(_Ts... __ts) -> __second_t<decltype(_Ty{__ts...}), decltype(_Self()(__ts..., __any_t()))>;
+
+  template <class... _Ts>
+  _CCCL_API auto operator()(_Ts...) const -> char (*)[sizeof...(_Ts) + 1];
+};
+
+template <class _Ty>
+struct __arity_of_t<_Ty, false>
+{
+  _CCCL_API auto operator()() const -> char*;
+};
+
+_CCCL_DIAG_POP
+
 // Specialize this for each sender type that can be used to initialize a structured binding.
 template <class _Sndr>
-inline constexpr size_t structured_binding_size = static_cast<size_t>(-1);
+inline constexpr size_t structured_binding_size = sizeof(*__arity_of_t<_Sndr>{}()) - 2;
 
 #endif // _CCCL_HAS_BUILTIN(__builtin_structured_binding_size)
 
@@ -132,6 +164,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT visit_t
 
 [[maybe_unused]]
 _CCCL_GLOBAL_CONSTANT visit_t visit{};
+
+template <class _Visitor, class _CvSndr, class _Context>
+using __visit_result_t _CCCL_NODEBUG_ALIAS =
+  decltype(visit(declval<_Visitor&>(), declval<_CvSndr>(), declval<_Context&>()));
 
 } // namespace cuda::experimental::execution
 

@@ -32,6 +32,7 @@
 #include <cuda/experimental/__execution/exception.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/run_loop.cuh>
+#include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
 #include <cuda/experimental/__execution/write_env.cuh>
@@ -48,7 +49,7 @@ struct sync_wait_t
 {
   _CUDAX_SEMI_PRIVATE :
   template <class _Env>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_state_t
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_base_t
   {
     // FUTURE: if _Env provides a delegation scheduler, we don't need the run_loop
     run_loop __loop_;
@@ -58,7 +59,7 @@ struct sync_wait_t
   template <class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
-    __env_state_t<_Env>* __state_;
+    __state_base_t<_Env>* __state_;
 
     _CCCL_TEMPLATE(class _Query)
     _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
@@ -95,53 +96,61 @@ struct sync_wait_t
     }
   };
 
-  template <class _Values, class _Errors, class _Env>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __env_state_t<_Env>
+  template <class _Sndr, class _Env>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __state_t : __state_base_t<_Env>
   {
-    struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
+    using __completions_t                = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
+    using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
+    using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions_t, __decayed_variant>;
+
+    _CUDA_VSTD::optional<__values_t>* __values_;
+    __errors_t __errors_;
+  };
+
+  template <class _Sndr, class _Env>
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_t
+  {
+    using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
+    using __values_t _CCCL_NODEBUG_ALIAS       = typename __state_t<_Sndr, _Env>::__values_t;
+
+    template <class... _As>
+    _CCCL_API void set_value(_As&&... __as) && noexcept
     {
-      using receiver_concept _CCCL_NODEBUG_ALIAS = receiver_t;
+      _CUDAX_TRY( //
+        ({ //
+          __state_->__values_->emplace(static_cast<_As&&>(__as)...);
+        }), //
+        _CUDAX_CATCH(...) //
+        ({ //
+          // avoid ODR-using a call to __emplace(exception_ptr) if this code is
+          // unreachable.
+          if constexpr (!__nothrow_constructible<__values_t, _As...>)
+          {
+            __state_->__errors_.__emplace(::std::current_exception());
+          }
+        }) //
+      )
+      __state_->__loop_.finish();
+    }
 
-      template <class... _As>
-      _CCCL_API void set_value(_As&&... __as) && noexcept
-      {
-        _CUDAX_TRY( //
-          ({ //
-            __state_->__values_->emplace(static_cast<_As&&>(__as)...);
-          }), //
-          _CUDAX_CATCH(...) //
-          ({ //
-            if constexpr (!__nothrow_constructible<_Values, _As...>)
-            {
-              __state_->__errors_.__emplace(::std::current_exception());
-            }
-          }) //
-        )
-        __state_->__loop_.finish();
-      }
+    template <class _Error>
+    _CCCL_API void set_error(_Error __err) && noexcept
+    {
+      __state_->__errors_.__emplace(static_cast<_Error&&>(__err));
+      __state_->__loop_.finish();
+    }
 
-      template <class _Error>
-      _CCCL_API void set_error(_Error __err) && noexcept
-      {
-        __state_->__errors_.__emplace(static_cast<_Error&&>(__err));
-        __state_->__loop_.finish();
-      }
+    _CCCL_API void set_stopped() && noexcept
+    {
+      __state_->__loop_.finish();
+    }
 
-      _CCCL_API void set_stopped() && noexcept
-      {
-        __state_->__loop_.finish();
-      }
+    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t<_Env>
+    {
+      return __env_t<_Env>{__state_};
+    }
 
-      [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t<_Env>
-      {
-        return __env_t<_Env>{__state_};
-      }
-
-      __state_t* __state_;
-    };
-
-    _CUDA_VSTD::optional<_Values>* __values_;
-    _Errors __errors_;
+    __state_t<_Sndr, _Env>* __state_;
   };
 
   struct __throw_error_fn
@@ -182,27 +191,28 @@ public:
   template <class _Sndr, class _Env>
   _CCCL_HOST_API static auto apply_sender(_Sndr&& __sndr, _Env&& __env)
   {
-    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<_Sndr, __env_t<_Env>>;
+    constexpr auto __completions = get_completion_signatures<_Sndr, __env_t<_Env>>();
+    using __completions_t        = decltype(__completions);
 
-    if constexpr (!__valid_completion_signatures<__completions>)
+    if constexpr (!__valid_completion_signatures<__completions_t>)
     {
-      return __bad_sync_wait<__completions>::__result();
+      return __bad_sync_wait<__completions_t>::__result();
     }
-    else if constexpr (__completions().count(set_value) != 1)
+    else if constexpr (__completions.count(set_value) != 1)
     {
-      static_assert(__completions().count(set_value) == 1,
+      static_assert(__completions.count(set_value) == 1,
                     "sync_wait requires a sender with exactly one value completion signature.");
     }
     else
     {
-      using __values_t _CCCL_NODEBUG_ALIAS = __value_types<__completions, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
-      using __errors_t _CCCL_NODEBUG_ALIAS = __error_types<__completions, __decayed_variant>;
+      using __values_t _CCCL_NODEBUG_ALIAS = typename __state_t<_Sndr, _Env>::__values_t;
+      using __errors_t _CCCL_NODEBUG_ALIAS = typename __state_t<_Sndr, _Env>::__errors_t;
+
       _CUDA_VSTD::optional<__values_t> __result{};
-      __state_t<__values_t, __errors_t, _Env> __state{{{}, static_cast<_Env&&>(__env)}, &__result, {}};
+      __state_t<_Sndr, _Env> __state{{{}, static_cast<_Env&&>(__env)}, &__result, {}};
 
       // Launch the sender with a continuation that will fill in a variant
-      using __rcvr_t = typename __state_t<__values_t, __errors_t, _Env>::__rcvr_t;
-      auto __opstate = execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{&__state});
+      auto __opstate = execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t<_Sndr, _Env>{&__state});
 
       execution::start(__opstate);
 

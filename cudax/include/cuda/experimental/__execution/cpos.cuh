@@ -54,7 +54,7 @@ struct set_value_t : __completion_tag<__value>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class... _Ts>
-  _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
+  _CCCL_TRIVIAL_API _CCCL_FORCEINLINE auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
   {
     static_assert(
@@ -68,7 +68,7 @@ struct set_error_t : __completion_tag<__error>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class _Ey>
-  _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
+  _CCCL_TRIVIAL_API _CCCL_FORCEINLINE auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e)))
   {
     static_assert(
@@ -82,7 +82,7 @@ struct set_stopped_t : __completion_tag<__stopped>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
-  _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr) const noexcept
+  _CCCL_TRIVIAL_API _CCCL_FORCEINLINE auto operator()(_Rcvr&& __rcvr) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped()), void>);
@@ -95,7 +95,7 @@ struct start_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _OpState>
-  _CCCL_TRIVIAL_API auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
+  _CCCL_TRIVIAL_API _CCCL_FORCEINLINE auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(__opstate.start()), void>);
     static_assert(noexcept(__opstate.start()));
@@ -117,7 +117,7 @@ struct connect_t
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
   _CCCL_REQUIRES((!__has_sender_transform<_Sndr, env_of_t<_Rcvr>>) )
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+  _CCCL_TRIVIAL_API _CCCL_FORCEINLINE constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
     noexcept(noexcept(declval<_Sndr>().connect(declval<_Rcvr>()))) -> decltype(auto)
   {
     return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
@@ -137,7 +137,7 @@ struct schedule_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
-  _CCCL_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept
+  _CCCL_TRIVIAL_API _CCCL_FORCEINLINE auto operator()(_Sch&& __sch) const noexcept
   {
     static_assert(noexcept(static_cast<_Sch&&>(__sch).schedule()));
     return static_cast<_Sch&&>(__sch).schedule();

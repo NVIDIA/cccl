@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_EXECUTION_THREAD_CONTEXT
-#define __CUDAX_EXECUTION_THREAD_CONTEXT
+#ifndef __CUDAX__EXECUTION_STREAM_SCHEDULE_FROM
+#define __CUDAX__EXECUTION_STREAM_SCHEDULE_FROM
 
 #include <cuda/std/detail/__config>
 
@@ -21,47 +21,28 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__execution/run_loop.cuh>
+#include <cuda/experimental/__execution/schedule_from.cuh>
+#include <cuda/experimental/__execution/stream/domain.cuh>
+#include <cuda/experimental/__stream/stream.cuh>
 
-#include <thread>
+#include <cuda_runtime_api.h>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
+// Transition from the CPU to the GPU domain
+template <>
+struct stream_domain::__apply_t<schedule_from_t>
 {
-  _CCCL_HOST_API thread_context() noexcept
-      : __thrd_{[this] {
-        __loop_.run();
-      }}
-  {}
-
-  _CCCL_HOST_API ~thread_context() noexcept
+  template <class _Sndr, class _Env>
+  _CCCL_API auto operator()(_Sndr __sndr, const _Env& __env) const
   {
-    join();
+    auto& [__tag, __sched, __child] = __sndr;
   }
-
-  _CCCL_HOST_API void join() noexcept
-  {
-    if (__thrd_.joinable())
-    {
-      __loop_.finish();
-      __thrd_.join();
-    }
-  }
-
-  _CCCL_HOST_API auto get_scheduler()
-  {
-    return __loop_.get_scheduler();
-  }
-
-private:
-  run_loop __loop_;
-  ::std::thread __thrd_;
 };
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_EXECUTION_THREAD_CONTEXT
+#endif // __CUDAX__EXECUTION_STREAM_SCHEDULE_FROM

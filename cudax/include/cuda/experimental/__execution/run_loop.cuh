@@ -62,7 +62,7 @@ public:
     }
   }
 
-private:
+  _CUDAX_SEMI_PRIVATE :
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __task : __immovable
   {
     using __execute_fn_t _CCCL_NODEBUG_ALIAS = void(__task*) noexcept;

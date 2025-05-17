@@ -90,7 +90,7 @@ struct __storage_registry
   template <class _Fn, class... _Args>
   _CCCL_API auto __write_at_from(size_t __token, _Fn __fn, _Args&&... __args) -> decltype(auto)
   {
-    using _Ty              = __decay_t<decltype(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...))>;
+    using _Ty              = _CUDA_VSTD::decay_t<decltype(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...))>;
     constexpr auto __bytes = __aligned_size(sizeof(_Ty));
     auto* pb               = __buffer_ + (__descriptors_[__token].__offset_ - __bytes);
     auto* __ptr            = ::new (pb) _Ty(static_cast<_Fn&&>(__fn)(static_cast<_Args&&>(__args)...));

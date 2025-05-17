@@ -45,7 +45,15 @@ public:
     _CUDA_VSTD::__is_nothrow_callable_v<__apply_t<_Tag>, _Sndr, _Args...>)
     -> _CUDA_VSTD::__call_result_t<__apply_t<_Tag>, _Sndr, _Args...>
   {
-    return __apply_t<_Tag>()(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
+    return __apply_t<_Tag>{}(static_cast<_Sndr&&>(__sndr), static_cast<_Args&&>(__args)...);
+  }
+
+  _CCCL_TEMPLATE(class _Sndr, class... _Env)
+  _CCCL_REQUIRES(_CUDA_VSTD::__is_callable_v<__apply_t<tag_of_t<_Sndr>>, _Sndr, const _Env&...>)
+  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env&... __env) noexcept(
+    _CUDA_VSTD::__is_nothrow_callable_v<__apply_t<tag_of_t<_Sndr>>, _Sndr, const _Env&...>) -> decltype(auto)
+  {
+    return __apply_t<tag_of_t<_Sndr>>{}(static_cast<_Sndr&&>(__sndr), __env...);
   }
 };
 

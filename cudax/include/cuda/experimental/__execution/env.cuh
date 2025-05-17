@@ -42,9 +42,12 @@ namespace cuda::experimental
 namespace execution
 {
 // NOLINTBEGIN(misc-unused-using-decls)
+using _CUDA_STD_EXEC::__forwarding_query;
 using _CUDA_STD_EXEC::__unwrap_reference_t;
 using _CUDA_STD_EXEC::env;
 using _CUDA_STD_EXEC::env_of_t;
+using _CUDA_STD_EXEC::forwarding_query;
+using _CUDA_STD_EXEC::forwarding_query_t;
 using _CUDA_STD_EXEC::get_env;
 using _CUDA_STD_EXEC::get_env_t;
 using _CUDA_STD_EXEC::prop;
@@ -57,8 +60,15 @@ using _CUDA_STD_EXEC::__queryable_with;
 template <class _Env>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
 {
+  template <class _Tag>
+  [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto query(get_domain_t<_Tag>) const noexcept
+  {
+    return get_domain<set_value_t>(__env_);
+  }
+
   _CCCL_TEMPLATE(class _Query)
-  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<_Env, _Query>)
+  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND(!__is_specialization_of_v<_Query, get_domain_t>)
+                   _CCCL_AND __queryable_with<_Env, _Query>)
   [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
     -> __query_result_t<_Env, _Query>
   {
@@ -80,10 +90,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>&& __env) const noexcept -> __fwd_env_<_Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>&& __env) const
+    noexcept(__nothrow_movable<_Env>) -> __fwd_env_<_Env>
   {
-    static_assert(noexcept(__fwd_env_<_Env>{static_cast<_Env&&>(__env)}),
-                  "The move constructor of __fwd_env_ must be noexcept");
     return static_cast<__fwd_env_<_Env>&&>(__env);
   }
 

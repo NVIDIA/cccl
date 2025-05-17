@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/unique_ptr.h>
 #include <cuda/std/__type_traits/is_callable.h>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
@@ -42,7 +43,7 @@
 namespace cuda::experimental::execution
 {
 template <class _Tag, class _Rcvr, class... _Args>
-__global__ static void __stream_complete(_Tag, _Rcvr* __rcvr, _Args... __args)
+__global__ void __stream_complete(_Tag, _Rcvr* __rcvr, _Args... __args)
 {
   _Tag{}(static_cast<_Rcvr&&>(*__rcvr), static_cast<_Args&&>(__args)...);
 }
@@ -58,6 +59,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
     __stream_.sync();
   }
 
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
+  {
+    stream_ref __stream_;
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////
   // stream scheduler
   struct _CCCL_TYPE_VISIBILITY_DEFAULT scheduler
@@ -69,7 +75,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
       return __stream_;
     }
 
-    _CCCL_API static constexpr auto query(get_domain_t<set_value_t>) noexcept -> stream_domain
+    template <class _Tag>
+    _CCCL_API static constexpr auto query(get_domain_t<_Tag>) noexcept -> stream_domain
     {
       return {};
     }
@@ -117,7 +124,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
       return scheduler{__stream_};
     }
 
-    _CCCL_TRIVIAL_HOST_API static constexpr auto query(get_domain_t<set_value_t>) noexcept -> stream_domain
+    template <class _Tag>
+    _CCCL_TRIVIAL_API static constexpr auto query(get_domain_t<_Tag>) noexcept -> stream_domain
     {
       return {};
     }
@@ -132,10 +140,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT stream_context : private __immovable
   {
     using operation_state_concept = operation_state_t;
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API explicit __opstate_t(_Rcvr __rcvr, stream_ref __stream_ref) noexcept(__nothrow_movable<_Rcvr>)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __stream_{__stream_ref}
-    {}
+    {
+      _CCCL_ASSERT(__get_pointer_attributes(this).type == cudaMemoryTypeManaged,
+                   "stream scheduler's operation state must be allocated in managed memory");
+    }
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 

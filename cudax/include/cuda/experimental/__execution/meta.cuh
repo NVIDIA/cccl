@@ -40,9 +40,6 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
 
 namespace cuda::experimental::execution
 {
-template <class _Ret, class... _Args>
-using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
-
 // The following must be left undefined
 template <class...>
 struct _DIAGNOSTIC;
