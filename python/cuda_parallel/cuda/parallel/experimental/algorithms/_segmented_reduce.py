@@ -9,7 +9,7 @@ from .._caching import CachableFunction, cache_with_key
 from .._cccl_interop import call_build, set_cccl_iterator_state, to_cccl_value_state
 from .._utils import protocols
 from .._utils.protocols import get_data_pointer, validate_and_get_stream
-from ..iterators._iterators import IteratorBase
+from ..iterators._iterators import IteratorBase, scrub_duplicate_ltoirs
 from ..typing import DeviceArrayLike, GpuStruct
 
 
@@ -33,10 +33,33 @@ class _SegmentedReduce:
         op: Callable,
         h_init: np.ndarray | GpuStruct,
     ):
+        start_offsets_in, end_offsets_in = scrub_duplicate_ltoirs(
+            start_offsets_in, end_offsets_in
+        )
         self.d_in_cccl = cccl.to_cccl_iter(d_in)
         self.d_out_cccl = cccl.to_cccl_iter(d_out)
         self.start_offsets_in_cccl = cccl.to_cccl_iter(start_offsets_in)
         self.end_offsets_in_cccl = cccl.to_cccl_iter(end_offsets_in)
+        # set host advance functions
+        cccl.cccl_iterator_set_host_advance(self.d_out_cccl, d_out)
+        cccl.cccl_iterator_set_host_advance(
+            self.start_offsets_in_cccl, start_offsets_in
+        )
+        if (
+            self.start_offsets_in_cccl.is_kind_iterator()
+            and self.end_offsets_in_cccl.is_kind_iterator()
+            and isinstance(start_offsets_in, IteratorBase)
+            and isinstance(end_offsets_in, IteratorBase)
+            and start_offsets_in.kind == end_offsets_in.kind
+        ):
+            self.end_offsets_in_cccl.host_advance_fn = (
+                self.start_offsets_in_cccl.host_advance_fn
+            )
+        else:
+            cccl.cccl_iterator_set_host_advance(
+                self.end_offsets_in_cccl, end_offsets_in
+            )
+
         self.h_init_cccl = cccl.to_cccl_value(h_init)
         if isinstance(h_init, np.ndarray):
             value_type = numba.from_dtype(h_init.dtype)

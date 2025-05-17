@@ -7,12 +7,15 @@
 # static type checker tools like mypy green-lights cuda.parallel
 
 from libc.string cimport memset, memcpy
-from libc.stdint cimport uint8_t, uint32_t, uint64_t
+from libc.stdint cimport uint8_t, uint32_t, uint64_t, int64_t, uintptr_t
 from cpython.bytes cimport PyBytes_FromStringAndSize
 
 from cpython.buffer cimport (
     Py_buffer, PyBUF_SIMPLE, PyBUF_ANY_CONTIGUOUS,
     PyBuffer_Release, PyObject_CheckBuffer, PyObject_GetBuffer
+)
+from cpython.pycapsule cimport (
+    PyCapsule_CheckExact, PyCapsule_IsValid, PyCapsule_GetPointer
 )
 
 import ctypes
@@ -68,6 +71,12 @@ cdef extern from "cccl/c/types.h":
         cccl_type_info type
         void *state
 
+    cdef union cccl_increment_t:
+        int64_t signed_offset
+        uint64_t unsigned_offset
+
+    ctypedef void (*cccl_host_op_fn_ptr_t)(void *, cccl_increment_t) nogil
+
     cdef struct cccl_iterator_t:
         size_t size
         size_t alignment
@@ -76,6 +85,7 @@ cdef extern from "cccl/c/types.h":
         cccl_op_t dereference
         cccl_type_info value_type
         void *state
+        cccl_host_op_fn_ptr_t host_advance
 
     ctypedef enum cccl_sort_order_t:
         CCCL_ASCENDING
@@ -475,6 +485,10 @@ cpdef bint is_SortOrder(IntEnumerationMember attr):
 
 
 cdef void _validate_alignment(int alignment) except *:
+    """
+    Alignment must be positive integer and a power of two
+    that can be represented by uint32_t type.
+    """
     cdef uint32_t val
     if alignment < 1:
         raise ValueError(
@@ -490,6 +504,21 @@ cdef void _validate_alignment(int alignment) except *:
 
 
 cdef class Op:
+    """
+    Represents CCCL Operation
+
+    Args:
+        name (str):
+            Name of the operation
+        operator_type (OpKind):
+            Whether operator is stateless or stateful
+        ltoir (bytes):
+            The LTOIR for the operation compiled for device
+        state (bytes, optional):
+            State for the stateful operation.
+        state_alignment (int, optional):
+            Alignment of the state struct. Default: `1`.
+    """
     # need Python owner of memory used for operator name
     cdef bytes op_encoded_name
     cdef bytes ltoir_bytes
@@ -574,6 +603,17 @@ cdef class Op:
 
 
 cdef class TypeInfo:
+    """
+    Represents CCCL type info structure
+
+    Args:
+        size (int):
+            Size of the type in bytes.
+        alignment (int):
+            Alignment of the type in bytes.
+        type_enum (IntEnumerationMember):
+            Enumeration member identifying the type.
+    """
     cdef cccl_type_info type_info
 
     def __cinit__(self, int size, int alignment, IntEnumerationMember type_enum):
@@ -608,6 +648,17 @@ cdef class TypeInfo:
 
 
 cdef class Value:
+    """
+    Represents CCCL value structure
+
+    Args:
+        value_type (TypeInfo):
+            type descriptor
+        state (object):
+            state of the value type. Object is expected to
+            implement Python buffer protocol and be able to provide
+            simple contiguous array of type `uint8_t`.
+    """
     cdef uint8_t[::1] state_obj
     cdef TypeInfo value_type
     cdef cccl_value_t value_data;
@@ -662,7 +713,8 @@ cdef void * get_buffer_pointer(object o, size_t *size):
         )
 
     ptr = view.buf
-    size[0] = <size_t>view.len
+    if size is not NULL:
+        size[0] = <size_t>view.len
     PyBuffer_Release(&view)
 
     return ptr
@@ -799,10 +851,84 @@ cdef class IteratorState(StateBase):
         pass
 
 
+cdef const char *function_ptr_capsule_name = "void (void *, cccl_increment_t)";
+
+cdef bint is_function_pointer_capsule(object o) noexcept:
+    """
+    Returns non-zero if input is a valid capsule with
+    name 'void (void *, cccl_increment_t)'.
+    """
+    return (
+        PyCapsule_CheckExact(o) and
+        PyCapsule_IsValid(o, function_ptr_capsule_name)
+    )
+
+
+cdef inline void* get_function_pointer_from_capsule(object cap) except *:
+    return PyCapsule_GetPointer(cap, function_ptr_capsule_name)
+
+
+cdef cccl_host_op_fn_ptr_t unbox_host_advance_fn(object host_fn_obj) except *:
+    cdef void *fn_ptr = NULL
+    if isinstance(host_fn_obj, ctypes._CFuncPtr):
+        # the _CFuncPtr object encapsulates a pointer to the function pointer
+        fn_ptr = ctypes_typed_pointer_payload_ptr(host_fn_obj)
+        return <cccl_host_op_fn_ptr_t>fn_ptr
+
+    if isinstance(host_fn_obj, int):
+        fn_ptr = <void *><uintptr_t>host_fn_obj
+        return <cccl_host_op_fn_ptr_t>fn_ptr
+
+    if isinstance(host_fn_obj, ctypes.c_void_p):
+        fn_ptr = <void *><uintptr_t>host_fn_obj.value
+        return <cccl_host_op_fn_ptr_t>fn_ptr
+
+    if is_function_pointer_capsule(host_fn_obj):
+        fn_ptr = get_function_pointer_from_capsule(host_fn_obj)
+        return <cccl_host_op_fn_ptr_t>fn_ptr
+
+    raise TypeError(
+        "Expected ctypes function pointer, ctypes.c_void_p, integer or a named capsule, "
+        f"got {type(host_fn_obj)}"
+    )
+
+
 cdef class Iterator:
+    """
+    Represents CCCL iterator.
+
+    Args:
+        alignment (int):
+            Alignment of the iterator state
+        iterator_type (IntEnumerationMember):
+            The type of iterator, `IteratorKind.POINTER` or
+            `IteratorKind.ITERATOR`
+        advance_fn (Op):
+            Descriptor for user-defined `advance` function
+            compiled for device
+        dereference_fn (Op):
+            Descriptor for user-defined `dereference` or `assign`
+            function compiled for device
+        value_type (TypeInfo):
+            Descriptor of the type addressed by the iterator
+        state (object, optional):
+            Python object for the state of the iterator. For iterators of
+            type `ITERATOR` the state object is expected to implement Python
+            buffer protocol for SIMPLE 1d buffer of type unsigned byte.
+            For iterators of type `POINTER` the state may be an integer convertible
+            to `uintptr_t`, or a `ctypes` pointer (typed or untyped).
+            Value `None` represents absence of iterator state.
+        host_advance_fn (object, optional):
+            Python object for host callable function to advance state by a given
+            increment. The argument may only be set for iterators of type
+            `IteratorKind.ITERATOR` and raise an exception otherwise. Supported
+            types are `int` or `ctypes.c_void_p` (raw pointer), ctypes function
+            pointer, or a Python capsule with name `"void *(void *, cccl_increment_t)"`.
+    """
     cdef Op advance
     cdef Op dereference
     cdef object state_obj
+    cdef object host_advance_obj
     cdef cccl_iterator_t iter_data
 
     def __cinit__(self,
@@ -811,7 +937,8 @@ cdef class Iterator:
         Op advance_fn,
         Op dereference_fn,
         TypeInfo value_type,
-        state = None
+        state=None,
+        host_advance_fn=None
     ):
         cdef cccl_iterator_kind_t it_kind
         _validate_alignment(alignment)
@@ -836,6 +963,12 @@ cdef class Iterator:
                     "Expect for Iterator of kind POINTER, state must have type Pointer or int, "
                     f"got {type(state)}"
                 )
+            if host_advance_fn is not None:
+                raise ValueError(
+                    "host_advance_fn must be set to None for iterators of kind POINTER"
+                )
+            self.iter_data.host_advance = NULL
+            self.host_advance_obj = None
         elif it_kind == cccl_iterator_kind_t.CCCL_ITERATOR:
             if state is None:
                 self.state_obj = None
@@ -850,6 +983,12 @@ cdef class Iterator:
                     "For Iterator of kind ITERATOR, state must have type IteratorState, "
                     f"got type {type(state)}"
                 )
+            if host_advance_fn is not None:
+                self.iter_data.host_advance = unbox_host_advance_fn(host_advance_fn)
+                self.host_advance_obj = host_advance_fn
+            else:
+                self.iter_data.host_advance = NULL
+                self.host_advance_obj = None
         else:  # pragma: no cover
             raise ValueError("Unrecognized iterator kind")
         self.advance = advance_fn
@@ -944,6 +1083,22 @@ cdef class Iterator:
         cdef uint8_t[:] mem_view = bytearray(sizeof(self.iter_data))
         memcpy(&mem_view[0], &self.iter_data, sizeof(self.iter_data))
         return bytes(mem_view)
+
+    @property
+    def host_advance_fn(self):
+        return self.host_advance_obj
+
+    @host_advance_fn.setter
+    def host_advance_fn(self, func):
+        if (self.iter_data.type == cccl_iterator_kind_t.CCCL_ITERATOR):
+            if func is not None:
+                self.iter_data.host_advance = unbox_host_advance_fn(func)
+                self.host_advance_obj = func
+            else:
+                self.iter_data.host_advance = NULL
+                self.host_advance_obj = None
+        else:
+            raise ValueError
 
 
 cdef class CommonData:
@@ -1093,9 +1248,9 @@ cdef class DeviceReduceBuildResult:
         stream
     ):
         cdef CUresult status = -1
-        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
             status = cccl_device_reduce(
@@ -1227,9 +1382,9 @@ cdef class DeviceScanBuildResult:
         stream
     ):
         cdef CUresult status = -1
-        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
             status = cccl_device_inclusive_scan(
@@ -1261,9 +1416,9 @@ cdef class DeviceScanBuildResult:
         stream
     ):
         cdef CUresult status = -1
-        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
             status = cccl_device_exclusive_scan(
@@ -1390,9 +1545,9 @@ cdef class DeviceSegmentedReduceBuildResult:
         stream
     ):
         cdef CUresult status = -1
-        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
             status = cccl_device_segmented_reduce(
@@ -1515,9 +1670,9 @@ cdef class DeviceMergeSortBuildResult:
         stream
     ):
         cdef CUresult status = -1
-        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
         with nogil:
             status = cccl_device_merge_sort(
                 self.build_data,
@@ -1646,9 +1801,9 @@ cdef class DeviceUniqueByKeyBuildResult:
         stream
     ):
         cdef CUresult status = -1
-        cdef void *storage_ptr = (<void *><size_t>temp_storage_ptr) if temp_storage_ptr else NULL
+        cdef void *storage_ptr = (<void *><uintptr_t>temp_storage_ptr) if temp_storage_ptr else NULL
         cdef size_t storage_sz = <size_t>temp_storage_bytes
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
 
         with nogil:
             status = cccl_device_unique_by_key(
@@ -1912,7 +2067,7 @@ cdef class DeviceUnaryTransform:
         stream
     ):
         cdef CUresult status = -1
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
         with nogil:
             status = cccl_device_unary_transform(
                 self.build_data,
@@ -1985,7 +2140,7 @@ cdef class DeviceBinaryTransform:
         stream
     ):
         cdef CUresult status = -1
-        cdef CUstream c_stream = <CUstream><size_t>(stream) if stream else NULL
+        cdef CUstream c_stream = <CUstream><uintptr_t>(stream) if stream else NULL
         with nogil:
             status = cccl_device_binary_transform(
                 self.build_data,

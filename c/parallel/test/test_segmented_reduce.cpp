@@ -462,6 +462,22 @@ struct host_check_functor_state
   DataT* m_ptr;
 };
 
+template <typename StateT>
+void host_advance_transform_it_state(void* state, cccl_increment_t offset)
+{
+  auto st      = reinterpret_cast<StateT*>(state);
+  using IndexT = decltype(st->base_it_state.value);
+
+  if constexpr (std::is_signed_v<IndexT>)
+  {
+    st->base_it_state.value += offset.signed_offset;
+  }
+  else
+  {
+    st->base_it_state.value += offset.unsigned_offset;
+  }
+}
+
 namespace validate
 {
 
@@ -535,14 +551,12 @@ C2H_TEST("SegmentedReduce works with large num_segments", "[segmented_reduce]")
 
   static constexpr IndexT n_segments_base          = (IndexT(1) << 15) + (IndexT(1) << 3);
   static constexpr IndexT n_segments_under_int_max = n_segments_base << 10;
+  static_assert(n_segments_under_int_max < INT_MAX);
 
-#ifdef SUPPORTS_HOST_INCREMENT
   static constexpr IndexT n_segments_over_int_max = n_segments_base << 16;
+  static_assert(n_segments_over_int_max > INT_MAX);
 
   const IndexT n_segments = GENERATE(n_segments_under_int_max, n_segments_over_int_max);
-#else
-  const IndexT n_segments = GENERATE(n_segments_under_int_max, n_segments_under_int_max * 8);
-#endif
 
   // first define constant iterator:
   //   iterators.ConstantIterator(np.int8(1))
@@ -659,6 +673,10 @@ extern "C" __device__ void {0}(const void *x1_p, const void *x2_p, void *out_p) 
 
   auto cccl_start_offsets_it = static_cast<cccl_iterator_t>(start_offsets_it);
   auto cccl_end_offsets_it   = static_cast<cccl_iterator_t>(end_offsets_it);
+
+  // set host_advance functions
+  cccl_start_offsets_it.host_advance = &host_advance_transform_it_state<HostTransformStateT>;
+  cccl_end_offsets_it.host_advance   = &host_advance_transform_it_state<HostTransformStateT>;
 
   value_t<DataT> h_init{DataT{0}};
 
