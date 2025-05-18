@@ -50,8 +50,15 @@ class __variant_impl<_CUDA_VSTD::index_sequence<>>
 {
 public:
   template <class _Fn, class... _Us>
-  _CCCL_API void __visit(_Fn&&, _Us&&...) const noexcept
-  {}
+  _CCCL_API static void __visit(_Fn&&, _Us&&...) noexcept
+  {
+    _CCCL_ASSERT(false, "cannot visit a stateless variant");
+  }
+
+  [[nodiscard]] _CCCL_TRIVIAL_API static constexpr size_t __index() noexcept
+  {
+    return __npos;
+  }
 };
 
 template <size_t... _Idx, class... _Ts>
@@ -85,12 +92,12 @@ public:
     __destroy();
   }
 
-  _CCCL_TRIVIAL_API void* __ptr() noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  _CCCL_TRIVIAL_API size_t __index() const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API size_t __index() const noexcept
   {
     return __index_;
   }
@@ -144,7 +151,7 @@ public:
   {
     // make this local in case destroying the sub-object destroys *this
     const auto index = __self.__index_;
-    _CCCL_ASSERT(index != __npos, "");
+    _CCCL_ASSERT(index != __npos, "cannot visit a stateless variant");
     ((_Idx == index
         ? static_cast<_Fn&&>(__fn)(static_cast<_As&&>(__as)..., static_cast<_Self&&>(__self).template __get<_Idx>())
         : void()),
@@ -152,21 +159,21 @@ public:
   }
 
   template <size_t _Ny>
-  _CCCL_API auto __get() && noexcept -> __at<_Ny>&&
+  [[nodiscard]] _CCCL_API auto __get() && noexcept -> __at<_Ny>&&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
   template <size_t _Ny>
-  _CCCL_API auto __get() & noexcept -> __at<_Ny>&
+  [[nodiscard]] _CCCL_API auto __get() & noexcept -> __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<__at<_Ny>*>(__ptr());
   }
 
   template <size_t _Ny>
-  _CCCL_API auto __get() const& noexcept -> const __at<_Ny>&
+  [[nodiscard]] _CCCL_API auto __get() const& noexcept -> const __at<_Ny>&
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<const __at<_Ny>*>(__ptr());
