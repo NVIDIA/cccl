@@ -90,7 +90,16 @@ public:
              _CUDA_VSTD::source_location __loc    = _CUDA_VSTD::source_location::current(),
              __detail::__msg_storage __msg_buffer = {}) noexcept
       : ::std::runtime_error(__detail::__format_cuda_error(__msg_buffer, __status, __msg, __api, __loc))
+      , __status_(__status)
   {}
+
+  auto status() const noexcept -> cudaError_t
+  {
+    return static_cast<cudaError_t>(__status_);
+  }
+
+private:
+  int __status_;
 };
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
