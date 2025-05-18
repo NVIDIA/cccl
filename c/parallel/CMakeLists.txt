@@ -34,11 +34,7 @@ add_subdirectory(src/jit_templates)
 
 find_package(CUDAToolkit REQUIRED)
 
-# TODO Use static versions of cudart, nvrtc, and nvJitLink
 target_link_libraries(cccl.c.parallel PRIVATE
-  CUDA::cudart
-  CUDA::nvrtc
-  CUDA::nvJitLink
   CUDA::cuda_driver
   cccl.compiler_interface_cpp20
   cccl.c.parallel.jit_template
