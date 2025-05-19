@@ -80,11 +80,7 @@ struct make_reverse_iterator_base
 //! #include <thrust/iterator/reverse_iterator.h>
 //! #include <thrust/device_vector.h>
 //! ...
-//! thrust::device_vector<float> v(4);
-//! v[0] = 0.0f;
-//! v[1] = 1.0f;
-//! v[2] = 2.0f;
-//! v[3] = 3.0f;
+//! thrust::device_vector<float> v{0.0f, 1.0f, 2.0f, 3.0f};
 //!
 //! using Iterator = thrust::device_vector<float>::iterator;
 //!
@@ -106,11 +102,7 @@ struct make_reverse_iterator_base
 //! \code
 //! #include <thrust/device_vector.h>
 //! ...
-//! thrust::device_vector<float> v(4);
-//! v[0] = 0.0f;
-//! v[1] = 1.0f;
-//! v[2] = 2.0f;
-//! v[3] = 3.0f;
+//! thrust::device_vector<float> v{0.0f, 1.0f, 2.0f, 3.0f};
 //!
 //! // we use the nested type reverse_iterator to refer to a reversed view of a device_vector and the method rbegin() to
 //! // create a reverse_iterator pointing to the beginning of the reversed device_vector
@@ -135,12 +127,7 @@ struct make_reverse_iterator_base
 //! #include <thrust/device_vector.h>
 //! #include <thrust/scan.h>
 //! ...
-//! thrust::device_vector<int> v(5);
-//! v[0] = 0;
-//! v[1] = 1;
-//! v[2] = 2;
-//! v[3] = 3;
-//! v[4] = 4;
+//! thrust::device_vector<int> v{0, 1, 2, 3, 4};
 //!
 //! thrust::device_vector<int> result(5);
 //!
