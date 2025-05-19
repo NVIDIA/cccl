@@ -155,6 +155,7 @@ template <class... Types>
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__vector_types/structured_bindings.h> // todo: remove this in the next major version
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
@@ -167,7 +168,6 @@ template <class... Types>
 #include <cuda/std/__tuple_dir/tuple_like.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__tuple_dir/vector_types.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/reference_constructs_from_temporary.h>
