@@ -85,10 +85,10 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<int*>>();
   test<int*>();
 
-  { // Enjusre that we can assign through projections
+  { // Ensure that we can assign through projections
     using pair    = cuda::std::pair<int, int>;
     pair buffer[] = {{0, -1}, {1, -1}, {2, -1}, {3, -1}, {4, -1}, {5, -1}, {6, -1}, {7, -1}};
-    cuda::transform_iterator iter{buffer, &cuda::std::pair<int, int>::second};
+    cuda::transform_iterator iter{buffer, &pair::second};
     assert(iter[4] == -1);
     iter[4] = 42;
     assert(iter[4] == 42);
@@ -103,7 +103,7 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  // static_assert(test(), "");
+  static_assert(test(), "");
 
   return 0;
 }
