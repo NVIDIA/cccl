@@ -51,9 +51,6 @@ source-dir = "."
 version = ">=1.11"
 make-fallback = true
 
-[tool.scikit-build.wheel]
-py-api = "py3"
-
 [tool.scikit-build.wheel.packages]
 "cuda" = "cuda"
 "cuda/parallel" = "cuda/parallel"
@@ -79,4 +76,7 @@ extend = "../../pyproject.toml"
 known-first-party = ["cuda.parallel"]
 
 [tool.pytest.ini_options]
-markers = ["no_verify_sass: skip SASS verification check"]
+markers = [
+  "no_verify_sass: skip SASS verification check",
+  "large: tests requiring large device memory allocations",
+]

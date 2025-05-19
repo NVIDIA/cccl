@@ -81,6 +81,7 @@ _CCCL_API constexpr auto __index_of() noexcept -> size_t
   return execution::__find_pos(__same, __same + sizeof...(_Ts));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ty, class _Uy = _Ty>
 _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _Ty
 {
@@ -94,6 +95,7 @@ _CCCL_API constexpr auto __exchange(_Ty& __obj, _Uy&& __new_value) noexcept -> _
   return old_value;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
 _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
@@ -107,6 +109,7 @@ _CCCL_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
   __right   = static_cast<_Ty&&>(__tmp);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Ty>
 _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>
 {

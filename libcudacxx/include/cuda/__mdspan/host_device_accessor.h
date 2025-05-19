@@ -21,10 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_HAS_CUDA_COMPILER || _CCCL_CUDA_COMPILER(CLANG)
-#  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
-
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -107,6 +103,7 @@ class __host_accessor : public _Accessor
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   __is_host_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
+#if _CCCL_HAS_CTK()
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
     {
       ::cudaPointerAttributes __ptr_attrib{};
@@ -115,6 +112,7 @@ class __host_accessor : public _Accessor
       return __ptr_attrib.hostPointer != nullptr || __ptr_attrib.type == ::cudaMemoryTypeUnregistered;
     }
     else
+#endif // _CCCL_HAS_CTK()
     {
       return true; // cannot be verified
     }
@@ -222,6 +220,7 @@ class __device_accessor : public _Accessor
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   __is_device_accessible_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
+#if _CCCL_HAS_CTK()
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
     {
       ::cudaPointerAttributes __ptr_attrib{};
@@ -230,6 +229,7 @@ class __device_accessor : public _Accessor
       return __ptr_attrib.devicePointer != nullptr || __ptr_attrib.type == ::cudaMemoryTypeUnregistered;
     }
     else
+#endif // _CCCL_HAS_CTK()
     {
       return true; // cannot be verified
     }
@@ -342,6 +342,7 @@ class __managed_accessor : public _Accessor
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
   __is_managed_pointer([[maybe_unused]] __data_handle_type __p) noexcept
   {
+#if _CCCL_HAS_CTK()
     if constexpr (_CUDA_VSTD::contiguous_iterator<__data_handle_type>)
     {
       ::cudaPointerAttributes __ptr_attrib{};
@@ -350,6 +351,7 @@ class __managed_accessor : public _Accessor
       return __ptr_attrib.devicePointer != nullptr && __ptr_attrib.hostPointer == __ptr_attrib.devicePointer;
     }
     else
+#endif // _CCCL_HAS_CTK()
     {
       return true; // cannot be verified
     }

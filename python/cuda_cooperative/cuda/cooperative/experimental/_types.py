@@ -3,9 +3,10 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import re
+from functools import cached_property
 from textwrap import dedent
 from types import FunctionType as PyFunctionType
-from typing import Literal
+from typing import BinaryIO, Literal, Sequence
 
 import jinja2
 import numba
@@ -609,8 +610,8 @@ class Algorithm:
             fake_return=self.fake_return,
         )
 
-    def get_temp_storage_bytes(self):
-        # TODO Should be in value types, not bytes for alignment purposes?
+    @cached_property
+    def _temp_storage_bytes_and_alignment(self):
         environment = jinja2.Environment()
         template = environment.from_string("""
             #include <cuda/std/cstdint>
@@ -629,6 +630,7 @@ class Algorithm:
             using temp_storage_t = typename algorithm_t::TempStorage;
 
             __device__ constexpr unsigned temp_storage_bytes = sizeof(temp_storage_t);
+            __device__ constexpr unsigned temp_storage_alignment = alignof(temp_storage_t);
             """)
         src = template.render(
             algorithm_name=self.struct_name,
@@ -639,7 +641,17 @@ class Algorithm:
         cc_major, cc_minor = device.compute_capability
         cc = cc_major * 10 + cc_minor
         _, ptx = nvrtc.compile(cpp=src, cc=cc, rdc=True, code="ptx")
-        return find_unsigned("temp_storage_bytes", ptx)
+        temp_storage_bytes = find_unsigned("temp_storage_bytes", ptx)
+        temp_storage_alignment = find_unsigned("temp_storage_alignment", ptx)
+        return (temp_storage_bytes, temp_storage_alignment)
+
+    @property
+    def temp_storage_bytes(self):
+        return self._temp_storage_bytes_and_alignment[0]
+
+    @property
+    def temp_storage_alignment(self):
+        return self._temp_storage_bytes_and_alignment[1]
 
     def get_lto_ir(self, threads=None):
         lto_irs = []
@@ -911,14 +923,25 @@ class Algorithm:
 
 
 class Invocable:
-    def __init__(self, temp_files, temp_storage_bytes, algorithm):
+    def __init__(
+        self,
+        temp_files: Sequence[BinaryIO],
+        temp_storage_bytes: int,
+        temp_storage_alignment: int,
+        algorithm: Algorithm,
+    ):
         self._temp_files = temp_files
         self._temp_storage_bytes = temp_storage_bytes
+        self._temp_storage_alignment = temp_storage_alignment
         algorithm.codegen(self)
 
     @property
     def temp_storage_bytes(self):
         return self._temp_storage_bytes
+
+    @property
+    def temp_storage_alignment(self):
+        return self._temp_storage_alignment
 
     @property
     def files(self):

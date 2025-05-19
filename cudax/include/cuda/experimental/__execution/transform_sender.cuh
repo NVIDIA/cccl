@@ -91,6 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
     return static_cast<_Sndr&&>(__sndr);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__transform))
   _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
@@ -100,6 +101,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
     return __dom_t{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_
                   == __strategy::__transform_recurse))

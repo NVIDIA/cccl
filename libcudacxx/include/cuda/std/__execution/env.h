@@ -292,6 +292,12 @@ template <class... _Envs>
 _CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 #ifndef _CCCL_DOXYGEN_INVOKED
+
+// Partial specialization for no env because NVCC segfaults trying to compile `__tuple<>`
+template <>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT env<>
+{};
+
 // Partial specialization for two environments so that the syntax `env(env0, env1)` is
 // valid. That is, `env` can use CTAD with a parentesized list of arguments.
 template <class _Env0, class _Env1>
@@ -307,7 +313,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT env<_Env0, _Env1>
     {
       return (__self.__env0_);
     }
-    else
+    else if constexpr (__queryable_with<_Env1, _Query>)
     {
       return (__self.__env1_);
     }

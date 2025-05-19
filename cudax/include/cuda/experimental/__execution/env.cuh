@@ -23,6 +23,7 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__utility/move.h>
 
@@ -40,14 +41,71 @@ namespace cuda::experimental
 {
 namespace execution
 {
+// NOLINTBEGIN(misc-unused-using-decls)
+using _CUDA_STD_EXEC::__unwrap_reference_t;
 using _CUDA_STD_EXEC::env;
 using _CUDA_STD_EXEC::env_of_t;
 using _CUDA_STD_EXEC::get_env;
+using _CUDA_STD_EXEC::get_env_t;
 using _CUDA_STD_EXEC::prop;
 
 using _CUDA_STD_EXEC::__nothrow_queryable_with;
 using _CUDA_STD_EXEC::__query_result_t;
 using _CUDA_STD_EXEC::__queryable_with;
+// NOLINTEND(misc-unused-using-decls)
+
+template <class _Env>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_
+{
+  _CCCL_TEMPLATE(class _Query)
+  _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<_Env, _Query>)
+  [[nodiscard]] _CCCL_API constexpr auto query(_Query) const noexcept(__nothrow_queryable_with<_Env, _Query>)
+    -> __query_result_t<_Env, _Query>
+  {
+    return __env_.query(_Query());
+  }
+
+  _Env __env_;
+};
+
+namespace __detail
+{
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
+{
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const
+    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Env>) -> __fwd_env_<_Env>
+  {
+    return __fwd_env_<_Env>{static_cast<_Env&&>(__env)};
+  }
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>&& __env) const noexcept
+    -> __fwd_env_<_Env>&&
+  {
+    return static_cast<_Env&&>(__env);
+  }
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>& __env) const noexcept -> __fwd_env_<_Env>&
+  {
+    return __env;
+  }
+
+  template <class _Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(const __fwd_env_<_Env>& __env) const noexcept
+    -> const __fwd_env_<_Env>&
+  {
+    return __env;
+  }
+};
+} // namespace __detail
+
+template <class _Env>
+using __fwd_env_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<__detail::__fwd_env_fn, _Env>;
+
+_CCCL_GLOBAL_CONSTANT __detail::__fwd_env_fn __fwd_env{};
+
 } // namespace execution
 
 template <class... _Properties>
