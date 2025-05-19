@@ -197,7 +197,7 @@ inline constexpr bool is_arithmetic_cuda_floating_point_v =
 // - promote small integer types to their corresponding 32-bit promotion type
 // - address the incompatibility between linux/windows for int/long
 template <typename T>
-using normalize_integer_t = _CUDA_VSTD::_If<
+using signed_promotion_t = _CUDA_VSTD::_If<
   _CUDA_VSTD::__cccl_is_signed_integer_v<T> && sizeof(T) <= sizeof(int),
   int,
   _CUDA_VSTD::_If<_CUDA_VSTD::__cccl_is_unsigned_integer_v<T> && sizeof(T) <= sizeof(uint32_t), uint32_t, T>>;
