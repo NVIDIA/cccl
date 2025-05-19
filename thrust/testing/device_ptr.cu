@@ -1,7 +1,14 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 
+#include <cuda/std/iterator>
+
 #include <unittest/unittest.h>
+
+#if _CCCL_STD_VER >= 2020
+static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
+static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
+#endif // _CCCL_STD_VER >= 2020
 
 void TestDevicePointerManipulation()
 {
