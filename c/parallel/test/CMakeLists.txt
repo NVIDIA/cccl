@@ -11,6 +11,7 @@ function(cccl_c_parallel_add_test target_name_var source)
     cccl.c.parallel
     CUDA::cudart
     CUDA::nvrtc
+    CUDA::nvJitLink
     cccl.c2h.main
     cccl.compiler_interface_cpp20
   )
