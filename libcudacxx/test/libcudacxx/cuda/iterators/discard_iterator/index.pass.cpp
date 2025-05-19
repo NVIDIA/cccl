@@ -19,15 +19,15 @@ __host__ __device__ constexpr bool test()
 {
   {
     const cuda::discard_iterator iter{};
-    assert(iter.count() == 0);
-    static_assert(cuda::std::is_same_v<decltype(iter.count()), cuda::std::ptrdiff_t>);
+    assert(iter.index() == 0);
+    static_assert(cuda::std::is_same_v<decltype(iter.index()), cuda::std::ptrdiff_t>);
   }
 
   {
-    const cuda::std::ptrdiff_t count = 2;
-    cuda::discard_iterator iter(count);
-    assert(iter.count() == count);
-    static_assert(cuda::std::is_same_v<decltype(iter.count()), cuda::std::ptrdiff_t>);
+    const cuda::std::ptrdiff_t index = 2;
+    cuda::discard_iterator iter(index);
+    assert(iter.index() == index);
+    static_assert(cuda::std::is_same_v<decltype(iter.index()), cuda::std::ptrdiff_t>);
   }
 
   return true;

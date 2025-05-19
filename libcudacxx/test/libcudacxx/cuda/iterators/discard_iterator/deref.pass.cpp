@@ -19,14 +19,14 @@
 __host__ __device__ constexpr bool test()
 {
   {
-    const int counter = 2;
-    cuda::discard_iterator iter(counter);
+    const int index = 2;
+    cuda::discard_iterator iter(index);
     *iter = 42;
   }
 
   {
-    const int counter = 2;
-    const cuda::discard_iterator iter(counter);
+    const int index = 2;
+    const cuda::discard_iterator iter(index);
     *iter = 42;
   }
 

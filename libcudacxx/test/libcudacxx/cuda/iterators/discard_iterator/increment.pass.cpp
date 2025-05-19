@@ -17,11 +17,11 @@
 
 __host__ __device__ constexpr bool test()
 {
-  const int counter = 2;
-  cuda::discard_iterator iter(counter);
+  const int index = 2;
+  cuda::discard_iterator iter(index);
 
-  assert(iter++ == cuda::discard_iterator(counter + 0));
-  assert(++iter == cuda::discard_iterator(counter + 2));
+  assert(iter++ == cuda::discard_iterator(index + 0));
+  assert(++iter == cuda::discard_iterator(index + 2));
 
   static_assert(cuda::std::is_same_v<decltype(iter++), cuda::discard_iterator>);
   static_assert(cuda::std::is_same_v<decltype(++iter), cuda::discard_iterator&>);

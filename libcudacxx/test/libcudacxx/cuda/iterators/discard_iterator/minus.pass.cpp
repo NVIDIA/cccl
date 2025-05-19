@@ -26,21 +26,21 @@ __host__ __device__ constexpr bool test()
 {
   { // operator-(iter_difference_t<I> n)
     {
-      const int counter = 3;
-      const int diff    = 2;
-      cuda::discard_iterator iter(counter);
-      assert(iter - diff == cuda::discard_iterator(counter - diff));
-      assert(iter - 0 == cuda::discard_iterator(counter));
+      const int index = 3;
+      const int diff  = 2;
+      cuda::discard_iterator iter(index);
+      assert(iter - diff == cuda::discard_iterator(index - diff));
+      assert(iter - 0 == cuda::discard_iterator(index));
 
       static_assert(cuda::std::is_same_v<decltype(iter - 2), cuda::discard_iterator>);
     }
 
     {
-      const int counter = 3;
-      const int diff    = 2;
-      const cuda::discard_iterator iter(counter);
-      assert(iter - diff == cuda::discard_iterator(counter - diff));
-      assert(iter - 0 == cuda::discard_iterator(counter));
+      const int index = 3;
+      const int diff  = 2;
+      const cuda::discard_iterator iter(index);
+      assert(iter - diff == cuda::discard_iterator(index - diff));
+      assert(iter - 0 == cuda::discard_iterator(index));
 
       static_assert(cuda::std::is_same_v<decltype(iter - 2), cuda::discard_iterator>);
     }
@@ -48,32 +48,32 @@ __host__ __device__ constexpr bool test()
 
   { // operator-(const discard_iterator& x, const discard_iterator& y)
     {
-      const int counter1 = 4;
-      const int counter2 = 2;
-      cuda::discard_iterator iter1(counter1);
-      cuda::discard_iterator iter2(counter2);
-      assert(iter1 - iter2 == counter2 - counter1);
-      assert(iter2 - iter1 == counter1 - counter2);
+      const int index1 = 4;
+      const int index2 = 2;
+      cuda::discard_iterator iter1(index1);
+      cuda::discard_iterator iter2(index2);
+      assert(iter1 - iter2 == index2 - index1);
+      assert(iter2 - iter1 == index1 - index2);
 
       static_assert(cuda::std::is_same_v<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
 
     {
-      const int counter1 = 4;
-      const int counter2 = 2;
-      const cuda::discard_iterator iter1(counter1);
-      const cuda::discard_iterator iter2(counter2);
-      assert(iter1 - iter2 == counter2 - counter1);
-      assert(iter2 - iter1 == counter1 - counter2);
+      const int index1 = 4;
+      const int index2 = 2;
+      const cuda::discard_iterator iter1(index1);
+      const cuda::discard_iterator iter2(index2);
+      assert(iter1 - iter2 == index2 - index1);
+      assert(iter2 - iter1 == index1 - index2);
 
       static_assert(cuda::std::is_same_v<decltype(iter1 - iter2), cuda::std::ptrdiff_t>);
     }
   }
 
   { // operator-=(iter_difference_t<I> n)
-    const int counter = 3;
-    const int diff    = 2;
-    cuda::discard_iterator iter(counter);
+    const int index = 3;
+    const int diff  = 2;
+    cuda::discard_iterator iter(index);
     assert((iter -= diff) == cuda::discard_iterator(1));
     assert((iter -= 0) == cuda::discard_iterator(1));
 
@@ -82,17 +82,17 @@ __host__ __device__ constexpr bool test()
 
   { // operator-(const discard_iterator& x, default_sentinel_t)
     {
-      const int counter = 3;
-      cuda::discard_iterator iter(counter);
-      assert((iter - cuda::std::default_sentinel) == -counter);
+      const int index = 3;
+      cuda::discard_iterator iter(index);
+      assert((iter - cuda::std::default_sentinel) == -index);
 
       static_assert(cuda::std::is_same_v<decltype(iter - cuda::std::default_sentinel), cuda::std::ptrdiff_t>);
     }
 
     {
-      const int counter = 3;
-      const cuda::discard_iterator iter(counter);
-      assert((iter - cuda::std::default_sentinel) == -counter);
+      const int index = 3;
+      const cuda::discard_iterator iter(index);
+      assert((iter - cuda::std::default_sentinel) == -index);
 
       static_assert(cuda::std::is_same_v<decltype(iter - cuda::std::default_sentinel), cuda::std::ptrdiff_t>);
     }
@@ -100,17 +100,17 @@ __host__ __device__ constexpr bool test()
 
   { // operator-(default_sentinel_t, const discard_iterator& y)
     {
-      const int counter = 3;
-      cuda::discard_iterator iter(counter);
-      assert((cuda::std::default_sentinel - iter) == counter);
+      const int index = 3;
+      cuda::discard_iterator iter(index);
+      assert((cuda::std::default_sentinel - iter) == index);
 
       static_assert(cuda::std::is_same_v<decltype(cuda::std::default_sentinel - iter), cuda::std::ptrdiff_t>);
     }
 
     {
-      const int counter = 3;
-      const cuda::discard_iterator iter(counter);
-      assert((cuda::std::default_sentinel - iter) == counter);
+      const int index = 3;
+      const cuda::discard_iterator iter(index);
+      assert((cuda::std::default_sentinel - iter) == index);
 
       static_assert(cuda::std::is_same_v<decltype(cuda::std::default_sentinel - iter), cuda::std::ptrdiff_t>);
     }
