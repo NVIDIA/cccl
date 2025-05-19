@@ -33,9 +33,16 @@ namespace cuda::experimental
 using ::cuda::mr::device_accessible;
 using ::cuda::mr::host_accessible;
 
+//! @brief A type representing a list of memory resource properties
+//! @tparam _Properties The properties to be included in the list
+//! It has a member template `rebind` that allows constructing a type by combining
+//! a template and type arguments with the properties from this list. The properties
+//! are appended after the type arguments in the resulting type.
 template <class... _Properties>
 struct properties_list
 {
+  //! @brief A type alias for a type template instantiated with the properties
+  //! from this list appended to the type arguments.
   template <template <class...> class _Fn, class... _ExtraArgs>
   using rebind = _Fn<_ExtraArgs..., _Properties...>;
 };
