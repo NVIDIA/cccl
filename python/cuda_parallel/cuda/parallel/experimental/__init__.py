@@ -8,5 +8,5 @@ from cuda.bindings.path_finder import (  # type: ignore[import-not-found]
     _load_nvidia_dynamic_library,
 )
 
-for libname in ("cudart", "nvrtc", "nvJitLink"):
+for libname in ("nvrtc", "nvJitLink"):
     logging.info(str(_load_nvidia_dynamic_library(libname)))

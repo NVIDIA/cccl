@@ -21,7 +21,6 @@ dependencies = [
   "numba>=0.60.0",
   "cuda-python==12.*",
   "cupy-cuda12x",
-  "nvidia-cuda-runtime-cu12",
   "nvidia-cuda-nvrtc-cu12",
   "nvidia-nvjitlink-cu12",
 ]
