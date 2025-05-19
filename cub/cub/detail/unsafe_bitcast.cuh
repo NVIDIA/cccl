@@ -46,7 +46,7 @@ template <typename Output, typename Input>
 {
   Output output;
   static_assert(sizeof(input) == sizeof(output), "wrong size");
-  ::memcpy(static_cast<void*>(&output), static_cast<const void*>(&input), sizeof(input));
+  ::memcpy(&output, &input, sizeof(input));
   return output;
 }
 
