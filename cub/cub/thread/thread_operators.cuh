@@ -36,10 +36,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/__functional/maximum.h"
-#include "cuda/std/__functional/operations.h"
-#include "cuda/std/__type_traits/always_false.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -52,7 +48,6 @@
 
 #include <cuda/functional> // cuda::maximum, cuda::minimum
 #include <cuda/std/cstdint> // cuda::std::uint32_t
-#include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/type_traits> // is_same_v
 
 CUB_NAMESPACE_BEGIN
