@@ -35,6 +35,9 @@ add_subdirectory(src/jit_templates)
 find_package(CUDAToolkit REQUIRED)
 set(CMAKE_CUDA_RUNTIME_LIBRARY "STATIC")
 target_link_libraries(cccl.c.parallel PRIVATE
+  CUDA::cudart_static
+  CUDA::nvrtc
+  CUDA::nvJitLink
   CUDA::cuda_driver
   cccl.compiler_interface_cpp20
   cccl.c.parallel.jit_template
