@@ -107,7 +107,7 @@ private:
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __params_t _CCCL_NODEBUG_ALIAS              = __closure<_Pred, _Then, _Else>;
-    using __env_t _CCCL_NODEBUG_ALIAS                 = _FWD_ENV_T<env_of_t<_Rcvr>>;
+    using __env_t _CCCL_NODEBUG_ALIAS                 = __fwd_env_t<env_of_t<_Rcvr>>;
 
     template <class... _As>
     using __opstate_t _CCCL_NODEBUG_ALIAS = //
@@ -131,6 +131,7 @@ private:
       execution::start(__op_);
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <class... _As>
     _CCCL_API void set_value(_As&&... __as) noexcept
     {
@@ -168,9 +169,9 @@ private:
       execution::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
 
-    _CCCL_API auto get_env() const noexcept -> __env_t
+    [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __env_t
     {
-      return get_env(__rcvr_);
+      return __fwd_env(execution::get_env(__rcvr_));
     }
 
     _Rcvr __rcvr_;
@@ -226,9 +227,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__sndr_t<conditional_t::__cl
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__params_t&&>(__params_)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 };
 

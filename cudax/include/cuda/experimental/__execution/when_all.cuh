@@ -86,16 +86,17 @@ private:
 
     __state_t& __state_;
 
-    _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
+    [[nodiscard]] _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }
 
-    // TODO: only forward the "forwarding" queries
-    template <class _Tag>
-    _CCCL_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query>)
+    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>)
+      -> __query_result_t<env_of_t<__rcvr_t>, _Query>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Tag());
+      return execution::get_env(__state_.__rcvr_).query(_Query());
     }
   };
 
@@ -390,7 +391,7 @@ template <class _Child, class... _Env>
 _CCCL_API constexpr auto when_all_t::__child_completions()
 {
   using __env_t _CCCL_NODEBUG_ALIAS = prop<get_stop_token_t, inplace_stop_token>;
-  _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, _FWD_ENV_T<_Env>>...>())
+  _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, __fwd_env_t<_Env>>...>())
   {
     if constexpr (__completions.count(set_value) > 1)
     {
@@ -481,6 +482,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<
   _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
+  }
+
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
+  {
+    if constexpr (sizeof...(_Sndrs) == 0)
+    {
+      return prop{get_domain, default_domain{}};
+    }
+    else
+    {
+      using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<domain_for_t<_Sndrs>...>;
+      return prop{get_domain, __dom_t{}};
+    }
+    _CCCL_UNREACHABLE();
   }
 };
 

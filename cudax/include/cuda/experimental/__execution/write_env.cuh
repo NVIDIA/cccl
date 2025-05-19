@@ -79,7 +79,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   _CCCL_API static constexpr auto get_completion_signatures()
   {
     using _Child _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
-    return execution::get_completion_signatures<_Child, env<const _Env&, _FWD_ENV_T<_Env2>>...>();
+    return execution::get_completion_signatures<_Child, env<const _Env&, __fwd_env_t<_Env2>>...>();
   }
 
   template <class _Rcvr>
@@ -95,9 +95,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Env>{__sndr_, __env_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 
   _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
