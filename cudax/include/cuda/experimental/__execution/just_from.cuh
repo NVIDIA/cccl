@@ -93,6 +93,7 @@ private:
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API void start() & noexcept
     {
       static_cast<_Fn&&>(__fn_)(__complete_fn<_Rcvr>{__rcvr_});

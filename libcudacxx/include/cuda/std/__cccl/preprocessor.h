@@ -27,6 +27,10 @@
 #define _CCCL_TO_STRING2(_STR) #_STR
 #define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
 
+#define _CCCL_PP_FIRST(first, ...)      first
+#define _CCCL_PP_SECOND(_, second, ...) second
+#define _CCCL_PP_THIRD(_1, _2, third)   third
+
 #define _CCCL_PP_EXPAND(...) __VA_ARGS__
 #define _CCCL_PP_EAT(...)
 

@@ -32,6 +32,8 @@
 #include <cuda/experimental/__event/event_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 class timed_event;
@@ -63,7 +65,7 @@ public:
   //! @brief Construct a new `event` object into the moved-from state.
   //!
   //! @post `get()` returns `cudaEvent_t()`.
-  explicit constexpr event(uninit_t) noexcept
+  explicit constexpr event(no_init_t) noexcept
       : event_ref(::cudaEvent_t{})
   {}
 
@@ -158,5 +160,7 @@ private:
   }
 };
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX_EVENT_DETAIL_H

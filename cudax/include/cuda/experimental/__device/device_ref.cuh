@@ -28,6 +28,8 @@
 #include <string>
 #include <vector>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 class device;
@@ -166,5 +168,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE_REF

@@ -15,6 +15,8 @@
 
 #include <cuda.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 // Get the driver function by name using this macro
 #define CUDAX_GET_DRIVER_FUNCTION(function_name) \
   reinterpret_cast<decltype(function_name)*>(get_driver_entry_point(#function_name))
@@ -233,4 +235,7 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
 } // namespace cuda::experimental::detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif

@@ -38,6 +38,8 @@
 #include <cuda/experimental/__stream/internal_streams.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -252,5 +254,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_MEMORY_RESOURCE_BASE
