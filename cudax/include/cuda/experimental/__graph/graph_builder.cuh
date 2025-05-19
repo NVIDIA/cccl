@@ -81,9 +81,12 @@ namespace cuda::experimental
 struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 {
   //! \brief Constructs a new, empty CUDA graph.
+  //! \param __dev The device on which graph nodes will execute, default to device 0.
   //! \throws cuda::std::cuda_error if `cudaGraphCreate` fails.
-  _CCCL_HOST_API graph_builder()
+  _CCCL_HOST_API graph_builder(device_ref __dev = device_ref{0})
+      : __dev_{__dev}
   {
+    __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(cudaGraphCreate, "cudaGraphCreate failed", &__graph_, 0);
   }
 
@@ -95,7 +98,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 
   //! \brief Constructs an uninitialized CUDA graph.
   //! \throws None
-  _CCCL_HOST_API constexpr graph_builder(no_init_t) noexcept {}
+  _CCCL_HOST_API constexpr graph_builder(no_init_t, device_ref __dev = device_ref{0}) noexcept
+      : __dev_{__dev}
+  {}
 
   //! \brief Move constructor for `graph_builder`.
   //! \param __other The `graph_builder` object to move from.
@@ -103,7 +108,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \throws None
   //! \post `__other.get() == nullptr`
   _CCCL_HOST_API constexpr graph_builder(graph_builder&& __other) noexcept
-      : __graph_{_CUDA_VSTD::exchange(__other.__graph_, nullptr)}
+      : __dev_{__other.__dev_}
+      , __graph_{_CUDA_VSTD::exchange(__other.__graph_, nullptr)}
   {}
 
   //! \brief Copy constructor for `graph_builder`.
@@ -111,6 +117,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \throws cuda::std::cuda_error if `cudaGraphClone` fails.
   //! \post `get() == __other.get()`
   _CCCL_HOST_API constexpr graph_builder(const graph_builder& __other)
+      : __dev_{__other.__dev_}
   {
     if (__other.__graph_)
     {
@@ -269,10 +276,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \param __graph The native CUDA graph handle to construct the `graph_builder` object from.
   //! \throws None
   //! \post `get() == __graph`
-  [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20 auto from_native_handle(cudaGraph_t __graph) noexcept
-    -> graph_builder
+  [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20 auto
+  from_native_handle(cudaGraph_t __graph, device_ref __dev) noexcept -> graph_builder
   {
-    return graph_builder{__graph};
+    return graph_builder{__graph, __dev};
+  }
+
+  //! \brief Retrieves the device on which the graph is built.
+  //! \return The device on which the graph is built.
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_device() const noexcept -> device_ref
+  {
+    return __dev_;
   }
 
   //! \brief Adds a new root node to the graph.
@@ -330,6 +344,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
     return __node.__add_to_graph(__graph_, __deps);
   }
 
+  //! \brief Retrieves the number of nodes in the graph.
+  //! \return The number of nodes in the graph.
+  //! \throws cuda::std::cuda_error if `cudaGraphGetNodes` fails.
+  _CCCL_HOST_API size_t node_count() const
+  {
+    size_t __count = 0;
+    _CCCL_TRY_CUDA_API(cudaGraphGetNodes, "cudaGraphGetNodes failed", __graph_, nullptr, &__count);
+    return __count;
+  }
+
   //! \brief Instantiates the CUDA graph into a `graph_exec` object.
   //! \return A `graph_exec` object representing the instantiated graph.
   //! \throws cuda::std::cuda_error if `cudaGraphInstantiate` fails.
@@ -350,8 +374,9 @@ private:
   //! \brief Constructs a `graph_builder` object from a native CUDA graph handle.
   //! \param __graph The native CUDA graph handle to construct the `graph_builder` object from.
   //! \throws None
-  _CCCL_HOST_API explicit constexpr graph_builder(cudaGraph_t __graph) noexcept
-      : __graph_{__graph}
+  _CCCL_HOST_API explicit constexpr graph_builder(cudaGraph_t __graph, device_ref __dev) noexcept
+      : __dev_{__dev}
+      , __graph_{__graph}
   {}
 
   //! \brief Adds this graph as a child graph to the parent graph.
@@ -375,6 +400,7 @@ private:
     return __child;
   }
 
+  device_ref __dev_; //!< The device on which the graph is built.
   cudaGraph_t __graph_ = nullptr; //!< The underlying CUDA graph handle.
 };
 } // namespace cuda::experimental
