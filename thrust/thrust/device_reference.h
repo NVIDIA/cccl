@@ -203,9 +203,7 @@ public:
    */
   using pointer = typename super_t::pointer;
 
-  _CCCL_HOST_DEVICE device_reference(const device_reference& other)
-      : super_t(other)
-  {}
+  device_reference(const device_reference& other) = default;
 
   /*! This copy constructor accepts a const reference to another
    *  \p device_reference. After this \p device_reference is constructed,
