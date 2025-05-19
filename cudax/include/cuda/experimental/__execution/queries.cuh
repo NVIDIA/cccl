@@ -41,26 +41,10 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace cuda::experimental::execution
 {
+using _CUDA_STD_EXEC::__forwarding_query;
 using _CUDA_STD_EXEC::__queryable_with;
-
-//////////////////////////////////////////////////////////////////////////////////////////
-// forwarding_query_t
-_CCCL_GLOBAL_CONSTANT struct forwarding_query_t
-{
-  template <class _Tag>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tag) const noexcept -> bool
-  {
-    if constexpr (__queryable_with<_Tag, forwarding_query_t>)
-    {
-      static_assert(noexcept(_Tag().query(*this)));
-      return _Tag().query(*this);
-    }
-    return _CUDA_VSTD::derived_from<_Tag, forwarding_query_t>;
-  }
-} forwarding_query{};
-
-template <class _Tag>
-_CCCL_CONCEPT __forwarding_query = _CCCL_REQUIRES_EXPR((_Tag))(forwarding_query(_Tag{}));
+using _CUDA_STD_EXEC::forwarding_query;
+using _CUDA_STD_EXEC::forwarding_query_t;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_allocator

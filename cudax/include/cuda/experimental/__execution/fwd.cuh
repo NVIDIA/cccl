@@ -134,7 +134,6 @@ struct sync_wait_t;
 struct start_detached_t;
 
 // queries:
-struct forwarding_query_t;
 struct get_allocator_t;
 struct get_stop_token_t;
 struct get_scheduler_t;
