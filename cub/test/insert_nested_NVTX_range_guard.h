@@ -17,13 +17,11 @@ struct NestedNVTXRangeGuard
   {
     UNSCOPED_INFO("Entering NVTX range " << name);
     // complain only about CUB nested NVTX ranges, not Thrust
-    if (strstr(name, "cub::") != nullptr)
+    if (strstr(name, "cub::") == name)
     {
       if (entered)
       {
-        {
-          FAIL("Nested NVTX range detected");
-        }
+        FAIL("Nested NVTX range detected");
       }
       entered = true;
     }
