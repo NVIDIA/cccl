@@ -33,7 +33,7 @@ endif()
 add_subdirectory(src/jit_templates)
 
 find_package(CUDAToolkit REQUIRED)
-
+set(CMAKE_CUDA_RUNTIME_LIBRARY "STATIC")
 target_link_libraries(cccl.c.parallel PRIVATE
   CUDA::cuda_driver
   cccl.compiler_interface_cpp20
