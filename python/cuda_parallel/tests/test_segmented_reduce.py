@@ -111,6 +111,7 @@ def test_segmented_reduce_struct_type():
     np.testing.assert_equal(expected["g"], d_out.get()["g"])
 
 
+@pytest.mark.large
 def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
     """
     This test builds input iterator as transformation
@@ -205,6 +206,7 @@ def test_large_num_segments_uniform_segment_sizes_nonuniform_input():
         id = id_next
 
 
+@pytest.mark.large
 def test_large_num_segments_nonuniform_segment_sizes_uniform_input():
     """
     Test with large num_segments > INT_MAX
