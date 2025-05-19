@@ -26,6 +26,7 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
+#include "util/runtime_policy.h"
 #include "util/types.h"
 #include <cccl/c/segmented_reduce.h>
 #include <cccl/c/types.h> // cccl_type_info
@@ -51,67 +52,21 @@ namespace segmented_reduce
 
 struct segmented_reduce_runtime_tuning_policy
 {
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
+  cub::detail::RuntimeReduceAgentPolicy segmented_reduce;
 
-  segmented_reduce_runtime_tuning_policy SegmentedReduce() const
+  auto SegmentedReduce() const
   {
-    return *this;
+    return segmented_reduce;
   }
 
-  int ItemsPerThread() const
-  {
-    return items_per_thread;
-  }
+  using MaxPolicy = segmented_reduce_runtime_tuning_policy;
 
-  int BlockThreads() const
+  template <typename F>
+  cudaError_t Invoke(int, F& op)
   {
-    return block_size;
+    return op.template Invoke<segmented_reduce_runtime_tuning_policy>(*this);
   }
 };
-
-template <typename Tuning, int N>
-Tuning find_tuning(int cc, const Tuning (&tunings)[N])
-{
-  for (const Tuning& tuning : tunings)
-  {
-    if (cc >= tuning.cc)
-    {
-      return tuning;
-    }
-  }
-
-  return tunings[N - 1];
-}
-
-struct segmented_reduce_tuning_t
-{
-  int cc;
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
-};
-
-segmented_reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
-{
-  // TODO: we should update this once we figure out a way to reuse
-  // tuning logic from C++. Alternately, we should implement
-  // something better than a hardcoded default:
-  constexpr segmented_reduce_tuning_t chain[] = {{16, 256, 16, 4}, {35, 256, 20, 4}};
-
-  auto [_, block_size, items_per_thread, vector_load_length] = find_tuning(cc, chain);
-
-  auto four_bytes_per_thread = items_per_thread * 4 / accumulator_type.size;
-  items_per_thread           = _CUDA_VSTD::min<decltype(items_per_thread)>(four_bytes_per_thread, items_per_thread * 2);
-  items_per_thread           = _CUDA_VSTD::min(1, items_per_thread);
-
-  auto work_per_sm    = cub::detail::max_smem_per_block / (accumulator_type.size * items_per_thread);
-  auto max_block_size = cuda::round_up(work_per_sm, 32);
-  block_size          = _CUDA_VSTD::min<decltype(block_size)>(block_size, max_block_size);
-
-  return {block_size, items_per_thread, vector_load_length};
-}
 
 static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
@@ -264,13 +219,14 @@ CUresult cccl_device_segmented_reduce_build(
   {
     const char* name = "device_segmented_reduce";
 
-    const int cc                       = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t       = segmented_reduce::get_accumulator_type(op, input_it, init);
-    const auto policy                  = segmented_reduce::get_policy(cc, accum_t);
-    const auto accum_cpp               = cccl_type_enum_to_name(accum_t.type);
+    const int cc                 = cc_major * 10 + cc_minor;
+    const cccl_type_info accum_t = segmented_reduce::get_accumulator_type(op, input_it, init);
+    const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
+
     const auto input_it_value_t        = cccl_type_enum_to_name(input_it.value_type.type);
     const auto start_offset_it_value_t = cccl_type_enum_to_name(start_offset_it.value_type.type);
     const auto end_offset_it_value_t   = cccl_type_enum_to_name(end_offset_it.value_type.type);
+
     // OffsetT is checked to match have 64-bit size
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
 
@@ -287,46 +243,70 @@ CUresult cccl_device_segmented_reduce_build(
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
+    const std::string dependent_definitions_src = std::format(
+      R"XXX(
+struct __align__({1}) storage_t {{
+  char data[{0}];
+}};
+{2}
+{3}
+{4}
+{5}
+{6}
+)XXX",
+      input_it.value_type.size, // 0
+      input_it.value_type.alignment, // 1
+      input_iterator_src, // 2
+      output_iterator_src, // 3
+      op_src, // 4
+      start_offset_iterator_src, // 5
+      end_offset_iterator_src); // 6
+
+    // Runtime parameter tuning
+
+    const std::string ptx_arch = std::format("-arch=compute_{}{}", cc_major, cc_minor);
+
+    constexpr size_t ptx_num_args      = 5;
+    const char* ptx_args[ptx_num_args] = {ptx_arch.c_str(), cub_path, thrust_path, libcudacxx_path, "-rdc=true"};
+
+    static constexpr std::string_view policy_wrapper_expr_tmpl =
+      R"XXXX(cub::detail::reduce::MakeReducePolicyWrapper(cub::detail::reduce::policy_hub<{0}, {1}, {2}>::MaxPolicy::ActivePolicy{{}}))XXXX";
+
+    const auto policy_wrapper_expr = std::format(
+      policy_wrapper_expr_tmpl,
+      accum_cpp, // 0
+      offset_t, // 1
+      "op_wrapper"); // 2
+
+    static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
+#include <cub/block/block_reduce.cuh>
+{0}
+)XXXX";
+
+    const auto ptx_query_tu_src   = std::format(ptx_query_tu_src_tmpl, dependent_definitions_src);
+    nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
+
+    using cub::detail::RuntimeReduceAgentPolicy;
+    auto [segmented_reduce_policy,
+          segmented_reduce_policy_str] = RuntimeReduceAgentPolicy::from_json(runtime_policy, "ReducePolicy");
+
     // agent_policy_t is to specify parameters like policy_hub does in dispatch_reduce.cuh
     constexpr std::string_view program_preamble_template = R"XXX(
 #include <cub/block/block_reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
-struct __align__({1}) storage_t {{
-   char data[{0}];
-}};
-{4}
-{5}
-{8}
-{9}
-struct agent_policy_t {{
-  static constexpr int ITEMS_PER_THREAD = {2};
-  static constexpr int BLOCK_THREADS = {3};
-  static constexpr int VECTOR_LOAD_LENGTH = {7};
-  static constexpr cub::BlockReduceAlgorithm BLOCK_ALGORITHM = cub::BLOCK_REDUCE_WARP_REDUCTIONS;
-  static constexpr cub::CacheLoadModifier LOAD_MODIFIER = cub::LOAD_LDG;
-}};
+{0}
 struct device_segmented_reduce_policy {{
   struct ActivePolicy {{
-    using ReducePolicy = agent_policy_t;
-    using SegmentedReducePolicy = agent_policy_t;
+    {1}
   }};
 }};
-{6}
 )XXX";
 
-    std::string src = std::format(
+    std::string final_src = std::format(
       program_preamble_template,
-      input_it.value_type.size, // 0
-      input_it.value_type.alignment, // 1
-      policy.items_per_thread, // 2
-      policy.block_size, // 3
-      input_iterator_src, // 4
-      output_iterator_src, // 5
-      op_src, // 6
-      policy.vector_load_length, // 7
-      start_offset_iterator_src, // 8
-      end_offset_iterator_src // 9
-    );
+      dependent_definitions_src, // 0
+      segmented_reduce_policy_str); // 1
 
     std::string segmented_reduce_kernel_name = segmented_reduce::get_device_segmented_reduce_kernel_name(
       op, input_it, output_it, start_offset_it, end_offset_it, init);
@@ -355,7 +335,7 @@ struct device_segmented_reduce_policy {{
 
     nvrtc_link_result result =
       make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_program(nvrtc_translation_unit{final_src.c_str(), name})
         .add_expression({segmented_reduce_kernel_name})
         .compile_program({args, num_args})
         .get_name({segmented_reduce_kernel_name, segmented_reduce_kernel_lowered_name})
@@ -372,6 +352,7 @@ struct device_segmented_reduce_policy {{
     build_ptr->cubin            = (void*) result.data.release();
     build_ptr->cubin_size       = result.size;
     build_ptr->accumulator_size = accum_t.size;
+    build_ptr->runtime_policy   = new segmented_reduce::segmented_reduce_runtime_tuning_policy{segmented_reduce_policy};
   }
   catch (const std::exception& exc)
   {
@@ -415,7 +396,7 @@ CUresult cccl_device_segmented_reduce(
       indirect_arg_t, // ReductionOpT
       indirect_arg_t, // InitT
       void, // AccumT
-      segmented_reduce::dynamic_reduce_policy_t<&segmented_reduce::get_policy>, // PolicHub
+      segmented_reduce::segmented_reduce_runtime_tuning_policy, // PolicHub
       segmented_reduce::segmented_reduce_kernel_source, // KernelSource
       cub::detail::CudaDriverLauncherFactory>:: // KernelLaunchFactory
       Dispatch(
@@ -431,7 +412,7 @@ CUresult cccl_device_segmented_reduce(
         stream,
         /* kernel_source */ {build},
         /* launcher_factory &*/ cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
-        /* policy */ {segmented_reduce::get_accumulator_type(op, d_in, init)});
+        /* policy */ *reinterpret_cast<segmented_reduce::segmented_reduce_runtime_tuning_policy*>(build.runtime_policy));
 
     error = static_cast<CUresult>(exec_status);
   }
@@ -463,6 +444,7 @@ CUresult cccl_device_segmented_reduce_cleanup(cccl_device_segmented_reduce_build
 
     // allocation behind cubin is owned by unique_ptr with delete[] deleter now
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(build_ptr->cubin));
+    std::unique_ptr<char[]> policy(reinterpret_cast<char*>(build_ptr->runtime_policy));
     check(cuLibraryUnload(build_ptr->library));
   }
   catch (const std::exception& exc)
