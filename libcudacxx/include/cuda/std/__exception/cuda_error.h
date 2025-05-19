@@ -42,6 +42,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
+#if _CCCL_HAS_CTK()
+using __cuda_error_t = ::cudaError_t;
+#else
+using __cuda_error_t = int;
+#endif
+
 #if _CCCL_HAS_EXCEPTIONS()
 
 namespace __detail
@@ -77,11 +83,6 @@ static char* __format_cuda_error(
   return __msg_buffer.__buffer;
 }
 
-#  if _CCCL_HAS_CTK()
-using __cuda_error_t = ::cudaError_t;
-#  else
-using __cuda_error_t = int;
-#  endif
 } // namespace __detail
 
 /**
@@ -90,7 +91,7 @@ using __cuda_error_t = int;
 class cuda_error : public ::std::runtime_error
 {
 public:
-  cuda_error(const __detail::__cuda_error_t __status,
+  cuda_error(const __cuda_error_t __status,
              const char* __msg,
              const char* __api                    = nullptr,
              _CUDA_VSTD::source_location __loc    = _CUDA_VSTD::source_location::current(),
@@ -99,17 +100,17 @@ public:
       , __status_(__status)
   {}
 
-  auto status() const noexcept -> __detail::__cuda_error_t
+  auto status() const noexcept -> __cuda_error_t
   {
     return __status_;
   }
 
 private:
-  __detail::__cuda_error_t __status_;
+  __cuda_error_t __status_;
 };
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
-  [[maybe_unused]] const __detail::__cuda_error_t __status,
+  [[maybe_unused]] const __cuda_error_t __status,
   [[maybe_unused]] const char* __msg,
   [[maybe_unused]] const char* __api                 = nullptr,
   [[maybe_unused]] _CUDA_VSTD::source_location __loc = _CUDA_VSTD::source_location::current())
@@ -123,7 +124,7 @@ class cuda_error
 {
 public:
   _LIBCUDACXX_HIDE_FROM_ABI cuda_error(
-    const __detail::__cuda_error_t,
+    const __cuda_error_t,
     const char*,
     const char*                 = nullptr,
     _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current()) noexcept
@@ -131,7 +132,7 @@ public:
 };
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(
-  const __detail::__cuda_error_t,
+  const __cuda_error_t,
   const char*,
   const char*                 = nullptr,
   _CUDA_VSTD::source_location = _CUDA_VSTD::source_location::current())
