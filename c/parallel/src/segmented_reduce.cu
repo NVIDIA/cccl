@@ -21,8 +21,10 @@
 
 #include <stdio.h> // printf
 
-#include "kernels/iterators.h"
-#include "kernels/operators.h"
+#include "jit_templates/templates/input_iterator.h"
+#include "jit_templates/templates/operation.h"
+#include "jit_templates/templates/output_iterator.h"
+#include "jit_templates/traits.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
@@ -33,7 +35,6 @@
 #include <nvrtc/command_list.h>
 #include <nvrtc/ltoir_list_appender.h>
 
-struct op_wrapper;
 struct device_segmented_reduce_policy;
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
@@ -41,11 +42,6 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 // check we can map OffsetT to ::cuda::std::uint64_t
 static_assert(std::is_unsigned_v<OffsetT>);
 static_assert(sizeof(OffsetT) == sizeof(::cuda::std::uint64_t));
-
-struct input_iterator_t;
-struct output_iterator_t;
-struct start_offset_iterator_t;
-struct end_offset_iterator_t;
 
 namespace segmented_reduce
 {
@@ -75,72 +71,20 @@ static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*i
   return init.type;
 }
 
-template <typename Type>
-std::string get_iterator_name()
-{
-  std::string iterator_t;
-  check(nvrtcGetTypeName<Type>(&iterator_t));
-  return iterator_t;
-}
-
-std::string get_input_iterator_name()
-{
-  return get_iterator_name<input_iterator_t>();
-}
-
-std::string get_output_iterator_name()
-{
-  return get_iterator_name<output_iterator_t>();
-}
-
-std::string get_start_offset_iterator_name()
-{
-  return get_iterator_name<start_offset_iterator_t>();
-}
-
-std::string get_end_offset_iterator_name()
-{
-  return get_iterator_name<end_offset_iterator_t>();
-}
-
 std::string get_device_segmented_reduce_kernel_name(
-  cccl_op_t op,
-  cccl_iterator_t input_it,
-  cccl_iterator_t output_it,
-  cccl_iterator_t start_offset_it,
-  cccl_iterator_t end_offset_it,
-  cccl_value_t init)
+  std::string_view reduction_op_t,
+  std::string_view input_iterator_t,
+  std::string_view output_iterator_t,
+  std::string_view start_offset_iterator_t,
+  std::string_view end_offset_iterator_t,
+  cccl_value_t init,
+  std::string_view accum_t)
 {
   std::string chained_policy_t;
   check(nvrtcGetTypeName<device_segmented_reduce_policy>(&chained_policy_t));
 
-  const std::string input_iterator_t =
-    input_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(input_it.value_type.type, true) //
-      : get_input_iterator_name();
-
-  const std::string output_iterator_t =
-    output_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(output_it.value_type.type, true) //
-      : get_output_iterator_name();
-
-  const std::string start_offset_iterator_t =
-    start_offset_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(start_offset_it.value_type.type, true) //
-      : get_start_offset_iterator_name();
-
-  const std::string end_offset_iterator_t =
-    end_offset_it.type == cccl_iterator_kind_t::CCCL_POINTER //
-      ? cccl_type_enum_to_name(end_offset_it.value_type.type, true) //
-      : get_end_offset_iterator_name();
-
-  const std::string accum_t = cccl_type_enum_to_name(get_accumulator_type(op, input_it, init).type);
-
   std::string offset_t;
   check(nvrtcGetTypeName<OffsetT>(&offset_t));
-
-  std::string reduction_op_t;
-  check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
 
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
@@ -169,20 +113,6 @@ std::string get_device_segmented_reduce_kernel_name(
     accum_t); // 8
 }
 
-template <auto* GetPolicy>
-struct dynamic_reduce_policy_t
-{
-  using MaxPolicy = dynamic_reduce_policy_t;
-
-  template <typename F>
-  cudaError_t Invoke(int device_ptx_version, F& op)
-  {
-    return op.template Invoke<segmented_reduce_runtime_tuning_policy>(GetPolicy(device_ptx_version, accumulator_type));
-  }
-
-  cccl_type_info accumulator_type;
-};
-
 struct segmented_reduce_kernel_source
 {
   cccl_device_segmented_reduce_build_result_t& build;
@@ -197,6 +127,9 @@ struct segmented_reduce_kernel_source
   }
 };
 } // namespace segmented_reduce
+
+struct segmented_reduce_iterator_tag;
+struct segmented_reduce_operation_tag;
 
 CUresult cccl_device_segmented_reduce_build(
   cccl_device_segmented_reduce_build_result_t* build_ptr,
@@ -223,25 +156,21 @@ CUresult cccl_device_segmented_reduce_build(
     const cccl_type_info accum_t = segmented_reduce::get_accumulator_type(op, input_it, init);
     const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
 
-    const auto input_it_value_t        = cccl_type_enum_to_name(input_it.value_type.type);
-    const auto start_offset_it_value_t = cccl_type_enum_to_name(start_offset_it.value_type.type);
-    const auto end_offset_it_value_t   = cccl_type_enum_to_name(end_offset_it.value_type.type);
+    const auto [input_iterator_name, input_iterator_src] =
+      get_specialization<segmented_reduce_iterator_tag>(template_id<input_iterator_traits>(), input_it);
+
+    const auto [output_iterator_name, output_iterator_src] =
+      get_specialization<segmented_reduce_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
+    const auto [start_offset_iterator_name, start_offset_iterator_src] =
+      get_specialization<segmented_reduce_iterator_tag>(template_id<input_iterator_traits>(), start_offset_it);
+    const auto [end_offset_iterator_name, end_offset_iterator_src] =
+      get_specialization<segmented_reduce_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
+
+    const auto [op_name, op_src] =
+      get_specialization<segmented_reduce_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
 
     // OffsetT is checked to match have 64-bit size
     const auto offset_t = cccl_type_enum_to_name(cccl_type_enum::CCCL_UINT64);
-
-    const std::string input_iterator_src =
-      make_kernel_input_iterator(offset_t, "input_iterator_t", input_it_value_t, input_it);
-
-    const std::string output_iterator_src =
-      make_kernel_output_iterator(offset_t, "output_iterator_t", accum_cpp, output_it);
-
-    const std::string start_offset_iterator_src =
-      make_kernel_input_iterator(offset_t, "start_offset_iterator_t", start_offset_it_value_t, start_offset_it);
-    const std::string end_offset_iterator_src =
-      make_kernel_input_iterator(offset_t, "end_offset_iterator_t", end_offset_it_value_t, end_offset_it);
-
-    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, accum_cpp, accum_cpp, op);
 
     const std::string dependent_definitions_src = std::format(
       R"XXX(
@@ -276,15 +205,18 @@ struct __align__({1}) storage_t {{
       policy_wrapper_expr_tmpl,
       accum_cpp, // 0
       offset_t, // 1
-      "op_wrapper"); // 2
+      op_name); // 2
 
     static constexpr std::string_view ptx_query_tu_src_tmpl = R"XXXX(
-#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/block/block_reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 {0}
+{1}
 )XXXX";
 
-    const auto ptx_query_tu_src   = std::format(ptx_query_tu_src_tmpl, dependent_definitions_src);
+    const auto ptx_query_tu_src =
+      std::format(ptx_query_tu_src_tmpl, jit_template_header_contents, dependent_definitions_src);
+
     nlohmann::json runtime_policy = get_policy(policy_wrapper_expr, ptx_query_tu_src, ptx_args);
 
     using cub::detail::RuntimeReduceAgentPolicy;
@@ -296,27 +228,43 @@ struct __align__({1}) storage_t {{
 #include <cub/block/block_reduce.cuh>
 #include <cub/device/dispatch/kernels/segmented_reduce.cuh>
 {0}
+{1}
 struct device_segmented_reduce_policy {{
   struct ActivePolicy {{
-    {1}
+    {2}
   }};
 }};
 )XXX";
 
     std::string final_src = std::format(
       program_preamble_template,
-      dependent_definitions_src, // 0
-      segmented_reduce_policy_str); // 1
+      jit_template_header_contents, // 0
+      dependent_definitions_src, // 1
+      segmented_reduce_policy_str); // 2
 
     std::string segmented_reduce_kernel_name = segmented_reduce::get_device_segmented_reduce_kernel_name(
-      op, input_it, output_it, start_offset_it, end_offset_it, init);
+      op_name,
+      input_iterator_name,
+      output_iterator_name,
+      start_offset_iterator_name,
+      end_offset_iterator_name,
+      init,
+      accum_cpp);
     std::string segmented_reduce_kernel_lowered_name;
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr size_t num_args  = 8;
+    constexpr size_t num_args  = 9;
     const char* args[num_args] = {
-      arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-DCUB_DISABLE_CDP"};
+      arch.c_str(),
+      cub_path,
+      thrust_path,
+      libcudacxx_path,
+      ctk_path,
+      "-rdc=true",
+      "-dlto",
+      "-DCUB_DISABLE_CDP",
+      "-std=c++20"};
 
     constexpr size_t num_lto_args   = 2;
     const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
