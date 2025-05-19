@@ -12,6 +12,13 @@ import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 
+
+def get_mark(dt, log_size):
+    if log_size < 20:
+        return tuple()
+    return pytest.mark.large
+
+
 DTYPE_LIST = [
     np.uint8,
     np.uint16,
@@ -27,7 +34,11 @@ DTYPE_LIST = [
 
 PROBLEM_SIZES = [2, 10, 20]
 
-DTYPE_SIZE = [(dt, 2**log_size) for dt in DTYPE_LIST for log_size in PROBLEM_SIZES]
+DTYPE_SIZE = [
+    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
+    for dt in DTYPE_LIST
+    for log_size in PROBLEM_SIZES
+]
 
 
 def random_array(size, dtype, max_value=None) -> np.typing.NDArray:
@@ -251,7 +262,7 @@ def test_radix_sort_pairs_double_buffer(dtype, num_items):
 
 # These tests take longer to execute so we reduce the number of test cases
 DTYPE_SIZE_BIT_WINDOW = [
-    (dt, 2**log_size)
+    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
     for dt in [np.uint8, np.int16, np.uint32, np.int64, np.float64]
     for log_size in [2, 24]
 ]

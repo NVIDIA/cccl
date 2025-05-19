@@ -25,10 +25,19 @@ DTYPE_LIST = [
     np.float64,
 ]
 
+
+def get_mark(dt, log_size):
+    if log_size < 20:
+        return tuple()
+    return pytest.mark.large
+
+
 PROBLEM_SIZES = [2, 8, 16, 22]
 
 DTYPE_SIZE_PAIRS = [
-    (dt, 2**log_size) for dt in DTYPE_LIST for log_size in PROBLEM_SIZES
+    pytest.param(dt, 2**log_size, marks=get_mark(dt, log_size))
+    for dt in DTYPE_LIST
+    for log_size in PROBLEM_SIZES
 ]
 
 
