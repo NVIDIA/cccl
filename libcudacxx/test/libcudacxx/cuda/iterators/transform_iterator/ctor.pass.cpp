@@ -21,12 +21,12 @@
 struct NoDefaultInitIter
 {
   int* ptr_;
-  typedef cuda::std::random_access_iterator_tag iterator_category;
-  typedef int value_type;
-  typedef cuda::std::ptrdiff_t difference_type;
-  typedef int* pointer;
-  typedef int& reference;
-  typedef NoDefaultInitIter self;
+  using iterator_category = cuda::std::random_access_iterator_tag;
+  using value_type        = int;
+  using difference_type   = cuda::std::ptrdiff_t;
+  using pointer           = int*;
+  using reference         = int&;
+  using self              = NoDefaultInitIter;
 
   __host__ __device__ constexpr NoDefaultInitIter(int* ptr)
       : ptr_(ptr)

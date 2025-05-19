@@ -88,7 +88,7 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //! needed while saving both memory capacity and bandwidth.
 //!
 //! The following code snippet demonstrates how to create a \p transform_iterator which represents the result of
-//! \c sqrtf applied to the contents of a \p device_vector.
+//! \c sqrtf applied to the contents of a \p thrust::device_vector.
 //!
 //! @code
 //! #include <cuda/iterator>
@@ -105,11 +105,7 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //!
 //! int main()
 //! {
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 4.0f;
-//!   v[2] = 9.0f;
-//!   v[3] = 16.0f;
+//!   thrust::device_vector<float> v{1.0f, 4.0f, 9.0f, 16.0f};
 //!
 //!   using FloatIterator = thrust::device_vector<float>::iterator;
 //!
@@ -126,8 +122,8 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //! @endcode
 //!
 //! This next example demonstrates how to use a \p transform_iterator with the \p thrust::reduce function to compute the
-//! sum of squares of a sequence. We will create temporary \p transform_iterators with the \p make_transform_iterator
-//! function in order to avoid explicitly specifying their type:
+//! sum of squares of a sequence. We will create temporary \p transform_iterators utilising class template argument
+//! deduction avoid explicitly specifying their type:
 //!
 //! @code
 //! #include <cuda/iterator>
@@ -151,53 +147,12 @@ inline constexpr bool __transform_iterator_nothrow_subscript<_Fn, _Iter, true> =
 //!   v[0] = 1.0f;
 //!   v[1] = 2.0f;
 //!   v[2] = 3.0f;
-//!   v[3] = 4.0f;
-//!
-//!   float sum_of_squares =
-//!    thrust::reduce(cuda::make_transform_iterator(v.begin(), square{}),
-//!                   cuda::make_transform_iterator(v.end(),   square{}));
+//!   thrust::device_vector<float> v{1.0f, 2.0f, 3.0f, 4.0f};
+//!   thrust::reduce(cuda::transform_iterator{v.begin(), square{}},
+//!                  cuda::transform_iterator{v.end(),   square{}});
 //!
 //!   std::cout << "sum of squares: " << sum_of_squares << std::endl;
 //!   return 0;
-//! }
-//! @endcode
-//!
-//! The following example illustrates how to use the third template argument to explicitly specify the return type of
-//! the function.
-//!
-//! @code
-//! #include <cuda/iterator>
-//! #include <thrust/device_vector.h>
-//!
-//! struct square_root
-//! {
-//!   __host__ __device__
-//!   float operator()(float x) const
-//!   {
-//!     return sqrtf(x);
-//!   }
-//! };
-//!
-//! int main()
-//! {
-//!   thrust::device_vector<float> v(4);
-//!   v[0] = 1.0f;
-//!   v[1] = 4.0f;
-//!   v[2] = 9.0f;
-//!   v[3] = 16.0f;
-//!
-//!   using FloatIterator = thrust::device_vector<float>::iterator;
-//!
-//!   // note: float result_type is specified explicitly
-//!   cuda::transform_iterator iter(v.begin(), square_root{});
-//!
-//!   *iter;   // returns 1.0f
-//!   iter[0]; // returns 1.0f;
-//!   iter[1]; // returns 2.0f;
-//!   iter[2]; // returns 3.0f;
-//!   iter[3]; // returns 4.0f;
-//!
-//!   // iter[4] is an out-of-bounds error
 //! }
 //! @endcode
 template <class _Iter, class _Fn>
@@ -206,7 +161,7 @@ class transform_iterator : public __transform_iterator_category_base<_Iter, _Fn>
   static_assert(_CUDA_VSTD::is_object_v<_Fn>, "cuda::transform_iterator requires that _Fn is a function object");
   static_assert(_CUDA_VSTD::regular_invocable<_Fn&, _CUDA_VSTD::iter_reference_t<_Iter>>,
                 "cuda::transform_iterator requires that _Fn is invocable with iter_reference_t<_Iter>");
-  static_assert(_CUDA_VSTD::regular_invocable<_Fn&, _CUDA_VSTD::iter_reference_t<_Iter>>,
+  static_assert(_CUDA_VSTD::__can_reference<_CUDA_VSTD::invoke_result_t<_Fn&, _CUDA_VSTD::iter_reference_t<_Iter>>>,
                 "cuda::transform_iterator requires that the return type of _Fn is referenceable");
 
 public:
@@ -341,10 +296,7 @@ public:
     return _CUDA_VSTD::invoke(const_cast<_Fn&>(*__func_), __current_[__n]);
   }
 
-  //! @brief Compares two \c transform_iterator \p __lhs and \p __rhs for equality
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return true if the stored iterators compares equal
+  //! @brief Compares two \c transform_iterator for equality, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator==(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -355,10 +307,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two \c transform_iterator \p __lhs and \p __rhs for inequality
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return true if the stored iterators do not compare equal
+  //! @brief Compares two \c transform_iterator for inequality, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator!=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -369,10 +318,7 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Compares two \c transform_iterator \p __lhs and \p __rhs for less than
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return true if the stored iterators compares less than
+  //! @brief Compares two \c transform_iterator for less then, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -382,10 +328,7 @@ public:
     return __lhs.__current_ < __rhs.__current_;
   }
 
-  //! @brief Compares two \c transform_iterator \p __lhs and \p __rhs for greater than
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return true if the stored iterators compares greater than
+  //! @brief Compares two \c transform_iterator for greater then, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -395,10 +338,7 @@ public:
     return __lhs.__current_ > __rhs.__current_;
   }
 
-  //! @brief Compares two \c transform_iterator \p __lhs and \p __rhs for less equal
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return true if the stored iterators compares less equal
+  //! @brief Compares two \c transform_iterator for less equal, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -408,10 +348,7 @@ public:
     return __lhs.__current_ <= __rhs.__current_;
   }
 
-  //! @brief Compares two \c transform_iterator \p __lhs and \p __rhs for greater equal
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return true if the stored iterators compares greater equal
+  //! @brief Compares two \c transform_iterator for greater equal, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator>=(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -422,10 +359,7 @@ public:
   }
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way-compares two \c transform_iterator \p __lhs and \p __rhs
-  //! @param __lhs The left \c transform_iterator
-  //! @param __rhs The right \c transform_iterator
-  //! @return The three-way ordering of stored iterators
+  //! @brief Three-way-compares two \c transform_iterator, directly three-way-comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<=>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(

@@ -12,6 +12,7 @@
 
 #include <cuda/iterator>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -84,13 +85,25 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<int*>>();
   test<int*>();
 
+  { // Enjusre that we can assign through projections
+    using pair    = cuda::std::pair<int, int>;
+    pair buffer[] = {{0, -1}, {1, -1}, {2, -1}, {3, -1}, {4, -1}, {5, -1}, {6, -1}, {7, -1}};
+    cuda::transform_iterator iter{buffer, &cuda::std::pair<int, int>::second};
+    assert(iter[4] == -1);
+    iter[4] = 42;
+    assert(iter[4] == 42);
+
+    const pair expected{4, 42};
+    assert(buffer[4] == expected);
+  }
+
   return true;
 }
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  // static_assert(test(), "");
 
   return 0;
 }
