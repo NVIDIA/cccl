@@ -352,8 +352,21 @@ template <typename T, typename ReductionOp, typename Config>
                       (return warp_reduce_shuffle_op(input, reduction_op1, config);),
                       (return warp_reduce_generic(input, reduction_op1, config);));
   }
-  // [Plus/Min/Max]: small integrals (int8, uint8, int16, uint16, int32, uint32)
-  // [Plus]:         float, double
+  // [Logical And]: bool
+  else if constexpr (is_cuda_std_logical_and_v<ReductionOp, T>)
+  {
+    return __all_sync(cub::detail::redux_lane_mask(config), input);
+  }
+  // [Logical Or]: bool
+  else if constexpr (is_cuda_std_logical_or_v<ReductionOp, T>)
+  {
+    return __any_sync(cub::detail::redux_lane_mask(config), input);
+  }
+  // TODO: [Comparison]: equal_to
+  // else if constexpr (is_cuda_std_equal_to_v<ReductionOp, T>)
+  //
+  // [Plus/Min/Max/Bitwise]: small integrals (int8, uint8, int16, uint16, int32, uint32)
+  // [Plus]:                 float, double
   else if constexpr (is_specialized_operator && (is_small_integer || is_floating_point_v<T>) )
   {
     static_assert(!is_cuda_std_bitwise_v<ReductionOp, T> || is_unsigned_v<T>,

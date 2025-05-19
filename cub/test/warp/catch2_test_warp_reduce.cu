@@ -248,6 +248,8 @@ using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
 
 using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
 
+using logical_op_list = c2h::type_list<cuda::std::logical_and<>, cuda::std::logical_or<>>;
+
 using min_max_type_list = c2h::type_list<
   int8_t, uint16_t, int32_t, int64_t,
   short2, ushort2,
@@ -364,6 +366,23 @@ C2H_TEST("WarpReduce::Bitwise",
 
   c2h::host_vector<T> h_in = d_in;
   c2h::host_vector<T> h_out(output_size);
+  compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
+  verify_results(h_out, d_out);
+}
+
+C2H_TEST("WarpReduce::Logical", "[reduce][warp][predefined_op][full]", logical_op_list, logical_warp_threads)
+{
+  using predefined_op                           = c2h::get<0, TestType>;
+  constexpr auto logical_warp_threads           = c2h::get<1, TestType>::value;
+  auto [input_size, output_size, logical_warps] = get_test_config(logical_warp_threads);
+  CAPTURE(c2h::type_name<bool>(), c2h::type_name<predefined_op>(), logical_warp_threads);
+  c2h::device_vector<bool> d_in(input_size);
+  c2h::device_vector<bool> d_out(output_size);
+  c2h::gen(C2H_SEED(1), d_in);
+  warp_reduce_launch<logical_warp_threads>(d_in, d_out, warp_reduce_t<predefined_op, bool>{});
+
+  c2h::host_vector<bool> h_in = d_in;
+  c2h::host_vector<bool> h_out(output_size);
   compute_host_reference<predefined_op>(h_in, h_out, logical_warps, logical_warp_threads);
   verify_results(h_out, d_out);
 }

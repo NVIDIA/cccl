@@ -284,9 +284,8 @@ template <typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t redux_lane_mask(Config config)
 {
   auto [logical_mode, _, logical_size, valid_items, is_segmented, first_pos] = config;
-
-  constexpr bool is_single_reduction = logical_mode == single_reduction;
-  [[maybe_unused]] auto shift        = is_single_reduction ? 0 : cub::detail::logical_warp_base_id(logical_size);
+  constexpr bool is_single_reduction                                         = logical_mode == single_reduction;
+  [[maybe_unused]] auto shift = is_single_reduction ? 0 : cub::detail::logical_warp_base_id(logical_size);
   if constexpr (is_segmented)
   {
     return ::cuda::bitmask(first_pos, valid_items.extent(0) - first_pos + 1);

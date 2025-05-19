@@ -69,6 +69,18 @@ inline const T operator_identity_v<T, cuda::std::bit_xor<>> = T{0};
 template <typename T>
 inline const T operator_identity_v<T, cuda::std::bit_xor<T>> = T{0};
 
+template <>
+inline const bool operator_identity_v<bool, cuda::std::logical_and<>> = true;
+
+template <>
+inline const bool operator_identity_v<bool, cuda::std::logical_and<bool>> = true;
+
+template <>
+inline const bool operator_identity_v<bool, cuda::std::logical_or<>> = false;
+
+template <>
+inline const bool operator_identity_v<bool, cuda::std::logical_or<bool>> = false;
+
 template <typename T>
 inline const T operator_identity_v<T, cuda::maximum<>> = cuda::std::numeric_limits<T>::lowest();
 

@@ -518,6 +518,36 @@ inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<>, T> = true;
 template <>
 inline constexpr bool is_cuda_std_bit_xor_v<_CUDA_VSTD::bit_xor<>, void> = true;
 
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_logical_and_v = false;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<bool>, void> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<bool>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_and_v<_CUDA_VSTD::logical_and<>, void> = true;
+
+template <typename, typename = void>
+inline constexpr bool is_cuda_std_logical_or_v = false;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<bool>, void> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<bool>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<>, bool> = true;
+
+template <>
+inline constexpr bool is_cuda_std_logical_or_v<_CUDA_VSTD::logical_or<>, void> = true;
+
 template <typename Op, typename T = void>
 inline constexpr bool is_cuda_minimum_maximum_v = is_cuda_maximum_v<Op, T> || is_cuda_minimum_v<Op, T>;
 
