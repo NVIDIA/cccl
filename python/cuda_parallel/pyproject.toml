@@ -79,4 +79,7 @@ extend = "../../pyproject.toml"
 known-first-party = ["cuda.parallel"]
 
 [tool.pytest.ini_options]
-markers = ["no_verify_sass: skip SASS verification check"]
+markers = [
+  "no_verify_sass: skip SASS verification check",
+  "large: tests requiring large device memory allocations",
+]
