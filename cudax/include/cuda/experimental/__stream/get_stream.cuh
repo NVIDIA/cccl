@@ -24,10 +24,10 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
 
 #include <cuda_runtime_api.h>
@@ -83,7 +83,7 @@ struct get_stream_t
     return __env.query(*this);
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI static constexpr auto query(execution::forwarding_query_t) noexcept -> bool
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI static constexpr auto query(_CUDA_STD_EXEC::forwarding_query_t) noexcept -> bool
   {
     return true;
   }

@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
@@ -372,6 +373,25 @@ _CCCL_GLOBAL_CONSTANT get_env_t get_env{};
 
 template <class _Ty>
 using env_of_t _CCCL_NODEBUG_ALIAS = decltype(get_env(declval<_Ty>()));
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// forwarding_query_t
+_CCCL_GLOBAL_CONSTANT struct forwarding_query_t
+{
+  template <class _Tag>
+  [[nodiscard]] _CCCL_API constexpr auto operator()(_Tag) const noexcept -> bool
+  {
+    if constexpr (__queryable_with<_Tag, forwarding_query_t>)
+    {
+      static_assert(noexcept(_Tag().query(*this)));
+      return _Tag().query(*this);
+    }
+    return _CUDA_VSTD::derived_from<_Tag, forwarding_query_t>;
+  }
+} forwarding_query{};
+
+template <class _Tag>
+_CCCL_CONCEPT __forwarding_query = _CCCL_REQUIRES_EXPR((_Tag))(forwarding_query(_Tag{}));
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
 
