@@ -16,6 +16,7 @@ docker run --rm -i \
   --env py_version=${py_version} \
   rapidsai/ci-wheel:cuda12.8.0-rockylinux8-py3.10 \
   bash -c '\
+    set -euo pipefail && \
     source /workspace/ci/pyenv_helper.sh && \
     setup_python_env "${py_version}" && \
     echo "Done setting up python env" && \
