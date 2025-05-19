@@ -1,15 +1,15 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
-#define _CUDAX__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#ifndef _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
+#define _CUDA___MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
 
 #include <cuda/std/detail/__config>
 
@@ -21,16 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__memory_resource/properties.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/is_same.h>
+#if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-#include <cuda/experimental/__memory_resource/any_resource.cuh>
+#  include <cuda/__memory_resource/properties.h>
+#  include <cuda/__memory_resource/resource.h>
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/__type_traits/remove_cvref.h>
 
-#include <cuda/std/__cccl/prologue.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-namespace cuda::experimental
-{
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 struct get_memory_resource_t;
 
@@ -67,8 +68,10 @@ struct get_memory_resource_t
 
 _CCCL_GLOBAL_CONSTANT auto get_memory_resource = get_memory_resource_t{};
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
+
+#endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDAX__MEMORY_RESOURCE_GET_MEMORY_RESOURCE_CUH
