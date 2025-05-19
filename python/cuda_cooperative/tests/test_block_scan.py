@@ -886,3 +886,18 @@ def test_block_scan_known_ops(
     sass = kernel.inspect_sass(sig)
     assert "LDL" not in sass
     assert "STL" not in sass
+
+
+def test_inclusive_sum_alignment():
+    block_scan1 = cudax.block.inclusive_sum(
+        dtype=types.int32,
+        threads_per_block=256,
+    )
+
+    block_scan2 = cudax.block.inclusive_sum(
+        dtype=types.float64,
+        threads_per_block=256,
+    )
+
+    assert block_scan1.temp_storage_alignment == 16
+    assert block_scan2.temp_storage_alignment == 16
