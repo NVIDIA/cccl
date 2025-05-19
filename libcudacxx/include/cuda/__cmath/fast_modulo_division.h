@@ -69,8 +69,8 @@ __multiply_extract_higher_bits(_Tp __x, _Up __y)
 template <typename _Tp>
 struct div_t
 {
-  _Tp __quotient;
-  _Tp __remainder;
+  _Tp quotient;
+  _Tp remainder;
 };
 
 template <typename _Tp>
