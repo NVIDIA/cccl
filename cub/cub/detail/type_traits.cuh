@@ -1,5 +1,6 @@
 /***********************************************************************************************************************
- * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -119,72 +120,72 @@ using implicit_prom_t = decltype(+T{});
 // half
 
 template <typename>
-inline constexpr bool is_half_base_v = false;
+inline constexpr bool is_half_impl_v = false;
 
 template <typename>
-inline constexpr bool is_half2_base_v = false;
+inline constexpr bool is_half2_impl_v = false;
 
 #if _CCCL_HAS_NVFP16()
 
 template <>
-inline constexpr bool is_half_base_v<__half> = true;
+inline constexpr bool is_half_impl_v<__half> = true;
 
 template <>
-inline constexpr bool is_half2_base_v<__half2> = true;
+inline constexpr bool is_half2_impl_v<__half2> = true;
 
 #endif // _CCCL_HAS_NVFP16
 
 template <typename T>
-inline constexpr bool is_half_v = is_half_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+inline constexpr bool is_half_v = is_half_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
 
 template <typename T>
-inline constexpr bool is_half2_v = is_half2_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+inline constexpr bool is_half2_v = is_half2_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
 
 template <typename T>
-inline constexpr bool is_any_half_v = is_half_base_v<T> || is_half2_base_v<T>;
+inline constexpr bool is_any_half_v = is_half_impl_v<T> || is_half2_impl_v<T>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // bfloat16
 
 template <typename>
-inline constexpr bool is_bfloat16_base_v = false;
+inline constexpr bool is_bfloat16_impl_v = false;
 
 template <typename>
-inline constexpr bool is_bfloat16x2_base_v = false;
+inline constexpr bool is_bfloat162_impl_v = false;
 
 #if _CCCL_HAS_NVBF16()
 
 template <>
-inline constexpr bool is_bfloat16_base_v<__nv_bfloat16> = true;
+inline constexpr bool is_bfloat16_impl_v<__nv_bfloat16> = true;
 
 template <>
-inline constexpr bool is_bfloat16x2_base_v<__nv_bfloat162> = true;
+inline constexpr bool is_bfloat162_impl_v<__nv_bfloat162> = true;
 
 #endif // _CCCL_HAS_NVBF16
 
 template <typename T>
-inline constexpr bool is_bfloat16_v = is_bfloat16_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+inline constexpr bool is_bfloat16_v = is_bfloat16_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
 
 template <typename T>
-inline constexpr bool is_bfloat16x2_v = is_bfloat16x2_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+inline constexpr bool is_bfloat162_v = is_bfloat162_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
 
 template <typename T>
-inline constexpr bool is_any_bfloat16_v = is_bfloat16_v<T> || is_bfloat16x2_v<T>;
+inline constexpr bool is_any_bfloat16_v = is_bfloat16_v<T> || is_bfloat162_v<T>;
 
 //----------------------------------------------------------------------------------------------------------------------
 // short2/ushort2
 
 template <typename T>
-inline constexpr bool is_any_short2_base_v = false;
+inline constexpr bool is_any_short2_impl_v = false;
 
 template <>
-inline constexpr bool is_any_short2_base_v<short2> = true;
+inline constexpr bool is_any_short2_impl_v<short2> = true;
 
 template <>
-inline constexpr bool is_any_short2_base_v<ushort2> = true;
+inline constexpr bool is_any_short2_impl_v<ushort2> = true;
 
 template <typename T>
-inline constexpr bool is_any_short2_v = is_any_short2_base_v<_CUDA_VSTD::remove_cv_t<T>>;
+inline constexpr bool is_any_short2_v = is_any_short2_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
 
 //----------------------------------------------------------------------------------------------------------------------
 
