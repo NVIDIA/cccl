@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+# Target script for `docker run` command in build_cuda_parallel_python.sh
+# The /workspace pathnames are hard-wired here.
+
 # Enable GCC toolset
 dnf -y install gcc-toolset-13-gcc gcc-toolset-13-gcc-c++
 echo -e "#!/bin/bash\nsource /opt/rh/gcc-toolset-13/enable" >/etc/profile.d/enable_devtools.sh
