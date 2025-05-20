@@ -63,4 +63,16 @@ struct PlusOneNoexcept
   }
 };
 
+struct PlusWithMutableMember
+{
+  int val_ = 0;
+  __host__ __device__ constexpr PlusWithMutableMember(const int val) noexcept
+      : val_(val)
+  {}
+  __host__ __device__ constexpr int operator()(int x) noexcept
+  {
+    return x + val_++;
+  }
+};
+
 #endif // TEST_CUDA_TRANSFORM_ITERATOR_TYPES_H

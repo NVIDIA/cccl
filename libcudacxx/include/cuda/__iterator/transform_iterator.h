@@ -215,10 +215,19 @@ public:
   }
 
   //! @brief Invokes the stored functor with the value pointed to by the stored iterator
+  _CCCL_TEMPLATE(class _Iter2 = _Iter)
+  _CCCL_REQUIRES(_CUDA_VSTD::regular_invocable<const _Fn&, _CUDA_VSTD::iter_reference_t<const _Iter2>>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator*() const
-    noexcept(noexcept(_CUDA_VSTD::invoke(const_cast<_Fn&>(*__func_), *__current_)))
+    noexcept(noexcept(_CUDA_VSTD::invoke(*__func_, *__current_)))
   {
-    return _CUDA_VSTD::invoke(const_cast<_Fn&>(*__func_), *__current_);
+    return _CUDA_VSTD::invoke(*__func_, *__current_);
+  }
+
+  //! @brief Invokes the stored functor with the value pointed to by the stored iterator
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
+  operator*() noexcept(noexcept(_CUDA_VSTD::invoke(*__func_, *__current_)))
+  {
+    return _CUDA_VSTD::invoke(*__func_, *__current_);
   }
 
   //! @brief Increments the stored iterator
@@ -289,11 +298,23 @@ public:
   //! @param __n The additional offset
   //! @returns _CUDA_VSTD::invoke(__func_, __current_[__n])
   _CCCL_TEMPLATE(class _Iter2 = _Iter)
-  _CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter2>)
+  _CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter2> _CCCL_AND
+                   _CUDA_VSTD::regular_invocable<const _Fn&, _CUDA_VSTD::iter_reference_t<const _Iter2>>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator[](difference_type __n) const
-    noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
+    noexcept(__transform_iterator_nothrow_subscript<const _Fn, _Iter2>)
   {
-    return _CUDA_VSTD::invoke(const_cast<_Fn&>(*__func_), __current_[__n]);
+    return _CUDA_VSTD::invoke(*__func_, __current_[__n]);
+  }
+
+  //! @brief Subscripts the stored iterator by \p __n and applies the stored functor to the result
+  //! @param __n The additional offset
+  //! @returns _CUDA_VSTD::invoke(__func_, __current_[__n])
+  _CCCL_TEMPLATE(class _Iter2 = _Iter)
+  _CCCL_REQUIRES(_CUDA_VSTD::random_access_iterator<_Iter2>)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto)
+  operator[](difference_type __n) noexcept(__transform_iterator_nothrow_subscript<_Fn, _Iter2>)
+  {
+    return _CUDA_VSTD::invoke(*__func_, __current_[__n]);
   }
 
   //! @brief Compares two \c transform_iterator for equality, directly comparing the stored iterators

@@ -27,6 +27,7 @@ __host__ __device__ constexpr void test()
   {
     cuda::transform_iterator iter{Iter{buffer}, PlusOne{}};
     assert(*iter == 1);
+    assert(*cuda::std::as_const(iter) == 1);
     assert(*buffer == 0);
 
     static_assert(!noexcept(*iter));
@@ -67,6 +68,17 @@ __host__ __device__ constexpr void test()
 
     static_assert(!noexcept(*iter));
     static_assert(cuda::std::is_same_v<int&&, decltype(*iter)>);
+  }
+
+  {
+    cuda::transform_iterator iter{Iter{buffer}, PlusWithMutableMember{3}};
+    assert(*iter == 5);
+    assert(*iter == 6);
+    assert(*iter == 7);
+    assert(*buffer == 2);
+
+    static_assert(noexcept(*iter) == noexcept(*cuda::std::declval<Iter>()));
+    static_assert(cuda::std::is_same_v<int, decltype(*iter)>);
   }
 }
 
