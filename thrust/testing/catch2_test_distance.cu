@@ -3,9 +3,9 @@
 #include "catch2_test_helper.h"
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
-C2H_TEST("TestDistance", "[distance]", vector_list)
+TEMPLATE_LIST_TEST_CASE("TestDistance", "[distance]", vector_list)
 {
-  using Vector   = typename c2h::get<0, TestType>;
+  using Vector   = TestType;
   using Iterator = typename Vector::iterator;
 
   Vector v(100);

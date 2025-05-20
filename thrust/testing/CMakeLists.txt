@@ -9,7 +9,7 @@ endforeach()
 # Generate testing framework libraries:
 add_subdirectory(unittest)
 
-cccl_get_c2h()
+cccl_get_catch2()
 
 # Some tests only support certain host.device configurations. Use this macro to
 # declare allowed configurations. If not specified, all host.device config are
@@ -79,26 +79,8 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   add_executable(${test_target} "${real_test_src}")
 
   if (is_catch2_test)
-    # Per config helper library:
-    set(config_c2h_target ${config_prefix}.test.catch2_helper)
-    if (NOT TARGET ${config_c2h_target})
-      add_library(${config_c2h_target} INTERFACE)
-      target_include_directories(${config_c2h_target} INTERFACE "${Thrust_SOURCE_DIR}/test")
-      thrust_clone_target_properties(${config_c2h_target} ${thrust_target})
-      target_link_libraries(${config_c2h_target} INTERFACE
-              ${thrust_target}
-              cccl.c2h
-      )
-    endif() # config_c2h_target
-
-    # TODO(bgruber): only CUB_SEPARATE_CATCH2 semantic for now:
-    target_link_libraries(${test_target} PRIVATE
-            ${thrust_target}
-            ${config_c2h_target}
-            cccl.c2h.main
-            Catch2::Catch2
-    )
-  else() # non Catch2 test
+    target_link_libraries(${test_target} PRIVATE ${thrust_target} Catch2::Catch2WithMain)
+  else()
     target_link_libraries(${test_target} PRIVATE ${config_framework_target})
   endif()
   target_include_directories(${test_target} PRIVATE "${Thrust_SOURCE_DIR}/testing")
