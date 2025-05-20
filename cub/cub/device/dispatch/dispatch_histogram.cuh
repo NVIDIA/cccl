@@ -79,17 +79,7 @@ struct DeviceHistogramKernelSource
   // We define this differently than the other kernel getters because there are
   // different dispatch paths which affect which policy is used and the decode operators.
   template <typename PolicyT, int PRIVATIZED_SMEM_BINS, typename PrivatizedDecodeOpT, typename OutputDecodeOpT>
-  _CCCL_HIDE_FROM_ABI
-  CUB_RUNTIME_FUNCTION static constexpr decltype(&DeviceHistogramSweepKernel<PolicyT,
-                                                                             PRIVATIZED_SMEM_BINS,
-                                                                             NUM_CHANNELS,
-                                                                             NUM_ACTIVE_CHANNELS,
-                                                                             SampleIteratorT,
-                                                                             CounterT,
-                                                                             PrivatizedDecodeOpT,
-                                                                             OutputDecodeOpT,
-                                                                             OffsetT>)
-  HistogramSweepKernel()
+  _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr auto HistogramSweepKernel()
   {
     return &DeviceHistogramSweepKernel<
       PolicyT,
@@ -428,7 +418,8 @@ public:
   // Should we call DispatchHistogram<....., PolicyHub=void> in DeviceHistogram?
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
               PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -613,7 +604,8 @@ public:
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 0>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 0>,
               PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -757,7 +749,8 @@ public:
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
               PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
@@ -957,7 +950,8 @@ public:
    */
   template <typename MaxPolicyT = typename ::cuda::std::_If<
               ::cuda::std::is_void_v<PolicyHub>,
-              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, 1>,
+              /* fallback_policy_hub */
+              detail::histogram::policy_hub<SampleT, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS, /* isEven */ 1>,
               PolicyHub>::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
