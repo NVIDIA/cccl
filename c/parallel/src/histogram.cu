@@ -465,7 +465,6 @@ CUresult cccl_device_histogram_range_impl(
 
     constexpr int NUM_CHANNELS        = 1;
     constexpr int NUM_ACTIVE_CHANNELS = 1;
-    indirect_arg_t d_output_histogram_elem{d_output_histograms};
 
     ::cuda::std::array<indirect_arg_t*, NUM_ACTIVE_CHANNELS> d_output_histogram_arr{
       static_cast<indirect_arg_t*>(d_output_histograms.state)};
