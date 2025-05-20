@@ -7,7 +7,7 @@ cuda::is_floating_point
 .. code:: cuda
 
    template <class T>
-   inline constexpr bool is_floating_point_v;
+   inline constexpr bool is_floating_point_v = __ implementation defined __;
 
    template <class T>
    using is_floating_point = cuda::std::bool_constant<is_floating_point_v<T>>;
