@@ -1,0 +1,502 @@
+Developer Overview
+==================
+
+This is the developer overview for the ``cuda.cooperative`` library.
+
+How It Works
+------------
+
+Concepts
+--------
+
+Usage
+^^^^^
+
+Using the ``cuda.cooperative`` primitives from Numba CUDA kernels
+written in Python follows the same general pattern:
+
+  #. Identify the primitive(s) you need (e.g. load & store, reduction).
+  #. `Create` a callable object `outside` of your Python CUDA kernel
+     for all primitives you wish to use within your kernel.  This is
+     done by invoking the corresponding Python function for the desired
+     primitive, typically furnishing information about the data type and
+     shape at a minimum, e.g.:
+
+    .. code-block:: python
+
+       from numba import cuda
+       from cuda.cooperative.experimental import block
+
+       # Create a callable for the block-wide load primitive.
+       block_load = block.load(dtype=np.int32, threads_per_block=128)
+
+       # Create a callable for the block-wide scan primitive.
+       block_scan = block.scan(dtype=np.int32, threads_per_block=128)
+
+       # These callables have important attributes that Numba CUDA
+       # depends upon, such as ``.files`` and ``.temp_storage_bytes``.
+       # They can't be called directly unless you're within a CUDA
+       # kernel (i.e. a Python function decorated with a ``@cuda.jit``
+       # decorator).
+
+  #. `Decorate` your Python CUDA kernel with a
+     ``@numba.cuda.jit(files=...)`` decorator, where the ``files``
+     keyword argument reflects the set of all ``.files`` attributes
+     on each of the returned callables, e.g.:
+
+    .. code-block:: python
+
+       @cuda.jit(files=block_load.files + block_scan.files)
+       def kernel(d_in, d_out):
+           ...
+
+  #. Within your Python CUDA kernels, optionally create temporary
+     storage by way of ``cuda.shared.array()`` or ``cuda.local.array()``
+     helpers, e.g., from within the kernel:
+
+    .. code-block:: python
+
+       # Identify the largest temporary storage size required by all
+       # primitives.
+       max_temp_storage_bytes = max(block_load.temp_storage_bytes,
+                                     block_scan.temp_storage_bytes)
+
+       # Create temporary storage in shared memory.
+       temp_storage = cuda.shared.array(
+           shape=max_temp_storage_bytes,
+           dtype=np.uint8,
+       )
+
+
+  #. Invoke the `callables` you obtained for the desired primitives
+     as necessary within your kernel implementation, e.g.:
+
+    .. code-block:: python
+
+       # Load data from global memory into shared memory.
+       block_load(d_in, temp_storage)
+
+       # Perform a block-wide scan on the loaded data.
+       block_scan(temp_storage, d_out)
+
+  #. After you've defined your kernel, invoke it using Numba CUDA's
+     support for launching CUDA kernels.
+
+    .. code-block:: python
+
+       # Launch the kernel with a grid of 1 block and 128 threads.
+       kernel[1, 128](d_in, d_out)
+
+Temporary Storage
+^^^^^^^^^^^^^^^^^
+
+Frequently, cooperative primitives need some form of temporary storage,
+or scratch space, to perform their work.  This temporary storage is
+ideally allocated in shared memory, but can also be allocated in local
+(global) memory if necessary.
+
+Shared memory, although significantly faster than global memory, is a
+limited resource, and the amount of shared memory available to each
+thread block is governed by multiple facets, such as GPU architecture
+and kernel launch configuration.
+
+Link-Time Optimization: Intermediate Representation (LTO-IR)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Link-time optimization (LTO) is a compiler optimization technique that
+allows the compiler to analyze and optimize the entire program at once,
+rather than optimizing each translation unit (source file) separately.
+
+LTO-IR is a specific form of LTO that operates on the intermediate
+representation (IR) of the code, and allows for Python Numba CUDA
+kernels to run at speed-of-light performance.
+
+Primitives
+----------
+
+The following sections describe the primitives exposed by
+``cuda.cooperative`` from the perspective of the underlying intent of
+that primitive, such as loading and storing data, reduction, prefix scan,
+etc.
+
+Each algorithm will typically have both a block-wide and warp-wide
+implementation, and calling conventions are typically identical between
+the two.  That is, examples demonstrating, for example, a block-wide
+load of data, would work equally well for a warp-wide data load.
+
+Loading & Storing
+^^^^^^^^^^^^^^^^^
+Overview
+++++++++
+Loading and storing data optimally is a crucial first step in writing
+performant CUDA kernels.  The block-wide and warp-wide load and store
+primitives ensure data movement is occurring in the most optimal fashion
+for the underlying GPU architecture.  Specifically, they ensure reads
+and writes are coalesced properly, such that the underlying bandwidth
+backing either the shared memory or HBM global memory can be saturated.
+
+Sorting
+^^^^^^^
+Overview
+++++++++
+Two sorting algorithms are provided: merge sort and radix sort.  The
+calling conventions are practically identical between the two, only
+differing in the type of algorithm that can be used.
+
+Merge Sort
+~~~~~~~~~~
+Merge sort uses a parallel merging strategy, combining two sorted
+sequences into a single sorted sequence.  It is a comparative sorting
+algorithm, and thus, relies on the ability, given two elements, to
+determine if one is greater than, equal, or less than the other.  This
+means it can be used to sort custom types---provided that custom
+comparators are furnished to the algorithm.  As a side-effect of the
+comparative nature of the algorithm, merge sort can handle data types of
+variable lengths
+
+Merge sort is inherently stable, which means equal keys retain their
+original order.
+
+Merge sort is efficient when merging already-sorted data chunks (common
+in some divide-and-conquer algorithms).  It offers also offers
+predictable performance for partially-sorted or nearly-sorted data.
+
+Merge sort performance will degrade depending on how poorly the data is
+already sorted, with truly random data requiring the most amount of
+computation to successfully sort.
+
+Radix Sort
+~~~~~~~~~~
+Radix sort is a non-comparative sorting algorithm based on individual
+digits, or bits, from least-significant to most-significant (or vice
+versa).  It uses digit-wise bucketing and histogram computation in
+parallel to efficiently sort numeric or key-value pairs.
+
+Radix sort is optimal for fixed-size numeric data types.  It is usually
+faster on uniformly random or large datasets due to requiring fewer
+passes and simpler computation logic.
+
+Radix sort offers no stability guarantees unless explicitly requested.
+
+Radix sort performance can degrade for non-uniform data distributions or
+many unique values, as overhead is introduced by uneven binning.
+
+Choosing Between Merge vs Radix Sort
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. list-table:: Comparison of Block-wide and Warp-wide Sorting in CUB
+   :header-rows: 1
+   :widths: 25 35 35
+
+   * - Feature
+     - Merge Sort
+     - Radix Sort
+
+   * - **Stability**
+     - Naturally stable
+     - Typically stable if implemented properly
+
+   * - **Key Types**
+     - Arbitrary comparable types
+     - Primarily numeric types
+
+   * - **Data Characteristics**
+     - Efficient on partially or nearly sorted data
+     - Efficient on random, uniformly distributed numeric data
+
+   * - **Memory Usage**
+     - Higher due to merging buffers
+     - Moderate; depends on histogram/bin size
+
+   * - **Performance Predictability**
+     - Predictable for partially sorted data
+     - Predictable and typically faster for numeric data
+
+   * - **Implementation Complexity**
+     - Moderate complexity
+     - Slightly higher complexity, especially for custom types
+
+Examples
+++++++++
+
+References
+++++++++++
+
+Python API References:
+
+  #. Block: Merge Sort Keys: :py:func:`cuda.cooperative.experimental.block.merge_sort_keys`
+  #. Warp: Merge Sort Keys: :py:func:`cuda.cooperative.experimental.warp.merge_sort_keys`
+  #. Block: Radix Sort Keys: :py:func:`cuda.cooperative.experimental.block.radix_sort_keys`
+  #. Block: Radix Sort Keys Descending: :py:func:`cuda.cooperative.experimental.block.radix_sort_keys_descending`
+  #. Warp: Radix Sort Keys: not yet implemented.
+  #. Warp: Radix Sort Keys Descending: not yet implemented.
+
+C++ API References:
+
+  #. :ref:`cub::BlockMergeSort <cub:classcub_1_1blockmergesort>`
+
+Parallel Prefix Scans
+^^^^^^^^^^^^^^^^^^^^^
+Overview
+++++++++
+.. _cuda_cooperative-scan-overview:
+
+Parallel prefix scans compute cumulative operations across elements of
+an array.  The most well-known parallel prefix scan primitives are the
+inclusive and exclusive sum: when provided an array of numerical data,
+each element of the returned array will reflect the sum of itself and
+all prior elements.  For inclusive sum, the current element is included,
+whereas for exclusive sum, the current element is excluded.
+
+Inclusive sum is generally equivalent to NumPy's
+`np.cumsum() <https://numpy.org/doc/stable/reference/generated/numpy.cumsum.html#numpy-cumsum>`_
+routine.
+
+Inclusive vs. Exclusive
+~~~~~~~~~~~~~~~~~~~~~~~
+
+*Inclusive scan* (often called a *prefix sum*) writes, for every thread, the
+sum that **includes** that thread’s own element:
+
+.. math::
+
+   \text{out}_i = \sum_{j = 0}^{i} \text{in}_j
+
+*Exclusive scan* writes the sum of all **preceding** elements---i.e. it
+*excludes* the current element—and optionally starts from an initial value
+(default 0):
+
+.. math::
+
+   \text{out}_i = \text{initial_value} + \sum_{j = 0}^{i-1} \text{in}_j
+
+Concrete Example
+~~~~~~~~~~~~~~~~
+
+With four threads (lane 0–3) holding the values ``[4, 7, 1, 3]`` and
+``initial_value = 0`` for the exclusive scan, the resulting arrays are
+as follows:
+
++-------------+-------+---------------+------------------+
+| Lane Index  | Value | Inclusive Sum  | Exclusive Sum   |
++=============+=======+===============+==================+
+| 0           | 4     | 4              | 0               |
++-------------+-------+----------------+-----------------+
+| 1           | 7     | 11             | 4               |
++-------------+-------+----------------+-----------------+
+| 2           | 1     | 12             | 11              |
++-------------+-------+----------------+-----------------+
+| 3           | 3     | 15             | 12              |
++-------------+-------+----------------+-----------------+
+
+Examples
+++++++++
+
+References
+++++++++++
+
+Quirks
+++++++
+
+Items per thread: 1 vs >1
+~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _cuda_cooperative-scan-items_per_thread_quirks:
+
+The block-wide and warp-wide scan primitives can be configured to
+process multiple items per thread.  This is done by specifying the
+``items_per_thread`` keyword argument when creating the callable for the
+scan primitive.  The default value is 1, which means that each thread
+will process one item.  This is also the only supported value when
+you're using user-defined types.
+
+Better performance can usually be achieved by setting ``items_per_thread``
+to a value greater than 1, with 4 being a common choice.
+
+However, it is important to understand a subtle difference in how the
+scan function is invoked within a CUDA kernel when using an
+``items_per_thread`` of 1 versus greater than 1.
+
+When ``items_per_thread`` is 1, the resulting scan primitive returns the
+scan value for each thread:
+
+.. code-block:: python
+   result = block_scan(temp_storage, d_in[idx])
+
+When ``items_per_thread`` is greater than 1, there is no return value;
+instead, the scan primitive writes the results to an additional output
+array argument:
+
+.. code-block:: python
+   # Using separate input and output arrays:
+   block_scan(temp_storage, input_array, output_array)
+   # Or, when using the same array for input and output:
+   block_scan(temp_storage, array, array)
+
+Complete examples follow.  With ``items_per_thread=1``:
+
+.. code-block:: python
+
+   import numpy as np
+   from numba import cuda
+   from pynvjitlink import patch
+   import cuda.cooperative.experimental as cudax
+
+   block_scan = cudax.block.inclusive_sum(
+       dtype=np.int32,
+       threads_per_block=128,
+       items_per_thread=1,
+   )
+   temp_storage_bytes = block_scan.temp_storage_bytes
+
+   @cuda.jit(files=block_scan1.files)
+   def kernel(d_in, d_out):
+       # Create temporary storage.
+       temp_storage = cuda.shared.array(
+           shape=temp_storage_bytes,
+           dtype=np.uint8,
+       )
+
+       # Identify this thread's index globally (assumes 1D grid).
+       idx = cuda.grid(1)
+
+       # Perform the scan, writing the result directly to the relevant
+       # offset in the d_out array.
+       d_out[idx] = block_scan(temp_storage, d_in[idx])
+
+   # Create input data and device-side input and output arrays.
+   h_in = np.array([4, 7, 1, 3], dtype=np.int32)
+   d_in = cuda.to_device(h_in)
+   d_out = cuda.device_array_like(h_in)
+
+   # Launch the kernel with a grid of 1 block and 4 threads.
+   kernel[1, 4](d_in, d_out)
+   cuda.synchronize()
+
+   # Sample code showing how you'd check the result.
+   expected = np.array([4, 11, 12, 15], dtype=np.int32)
+   h_out = d_out.copy_to_host()
+   np.testing.assert_array_equal(h_out, expected)
+
+Compare to the following ``items_per_thread=4`` example:
+
+.. literalinclude:: ../python/cuda_cooperative/tests/test_block_scan_api.py
+   :language: python
+   :dedent:
+   :start-after: example-begin imports
+   :end-before: example-end imports
+
+.. code-block:: python
+
+   import numpy as np
+   from numba import cuda
+   from pynvjitlink import patch
+   import cuda.cooperative.experimental as cudax
+
+   block_scan4 = cudax.block.inclusive_sum(
+       dtype=np.int32,
+       threads_per_block=128,
+       items_per_thread=4,
+   )
+   temp_storage_bytes = block_scan4.temp_storage_bytes
+
+   @cuda.jit(files=block_scan1.files)
+   def kernel(d_in, d_out):
+       # Create temporary storage.
+       temp_storage = cuda.shared.array(
+           shape=temp_storage_bytes,
+           dtype=np.uint8,
+       )
+
+       # Identify this thread's index globally (assumes 1D grid).
+       idx = cuda.grid(1)
+
+       # Perform the scan, writing the result directly to the relevant
+       # offset in the d_out array.
+       d_out[idx] = block_scan1(temp_storage, d_in[idx])
+
+   # Create input data and device-side input and output arrays.
+   h_in = np.array([4, 7, 1, 3], dtype=np.int32)
+   d_in = cuda.to_device(h_in)
+   d_out = cuda.device_array_like(h_in)
+
+   # Launch the kernel with a grid of 1 block and 4 threads.
+   kernel[1, 4](d_in, d_out)
+   cuda.synchronize()
+
+   # Sample code showing how you'd check the result.
+   expected = np.array([4, 11, 12, 15], dtype=np.int32)
+   h_out = d_out.copy_to_host()
+   np.testing.assert_array_equal(h_out, expected)
+
+
+
+Q&A
++++
+
+**Q.** What's the difference between ``inclusive_sum`` (or ``exclusive_sum``)
+and just calling ``inclusive_scan`` with ``scan_op='+'`` or ``scan_op='add'``?
+
+**A.** There is no difference in this case.  The ``inclusive_sum`` and
+``exclusive_sum`` routines simply call the underlying ``inclusive_scan``
+or ``exclusive_scan`` routines with ``scan_op='+'``.
+
+**Q.** What's the difference between calling ``inclusive_sum`` (or
+``inclusive_scan`` with ``scan_op='+'``, or ``scan_op='add'``) versus
+``inclusive_scan`` with a custom Python operator that is simply an
+addition?  E.g.:
+
+   .. code-block:: python
+
+      def add(x, y):
+          return x + y
+
+      block_scan = block.inclusive_scan(
+          dtype=np.int32,
+          threads_per_block=128,
+          scan_op=add,
+      )
+
+**A.** This approach requires Numba CUDA to perform more work, as it needs
+to analyze and compile ``add``, and involve it in the final link-time
+optimization (LTO) step.  So, the initial overhead will be higher in
+this case to produce the callable CUDA kernel.
+
+References
+++++++++++
+
+Python API References:
+
+#. Block
+
+   #. Sum
+
+      #. Inclusive Sum: :py:func:`cuda.cooperative.experimental.block.inclusive_sum`
+      #. Exclusive Sum: :py:func:`cuda.cooperative.experimental.block.exclusive_sum`
+
+   #. Scan
+
+      #. Inclusive Scan: :py:func:`cuda.cooperative.experimental.block.inclusive_scan`
+      #. Exclusive Scan: :py:func:`cuda.cooperative.experimental.block.exclusive_scan`
+      #. Scan: :py:func:`cuda.cooperative.experimental.block.scan`
+
+#. Warp
+
+   #. Sum
+
+      #. Inclusive Sum: :py:func:`cuda.cooperative.experimental.warp.inclusive_sum`
+      #. Exclusive Sum: :py:func:`cuda.cooperative.experimental.warp.exclusive_sum`
+
+   #. Scan
+
+      #. Inclusive Scan: :py:func:`cuda.cooperative.experimental.warp.inclusive_scan`
+      #. Exclusive Scan: :py:func:`cuda.cooperative.experimental.warp.exclusive_scan`
+
+Reduction
+^^^^^^^^^
+
+Exchange
+^^^^^^^^
+
+Adjacent Differences
+^^^^^^^^^^^^^^^^^^^^
+
+.. vim: set filetype=rst expandtab ts=8 sw=3 sts=3 tw=78 ai:
