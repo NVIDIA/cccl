@@ -8,6 +8,8 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
+    - {jobs: ['build', 'test'], project: ['cccl_c_parallel'], gpu: 'rtx2080'}
+    - {jobs: ['build', 'test'], project: ['python'], py_version: '3.12'}
 
 
   pull_request:
