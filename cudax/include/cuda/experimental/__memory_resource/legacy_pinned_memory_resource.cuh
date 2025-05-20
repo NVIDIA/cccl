@@ -112,6 +112,8 @@ public:
     return __alignment <= _CUDA_VMR::default_cuda_malloc_host_alignment
         && (_CUDA_VMR::default_cuda_malloc_host_alignment % __alignment == 0);
   }
+
+  using default_queries = properties_list<device_accessible, host_accessible>;
 };
 
 static_assert(_CUDA_VMR::resource_with<legacy_pinned_memory_resource, device_accessible>, "");
