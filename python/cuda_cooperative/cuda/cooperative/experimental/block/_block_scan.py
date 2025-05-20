@@ -104,7 +104,7 @@ from cuda.cooperative.experimental._typing import (
 def scan(
     dtype: DtypeType,
     threads_per_block: DimType,
-    items_per_thread: int = 1,
+    items_per_thread: int = 4,
     initial_value: Any = None,
     mode: Literal["exclusive", "inclusive"] = "exclusive",
     scan_op: ScanOpType = "+",
@@ -128,8 +128,9 @@ def scan(
         for a 2D or 3D block, respectively.
     :type  threads_per_block: DimType
 
-    :param items_per_thread: Supplies the number of items partitioned onto each
-        thread.
+    :param items_per_thread: Optionally supplies the number of items
+        partitioned onto each thread.  Default is 4.  This parameter must be
+        greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param initial_value: Optionally supplies the initial value to use for the
@@ -653,7 +654,7 @@ def scan(
 def exclusive_sum(
     dtype: DtypeType,
     threads_per_block: DimType,
-    items_per_thread: int = 1,
+    items_per_thread: int = 4,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -698,8 +699,9 @@ def exclusive_sum(
         for a 2D or 3D block, respectively.
     :type  threads_per_block: DimType
 
-    :param items_per_thread: Supplies the number of items partitioned onto each
-        thread.
+    :param items_per_thread: Optionally supplies the number of items
+        partitioned onto each thread.  Default is 4.  This parameter must be
+        greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by the
@@ -747,7 +749,7 @@ def exclusive_sum(
 def inclusive_sum(
     dtype: DtypeType,
     threads_per_block: DimType,
-    items_per_thread: int = 1,
+    items_per_thread: int = 4,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -764,8 +766,9 @@ def inclusive_sum(
         for a 2D or 3D block, respectively.
     :type  threads_per_block: DimType
 
-    :param items_per_thread: Supplies the number of items partitioned onto each
-        thread.
+    :param items_per_thread: Optionally supplies the number of items
+        partitioned onto each thread.  Default is 4.  This parameter must be
+        greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by the
@@ -812,7 +815,7 @@ def exclusive_scan(
     threads_per_block: DimType,
     scan_op: ScanOpType,
     initial_value: Any = None,
-    items_per_thread: int = 1,
+    items_per_thread: int = 4,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -838,7 +841,8 @@ def exclusive_scan(
     :type  initial_value: Any, optional
 
     :param items_per_thread: Optionally supplies the number of items
-        partitioned onto each thread.  Defaults to *1*.
+        partitioned onto each thread.  Default is 4.  This parameter must be
+        greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by
@@ -904,7 +908,7 @@ def inclusive_scan(
     threads_per_block: DimType,
     scan_op: ScanOpType,
     initial_value: Any = None,
-    items_per_thread: int = 1,
+    items_per_thread: int = 4,
     prefix_op: Callable = None,
     algorithm: Literal["raking", "raking_memoize", "warp_scans"] = "raking",
     methods: dict = None,
@@ -931,7 +935,8 @@ def inclusive_scan(
     :type  initial_value: Any, optional
 
     :param items_per_thread: Optionally supplies the number of items
-        partitioned onto each thread.  Defaults to *1*.
+        partitioned onto each thread.  Default is 4.  This parameter must be
+        greater than or equal to 1.
     :type  items_per_thread: int, optional
 
     :param prefix_op: Optionally supplies a callable that will be invoked by

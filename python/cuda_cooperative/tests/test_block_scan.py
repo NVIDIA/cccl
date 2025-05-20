@@ -602,7 +602,13 @@ def test_block_scan_invariants(mode):
                 "with items_per_thread == 1"
             ),
         ):
-            scan_func(numba.int32, 128, scan_op="*", initial_value=0)
+            scan_func(
+                dtype=numba.int32,
+                threads_per_block=128,
+                scan_op="*",
+                items_per_thread=1,
+                initial_value=0,
+            )
 
     # 2) For exclusive scans with items_per_thread=1 and a prefix callback,
     #    initial_value is invalid.
@@ -619,9 +625,10 @@ def test_block_scan_invariants(mode):
             ),
         ):
             scan_func(
-                numba.int32,
-                128,
+                dtype=numba.int32,
+                threads_per_block=128,
                 scan_op="*",
+                items_per_thread=1,
                 initial_value=0,
                 prefix_op=prefix_op,
             )
@@ -638,7 +645,12 @@ def test_block_scan_invariants(mode):
             "operator has been supplied"
         ),
     ):
-        scan_func(complex_type, 128, scan_op="+", items_per_thread=2)
+        scan_func(
+            dtype=complex_type,
+            threads_per_block=128,
+            scan_op="*",
+            items_per_thread=2,
+        )
 
 
 @pytest.mark.parametrize("T", [types.int32])
