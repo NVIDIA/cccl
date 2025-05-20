@@ -88,10 +88,10 @@ StableOddEvenSort(KeyT (&keys)[ITEMS_PER_THREAD], ValueT (&items)[ITEMS_PER_THRE
 {
   constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
-#pragma unroll
+  _CCCL_SORT_MAYBE_UNROLL()
   for (int i = 0; i < ITEMS_PER_THREAD; ++i)
   {
-#pragma unroll
+    _CCCL_SORT_MAYBE_UNROLL()
     for (int j = 1 & i; j < ITEMS_PER_THREAD - 1; j += 2)
     {
       if (compare_op(keys[j + 1], keys[j]))

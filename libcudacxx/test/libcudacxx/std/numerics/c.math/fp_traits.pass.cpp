@@ -26,20 +26,10 @@ __host__ __device__ void test_fpclassify(float val)
   assert(cuda::std::fpclassify(T(0.0)) == FP_ZERO);
   assert(cuda::std::fpclassify(T(-1.0)) == FP_NORMAL);
   assert(cuda::std::fpclassify(T(-0.0)) == FP_ZERO);
-  // extended floating point types have issues here
-  if (!cuda::std::__is_extended_floating_point<T>::value)
-  {
-    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<T>::quiet_NaN())) == FP_NAN);
-    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<T>::infinity())) == FP_INFINITE);
-    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<T>::denorm_min())) == FP_SUBNORMAL);
-  }
-  else
-  {
-    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<float>::quiet_NaN())) == FP_NAN);
-    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<float>::infinity())) == FP_INFINITE);
-    // float subnormal turns to 0.0 for our half precision types
-    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<float>::denorm_min())) == FP_ZERO);
-  }
+
+  assert(cuda::std::fpclassify(cuda::std::numeric_limits<T>::quiet_NaN()) == FP_NAN);
+  assert(cuda::std::fpclassify(cuda::std::numeric_limits<T>::infinity()) == FP_INFINITE);
+  assert(cuda::std::fpclassify(cuda::std::numeric_limits<T>::denorm_min()) == FP_SUBNORMAL);
 }
 
 __host__ __device__ void test_fpclassify(float val)
@@ -102,9 +92,9 @@ __host__ __device__ void test_isfinite(float val)
   assert(cuda::std::isfinite(T(val)) == true);
   assert(cuda::std::isfinite(T(-1.0f)) == true);
   assert(cuda::std::isfinite(T(1.0f)) == true);
-  assert(cuda::std::isfinite(T(NAN)) == false);
-  assert(cuda::std::isfinite(T(INFINITY)) == false);
-  assert(cuda::std::isfinite(-T(INFINITY)) == false);
+  assert(cuda::std::isfinite(cuda::std::numeric_limits<T>::quiet_NaN()) == false);
+  assert(cuda::std::isfinite(cuda::std::numeric_limits<T>::infinity()) == false);
+  assert(cuda::std::isfinite(-cuda::std::numeric_limits<T>::infinity()) == false);
 }
 
 __host__ __device__ void test_isfinite(float val)
@@ -141,9 +131,9 @@ __host__ __device__ void test_isnormal(float val)
   assert(cuda::std::isnormal(T(-1.0f)) == true);
   assert(cuda::std::isnormal(T(1.0f)) == true);
   assert(cuda::std::isnormal(T(0.0f)) == false);
-  assert(cuda::std::isnormal(T(NAN)) == false);
-  assert(cuda::std::isnormal(T(INFINITY)) == false);
-  assert(cuda::std::isnormal(-T(INFINITY)) == false);
+  assert(cuda::std::isnormal(cuda::std::numeric_limits<T>::quiet_NaN()) == false);
+  assert(cuda::std::isnormal(cuda::std::numeric_limits<T>::infinity()) == false);
+  assert(cuda::std::isnormal(-cuda::std::numeric_limits<T>::infinity()) == false);
 }
 
 __host__ __device__ void test_isnormal(float val)
