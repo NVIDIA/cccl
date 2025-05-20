@@ -203,6 +203,8 @@ public:
    */
   using pointer = typename super_t::pointer;
 
+  device_reference(const device_reference& other) = default;
+
   /*! This copy constructor accepts a const reference to another
    *  \p device_reference. After this \p device_reference is constructed,
    *  it shall refer to the same object as \p other.
@@ -273,6 +275,11 @@ public:
       : super_t(ptr)
   {}
 
+  _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference& other) const
+  {
+    return super_t::operator=(other);
+  }
+
   /*! This assignment operator assigns the value of the object referenced by
    *  the given \p device_reference to the object referenced by this
    *  \p device_reference.
@@ -281,7 +288,7 @@ public:
    *  \return <tt>*this</tt>
    */
   template <typename OtherT>
-  _CCCL_HOST_DEVICE device_reference& operator=(const device_reference<OtherT>& other)
+  _CCCL_HOST_DEVICE const device_reference& operator=(const device_reference<OtherT>& other) const
   {
     return super_t::operator=(other);
   }
@@ -292,7 +299,7 @@ public:
    *  \param x The value to assign from.
    *  \return <tt>*this</tt>
    */
-  _CCCL_HOST_DEVICE device_reference& operator=(const value_type& x)
+  _CCCL_HOST_DEVICE const device_reference& operator=(const value_type& x) const
   {
     return super_t::operator=(x);
   }
