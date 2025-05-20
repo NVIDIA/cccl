@@ -68,6 +68,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
   default_delete(const default_delete<_Up>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void operator()(_Tp* __ptr) const noexcept
   {
     static_assert(sizeof(_Tp) >= 0, "cannot delete an incomplete type");
@@ -86,6 +87,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
     const default_delete<_Up[]>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
   operator()(_Up* __ptr) const noexcept
@@ -704,12 +706,14 @@ struct __unique_if<_Tp[_Np]>
   typedef void __unique_array_known_bound;
 };
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique(_Args&&... __args)
 {
   return unique_ptr<_Tp>(new _Tp(_CUDA_VSTD::forward<_Args>(__args)...));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
 make_unique(size_t __n)
@@ -721,12 +725,14 @@ make_unique(size_t __n)
 template <class _Tp, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI typename __unique_if<_Tp>::__unique_array_known_bound make_unique(_Args&&...) = delete;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_single make_unique_for_overwrite()
 {
   return unique_ptr<_Tp>(new _Tp);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
 make_unique_for_overwrite(size_t __n)

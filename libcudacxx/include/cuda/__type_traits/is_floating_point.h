@@ -29,7 +29,8 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! Tells whether a type is a floating point type. Users are allowed to specialize this template for their own types.
+//! Tells whether a type is a floating point type, including extended floating point types.
+//! Users are allowed to specialize this template for their own types.
 template <class _Tp>
 inline constexpr bool is_floating_point_v =
   _CUDA_VSTD::is_floating_point_v<_CUDA_VSTD::remove_cv_t<_Tp>>
