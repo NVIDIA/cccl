@@ -1,6 +1,5 @@
 /***********************************************************************************************************************
- * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
- * SPDX-License-Identifier: BSD-3-Clause
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -35,40 +34,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh> // static_size_v
-#include <cub/util_namespace.cuh>
-
-#include <cuda/std/array> // array
-#include <cuda/std/cstddef> // size_t
-#include <cuda/std/iterator> // _CUDA_VSTD::iter_value_t
-#include <cuda/std/type_traits> // _If
-#include <cuda/std/utility> // index_sequence
-
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-/***********************************************************************************************************************
- * Generic Array-like to Array Conversion
- **********************************************************************************************************************/
-
-template <typename CastType, typename Input, _CUDA_VSTD::size_t... i>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE _CUDA_VSTD::array<CastType, static_size_v<Input>>
-to_array_impl(const Input& input, _CUDA_VSTD::index_sequence<i...>)
+// NOTE: bit_cast cannot be always used because __half, __nv_bfloat16, etc. are not trivially copyable
+template <typename Output, typename Input>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE Output unsafe_bitcast(const Input& input)
 {
-  using ArrayType = _CUDA_VSTD::array<CastType, static_size_v<Input>>;
-  return ArrayType{static_cast<CastType>(input[i])...};
-}
-
-template <typename CastType = void, typename Input>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE _CUDA_VSTD::array<CastType, static_size_v<Input>>
-to_array(const Input& input)
-{
-  using InputType = _CUDA_VSTD::iter_value_t<Input>;
-  using CastType1 = _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<CastType, void>, InputType, CastType>;
-  return to_array_impl<CastType1>(input, _CUDA_VSTD::make_index_sequence<static_size_v<Input>>{});
+  Output output;
+  static_assert(sizeof(input) == sizeof(output), "wrong size");
+  ::memcpy(&output, &input, sizeof(input));
+  return output;
 }
 
 #endif // !_CCCL_DOXYGEN_INVOKED
