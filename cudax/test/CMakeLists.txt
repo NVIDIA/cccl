@@ -96,7 +96,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target stream ${cn_target}
-    stream/get_stream.cu
     stream/stream_smoke.cu
   )
 

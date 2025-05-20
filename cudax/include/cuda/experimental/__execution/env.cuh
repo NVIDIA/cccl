@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
+#include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -32,7 +33,6 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
-#include <cuda/experimental/__stream/get_stream.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -142,7 +142,7 @@ public:
   template <class _Env>
   static constexpr bool __is_compatible_env =
     _CUDA_STD_EXEC::__queryable_with<_Env, get_memory_resource_t> //
-    && _CUDA_STD_EXEC::__queryable_with<_Env, get_stream_t>
+    && _CUDA_STD_EXEC::__queryable_with<_Env, ::cuda::get_stream_t>
     && _CUDA_STD_EXEC::__queryable_with<_Env, execution::get_execution_policy_t>;
 
   //! @brief Construct from an environment that has the right queries
@@ -151,7 +151,7 @@ public:
   _CCCL_REQUIRES((!_CCCL_TRAIT(_CUDA_VSTD::is_same, _Env, env_t)) _CCCL_AND __is_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI env_t(const _Env& __env) noexcept
       : __mr_(__env.query(get_memory_resource))
-      , __stream_(__env.query(get_stream))
+      , __stream_(__env.query(::cuda::get_stream))
       , __policy_(__env.query(execution::get_execution_policy))
   {}
 
@@ -160,7 +160,7 @@ public:
     return __mr_;
   }
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI __stream_ref query(get_stream_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI __stream_ref query(::cuda::get_stream_t) const noexcept
   {
     return __stream_;
   }
