@@ -154,7 +154,7 @@ public:
    *
    *  \param other The \p tagged_reference to swap with.
    */
-  _CCCL_HOST_DEVICE void swap(derived_type& other)
+  _CCCL_HOST_DEVICE void swap(derived_type other)
   {
     // Avoid default-constructing a system; instead, just use a null pointer
     // for dispatch. This assumes that `get_value` will not access any system
@@ -365,7 +365,7 @@ private:
   }
 
   template <typename System>
-  _CCCL_HOST_DEVICE void swap(System* system, derived_type& other)
+  _CCCL_HOST_DEVICE void swap(System* system, derived_type other)
   {
     using thrust::system::detail::generic::iter_swap;
     using thrust::system::detail::generic::select_system;
@@ -492,7 +492,7 @@ class tagged_reference<void const, Tag>
 // note: this is not a hidden friend, because we have template specializations of tagged_reference
 template <typename Element, typename Tag>
 _CCCL_HOST_DEVICE void
-swap(tagged_reference<Element, Tag>& x, tagged_reference<Element, Tag>& y) noexcept(noexcept(x.swap(y)))
+swap(tagged_reference<Element, Tag> x, tagged_reference<Element, Tag> y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }
