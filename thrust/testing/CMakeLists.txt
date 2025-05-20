@@ -29,10 +29,8 @@ thrust_declare_test_restrictions(unittest_static_assert CPP.CPP CPP.CUDA)
 # https://github.com/NVIDIA/thrust/issues/1811
 thrust_declare_test_restrictions(transform_output_iterator_reduce_by_key CPP.CPP CPP.OMP CPP.CUDA)
 
-## thrust_is_catch2_test
-#
-# If the test_src contains the substring "catch2_test_", `result_var` will be set to TRUE.
 function(thrust_is_catch2_test result_var test_src)
+  # If the test_src contains the substring "catch2_test_", `result_var` will be set to TRUE.
   string(FIND "${test_src}" "catch2_test_" idx)
   if (idx EQUAL -1)
     set(${result_var} FALSE PARENT_SCOPE)
@@ -87,7 +85,7 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   thrust_clone_target_properties(${test_target} ${thrust_target})
 
   if (NOT "Clang" STREQUAL "${CMAKE_CUDA_COMPILER_ID}")
-    target_compile_definitions(${test_target} PRIVATE THRUSzT_TEST_DEVICE_SIDE)
+    target_compile_definitions(${test_target} PRIVATE THRUST_TEST_DEVICE_SIDE)
   endif()
 
   # Ensure that we test with assertions enabled
