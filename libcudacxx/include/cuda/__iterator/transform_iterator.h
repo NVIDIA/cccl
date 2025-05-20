@@ -318,7 +318,7 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Compares two \c transform_iterator for less then, directly comparing the stored iterators
+  //! @brief Compares two \c transform_iterator for less than, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator<(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
@@ -328,7 +328,7 @@ public:
     return __lhs.__current_ < __rhs.__current_;
   }
 
-  //! @brief Compares two \c transform_iterator for greater then, directly comparing the stored iterators
+  //! @brief Compares two \c transform_iterator for greater than, directly comparing the stored iterators
   template <class _Iter2 = _Iter>
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   operator>(const transform_iterator& __lhs, const transform_iterator& __rhs) noexcept(
