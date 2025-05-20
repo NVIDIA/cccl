@@ -77,7 +77,7 @@ namespace detail
       "mov.b32 r0, {%0, dummy};                                                                               \n\t\t" \
       "shfl.sync.down.b32 r0|p, r0, %1, %2, %3;                                                               \n\t\t" \
       "mov.b32 {h1, dummy}, r0;                                                                               \n\t\t" \
-      "@p " #PTX_OP " %0, h1, %0;                                                                             \n\t\t" \
+      "" #PTX_OP " %0, h1, %0;                                                                                \n\t\t" \
       "}"                                                                                                             \
       : "+h"(tmp)                                                                                                     \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
@@ -99,7 +99,7 @@ namespace detail
       ".reg .pred p;                                                                                          \n\t\t" \
       ".reg .b32  r0;                                                                                         \n\t\t" \
       "shfl.sync.down.b32 r0|p, %0, %1, %2, %3;                                                               \n\t\t" \
-      "@p " #PTX_OP " %0, r0, %0;                                                                             \n\t\t" \
+      "" #PTX_OP " %0, r0, %0;                                                                                \n\t\t" \
       "}"                                                                                                             \
       : "+r"(tmp)                                                                                                     \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
@@ -126,7 +126,7 @@ namespace detail
       "shfl.sync.down.b32 lo,   lo, %1, %2, %3;                                                               \n\t\t" \
       "shfl.sync.down.b32 hi|p, hi, %1, %2, %3;                                                               \n\t\t" \
       "mov.b64 r1, {lo, hi};                                                                                  \n\t\t" \
-      "@p " #PTX_OP " %0, r1, %0;                                                                             \n\t\t" \
+      "" #PTX_OP " %0, r1, %0;                                                                                \n\t\t" \
       "}"                                                                                                             \
       : "+l"(tmp)                                                                                                     \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                  \
@@ -136,9 +136,9 @@ namespace detail
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::std::plus Instantiations
 
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, uint32_t, add.u32)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, int, add.s32)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, add.f32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, uint32_t, @p add.u32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, int, @p add.s32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, float, @p add.f32)
 _CUB_SHFL_DOWN_OP_64BIT(_CUDA_VSTD::plus<>, double, add.f64)
 
 #if _CCCL_HAS_NVFP16() && __cccl_ptx_isa >= 860 && (__CUDA_ARCH_HAS_FEATURE__(SM100_ALL) || CUB_PTX_ARCH >= 1000)
@@ -163,14 +163,14 @@ _CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::plus<>, __nv_bfloat162, add.bf16x2)
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::maximum/minimum Instantiations
 
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, int, max.s32)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, uint32_t, max.u32)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, float, max.f32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, int, @p max.s32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, uint32_t, @p max.u32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, float, @p max.f32)
 _CUB_SHFL_DOWN_OP_64BIT(::cuda::maximum<>, double, max.f64)
 
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, int, min.s32)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, uint32_t, min.u32)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, float, min.f32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, int, @p min.s32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, uint32_t, @p min.u32)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, float, @p min.f32)
 _CUB_SHFL_DOWN_OP_64BIT(::cuda::minimum<>, double, min.f64)
 
 #if __cccl_ptx_isa >= 800 && CUB_PTX_ARCH >= 900
@@ -191,18 +191,18 @@ _CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __half2, max.f16x2)
 
 #if _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::minimum<>, __nv_bfloat16, min.bf16)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __nv_bfloat162, min.bf16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::minimum<>, __nv_bfloat162, @p min.bf16x2)
 
 _CUB_SHFL_DOWN_OP_16BIT(::cuda::maximum<>, __nv_bfloat16, max.bf16)
-_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __nv_bfloat162, max.bf16x2)
+_CUB_SHFL_DOWN_OP_32BIT(::cuda::maximum<>, __nv_bfloat162, @p max.bf16x2)
 #endif // _CCCL_HAS_NVBF16() && CUB_PTX_ARCH >= 800
 
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::std::bit_and/bit_or/bit_xor Instantiations
 
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, uint32_t, and.b32)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<>, uint32_t, or.b32)
-_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<>, uint32_t, xor.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_and<>, uint32_t, @p and.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_or<>, uint32_t, @p or.b32)
+_CUB_SHFL_DOWN_OP_32BIT(_CUDA_VSTD::bit_xor<>, uint32_t, @p xor.b32)
 
 #undef _CUB_SHFL_DOWN_OP_16BIT
 #undef _CUB_SHFL_DOWN_OP_32BIT
