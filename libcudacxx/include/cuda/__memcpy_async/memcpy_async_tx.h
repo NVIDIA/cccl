@@ -59,7 +59,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
   static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");
 
-  ::cuda::__memcpy_async_check_pre(__dest, __src, __size);
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__dest, __src, __size), "memcpy_async_tx preconditions unmet");
 
   _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(__isShared(__dest), "dest must point to shared memory.");
