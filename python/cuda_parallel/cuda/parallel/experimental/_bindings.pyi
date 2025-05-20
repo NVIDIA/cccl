@@ -132,6 +132,7 @@ class Iterator:
         dereference_fn: Op,
         value_type: TypeInfo,
         state=None,
+        host_advance_fn=None,
     ):
         pass
 
@@ -148,6 +149,10 @@ class Iterator:
     def as_bytes(self) -> bytes: ...
     def is_kind_pointer(self) -> bool: ...
     def is_kind_iterator(self) -> bool: ...
+    @property
+    def host_advance_fn(self): ...
+    @host_advance_fn.setter
+    def host_advance_fn(self, value) -> None: ...
 
 class CommonData:
     def __init__(
