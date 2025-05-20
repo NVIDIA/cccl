@@ -323,7 +323,7 @@ public:
      *  \p other The other \p device_reference with which to swap.
      */
     _CCCL_HOST_DEVICE
-    void swap(device_reference &other);
+    void swap(device_reference other);
 
     /*! Prefix increment operator increments the object referenced by this
      *  \p device_reference.
@@ -948,7 +948,6 @@ public:
     device_reference &operator^=(const T &rhs);
 #endif // end doxygen-only members
 }; // end device_reference
-
 
 /*! swaps the value of one \p device_reference with another.
  *  \p x The first \p device_reference of interest.

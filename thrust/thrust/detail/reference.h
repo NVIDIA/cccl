@@ -367,7 +367,7 @@ private:
   }
 
   template <typename System>
-  _CCCL_HOST_DEVICE void swap(System* system, derived_type& other)
+  _CCCL_HOST_DEVICE void swap(System* system, derived_type other)
   {
     using thrust::system::detail::generic::iter_swap;
     using thrust::system::detail::generic::select_system;
