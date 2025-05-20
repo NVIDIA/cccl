@@ -24,20 +24,21 @@
 #if defined(CCCL_CHECK_SASS)
 #  include <cub/warp/warp_reduce.cuh>
 
-#  include <c2h/catch2_test_helper.h>
-#  include <c2h/extended_types.h>
 #  include <test_util.h>
 
-__device__ uint64_t input;
-__device__ uint64_t output;
+#  include <c2h/catch2_test_helper.h>
+#  include <c2h/extended_types.h>
+
+__device__ uint64_t input[256];
+__device__ uint64_t output[256];
 
 template <typename T, typename ReductionOp>
 __global__ void warp_reduce_kernel(ReductionOp reduction_op)
 {
   using storage_t = typename cub::WarpReduce<T>::TempStorage;
   storage_t storage{};
-  auto value      = *reinterpret_cast<T*>(&input);
-  auto output_ptr = reinterpret_cast<T*>(&output);
+  auto value      = *reinterpret_cast<T*>(&input + threadIdx.x);
+  auto output_ptr = reinterpret_cast<T*>(&output + threadIdx.x);
   *output_ptr     = cub::WarpReduce<T>{storage}.Reduce(value, reduction_op);
 }
 
@@ -50,6 +51,7 @@ using arithmetic_type_list = c2h::type_list<
   int32_t, int64_t,
   float, double,
   cuda::std::complex<float>,
+  cuda::std::complex<double>,
   ushort2
 #  if TEST_HALF_T()
    , __half
@@ -60,6 +62,7 @@ using arithmetic_type_list = c2h::type_list<
    , __nv_bfloat162
 #  endif // TEST_BF_T()
 >;
+
 
 using bitwise_type_list = c2h::type_list<uint32_t, uint64_t>;
 
