@@ -13,5 +13,5 @@ cuda::is_floating_point
    using is_floating_point = cuda::std::bool_constant<is_floating_point_v<T>>;
 
 
-Tells whether a type is a floating point type, including extended floating point types.
+Tells whether a type is a floating point type, including implementation defined extended floating point types.
 Users are allowed to specialize the variable template for their own types, but CCCL does not provide support for any issues arising from that.
