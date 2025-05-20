@@ -44,6 +44,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/iterator_traits.h>
+#include <thrust/iterator/strided_iterator.h>
 
 #include <cuda/std/cstddef>
 #include <cuda/std/type_traits>
@@ -263,13 +264,9 @@ private:
   }
 
   // note that we implement equal specially for floating point counting_iterator
-  template <typename  OtherSystem,
-            typename OtherTraversal,
-            typename OtherDifference,
-            typename OtherStrideHolder>
-  _CCCL_HOST_DEVICE bool
-  equal(counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, OtherStrideHolder> const& y)
-    const
+  template <typename OtherSystem, typename OtherTraversal, typename OtherDifference, typename OtherStrideHolder>
+  _CCCL_HOST_DEVICE bool equal(
+    counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, OtherStrideHolder> const& y) const
   {
     if constexpr (::cuda::is_floating_point_v<Incrementable>)
     {
@@ -282,8 +279,8 @@ private:
   }
 
   template <typename OtherSystem, typename OtherTraversal, typename OtherDifference>
-  _CCCL_HOST_DEVICE difference_type
-  distance_to(counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, StrideHolder> const& y) const
+  _CCCL_HOST_DEVICE difference_type distance_to(
+    counting_iterator<Incrementable, OtherSystem, OtherTraversal, OtherDifference, StrideHolder> const& y) const
   {
     if constexpr (::cuda::std::is_integral<Incrementable>::value)
     {
@@ -309,35 +306,12 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
   return counting_iterator<Incrementable>(x);
 }
 
-namespace detail
-{
-// Holds a runtime stride
-template <typename T>
-struct runtime_stride_holder
-{
-  T value;
-};
-
-// Holds a compile-time stride
-// (we cannot use ::cuda::std::integral_constant, because it has a conversion operator to T that causes an ambiguity
-// with operator+(counting_iterator, counting_iterator::difference_type) in any expression `counting_iterator +
-// integral`.
-template <typename T, T Value>
-struct compile_time_stride_holder
-{
-  static constexpr T value = Value;
-};
-} // namespace detail
-
 //! Constructs a counting_iterator with a runtime stride
 template <typename Incrementable, typename Stride>
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
 {
-  return counting_iterator<Incrementable,
-                           use_default,
-                           random_access_traversal_tag,
-                           use_default,
-                           detail::runtime_stride_holder<Stride>>(x, {stride});
+  return counting_iterator<Incrementable, use_default, random_access_traversal_tag, use_default, runtime_value<Stride>>(
+    x, {stride});
 }
 
 //! Constructs a counting_iterator with a compile-time stride
@@ -348,7 +322,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
                            use_default,
                            random_access_traversal_tag,
                            use_default,
-                           detail::compile_time_stride_holder<decltype(Stride), Stride>>(x, {});
+                           compile_time_value<Stride>>(x, {});
 }
 
 //! \} // end fancyiterators

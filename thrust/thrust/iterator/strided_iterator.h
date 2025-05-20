@@ -13,7 +13,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/iterator_adaptor.h>
+#include <thrust/iterator/iterator_traits.h>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -44,10 +45,10 @@ struct compile_time_value
 namespace detail
 {
 template <typename T>
-_CCCL_INLINE_VAR constexpr bool is_compile_time_value = false;
+inline constexpr bool is_compile_time_value = false;
 
 template <auto Value>
-_CCCL_INLINE_VAR constexpr bool is_compile_time_value<compile_time_value<Value>> = true;
+inline constexpr bool is_compile_time_value<compile_time_value<Value>> = true;
 } // namespace detail
 
 //! A \p strided_iterator wraps another iterator and moves it by a specified stride each time it is incremented or
