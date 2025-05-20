@@ -133,6 +133,7 @@ template <typename T, typename ReductionOp, typename Config>
     if constexpr (is_power_of_two && valid_items.rank_dynamic() == 0)
     {
       result = _CUDA_DEVICE::warp_shuffle_down(input, 1u << K, mask, logical_size);
+      input  = reduction_op(input, result.data); // do not use shuffle predicate
     }
     else
     {
@@ -140,11 +141,10 @@ template <typename T, typename ReductionOp, typename Config>
       auto lane_dest = cub::detail::logical_lane_id<logical_size1>() + (1u << K);
       auto dest      = ::min(lane_dest, limit);
       result         = _CUDA_DEVICE::warp_shuffle_idx<logical_size1_round>(input, dest, mask);
-      result.pred    = lane_dest <= limit;
-    }
-    if (result.pred)
-    {
-      input = reduction_op(input, result.data);
+      if (lane_dest <= limit)
+      {
+        input = reduction_op(input, result.data);
+      }
     }
   }
   if constexpr (result_mode == all_lanes_result)
