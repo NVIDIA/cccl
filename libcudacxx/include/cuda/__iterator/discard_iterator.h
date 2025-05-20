@@ -73,7 +73,7 @@ private:
   {
     _CCCL_TEMPLATE(class _Tp)
     _CCCL_REQUIRES((!_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Tp>, __discard_proxy>) )
-    _LIBCUDACXX_HIDE_FROM_ABI constexpr __discard_proxy& operator=(_Tp&&) noexcept
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr const __discard_proxy& operator=(_Tp&&) const noexcept
     {
       return *this;
     }
@@ -213,10 +213,7 @@ public:
     return *this;
   }
 
-  //! @brief Compares two \c discard_iterator \p __lhs and \p __rhs for equality
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if both iterators store the same index
+  //! @brief Compares two \c discard_iterator for equality by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -224,10 +221,7 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two \c discard_iterator \p __lhs and \p __rhs for inequality
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if both iterators store different indexs
+  //! @brief Compares two \c discard_iterator for inequality by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -235,9 +229,7 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Compares a \c discard_iterator \p __lhs with \p default_sentinel for equality
-  //! @param __lhs The left \c discard_iterator
-  //! @return true if the index of \p __lhs is zero
+  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
   {
@@ -245,27 +237,21 @@ public:
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares a \c discard_iterator \p __rhs with \p default_sentinel for equality
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if the index of \p __rhs is zero
+  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is zero
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
     return __rhs.__index_ == 0;
   }
 
-  //! @brief Compares a \c discard_iterator \p __rhs with \p default_sentinel for inequality
-  //! @param __lhs The right \c discard_iterator
-  //! @return true if the index of \p __lhs is not zero
+  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const discard_iterator& __lhs, _CUDA_VSTD::default_sentinel_t) noexcept
   {
     return __lhs.__index_ != 0;
   }
 
-  //! @brief Compares a \c discard_iterator \p __rhs with \p default_sentinel for inequality
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if the index of \p __rhs is not zero
+  //! @brief Compares a \c discard_iterator with \p default_sentinel , true if the index of \p __lhs is not zero
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(_CUDA_VSTD::default_sentinel_t, const discard_iterator& __rhs) noexcept
   {
@@ -274,10 +260,7 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-  //! @brief Three-way-compares two \c discard_iterator \p __lhs and \p __rhs
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
-  //! @return the three-way ordering of the indexs stored by \p __lhs and \p __rhs
+  //! @brief Three-way-compares two \c discard_iterator by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr strong_ordering
   operator<=>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -285,40 +268,28 @@ public:
   }
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  //! @brief Compares two \c discard_iterator \p __lhs and \p __rhs for less than
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if the index stored by \p __lhs compares less than the one stored by \p __rhs
+  //! @brief Compares two \c discard_iterator for less then by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ < __rhs.__index_;
   }
 
-  //! @brief Compares two \c discard_iterator \p __lhs and \p __rhs for less equal
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if the index stored by \p __lhs compares less equal the one stored by \p __rhs
+  //! @brief Compares two \c discard_iterator for less equal by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ <= __rhs.__index_;
   }
 
-  //! @brief Compares two \c discard_iterator \p __lhs and \p __rhs for greater than
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if the index stored by \p __lhs compares less greater the one stored by \p __rhs
+  //! @brief Compares two \c discard_iterator for greater then by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
     return __lhs.__index_ > __rhs.__index_;
   }
 
-  //! @brief Compares two \c discard_iterator \p __lhs and \p __rhs for greater equal
-  //! @param __lhs The left \c discard_iterator
-  //! @param __rhs The right \c discard_iterator
-  //! @return true if the index stored by \p __lhs compares greater equal the one stored by \p __rhs
+  //! @brief Compares two \c discard_iterator for greater equal by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
