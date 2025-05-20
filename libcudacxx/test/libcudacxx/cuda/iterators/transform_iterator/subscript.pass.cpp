@@ -85,6 +85,9 @@ __host__ __device__ constexpr bool test()
   test<random_access_iterator<int*>>();
   test<int*>();
 
+#if TEST_COMPILER(MSVC)
+  if (!cuda::std::is_constant_evaluated()) // MSVC complains about a non constant expression in the assignment
+#endif // TEST_COMPILER(MSVC)
   { // Ensure that we can assign through projections
     using pair    = cuda::std::pair<int, int>;
     pair buffer[] = {{0, -1}, {1, -1}, {2, -1}, {3, -1}, {4, -1}, {5, -1}, {6, -1}, {7, -1}};
