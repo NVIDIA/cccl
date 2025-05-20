@@ -268,7 +268,7 @@ public:
   }
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 
-  //! @brief Compares two \c discard_iterator for less then by comparing their indices
+  //! @brief Compares two \c discard_iterator for less than by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
@@ -282,7 +282,7 @@ public:
     return __lhs.__index_ <= __rhs.__index_;
   }
 
-  //! @brief Compares two \c discard_iterator for greater then by comparing their indices
+  //! @brief Compares two \c discard_iterator for greater than by comparing their indices
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(const discard_iterator& __lhs, const discard_iterator& __rhs) noexcept
   {
