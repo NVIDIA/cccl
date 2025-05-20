@@ -330,7 +330,7 @@ public:
      *  \p other The other \p device_reference with which to swap.
      */
     _CCCL_HOST_DEVICE
-    void swap(device_reference &other);
+    void swap(device_reference other);
 
     /*! Prefix increment operator increments the object referenced by this
      *  \p device_reference.
@@ -954,16 +954,18 @@ public:
      */
     device_reference &operator^=(const T &rhs);
 #endif // end doxygen-only members
-
-  /*! swaps the value of one \p device_reference with another.
-   *  \p x The first \p device_reference of interest.
-   *  \p y The second \p device_reference of interest.
-   */
-  _CCCL_HOST_DEVICE friend void swap(device_reference& x, device_reference& y) noexcept(noexcept(x.swap(y)))
-  {
-    x.swap(y);
-  }
 }; // end device_reference
+
+/*! swaps the value of one \p device_reference with another.
+ *  \p x The first \p device_reference of interest.
+ *  \p y The second \p device_reference of interest.
+ */
+// note: this is not a hidden friend, because nvcc 12.0 will miscompile with: error: incomplete type is not allowed
+template <typename T>
+_CCCL_HOST_DEVICE void swap(device_reference<T> x, device_reference<T> y) noexcept(noexcept(x.swap(y)))
+{
+  x.swap(y);
+}
 
 // declare these methods for the purpose of Doxygenating them
 // they actually are defined for a base class
