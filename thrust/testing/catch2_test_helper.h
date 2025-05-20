@@ -11,6 +11,7 @@
 #include <catch2/matchers/catch_matchers.hpp>
 #include <catch2/matchers/catch_matchers_vector.hpp>
 
+// corresponds to DECLARE_VECTOR_UNITTEST
 using vector_list = cuda::std::__type_list<
   // host
   thrust::host_vector<signed char>,
@@ -29,3 +30,7 @@ using vector_list = cuda::std::__type_list<
   // universal
   thrust::universal_vector<int>,
   thrust::universal_host_pinned_vector<int>>;
+
+// corresponds to DECLARE_VARIABLE_UNITTEST
+using variable_list =
+  cuda::std::__type_list<signed char, unsigned char, short, unsigned short, int, unsigned int, float, double>;
