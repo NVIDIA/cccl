@@ -25,6 +25,7 @@
 #include <cuda/__cmath/pow2.h>
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/shfl_sync.h>
+#include <cuda/__warp/warp_match_all.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__type_traits/enable_if.h>
