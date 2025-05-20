@@ -10,6 +10,7 @@ function(cccl_c_parallel_add_test target_name_var source)
   target_link_libraries(${target_name} PRIVATE
     cccl.c.parallel
     CUDA::cudart
+    CUDA::nvrtc
     cccl.c2h.main
     cccl.compiler_interface_cpp20
   )
