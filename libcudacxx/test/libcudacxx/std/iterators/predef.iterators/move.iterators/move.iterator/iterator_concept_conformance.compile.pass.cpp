@@ -102,7 +102,9 @@ __host__ __device__ void test()
     static_assert(cuda::std::default_initializable<iterator>);
     static_assert(cuda::std::copyable<iterator>);
     static_assert(cuda::std::random_access_iterator<iterator>);
+#if !defined(TEST_COMPILER_MSVC)
     static_assert(!cuda::std::contiguous_iterator<iterator>);
+#endif // !TEST_COMPILER_MSVC
     static_assert(cuda::std::sentinel_for<iterator, iterator>);
     static_assert(cuda::std::sized_sentinel_for<iterator, iterator>);
     static_assert(!cuda::std::indirectly_movable<int*, iterator>);
@@ -121,7 +123,9 @@ __host__ __device__ void test()
     static_assert(cuda::std::default_initializable<iterator>);
     static_assert(cuda::std::copyable<iterator>);
     static_assert(cuda::std::random_access_iterator<iterator>);
+#if !defined(TEST_COMPILER_MSVC)
     static_assert(!cuda::std::contiguous_iterator<iterator>);
+#endif // !TEST_COMPILER_MSVC
     static_assert(cuda::std::sentinel_for<iterator, iterator>);
     static_assert(cuda::std::sized_sentinel_for<iterator, iterator>);
     static_assert(!cuda::std::indirectly_movable<int*, iterator>);
