@@ -2,10 +2,10 @@
 
 #include "catch2_test_helper.h"
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 C2H_TEST("TestDistance", "[distance]", vector_list)
 {
-  using Vector = typename c2h::get<0, TestType>;
-  ;
+  using Vector   = typename c2h::get<0, TestType>;
   using Iterator = typename Vector::iterator;
 
   Vector v(100);
@@ -19,3 +19,4 @@ C2H_TEST("TestDistance", "[distance]", vector_list)
   CHECK(thrust::distance(i, v.end()) == 50);
   CHECK(thrust::distance(i, i) == 0);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
