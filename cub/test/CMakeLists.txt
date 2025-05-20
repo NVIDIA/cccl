@@ -346,3 +346,4 @@ foreach (test_src IN LISTS test_srcs)
 endforeach() # Source file
 
 add_subdirectory(cmake)
+add_subdirectory(ptx-json)

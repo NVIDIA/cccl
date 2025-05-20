@@ -25,8 +25,6 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -53,24 +51,30 @@ public:
   {};
   struct persisting
   {
+#if _CCCL_HAS_CTK()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
     {
       return cudaAccessProperty::cudaAccessPropertyPersisting;
     }
+#endif // _CCCL_HAS_CTK()
   };
   struct streaming
   {
+#if _CCCL_HAS_CTK()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
     {
       return cudaAccessProperty::cudaAccessPropertyStreaming;
     }
+#endif // _CCCL_HAS_CTK()
   };
   struct normal
   {
+#if _CCCL_HAS_CTK()
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
     {
       return cudaAccessProperty::cudaAccessPropertyNormal;
     }
+#endif // _CCCL_HAS_CTK()
   };
 
   _CCCL_HIDE_FROM_ABI access_property() noexcept = default;
