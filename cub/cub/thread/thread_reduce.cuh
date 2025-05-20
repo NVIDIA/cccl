@@ -406,7 +406,8 @@ template <typename Input, typename ReductionOp, typename ValueT, typename AccumT
   }
   using PromT = _CUDA_VSTD::_If<enable_min_max_promotion_v<ReductionOp, ValueT>, int, AccumT>;
   // TODO: should be part of the tuning policy
-  if constexpr ((!is_cuda_operator_v<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>) || sizeof(ValueT) >= 8)
+  if constexpr ((!is_simd_enabled_cuda_operator<ReductionOp, ValueT> && !is_simd_operator_v<ReductionOp>)
+                || sizeof(ValueT) >= 8)
   {
     return ThreadReduceSequential<AccumT>(input, reduction_op);
   }
