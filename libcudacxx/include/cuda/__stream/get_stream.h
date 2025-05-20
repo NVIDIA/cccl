@@ -1,17 +1,16 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of CUDA Experimental in CUDA C++ Core Libraries,
-// under the Apache License v2.0 with LLVM Exceptions.
+// Part of the libcu++ Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__STREAM_GET_STREAM
-#define _CUDAX__STREAM_GET_STREAM
+#ifndef _CUDA___STREAM_GET_STREAM_H
+#define _CUDA___STREAM_GET_STREAM_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,22 +20,20 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/convertible_to.h>
-#include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__execution/env.h>
-#include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/stream_ref>
+#if _CCCL_HAS_CTK()
 
-#include <cuda/experimental/__stream/stream.cuh>
+#  include <cuda/__stream/stream_ref.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__concepts/convertible_to.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/__execution/env.h>
+#  include <cuda/std/__type_traits/is_convertible.h>
 
-#include <cuda_runtime_api.h>
+#  include <cuda/std/__cccl/prologue.h>
 
-#include <cuda/std/__cccl/prologue.h>
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-namespace cuda::experimental
-{
-
+class stream_ref;
 struct get_stream_t;
 
 template <class _Tp>
@@ -91,8 +88,10 @@ struct get_stream_t
 
 _CCCL_GLOBAL_CONSTANT auto get_stream = get_stream_t{};
 
-} // namespace cuda::experimental
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
-#include <cuda/std/__cccl/epilogue.h>
+#  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDAX__STREAM_GET_STREAM
+#endif // _CCCL_HAS_CTK()
+
+#endif // _CUDA___STREAM_GET_STREAM_H
