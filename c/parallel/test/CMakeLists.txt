@@ -7,6 +7,7 @@ function(cccl_c_parallel_add_test target_name_var source)
   add_executable(${target_name} "${source}")
   cccl_configure_target(${target_name} DIALECT 20)
 
+  set_target_properties(${target_name} PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
   target_link_libraries(${target_name} PRIVATE
     cccl.c.parallel
     CUDA::cudart_static

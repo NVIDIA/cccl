@@ -33,7 +33,7 @@ endif()
 add_subdirectory(src/jit_templates)
 
 find_package(CUDAToolkit REQUIRED)
-set(CMAKE_CUDA_RUNTIME_LIBRARY "STATIC")
+set_target_properties(cccl.c.parallel PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
 target_link_libraries(cccl.c.parallel PRIVATE
   CUDA::cudart_static
   CUDA::nvrtc
