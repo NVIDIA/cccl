@@ -100,7 +100,7 @@ public:
       , __status_(__status)
   {}
 
-  auto status() const noexcept -> __cuda_error_t
+  [[nodiscard]] auto status() const noexcept -> __cuda_error_t
   {
     return __status_;
   }
