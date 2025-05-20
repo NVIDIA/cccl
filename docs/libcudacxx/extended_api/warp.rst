@@ -8,6 +8,7 @@ Warp
    :maxdepth: 1
 
    cuda::device::warp_shuffle <warp/warp_shuffle>
+   cuda::device::warp_match_all <warp/warp_match_all>
 
 .. list-table::
    :widths: 25 45 30 30
