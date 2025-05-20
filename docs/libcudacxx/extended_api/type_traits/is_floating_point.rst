@@ -14,4 +14,4 @@ cuda::is_floating_point
 
 
 Tells whether a type is a floating point type, including extended floating point types.
-Users are allowed to specialize the variable template for their own types.
+Users are allowed to specialize the variable template for their own types, but CCCL does not provide support for any issues arising from that.
