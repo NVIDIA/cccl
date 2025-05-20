@@ -1,6 +1,7 @@
 /***********************************************************************************************************************
  * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
@@ -42,7 +43,6 @@
 
 #include <cuda/cmath> // ilog2
 #include <cuda/std/__type_traits/num_bits.h>
-#include <cuda/std/bit> // has_single_bit
 #include <cuda/std/complex> // __is_complex
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
@@ -94,31 +94,7 @@ template <typename T, typename ReductionOp, typename Config>
   _CCCL_UNREACHABLE();
 }
 
-// template <typename T, typename ReductionOp, typename Config>
-//[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_shuffle(T input, ReductionOp, Config config)
-//{
-//   using namespace _CUDA_VSTD;
-//   using cast_t = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
-//   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
-//   constexpr auto log2_size                                                     = ::cuda::ceil_ilog2(logical_size());
-//   const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
-//   auto input1     = static_cast<cast_t>(input);
-//   _CCCL_PRAGMA_UNROLL_FULL()
-//   for (int K = 0; K < log2_size; K++)
-//   {
-//     auto shuffle_mask = cub::detail::reduce_shuffle_bound_mask(K, logical_size, valid_items, is_segmented);
-//     input1            = cub::detail::shfl_down_op(ReductionOp{}, input1, 1u << K, shuffle_mask, mask);
-//   }
-//   if constexpr (result_mode == all_lanes_result)
-//   {
-//     constexpr auto logical_size1      = is_segmented ? warp_threads : logical_size;
-//     constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size1);
-//     input1 = _CUDA_DEVICE::warp_shuffle_idx<logical_size_round>(input1, config.first_pos, mask);
-//   }
-//   return input1;
-// }
-
-template <typename T, typename ReductionOp, typename Config>
+template <bool UsePtx = true, typename T, typename ReductionOp, typename Config>
 [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T warp_reduce_shuffle(T input, ReductionOp reduction_op, Config config)
 {
   auto [logical_mode, result_mode, logical_size, valid_items, is_segmented, _] = config;
@@ -126,21 +102,23 @@ template <typename T, typename ReductionOp, typename Config>
   constexpr auto log2_size                           = ::cuda::ceil_ilog2(logical_size());
   constexpr auto logical_size1                       = is_segmented ? warp_threads : logical_size;
   [[maybe_unused]] constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size1);
+  constexpr bool is_vector_type                      = _CUDA_VSTD::is_same_v<float2, T> && is_any_short2_v<T>;
   const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
-  using cast_t    = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
-  auto input1     = static_cast<cast_t>(input);
+
+  using cast_t = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
+  auto input1  = static_cast<cast_t>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
-    if constexpr (is_shfl_down_op_pred_v<ReductionOp, T> || is_any_short2_v<T> || _CUDA_VSTD::is_same_v<T, float2>)
-    {
-      auto shuffle_mask = cub::detail::reduce_shuffle_bound_mask(K, logical_size, valid_items, is_segmented);
-      input1            = cub::detail::shfl_down_op(ReductionOp{}, input1, 1u << K, shuffle_mask, mask);
-    }
-    else if constexpr (is_power_of_two && valid_items.rank_dynamic() == 0)
+    if constexpr (is_power_of_two && valid_items.rank_dynamic() == 0 && !is_vector_type)
     {
       auto result = _CUDA_DEVICE::warp_shuffle_down(input1, 1u << K, mask, logical_size);
       input1      = reduction_op(input1, result.data); // do not use shuffle predicate
+    }
+    else if constexpr (UsePtx && is_shfl_down_op_pred_v<ReductionOp, T>)
+    {
+      auto shuffle_mask = cub::detail::reduce_shuffle_bound_mask(K, logical_size, valid_items, is_segmented);
+      input1            = cub::detail::shfl_down_op_pred(ReductionOp{}, input1, 1u << K, shuffle_mask, mask);
     }
     else
     {
@@ -330,12 +308,8 @@ template <typename T, typename ReductionOp, typename Config>
     else if constexpr (is_any_half_v<T>) //  __half, __half2
     {
       NV_IF_TARGET(NV_PROVIDES_SM_53, (return warp_reduce_shuffle(input, reduction_op1, config);));
-    }
-    else if constexpr (is_any_bfloat16_v<T>) // __nv_bfloat16, __nv_bfloat162
-    {
-      NV_IF_TARGET(NV_PROVIDES_SM_90, (return warp_reduce_shuffle(input, reduction_op1, config);))
-    }
-    else if constexpr (is_any_short2_v<T> && __cccl_ptx_isa >= 800) // short2, ushort2
+    } // __nv_bfloat16, __nv_bfloat162, short2, ushort2
+    else if constexpr (is_any_bfloat16_v<T> || (is_any_short2_v<T> && __cccl_ptx_isa >= 800))
     {
       NV_IF_TARGET(NV_PROVIDES_SM_90, (return warp_reduce_shuffle(input, reduction_op1, config);))
     }
@@ -368,29 +342,7 @@ template <typename T, typename ReductionOp, typename Config>
   }
   //--------------------------------------------------------------------------------------------------------------------
   // else generic implementation
-  return warp_reduce_shuffle(input, reduction_op1, config);
-  //
-  // [Plus/Min/Max/Bitwise]: small integrals (int8, uint8, int16, uint16, int32, uint32)
-  // [Plus]:                 float, double
-  // else if constexpr (is_specialized_operator && (is_small_integer || is_floating_point_v<T>) )
-  //{
-  //  static_assert(!is_cuda_std_bitwise_v<ReductionOp, T> || is_unsigned_v<T>,
-  //                "Bitwise reduction operations are only supported for unsigned integral types.");
-  //  if constexpr (is_integral_v<T>)
-  //  {
-  //    NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_redux_op(input, reduction_op1, config);));
-  //  }
-  //  return warp_reduce_shuffle(input, reduction_op1, config);
-  //}
-  // else
-  //{
-  //  // [Plus/Min/Max]: large integrals (int64, uint64, int128, uint128)
-  //  if constexpr (is_specialized_operator && is_integral_v<T>)
-  //  {
-  //    NV_IF_TARGET(NV_PROVIDES_SM_80, (return warp_reduce_recursive(input, reduction_op1, config);));
-  //  }
-  //  return warp_reduce_shuffle(input, reduction_op1, config);
-  //}
+  return warp_reduce_shuffle<false>(input, reduction_op1, config);
 }
 
 template <bool IsHeadSegment,

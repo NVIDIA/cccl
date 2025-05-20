@@ -1,6 +1,7 @@
 /***********************************************************************************************************************
  * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
+ *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
  *     * Redistributions of source code must retain the above copyright notice, this list of conditions and the
@@ -87,7 +88,7 @@ inline constexpr bool is_shfl_down_op_pred_v = false;
       "mov.b32 r0, {%0, dummy};                                                                                \n\t\t" \
       "shfl.sync.down.b32 r0|p, r0, %1, %2, %3;                                                                \n\t\t" \
       "mov.b32 {h1, dummy}, r0;                                                                                \n\t\t" \
-      "" #PRED " " #PTX_OP " %0, h1, %0;                                                                       \n\t\t" \
+      "" #PTX_PRED " " #PTX_OP " %0, h1, %0;                                                                   \n\t\t" \
       "}"                                                                                                              \
       : "+h"(tmp)                                                                                                      \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
@@ -96,10 +97,10 @@ inline constexpr bool is_shfl_down_op_pred_v = false;
 
 #define _CUB_SHFL_DOWN_OP_16BIT(OPERATOR, TYPE, PTX_OP)    \
   _CUB_SHFL_DOWN_OP_16BIT_IMPL(OPERATOR, TYPE, , , PTX_OP) \
-  _CUB_SHFL_DOWN_OP_16BIT_IMPL(OPERATOR, TYPE, _pred, "@p", PTX_OP)
+  _CUB_SHFL_DOWN_OP_16BIT_IMPL(OPERATOR, TYPE, _pred, @p, PTX_OP)
 
 #define _CUB_SHFL_DOWN_OP_PRED_ONLY_16BIT(OPERATOR, TYPE, PTX_OP) \
-  _CUB_SHFL_DOWN_OP_16BIT_IMPL(OPERATOR, TYPE, _pred, "@p", PTX_OP)
+  _CUB_SHFL_DOWN_OP_16BIT_IMPL(OPERATOR, TYPE, _pred, @p, PTX_OP)
 
 //----------------------------------------------------------------------------------------------------------------------
 // 32-bit shfl_down_op
@@ -119,7 +120,7 @@ inline constexpr bool is_shfl_down_op_pred_v = false;
       ".reg .pred p;                                                                                           \n\t\t" \
       ".reg .b32  r0;                                                                                          \n\t\t" \
       "shfl.sync.down.b32 r0|p, %0, %1, %2, %3;                                                                \n\t\t" \
-      "" #PRED " " #PTX_OP " %0, r0, %0;                                                                       \n\t\t" \
+      "" #PTX_PRED " " #PTX_OP " %0, r0, %0;                                                                   \n\t\t" \
       "}"                                                                                                              \
       : "+r"(tmp)                                                                                                      \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
@@ -128,10 +129,10 @@ inline constexpr bool is_shfl_down_op_pred_v = false;
 
 #define _CUB_SHFL_DOWN_OP_32BIT(OPERATOR, TYPE, PTX_OP)    \
   _CUB_SHFL_DOWN_OP_32BIT_IMPL(OPERATOR, TYPE, , , PTX_OP) \
-  _CUB_SHFL_DOWN_OP_32BIT_IMPL(OPERATOR, TYPE, _pred, "@p", PTX_OP)
+  _CUB_SHFL_DOWN_OP_32BIT_IMPL(OPERATOR, TYPE, _pred, @p, PTX_OP)
 
 #define _CUB_SHFL_DOWN_OP_PRED_ONLY_32BIT(OPERATOR, TYPE, PTX_OP) \
-  _CUB_SHFL_DOWN_OP_32BIT_IMPL(OPERATOR, TYPE, _pred, "@p", PTX_OP)
+  _CUB_SHFL_DOWN_OP_32BIT_IMPL(OPERATOR, TYPE, _pred, @p, PTX_OP)
 
 //----------------------------------------------------------------------------------------------------------------------
 // 64-bit shfl_down_op
@@ -156,7 +157,7 @@ inline constexpr bool is_shfl_down_op_pred_v = false;
       "shfl.sync.down.b32 lo,   lo, %1, %2, %3;                                                                \n\t\t" \
       "shfl.sync.down.b32 hi|p, hi, %1, %2, %3;                                                                \n\t\t" \
       "mov.b64 r1, {lo, hi};                                                                                   \n\t\t" \
-      "" #PRED " " #PTX_OP " %0, r1, %0;                                                                       \n\t\t" \
+      "" #PTX_PRED " " #PTX_OP " %0, r1, %0;                                                                   \n\t\t" \
       "}"                                                                                                              \
       : "+l"(tmp)                                                                                                      \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
@@ -165,10 +166,10 @@ inline constexpr bool is_shfl_down_op_pred_v = false;
 
 #define _CUB_SHFL_DOWN_OP_64BIT(OPERATOR, TYPE, PTX_OP)    \
   _CUB_SHFL_DOWN_OP_64BIT_IMPL(OPERATOR, TYPE, , , PTX_OP) \
-  _CUB_SHFL_DOWN_OP_64BIT_IMPL(OPERATOR, TYPE, _pred, "@p", PTX_OP)
+  _CUB_SHFL_DOWN_OP_64BIT_IMPL(OPERATOR, TYPE, _pred, @p, PTX_OP)
 
 #define _CUB_SHFL_DOWN_OP_PRED_ONLY_64BIT(OPERATOR, TYPE, PTX_OP) \
-  _CUB_SHFL_DOWN_OP_64BIT_IMPL(OPERATOR, TYPE, _pred, "@p", PTX_OP)
+  _CUB_SHFL_DOWN_OP_64BIT_IMPL(OPERATOR, TYPE, _pred, @p, PTX_OP)
 
 //----------------------------------------------------------------------------------------------------------------------
 // cuda::std::plus Instantiations
