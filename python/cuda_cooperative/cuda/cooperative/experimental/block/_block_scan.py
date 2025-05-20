@@ -156,17 +156,13 @@ def scan(
     :type  algorithm: Literal["raking", "raking_memoize", "warp_scans"], optional
 
     :param methods: Optionally supplies a dictionary of methods to use for
-        user-defined types.  The default is *None*.  Not supported if
-        ``items_per_thread > 1``.
+        user-defined types.  The default is *None*.
     :type  methods: dict, optional
 
     :raises ValueError: If ``algorithm`` is not one of the supported algorithms
         (``"raking"``, ``"raking_memoize"``, or ``"warp_scans"``).
 
     :raises ValueError: If ``items_per_thread`` is less than 1.
-
-    :raises ValueError: If ``items_per_thread`` is greater than 1 and ``methods``
-        is not *None* (i.e. a user-defined type is being used).
 
     :raises ValueError: If ``mode`` is not one of the supported modes
         (``"exclusive"`` or ``"inclusive"``).
@@ -218,12 +214,6 @@ def scan(
         cpp_function_name = f"{cpp_func_prefix}Sum"
     else:
         cpp_function_name = f"{cpp_func_prefix}Scan"
-
-    # If items_per_thread > 1, we need to check that methods is not None.
-    if items_per_thread > 1 and methods is not None:
-        raise ValueError(
-            "user-defined types are not supported for items_per_thread > 1"
-        )
 
     # An initial value is not supported for inclusive and exclusive sums.
     if initial_value is not None and scan_op.is_sum:

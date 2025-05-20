@@ -331,19 +331,18 @@ def test_block_scan_user_defined_type(
     Tests block-wide scans for a user-defined (Complex) type. Uses an addition
     operator to sum real and imaginary parts respectively.
     """
+    if items_per_thread > 1 and initial_value is None:
+        pytest.skip("initial_value is required for items_per_thread > 1")
+
     num_threads = (
         threads_per_block
         if isinstance(threads_per_block, int)
         else reduce(mul, threads_per_block)
     )
+    num_elements = num_threads * items_per_thread
 
     if algorithm == "raking_memoize" and num_threads >= 512:
         pytest.skip("raking_memoize can exceed resources for >= 512 threads.")
-
-    # Numba balks at the `block_op(temp_storage, thread_in, thread_out)`
-    # call for items_per_thread > 1 when using user-defined types.
-    if items_per_thread > 1:
-        pytest.skip("items_per_thread>1 not supported for user defined type.")
 
     # Our custom operator (add complex).
     def op(result_ptr, lhs_ptr, rhs_ptr):
@@ -395,10 +394,12 @@ def test_block_scan_user_defined_type(
             thread_in = cuda.local.array(items_per_thread, dtype=complex_type)
             thread_out = cuda.local.array(items_per_thread, dtype=complex_type)
 
+            real_idx_base = tid * items_per_thread
+            complex_idx_base = num_elements + tid * items_per_thread
             for i in range(items_per_thread):
                 thread_in[i] = Complex(
-                    input_arr[tid * items_per_thread + i],
-                    input_arr[num_threads + tid * items_per_thread + i],
+                    input_arr[real_idx_base + i],
+                    input_arr[complex_idx_base + i],
                 )
 
             if items_per_thread == 1:
@@ -407,10 +408,8 @@ def test_block_scan_user_defined_type(
                 block_op(temp_storage, thread_in, thread_out, initial_value)
 
             for i in range(items_per_thread):
-                output_arr[tid * items_per_thread + i] = thread_out[i].real
-                output_arr[num_threads + tid * items_per_thread + i] = thread_out[
-                    i
-                ].imag
+                output_arr[real_idx_base + i] = thread_out[i].real
+                output_arr[complex_idx_base + i] = thread_out[i].imag
 
     else:
 
@@ -423,10 +422,12 @@ def test_block_scan_user_defined_type(
             thread_in = cuda.local.array(items_per_thread, dtype=complex_type)
             thread_out = cuda.local.array(items_per_thread, dtype=complex_type)
 
+            real_idx_base = tid * items_per_thread
+            complex_idx_base = num_elements + tid * items_per_thread
             for i in range(items_per_thread):
                 thread_in[i] = Complex(
-                    input_arr[tid * items_per_thread + i],
-                    input_arr[num_threads + tid * items_per_thread + i],
+                    input_arr[real_idx_base + i],
+                    input_arr[complex_idx_base + i],
                 )
 
             if items_per_thread == 1:
@@ -435,24 +436,28 @@ def test_block_scan_user_defined_type(
                 block_op(temp_storage, thread_in, thread_out)
 
             for i in range(items_per_thread):
-                output_arr[tid * items_per_thread + i] = thread_out[i].real
-                output_arr[num_threads + tid * items_per_thread + i] = thread_out[
-                    i
-                ].imag
+                output_arr[real_idx_base + i] = thread_out[i].real
+                output_arr[complex_idx_base + i] = thread_out[i].imag
 
-    h_input = random_int(2 * num_threads, "int32")
+    # Account for a Complex type containing two int32 values.
+    total_items = num_threads * items_per_thread * 2
+    h_input = random_int(total_items, "int32")
     d_input = cuda.to_device(h_input)
-    d_output = cuda.device_array(2 * num_threads, dtype=np.int32)
+    d_output = cuda.device_array(total_items, dtype=np.int32)
     kernel[1, threads_per_block](d_input, d_output)
     cuda.synchronize()
 
     h_output = d_output.copy_to_host()
-    real_vals = h_input[:num_threads]
-    imag_vals = h_input[num_threads:]
+    real_vals = h_input[:num_elements]
+    imag_vals = h_input[num_elements:]
 
     if mode == "inclusive":
         real_ref = np.cumsum(real_vals)
         imag_ref = np.cumsum(imag_vals)
+
+        if initial_value is not None:
+            real_ref = real_ref + initial_value.real
+            imag_ref = imag_ref + initial_value.imag
     else:
         real_ref = np.zeros_like(real_vals)
         imag_ref = np.zeros_like(imag_vals)
@@ -465,8 +470,8 @@ def test_block_scan_user_defined_type(
             real_ref[0] = h_output[0]
             imag_ref[0] = h_output[num_threads]
 
-    np.testing.assert_array_equal(h_output[:num_threads], real_ref)
-    np.testing.assert_array_equal(h_output[num_threads:], imag_ref)
+    np.testing.assert_array_equal(h_output[:num_elements], real_ref)
+    np.testing.assert_array_equal(h_output[num_elements:], imag_ref)
 
     sig = (numba.int32[::1], numba.int32[::1])
     sass = kernel.inspect_sass(sig)
@@ -582,7 +587,6 @@ def test_block_scan_invariants(mode):
          a block prefix callback.
       3) When items_per_thread > 1 and no prefix callback is supplied, an
          initial value is required.
-      4) User-defined types are not supported for items_per_thread > 1.
     """
     if mode == "inclusive":
         scan_func = cudax.block.inclusive_scan
@@ -635,22 +639,6 @@ def test_block_scan_invariants(mode):
         ),
     ):
         scan_func(complex_type, 128, scan_op="+", items_per_thread=2)
-
-    # 4) User-defined types are not supported for items_per_thread > 1.
-    with pytest.raises(
-        ValueError,
-        match="user-defined types are not supported for items_per_thread > 1",
-    ):
-        scan_func(
-            complex_type,
-            128,
-            scan_op="+",
-            items_per_thread=2,
-            methods={
-                "construct": Complex.construct,
-                "assign": Complex.assign,
-            },
-        )
 
 
 @pytest.mark.parametrize("T", [types.int32])
