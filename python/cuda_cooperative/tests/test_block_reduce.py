@@ -8,17 +8,14 @@ from operator import mul
 import numba
 import numpy as np
 import pytest
-from helpers import NUMBA_TYPES_TO_NP, random_int, row_major_tid
-from numba import cuda, types
-from numba.core import cgutils
-from numba.core.extending import (
-    lower_builtin,
-    make_attribute_wrapper,
-    models,
-    register_model,
-    type_callable,
-    typeof_impl,
+from helpers import (
+    NUMBA_TYPES_TO_NP,
+    Complex,
+    complex_type,
+    random_int,
+    row_major_tid,
 )
+from numba import cuda, types
 from pynvjitlink import patch
 
 import cuda.cooperative.experimental as cudax
@@ -27,62 +24,6 @@ numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
 patch.patch_numba_linker(lto=True)
-
-
-class Complex:
-    def __init__(self, real, imag):
-        self.real = real
-        self.imag = imag
-
-    def construct(this):
-        default_value = numba.int32(0)
-        this[0] = Complex(default_value, default_value)
-
-    def assign(this, that):
-        this[0] = Complex(that[0].real, that[0].imag)
-
-
-class ComplexType(types.Type):
-    def __init__(self):
-        super().__init__(name="Complex")
-
-
-complex_type = ComplexType()
-
-
-@typeof_impl.register(Complex)
-def typeof_complex(val, c):
-    return complex_type
-
-
-@type_callable(Complex)
-def type__complex(context):
-    def typer(real, imag):
-        if isinstance(real, types.Integer) and isinstance(imag, types.Integer):
-            return complex_type
-
-    return typer
-
-
-@register_model(ComplexType)
-class ComplexModel(models.StructModel):
-    def __init__(self, dmm, fe_type):
-        members = [("real", types.int32), ("imag", types.int32)]
-        models.StructModel.__init__(self, dmm, fe_type, members)
-
-
-make_attribute_wrapper(ComplexType, "real", "real")
-make_attribute_wrapper(ComplexType, "imag", "imag")
-
-
-@lower_builtin(Complex, types.Integer, types.Integer)
-def impl_complex(context, builder, sig, args):
-    typ = sig.return_type
-    real, imag = args
-    state = cgutils.create_struct_proxy(typ)(context, builder)
-    state.real = real
-    state.imag = imag
-    return state._getvalue()
 
 
 @pytest.mark.parametrize(
@@ -694,3 +635,24 @@ def test_block_sum_invalid_algorithm():
             threads_per_block=128,
             algorithm="invalid_algorithm",
         )
+
+
+def test_sum_alignment():
+    sum1 = cudax.block.sum(
+        dtype=types.int32,
+        threads_per_block=256,
+    )
+
+    sum2 = cudax.block.sum(
+        dtype=types.float64,
+        threads_per_block=256,
+    )
+
+    sum3 = cudax.block.sum(
+        dtype=types.int8,
+        threads_per_block=256,
+    )
+
+    assert sum1.temp_storage_alignment == 4
+    assert sum2.temp_storage_alignment == 8
+    assert sum3.temp_storage_alignment == 1

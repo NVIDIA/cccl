@@ -39,6 +39,8 @@ struct __half;
 struct __nv_bfloat16;
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.24.7. Data Movement and Conversion Instructions: cp.reduce.async.bulk
@@ -52,5 +54,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 #endif // _LIBCUDACXX_HAS_NVBF16()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_PTX_CP_REDUCE_ASYNC_BULK_H_

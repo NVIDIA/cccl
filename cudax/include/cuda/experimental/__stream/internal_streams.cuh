@@ -12,6 +12,7 @@
 #define _CUDAX__STREAM_INTERNAL_STREAMS
 
 #include <cuda/std/detail/__config>
+
 #include <cuda_runtime_api.h>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -24,6 +25,8 @@
 
 #include <cuda/experimental/__stream/stream.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 //! @brief internal stream used for memory allocations, no real blocking work
@@ -35,4 +38,7 @@ inline ::cuda::stream_ref __cccl_allocation_stream()
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__STREAM_INTERNAL_STREAMS

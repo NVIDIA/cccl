@@ -16,7 +16,7 @@ from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
     DependentArray,
-    DependentOperator,
+    DependentPythonOperator,
     DependentReference,
     Invocable,
     Pointer,
@@ -108,7 +108,7 @@ def _reduce(
                 [
                     Pointer(numba.uint8),
                     DependentReference(Dependency("T")),
-                    DependentOperator(
+                    DependentPythonOperator(
                         Dependency("T"),
                         [Dependency("T"), Dependency("T")],
                         Dependency("Op"),
@@ -119,7 +119,7 @@ def _reduce(
                 [
                     Pointer(numba.uint8),
                     DependentReference(Dependency("T")),
-                    DependentOperator(
+                    DependentPythonOperator(
                         Dependency("T"),
                         [Dependency("T"), Dependency("T")],
                         Dependency("Op"),
@@ -139,7 +139,7 @@ def _reduce(
                 [
                     Pointer(numba.uint8),
                     DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
-                    DependentOperator(
+                    DependentPythonOperator(
                         Dependency("T"),
                         [Dependency("T"), Dependency("T")],
                         Dependency("Op"),
@@ -164,7 +164,8 @@ def _reduce(
             make_binary_tempfile(ltoir, ".ltoir")
             for ltoir in specialization.get_lto_ir()
         ],
-        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
     )
 

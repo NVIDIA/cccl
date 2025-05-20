@@ -8,7 +8,7 @@ from cuda.cooperative.experimental._common import make_binary_tempfile
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
-    DependentOperator,
+    DependentPythonOperator,
     DependentReference,
     Invocable,
     Pointer,
@@ -64,7 +64,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
             [
                 Pointer(numba.uint8),
                 DependentReference(Dependency("T")),
-                DependentOperator(
+                DependentPythonOperator(
                     Dependency("T"),
                     [Dependency("T"), Dependency("T")],
                     Dependency("Op"),
@@ -83,7 +83,8 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
             make_binary_tempfile(ltoir, ".ltoir")
             for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
         ],
-        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
     )
 
@@ -146,6 +147,7 @@ def sum(dtype, threads_in_warp=32):
             make_binary_tempfile(ltoir, ".ltoir")
             for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
         ],
-        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
     )

@@ -32,6 +32,8 @@
 #    include <cuda/std/__atomic/scopes.h>
 #    include <cuda/std/cstdint>
 
+#    include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_before_SM_90__();
@@ -60,6 +62,8 @@ barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __tran
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
 #endif // _CCCL_CUDA_COMPILER

@@ -11,9 +11,10 @@
 
 #include <algorithm>
 
+#include <test_util.h>
+
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
-#include <test_util.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -64,7 +65,8 @@ C2H_TEST("DeviceMerge::MergeKeys key types", "[merge][device]", types)
   test_keys<key_t, offset_t>();
 }
 
-C2H_TEST("DeviceMerge::MergeKeys works for large number of items", "[merge][device]")
+C2H_TEST("DeviceMerge::MergeKeys works for large number of items",
+         "[merge][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
 try
 {
   using key_t    = char;
@@ -252,7 +254,8 @@ C2H_TEST("DeviceMerge::MergePairs input sizes", "[merge][device]")
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceMerge::MergePairs really large input", "[merge][device]")
+C2H_TEST("DeviceMerge::MergePairs really large input",
+         "[merge][device][skip-cs-racecheck][skip-cs-initcheck][skip-cs-synccheck]")
 try
 {
   using key_t     = char;

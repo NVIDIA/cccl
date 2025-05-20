@@ -327,7 +327,8 @@ C2H_TEST("DeviceSelect::If works with a different output type", "[device][select
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::int64_t;
@@ -372,7 +373,8 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
 }
 
-C2H_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of output items",
+         "[device][select_if][skip-cs-initcheck][skip-cs-racecheck][skip-cs-synccheck]")
 try
 {
   using type     = std::uint8_t;

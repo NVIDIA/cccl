@@ -36,6 +36,8 @@
 #    include <cuda/std/__type_traits/is_trivially_copyable.h>
 #    include <cuda/std/cstdint>
 
+#    include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
@@ -83,6 +85,8 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
+
+#    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
 #endif // _CCCL_CUDA_COMPILER

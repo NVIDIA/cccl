@@ -10,7 +10,7 @@ from cuda.cooperative.experimental._types import (
     Constant,
     Dependency,
     DependentArray,
-    DependentOperator,
+    DependentPythonOperator,
     Invocable,
     Pointer,
     TemplateParameter,
@@ -70,7 +70,7 @@ def merge_sort_keys(
             [
                 Pointer(numba.uint8),
                 DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
-                DependentOperator(
+                DependentPythonOperator(
                     Constant(numba.int8),
                     [Dependency("KeyT"), Dependency("KeyT")],
                     Dependency("Op"),
@@ -92,6 +92,7 @@ def merge_sort_keys(
             make_binary_tempfile(ltoir, ".ltoir")
             for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
         ],
-        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        temp_storage_bytes=specialization.temp_storage_bytes,
+        temp_storage_alignment=specialization.temp_storage_alignment,
         algorithm=specialization,
     )

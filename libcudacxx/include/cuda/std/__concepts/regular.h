@@ -24,6 +24,8 @@
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/semiregular.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -46,5 +48,7 @@ _CCCL_CONCEPT regular = _CCCL_FRAGMENT(__regular_, _Tp);
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___CONCEPTS_REGULAR_H

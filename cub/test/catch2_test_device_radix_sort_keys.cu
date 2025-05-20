@@ -508,7 +508,9 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check",
+         "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint32_t;
@@ -523,7 +525,9 @@ C2H_TEST("DeviceRadixSort::SortKeys: 32-bit overflow check", "[large][keys][radi
   do_large_offset_test<key_t, num_items_t>(num_items);
 }
 
-C2H_TEST("DeviceRadixSort::SortKeys: Large Offsets", "[large][keys][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceRadixSort::SortKeys: Large Offsets",
+         "[large][keys][radix][sort][device][skip-cs-synccheck][skip-cs-initcheck][skip-cs-racecheck]",
+         single_key_type)
 {
   using key_t       = c2h::get<0, TestType>;
   using num_items_t = std::uint64_t;

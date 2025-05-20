@@ -91,6 +91,20 @@ struct Always_false
   }
 };
 
+struct Dest
+{
+  struct tag
+  {};
+  __host__ __device__ constexpr Dest(tag) {}
+};
+struct ConvertibleToDest
+{
+  __host__ __device__ constexpr operator Dest() const noexcept
+  {
+    return Dest{Dest::tag{}};
+  }
+};
+
 struct WithSpecialMoveAssignment
 {
   WithSpecialMoveAssignment()                                            = default;
@@ -161,6 +175,15 @@ __host__ __device__ constexpr bool test()
     assert(*res == 2);
   }
 
+#if !TEST_COMPILER(NVHPC, <, 25, 5)
+  // ensure that we can construct despite only through conversion operator
+  {
+    Dest i{Dest::tag{}};
+    const ConvertibleToDest conv{};
+    Dest* res = cuda::std::construct_at(&i, conv);
+    assert(res == &i);
+  }
+#endif // !TEST_COMPILER(NVHPC, <, 25, 5)
 #if 0 // we do not support std::allocator
     {
         cuda::std::allocator<Counted> a;

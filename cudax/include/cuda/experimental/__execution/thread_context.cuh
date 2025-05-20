@@ -1,0 +1,71 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of CUDA Experimental in CUDA C++ Core Libraries,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef __CUDAX_ASYNC_DETAIL_THREAD_CONTEXT
+#define __CUDAX_ASYNC_DETAIL_THREAD_CONTEXT
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_HOST_COMPILATION()
+
+#  include <cuda/experimental/__execution/run_loop.cuh>
+
+#  include <thread>
+
+#  include <cuda/experimental/__execution/prologue.cuh>
+
+namespace cuda::experimental::execution
+{
+struct _CCCL_TYPE_VISIBILITY_DEFAULT thread_context
+{
+  thread_context() noexcept
+      : __thrd_{[this] {
+        __loop_.run();
+      }}
+  {}
+
+  ~thread_context() noexcept
+  {
+    join();
+  }
+
+  void join() noexcept
+  {
+    if (__thrd_.joinable())
+    {
+      __loop_.finish();
+      __thrd_.join();
+    }
+  }
+
+  auto get_scheduler()
+  {
+    return __loop_.get_scheduler();
+  }
+
+private:
+  run_loop __loop_;
+  ::std::thread __thrd_;
+};
+} // namespace cuda::experimental::execution
+
+#  include <cuda/experimental/__execution/epilogue.cuh>
+
+#endif // _CCCL_HOST_COMPILATION()
+
+#endif

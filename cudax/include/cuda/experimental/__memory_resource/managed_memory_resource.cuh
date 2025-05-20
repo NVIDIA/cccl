@@ -35,6 +35,8 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
 namespace cuda::experimental
@@ -176,5 +178,7 @@ static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, device_acc
 static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, host_accessible>, "");
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDAX__MEMORY_RESOURCE_MANAGED_MEMORY_RESOURCE_CUH

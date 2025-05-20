@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,15 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/stream_ref>
 
+#include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
+
+#include <cuda_runtime_api.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -53,14 +56,16 @@ _CCCL_CONCEPT __has_query_get_stream = _CCCL_REQUIRES_EXPR((_Env), const _Env& _
 //! @brief `get_stream` is a customization point object that queries a type `T` for an associated stream
 struct get_stream_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__convertible_to_stream_ref<_Tp>)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
     noexcept(noexcept(static_cast<::cuda::stream_ref>(__t)))
   {
     return static_cast<::cuda::stream_ref>(__t);
-  } // namespace __get_stream
+  }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(__has_member_get_stream<_Tp>)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
@@ -69,6 +74,7 @@ struct get_stream_t
     return __t.get_stream();
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES(__has_query_get_stream<_Env>)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
@@ -76,10 +82,17 @@ struct get_stream_t
     static_assert(noexcept(__env.query(*this)), "");
     return __env.query(*this);
   }
+
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI static constexpr auto query(execution::forwarding_query_t) noexcept -> bool
+  {
+    return true;
+  }
 };
 
 _CCCL_GLOBAL_CONSTANT auto get_stream = get_stream_t{};
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__STREAM_GET_STREAM

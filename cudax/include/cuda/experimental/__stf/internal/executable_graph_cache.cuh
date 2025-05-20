@@ -42,14 +42,8 @@ namespace reserved
 // the returned value indicates whether the update was successful or not
 inline bool try_updating_executable_graph(cudaGraphExec_t exec_graph, cudaGraph_t graph)
 {
-#if _CCCL_CUDACC_BELOW(12)
-  cudaGraphNode_t errorNode;
-  cudaGraphExecUpdateResult updateResult;
-  cudaGraphExecUpdate(exec_graph, graph, &errorNode, &updateResult);
-#else
   cudaGraphExecUpdateResultInfo resultInfo;
   cudaGraphExecUpdate(exec_graph, graph, &resultInfo);
-#endif
 
   // Be sure to "erase" the last error
   cudaError_t res = cudaGetLastError();
@@ -82,6 +76,15 @@ public:
   size_t update_cnt      = 0;
   size_t nnodes          = 0;
   size_t nedges          = 0;
+
+  executable_graph_cache_stat& operator+=(const executable_graph_cache_stat& other)
+  {
+    instantiate_cnt += other.instantiate_cnt;
+    update_cnt += other.update_cnt;
+    nnodes += other.nnodes;
+    nedges += other.nedges;
+    return *this;
+  }
 };
 
 class executable_graph_cache

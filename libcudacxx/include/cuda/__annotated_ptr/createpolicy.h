@@ -24,6 +24,8 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 enum class __l2_evict_t : uint32_t
@@ -201,5 +203,7 @@ __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float 
 #endif // _CCCL_HAS_CUDA_COMPILER()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___ANNOTATED_PTR_CREATEPOLICY

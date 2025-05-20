@@ -24,6 +24,8 @@
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__type_traits/is_object.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 _CCCL_TEMPLATE(class _Tp)
@@ -69,5 +71,7 @@ _CCCL_GLOBAL_CONSTANT empty_view<_Tp> empty{};
 #endif // !_CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_VIEWS
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___RANGES_EMPTY_VIEW_H

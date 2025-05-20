@@ -8,42 +8,60 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda_runtime.h>
-
 #include <algorithm>
+#include <optional> // std::optional
+#include <string>
 #include <vector>
 
+#include <cuda_runtime.h>
+
+#include "algorithm_execution.h"
+#include "build_result_caching.h"
 #include "test_util.h"
 #include <cccl/c/unique_by_key.h>
 
 using key_types = c2h::type_list<uint8_t, int16_t, uint32_t, int64_t>;
 using item_t    = int32_t;
 
-void unique_by_key(
-  cccl_iterator_t input_keys,
-  cccl_iterator_t input_values,
-  cccl_iterator_t output_keys,
-  cccl_iterator_t output_values,
-  cccl_iterator_t output_num_selected,
-  cccl_op_t op,
-  unsigned long long num_items)
+using BuildResultT = cccl_device_unique_by_key_build_result_t;
+
+struct unique_by_key_cleanup
 {
-  cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, 0);
+  CUresult operator()(BuildResultT* build_data) const noexcept
+  {
+    return cccl_device_unique_by_key_cleanup(build_data);
+  }
+};
 
-  const int cc_major = deviceProp.major;
-  const int cc_minor = deviceProp.minor;
+using unique_by_key_deleter       = BuildResultDeleter<BuildResultT, unique_by_key_cleanup>;
+using unique_by_key_build_cache_t = build_cache_t<std::string, result_wrapper_t<BuildResultT, unique_by_key_deleter>>;
 
-  const char* cub_path        = TEST_CUB_PATH;
-  const char* thrust_path     = TEST_THRUST_PATH;
-  const char* libcudacxx_path = TEST_LIBCUDACXX_PATH;
-  const char* ctk_path        = TEST_CTK_PATH;
+template <typename Tag>
+auto& get_cache()
+{
+  return fixture<unique_by_key_build_cache_t, Tag>::get_or_create().get_value();
+}
 
-  cccl_device_unique_by_key_build_result_t build;
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_unique_by_key_build(
-      &build,
+struct unique_by_key_build
+{
+  CUresult operator()(
+    BuildResultT* build_ptr,
+    cccl_iterator_t input_keys,
+    cccl_iterator_t input_values,
+    cccl_iterator_t output_keys,
+    cccl_iterator_t output_values,
+    cccl_iterator_t output_num_selected,
+    cccl_op_t op,
+    uint64_t,
+    int cc_major,
+    int cc_minor,
+    const char* cub_path,
+    const char* thrust_path,
+    const char* libcudacxx_path,
+    const char* ctk_path) const noexcept
+  {
+    return cccl_device_unique_by_key_build(
+      build_ptr,
       input_keys,
       input_values,
       output_keys,
@@ -55,47 +73,40 @@ void unique_by_key(
       cub_path,
       thrust_path,
       libcudacxx_path,
-      ctk_path));
+      ctk_path);
+  }
+};
 
-  const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-  REQUIRE(sass.find("LDL") == std::string::npos);
-  REQUIRE(sass.find("STL") == std::string::npos);
+struct unique_by_key_run
+{
+  template <typename... Ts>
+  CUresult operator()(Ts... args) const noexcept
+  {
+    return cccl_device_unique_by_key(args...);
+  }
+};
 
-  size_t temp_storage_bytes = 0;
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_unique_by_key(
-      build,
-      nullptr,
-      &temp_storage_bytes,
-      input_keys,
-      input_values,
-      output_keys,
-      output_values,
-      output_num_selected,
-      op,
-      num_items,
-      0));
-
-  pointer_t<uint8_t> temp_storage(temp_storage_bytes);
-
-  REQUIRE(
-    CUDA_SUCCESS
-    == cccl_device_unique_by_key(
-      build,
-      temp_storage.ptr,
-      &temp_storage_bytes,
-      input_keys,
-      input_values,
-      output_keys,
-      output_values,
-      output_num_selected,
-      op,
-      num_items,
-      0));
-  REQUIRE(CUDA_SUCCESS == cccl_device_unique_by_key_cleanup(&build));
+template <typename BuildCache = unique_by_key_build_cache_t, typename KeyT = std::string>
+void unique_by_key(
+  cccl_iterator_t input_keys,
+  cccl_iterator_t input_values,
+  cccl_iterator_t output_keys,
+  cccl_iterator_t output_values,
+  cccl_iterator_t output_num_selected,
+  cccl_op_t op,
+  uint64_t num_items,
+  std::optional<BuildCache>& cache,
+  const std::optional<KeyT>& lookup_key)
+{
+  AlgorithmExecute<BuildResultT, unique_by_key_build, unique_by_key_cleanup, unique_by_key_run, BuildCache, KeyT>(
+    cache, lookup_key, input_keys, input_values, output_keys, output_values, output_num_selected, op, num_items);
 }
 
+// =============
+//  Test section
+// =============
+
+struct UniqueByKey_AllPointerInputs_Fixture_Tag;
 C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[unique_by_key]", key_types)
 {
   using key_t = c2h::get<0, TestType>;
@@ -108,7 +119,24 @@ C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[unique_by_key]"
   pointer_t<key_t> input_keys_it(input_keys);
   pointer_t<int> output_num_selected_it(1);
 
-  unique_by_key(input_keys_it, input_keys_it, input_keys_it, input_keys_it, output_num_selected_it, op, num_items);
+  auto& input_items_it  = input_keys_it;
+  auto& output_keys_it  = input_keys_it;
+  auto& output_items_it = input_keys_it;
+
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, key_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_items_it,
+    output_keys_it,
+    output_items_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
 
   REQUIRE(0 == std::vector<int>(output_num_selected_it)[0]);
 }
@@ -129,7 +157,20 @@ C2H_TEST("DeviceSelect::UniqueByKey works", "[unique_by_key]", key_types)
   pointer_t<item_t> output_values_it(num_items);
   pointer_t<int> output_num_selected_it(1);
 
-  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
 
   std::vector<std::pair<key_t, item_t>> input_pairs;
   for (size_t i = 0; i < input_keys.size(); ++i)
@@ -173,7 +214,20 @@ C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique
   pointer_t<item_t> output_values_it(num_items);
   pointer_t<int> output_num_selected_it(1);
 
-  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
 
   REQUIRE(num_items == std::vector<int>(output_num_selected_it)[0]);
   REQUIRE(input_keys == std::vector<key_t>(output_keys_it));
@@ -196,7 +250,20 @@ C2H_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_
   pointer_t<item_t> output_values_it(1);
   pointer_t<int> output_num_selected_it(1);
 
-  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_t, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
 
   REQUIRE(1 == std::vector<int>(output_num_selected_it)[0]);
   REQUIRE(input_keys[0] == std::vector<key_t>(output_keys_it)[0]);
@@ -242,7 +309,20 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_u
   pointer_t<item_t> output_values_it(num_items);
   pointer_t<int> output_num_selected_it(1);
 
-  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+  auto& build_cache = get_cache<UniqueByKey_AllPointerInputs_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<key_pair, item_t, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
 
   std::vector<std::pair<key_pair, item_t>> input_pairs;
   for (size_t i = 0; i < input_keys.size(); ++i)
@@ -271,6 +351,7 @@ C2H_TEST("DeviceSelect::UniqueByKey works with custom types", "[device][select_u
   REQUIRE(input_pairs == output_pairs);
 }
 
+struct UniqueByKey_Iterators_Fixture_Tag;
 C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[merge_sort]")
 {
   using T = int;
@@ -305,7 +386,20 @@ C2H_TEST("DeviceMergeSort::SortPairs works with input and output iterators", "[m
   pointer_t<int> output_num_selected_ptr(1);
   output_num_selected_it.state.data = output_num_selected_ptr.ptr;
 
-  unique_by_key(input_keys_it, input_values_it, output_keys_it, output_values_it, output_num_selected_it, op, num_items);
+  auto& build_cache = get_cache<UniqueByKey_Iterators_Fixture_Tag>();
+  // key: (input_type, output_type, num_selected_type)
+  const auto& test_key = make_key<T, T, int>();
+
+  unique_by_key(
+    input_keys_it,
+    input_values_it,
+    output_keys_it,
+    output_values_it,
+    output_num_selected_it,
+    op,
+    num_items,
+    build_cache,
+    test_key);
 
   std::vector<std::pair<T, item_t>> input_pairs;
   for (size_t i = 0; i < input_keys.size(); ++i)

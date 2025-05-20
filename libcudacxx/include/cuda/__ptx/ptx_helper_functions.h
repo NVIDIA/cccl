@@ -29,6 +29,8 @@
 
 #if _CCCL_HAS_CUDA_COMPILER()
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 /*************************************************************
@@ -141,6 +143,8 @@ inline _CCCL_DEVICE _B8 __u32_as_b8(uint32_t __u32)
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_HAS_CUDA_COMPILER()
 

@@ -66,6 +66,8 @@
 #  include <utility>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __invalid_pair_constraints
@@ -639,10 +641,10 @@ swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(noexcept(__x
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr pair<unwrap_ref_decay_t<_T1>, unwrap_ref_decay_t<_T2>>
 make_pair(_T1&& __t1, _T2&& __t2)
 {
-  return pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>(
+  return pair<unwrap_ref_decay_t<_T1>, unwrap_ref_decay_t<_T2>>(
     _CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2));
 }
 
@@ -800,5 +802,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _T1 const&& get(pair<_T2, _T1> const&& __p) 
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___UTILITY_PAIR_H

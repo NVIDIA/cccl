@@ -23,12 +23,12 @@ CompileFlags:
 ---
 
 If:
-  PathMatch: ".*cudax/include/cuda/experimental/__async/sender/epilogue[.]cuh"
+  PathMatch: ".*cudax/include/cuda/experimental/__execution/epilogue[.]cuh"
 
 CompileFlags:
   Add:
   - -include
-  - cuda/experimental/__async/sender/prologue.cuh
+  - cuda/experimental/__execution/prologue.cuh
   - -Wno-unknown-pragmas
 
 ---

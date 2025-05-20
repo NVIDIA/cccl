@@ -27,6 +27,8 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 #if !_CCCL_COMPILER(NVRTC)
@@ -64,5 +66,7 @@ struct __ensure_current_device
 #endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__STD__CUDA_ENSURE_CURRENT_DEVICE_H
