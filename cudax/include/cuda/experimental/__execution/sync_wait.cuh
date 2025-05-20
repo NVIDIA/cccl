@@ -149,11 +149,11 @@ private:
     template <class _Error>
     _CCCL_HOST_API void operator()(_Error&& __err) const
     {
-      if constexpr (_CUDA_VSTD::_IsSame<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::exception_ptr>::value)
+      if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::exception_ptr>)
       {
         ::std::rethrow_exception(static_cast<_Error&&>(__err));
       }
-      else if constexpr (_CUDA_VSTD::_IsSame<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::error_code>::value)
+      else if constexpr (_CUDA_VSTD::is_same_v<_CUDA_VSTD::remove_cvref_t<_Error>, ::std::error_code>)
       {
         throw ::std::system_error(static_cast<_Error&&>(__err));
       }
