@@ -5,7 +5,7 @@
 #include <thrust/universal_vector.h>
 
 #include "unittest/testframework.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 // TODO expand this with other iterator types (forward, bidirectional, etc.)
 
