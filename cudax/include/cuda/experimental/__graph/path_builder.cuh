@@ -32,9 +32,7 @@
 #  pragma system_header
 #endif // no system header
 
-namespace cuda
-{
-namespace experimental
+namespace cuda::experimental
 {
 
 //! \brief A builder for a path in a CUDA graph.
@@ -203,7 +201,6 @@ template <typename _FirstNode, typename... _Nodes>
   return __pb;
 }
 
-} // namespace experimental
-} // namespace cuda
+} // namespace cuda::experimental
 
 #endif // _CUDAX__GRAPH_PATH_BUILDER
