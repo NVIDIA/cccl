@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__memory_resource/get_memory_resource.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__stream/get_stream.h>
 #include <cuda/std/__execution/env.h>
@@ -32,7 +33,6 @@
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
-#include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
@@ -141,7 +141,7 @@ public:
   //! properties we need
   template <class _Env>
   static constexpr bool __is_compatible_env =
-    _CUDA_STD_EXEC::__queryable_with<_Env, get_memory_resource_t> //
+    _CUDA_STD_EXEC::__queryable_with<_Env, ::cuda::mr::get_memory_resource_t> //
     && _CUDA_STD_EXEC::__queryable_with<_Env, ::cuda::get_stream_t>
     && _CUDA_STD_EXEC::__queryable_with<_Env, execution::get_execution_policy_t>;
 
@@ -150,12 +150,12 @@ public:
   _CCCL_TEMPLATE(class _Env)
   _CCCL_REQUIRES((!_CCCL_TRAIT(_CUDA_VSTD::is_same, _Env, env_t)) _CCCL_AND __is_compatible_env<_Env>)
   _CCCL_HIDE_FROM_ABI env_t(const _Env& __env) noexcept
-      : __mr_(__env.query(get_memory_resource))
+      : __mr_(__env.query(::cuda::mr::get_memory_resource))
       , __stream_(__env.query(::cuda::get_stream))
       , __policy_(__env.query(execution::get_execution_policy))
   {}
 
-  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource& query(get_memory_resource_t) const noexcept
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI const __resource& query(::cuda::mr::get_memory_resource_t) const noexcept
   {
     return __mr_;
   }
