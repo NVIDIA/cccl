@@ -1,4 +1,4 @@
-# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+# Copyright (c) 2024-2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
@@ -14,6 +14,7 @@ from numba.core.extending import (
     type_callable,
     typeof_impl,
 )
+from numba.core.imputils import lower_constant
 
 NUMBA_TYPES_TO_NP = {
     types.int8: np.int8,
@@ -97,4 +98,12 @@ def impl_complex(context, builder, sig, args):
     state = cgutils.create_struct_proxy(typ)(context, builder)
     state.real = real
     state.imag = imag
+    return state._getvalue()
+
+
+@lower_constant(ComplexType)
+def lower_constant_complex(context, builder, typ, value):
+    state = cgutils.create_struct_proxy(typ)(context, builder)
+    state.real = context.get_constant(types.int32, value.real)
+    state.imag = context.get_constant(types.int32, value.imag)
     return state._getvalue()
