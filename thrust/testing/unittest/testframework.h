@@ -285,7 +285,7 @@ using ArgumentSet = std::set<std::string>;
 using ArgumentMap = std::map<std::string, std::string>;
 
 // clang-format off
-constexpr size_t standard_test_sizes[] =
+inline constexpr size_t standard_test_sizes[] =
 {
   0, 1, 2, 3, 4, 5, 8, 10, 13, 16, 17, 19, 27, 30, 31, 32,
   33, 35, 42, 53, 58, 63, 64, 65, 72, 97, 100, 127, 128, 129, 142, 183, 192, 201, 240, 255, 256,
@@ -298,14 +298,14 @@ constexpr size_t standard_test_sizes[] =
 };
 // clang-format on
 
-constexpr size_t tiny_threshold    = 1 << 5; //   32
-constexpr size_t small_threshold   = 1 << 8; //  256
-constexpr size_t medium_threshold  = 1 << 12; //   4K
-constexpr size_t default_threshold = 1 << 16; //  64K
-constexpr size_t large_threshold   = 1 << 20; //   1M
-constexpr size_t huge_threshold    = 1 << 24; //  16M
-constexpr size_t epic_threshold    = 1 << 26; //  64M
-constexpr size_t max_threshold     = (std::numeric_limits<size_t>::max)();
+inline constexpr size_t tiny_threshold    = 1 << 5; //   32
+inline constexpr size_t small_threshold   = 1 << 8; //  256
+inline constexpr size_t medium_threshold  = 1 << 12; //   4K
+inline constexpr size_t default_threshold = 1 << 16; //  64K
+inline constexpr size_t large_threshold   = 1 << 20; //   1M
+inline constexpr size_t huge_threshold    = 1 << 24; //  16M
+inline constexpr size_t epic_threshold    = 1 << 26; //  64M
+inline constexpr size_t max_threshold     = (std::numeric_limits<size_t>::max)();
 
 inline std::vector<size_t> test_sizes = [] {
   std::vector<size_t> v;
@@ -319,7 +319,7 @@ inline std::vector<size_t> test_sizes = [] {
   return v;
 }();
 
-inline std::vector<size_t> get_test_sizes()
+inline const std::vector<size_t>& get_test_sizes()
 {
   return test_sizes;
 }
