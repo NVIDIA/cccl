@@ -29,7 +29,10 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/execution_policy.h>
+
+#include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -726,11 +729,11 @@ ForwardIterator transform_if(
   Predicate pred);
 
 //! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
-template <typename DerivedPolicy, typename InputIterator, typename Size, typename OutputIterator, typename UnaryFunction>
+template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
 _CCCL_HOST_DEVICE OutputIterator transform_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
-  Size count,
+  ::cuda::std::iter_difference_t<InputIterator> count,
   OutputIterator result,
   UnaryFunction op)
 {
@@ -739,8 +742,9 @@ _CCCL_HOST_DEVICE OutputIterator transform_n(
 }
 
 //! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
-template <typename InputIterator, typename Size, typename OutputIterator, typename UnaryFunction>
-OutputIterator transform_n(InputIterator first, Size count, OutputIterator result, UnaryFunction op)
+template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
+OutputIterator transform_n(
+  InputIterator first, ::cuda::std::iter_difference_t<InputIterator> count, OutputIterator result, UnaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
   return thrust::transform(first, first + count, result, op);
@@ -749,14 +753,14 @@ OutputIterator transform_n(InputIterator first, Size count, OutputIterator resul
 //! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename DerivedPolicy,
           typename InputIterator1,
-          typename Size,
+
           typename InputIterator2,
           typename OutputIterator,
           typename BinaryFunction>
 _CCCL_HOST_DEVICE OutputIterator transform_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
-  Size count,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 first2,
   OutputIterator result,
   BinaryFunction op)
@@ -766,9 +770,13 @@ _CCCL_HOST_DEVICE OutputIterator transform_n(
 }
 
 //! Like \ref transform, but uses an element count instead of an iterator to the last element of the input sequence.
-template <typename InputIterator1, typename Size, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
-OutputIterator
-transform_n(InputIterator1 first1, Size count, InputIterator2 first2, OutputIterator result, BinaryFunction op)
+template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
+OutputIterator transform_n(
+  InputIterator1 first1,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 first2,
+  OutputIterator result,
+  BinaryFunction op)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_n");
   return thrust::transform(first1, first1 + count, first2, result, op);
@@ -777,14 +785,14 @@ transform_n(InputIterator1 first1, Size count, InputIterator2 first2, OutputIter
 //! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename DerivedPolicy,
           typename InputIterator,
-          typename Size,
+
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
 _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
-  Size count,
+  ::cuda::std::iter_difference_t<InputIterator> count,
   ForwardIterator result,
   UnaryFunction op,
   Predicate pred)
@@ -794,8 +802,13 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
 }
 
 //! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
-template <typename InputIterator, typename Size, typename ForwardIterator, typename UnaryFunction, typename Predicate>
-ForwardIterator transform_if_n(InputIterator first, Size count, ForwardIterator result, UnaryFunction op, Predicate pred)
+template <typename InputIterator, typename ForwardIterator, typename UnaryFunction, typename Predicate>
+ForwardIterator transform_if_n(
+  InputIterator first,
+  ::cuda::std::iter_difference_t<InputIterator> count,
+  ForwardIterator result,
+  UnaryFunction op,
+  Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
   return thrust::transform_if(first, first + count, result, op, pred);
@@ -804,7 +817,7 @@ ForwardIterator transform_if_n(InputIterator first, Size count, ForwardIterator 
 //! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename DerivedPolicy,
           typename InputIterator1,
-          typename Size,
+
           typename InputIterator2,
           typename ForwardIterator,
           typename UnaryFunction,
@@ -812,7 +825,7 @@ template <typename DerivedPolicy,
 _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first,
-  Size count,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 stencil,
   ForwardIterator result,
   UnaryFunction op,
@@ -824,13 +837,17 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
 
 //! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename InputIterator1,
-          typename Size,
           typename InputIterator2,
           typename ForwardIterator,
           typename UnaryFunction,
           typename Predicate>
 ForwardIterator transform_if_n(
-  InputIterator1 first, Size count, InputIterator2 stencil, ForwardIterator result, UnaryFunction op, Predicate pred)
+  InputIterator1 first,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
+  InputIterator2 stencil,
+  ForwardIterator result,
+  UnaryFunction op,
+  Predicate pred)
 {
   _CCCL_NVTX_RANGE_SCOPE("thrust::transform_if_n");
   return thrust::transform_if(first, first + count, stencil, result, op, pred);
@@ -839,7 +856,6 @@ ForwardIterator transform_if_n(
 //! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename DerivedPolicy,
           typename InputIterator1,
-          typename Size,
           typename InputIterator2,
           typename InputIterator3,
           typename ForwardIterator,
@@ -848,7 +864,7 @@ template <typename DerivedPolicy,
 _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
   const detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator1 first1,
-  Size count,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 first2,
   InputIterator3 stencil,
   ForwardIterator result,
@@ -861,7 +877,6 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if_n(
 
 //! Like \ref transform_if, but uses an element count instead of an iterator to the last element of the input sequence.
 template <typename InputIterator1,
-          typename Size,
           typename InputIterator2,
           typename InputIterator3,
           typename ForwardIterator,
@@ -869,7 +884,7 @@ template <typename InputIterator1,
           typename Predicate>
 ForwardIterator transform_if_n(
   InputIterator1 first1,
-  Size count,
+  ::cuda::std::iter_difference_t<InputIterator1> count,
   InputIterator2 first2,
   InputIterator3 stencil,
   ForwardIterator result,
