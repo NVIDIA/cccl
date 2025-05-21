@@ -2,11 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import logging
-
 from cuda.bindings.path_finder import (  # type: ignore[import-not-found]
     _load_nvidia_dynamic_library,
 )
 
 for libname in ("nvrtc", "nvJitLink"):
-    logging.debug(str(_load_nvidia_dynamic_library(libname)))
+    _load_nvidia_dynamic_library(libname)
