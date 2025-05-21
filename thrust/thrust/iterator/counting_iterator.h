@@ -213,7 +213,7 @@ public:
 
 private:
   template <typename S = StrideHolder>
-  auto stride() const
+  _CCCL_HOST_DEVICE auto stride() const
   {
     return static_cast<const S&>(*this).value;
   }
