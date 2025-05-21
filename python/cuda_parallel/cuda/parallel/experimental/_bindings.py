@@ -1,4 +1,11 @@
 # Copyright (c) 2025, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from ._bindings_impl import *  # noqa: F403
+from cuda.bindings.path_finder import (  # type: ignore[import-not-found]
+    _load_nvidia_dynamic_library,
+)
+
+for libname in ("nvrtc", "nvJitLink"):
+    _load_nvidia_dynamic_library(libname)
+
+from ._bindings_impl import *  # noqa: E402 F403
