@@ -29,5 +29,5 @@ python -m auditwheel repair \
     cuda_parallel-*.whl
 
 # Move wheels to output directory
-mv cuda_cccl-*.whl /workspace/cccl/wheelhouse/
-mv wheelhouse/cuda_parallel-*.whl /workspace/cccl/wheelhouse/
+mv cuda_cccl-*.whl /workspace/wheelhouse/
+mv wheelhouse/cuda_parallel-*.whl /workspace/wheelhouse/
