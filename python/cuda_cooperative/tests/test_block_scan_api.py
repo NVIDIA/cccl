@@ -55,11 +55,14 @@ def test_block_exclusive_sum():
 
 def test_block_exclusive_sum_single_input_per_thread():
     # example-begin exclusive-sum-single-input-per-thread
+    items_per_thread = 1
     threads_per_block = 128
 
     # Specialize exclusive sum for a 1D block of 128 threads.  Each thread
     # owns a single integer item.
-    block_exclusive_sum = cudax.block.exclusive_sum(numba.int32, threads_per_block)
+    block_exclusive_sum = cudax.block.exclusive_sum(
+        numba.int32, threads_per_block, items_per_thread
+    )
 
     # Link the exclusive sum to a CUDA kernel
     @cuda.jit(link=block_exclusive_sum.files)
