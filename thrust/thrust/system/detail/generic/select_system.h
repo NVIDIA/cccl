@@ -35,9 +35,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-// forward declaration of any_system_tag for any_conversion below
-struct any_system_tag;
-
 namespace system::detail::generic
 {
 template <typename, typename... Tags>
