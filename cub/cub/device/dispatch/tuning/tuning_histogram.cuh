@@ -168,6 +168,40 @@ struct sm100_tuning<false, SampleT, 1, 1, counter_size::_4, primitive_sample::ye
   static constexpr int vec_size                                  = 1 << 2;
 };
 
+template <typename PolicyT, typename = void>
+struct HistogramPolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION HistogramPolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct HistogramPolicyWrapper<StaticPolicyT,
+                              ::cuda::std::void_t<decltype(StaticPolicyT::AgentHistogramPolicyT::LOAD_MODIFIER)>>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION HistogramPolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::AgentHistogramPolicyT::BLOCK_THREADS;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int PixelsPerThread()
+  {
+    return StaticPolicyT::AgentHistogramPolicyT::PIXELS_PER_THREAD;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION HistogramPolicyWrapper<PolicyT> MakeHistogramPolicyWrapper(PolicyT policy)
+{
+  return HistogramPolicyWrapper<PolicyT>{policy};
+}
+
 // sample_size 2/4/8 showed no benefit over SM90 during verification benchmarks
 
 // multi.even and multi.range: none of the found tunings surpassed the SM90 tuning during verification benchmarks
