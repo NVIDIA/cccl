@@ -130,7 +130,6 @@ public:
       case ::cudaSuccess:
         break;
       default:
-        ::cudaGetLastError(); // Clear CUDA error state
         ::cuda::__throw_cuda_error(__result, "Failed to query stream.");
     }
     return true;
