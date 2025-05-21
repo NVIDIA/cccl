@@ -134,15 +134,7 @@ struct make_counting_iterator_base
 //!  // this example computes indices for all the nonzero values in a sequence
 //!
 //!  // sequence of zero and nonzero values
-//!  thrust::device_vector<int> stencil(8);
-//!  stencil[0] = 0;
-//!  stencil[1] = 1;
-//!  stencil[2] = 1;
-//!  stencil[3] = 0;
-//!  stencil[4] = 0;
-//!  stencil[5] = 1;
-//!  stencil[6] = 0;
-//!  stencil[7] = 1;
+//!  thrust::device_vector<int> stencil{0, 1, 1, 0, 0, 1, 0, 1};
 //!
 //!  // storage for the nonzero indices
 //!  thrust::device_vector<int> indices(8);

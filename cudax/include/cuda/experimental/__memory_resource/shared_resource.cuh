@@ -26,6 +26,7 @@
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
@@ -56,7 +57,7 @@ struct shared_resource
   //! dynamically allocated with \c new.
   //! @param __args The arguments to be passed to the \c _Resource constructor.
   template <class... _Args>
-  explicit shared_resource(_Args&&... __args)
+  explicit shared_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args)
       : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
   {}
 
@@ -252,7 +253,7 @@ template <class _Resource, class... _Args>
 auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
-  return shared_resource<_Resource>{_CUDA_VSTD::forward<_Args>(__args)...};
+  return shared_resource<_Resource>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
 }
 
 } // namespace cuda::experimental

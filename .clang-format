@@ -89,6 +89,9 @@ IncludeCategories:
   - Regex:           '^<cuda/experimental/__execution/prologue.cuh>'
     Priority:            0x7FFFFFFF
     SortPriority:        0x7FFFFFFF
+  - Regex:           '^"insert_nested_NVTX_range_guard.h"'
+    Priority:            -1
+    SortPriority:        -1
   - Regex:           '^<(cuda/std/detail/__config|cub/config.cuh|thrust/detail/config.h|thrust/system/cuda/config.h)'
     Priority:            0
     SortPriority:        0

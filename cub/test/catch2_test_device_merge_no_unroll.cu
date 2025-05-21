@@ -7,7 +7,6 @@
 #define CCCL_AVOID_SORT_UNROLL
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_merge.cuh>
 

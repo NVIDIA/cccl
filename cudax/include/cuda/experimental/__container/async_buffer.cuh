@@ -29,6 +29,7 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource_ref.h>
+#include <cuda/__stream/get_stream.h>
 #include <cuda/std/__algorithm/copy.h>
 #include <cuda/std/__algorithm/equal.h>
 #include <cuda/std/__algorithm/fill.h>
@@ -65,7 +66,6 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
-#include <cuda/experimental/__stream/get_stream.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 #include <cuda/experimental/__utility/select_execution_space.cuh>
 
@@ -306,7 +306,7 @@ public:
   //! At the destruction of the \c async_buffer all elements in the range `[vec.begin(), vec.end())` will be destroyed.
   _CCCL_HIDE_FROM_ABI explicit async_buffer(
     const __env_t& __env, const size_type __size, ::cuda::experimental::no_init_t)
-      : __buf_(::cuda::experimental::get_memory_resource(__env), ::cuda::experimental::get_stream(__env), __size)
+      : __buf_(::cuda::experimental::get_memory_resource(__env), ::cuda::get_stream(__env), __size)
   {}
 
   //! @brief Constructs a async_buffer using a memory resource and copy-constructs all elements from the forward range
