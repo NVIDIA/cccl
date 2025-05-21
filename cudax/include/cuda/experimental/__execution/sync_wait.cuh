@@ -255,14 +255,14 @@ public:
   template <class _Sndr, class _Env>
   _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
-    using __dom_t = domain_for_t<_Sndr, __env_t<_Env>>;
+    using __dom_t = __late_domain_of_t<_Sndr, __env_t<_Env>>;
     return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
   }
 
   template <class _Sndr, class... _Env>
   _CCCL_HOST_API auto operator()(_Sndr&& __sndr) const
   {
-    using __dom_t = domain_for_t<_Sndr, __env_t<env<>>>;
+    using __dom_t = __late_domain_of_t<_Sndr, __env_t<env<>>>;
     return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr));
   }
 };
