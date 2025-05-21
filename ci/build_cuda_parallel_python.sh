@@ -5,7 +5,6 @@ set -euo pipefail
 py_version=${2#*=}
 echo "Docker socket: " $(ls /var/run/docker.sock)
 
-
 # cuda_parallel must be built in a container that can produce manylinux wheels,
 # and has the CUDA toolkit installed. We use the rapidsai/ci-wheel image for this.
 # These images don't come with a new enough version of gcc installed, so that
@@ -28,5 +27,5 @@ docker run --rm -i \
     python -m pip install patchelf auditwheel && \
     python --version && \
     python -m auditwheel repair cuda_parallel-*.whl --exclude libcuda.so.1 && \
-    mv cuda_cccl-*.whl /workspace/cccl/wheelhouse && \
-    mv wheelhouse/cuda_parallel-*.whl /workspace/cccl/wheelhouse/'
+    mv cuda_cccl-*.whl /workspace/wheelhouse && \
+    mv wheelhouse/cuda_parallel-*.whl /workspace/wheelhouse/'
