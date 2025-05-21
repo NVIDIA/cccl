@@ -44,16 +44,16 @@ template <typename... Tags>
 inline constexpr bool
   select_system_exists<::cuda::std::void_t<decltype(select_system(::cuda::std::declval<Tags>()...))>, Tags...> = true;
 
-template <typename System>
-_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!select_system_exists<System>, System&>
-select_system(thrust::execution_policy<System>& system)
+template <typename System, ::cuda::std::enable_if_t<!select_system_exists<System>, int> = 0>
+_CCCL_HOST_DEVICE auto select_system(thrust::execution_policy<System>& system) -> System&
 {
   return thrust::detail::derived_cast(system);
 }
 
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE thrust::detail::minimum_system_t<System1, System2>&
+_CCCL_HOST_DEVICE auto
 select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
+  -> thrust::detail::minimum_system_t<System1, System2>&
 {
   if constexpr (::cuda::std::is_same_v<System1, System2>
                 || ::cuda::std::is_same_v<System1, thrust::detail::minimum_system_t<System1, System2>>)
@@ -67,13 +67,14 @@ select_system(thrust::execution_policy<System1>& system1, thrust::execution_poli
   }
 }
 
-template <typename System1, typename System2, typename... Systems>
-_CCCL_HOST_DEVICE typename thrust::detail::lazy_disable_if<
-  select_system_exists<Systems...>,
-  ::cuda::std::__type_defer_quote<thrust::detail::minimum_system_t, System1, System2, Systems...>>::type&
-select_system(thrust::execution_policy<System1>& system1,
-              thrust::execution_policy<System2>& system2,
-              thrust::execution_policy<Systems>&... systems)
+template <typename System1,
+          typename System2,
+          typename... Systems,
+          ::cuda::std::enable_if_t<!select_system_exists<Systems...>, int> = 0>
+_CCCL_HOST_DEVICE auto select_system(
+  thrust::execution_policy<System1>& system1,
+  thrust::execution_policy<System2>& system2,
+  thrust::execution_policy<Systems>&... systems) -> thrust::detail::minimum_system_t<System1, System2, Systems...>
 {
   return select_system(select_system(system1, system2), systems...);
 }
