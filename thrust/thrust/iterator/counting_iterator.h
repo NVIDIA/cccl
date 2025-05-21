@@ -305,6 +305,10 @@ inline _CCCL_HOST_DEVICE counting_iterator<Incrementable> make_counting_iterator
   return counting_iterator<Incrementable>(x);
 }
 
+// FIXME(bgruber): Sphinx fails to document the fancyiterators group if make_counting_iterator has overloads, so we
+// exclude them for now
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
 //! Constructs a counting_iterator with a runtime stride
 template <typename Incrementable, typename Stride>
 _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x, Stride stride)
@@ -323,6 +327,7 @@ _CCCL_HOST_DEVICE auto make_counting_iterator(Incrementable x)
                            use_default,
                            compile_time_value<Stride>>(x, {});
 }
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! \} // end fancyiterators
 //! \} // end iterators
