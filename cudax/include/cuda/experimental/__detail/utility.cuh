@@ -21,12 +21,18 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
 
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
+// NOLINTBEGIN(misc-unused-using-decls)
+using _CUDA_VSTD::__undefined;
+using _CUDA_VSTD::declval;
+// NOLINTEND(misc-unused-using-decls)
+
 namespace detail
 {
 // This is a helper type that can be used to ignore function arguments.
@@ -61,8 +67,6 @@ inline constexpr bool __is_specialization_of<_Template<_Args...>, _Template> = t
 
 template <class _Tp>
 using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
-
-using _CUDA_VSTD::declval;
 
 struct no_init_t
 {

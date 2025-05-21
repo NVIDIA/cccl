@@ -202,7 +202,8 @@ public:
   template <class _Sndr, class... _Env>
   _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&&... __env) const
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr, _Env...>;
+    using __env_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_index_c<0, env<_Env, __env_t>..., __env_t>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = __late_domain_of_t<_Sndr, __env_t>;
     return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env)...);
   }
 };

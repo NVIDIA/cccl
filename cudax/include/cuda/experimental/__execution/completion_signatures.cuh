@@ -470,7 +470,7 @@ _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     // Apply a lazy sender transform if one exists before computing the completion signatures:
     using _NewSndr _CCCL_NODEBUG_ALIAS =
-      _CUDA_VSTD::__call_result_t<transform_sender_t, domain_for_t<_Sndr, _Env...>, _Sndr, _Env...>;
+      _CUDA_VSTD::__call_result_t<transform_sender_t, __late_domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>;
     return __get_completion_signatures_helper<_NewSndr, _Env...>();
   }
 }

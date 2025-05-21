@@ -135,9 +135,9 @@ public:
       _CCCL_API static constexpr auto get_completion_signatures() noexcept
       {
 #if _CCCL_HAS_EXCEPTIONS()
-        return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>();
+        return completion_signatures<set_value_t(), set_error_t(::std::exception_ptr), set_stopped_t()>{};
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
-        return completion_signatures<set_value_t(), set_stopped_t()>();
+        return completion_signatures<set_value_t(), set_stopped_t()>{};
 #endif // !_CCCL_HAS_EXCEPTIONS()
       }
 

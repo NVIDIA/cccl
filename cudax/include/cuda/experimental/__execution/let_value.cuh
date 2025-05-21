@@ -227,9 +227,9 @@ private:
     {
       using __result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_Ts>&...>;
       // ask the result sender if it knows where it will complete:
-      if constexpr (__queryable_with<env_of_t<__result_t>, get_domain_t>)
+      if constexpr (__queryable_with<env_of_t<__result_t>, get_domain_t<set_value_t>>)
       {
-        return __query_result_t<env_of_t<__result_t>, get_domain_t>{};
+        return __query_result_t<env_of_t<__result_t>, get_domain_t<set_value_t>>{};
       }
       else
       {
@@ -303,16 +303,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
     template <class _SetTag>
     _CCCL_API auto query(get_completion_scheduler_t<_SetTag>) const = delete;
 
+    // Returns the domain on which the let sender will start:
+    _CCCL_TEMPLATE(class _Env = env_of_t<_Sndr>)
+    _CCCL_REQUIRES(__queryable_with<_Env, get_domain_t<start_t>>)
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t<start_t>) noexcept
+      -> __query_result_t<_Env, get_domain_t<start_t>>
+    {
+      return {};
+    }
+
     // Returns the domain on which the let sender will complete:
     _CCCL_TEMPLATE(class _Sndr2 = _Sndr)
     _CCCL_REQUIRES((!_CUDA_VSTD::same_as<__completion_domain_of_t<_Sndr2, _Fn>, __nil>) )
-    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept -> __completion_domain_of_t<_Sndr2, _Fn>
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t<set_value_t>) noexcept
+      -> __completion_domain_of_t<_Sndr2, _Fn>
     {
       return {};
     }
 
     _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND(!_CUDA_VSTD::same_as<_Query, get_domain_t>)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND(!detail::__is_specialization_of<_Query, get_domain_t>)
                      _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
     [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
       -> __query_result_t<env_of_t<_Sndr>, _Query>
@@ -397,13 +407,13 @@ template <__disposition_t _Disposition>
 template <class _Sndr, class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __let_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
   // If the incoming sender is non-dependent, we can check the completion signatures of
   // the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)
   {
     __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Sndr, _Fn>>());
   }
+  using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
   return transform_sender(__dom_t{}, __sndr_t<_Sndr, _Fn>{{}, static_cast<_Fn&&>(__fn), static_cast<_Sndr&&>(__sndr)});
 }
 

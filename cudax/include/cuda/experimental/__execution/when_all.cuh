@@ -488,12 +488,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<
   {
     if constexpr (sizeof...(_Sndrs) == 0)
     {
-      return prop{get_domain, default_domain{}};
+      return prop{get_domain<start_t>, default_domain{}};
     }
     else
     {
-      using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<domain_for_t<_Sndrs>...>;
-      return prop{get_domain, __dom_t{}};
+      using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
+      return prop{get_domain<start_t>, __dom_t{}};
     }
     _CCCL_UNREACHABLE();
   }
@@ -506,14 +506,14 @@ _CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
   {
     return __sndr_t{};
   }
-  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>)
+  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, __early_domain_of_t<_Sndrs>...>)
   {
-    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>,
+    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, __early_domain_of_t<_Sndrs>...>,
                   "when_all: all child senders must have the same domain");
   }
   else
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<domain_for_t<_Sndrs>...>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<__early_domain_of_t<_Sndrs>...>;
     // If the incoming senders are non-dependent, we can check the completion
     // signatures of the composed sender immediately.
     if constexpr (((!dependent_sender<_Sndrs>) && ...))

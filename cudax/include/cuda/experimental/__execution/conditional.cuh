@@ -243,7 +243,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure
   template <class _Sndr>
   _CCCL_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) -> __sndr_t<__closure, _Sndr>
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
     // If the incoming sender is non-dependent, we can check the completion signatures of
     // the composed sender immediately.
     if constexpr (!dependent_sender<_Sndr>)
@@ -270,7 +270,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional_t::__closure
 template <class _Sndr, class _Pred, class _Then, class _Else>
 _CCCL_TRIVIAL_API constexpr auto conditional_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS    = domain_for_t<_Sndr>;
+  using __dom_t _CCCL_NODEBUG_ALIAS    = __early_domain_of_t<_Sndr>;
   using __params_t _CCCL_NODEBUG_ALIAS = __closure<_Pred, _Then, _Else>;
   __params_t __params{static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)};
   return static_cast<__params_t&&>(__params).__mk_sender(static_cast<_Sndr&&>(__sndr));

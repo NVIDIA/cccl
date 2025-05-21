@@ -100,7 +100,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   template <class _Self, class... _Env>
   _CCCL_API static constexpr auto get_completion_signatures() noexcept
   {
-    return completion_signatures<_SetTag(_Ts...)>();
+    return completion_signatures<_SetTag(_Ts...)>{};
   }
 
   template <class _Rcvr>
