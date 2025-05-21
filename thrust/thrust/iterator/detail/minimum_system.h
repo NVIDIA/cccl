@@ -47,10 +47,7 @@ _CCCL_HOST_DEVICE auto minimum_system_impl(long) -> unrelated_systems<Ts...>;
 // if a minimum system exists for these arguments, return it
 // otherwise, collect the arguments and report them as unrelated
 template <typename... Ts>
-using minimum_system = decltype(minimum_system_impl<Ts...>(0));
-
-template <typename... Ts>
-using minimum_system_t = typename minimum_system<Ts...>::type;
+using minimum_system_t = decltype(minimum_system_impl<Ts...>(0));
 
 } // namespace detail
 THRUST_NAMESPACE_END

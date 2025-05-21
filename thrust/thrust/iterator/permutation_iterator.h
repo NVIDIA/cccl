@@ -62,7 +62,7 @@ struct make_permutation_iterator_base
     iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,
                      IndexIterator,
                      it_value_t<ElementIterator>,
-                     minimum_system<System1, System2>,
+                     minimum_system_t<System1, System2>,
                      use_default,
                      it_reference_t<ElementIterator>>;
 };
