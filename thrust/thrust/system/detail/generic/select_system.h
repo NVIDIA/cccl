@@ -26,6 +26,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/detail/execution_policy.h>
 #include <thrust/detail/type_traits.h>
 #include <thrust/iterator/detail/any_system_tag.h>
@@ -33,83 +34,58 @@
 #include <thrust/iterator/detail/minimum_system.h>
 
 THRUST_NAMESPACE_BEGIN
-namespace system
+
+// forward declaration of any_system_tag for any_conversion below
+struct any_system_tag;
+
+namespace system::detail::generic
 {
-namespace detail
-{
-namespace generic
-{
+template <typename, typename... Tags>
+inline constexpr bool select_system_exists = false;
 
-template <typename Tag>
-struct select_system1_exists;
-
-template <typename Tag1, typename Tag2>
-struct select_system2_exists;
-
-template <typename Tag1, typename Tag2, typename Tag3>
-struct select_system3_exists;
-
-template <typename Tag1, typename Tag2, typename Tag3, typename Tag4>
-struct select_system4_exists;
-
-template <typename Tag1, typename Tag2, typename Tag3, typename Tag4, typename Tag5>
-struct select_system5_exists;
-
-template <typename Tag1, typename Tag2, typename Tag3, typename Tag4, typename Tag5, typename Tag6>
-struct select_system6_exists;
+template <typename... Tags>
+inline constexpr bool
+  select_system_exists<::cuda::std::void_t<decltype(select_system(::cuda::std::declval<Tags>()...))>, Tags...> = true;
 
 template <typename System>
-_CCCL_HOST_DEVICE typename thrust::detail::disable_if<select_system1_exists<System>::value, System&>::type
-select_system(thrust::execution_policy<System>& system);
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!select_system_exists<System>, System&>
+select_system(thrust::execution_policy<System>& system)
+{
+  return thrust::detail::derived_cast(system);
+}
 
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE typename thrust::detail::enable_if_defined<thrust::detail::minimum_system<System1, System2>>::type&
-select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2);
+_CCCL_HOST_DEVICE thrust::detail::minimum_system_t<System1, System2>&
+select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
+{
+  if constexpr (::cuda::std::is_same_v<System1, System2>
+                || ::cuda::std::is_same_v<System1, thrust::detail::minimum_system_t<System1, System2>>)
+  {
+    return thrust::detail::derived_cast(system1);
+  }
+  else
+  {
+    static_assert(::cuda::std::is_same_v<System2, thrust::detail::minimum_system_t<System1, System2>>);
+    return thrust::detail::derived_cast(system2);
+  }
+}
 
-template <typename System1, typename System2, typename System3>
-_CCCL_HOST_DEVICE
-typename thrust::detail::lazy_disable_if<select_system3_exists<System1, System2, System3>::value,
-                                         thrust::detail::minimum_system<System1, System2, System3>>::type&
-select_system(thrust::execution_policy<System1>& system1,
-              thrust::execution_policy<System2>& system2,
-              thrust::execution_policy<System3>& system3);
-
-template <typename System1, typename System2, typename System3, typename System4>
-_CCCL_HOST_DEVICE
-typename thrust::detail::lazy_disable_if<select_system4_exists<System1, System2, System3, System4>::value,
-                                         thrust::detail::minimum_system<System1, System2, System3, System4>>::type&
-select_system(thrust::execution_policy<System1>& system1,
-              thrust::execution_policy<System2>& system2,
-              thrust::execution_policy<System3>& system3,
-              thrust::execution_policy<System4>& system4);
-
-template <typename System1, typename System2, typename System3, typename System4, typename System5>
+template <typename System1, typename System2, typename... Systems>
 _CCCL_HOST_DEVICE typename thrust::detail::lazy_disable_if<
-  select_system5_exists<System1, System2, System3, System4, System5>::value,
-  thrust::detail::minimum_system<System1, System2, System3, System4, System5>>::type&
+  select_system_exists<Systems...>,
+  ::cuda::std::__type_defer_quote<thrust::detail::minimum_system_t, System1, System2, Systems...>>::type&
 select_system(thrust::execution_policy<System1>& system1,
               thrust::execution_policy<System2>& system2,
-              thrust::execution_policy<System3>& system3,
-              thrust::execution_policy<System4>& system4,
-              thrust::execution_policy<System5>& system5);
-
-template <typename System1, typename System2, typename System3, typename System4, typename System5, typename System6>
-_CCCL_HOST_DEVICE typename thrust::detail::lazy_disable_if<
-  select_system6_exists<System1, System2, System3, System4, System5, System6>::value,
-  thrust::detail::minimum_system<System1, System2, System3, System4, System5, System6>>::type&
-select_system(thrust::execution_policy<System1>& system1,
-              thrust::execution_policy<System2>& system2,
-              thrust::execution_policy<System3>& system3,
-              thrust::execution_policy<System4>& system4,
-              thrust::execution_policy<System5>& system5,
-              thrust::execution_policy<System6>& system6);
+              thrust::execution_policy<Systems>&... systems)
+{
+  return select_system(select_system(system1, system2), systems...);
+}
 
 // Map a single any_system_tag to device_system_tag.
-inline _CCCL_HOST_DEVICE thrust::device_system_tag select_system(thrust::any_system_tag);
+inline _CCCL_HOST_DEVICE thrust::device_system_tag select_system(thrust::any_system_tag)
+{
+  return thrust::device_system_tag();
+}
 
-} // namespace generic
-} // namespace detail
-} // namespace system
+} // namespace system::detail::generic
 THRUST_NAMESPACE_END
-
-#include <thrust/system/detail/generic/select_system.inl>

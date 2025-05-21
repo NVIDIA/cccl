@@ -43,5 +43,8 @@ template <typename... Ts>
 using minimum_system = ::cuda::std::
   _If<is_metafunction_defined<minimum_type<Ts...>>::value, minimum_type<Ts...>, identity_<unrelated_systems<Ts...>>>;
 
+template <typename... Ts>
+using minimum_system_t = typename minimum_system<Ts...>::type;
+
 } // namespace detail
 THRUST_NAMESPACE_END
