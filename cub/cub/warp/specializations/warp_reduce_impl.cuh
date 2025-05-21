@@ -294,15 +294,16 @@ template <typename T, typename ReductionOp, typename Config>
 #endif // _CCCL_HAS_NVBF16()
       if constexpr (is_same_v<typename T::value_type, float>)
       {
-        auto float2_value = unsafe_bitcast<float2>(input);
-        auto ret          = warp_reduce_dispatch(float2_value, reduction_op1, config);
-        return unsafe_bitcast<T>(ret);
+        NV_IF_TARGET(NV_PROVIDES_SM_100,
+                     (auto float2_value = unsafe_bitcast<float2>(input);
+                      auto ret          = warp_reduce_dispatch(float2_value, reduction_op1, config);
+                      return unsafe_bitcast<T>(ret);))
       }
       else
       { // double
         auto real = warp_reduce_dispatch(input.real(), reduction_op1, config);
-        auto img  = warp_reduce_dispatch(input.imag(), reduction_op1, config);
-        return T{real, img};
+        auto imag = warp_reduce_dispatch(input.imag(), reduction_op1, config);
+        return T{real, imag};
       }
     }
     else if constexpr (is_any_half_v<T>) //  __half, __half2
@@ -316,6 +317,10 @@ template <typename T, typename ReductionOp, typename Config>
     else if constexpr (is_same_v<T, float2> && __cccl_ptx_isa >= 860)
     {
       NV_IF_TARGET(NV_PROVIDES_SM_100, (return warp_reduce_shuffle(input, reduction_op1, config);))
+    }
+    else if constexpr (is_floating_point_v<T>) // float, double
+    {
+      return warp_reduce_shuffle(input, reduction_op1, config);
     }
   }
   //--------------------------------------------------------------------------------------------------------------------
