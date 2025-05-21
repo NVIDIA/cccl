@@ -317,7 +317,7 @@ public:
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
   operator-(const offset_iterator& __lhs, const offset_iterator& __rhs)
   {
-    return static_cast<difference_type>(__rhs.offset() - __lhs.offset());
+    return (__rhs.__iter_ + __rhs.offset()) - (__lhs.__iter_ + __lhs.offset());
   }
 
   //! @brief Returns the offset between an \c offset_iterators and default sentinel, equivalent to -offset()
