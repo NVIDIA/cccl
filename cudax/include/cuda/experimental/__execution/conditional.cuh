@@ -112,8 +112,8 @@ private:
     template <class... _As>
     using __opstate_t _CCCL_NODEBUG_ALIAS = //
       _CUDA_VSTD::__type_list< //
-        connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>,
-        connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>>;
+        connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>,
+        connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref_t<_Rcvr>>>;
 
     using __next_ops_variant_t _CCCL_NODEBUG_ALIAS = //
       __value_types<completion_signatures_of_t<_Sndr, __env_t>, __opstate_t, __type_concat_into_quote<__variant>::__call>;
@@ -121,7 +121,7 @@ private:
     _CCCL_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __params_t&& __params)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __params_{static_cast<__params_t&&>(__params)}
-        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{*this})}
+        , __op_{execution::connect(static_cast<_Sndr&&>(__sndr), __ref_rcvr(*this))}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
@@ -141,13 +141,13 @@ private:
           if (static_cast<_Pred&&>(__params_.pred)(__as...))
           {
             auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __rcvr_ref{__rcvr_});
+              __ops_.__emplace_from(connect, static_cast<_Then&&>(__params_.on_true)(__just), __ref_rcvr(__rcvr_));
             execution::start(__op);
           }
           else
           {
             auto& __op =
-              __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __rcvr_ref{__rcvr_});
+              __ops_.__emplace_from(connect, static_cast<_Else&&>(__params_.on_false)(__just), __ref_rcvr(__rcvr_));
             execution::start(__op);
           }
         }),
@@ -176,7 +176,7 @@ private:
 
     _Rcvr __rcvr_;
     __params_t __params_;
-    connect_result_t<_Sndr, __rcvr_ref<__opstate, __env_t>> __op_;
+    connect_result_t<_Sndr, __rcvr_ref_t<__opstate, __env_t>> __op_;
     __next_ops_variant_t __ops_;
   };
 
