@@ -62,8 +62,8 @@ private:
 
     _CCCL_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
-        , __opstate1_(execution::connect(static_cast<__sndr1_t&&>(__sndr1), __rcvr_ref{*this}))
-        , __opstate2_(execution::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref{__rcvr_}))
+        , __opstate1_(execution::connect(static_cast<__sndr1_t&&>(__sndr1), __ref_rcvr(*this)))
+        , __opstate2_(execution::connect(static_cast<__sndr2_t&&>(__sndr2), __ref_rcvr(__rcvr_)))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
@@ -96,8 +96,8 @@ private:
     }
 
     __rcvr_t __rcvr_;
-    connect_result_t<__sndr1_t, __rcvr_ref<__opstate, __env_t>> __opstate1_;
-    connect_result_t<__sndr2_t, __rcvr_ref<__rcvr_t>> __opstate2_;
+    connect_result_t<__sndr1_t, __rcvr_ref_t<__opstate, __env_t>> __opstate1_;
+    connect_result_t<__sndr2_t, __rcvr_ref_t<__rcvr_t>> __opstate2_;
   };
 
 public:
