@@ -38,7 +38,7 @@ struct policy_hub_for_alg
     using algo_policy =
       ::cuda::std::_If<Alg == Algorithm::prefetch,
                        cub::detail::transform::prefetch_policy_t<256>,
-                       cub::detail::transform::async_copy_policy_t<256>>;
+                       cub::detail::transform::async_copy_policy_t<256, 128>>;
   };
 };
 

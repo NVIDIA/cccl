@@ -181,8 +181,9 @@ struct dispatch_t<StableAddress,
     ::cuda::std::
       tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
   {
-    using policy_t          = typename ActivePolicy::algo_policy;
-    constexpr int block_dim = policy_t::block_threads;
+    using policy_t                    = typename ActivePolicy::algo_policy;
+    constexpr int block_dim           = policy_t::block_threads;
+    constexpr int bulk_copy_alignment = policy_t::bulk_copy_alignment;
     static_assert(block_dim % bulk_copy_alignment == 0,
                   "block_threads needs to be a multiple of bulk_copy_alignment (128)"); // then tile_size is a multiple
                                                                                         // of 128-byte
@@ -202,7 +203,7 @@ struct dispatch_t<StableAddress,
            ++elem_per_thread)
       {
         const int tile_size = block_dim * elem_per_thread;
-        const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
+        const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size, bulk_copy_alignment);
         if (smem_size > *max_smem)
         {
           // assert should be prevented by smem check in policy
@@ -259,7 +260,8 @@ struct dispatch_t<StableAddress,
   template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_ublkcp_algorithm(::cuda::std::index_sequence<Is...>)
   {
-    auto ret = configure_ublkcp_kernel<ActivePolicy>();
+    constexpr int bulk_copy_alignment = ActivePolicy::algo_policy::bulk_copy_alignment;
+    auto ret                          = configure_ublkcp_kernel<ActivePolicy>();
     if (!ret)
     {
       return ret.error();
