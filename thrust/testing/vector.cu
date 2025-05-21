@@ -865,15 +865,29 @@ void TestVectorDefaultInitCtor()
 }
 DECLARE_UNITTEST(TestVectorDefaultInitCtor);
 
+void TestVectorNoInitCtor()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+    thrust::host_vector<int> hv(10, thrust::no_init);
+    thrust::device_vector<int> dv(10, thrust::no_init);
+  }
+
+  // non-trivially-constructible type: those should fail to compile
+  // thrust::host_vector<IntWithInit> hv(10, thrust::no_init);
+  // thrust::device_vector<IntWithInit> dv(10, thrust::no_init);
+}
+DECLARE_UNITTEST(TestVectorNoInitCtor);
+
 void TestVectorDefaultInitResize()
 {
   // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
   {
-    thrust::host_vector<int> hv(10);
+    thrust::host_vector<int> hv(5);
     hv.resize(10, thrust::default_init);
   }
   {
-    thrust::device_vector<int> dv(10);
+    thrust::device_vector<int> dv(5);
     dv.resize(10, thrust::default_init);
   }
 
@@ -896,3 +910,21 @@ void TestVectorDefaultInitResize()
   }
 }
 DECLARE_UNITTEST(TestVectorDefaultInitResize);
+
+void TestVectorNoInitResize()
+{
+  // trivially-constructible type: just compilation test, since we cannot check that initialization was skipped
+  {
+    thrust::host_vector<int> hv(5);
+    hv.resize(10, thrust::no_init);
+  }
+  {
+    thrust::device_vector<int> dv(5);
+    dv.resize(10, thrust::no_init);
+  }
+
+  // non-trivially-constructible type: those should fail to compile
+  thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
+  thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
+}
+DECLARE_UNITTEST(TestVectorNoInitResize);
