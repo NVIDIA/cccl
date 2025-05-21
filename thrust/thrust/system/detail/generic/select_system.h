@@ -55,17 +55,17 @@ select_system(thrust::execution_policy<System>& system)
 }
 
 template <typename System1, typename System2>
-_CCCL_HOST_DEVICE thrust::detail::minimum_system<System1, System2>&
+_CCCL_HOST_DEVICE thrust::detail::minimum_system_t<System1, System2>&
 select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
 {
   if constexpr (::cuda::std::is_same_v<System1, System2>
-                || ::cuda::std::is_same_v<System1, thrust::detail::minimum_system<System1, System2>>)
+                || ::cuda::std::is_same_v<System1, thrust::detail::minimum_system_t<System1, System2>>)
   {
     return thrust::detail::derived_cast(system1);
   }
   else
   {
-    static_assert(::cuda::std::is_same_v<System2, thrust::detail::minimum_system<System1, System2>>);
+    static_assert(::cuda::std::is_same_v<System2, thrust::detail::minimum_system_t<System1, System2>>);
     return thrust::detail::derived_cast(system2);
   }
 }
@@ -73,7 +73,7 @@ select_system(thrust::execution_policy<System1>& system1, thrust::execution_poli
 template <typename System1, typename System2, typename... Systems>
 _CCCL_HOST_DEVICE typename thrust::detail::lazy_disable_if<
   select_system_exists<Systems...>,
-  ::cuda::std::__type_defer_quote<thrust::detail::minimum_system, System1, System2, Systems...>>::type&
+  ::cuda::std::__type_defer_quote<thrust::detail::minimum_system_t, System1, System2, Systems...>>::type&
 select_system(thrust::execution_policy<System1>& system1,
               thrust::execution_policy<System2>& system2,
               thrust::execution_policy<Systems>&... systems)
