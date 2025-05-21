@@ -97,6 +97,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   graph_builder(_CUDA_VSTD::nullptr_t) = delete;
 
   //! \brief Constructs an uninitialized CUDA graph.
+  //! \param __dev The device on which graph nodes will execute, default to device 0.
   //! \throws None
   _CCCL_HOST_API constexpr graph_builder(no_init_t, device_ref __dev = device_ref{0}) noexcept
       : __dev_{__dev}
@@ -274,6 +275,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 
   //! \brief Constructs a `graph_builder` object from a native CUDA graph handle.
   //! \param __graph The native CUDA graph handle to construct the `graph_builder` object from.
+  //! \param __dev The device on which graph nodes will execute, default to device 0.
   //! \throws None
   //! \post `get() == __graph`
   [[nodiscard]] _CCCL_HOST_API static _CCCL_CONSTEXPR_CXX20 auto
@@ -373,6 +375,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
 private:
   //! \brief Constructs a `graph_builder` object from a native CUDA graph handle.
   //! \param __graph The native CUDA graph handle to construct the `graph_builder` object from.
+  //! \param __dev The device on which graph nodes will execute, default to device 0.
   //! \throws None
   _CCCL_HOST_API explicit constexpr graph_builder(cudaGraph_t __graph, device_ref __dev) noexcept
       : __dev_{__dev}

@@ -213,7 +213,7 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
     CUDAX_REQUIRE(*ptr == 43);
   }
 
-  SECTION("many paths joining")
+  SECTION("many branching paths joining")
   {
     cudax::graph_builder g;
     cudax::path_builder pb = cudax::start_path(g);
