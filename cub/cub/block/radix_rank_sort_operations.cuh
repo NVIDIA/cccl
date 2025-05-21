@@ -50,6 +50,7 @@
 #include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/bit>
+#include <cuda/functional>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>

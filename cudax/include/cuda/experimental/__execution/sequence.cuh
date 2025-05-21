@@ -144,9 +144,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr2>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr2>>
   {
-    return execution::get_env(__sndr2_);
+    return __fwd_env(execution::get_env(__sndr2_));
   }
 
   _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;

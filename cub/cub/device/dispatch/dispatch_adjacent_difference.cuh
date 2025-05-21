@@ -47,7 +47,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/type_traits>
+#include <cuda/std/functional>
 
 CUB_NAMESPACE_BEGIN
 

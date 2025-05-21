@@ -52,6 +52,7 @@ struct __completion_tag
 
 struct set_value_t : __completion_tag<__value>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class... _Ts>
   _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
@@ -65,6 +66,7 @@ struct set_value_t : __completion_tag<__value>
 
 struct set_error_t : __completion_tag<__error>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class _Ey>
   _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e)))
@@ -78,6 +80,7 @@ struct set_error_t : __completion_tag<__error>
 
 struct set_stopped_t : __completion_tag<__stopped>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
   _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
@@ -90,6 +93,7 @@ struct set_stopped_t : __completion_tag<__stopped>
 
 struct start_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _OpState>
   _CCCL_TRIVIAL_API auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
@@ -109,6 +113,7 @@ struct connect_t
     return transform_sender(_Domain{}, static_cast<_Sndr&&>(__sndr), get_env(__rcvr));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
   _CCCL_REQUIRES((!__has_sender_transform<_Sndr, env_of_t<_Rcvr>>) )
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
@@ -117,6 +122,7 @@ struct connect_t
     return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
   _CCCL_REQUIRES(__has_sender_transform<_Sndr, env_of_t<_Rcvr>>)
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
@@ -128,6 +134,7 @@ struct connect_t
 
 struct schedule_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
   _CCCL_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept -> decltype(declval<_Sch>().schedule())
   {

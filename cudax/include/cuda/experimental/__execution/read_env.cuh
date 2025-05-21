@@ -56,6 +56,7 @@ private:
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
