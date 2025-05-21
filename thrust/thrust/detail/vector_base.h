@@ -103,6 +103,7 @@ public:
   //! This constructor creates a vector_base without initializing elements. It mandates that the element type is
   //! trivially default-constructible.
   //! \param n The number of elements to create.
+  template <typename T2 = T>
   explicit vector_base(size_type n, no_init_t);
 
   /*! This constructor creates a vector_base with value-initialized elements.
@@ -247,6 +248,7 @@ public:
   //! that the element type is trivially default-constructible.
   //! \param new_size Number of elements this vector_base should contain.
   //! \throw std::length_error If n exceeds max_size().
+  template <typename T2 = T>
   void resize(size_type new_size, no_init_t);
 
   /*! \brief Resizes this vector_base to the specified number of elements.

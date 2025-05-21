@@ -89,11 +89,12 @@ vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
 }
 
 template <typename T, typename Alloc>
+template <typename T2>
 vector_base<T, Alloc>::vector_base(size_type n, no_init_t)
     : m_storage()
     , m_size(0)
 {
-  static_assert(::cuda::std::is_trivially_constructible_v<T>,
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
                 "The vector's element type must be trivially constructible to skip initialization.");
   if (n > 0)
   {
@@ -355,9 +356,10 @@ void vector_base<T, Alloc>::resize(size_type new_size, default_init_t)
 }
 
 template <typename T, typename Alloc>
+template <typename T2>
 void vector_base<T, Alloc>::resize(size_type new_size, no_init_t)
 {
-  static_assert(::cuda::std::is_trivially_constructible_v<T>,
+  static_assert(::cuda::std::is_trivially_constructible_v<T2>,
                 "The vector's element type must be trivially constructible to skip initialization.");
   if (new_size < size())
   {
