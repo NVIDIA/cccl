@@ -33,6 +33,8 @@
 #include <thrust/iterator/detail/device_system_tag.h>
 #include <thrust/iterator/detail/minimum_system.h>
 
+#include <cuda/std/type_traits>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace system::detail::generic
