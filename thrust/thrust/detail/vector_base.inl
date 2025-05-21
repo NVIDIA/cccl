@@ -83,7 +83,7 @@ vector_base<T, Alloc>::vector_base(size_type n, default_init_t)
 
     if constexpr (!::cuda::std::is_trivially_constructible_v<T>)
     {
-      value_init(n);
+      m_storage.value_initialize_n(begin(), size());
     }
   }
 }
