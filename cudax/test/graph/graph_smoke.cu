@@ -248,6 +248,7 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
     CUDAX_REQUIRE(*ptr == 54);
   }
 
+#if _CCCL_CTK_AT_LEAST(12, 3)
   SECTION("legacy stream capture")
   {
     cudax::graph_builder g;
@@ -271,6 +272,8 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
     s.sync();
     CUDAX_REQUIRE(*ptr == 44);
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 3)
+
   if (cudax::devices.size() > 1)
   {
     SECTION("Multi-device graph")

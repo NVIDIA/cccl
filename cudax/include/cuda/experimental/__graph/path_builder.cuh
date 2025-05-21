@@ -45,9 +45,8 @@ namespace cuda::experimental
 //! \rst
 //! .. _cudax-graph-path-builder:
 //! \endrst
-class path_builder
+struct path_builder
 {
-public:
   //! \brief Construct a path builder that will insert nodes into a graph builder.
   //! \param __builder The graph builder to create the path builder for.
   path_builder(graph_builder& __builder)
@@ -63,6 +62,7 @@ public:
       , __dev_(__dev)
   {}
 
+#if _CCCL_CTK_AT_LEAST(12, 3)
   //! \brief Capture the nodes into the path builder from a legacy stream capture.
   //! \param __stream The stream to use for the capture.
   //! \param __capture_fn A function that will be called with the stream to capture the nodes to.
@@ -105,6 +105,7 @@ public:
     __nodes_.clear();
     __nodes_.push_back(__last_captured_node[0]);
   }
+#endif // _CCCL_CTK_AT_LEAST(12, 3)
 
   //! \brief Clear the path builder and set the dependency node.
   //! Used by most APIs that operate on a path builder to insert a new node into the path.
