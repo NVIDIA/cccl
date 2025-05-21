@@ -41,6 +41,9 @@
 // include this last:
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wunused-but-set-parameter")
+
 namespace cuda::experimental::execution
 {
 using _CUDA_VSTD::__type_list;
@@ -180,15 +183,20 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT completion_signatures
   {
     if constexpr (_Tag() == set_value)
     {
-      return __partitioned::template __value_types<__type_function<set_value_t>::__call, completion_signatures>();
+      using __result_t =
+        typename __partitioned::template __value_types<__type_function<set_value_t>::__call, completion_signatures>;
+      return __result_t{};
     }
     else if constexpr (_Tag() == set_error)
     {
-      return __partitioned::template __error_types<completion_signatures, __type_function<set_error_t>::__call>();
+      using __result_t =
+        typename __partitioned::template __error_types<completion_signatures, __type_function<set_error_t>::__call>;
+      return __result_t{};
     }
     else
     {
-      return __partitioned::template __stopped_types<completion_signatures>();
+      using __result_t = typename __partitioned::template __stopped_types<completion_signatures>;
+      return __result_t{};
     }
   }
 
@@ -352,13 +360,13 @@ template <class... _Sndr>
 template <class... What, class... Values>
 [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto invalid_completion_signature([[maybe_unused]] Values... values)
 {
-  return _ERROR<What...>();
+  return _ERROR<What...>{};
 }
 
 template <class... _Sndr>
 [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __dependent_sender() -> __dependent_sender_error<_Sndr...>
 {
-  return __dependent_sender_error<_Sndr...>();
+  return __dependent_sender_error<_Sndr...>{};
 }
 
 #endif // ^^^ no constexpr exceptions ^^^
@@ -843,7 +851,7 @@ _CCCL_API constexpr auto transform_completion_signatures(
 #if _CCCL_HAS_EXCEPTIONS()
 _CCCL_API inline constexpr auto __eptr_completion() noexcept
 {
-  return completion_signatures<set_error_t(::std::exception_ptr)>();
+  return completion_signatures<set_error_t(::std::exception_ptr)>{};
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
 _CCCL_API inline constexpr auto __eptr_completion() noexcept
@@ -893,6 +901,8 @@ _CCCL_API constexpr auto __is_dependent_sender() noexcept -> bool
 #endif
 
 } // namespace cuda::experimental::execution
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
