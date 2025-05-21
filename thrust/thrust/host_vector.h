@@ -307,13 +307,13 @@ public:
     //!         value-initialization.
     //! \param new_size Number of elements this vector should contain.
     //! \throw std::length_error If n exceeds max_size().
-  void resize(size_type new_size, default_init_t);
+    void resize(size_type new_size, default_init_t);
 
-  //! \brief Resizes this vector to the specified number of elements, without initializing elements. It mandates
-  //! that the element type is trivially default-constructible.
-  //! \param new_size Number of elements this vector should contain.
-  //! \throw std::length_error If n exceeds max_size().
-  void resize(size_type new_size, no_init_t);
+    //! \brief Resizes this vector to the specified number of elements, without initializing elements. It mandates
+    //! that the element type is trivially default-constructible.
+    //! \param new_size Number of elements this vector should contain.
+    //! \throw std::length_error If n exceeds max_size().
+    void resize(size_type new_size, no_init_t);
 
     /*! Returns the number of elements in this vector.
      */
