@@ -104,7 +104,7 @@ struct assign_n
 template <int N>
 struct verify_n
 {
-  __device__ constexpr void operator()(int* pi) const noexcept
+  __device__ void operator()(int* pi) const noexcept
   {
     CUDAX_REQUIRE(*pi == N);
   }
