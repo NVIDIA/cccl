@@ -754,7 +754,7 @@ void TestTransformN()
 {
   using namespace thrust::placeholders;
 
-  thrust::device_vector vec{1, 2, 3};
+  thrust::device_vector vec{1, 2, 3, 4, 5};
   thrust::device_vector stencil{true, false, true};
 
   {
