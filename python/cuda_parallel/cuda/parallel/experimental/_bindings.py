@@ -14,11 +14,11 @@
 # See also:
 # https://github.com/NVIDIA/cuda-python/blob/main/cuda_bindings/cuda/bindings/_path_finder/README.md
 
-from cuda.bindings.path_finder import (
-    _load_nvidia_dynamic_library,  # type: ignore[import-not-found]
+from cuda.bindings.path_finder import (  # type: ignore[import-not-found]
+    _load_nvidia_dynamic_library,
 )
 
 for libname in ("nvrtc", "nvJitLink"):
     _load_nvidia_dynamic_library(libname)
 
-from ._cy_bindings import *  # noqa: E402 F403
+from ._bindings_impl import *  # noqa: E402 F403
