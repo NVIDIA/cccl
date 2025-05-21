@@ -85,8 +85,7 @@ struct make_counting_iterator_base
                      difference>;
 };
 
-struct empty
-{};
+using unit_stride = compile_time_value<1>;
 } // namespace detail
 
 //! \addtogroup iterators
@@ -163,7 +162,7 @@ template <typename Incrementable,
           typename System       = use_default,
           typename Traversal    = use_default,
           typename Difference   = use_default,
-          typename StrideHolder = detail::empty>
+          typename StrideHolder = detail::unit_stride>
 class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
     : public detail::make_counting_iterator_base<Incrementable, System, Traversal, Difference, StrideHolder>::type
     , StrideHolder
@@ -222,7 +221,7 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void advance(difference_type n)
   {
-    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::empty>)
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
     {
       this->base_reference() = static_cast<Incrementable>(this->base_reference() + n);
     }
@@ -235,7 +234,7 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void increment()
   {
-    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::empty>)
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
     {
       ++this->base_reference();
     }
@@ -248,7 +247,7 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void decrement()
   {
-    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::empty>)
+    if constexpr (::cuda::std::is_same_v<StrideHolder, detail::unit_stride>)
     {
       --this->base_reference();
     }
