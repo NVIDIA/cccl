@@ -41,8 +41,8 @@
   do                                                                    \
   {                                                                     \
     [[maybe_unused]] const ::cudaError_t __status = _NAME(__VA_ARGS__); \
-    _CCCL_ASSERT(__status == cudaSuccess, _MSG);                        \
     ::cudaGetLastError(); /* clear CUDA error state */                  \
+    _CCCL_ASSERT(__status == cudaSuccess, _MSG);                        \
   } while (0)
 
 #define _CCCL_LOG_CUDA_API(_NAME, _MSG, ...)                                       \
