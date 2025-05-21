@@ -208,9 +208,11 @@ __host__ __device__ constexpr bool test()
   {
     move_tracker arr[2];
     cuda::std::ranges::iter_swap(cuda::std::begin(arr), cuda::std::begin(arr) + 1);
-    if (__builtin_is_constant_evaluated())
+    if (cuda::std::is_constant_evaluated())
     {
+#  if !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
       assert(arr[0].moves() == 1 && arr[1].moves() == 3);
+#  endif // !TEST_COMPILER(MSVC) || TEST_STD_VER != 2017
     }
     else
     {
