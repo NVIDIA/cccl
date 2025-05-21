@@ -924,7 +924,7 @@ void TestVectorNoInitResize()
   }
 
   // non-trivially-constructible type: those should fail to compile
-  thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
-  thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
+  // thrust::host_vector<IntWithInit>(5).resize(10, thrust::no_init);
+  // thrust::device_vector<IntWithInit>(5).resize(10, thrust::no_init);
 }
 DECLARE_UNITTEST(TestVectorNoInitResize);
