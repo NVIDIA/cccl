@@ -173,7 +173,6 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
     [[maybe_unused]] auto node = cudax::launch(pb, test::one_thread_dims, test::empty_kernel{});
 
     auto exec = g.instantiate();
-    cudax::stream s;
     exec.launch(s);
     s.sync();
   }
@@ -185,7 +184,6 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
     [[maybe_unused]] auto node = cudax::launch(pb, test::one_thread_dims, test::assign_42{}, ptr);
     auto node2                 = cudax::launch(pb, test::one_thread_dims, test::verify_42{}, ptr);
     auto exec                  = g.instantiate();
-    cudax::stream s;
     exec.launch(s);
     s.sync();
     CUDAX_REQUIRE(*ptr == 42);
@@ -301,7 +299,6 @@ C2H_TEST("Path builder with kernel nodes", "[graph]")
       CUDAX_REQUIRE(g.node_count() == 7);
 
       auto exec = g.instantiate();
-      cudax::stream s;
       exec.launch(s);
       s.sync();
       CUDAX_REQUIRE(*ptr == 43);
