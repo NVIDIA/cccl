@@ -1,3 +1,11 @@
+#include <cuda/__cccl_config>
+
+_CCCL_DIAG_PUSH
+// gcc 10 and 11 wrongly warn about an out-of-bounds access in TestWritingStridedIteratorToStructMember
+#if _CCCL_COMPILER(GCC, >=, 10) && _CCCL_COMPILER(GCC, <, 12)
+_CCCL_DIAG_SUPPRESS_GCC("-Warray-bounds")
+#endif // _CCCL_COMPILER(GCC, >=, 10) && _CCCL_COMPILER(GCC, <, 12)
+
 #include <thrust/device_vector.h>
 #include <thrust/iterator/strided_iterator.h>
 
@@ -62,6 +70,7 @@ void TestWritingStridedIteratorToStructMember()
   const auto data       = arr_of_pairs{{{1, 2}, {3, 4}, {5, 6}, {7, 8}}};
   const auto reference  = arr_of_pairs{{{1, 1337}, {3, 1337}, {5, 1337}, {7, 1337}}};
   constexpr auto stride = sizeof(pair) / sizeof(double);
+  static_assert(stride == 2);
 
   // iterate over all second elements (runtime stride)
   {
@@ -80,3 +89,5 @@ void TestWritingStridedIteratorToStructMember()
   }
 }
 DECLARE_UNITTEST(TestWritingStridedIteratorToStructMember);
+
+_CCCL_DIAG_POP
