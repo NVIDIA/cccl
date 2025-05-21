@@ -605,13 +605,27 @@ struct GeneralizeOperator<::cuda::minimum<T>, T>
   using type = ::cuda::minimum<>;
 };
 
+template <typename T>
+struct GeneralizeOperator<_CUDA_VSTD::logical_and<T>, T>
+{
+  using type = _CUDA_VSTD::logical_and<>;
+};
+
+template <typename T>
+struct GeneralizeOperator<_CUDA_VSTD::logical_or<T>, T>
+{
+  using type = _CUDA_VSTD::logical_or<>;
+};
+
 template <typename Op, typename T>
 using generalize_operator_t = typename GeneralizeOperator<Op, T>::type;
 
 template <typename T, typename Operator>
 [[nodiscard]] constexpr _CCCL_DEVICE _CCCL_FORCEINLINE auto generalize_operator(Operator op)
 {
-  if constexpr (is_cuda_operator_v<Operator, T>)
+  if constexpr (is_cuda_std_logical_or_v<Operator, T> || is_cuda_std_logical_and_v<Operator, T>
+                || is_cuda_minimum_maximum_v<Operator, T> || is_cuda_std_plus_mul_v<Operator, T>
+                || is_cuda_std_bitwise_v<Operator, T>)
   {
     return generalize_operator_t<Operator, T>{};
   }

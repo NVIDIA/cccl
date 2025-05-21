@@ -105,7 +105,7 @@ template <bool UsePtx = true, typename T, typename ReductionOp, typename Config>
   constexpr bool is_vector_type                      = _CUDA_VSTD::is_same_v<float2, T> && is_any_short2_v<T>;
   const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
 
-  using cast_t = normalize_integer_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
+  using cast_t = signed_promotion_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
   auto input1  = static_cast<cast_t>(input);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
