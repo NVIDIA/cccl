@@ -19,6 +19,7 @@ requires-python = ">=3.9"
 dependencies = [
   "cuda-cccl",
   "numba>=0.60.0",
+  # Pinning to exact version until cuda.bindings.path_finder API is made public:
   "cuda-python==12.9.0",
   "cupy-cuda12x",
   "nvidia-cuda-nvrtc-cu12",
