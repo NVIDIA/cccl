@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -66,7 +67,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
     else
     {
       using __dom2_t _CCCL_NODEBUG_ALIAS = __transform_domain_t<domain_for_t<__result_t, _Env...>, __result_t, _Env...>;
-      using __result2_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom2_t, _Sndr, _Env...>;
+      using __result2_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom2_t, __result_t, _Env...>;
 
       if constexpr (_CUDA_VSTD::_IsSame<__result2_t&&, __result_t&&>::value)
       {
@@ -84,9 +85,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__passthru))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const noexcept -> _Sndr&&
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const
+    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }
