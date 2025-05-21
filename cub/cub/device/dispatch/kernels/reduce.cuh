@@ -370,11 +370,12 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
       }
     }
 
-    FloatType abs_max_val = fabs(items[0]);
+    FloatType abs_max_val = ::cuda::std::fabs(items[0]);
+
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int j = 1; j < ITEMS_PER_THREAD; j++)
     {
-      abs_max_val = fmax(fabs(items[j]), abs_max_val);
+      abs_max_val = ::cuda::std::fmax(::cuda::std::fabs(items[j]), abs_max_val);
     }
 
     thread_aggregate.set_max_val(abs_max_val);

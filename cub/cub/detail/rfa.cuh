@@ -138,14 +138,28 @@ struct RFA_bins
   {
     if (index == 0)
     {
-      return ::cuda::std::ldexpf(0.75f, MAX_EXP);
+      if constexpr (std::is_same_v<ftype, float>)
+      {
+        return ::cuda::std::ldexp(0.75, MAX_EXP);
+      }
+      else
+      {
+        return 2.0 * ::cuda::std::ldexp(0.75, MAX_EXP - 1);
+      }
+    }
+
+    if (index > 0 && index <= MAXINDEX)
+    {
+      return ::cuda::std::ldexp(0.75, MAX_EXP + MANT_DIG - BIN_WIDTH + 1 - index * BIN_WIDTH);
     }
     else
     {
-      return ::cuda::std::ldexpf(0.75f, MAX_EXP + MANT_DIG - BIN_WIDTH - index * BIN_WIDTH);
+      return ::cuda::std::ldexp(0.75, MAX_EXP + MANT_DIG - BIN_WIDTH + 1 - MAXINDEX * BIN_WIDTH);
     }
   }
 };
+
+static char rfa_bin_host_buffer[sizeof(RFA_bins<double>)];
 
 //! Class to hold a reproducible summation of the numbers passed to it
 //!
@@ -199,36 +213,13 @@ private:
       NV_IS_HOST,
       (
         // clang-format off
-          static float bins_host[MAXINDEX + MAXFOLD] = {};
-
-          for (int i = 0; i < MAXINDEX + MAXFOLD; ++i)
-          {
-            bins_host[i] = RFA_bins<ftype>::initialize_bins(i);
-          }
-
-          if (index >= MAXINDEX + MAXFOLD)
-          {
-            return static_cast<ftype>(bins_host[MAXINDEX + MAXFOLD - 1]);
-          }
-          if (index < 0)
-          {
-            return static_cast<ftype>(bins_host[0]);
-          }
-          return static_cast<ftype>(bins_host[index]);
+          return static_cast<ftype>(reinterpret_cast<ftype*>( &rfa_bin_host_buffer)[index]);
         // clang-format on
         ),
       ( // NV_IS_DEVICE:
         // clang-format off
           ftype* bins = get_shared_bin_array<ftype, MAXINDEX + MAXFOLD>();
-          if (index >= MAXINDEX + MAXFOLD)
-          {
-            return static_cast<ftype>(bins[MAXINDEX + MAXFOLD - 1]);
-          }
-          if (index < 0)
-          {
-            return static_cast<ftype>(bins[0]);
-          }
-          return static_cast<ftype>(bins[index]);
+         return static_cast<ftype>(bins[index]);
         // clang-format on
         ));
   }
@@ -780,7 +771,7 @@ private:
         {
           continue;
         }
-        primary(i * incpriY) += x.primary((i + shift) * incpriX) - binned_bins(i + shift);
+        primary(i * incpriY) += x.primary((i + shift) * incpriX) - binned_bins(X_index + i + shift);
         carry(i * inccarY) += x.carry((i + shift) * inccarX);
       }
     }

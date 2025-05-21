@@ -166,19 +166,27 @@ void deterministic_reduce_gpu(const int N)
 
   deterministic_dispatch_t_p1::Dispatch(nullptr, temp_storage_bytes, d_input, output_p1.begin(), num_items);
 
-  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  c2h::device_vector<std::uint8_t> temp_storage_p1(temp_storage_bytes);
 
   deterministic_dispatch_t_p1::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, d_input, output_p1.begin(), num_items);
+    thrust::raw_pointer_cast(temp_storage_p1.data()), temp_storage_bytes, d_input, output_p1.begin(), num_items);
 
   type const res_p1 = output_p1[0];
 
   deterministic_dispatch_t_p2::Dispatch(nullptr, temp_storage_bytes, d_input, output_p2.begin(), num_items);
 
-  deterministic_dispatch_t_p2::Dispatch(
-    thrust::raw_pointer_cast(temp_storage.data()), temp_storage_bytes, d_input, output_p2.begin(), num_items);
+  c2h::device_vector<std::uint8_t> temp_storage_p2(temp_storage_bytes);
 
-  type const res_p2 = output_p1[0];
+  deterministic_dispatch_t_p2::Dispatch(
+    thrust::raw_pointer_cast(temp_storage_p2.data()), temp_storage_bytes, d_input, output_p2.begin(), num_items);
+
+  type const res_p2 = output_p2[0];
+
+  c2h::host_vector<type> h_input = input;
+  const type h_expected          = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
+
+  // device RFA result should be approximately equal to host result
+  REQUIRE(approx_eq(h_expected, res_p1));
 
   // Both results should be same, as RFA is deterministic
   REQUIRE(res_p1 == res_p2);
