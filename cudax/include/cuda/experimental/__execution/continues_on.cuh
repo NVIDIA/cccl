@@ -47,49 +47,37 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   }
 
   template <class _Sndr, class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<continues_on_t, _Sch, _Sndr>
+  {};
 
   template <class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
+  {
+    template <class _Sndr>
+    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+    {
+      return continues_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
+    }
+
+    _Sch __sch;
+  };
 
   template <class _Sndr, class _Sch>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const;
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
+  {
+    static_assert(__is_sender<_Sndr>);
+    static_assert(__is_scheduler<_Sch>);
+    // continues_on always dispatches based on the domain of the predecessor sender
+    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+    return execution::transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
+  }
 
   template <class _Sch>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>;
-};
-
-template <class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__closure_t
-{
-  _Sch __sch;
-
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
   {
-    return continues_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
+    return __closure_t<_Sch>{__sch};
   }
 };
-
-template <class _Sndr, class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t : __detail::__transfer_sndr_t<continues_on_t, _Sch, _Sndr>
-{};
-
-template <class _Sndr, class _Sch>
-_CCCL_TRIVIAL_API constexpr auto continues_on_t::operator()(_Sndr __sndr, _Sch __sch) const
-{
-  static_assert(__is_sender<_Sndr>);
-  static_assert(__is_scheduler<_Sch>);
-  // continues_on always dispatches based on the domain of the predecessor sender
-  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
-  return execution::transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
-}
-
-template <class _Sch>
-_CCCL_TRIVIAL_API constexpr auto continues_on_t::operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
-{
-  return __closure_t<_Sch>{__sch};
-}
 
 template <class _Sndr, class _Sch>
 inline constexpr size_t structured_binding_size<continues_on_t::__sndr_t<_Sndr, _Sch>> = 3;
