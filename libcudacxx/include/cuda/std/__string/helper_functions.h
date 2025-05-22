@@ -32,6 +32,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
@@ -48,6 +49,7 @@ __cccl_str_find(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexce
   return static_cast<_SizeT>(__r - __p);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _Traits>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr const _CharT*
 __cccl_search_substring(const _CharT* __first1, const _CharT* __last1, const _CharT* __first2, const _CharT* __last2)
@@ -121,6 +123,7 @@ __cccl_str_find(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos,
   return static_cast<_SizeT>(__r - __p);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_rfind(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
@@ -147,6 +150,7 @@ __cccl_str_rfind(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexc
   return __npos;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
@@ -169,6 +173,7 @@ __cccl_str_rfind(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos
   return static_cast<_SizeT>(__r - __p);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_first_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
@@ -185,6 +190,7 @@ __cccl_str_find_first_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Siz
   return static_cast<_SizeT>(__r - __p);
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_last_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
@@ -211,6 +217,7 @@ __cccl_str_find_last_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _Size
   return __npos;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
@@ -230,6 +237,7 @@ __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, 
   return __npos;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
@@ -248,6 +256,7 @@ __cccl_str_find_first_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT 
   return __npos;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _SizeT __pos, _SizeT __n) noexcept
@@ -270,6 +279,7 @@ __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, const _CharT* __s, _
   return __npos;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _CharT, class _SizeT, class _Traits, _SizeT __npos>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _SizeT
 __cccl_str_find_last_not_of(const _CharT* __p, _SizeT __sz, _CharT __c, _SizeT __pos) noexcept
