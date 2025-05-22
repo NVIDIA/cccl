@@ -110,7 +110,8 @@ private:
   [[maybe_unused]] _CUDA_VSTD::source_location __loc = _CUDA_VSTD::source_location::current())
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (throw ::cuda::cuda_error(__status, __msg, __api, __loc);), //
+                    (::cudaGetLastError(); // clear CUDA error state
+                     throw ::cuda::cuda_error(__status, __msg, __api, __loc);), //
                     (_CUDA_VSTD_NOVERSION::terminate();))
 }
 #else // ^^^ _CCCL_HAS_EXCEPTIONS() ^^^ / vvv !_CCCL_HAS_EXCEPTIONS() vvv
