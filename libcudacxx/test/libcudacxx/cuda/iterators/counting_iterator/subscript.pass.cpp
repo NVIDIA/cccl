@@ -21,7 +21,7 @@ template <class T>
 __host__ __device__ constexpr void testType()
 {
   {
-    cuda::iota_iterator<T> iter{T{0}};
+    cuda::counting_iterator<T> iter{T{0}};
     for (int i = 0; i < 100; ++i)
     {
       assert(iter[i] == T(i));
@@ -30,7 +30,7 @@ __host__ __device__ constexpr void testType()
     static_assert(cuda::std::is_same_v<decltype(iter[0]), T>);
   }
   {
-    cuda::iota_iterator<T> iter{T{10}};
+    cuda::counting_iterator<T> iter{T{10}};
     for (int i = 0; i < 100; ++i)
     {
       assert(iter[i] == T(i + 10));
@@ -40,7 +40,7 @@ __host__ __device__ constexpr void testType()
   }
 
   {
-    const cuda::iota_iterator<T> iter{T{0}};
+    const cuda::counting_iterator<T> iter{T{0}};
     for (int i = 0; i < 100; ++i)
     {
       assert(iter[i] == T(i));
@@ -49,7 +49,7 @@ __host__ __device__ constexpr void testType()
     static_assert(cuda::std::is_same_v<decltype(iter[0]), T>);
   }
   {
-    const cuda::iota_iterator<T> iter{T{10}};
+    const cuda::counting_iterator<T> iter{T{10}};
     for (int i = 0; i < 100; ++i)
     {
       assert(iter[i] == T(i + 10));

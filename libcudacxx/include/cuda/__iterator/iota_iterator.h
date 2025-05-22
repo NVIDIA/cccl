@@ -25,18 +25,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-using _CUDA_VRANGES::iota_iterator;
-
-//! @brief make_transform_iterator creates a \p transform_iterator from an \c Iterator and \c _Fn.
-//!
-//! @param __iter The \c Iterator pointing to the input range of the newly created \p transform_iterator.
-//! @param __fun The \c _Fn used to transform the range pointed to by @param __iter in the newly created
-//! \p transform_iterator.
-//! @return A new \p transform_iterator which transforms the range at @param __iter by @param __fun.
 template <class _Start>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto make_iota_iterator(_Start __start)
+using counting_iterator = _CUDA_VRANGES::__iota_iterator<_Start>;
+
+//! @brief make_counting_iterator creates a \p counting_iterator from an __integer-like__ \c _Start
+//! @param __start The __integer-like__ \c _Start representing the initial count
+template <class _Start>
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr auto make_counting_iterator(_Start __start)
 {
-  return iota_iterator{__start};
+  return counting_iterator<_Start>{__start};
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

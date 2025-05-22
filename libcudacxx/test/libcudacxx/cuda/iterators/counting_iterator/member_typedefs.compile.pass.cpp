@@ -108,7 +108,7 @@ _CCCL_CONCEPT HasIteratorCategory =
 __host__ __device__ void test()
 {
   {
-    using Iter = cuda::iota_iterator<char>;
+    using Iter = cuda::counting_iterator<char>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, char>);
@@ -117,7 +117,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
   }
   {
-    using Iter = cuda::iota_iterator<short>;
+    using Iter = cuda::counting_iterator<short>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, short>);
@@ -126,7 +126,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
   }
   {
-    using Iter = cuda::iota_iterator<int>;
+    using Iter = cuda::counting_iterator<int>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, int>);
@@ -141,7 +141,7 @@ __host__ __device__ void test()
 #endif
   }
   {
-    using Iter = cuda::iota_iterator<long>;
+    using Iter = cuda::counting_iterator<long>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, long>);
@@ -151,7 +151,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, long long>);
   }
   {
-    using Iter = cuda::iota_iterator<long long>;
+    using Iter = cuda::counting_iterator<long long>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::random_access_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, long long>);
@@ -162,35 +162,35 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::difference_type, long long>);
   }
   {
-    using Iter = cuda::iota_iterator<Decrementable>;
+    using Iter = cuda::counting_iterator<Decrementable>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::bidirectional_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, Decrementable>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
   }
   {
-    using Iter = cuda::iota_iterator<Incrementable>;
+    using Iter = cuda::counting_iterator<Incrementable>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, Incrementable>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
   }
   {
-    using Iter = cuda::iota_iterator<NotIncrementable>;
+    using Iter = cuda::counting_iterator<NotIncrementable>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::input_iterator_tag>);
     static_assert(!HasIteratorCategory<Iter>);
     static_assert(cuda::std::same_as<Iter::value_type, NotIncrementable>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
   }
   {
-    using Iter = cuda::iota_iterator<BigType>;
+    using Iter = cuda::counting_iterator<BigType>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, BigType>);
     static_assert(cuda::std::same_as<Iter::difference_type, int>);
   }
   {
-    using Iter = cuda::iota_iterator<CharDifferenceType>;
+    using Iter = cuda::counting_iterator<CharDifferenceType>;
     static_assert(cuda::std::same_as<Iter::iterator_concept, cuda::std::forward_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::iterator_category, cuda::std::input_iterator_tag>);
     static_assert(cuda::std::same_as<Iter::value_type, CharDifferenceType>);

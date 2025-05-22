@@ -21,8 +21,8 @@
 __host__ __device__ constexpr bool test()
 {
   {
-    cuda::iota_iterator<int> iter1{0};
-    cuda::iota_iterator<int> iter2{0};
+    cuda::counting_iterator<int> iter1{0};
+    cuda::counting_iterator<int> iter2{0};
     assert(iter1 == iter2);
     assert(++iter1 != iter2++);
     assert(iter1 == iter2);
@@ -34,8 +34,8 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::same_as<cuda::std::remove_reference_t<decltype(++iter2)>, decltype(iter2++)>);
   }
   {
-    cuda::iota_iterator<SomeInt> iter1{SomeInt{0}};
-    cuda::iota_iterator<SomeInt> iter2{SomeInt{0}};
+    cuda::counting_iterator<SomeInt> iter1{SomeInt{0}};
+    cuda::counting_iterator<SomeInt> iter2{SomeInt{0}};
     assert(iter1 == iter2);
     assert(++iter1 != iter2++);
     assert(iter1 == iter2);
@@ -48,8 +48,8 @@ __host__ __device__ constexpr bool test()
   }
 
   {
-    cuda::iota_iterator<NotIncrementable> iter1{NotIncrementable{0}};
-    cuda::iota_iterator<NotIncrementable> iter2{NotIncrementable{0}};
+    cuda::counting_iterator<NotIncrementable> iter1{NotIncrementable{0}};
+    cuda::counting_iterator<NotIncrementable> iter2{NotIncrementable{0}};
     assert(iter1 == iter2);
     assert(++iter1 != iter2);
     iter2++;

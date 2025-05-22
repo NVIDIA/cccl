@@ -124,7 +124,7 @@ template <weakly_incrementable _Start>
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Start, enable_if_t<weakly_incrementable<_Start>, int> = 0, enable_if_t<copyable<_Start>, int> = 0>
 #endif // _CCCL_NO_CONCEPTS
-struct iota_iterator : public __iota_iterator_category<_Start>
+struct __iota_iterator : public __iota_iterator_category<_Start>
 {
   using iterator_concept =
     conditional_t<__advanceable<_Start>,
@@ -141,16 +141,16 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _Start __value_ = _Start();
 
 #if !defined(_CCCL_NO_CONCEPTS)
-  _CCCL_HIDE_FROM_ABI iota_iterator()
+  _CCCL_HIDE_FROM_ABI __iota_iterator()
     requires default_initializable<_Start>
   = default;
 #else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(default_initializable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_iterator() noexcept(is_nothrow_default_constructible_v<_Start2>) {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __iota_iterator() noexcept(is_nothrow_default_constructible_v<_Start2>) {}
 #endif // _CCCL_NO_CONCEPTS
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit iota_iterator(_Start __value) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __iota_iterator(_Start __value) noexcept(
     is_nothrow_move_constructible_v<_Start>)
       : __value_(_CUDA_VSTD::move(__value))
   {}
@@ -176,7 +176,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_iterator& operator++() noexcept(noexcept(++_CUDA_VSTD::declval<_Start&>()))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __iota_iterator& operator++() noexcept(noexcept(++_CUDA_VSTD::declval<_Start&>()))
   {
     ++__value_;
     return *this;
@@ -199,7 +199,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__decrementable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_iterator& operator--() noexcept(noexcept(--_CUDA_VSTD::declval<_Start2&>()))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __iota_iterator& operator--() noexcept(noexcept(--_CUDA_VSTD::declval<_Start2&>()))
   {
     --__value_;
     return *this;
@@ -207,7 +207,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__decrementable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_iterator
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __iota_iterator
   operator--(int) noexcept(noexcept(--_CUDA_VSTD::declval<_Start2&>()) && is_nothrow_copy_constructible_v<_Start>)
   {
     auto __tmp = *this;
@@ -217,7 +217,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_iterator& operator+=(difference_type __n) noexcept(__integer_like<_Start2>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __iota_iterator& operator+=(difference_type __n) noexcept(__integer_like<_Start2>)
   {
     if constexpr (__integer_like<_Start> && !__signed_integer_like<_Start>)
     {
@@ -243,7 +243,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_iterator& operator-=(difference_type __n) noexcept(__integer_like<_Start2>)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __iota_iterator& operator-=(difference_type __n) noexcept(__integer_like<_Start2>)
   {
     if constexpr (__integer_like<_Start> && !__signed_integer_like<_Start>)
     {
@@ -270,7 +270,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(equality_comparable<_Start2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator==(const iota_iterator& __x, const iota_iterator& __y) noexcept(
+  operator==(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() == _CUDA_VSTD::declval<const _Start2&>()))
   {
     return __x.__value_ == __y.__value_;
@@ -280,7 +280,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(equality_comparable<_Start2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator!=(const iota_iterator& __x, const iota_iterator& __y) noexcept(
+  operator!=(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() != _CUDA_VSTD::declval<const _Start2&>()))
   {
     return __x.__value_ != __y.__value_;
@@ -290,7 +290,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(totally_ordered<_Start2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator<(const iota_iterator& __x, const iota_iterator& __y) noexcept(
+  operator<(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
     return __x.__value_ < __y.__value_;
@@ -299,7 +299,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(totally_ordered<_Start2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator>(const iota_iterator& __x, const iota_iterator& __y) noexcept(
+  operator>(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
     return __y < __x;
@@ -308,7 +308,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(totally_ordered<_Start2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator<=(const iota_iterator& __x, const iota_iterator& __y) noexcept(
+  operator<=(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
     return !(__y < __x);
@@ -317,7 +317,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(totally_ordered<_Start2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
-  operator>=(const iota_iterator& __x, const iota_iterator& __y) noexcept(
+  operator>=(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() < _CUDA_VSTD::declval<const _Start2&>()))
   {
     return !(__x < __y);
@@ -325,7 +325,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
 
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-  operator<=>(const iota_iterator& __x, const iota_iterator& __y) noexcept(
+  operator<=>(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(
     noexcept(_CUDA_VSTD::declval<const _Start2&>() <=> _CUDA_VSTD::declval<const _Start2&>()))
     requires totally_ordered<_Start> && three_way_comparable<_Start>
   {
@@ -335,8 +335,8 @@ struct iota_iterator : public __iota_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iota_iterator
-  operator+(iota_iterator __i, difference_type __n) noexcept(__integer_like<_Start2>)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iota_iterator
+  operator+(__iota_iterator __i, difference_type __n) noexcept(__integer_like<_Start2>)
   {
     __i += __n;
     return __i;
@@ -344,16 +344,16 @@ struct iota_iterator : public __iota_iterator_category<_Start>
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iota_iterator
-  operator+(difference_type __n, iota_iterator __i) noexcept(__integer_like<_Start2>)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iota_iterator
+  operator+(difference_type __n, __iota_iterator __i) noexcept(__integer_like<_Start2>)
   {
     return __i + __n;
   }
 
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr iota_iterator
-  operator-(iota_iterator __i, difference_type __n) noexcept(__integer_like<_Start2>)
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __iota_iterator
+  operator-(__iota_iterator __i, difference_type __n) noexcept(__integer_like<_Start2>)
   {
     __i -= __n;
     return __i;
@@ -362,7 +362,7 @@ struct iota_iterator : public __iota_iterator_category<_Start>
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(__advanceable<_Start2>)
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr difference_type
-  operator-(const iota_iterator& __x, const iota_iterator& __y) noexcept(__integer_like<_Start2>)
+  operator-(const __iota_iterator& __x, const __iota_iterator& __y) noexcept(__integer_like<_Start2>)
   {
     if constexpr (__integer_like<_Start> && !__signed_integer_like<_Start>)
     {
