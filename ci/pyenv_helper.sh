@@ -13,7 +13,7 @@ setup_python_env() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         if [ "$ID" = "ubuntu" ]; then
-            apt update; apt install -y make libssl-dev zlib1g-dev \
+            sudo apt update; sudo apt install -y make libssl-dev zlib1g-dev \
             libbz2-dev libreadline-dev libsqlite3-dev curl git \
             libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
         elif [ "$ID" = "rocky" ]; then
