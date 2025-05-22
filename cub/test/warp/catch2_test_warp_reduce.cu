@@ -30,7 +30,7 @@
 #include <cuda/std/complex>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
-#include <cuda/std/type_traits>
+#include <cuda/type_traits>
 
 #include <array>
 #include <numeric>
@@ -328,7 +328,7 @@ C2H_TEST("WarpReduce::Sum", "[reduce][warp][predefined_op][full]", arithmetic_ty
   CAPTURE(c2h::type_name<T>(), c2h::type_name<T>(), logical_warp_threads);
   c2h::device_vector<T> d_in(input_size);
   c2h::device_vector<T> d_out(output_size);
-  if constexpr (cuda::std::__is_any_floating_point_v<T>)
+  if constexpr (cuda::is_floating_point_v<T>)
   {
     c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
   }
@@ -438,7 +438,7 @@ C2H_TEST("WarpReduce::Sum Partial", "[reduce][warp][predefined_op][partial]", ar
   CAPTURE(c2h::type_name<T>(), logical_warp_threads, valid_items);
   c2h::device_vector<T> d_in(input_size);
   c2h::device_vector<T> d_out(output_size);
-  if constexpr (cuda::std::__is_any_floating_point_v<T>)
+  if constexpr (cuda::is_floating_point_v<T>)
   {
     c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
   }

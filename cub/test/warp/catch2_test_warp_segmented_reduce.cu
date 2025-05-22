@@ -24,7 +24,7 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
-#include <cuda/std/functional>
+#include <cuda/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
@@ -33,7 +33,6 @@
 #include <c2h/catch2_test_helper.h>
 #include <c2h/check_results.cuh>
 #include <c2h/custom_type.h>
-#include <sys/types.h>
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
@@ -260,7 +259,7 @@ C2H_TEST(
   c2h::device_vector<T> d_in(params::tile_size);
   c2h::device_vector<flag_t> d_flags(params::tile_size);
   c2h::device_vector<T> d_out(params::tile_size);
-  if constexpr (cuda::std::__is_any_floating_point_v<T>)
+  if constexpr (cuda::is_floating_point_v<T>)
   {
     c2h::gen(C2H_SEED(1), d_in, T{-1.0}, T{2.0});
   }
