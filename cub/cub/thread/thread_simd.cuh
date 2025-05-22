@@ -463,7 +463,7 @@ using cuda_operator_to_simd_x2_t = typename CudaOperatorToSimdX2<ReduceOp, T>::t
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T, typename Op>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto try_simd_operator(Op op)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto try_simd_operator(Op op)
 {
   using _CUDA_VSTD::is_same_v;
   if constexpr (is_cuda_std_plus_v<Op>
