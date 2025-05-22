@@ -44,6 +44,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/thread/thread_operators.cuh>
+
 #include <cuda/functional> // cuda::maximum, cuda::minimum
 #include <cuda/std/cstdint> // uint32_t
 #include <cuda/std/functional> // cuda::std::plus
@@ -71,7 +73,17 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-_CCCL_HOST_DEVICE uint32_t simd_operation_is_not_supported_before_sm90();
+template <typename T>
+extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm100();
+
+template <typename T>
+extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm90();
+
+template <typename T>
+extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm80();
+
+template <typename T>
+extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm53();
 
 template <typename T>
 struct SimdMin
@@ -80,39 +92,37 @@ struct SimdMin
 };
 
 template <>
-struct SimdMin<int16_t>
+struct SimdMin<short2>
 {
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE short2 operator()(short2 a, short2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (return __vmins2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm90();));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (return __vmins2(_CUDA_VSTD::bit_cast<short2>(a), _CUDA_VSTD::bit_cast<short2>(b));),
+                      (return simd_operation_is_not_supported_before_sm90<short2>();))
   }
 };
 
 template <>
-struct SimdMin<uint16_t>
+struct SimdMin<ushort2>
 {
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ushort2 operator()(ushort2 a, ushort2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (return __vminu2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm90();));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (return __vminu2(_CUDA_VSTD::bit_cast<ushort2>(a), _CUDA_VSTD::bit_cast<ushort2>(b));),
+                      (return simd_operation_is_not_supported_before_sm90<ushort2>();))
   }
 };
 
 #  if _CCCL_HAS_NVFP16()
 
-_CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm80(__half2);
-
 template <>
-struct SimdMin<__half>
+struct SimdMin<__half2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmin2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm80(__half2{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (return __hmin2(a, b);), //
+                      (return simd_operation_is_not_supported_before_sm80<__half2>();))
   }
 };
 
@@ -120,16 +130,14 @@ struct SimdMin<__half>
 
 #  if _CCCL_HAS_NVBF16()
 
-_CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm80(__nv_bfloat162);
-
 template <>
-struct SimdMin<__nv_bfloat16>
+struct SimdMin<__nv_bfloat162>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmin2(a, b);),
-                 (return simd_operation_is_not_supported_before_sm80(__nv_bfloat162{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (return __hmin2(a, b);),
+                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -144,37 +152,37 @@ struct SimdMax
 };
 
 template <>
-struct SimdMax<int16_t>
+struct SimdMax<short2>
 {
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE short2 operator()(short2 a, short2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (return __vmaxs2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm90();));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (return __vmaxs2(_CUDA_VSTD::bit_cast<short2>(a), _CUDA_VSTD::bit_cast<short2>(b));),
+                      (return simd_operation_is_not_supported_before_sm90<short2>();))
   }
 };
 
 template <>
-struct SimdMax<uint16_t>
+struct SimdMax<ushort2>
 {
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t operator()(uint32_t a, uint32_t b) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ushort2 operator()(ushort2 a, ushort2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_90,
-                 (return __vmaxu2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm90();));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                      (return __vmaxu2(_CUDA_VSTD::bit_cast<ushort2>(a), _CUDA_VSTD::bit_cast<ushort2>(b));),
+                      (return simd_operation_is_not_supported_before_sm90<ushort2>();))
   }
 };
 
 #  if _CCCL_HAS_NVFP16()
 
 template <>
-struct SimdMax<__half>
+struct SimdMax<__half2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmax2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm80(__half2{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (return __hmax2(a, b);), //
+                      (return simd_operation_is_not_supported_before_sm80<__half2>();))
   }
 };
 
@@ -183,13 +191,13 @@ struct SimdMax<__half>
 #  if _CCCL_HAS_NVBF16()
 
 template <>
-struct SimdMax<__nv_bfloat16>
+struct SimdMax<__nv_bfloat162>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmax2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm80(__nv_bfloat162{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (return __hmax2(a, b);), //
+                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -205,16 +213,14 @@ struct SimdSum
 
 #  if _CCCL_HAS_NVFP16()
 
-_CCCL_HOST_DEVICE __half2 simd_operation_is_not_supported_before_sm53(__half2);
-
 template <>
-struct SimdSum<__half>
+struct SimdSum<__half2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (return __hadd2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm53(__half2{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                      (return __hadd2(a, b);), //
+                      (return simd_operation_is_not_supported_before_sm53<__half2>();))
   }
 };
 
@@ -222,20 +228,72 @@ struct SimdSum<__half>
 
 #  if _CCCL_HAS_NVBF16()
 
-_CCCL_HOST_DEVICE __nv_bfloat162 simd_operation_is_not_supported_before_sm53(__nv_bfloat162);
-
 template <>
-struct SimdSum<__nv_bfloat16>
+struct SimdSum<__nv_bfloat162>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hadd2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm53(__nv_bfloat162{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (return __hadd2(a, b);), //
+                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
 #  endif // _CCCL_HAS_NVBF16()
+
+template <>
+struct SimdSum<ushort2>
+{
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ushort2 operator()(ushort2 a, ushort2 b) const
+  {
+    // clang-format off
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                     (uint32_t ret;
+                      asm("add.u16x2 %0, %1, %2;"
+                          : "=r"(ret)
+                          : "r"(_CUDA_VSTD::bit_cast<uint32_t>(a)),
+                            "r"(_CUDA_VSTD::bit_cast<uint32_t>(b)));
+                      return _CUDA_VSTD::bit_cast<ushort2>(ret);),
+                     (return ushort2{static_cast<uint16_t>(a.x + b.x), static_cast<uint16_t>(a.y + b.y)};));
+    // clang-format on
+  }
+};
+
+template <>
+struct SimdSum<short2>
+{
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE short2 operator()(short2 a, short2 b) const
+  {
+    // clang-format off
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                     (uint32_t ret;
+                      asm("add.s16x2 %0, %1, %2;"
+                          : "=r"(ret)
+                          : "r"(_CUDA_VSTD::bit_cast<uint32_t>(a)),
+                            "r"(_CUDA_VSTD::bit_cast<uint32_t>(b)));
+                      return _CUDA_VSTD::bit_cast<short2>(ret);),
+                     (return short2{static_cast<int16_t>(a.x + b.x), static_cast<int16_t>(a.y + b.y)};));
+    // clang-format on
+  }
+};
+
+template <>
+struct SimdSum<float2>
+{
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE float2 operator()(float2 a, float2 b) const
+  {
+    // clang-format off
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_100,
+                     (uint64_t ret;
+                      asm("add.f32x2 %0, %1, %2;"
+                           : "=l"(ret)
+                           : "l"(_CUDA_VSTD::bit_cast<uint64_t>(a)),
+                             "l"(_CUDA_VSTD::bit_cast<uint64_t>(b)));
+                      return _CUDA_VSTD::bit_cast<float2>(ret);),
+                     (return float2{a.x + b.x,  a.y + b.y};))
+    // clang-format on
+  }
+};
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -248,13 +306,13 @@ struct SimdMul
 #  if _CCCL_HAS_NVFP16()
 
 template <>
-struct SimdMul<__half>
+struct SimdMul<__half2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_53,
-                 (return __hmul2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm53(__half2{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53,
+                      (return __hmul2(a, b);), //
+                      (return simd_operation_is_not_supported_before_sm53<__half2>();))
   }
 };
 
@@ -263,13 +321,13 @@ struct SimdMul<__half>
 #  if _CCCL_HAS_NVBF16()
 
 template <>
-struct SimdMul<__nv_bfloat16>
+struct SimdMul<__nv_bfloat162>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (return __hmul2(a, b);), //
-                 (return simd_operation_is_not_supported_before_sm53(__nv_bfloat162{});));
+    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_80,
+                      (return __hmul2(a, b);),
+                      (return simd_operation_is_not_supported_before_sm80<__nv_bfloat162>();))
   }
 };
 
@@ -293,90 +351,30 @@ template <typename T>
 inline constexpr bool is_simd_operator_v<SimdMax<T>> = true;
 
 //----------------------------------------------------------------------------------------------------------------------
-// Predefined CUDA operators to SIMD
-
-template <typename ReduceOp, typename T>
-struct CudaOperatorToSimd
-{
-  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
-};
-
-template <typename T>
-struct CudaOperatorToSimd<::cuda::minimum<>, T>
-{
-  using type = SimdMin<T>;
-};
-
-template <typename T>
-struct CudaOperatorToSimd<::cuda::minimum<T>, T>
-{
-  using type = SimdMin<T>;
-};
-
-template <typename T>
-struct CudaOperatorToSimd<::cuda::maximum<>, T>
-{
-  using type = SimdMax<T>;
-};
-
-template <typename T>
-struct CudaOperatorToSimd<::cuda::maximum<T>, T>
-{
-  using type = SimdMax<T>;
-};
-
-template <typename T>
-struct CudaOperatorToSimd<_CUDA_VSTD::plus<>, T>
-{
-  using type = SimdSum<T>;
-};
-
-template <typename T>
-struct CudaOperatorToSimd<_CUDA_VSTD::plus<T>, T>
-{
-  using type = SimdSum<T>;
-};
-
-template <typename T>
-struct CudaOperatorToSimd<_CUDA_VSTD::multiplies<>, T>
-{
-  using type = SimdMul<T>;
-};
-
-template <typename T>
-struct CudaOperatorToSimd<_CUDA_VSTD::multiplies<T>, T>
-{
-  using type = SimdMul<T>;
-};
-
-template <typename ReduceOp, typename T>
-using cub_operator_to_simd_operator_t = typename CudaOperatorToSimd<ReduceOp, T>::type;
-
-//----------------------------------------------------------------------------------------------------------------------
 // SIMD type
 
 template <typename T>
-struct SimdType
+struct VectorTypeX2
 {
   static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
 };
 
 template <>
-struct SimdType<int16_t>
+struct VectorTypeX2<int16_t>
 {
-  using type = uint32_t;
+  using type = short2;
 };
 
 template <>
-struct SimdType<uint16_t>
+struct VectorTypeX2<uint16_t>
 {
-  using type = uint32_t;
+  using type = ushort2;
 };
 
 #  if _CCCL_HAS_NVFP16()
 
 template <>
-struct SimdType<__half>
+struct VectorTypeX2<__half>
 {
   using type = __half2;
 };
@@ -386,7 +384,7 @@ struct SimdType<__half>
 #  if _CCCL_HAS_NVBF16()
 
 template <>
-struct SimdType<__nv_bfloat16>
+struct VectorTypeX2<__nv_bfloat16>
 {
   using type = __nv_bfloat162;
 };
@@ -394,7 +392,92 @@ struct SimdType<__nv_bfloat16>
 #  endif // _CCCL_HAS_NVBF16()
 
 template <typename T>
-using simd_type_t = typename SimdType<T>::type;
+using vector_type_x2_t = typename VectorTypeX2<T>::type;
+
+//----------------------------------------------------------------------------------------------------------------------
+// Predefined CUDA operators to SIMD
+
+template <typename ReduceOp, typename T>
+struct CudaOperatorToSimdX2
+{
+  static_assert(_CUDA_VSTD::__always_false_v<T>, "Unsupported specialization");
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<::cuda::minimum<>, T>
+{
+  using type = SimdMin<vector_type_x2_t<T>>;
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<::cuda::minimum<T>, T>
+{
+  using type = SimdMin<vector_type_x2_t<T>>;
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<::cuda::maximum<>, T>
+{
+  using type = SimdMax<vector_type_x2_t<T>>;
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<::cuda::maximum<T>, T>
+{
+  using type = SimdMax<vector_type_x2_t<T>>;
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<_CUDA_VSTD::plus<>, T>
+{
+  using type = SimdSum<vector_type_x2_t<T>>;
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<_CUDA_VSTD::plus<T>, T>
+{
+  using type = SimdSum<vector_type_x2_t<T>>;
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<_CUDA_VSTD::multiplies<>, T>
+{
+  using type = SimdMul<vector_type_x2_t<T>>;
+};
+
+template <typename T>
+struct CudaOperatorToSimdX2<_CUDA_VSTD::multiplies<T>, T>
+{
+  using type = SimdMul<vector_type_x2_t<T>>;
+};
+
+template <typename ReduceOp, typename T>
+using cuda_operator_to_simd_x2_t = typename CudaOperatorToSimdX2<ReduceOp, T>::type;
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename T, typename Op>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE auto try_simd_operator(Op op)
+{
+  using _CUDA_VSTD::is_same_v;
+  if constexpr (is_cuda_std_plus_v<Op>
+                && (is_same_v<T, float2> || is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>) )
+  {
+    return SimdSum<T>{};
+  }
+  else if constexpr (is_cuda_minimum_v<Op> && (is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>) )
+  {
+    return SimdMin<T>{};
+  }
+  else if constexpr (is_cuda_maximum_v<Op> && (is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>) )
+  {
+    return SimdMax<T>{};
+  }
+  else
+  {
+    return op;
+  }
+}
 
 } // namespace detail
 
