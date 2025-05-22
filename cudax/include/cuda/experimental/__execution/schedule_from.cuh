@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__utility/pod_tuple.h>
 
@@ -41,6 +42,96 @@
 
 namespace cuda::experimental::execution
 {
+namespace __detail
+{
+template <class _Tag>
+struct __decay_args
+{
+  template <class... _Ts>
+  [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept
+  {
+    if constexpr (!__decay_copyable<_Ts...>)
+    {
+      return invalid_completion_signature<_WHERE(_IN_ALGORITHM, schedule_from_t),
+                                          _WHAT(_ARGUMENTS_ARE_NOT_DECAY_COPYABLE),
+                                          _WITH_ARGUMENTS(_Ts...)>();
+    }
+    else if constexpr (!__nothrow_decay_copyable<_Ts...>)
+    {
+      return completion_signatures<_Tag(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
+    }
+    else
+    {
+      return completion_signatures<_Tag(__decay_t<_Ts>...)>{};
+    }
+  }
+};
+
+// A base class for both schedule_from_t::__sndr_t and continues_on_t::__sndr_t
+template <class _Tag, class _Sch, class _Sndr>
+struct __transfer_sndr_t
+{
+  using sender_concept = sender_t;
+
+  // see SCHED-ATTRS here: https://eel.is/c++draft/exec#snd.expos-6
+  struct __attrs_t
+  {
+    template <class _SetTag>
+    _CCCL_API auto query(get_completion_scheduler_t<_SetTag>) const = delete;
+
+    _CCCL_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
+    {
+      return __self_->__sch_;
+    }
+
+    // Returns the domain on which the schedule_from/continues_on sender will complete:
+    [[nodiscard]] _CCCL_API static constexpr auto query(get_domain_t) noexcept
+    {
+      return _CUDA_VSTD::__call_result_t<get_domain_t, _Sch>{};
+    }
+
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
+    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
+      -> __query_result_t<env_of_t<_Sndr>, _Query>
+    {
+      return execution::get_env(__self_->__sndr_).query(_Query{});
+    }
+
+    const __transfer_sndr_t* __self_;
+  };
+
+  template <class _Self, class... _Env>
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
+  {
+    _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
+    {
+      _CUDAX_LET_COMPLETIONS(
+        auto(__sch_completions) = execution::get_completion_signatures<schedule_result_t<_Sch>, _Env...>())
+      {
+        // The scheduler contributes error and stopped completions.
+        return concat_completion_signatures(
+          transform_completion_signatures(__sch_completions, __swallow_transform{}),
+          transform_completion_signatures(
+            __child_completions, __decay_args<set_value_t>{}, __decay_args<set_error_t>{}));
+      }
+    }
+
+    _CCCL_UNREACHABLE();
+  }
+
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __attrs_t
+  {
+    return __attrs_t{this};
+  }
+
+  _CCCL_NO_UNIQUE_ADDRESS _Tag __tag_;
+  _Sch __sch_;
+  _Sndr __sndr_;
+};
+
+} // namespace __detail
+
 struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
 {
 private:
@@ -172,109 +263,30 @@ private:
 
 public:
   template <class _Sndr, class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
-
-  template <class _Sch, class _Sndr>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
-};
-
-template <class _Tag>
-struct __decay_args
-{
-  template <class... _Ts>
-  _CCCL_TRIVIAL_API constexpr auto operator()() const noexcept
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<schedule_from_t, _Sch, _Sndr>
   {
-    if constexpr (!__decay_copyable<_Ts...>)
+    template <class _Rcvr>
+    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
     {
-      return invalid_completion_signature<_WHERE(_IN_ALGORITHM, schedule_from_t),
-                                          _WHAT(_ARGUMENTS_ARE_NOT_DECAY_COPYABLE),
-                                          _WITH_ARGUMENTS(_Ts...)>();
-    }
-    else if constexpr (!__nothrow_decay_copyable<_Ts...>)
-    {
-      return completion_signatures<_Tag(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
-    }
-    else
-    {
-      return completion_signatures<_Tag(__decay_t<_Ts>...)>{};
-    }
-  }
-};
-
-template <class _Sndr, class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t::__sndr_t
-{
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS schedule_from_t __tag_;
-  _Sch __sch_;
-  _Sndr __sndr_;
-
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
-  {
-    template <class _SetTag>
-    _CCCL_API auto query(get_completion_scheduler_t<_SetTag>) const = delete;
-
-    [[nodiscard]] _CCCL_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
-    {
-      return __sndr_->__sch_;
+      return {static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
 
-    _CCCL_TEMPLATE(class _Query)
-    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-      -> __query_result_t<env_of_t<_Sndr>, _Query>
+    template <class _Rcvr>
+    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
     {
-      return execution::get_env(__sndr_->__sndr_).query(_Query{});
+      return {this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
     }
-
-    const __sndr_t* __sndr_;
   };
 
-  template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto get_completion_signatures()
+  template <class _Sch, class _Sndr>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
-    _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
-    {
-      _CUDAX_LET_COMPLETIONS(
-        auto(__sch_completions) = execution::get_completion_signatures<schedule_result_t<_Sch>, _Env...>())
-      {
-        // The scheduler contributes error and stopped completions.
-        return concat_completion_signatures(
-          transform_completion_signatures(__sch_completions, __swallow_transform()),
-          transform_completion_signatures(
-            __child_completions, __decay_args<set_value_t>{}, __decay_args<set_error_t>{}));
-      }
-    }
-
-    _CCCL_UNREACHABLE();
-  }
-
-  template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
-  {
-    return {static_cast<_Sndr&&>(__sndr_), __sch_, static_cast<_Rcvr&&>(__rcvr)};
-  }
-
-  template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
-  {
-    return {__sndr_, __sch_, static_cast<_Rcvr&&>(__rcvr)};
-  }
-
-  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __attrs_t
-  {
-    return __attrs_t{this};
+    static_assert(__is_sender<_Sndr>);
+    static_assert(__is_scheduler<_Sch>);
+    // schedule_from always dispatches based on the domain of the scheduler
+    return transform_sender(get_domain(__sch), __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
   }
 };
-
-template <class _Sch, class _Sndr>
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto schedule_from_t::operator()(_Sch __sch, _Sndr __sndr) const
-{
-  static_assert(__is_sender<_Sndr>);
-  static_assert(__is_scheduler<_Sch>);
-  using __dom_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Sch>; // see [exec.schedule.from]
-  return transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)});
-}
 
 template <class _Sndr, class _Sch>
 inline constexpr size_t structured_binding_size<schedule_from_t::__sndr_t<_Sndr, _Sch>> = 3;
