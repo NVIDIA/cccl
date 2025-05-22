@@ -74,12 +74,6 @@ namespace detail
 {
 
 template <typename T>
-extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm100();
-
-template <typename T>
-extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm90();
-
-template <typename T>
 extern _CCCL_HOST_DEVICE T simd_operation_is_not_supported_before_sm80();
 
 template <typename T>
@@ -96,9 +90,12 @@ struct SimdMin<short2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE short2 operator()(short2 a, short2 b) const
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      (return __vmins2(_CUDA_VSTD::bit_cast<short2>(a), _CUDA_VSTD::bit_cast<short2>(b));),
-                      (return simd_operation_is_not_supported_before_sm90<short2>();))
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_90,
+      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
+       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
+       return _CUDA_VSTD::bit_cast<short2>(__vmins2(a1, b1));),
+      (return short2{static_cast<int16_t>(::min(a.x, b.x)), static_cast<int16_t>(::min(a.y, b.y))};))
   }
 };
 
@@ -107,9 +104,12 @@ struct SimdMin<ushort2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ushort2 operator()(ushort2 a, ushort2 b) const
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      (return __vminu2(_CUDA_VSTD::bit_cast<ushort2>(a), _CUDA_VSTD::bit_cast<ushort2>(b));),
-                      (return simd_operation_is_not_supported_before_sm90<ushort2>();))
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_90,
+      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
+       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
+       return _CUDA_VSTD::bit_cast<ushort2>(__vminu2(a1, b1));),
+      (return ushort2{static_cast<uint16_t>(::min(a.x, b.x)), static_cast<uint16_t>(::min(a.y, b.y))};))
   }
 };
 
@@ -156,9 +156,12 @@ struct SimdMax<short2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE short2 operator()(short2 a, short2 b) const
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      (return __vmaxs2(_CUDA_VSTD::bit_cast<short2>(a), _CUDA_VSTD::bit_cast<short2>(b));),
-                      (return simd_operation_is_not_supported_before_sm90<short2>();))
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_90,
+      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
+       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
+       return _CUDA_VSTD::bit_cast<short2>(__vmaxs2(a1, b1));),
+      (return short2{static_cast<int16_t>(::max(a.x, b.x)), static_cast<int16_t>(::max(a.y, b.y))};))
   }
 };
 
@@ -167,9 +170,12 @@ struct SimdMax<ushort2>
 {
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ushort2 operator()(ushort2 a, ushort2 b) const
   {
-    NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                      (return __vmaxu2(_CUDA_VSTD::bit_cast<ushort2>(a), _CUDA_VSTD::bit_cast<ushort2>(b));),
-                      (return simd_operation_is_not_supported_before_sm90<ushort2>();))
+    NV_IF_ELSE_TARGET(
+      NV_PROVIDES_SM_90,
+      (auto a1 = _CUDA_VSTD::bit_cast<uint32_t>(a); //
+       auto b1 = _CUDA_VSTD::bit_cast<uint32_t>(b);
+       return _CUDA_VSTD::bit_cast<ushort2>(__vmaxu2(a1, b1));),
+      (return ushort2{static_cast<uint16_t>(::max(a.x, b.x)), static_cast<uint16_t>(::max(a.y, b.y))};))
   }
 };
 
