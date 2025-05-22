@@ -119,13 +119,18 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 
 constexpr int bulk_copy_size_multiple = 16;
 
-template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_alignment) -> int
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_alignment(int ptx_version) -> int
 {
-  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_alignment) /* bar */
+  return ptx_version < 1000 ? 128 : 16;
+}
+
+template <typename... RandomAccessIteratorsIn>
+_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size, int bulk_copy_align) -> int
+{
+  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_align) /* bar */
        // 128 bytes of padding for each input tile (handles before + after)
        + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
+       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_align;
 }
 
 _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
@@ -211,17 +216,18 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-  template <int BlockSize, int BulkCopyAlignment, int PtxVersion>
+  template <int BlockSize, int PtxVersion>
   struct bulkcopy_policy
   {
   private:
-    using async_policy = async_copy_policy_t<BlockSize, BulkCopyAlignment>;
+    static constexpr int bulk_copy_align = bulk_copy_alignment(PtxVersion);
+    using async_policy                   = async_copy_policy_t<BlockSize, bulk_copy_align>;
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        async_policy::block_threads * async_policy::min_items_per_thread, BulkCopyAlignment)
+        async_policy::block_threads * async_policy::min_items_per_thread, bulk_copy_align)
       > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
-      ((alignof(it_value_t<RandomAccessIteratorsIn>) > BulkCopyAlignment) || ...);
+      ((alignof(it_value_t<RandomAccessIteratorsIn>) > bulk_copy_align) || ...);
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
@@ -233,12 +239,12 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   };
 
   struct policy900
-      : bulkcopy_policy<256, 128, 900>
+      : bulkcopy_policy<256, 900>
       , ChainedPolicy<900, policy900, policy300>
   {};
 
   struct policy1000
-      : bulkcopy_policy<128, 16, 1000>
+      : bulkcopy_policy<128, 1000>
       , ChainedPolicy<1000, policy1000, policy900>
   {};
 
