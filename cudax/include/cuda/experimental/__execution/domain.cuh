@@ -62,6 +62,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @param __sndr The sender to which the operation is applied.
   //! @param __args Additional arguments for the operation.
   //! @return The result of applying the sender operation.
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tag, class _Sndr, class... _Args>
   _CCCL_TRIVIAL_API static constexpr auto apply_sender(_Tag, _Sndr&& __sndr, _Args&&... __args) noexcept(noexcept(
     _Tag{}.apply_sender(declval<_Sndr>(), declval<_Args>()...))) -> __apply_sender_result_t<_Tag, _Sndr, _Args...>
@@ -76,6 +77,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @param __sndr The sender to be transformed.
   //! @param __env The environment used for the transformation.
   //! @return The result of transforming the sender with the given environment.
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr, class _Env>
   _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, const _Env& __env) noexcept(
     noexcept(tag_of_t<_Sndr>{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env)))

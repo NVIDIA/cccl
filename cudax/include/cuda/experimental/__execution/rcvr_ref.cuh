@@ -61,7 +61,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_ref
 };
 
 template <class _Rcvr>
-__rcvr_ref(_Rcvr&) -> __rcvr_ref<_Rcvr>;
+_CCCL_HOST_DEVICE __rcvr_ref(_Rcvr&) -> __rcvr_ref<_Rcvr>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
