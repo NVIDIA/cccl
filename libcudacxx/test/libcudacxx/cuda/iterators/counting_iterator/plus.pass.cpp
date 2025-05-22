@@ -22,8 +22,8 @@
 __host__ __device__ constexpr bool test()
 {
   { // When "_Start" is signed integer like.
-    cuda::iota_iterator<int> iter1{0};
-    cuda::iota_iterator<int> iter2{0};
+    cuda::counting_iterator<int> iter1{0};
+    cuda::counting_iterator<int> iter2{0};
     assert(iter1 == iter2);
     assert(iter1 + 0 == iter1);
     assert(iter1 + 5 != iter2);
@@ -35,8 +35,8 @@ __host__ __device__ constexpr bool test()
 
   { // When "_Start" is not integer like.
     static_assert(cuda::std::totally_ordered<SomeInt>);
-    cuda::iota_iterator<SomeInt> iter1{SomeInt{0}};
-    cuda::iota_iterator<SomeInt> iter2{SomeInt{0}};
+    cuda::counting_iterator<SomeInt> iter1{SomeInt{0}};
+    cuda::counting_iterator<SomeInt> iter2{SomeInt{0}};
     assert(iter1 == iter2);
     assert(iter1 + 0 == iter1);
     assert(iter1 + 5 != iter2);
@@ -47,8 +47,8 @@ __host__ __device__ constexpr bool test()
   }
 
   { // When "_Start" is unsigned integer like and n is greater than or equal to zero.
-    cuda::iota_iterator<unsigned> iter1{0};
-    cuda::iota_iterator<unsigned> iter2{0};
+    cuda::counting_iterator<unsigned> iter1{0};
+    cuda::counting_iterator<unsigned> iter2{0};
     assert(iter1 == iter2);
     assert(iter1 + 0 == iter1);
     assert(iter1 + 5 != iter2);
@@ -59,9 +59,9 @@ __host__ __device__ constexpr bool test()
   }
 
   { // When "_Start" is unsigned integer like and n is less than zero.
-    using difference_type = typename cuda::iota_iterator<unsigned>::difference_type;
-    cuda::iota_iterator<unsigned> iter1{10};
-    cuda::iota_iterator<unsigned> iter2{10};
+    using difference_type = typename cuda::counting_iterator<unsigned>::difference_type;
+    cuda::counting_iterator<unsigned> iter1{10};
+    cuda::counting_iterator<unsigned> iter2{10};
     assert(iter1 == iter2);
     assert(iter1 + difference_type(-0) == iter1);
     assert(iter1 + difference_type(-5) != iter2);

@@ -19,8 +19,7 @@
 
 __host__ __device__ constexpr bool test()
 {
-  auto iter1 = cuda::iota_iterator{42};
-  static_assert(cuda::std::is_same_v<decltype(iter1), cuda::iota_iterator<int>>);
+  cuda::counting_iterator<int> iter1{42};
   const auto iter2 = iter1 + 1;
 
   assert(!(iter1 < iter1));
@@ -43,7 +42,7 @@ __host__ __device__ constexpr bool test()
   assert(!(iter2 != iter2));
 
 #if TEST_HAS_SPACESHIP()
-  static_assert(cuda::std::three_way_comparable<cuda::iota_iterator<int>>);
+  static_assert(cuda::std::three_way_comparable<cuda::counting_iterator<int>>);
   assert((iter1 <=> iter2) == cuda::std::strong_ordering::less);
   assert((iter1 <=> iter1) == cuda::std::strong_ordering::equal);
   assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);
