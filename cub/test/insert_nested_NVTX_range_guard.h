@@ -8,16 +8,18 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#if defined(__cpp_inline_variables)
 inline thread_local bool entered = false;
 
 struct NestedNVTXRangeGuard
 {
-  NestedNVTXRangeGuard(const char* name)
+  // complain only about CUB nested NVTX ranges, not Thrust
+  bool inside_cub_range;
+
+  explicit NestedNVTXRangeGuard(const char* name)
+      : inside_cub_range(strstr(name, "cub::") == name)
   {
     UNSCOPED_INFO("Entering NVTX range " << name);
-    // complain only about CUB nested NVTX ranges, not Thrust
-    if (strstr(name, "cub::") == name)
+    if (inside_cub_range)
     {
       if (entered)
       {
@@ -29,12 +31,14 @@ struct NestedNVTXRangeGuard
 
   ~NestedNVTXRangeGuard()
   {
-    entered = false;
+    if (inside_cub_range)
+    {
+      entered = false;
+    }
     UNSCOPED_INFO("Leaving NVTX range");
   }
 };
 
-#  define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                   \
-    ::cuda::std::optional<::NestedNVTXRangeGuard> __cub_nvtx3_reentrency_guard; \
-    NV_IF_TARGET(NV_IS_HOST, __cub_nvtx3_reentrency_guard.emplace(name););
-#endif // defined(__cpp_inline_variables)
+#define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                   \
+  ::cuda::std::optional<::NestedNVTXRangeGuard> __cub_nvtx3_reentrency_guard; \
+  NV_IF_TARGET(NV_IS_HOST, __cub_nvtx3_reentrency_guard.emplace(name););
