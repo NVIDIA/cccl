@@ -75,6 +75,20 @@ private:
   _Rcvr* __rcvr_;
 };
 
+namespace __detail
+{
+template <class _Rcvr, size_t = sizeof(_Rcvr)>
+_CCCL_API constexpr auto __is_type_complete(int) noexcept
+{
+  return true;
+}
+template <class _Rcvr>
+_CCCL_API constexpr auto __is_type_complete(long) noexcept
+{
+  return false;
+}
+} // namespace __detail
+
 // The __ref_rcvr function and its helpers are used to avoid wrapping a receiver in a
 // __rcvr_ref when that is possible. The logic goes as follows:
 //
@@ -83,30 +97,34 @@ private:
 //    receiver.
 // 3. If the receiver is nothrow copy constructible, return it.
 // 4. Otherwise, return a __rcvr_ref wrapping the receiver.
-template <class _Env, class _Rcvr, size_t = sizeof(_Rcvr)>
-_CCCL_TRIVIAL_API auto __ref_rcvr_impl(_Rcvr&, int)
-  -> _CUDA_VSTD::enable_if_t<!__is_operation_state<_Rcvr> && _CUDA_VSTD::is_nothrow_copy_constructible_v<_Rcvr>, _Rcvr>;
-
-template <class _Env, class _Rcvr>
-_CCCL_TRIVIAL_API auto __ref_rcvr_impl(_Rcvr&, long) -> __rcvr_ref<_Rcvr, _Env>;
-
-template <class _Env, class _Rcvr>
-_CCCL_TRIVIAL_API constexpr auto __ref_rcvr(_Rcvr& __rcvr) noexcept
+template <class _Env = void, class _Rcvr>
+[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto __ref_rcvr(_Rcvr& __rcvr) noexcept
 {
-  using __rcvr_ref_t = decltype(execution::__ref_rcvr_impl<_Env>(__rcvr, 0));
-  return __rcvr_ref_t{__rcvr};
-}
-
-template <class _Rcvr>
-_CCCL_TRIVIAL_API constexpr auto __ref_rcvr(_Rcvr& __rcvr) noexcept
-{
-  return __ref_rcvr<env_of_t<_Rcvr>>(__rcvr);
-}
-
-template <class = void, class _Rcvr>
-_CCCL_TRIVIAL_API constexpr auto __ref_rcvr(__rcvr_ref<_Rcvr> __rcvr) noexcept
-{
-  return __rcvr;
+  if constexpr (_CUDA_VSTD::is_same_v<_Env, void>)
+  {
+    return execution::__ref_rcvr<env_of_t<_Rcvr>>(__rcvr);
+  }
+  else if constexpr (detail::__is_specialization_of<_Rcvr, __rcvr_ref>)
+  {
+    return __rcvr;
+  }
+  else if constexpr (!__detail::__is_type_complete<_Rcvr>(0))
+  {
+    return __rcvr_ref<_Rcvr, _Env>{__rcvr};
+  }
+  else if constexpr (__is_operation_state<_Rcvr>)
+  {
+    return __rcvr_ref<_Rcvr, _Env>{__rcvr};
+  }
+  else if constexpr (_CUDA_VSTD::is_nothrow_copy_constructible_v<_Rcvr>)
+  {
+    return __rcvr;
+  }
+  else
+  {
+    return __rcvr_ref<_Rcvr, _Env>{__rcvr};
+  }
+  _CCCL_UNREACHABLE();
 }
 
 template <class _Rcvr, class _Env = env_of_t<_Rcvr>>
