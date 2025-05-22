@@ -186,7 +186,7 @@ private:
   struct __transform_args_fn
   {
     template <class... _Ts>
-    _CCCL_API constexpr auto operator()() const
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
       if constexpr (!__decay_copyable<_Ts...>)
       {
@@ -223,7 +223,7 @@ private:
   struct __domain_transform_fn
   {
     template <class... _Ts>
-    _CCCL_API auto operator()(_SetTag (*)(_Ts...)) const
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_SetTag (*)(_Ts...)) const
     {
       using __result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_Ts>&...>;
       // ask the result sender if it knows where it will complete:
@@ -241,7 +241,7 @@ private:
   struct __domain_reduce_fn
   {
     template <class... _Domains>
-    _CCCL_API auto operator()(_Domains...) const
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Domains...) const
     {
       if constexpr (_CUDA_VSTD::_IsValidExpansion<_CUDA_VSTD::common_type_t, _Domains...>::value)
       {
@@ -255,15 +255,13 @@ private:
   };
 
   template <class _Sndr, class _Fn>
-  _CCCL_API static constexpr auto __get_completion_domain() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completion_domain() noexcept
   {
     // we can know the completion domain for non-dependent senders
     using __completions = completion_signatures_of_t<_Sndr>;
     if constexpr (__valid_completion_signatures<__completions>)
     {
-      auto __dom =
-        __completions().select(_SetTag()).transform_reduce(__domain_transform_fn<_Fn>(), __domain_reduce_fn());
-      return __dom;
+      return __completions{}.select(_SetTag()).transform_reduce(__domain_transform_fn<_Fn>{}, __domain_reduce_fn{});
     }
     else
     {
@@ -324,7 +322,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__sndr_t
   };
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
