@@ -81,40 +81,40 @@ struct deterministic_sum_t
 {
   using DeterministicAcc = detail::rfa::ReproducibleFloatingAccumulator<FloatType>;
 
-  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
+  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, FloatType f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc acc, float4 f)
+  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, float4 f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc acc, double4 f)
+  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, double4 f)
   {
     acc += f;
     return acc;
   }
 
-  _CCCL_HOST_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
+  _CCCL_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_HOST_DEVICE DeterministicAcc operator()(float4 f, DeterministicAcc acc)
+  _CCCL_DEVICE DeterministicAcc operator()(float4 f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_HOST_DEVICE DeterministicAcc operator()(double4 f, DeterministicAcc acc)
+  _CCCL_DEVICE DeterministicAcc operator()(double4 f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
 
-  _CCCL_HOST_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
+  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc lhs, DeterministicAcc rhs)
   {
     DeterministicAcc rtn = lhs;
     rtn += rhs;
