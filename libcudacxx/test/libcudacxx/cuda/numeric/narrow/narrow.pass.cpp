@@ -23,7 +23,7 @@
                (if (!(throw_cond)) { assert((expr)); }))
 
 template <class To, class From>
-__host__ __device__ constexpr void test_type()
+__host__ __device__ void test_type()
 {
   // 1. Casting zero should always work
   assert(cuda::narrow<To>(From{0}) == To{0});
@@ -55,7 +55,7 @@ __host__ __device__ constexpr void test_type()
 }
 
 template <class T>
-__host__ __device__ constexpr void test_type()
+__host__ __device__ void test_type()
 {
   test_type<T, signed char>();
   test_type<T, unsigned char>();
@@ -75,7 +75,7 @@ __host__ __device__ constexpr void test_type()
   test_type<T, double>();
 }
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ bool test()
 {
   test_type<signed char>();
   test_type<unsigned char>();
