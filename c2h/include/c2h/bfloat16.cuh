@@ -240,7 +240,7 @@ inline constexpr bool is_floating_point_v<bfloat16_t> = true;
 }
 
 template <>
-class ::cuda::std::numeric_limits<bfloat16_t>
+class cuda::std::numeric_limits<bfloat16_t>
 {
 public:
   static constexpr bool is_specialized = true;
@@ -262,7 +262,7 @@ public:
 };
 
 template <>
-struct CUB_NS_QUALIFIER::NumericTraits<bfloat16_t> : BaseTraits<FLOATING_POINT, true, unsigned short, bfloat16_t>
+struct cub::NumericTraits<bfloat16_t> : BaseTraits<FLOATING_POINT, true, unsigned short, bfloat16_t>
 {};
 
 #ifdef __GNUC__
