@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
@@ -30,9 +31,11 @@
 
 namespace cuda::experimental::execution
 {
+// NOLINTBEGIN(misc-unused-using-decls)
 using _CUDA_STD_EXEC::__query_result_t;
 using _CUDA_STD_EXEC::__queryable_with;
 using _CUDA_STD_EXEC::env_of_t;
+// NOLINTEND(misc-unused-using-decls)
 
 template <class _DomainOrTag, class... _Args>
 using __apply_sender_result_t _CCCL_NODEBUG_ALIAS = decltype(_DomainOrTag{}.apply_sender(declval<_Args>()...));
@@ -82,16 +85,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   }
 
   //! @overload
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr) noexcept -> _Sndr&&
+  _CCCL_TRIVIAL_API static constexpr auto
+  transform_sender(_Sndr&& __sndr) noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Sndr>) -> _Sndr
   {
     // FUTURE TODO: add a transform for the split sender once we have a split sender
     return static_cast<_Sndr&&>(__sndr);
   }
 
   //! @overload
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept -> _Sndr&&
+  _CCCL_TRIVIAL_API static constexpr auto
+  transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Sndr>)
+    -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }
