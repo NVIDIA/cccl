@@ -23,6 +23,7 @@
 
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__execution/meta.cuh>
@@ -100,6 +101,12 @@ public:
   [[nodiscard]] _CCCL_TRIVIAL_API size_t __index() const noexcept
   {
     return __index_;
+  }
+
+  template <class _Ty>
+  _CCCL_API auto __emplace(_Ty&& __value) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>&
+  {
+    return __emplace<_CUDA_VSTD::decay_t<_Ty>, _Ty>(static_cast<_Ty&&>(__value));
   }
 
   _CCCL_EXEC_CHECK_DISABLE
