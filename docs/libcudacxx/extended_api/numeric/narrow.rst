@@ -21,9 +21,14 @@ Example
     #include <cuda/narrow>
     #include <cuda/std/cassert>
 
-    int main() {
-        unsigned char r1 = narrow<unsigned char>(      200); // ok
-        unsigned char r2 = narrow<unsigned char>(      300); // throws
-        unsigned int  r3 = narrow<unsigned int >(2LL << 35); // throws
-        unsigned int  r4 = narrow<unsigned int >(     -100); // throws
+    __global__ void device(size_t n) {
+        unsigned int r = narrow<unsigned int>(n); // traps
+    }
+
+    void host() {
+        unsigned char r1 = narrow<unsigned char>( 200); // ok
+        unsigned char r2 = narrow<unsigned char>( 300); // throws narrowing_error
+        unsigned int  r3 = narrow<unsigned int >(-100); // throws narrowing_error
+
+        kernel<<<1, 1>>>(2LL << 35); // size larger than unsigned int
     }
