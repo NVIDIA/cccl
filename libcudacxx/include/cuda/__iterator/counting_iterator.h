@@ -7,8 +7,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
-#ifndef _CUDA___ITERATOR_IOTA_ITERATOR_H
-#define _CUDA___ITERATOR_IOTA_ITERATOR_H
+#ifndef _CUDA___ITERATOR_COUNTING_ITERATOR_H
+#define _CUDA___ITERATOR_COUNTING_ITERATOR_H
 
 #include <cuda/std/detail/__config>
 
@@ -40,4 +40,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CUDA___ITERATOR_IOTA_ITERATOR_H
+#endif // _CUDA___ITERATOR_COUNTING_ITERATOR_H
