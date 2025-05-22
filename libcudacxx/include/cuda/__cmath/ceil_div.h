@@ -60,11 +60,6 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
   {
     return static_cast<_Common>((__a1 + __b1 - 1) / __b1);
   }
-  else if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    const auto __res = __a1 / __b1;
-    return static_cast<_Common>(__res + (__res * __b1 != __a1));
-  }
   else
   {
     if (_CUDA_VSTD::is_constant_evaluated())
