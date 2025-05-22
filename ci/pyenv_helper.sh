@@ -17,4 +17,6 @@ setup_python_env() {
     # Using pyenv, install the Python version
     PYENV_DEBUG=1 pyenv install -v "${py_version}"
     pyenv local "${py_version}"
+
+    pip install --upgrade pip
 }
