@@ -795,12 +795,6 @@ public:
     data = {0};
   }
 
-  /// Return the fold of the binned fp
-  constexpr int fold() const
-  {
-    return FOLD;
-  }
-
   /// Return the endurance of the binned fp
   _CCCL_DEVICE _CCCL_FORCEINLINE constexpr int endurance() const
   {
