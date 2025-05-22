@@ -91,7 +91,7 @@ C2H_TEST("let_value can be used to produce values", "[adaptors][let_value]")
 
 C2H_TEST("let_value can be used to transform values", "[adaptors][let_value]")
 {
-  auto sndr = ex::just(13) | ex::let_value([] _CCCL_HOST_DEVICE(int& x) {
+  auto sndr = ex::just(13) | ex::let_value([](int& x) {
                 return ex::just(x + 4);
               });
   wait_for_value(std::move(sndr), 17);
@@ -99,7 +99,7 @@ C2H_TEST("let_value can be used to transform values", "[adaptors][let_value]")
 
 C2H_TEST("let_value can be used with multiple parameters", "[adaptors][let_value]")
 {
-  auto sndr = ex::just(3, 0.1415) | ex::let_value([] _CCCL_HOST_DEVICE(int& x, double y) {
+  auto sndr = ex::just(3, 0.1415) | ex::let_value([](int& x, double y) {
                 return ex::just(x + y);
               });
   wait_for_value(std::move(sndr), 3.1415); // NOLINT(modernize-use-std-numbers)
@@ -107,7 +107,7 @@ C2H_TEST("let_value can be used with multiple parameters", "[adaptors][let_value
 
 C2H_TEST("let_value can be used to change the sender", "[adaptors][let_value]")
 {
-  auto sndr = ex::just(13) | ex::let_value([] _CCCL_HOST_DEVICE(int& x) {
+  auto sndr = ex::just(13) | ex::let_value([](int& x) {
                 return ex::just_error(x + 4);
               });
   auto op   = ex::connect(std::move(sndr), checked_error_receiver{13 + 4});
@@ -179,7 +179,7 @@ C2H_TEST("let_value can throw, and set_error will be called", "[adaptors][let_va
 C2H_TEST("let_value can be used with just_error", "[adaptors][let_value]")
 {
   auto sndr = ex::just_error(std::string{"err"}) //
-            | ex::let_value([] _CCCL_HOST_DEVICE() {
+            | ex::let_value([]() {
                 return ex::just(17);
               });
   auto op = ex::connect(std::move(sndr), checked_error_receiver{std::string{"err"}});
@@ -188,7 +188,7 @@ C2H_TEST("let_value can be used with just_error", "[adaptors][let_value]")
 
 C2H_TEST("let_value can be used with just_stopped", "[adaptors][let_value]")
 {
-  auto sndr = ex::just_stopped() | ex::let_value([] _CCCL_HOST_DEVICE() {
+  auto sndr = ex::just_stopped() | ex::let_value([]() {
                 return ex::just(17);
               });
   auto op   = ex::connect(std::move(sndr), checked_stopped_receiver{});
