@@ -181,6 +181,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
   }
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __destroy(_ForwardIterator __first, _ForwardIterator __last)
 {
@@ -191,6 +192,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _ForwardIterator __destroy(_ForwardIterator 
   return __first;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BidirectionalIterator>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _BidirectionalIterator
 __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
@@ -203,6 +205,7 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
   return __last;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 {
@@ -227,6 +230,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __
   (void) _CUDA_VSTD::__destroy(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last));
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _ForwardIterator, class _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_ForwardIterator __first, _Size __n)
 {
