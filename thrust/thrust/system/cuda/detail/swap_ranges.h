@@ -37,64 +37,38 @@
 #endif // no system header
 
 #if _CCCL_HAS_CUDA_COMPILER()
-#  include <thrust/distance.h>
-#  include <thrust/swap.h>
-#  include <thrust/system/cuda/detail/par_to_seq.h>
-#  include <thrust/system/cuda/detail/parallel_for.h>
-#  include <thrust/system/cuda/detail/transform.h>
 
-#  include <cuda/std/utility>
+#  include <thrust/iterator/iterator_traits.h>
+#  include <thrust/system/cuda/detail/parallel_for.h>
+
+#  include <cuda/std/__algorithm_>
+#  include <cuda/std/iterator>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
-namespace __swap_ranges
-{
-
 template <class ItemsIt1, class ItemsIt2>
-struct swap_f
+struct __swap_f
 {
   ItemsIt1 items1;
   ItemsIt2 items2;
 
-  using value1_type = thrust::detail::it_value_t<ItemsIt1>;
-  using value2_type = thrust::detail::it_value_t<ItemsIt2>;
-
-  THRUST_FUNCTION
-  swap_f(ItemsIt1 items1_, ItemsIt2 items2_)
-      : items1(items1_)
-      , items2(items2_)
-  {}
-
   template <class Size>
-  void THRUST_DEVICE_FUNCTION operator()(Size idx)
+  _CCCL_HOST_DEVICE void operator()(Size idx) const
   {
-    // TODO(bgruber): this should probably use ::cuda::std::iter_swap(items1 + idx, items2 + idx);
-    value1_type item1 = items1[idx];
-    value2_type item2 = items2[idx];
-    using ::cuda::std::swap;
-    swap(item1, item2);
-    items1[idx] = item1;
-    items2[idx] = item2;
+    ::cuda::std::iter_swap(items1 + idx, items2 + idx);
   }
 };
-} // namespace __swap_ranges
 
 template <class Derived, class ItemsIt1, class ItemsIt2>
 ItemsIt2 _CCCL_HOST_DEVICE
 swap_ranges(execution_policy<Derived>& policy, ItemsIt1 first1, ItemsIt1 last1, ItemsIt2 first2)
 {
-  using size_type = thrust::detail::it_difference_t<ItemsIt1>;
-
-  size_type num_items = static_cast<size_type>(::cuda::std::distance(first1, last1));
-
-  cuda_cub::parallel_for(policy, __swap_ranges::swap_f<ItemsIt1, ItemsIt2>(first1, first2), num_items);
-
+  const auto num_items = ::cuda::std::distance(first1, last1);
+  cuda_cub::parallel_for(policy, __swap_f<ItemsIt1, ItemsIt2>{first1, first2}, num_items);
   return first2 + num_items;
 }
-
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

@@ -10,8 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
-#include "utils.h"
 #include <cooperative_groups.h>
+
+#include "utils.h"
 
 // TODO: global-shared
 // TODO: read  const

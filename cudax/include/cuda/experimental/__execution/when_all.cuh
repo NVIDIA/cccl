@@ -42,6 +42,7 @@
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/stop_token.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/variant.cuh>
@@ -66,12 +67,12 @@ private:
   // Returns the completion signatures of a child sender. Throws an exception if
   // the child sender has more than one set_value completion signature.
   template <class _Child, class... _Env>
-  _CCCL_API static constexpr auto __child_completions();
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __child_completions();
 
   // Merges the completion signatures of the child senders into a single set of
   // completion signatures for the when_all sender.
   template <class... _Completions>
-  _CCCL_API static constexpr auto __merge_completions(_Completions...);
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __merge_completions(_Completions...);
 
   /// The receivers connected to the when_all's sub-operations expose this as
   /// their environment. Its `get_stop_token` query returns the token from
@@ -85,16 +86,17 @@ private:
 
     __state_t& __state_;
 
-    _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
+    [[nodiscard]] _CCCL_API auto query(get_stop_token_t) const noexcept -> inplace_stop_token
     {
       return __state_.__stop_token_;
     }
 
-    // TODO: only forward the "forwarding" queries
-    template <class _Tag>
-    _CCCL_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<env_of_t<__rcvr_t>, _Query>)
+    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<__rcvr_t>, _Query>)
+      -> __query_result_t<env_of_t<__rcvr_t>, _Query>
     {
-      return execution::get_env(__state_.__rcvr_).query(_Tag());
+      return execution::get_env(__state_.__rcvr_).query(_Query());
     }
   };
 
@@ -380,27 +382,16 @@ private:
   template <class... _Ts>
   using __decay_all _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_list<_CUDA_VSTD::decay_t<_Ts>...>;
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class... _Sndrs>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
-  };
-
 public:
-  _CCCL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   template <class... _Sndrs>
   _CCCL_TRIVIAL_API constexpr auto operator()(_Sndrs... __sndrs) const;
 };
 
 template <class _Child, class... _Env>
-_CCCL_API constexpr auto when_all_t::__child_completions()
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto when_all_t::__child_completions()
 {
   using __env_t _CCCL_NODEBUG_ALIAS = prop<get_stop_token_t, inplace_stop_token>;
-  _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, _FWD_ENV_T<_Env>>...>())
+  _CUDAX_LET_COMPLETIONS(auto(__completions) = get_completion_signatures<_Child, env<__env_t, __fwd_env_t<_Env>>...>())
   {
     if constexpr (__completions.count(set_value) > 1)
     {
@@ -419,15 +410,15 @@ _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
 
 template <class... _Completions>
-_CCCL_API constexpr auto when_all_t::__merge_completions(_Completions... __cs)
+[[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto when_all_t::__merge_completions(_Completions... __cs)
 {
   // Use _CUDAX_LET_COMPLETIONS to ensure all completions are valid:
   _CUDAX_LET_COMPLETIONS(auto(__tmp) = (completion_signatures{}, ..., __cs)) // NB: uses overloaded comma operator
   {
     _CUDA_VSTD::ignore           = __tmp; // silence unused variable warning
     auto __non_value_completions = concat_completion_signatures(
-      completion_signatures<set_stopped_t()>(),
-      transform_completion_signatures(__cs, __swallow_transform(), __decay_transform<set_error_t>())...);
+      completion_signatures<set_stopped_t()>{},
+      transform_completion_signatures(__cs, __swallow_transform{}, __decay_transform<set_error_t>{})...);
 
     if constexpr (((0 == __cs.count(set_value)) || ...))
     {
@@ -470,13 +461,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<
   using __sndrs_t _CCCL_NODEBUG_ALIAS      = _CUDA_VSTD::__tuple<when_all_t, __ignore, _Sndrs...>;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto __get_completions_and_offsets()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completions_and_offsets()
   {
     return __merge_completions(__child_completions<__copy_cvref_t<_Self, _Sndrs>, _Env...>()...);
   }
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     return __get_completions_and_offsets<_Self, _Env...>().first;
   }
@@ -492,20 +483,21 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(static_cast<__sndrs_t const&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
-};
 
-template <class... _Sndrs>
-_CCCL_TRIVIAL_API constexpr auto when_all_t::__fn::operator()(_Sndrs... __sndrs) const
-{
-  // If the incoming senders are non-dependent, we can check the completion
-  // signatures of the composed sender immediately.
-  if constexpr (((!dependent_sender<_Sndrs>) && ...))
+  [[nodiscard]] _CCCL_API constexpr auto get_env() const noexcept
   {
-    using __completions _CCCL_NODEBUG_ALIAS = completion_signatures_of_t<__sndr_t<_Sndrs...>>;
-    static_assert(__valid_completion_signatures<__completions>);
+    if constexpr (sizeof...(_Sndrs) == 0)
+    {
+      return prop{get_domain, default_domain{}};
+    }
+    else
+    {
+      using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<domain_for_t<_Sndrs>...>;
+      return prop{get_domain, __dom_t{}};
+    }
+    _CCCL_UNREACHABLE();
   }
-  return __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}};
-}
+};
 
 template <class... _Sndrs>
 _CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
@@ -514,15 +506,21 @@ _CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
   {
     return __sndr_t{};
   }
-  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>)
+  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>)
   {
-    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, early_domain_of_t<_Sndrs>...>,
+    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>,
                   "when_all: all child senders must have the same domain");
   }
   else
   {
-    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<early_domain_of_t<_Sndrs>...>;
-    return __dom_t::__apply(*this)(static_cast<_Sndrs&&>(__sndrs)...);
+    using __dom_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::common_type_t<domain_for_t<_Sndrs>...>;
+    // If the incoming senders are non-dependent, we can check the completion
+    // signatures of the composed sender immediately.
+    if constexpr (((!dependent_sender<_Sndrs>) && ...))
+    {
+      __assert_valid_completion_signatures(get_completion_signatures<__sndr_t<_Sndrs...>>());
+    }
+    return transform_sender(__dom_t{}, __sndr_t<_Sndrs...>{{{}, {}, static_cast<_Sndrs&&>(__sndrs)...}});
   }
 }
 

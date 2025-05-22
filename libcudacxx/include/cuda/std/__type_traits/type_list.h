@@ -48,6 +48,8 @@
 #  endif
 #endif
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -1061,5 +1063,7 @@ using __type_iota =
 #endif // _CCCL_DOXYGEN_INVOKED
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_LIST_H

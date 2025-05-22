@@ -36,6 +36,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/initializer_list>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Err>
@@ -145,7 +147,7 @@ public:
   // [expected.un.eq]
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() == __rhs.error())))
   {
@@ -154,7 +156,7 @@ public:
 #if _CCCL_STD_VER < 2020
   _CCCL_EXEC_CHECK_DISABLE
   template <class _UErr>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(const unexpected& __lhs,
              const unexpected<_UErr>& __rhs) noexcept(noexcept(static_cast<bool>(__lhs.error() != __rhs.error())))
   {
@@ -170,5 +172,7 @@ template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___EXPECTED_UNEXPECTED_H

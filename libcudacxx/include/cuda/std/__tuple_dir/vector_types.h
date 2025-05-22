@@ -34,10 +34,6 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 
-#  if !_CCCL_CUDA_COMPILATION()
-#    include <cuda_runtime_api.h>
-#  endif // !_CCCL_CUDA_COMPILATION()
-
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size)              \
     template <>                                                                       \
     struct tuple_size<__name##__size> : _CUDA_VSTD::integral_constant<size_t, __size> \
@@ -83,6 +79,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
     _LIBCUDACXX_SPECIALIZE_GET(__name##2, __base_type)           \
     _LIBCUDACXX_SPECIALIZE_GET(__name##3, __base_type)           \
     _LIBCUDACXX_SPECIALIZE_GET(__name##4, __base_type)
+
+#  include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -229,6 +227,8 @@ _LIBCUDACXX_SPECIALIZE_GET_VECTOR(double, double)
 _LIBCUDACXX_SPECIALIZE_GET(dim3, unsigned int)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE
 #  undef _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE_VECTOR

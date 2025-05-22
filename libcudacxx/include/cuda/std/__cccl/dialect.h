@@ -106,11 +106,12 @@
 #define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 
 // We need to treat host and device separately
-#if defined(__CUDA_ARCH__)
+#if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE constexpr
-#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 #  define _CCCL_GLOBAL_CONSTANT inline constexpr
-#endif // __CUDA_ARCH__
+#endif // !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC)
 
 #if _CCCL_STD_VER >= 2020 && __cpp_constinit >= 201907L
 #  define _CCCL_CONSTINIT constinit

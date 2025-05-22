@@ -73,7 +73,7 @@ using __decay_copyable_ _CCCL_NODEBUG_ALIAS = decltype(__decay_t<_Ty>(declval<_T
 template <class... _As>
 inline constexpr bool __decay_copyable = (__type_valid_v<__decay_copyable_, _As> && ...);
 
-#if defined(__CUDA_ARCH__)
+#if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 template <class _Fn, class... _As>
 inline constexpr bool __nothrow_callable = true;
 
@@ -88,7 +88,8 @@ inline constexpr bool __nothrow_movable = true;
 
 template <class... _As>
 inline constexpr bool __nothrow_copyable = true;
-#else
+#else // ^^^ _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC) ^^^ /
+      // vvv !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) vvv
 template <class _Fn, class... _As>
 using __nothrow_callable_ _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::enable_if_t<noexcept(declval<_Fn>()(declval<_As>()...))>;
 
@@ -118,7 +119,7 @@ using __nothrow_copyable_ _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::enable_if_t<noexcept
 
 template <class... _As>
 inline constexpr bool __nothrow_copyable = (__type_valid_v<__nothrow_copyable_, _As> && ...);
-#endif
+#endif // ^^^ !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) ^^^
 
 template <class... _As>
 using __nothrow_decay_copyable_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::bool_constant<__nothrow_decay_copyable<_As...>>;

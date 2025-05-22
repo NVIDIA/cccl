@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 //! @brief __completion_mechanism allows memcpy_async to report back what completion
@@ -39,5 +41,7 @@ enum class __completion_mechanism
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA___BARRIER_COMPLETION_MECHANISM_H

@@ -23,6 +23,8 @@
 
 #include <cuda/std/__memory/addressof.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <typename _Tp>
@@ -33,5 +35,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void* __voidify(_Tp& __from)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___MEMORY_VOIDIFY_H

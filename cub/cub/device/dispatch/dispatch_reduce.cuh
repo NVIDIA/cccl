@@ -59,6 +59,7 @@
 #include <cub/util_type.cuh> // for cub::detail::non_void_value_t, cub::detail::value_t
 
 #include <cuda/std/functional>
+#include <cuda/std/iterator>
 
 CUB_NAMESPACE_BEGIN
 
@@ -572,7 +573,7 @@ template <
   typename InitT,
   typename AccumT =
     ::cuda::std::__accumulator_t<ReductionOpT,
-                                 cub::detail::invoke_result_t<TransformOpT, cub::detail::it_value_t<InputIteratorT>>,
+                                 _CUDA_VSTD::invoke_result_t<TransformOpT, _CUDA_VSTD::iter_value_t<InputIteratorT>>,
                                  InitT>,
   typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource = detail::reduce::DeviceReduceKernelSource<
@@ -994,6 +995,26 @@ struct DispatchSegmentedReduce
 
 namespace detail::reduce
 {
+
+// @brief Functor to generate a key-value pair from an index and value
+template <typename Iterator, typename OutputValueT>
+struct generate_idx_value
+{
+private:
+  Iterator it;
+  int segment_size;
+
+public:
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE generate_idx_value(Iterator it, int segment_size)
+      : it(it)
+      , segment_size(segment_size)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto operator()(::cuda::std::int64_t idx) const
+  {
+    return ::cuda::std::pair<int, OutputValueT>(static_cast<int>(idx % segment_size), it[idx]);
+  }
+};
 
 template <typename MaxPolicyT,
           typename InputIteratorT,

@@ -26,6 +26,8 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIterator, class _Tp, class _BinaryOp, class _UnaryOp>
@@ -64,5 +66,7 @@ transform_reduce(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterat
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___NUMERIC_TRANSFORM_REDUCE_H

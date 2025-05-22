@@ -26,12 +26,13 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_segmented_reduce.cuh>
 
 #include <thrust/device_vector.h>
 #include <thrust/equal.h>
+
+#include <cuda/std/utility>
 
 #include <climits>
 #include <cstddef>
@@ -54,6 +55,11 @@ struct CustomMin
 struct is_equal
 {
   __device__ bool operator()(cub::KeyValuePair<int, int> lhs, cub::KeyValuePair<int, int> rhs)
+  {
+    return !(lhs != rhs);
+  }
+
+  __device__ bool operator()(::cuda::std::pair<int, int> lhs, ::cuda::std::pair<int, int> rhs)
   {
     return !(lhs != rhs);
   }
@@ -273,4 +279,148 @@ C2H_TEST("cub::DeviceSegmentedReduce::Reduce Fixed Segment Size works with int d
   // example-end fixed-size-segmented-reduce-reduce
 
   REQUIRE(d_out == expected);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Sum Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]")
+{
+  // example-begin fixed-size-segmented-reduce-sum
+  int num_segments = 3;
+  int segment_size = 2;
+  c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
+  c2h::device_vector<int> d_out(3);
+
+  // Determine temporary device storage requirements
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSegmentedReduce::Sum(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // Run reduction
+  cub::DeviceSegmentedReduce::Sum(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<int> d_expected{14, 12, 3};
+  // example-end fixed-size-segmented-reduce-sum
+
+  REQUIRE(d_expected == d_out);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Min Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]")
+{
+  // example-begin fixed-size-segmented-reduce-min
+  int num_segments = 3;
+  int segment_size = 2;
+  c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
+  c2h::device_vector<int> d_out(3);
+
+  // Determine temporary device storage requirements
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSegmentedReduce::Min(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // Run reduction
+  cub::DeviceSegmentedReduce::Min(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<int> d_expected{6, 5, 0};
+  // example-end fixed-size-segmented-reduce-min
+
+  REQUIRE(d_expected == d_out);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::ArgMin Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]")
+{
+  // example-begin fixed-size-segmented-reduce-argmin
+  int num_segments = 3;
+  int segment_size = 2;
+  c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
+  c2h::device_vector<::cuda::std::pair<int, int>> d_out(3);
+
+  // Determine temporary device storage requirements
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSegmentedReduce::ArgMin(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // Run reduction
+  cub::DeviceSegmentedReduce::ArgMin(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::host_vector<::cuda::std::pair<int, int>> h_expected{{0, 6}, {1, 5}, {1, 0}};
+  // example-end fixed-size-segmented-reduce-argmin
+
+  c2h::host_vector<::cuda::std::pair<int, int>> h_out(d_out);
+
+  REQUIRE(h_expected == h_out);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::Max Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]")
+{
+  // example-begin fixed-size-segmented-reduce-max
+  int num_segments = 3;
+  int segment_size = 2;
+
+  c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
+  c2h::device_vector<int> d_out(3);
+
+  // Determine temporary device storage requirements
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSegmentedReduce::Max(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // Run reduction
+  cub::DeviceSegmentedReduce::Max(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<int> d_expected{8, 7, 3};
+  // example-end fixed-size-segmented-reduce-max
+
+  REQUIRE(d_expected == d_out);
+}
+
+C2H_TEST("cub::DeviceSegmentedReduce::ArgMax Fixed Segment Size works with int data elements",
+         "[segmented_reduce][device]")
+{
+  // example-begin fixed-size-segmented-reduce-argmax
+  int num_segments = 3;
+  int segment_size = 2;
+  c2h::device_vector<int> d_in{6, 8, 7, 5, 3, 0};
+  c2h::device_vector<::cuda::std::pair<int, int>> d_out(3);
+
+  // Determine temporary device storage requirements
+  void* d_temp_storage      = nullptr;
+  size_t temp_storage_bytes = 0;
+  cub::DeviceSegmentedReduce::ArgMax(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
+  d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
+
+  // Run reduction
+  cub::DeviceSegmentedReduce::ArgMax(
+    d_temp_storage, temp_storage_bytes, d_in.begin(), d_out.begin(), num_segments, segment_size);
+
+  c2h::host_vector<::cuda::std::pair<int, int>> h_expected{{1, 8}, {0, 7}, {0, 3}};
+  // example-end fixed-size-segmented-reduce-argmax
+
+  c2h::host_vector<::cuda::std::pair<int, int>> h_out(d_out);
+  REQUIRE(h_expected == h_out);
 }

@@ -12,9 +12,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/utility>
 
-#include <utility>
-
 #include <nv/target>
+
+#include <utility>
 
 template <class T1, class U1>
 void test_assignment()

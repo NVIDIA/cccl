@@ -31,12 +31,12 @@ static_assert(cuda::std::indirect_unary_predicate<GoodPredicate<It>, It>, "");
 static_assert(cuda::std::indirect_unary_predicate<bool (*)(int), int*>, "");
 
 TEST_DIAG_SUPPRESS_CLANG("-Wunneeded-internal-declaration")
-#ifndef __CUDA_ARCH__
+#if _CCCL_HOST_COMPILATION()
 auto lambda = [](int i) {
   return i % 2 == 0;
 };
 static_assert(cuda::std::indirect_unary_predicate<decltype(lambda), int*>, "");
-#endif
+#endif // _CCCL_HOST_COMPILATION()
 
 // Should fail when the iterator is not indirectly_readable
 #if TEST_STD_VER > 2017

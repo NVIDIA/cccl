@@ -17,6 +17,8 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -291,9 +293,9 @@ struct launch_priority : public detail::launch_option
   static constexpr bool needs_attribute_space      = true;
   static constexpr bool is_relevant_on_dpevice     = false;
   static constexpr detail::launch_option_kind kind = detail::launch_option_kind::launch_priority;
-  unsigned int priority;
+  int priority;
 
-  launch_priority(unsigned int p) noexcept
+  launch_priority(int p) noexcept
       : priority(p)
   {}
 
@@ -657,4 +659,7 @@ _CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>&
 
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__LAUNCH_CONFIGURATION

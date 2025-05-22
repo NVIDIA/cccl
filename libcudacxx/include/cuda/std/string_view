@@ -51,6 +51,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
 #include <cuda/std/version>
@@ -59,9 +60,14 @@
 #  include <iosfwd>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+template <class _Range, class _CharT, class _Traits>
+_CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
+  _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits), remove_cvref_t<_Range>& __d)(
+    (__d.operator _CUDA_VSTD::basic_string_view<_CharT, _Traits>()));
 
 template <class _CharT, class _Traits>
 class basic_string_view
@@ -118,26 +124,27 @@ public:
     _CCCL_ASSERT(__len == 0 || __s != nullptr, "string_view::string_view(_CharT *, size_t): received nullptr");
   }
 
-#if 0 // todo: implement range constructors
-  template <contiguous_iterator _It, sized_sentinel_for<_It> _End>
-    requires(is_same_v<iter_value_t<_It>, _CharT> && !is_convertible_v<_End, size_type>)
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _It, class _End)
+  _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It> _CCCL_AND
+                   is_same_v<iter_value_t<_It>, _CharT> _CCCL_AND(!is_convertible_v<_End, size_type>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr basic_string_view(_It __begin, _End __end)
       : __data_{_CUDA_VSTD::to_address(__begin)}
-      , __size_{__end - __begin}
+      , __size_{static_cast<size_type>(__end - __begin)}
   {
     _CCCL_ASSERT((__end - __begin) >= 0, "string_view::string_view(iterator, sentinel) received invalid range");
   }
 
-  template <class _Range>
-    requires(!is_same_v<remove_cvref_t<_Range>, basic_string_view> && _CUDA_VRANGES::contiguous_range<_Range>
-             && _CUDA_VRANGES::sized_range<_Range> && is_same_v<_CUDA_VRANGES::range_value_t<_Range>, _CharT>
-             && !is_convertible_v<_Range, const _CharT*>
-             && (!requires(remove_cvref_t<_Range>& __d) { __d.operator basic_string_view<_CharT, _Traits>(); }))
-  constexpr explicit _LIBCUDACXX_HIDE_FROM_ABI basic_string_view(_Range&& __r)
+  _CCCL_TEMPLATE(class _Range)
+  _CCCL_REQUIRES(
+    (!is_same_v<remove_cvref_t<_Range>, basic_string_view>)
+      _CCCL_AND _CUDA_VRANGES::contiguous_range<_Range> _CCCL_AND _CUDA_VRANGES::sized_range<_Range> _CCCL_AND
+        is_same_v<_CUDA_VRANGES::range_value_t<_Range>, _CharT> _CCCL_AND(!is_convertible_v<_Range, const _CharT*>)
+          _CCCL_AND(!__cccl_has_basic_sv_conv_operator<_Range, _CharT, _Traits>))
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr basic_string_view(_Range&& __r)
       : __data_{_CUDA_VRANGES::data(__r)}
       , __size_{_CUDA_VRANGES::size(__r)}
   {}
-#endif
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
   {
@@ -566,7 +573,7 @@ public:
 
   // operator ==
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     if (__lhs.__size_ != __rhs.__size_)
@@ -577,7 +584,7 @@ public:
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     if (__lhs.__size_ != __rhs.__size_)
@@ -588,7 +595,7 @@ public:
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator==(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs == __rhs;
@@ -596,21 +603,21 @@ public:
 
   // operator !=
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator!=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -618,21 +625,21 @@ public:
 
   // operator <
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) < 0;
@@ -640,21 +647,21 @@ public:
 
   // operator >
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) > 0;
@@ -662,21 +669,21 @@ public:
 
   // operator <=
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator<=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) <= 0;
@@ -684,21 +691,21 @@ public:
 
   // operator >=
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(basic_string_view __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
   }
 
   template <int = 1>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(basic_string_view __lhs, type_identity_t<basic_string_view> __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
   }
 
   template <unsigned = 2>
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
   operator>=(type_identity_t<basic_string_view> __lhs, basic_string_view __rhs) noexcept
   {
     return __lhs.compare(__rhs) >= 0;
@@ -723,19 +730,13 @@ private:
 
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(basic_string_view);
 
-#if 0 // todo: implement range support
-template <class _CharT, class _Traits>
-inline constexpr bool _CUDA_VRANGES::enable_view<basic_string_view<_CharT, _Traits>> = true;
+_CCCL_TEMPLATE(class _It, class _End)
+_CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It>)
+_CCCL_HOST_DEVICE basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
 
-template <class _CharT, class _Traits>
-inline constexpr bool _CUDA_VRANGES::enable_borrowed_range<basic_string_view<_CharT, _Traits> > = true;
-
-template <contiguous_iterator _It, sized_sentinel_for<_It> _End>
-basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
-
-template <_CUDA_VRANGES::contiguous_range _Range>
-basic_string_view(_Range) -> basic_string_view<_CUDA_VRANGES::range_value_t<_Range>>;
-#endif
+_CCCL_TEMPLATE(class _Range)
+_CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
+_CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<_CUDA_VRANGES::range_value_t<_Range>>;
 
 // operator <<
 
@@ -798,6 +799,16 @@ _CCCL_DIAG_POP
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+_LIBCUDACXX_BEGIN_NAMESPACE_RANGES
+
+template <class _CharT, class _Traits>
+inline constexpr bool enable_view<_CUDA_VSTD::basic_string_view<_CharT, _Traits>> = true;
+
+template <class _CharT, class _Traits>
+inline constexpr bool enable_borrowed_range<_CUDA_VSTD::basic_string_view<_CharT, _Traits>> = true;
+
+_LIBCUDACXX_END_NAMESPACE_RANGES
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDA_STD_STRING_VIEW

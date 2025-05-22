@@ -27,6 +27,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
@@ -90,5 +92,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 front_insert_iterator<_Container
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_FRONT_INSERT_ITERATOR_H

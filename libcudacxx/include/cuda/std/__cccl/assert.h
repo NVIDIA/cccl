@@ -100,11 +100,11 @@ _CCCL_HOST_DEVICE
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
       ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
 #  endif // !_CCCL_COMPILER(MSVC)
-#elif _CCCL_HAS_CUDA_COMPILER()
+#elif _CCCL_CUDA_COMPILATION()
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
-#else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) ((void) 0)
-#endif // !_CCCL_HAS_CUDA_COMPILER()
+#endif // !_CCCL_CUDA_COMPILATION()
 
 //! _CCCL_ASSERT_HOST is enabled conditionally depending on CCCL_ENABLE_HOST_ASSERTIONS
 #ifdef CCCL_ENABLE_HOST_ASSERTIONS
@@ -130,17 +130,17 @@ _CCCL_HOST_DEVICE
 #  else
 #    define _CCCL_ASSERT(expression, message) ((void) 0)
 #  endif
-#elif _CCCL_HAS_CUDA_COMPILER()
-#  ifdef __CUDA_ARCH__
+#elif _CCCL_CUDA_COMPILATION()
+#  if _CCCL_DEVICE_COMPILATION()
 #    define _CCCL_VERIFY(expression, message) _CCCL_ASSERT_IMPL_DEVICE(expression, message)
 #    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_DEVICE(expression, message)
-#  else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#  else // ^^^ _CCCL_DEVICE_COMPILATION() ^^^ / vvv !_CCCL_DEVICE_COMPILATION() vvv
 #    define _CCCL_VERIFY(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #    define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_HOST(expression, message)
-#  endif // !__CUDA_ARCH__
-#else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
+#  endif // !_CCCL_DEVICE_COMPILATION()
+#else // ^^^ _CCCL_CUDA_COMPILATION() ^^^ / vvv !_CCCL_CUDA_COMPILATION() vvv
 #  define _CCCL_VERIFY(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #  define _CCCL_ASSERT(expression, message) _CCCL_ASSERT_HOST(expression, message)
-#endif // !_CCCL_HAS_CUDA_COMPILER()
+#endif // !_CCCL_CUDA_COMPILATION()
 
 #endif // __CCCL_ASSERT_H

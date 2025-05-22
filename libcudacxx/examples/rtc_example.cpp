@@ -22,10 +22,9 @@ THE SOFTWARE.
 
 */
 
-#include <cuda.h>
-
 #include <iostream>
 
+#include <cuda.h>
 #include <nvrtc.h>
 
 #define NVRTC_SAFE_CALL(x)                                                                      \

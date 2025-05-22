@@ -19,6 +19,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
@@ -54,5 +56,7 @@ using __unary_function = __unary_function_keep_layout_base<_Arg, _Result>;
 #endif // !_LIBCUDACXX_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___FUNCTIONAL_UNARY_FUNCTION_H

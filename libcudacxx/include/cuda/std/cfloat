@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cfloat>
 #else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
@@ -57,7 +55,5 @@ _CCCL_PUSH_MACROS
 #  define DBL_MAX_10_EXP  308
 #  define DBL_HAS_SUBNORM 1
 #endif // ^^^ _CCCL_COMPILER(NVRTC) ^^^
-
-_CCCL_POP_MACROS
 
 #endif // _CUDA_STD_CFLOAT

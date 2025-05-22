@@ -56,6 +56,7 @@ private:
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
@@ -101,7 +102,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 
   template <class _Self, class _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     if constexpr (!_CUDA_VSTD::__is_callable_v<_Query, _Env>)
     {

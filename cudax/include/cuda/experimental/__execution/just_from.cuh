@@ -34,11 +34,6 @@
 
 namespace cuda::experimental::execution
 {
-// Forward declarations of the just* tag types:
-struct just_from_t;
-struct just_error_from_t;
-struct just_stopped_from_t;
-
 // Map from a disposition to the corresponding tag types:
 namespace __detail
 {
@@ -56,7 +51,8 @@ struct _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT;
 struct _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
 
 template <__disposition_t _Disposition>
-struct __just_from_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(just_from_t) _CCCL_PREFERRED_NAME(just_error_from_t)
+  _CCCL_PREFERRED_NAME(just_stopped_from_t) __just_from_t
 {
 private:
   using _JustTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__just_from_tag<_Disposition>());
@@ -97,6 +93,7 @@ private:
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API void start() & noexcept
     {
       static_cast<_Fn&&>(__fn_)(__complete_fn<_Rcvr>{__rcvr_});
@@ -124,7 +121,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
   _Fn __fn_;
 
   template <class _Self, class...>
-  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
     return __call_result_t<_Fn, __probe_fn>{};
   }
@@ -156,23 +153,16 @@ _CCCL_TRIVIAL_API constexpr auto __just_from_t<_Disposition>::operator()(_Fn __f
 }
 
 template <class _Fn>
-inline constexpr size_t structured_binding_size<__just_from_t<__value>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<just_from_t::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr size_t structured_binding_size<__just_from_t<__error>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<just_error_from_t::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr size_t structured_binding_size<__just_from_t<__stopped>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<just_stopped_from_t::__sndr_t<_Fn>> = 2;
 
-_CCCL_GLOBAL_CONSTANT struct just_from_t : __just_from_t<__value>
-{
-} just_from{};
+_CCCL_GLOBAL_CONSTANT auto just_from         = just_from_t{};
+_CCCL_GLOBAL_CONSTANT auto just_error_from   = just_error_from_t{};
+_CCCL_GLOBAL_CONSTANT auto just_stopped_from = just_stopped_from_t{};
 
-_CCCL_GLOBAL_CONSTANT struct just_error_from_t : __just_from_t<__error>
-{
-} just_error_from{};
-
-_CCCL_GLOBAL_CONSTANT struct just_stopped_from_t : __just_from_t<__stopped>
-{
-} just_stopped_from{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>

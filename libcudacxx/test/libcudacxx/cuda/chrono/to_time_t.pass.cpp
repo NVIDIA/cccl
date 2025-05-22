@@ -15,8 +15,9 @@
 
 #include <cuda/std/chrono>
 
-#include "test_macros.h"
 #include <nv/target>
+
+#include "test_macros.h"
 
 int main(int, char**)
 {

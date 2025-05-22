@@ -34,6 +34,8 @@
 #  include <intrin.h>
 #endif // _CCCL_COMPILER(MSVC)
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
@@ -175,5 +177,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___BIT_BYTESWAP_H

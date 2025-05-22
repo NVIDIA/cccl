@@ -52,7 +52,7 @@ def test_OpKind_positive(cccl_op_kind):
     assert isinstance(cccl_op_kind.value, int)
 
 
-def test_OpKind_negatuve(cccl_iterator_kind):
+def test_OpKind_negative(cccl_iterator_kind):
     assert not bindings.is_OpKind(cccl_iterator_kind)
 
 

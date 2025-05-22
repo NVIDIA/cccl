@@ -24,6 +24,8 @@
 
 #include <nv/target>
 
+#include <cuda/std/__cccl/prologue.h>
+
 #if _CCCL_STD_VER >= 2017
 namespace cuda::experimental
 {
@@ -398,13 +400,13 @@ struct hierarchy_dimensions
 #  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   [[nodiscard]] _CCCL_HIDE_FROM_ABI constexpr bool operator==(const hierarchy_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CCCL_API constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator==(const hierarchy_dimensions& left, const hierarchy_dimensions& right) noexcept
   {
     return left.levels == right.levels;
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_API constexpr bool
+  [[nodiscard]] _CCCL_API friend constexpr bool
   operator!=(const hierarchy_dimensions& left, const hierarchy_dimensions& right) noexcept
   {
     return left.levels != right.levels;
@@ -907,4 +909,7 @@ constexpr auto hierarchy_add_level(const hierarchy_dimensions<Unit, Levels...>& 
 
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
+
+#include <cuda/std/__cccl/epilogue.h>
+
 #endif // _CUDAX__HIERARCHY_HIERARCHY_DIMENSIONS

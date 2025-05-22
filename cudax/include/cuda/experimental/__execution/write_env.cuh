@@ -28,6 +28,7 @@
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/rcvr_ref.cuh>
 #include <cuda/experimental/__execution/rcvr_with_env.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
@@ -59,18 +60,7 @@ private:
     connect_result_t<_Sndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, _Env>>> __opstate_;
   };
 
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __fn
-  {
-    template <class _Env, class _Sndr>
-    _CCCL_TRIVIAL_API constexpr auto operator()(_Env __env, _Sndr __sndr) const;
-  };
-
 public:
-  _CCCL_TRIVIAL_API static constexpr auto __apply() noexcept
-  {
-    return __fn{};
-  }
-
   template <class _Sndr, class _Env>
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
 
@@ -86,10 +76,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   template <class _Self, class... _Env2>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     using _Child _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
-    return execution::get_completion_signatures<_Child, env<const _Env&, _FWD_ENV_T<_Env2>>...>();
+    return execution::get_completion_signatures<_Child, env<const _Env&, __fwd_env_t<_Env2>>...>();
   }
 
   template <class _Rcvr>
@@ -105,9 +95,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Env>{__sndr_, __env_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 
   _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
@@ -115,17 +105,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   _Sndr __sndr_;
 };
 
-template <class _Env, class _Sndr>
-_CCCL_TRIVIAL_API constexpr auto write_env_t::__fn::operator()(_Env __env, _Sndr __sndr) const
-{
-  return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
-}
-
 template <class _Sndr, class _Env>
 _CCCL_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = __domain_of_t<_Env>;
-  return __dom_t::__apply(*this)(static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr));
+  using __dom_t _CCCL_NODEBUG_ALIAS  = __domain_of_t<_Env>;
+  using __sndr_t _CCCL_NODEBUG_ALIAS = write_env_t::__sndr_t<_Sndr, _Env>;
+  return transform_sender(__dom_t{}, __sndr_t{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <class _Sndr, class _Env>

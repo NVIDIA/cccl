@@ -30,6 +30,8 @@
 
 #  include <nv/target>
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
@@ -88,6 +90,8 @@ __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, 
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CCCL_CUDA_COMPILER
 
