@@ -252,9 +252,9 @@ public:
     return current_color;
   }
 
-  void change_epoch()
+  void change_stage()
   {
-    if (getenv("CUDASTF_DOT_DISPLAY_EPOCHS"))
+    if (getenv("CUDASTF_DOT_DISPLAY_STAGES"))
     {
       ::std::lock_guard<::std::mutex> guard(mtx);
       prev_oss.push_back(mv(oss));
@@ -325,9 +325,9 @@ public:
   unique_id<per_ctx_dot> id;
 
 public: // XXX protected, friend : dot
-  // string for the current epoch
+  // string for the current stage
   mutable ::std::ostringstream oss;
-  // strings of the previous epochs
+  // strings of the previous stages
   mutable ::std::vector<::std::ostringstream> prev_oss;
   ::std::unordered_map<int /* id */, per_task_info> metadata;
 
@@ -568,7 +568,7 @@ public:
       bool display_clusters = (per_ctx.size() > 1);
       /*
        * For every context, we write the description of the DAG per
-       * epoch. Then we write the edges after removing redundant ones.
+       * stage. Then we write the edges after removing redundant ones.
        */
       for (const auto& pc : per_ctx)
       {
@@ -656,20 +656,20 @@ private:
     {
       outFile << "subgraph cluster_" << ctx_id << " {\n";
     }
-    size_t epoch_cnt = pc->prev_oss.size();
-    for (size_t epoch_id = 0; epoch_id < epoch_cnt; epoch_id++)
+    size_t stage_cnt = pc->prev_oss.size();
+    for (size_t stage_id = 0; stage_id < stage_cnt; stage_id++)
     {
-      if (epoch_cnt > 1)
+      if (stage_cnt > 1)
       {
-        outFile << "subgraph cluster_" << epoch_id << "_" << ctx_id << " {\n";
-        outFile << "label=\"epoch " << epoch_id << "\"\n";
+        outFile << "subgraph cluster_" << stage_id << "_" << ctx_id << " {\n";
+        outFile << "label=\"stage " << stage_id << "\"\n";
       }
 
-      outFile << pc->prev_oss[epoch_id].str();
+      outFile << pc->prev_oss[stage_id].str();
 
-      if (epoch_cnt > 1)
+      if (stage_cnt > 1)
       {
-        outFile << "} // end subgraph cluster_" << epoch_id << "_" << ctx_id << "\n";
+        outFile << "} // end subgraph cluster_" << stage_id << "_" << ctx_id << "\n";
       }
 
       if (!getenv("CUDASTF_DOT_SKIP_CHILDREN"))
