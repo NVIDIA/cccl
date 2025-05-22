@@ -34,10 +34,6 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 
-#  if !_CCCL_CUDA_COMPILATION()
-#    include <cuda_runtime_api.h>
-#  endif // !_CCCL_CUDA_COMPILATION()
-
 #  define _LIBCUDACXX_SPECIALIZE_TUPLE_INTERFACE(__name, __type, __size)              \
     template <>                                                                       \
     struct tuple_size<__name##__size> : _CUDA_VSTD::integral_constant<size_t, __size> \

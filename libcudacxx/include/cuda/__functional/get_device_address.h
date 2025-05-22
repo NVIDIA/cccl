@@ -23,10 +23,6 @@
 
 #if _CCCL_HAS_CTK()
 
-#  if !_CCCL_CUDA_COMPILATION()
-#    include <cuda_runtime_api.h>
-#  endif // !_CCCL_CUDA_COMPILATION()
-
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__memory/addressof.h>
 

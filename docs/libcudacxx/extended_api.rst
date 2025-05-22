@@ -15,6 +15,7 @@ Extended API
    extended_api/asynchronous_operations
    extended_api/memory_access_properties
    extended_api/functional
+   extended_api/type_traits
    extended_api/streams
    extended_api/memory_resource
    extended_api/math
