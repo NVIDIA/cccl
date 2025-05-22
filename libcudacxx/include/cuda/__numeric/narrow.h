@@ -55,7 +55,7 @@ template <class _To, class _From>
     {
       NV_IF_TARGET(NV_IS_HOST, throw narrowing_error{};, __trap(););
     }
-    _CCCL_NV_DIAG_DEFAULT()
+    _CCCL_NV_DIAG_DEFAULT(186)
   }
   else if (static_cast<_From>(__converted) != __from)
   {
