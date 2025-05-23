@@ -228,7 +228,11 @@ public:
 
     if (is_green_ctx())
     {
-      return "green ctx";
+      // Convert the green context opaque object to a string
+      ::std::ostringstream oss;
+      oss << gc_view->g_ctx;
+      ::std::string g_ctx_str = oss.str();
+      return "green ctx dev(" + ::std::to_string(gc_view->devid) + "):" + g_ctx_str;
     }
 
     if (is_composite())
@@ -628,6 +632,9 @@ public:
 
   // For debug purpose on a machine with a single GPU, for example
   static exec_place_grid repeat(const exec_place& e, size_t cnt);
+
+  template <typename... Args>
+  auto partition_by_scope(Args&&... args);
 
   /**
    * @brief Execute lambda on this place.
