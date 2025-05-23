@@ -167,4 +167,4 @@ _CCCL_GLOBAL_CONSTANT auto just_stopped_from = just_stopped_from_t{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_JUST_FROM

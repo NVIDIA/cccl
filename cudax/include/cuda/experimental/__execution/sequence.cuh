@@ -172,4 +172,4 @@ _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_SEQUENCE

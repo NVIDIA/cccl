@@ -428,4 +428,4 @@ _CCCL_GLOBAL_CONSTANT auto let_stopped = let_stopped_t{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_LET_VALUE

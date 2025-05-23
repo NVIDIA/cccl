@@ -534,4 +534,4 @@ _CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_WHEN_ALL

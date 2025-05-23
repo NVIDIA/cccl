@@ -71,7 +71,7 @@ private:
     // escapes. So for gcc, we let this operation state be movable.
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
-#endif
+#endif // !_CCCL_COMPILER(GCC)
 
     _CCCL_API void start() & noexcept
     {
@@ -143,4 +143,4 @@ _CCCL_GLOBAL_CONSTANT auto just_stopped = just_stopped_t{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_JUST

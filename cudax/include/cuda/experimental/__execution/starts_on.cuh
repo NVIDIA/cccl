@@ -156,4 +156,4 @@ _CCCL_GLOBAL_CONSTANT starts_on_t starts_on{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_STARTS_ON

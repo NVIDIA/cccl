@@ -175,7 +175,7 @@ using __zip _CCCL_NODEBUG_ALIAS = _Type;
 template <class _Id>
 using __unzip _CCCL_NODEBUG_ALIAS = _Id;
 
-#else
+#else // ^^^ _CCCL_COMPILER(CLANG, <, 12) ^^^ / vvv !_CCCL_COMPILER(CLANG, <, 12) vvv
 
 template <class _Type, size_t _Val = execution::__next<_Type>(0)>
 using __zip _CCCL_NODEBUG_ALIAS = __slot<_Val>;
@@ -183,7 +183,7 @@ using __zip _CCCL_NODEBUG_ALIAS = __slot<_Val>;
 template <class _Id>
 using __unzip _CCCL_NODEBUG_ALIAS = decltype(__slot_allocated(_Id())());
 
-#endif
+#endif // ^^^ !_CCCL_COMPILER(CLANG, <, 12) ^^^
 
 // burn the first slot
 using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
@@ -196,4 +196,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_UTILITY

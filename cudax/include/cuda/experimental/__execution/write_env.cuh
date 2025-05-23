@@ -121,4 +121,4 @@ _CCCL_GLOBAL_CONSTANT __write_env_t write_env{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_WRITE_ENV

@@ -108,4 +108,4 @@ _CCCL_GLOBAL_CONSTANT start_detached_t start_detached{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_START_DETACHED

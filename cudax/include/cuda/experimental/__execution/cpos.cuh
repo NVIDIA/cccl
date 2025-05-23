@@ -163,4 +163,4 @@ inline constexpr bool __nothrow_connectable = noexcept(connect(declval<_Sndr>(),
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_CPOS

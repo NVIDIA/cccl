@@ -477,4 +477,4 @@ using stop_callback_for_t _CCCL_NODEBUG_ALIAS = typename _Token::template callba
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_STOP_TOKEN

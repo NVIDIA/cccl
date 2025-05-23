@@ -68,4 +68,4 @@ private:
 
 #endif // _CCCL_HOST_COMPILATION()
 
-#endif
+#endif // __CUDAX_EXECUTION_THREAD_CONTEXT

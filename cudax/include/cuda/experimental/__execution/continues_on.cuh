@@ -87,4 +87,4 @@ _CCCL_GLOBAL_CONSTANT continues_on_t continues_on{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_CONTINUES_ON

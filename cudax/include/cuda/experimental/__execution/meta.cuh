@@ -284,4 +284,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_META

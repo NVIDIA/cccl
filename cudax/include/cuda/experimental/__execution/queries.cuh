@@ -41,10 +41,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace cuda::experimental::execution
 {
+// NOLINTBEGIN(misc-unused-using-decls)
 using _CUDA_STD_EXEC::__forwarding_query;
 using _CUDA_STD_EXEC::__queryable_with;
 using _CUDA_STD_EXEC::forwarding_query;
 using _CUDA_STD_EXEC::forwarding_query_t;
+// NOLINTEND(misc-unused-using-decls)
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_allocator
@@ -225,4 +227,4 @@ using __domain_of_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<get_domain
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_QUERIES

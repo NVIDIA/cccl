@@ -84,4 +84,4 @@ inline _CCCL_API void __this_thread_yield() noexcept
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_THREAD

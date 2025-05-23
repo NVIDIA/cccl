@@ -101,10 +101,10 @@ _CCCL_GLOBAL_CONSTANT __concat_completion_signatures_fn concat_completion_signat
 #if defined(__cpp_constexpr_exceptions) // C++26, https://wg21.link/p3068
 template <class... What, class... Values>
 [[noreturn, nodiscard]] constexpr completion_signatures<> invalid_completion_signature(Values... values);
-#else
+#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
 template <class... What, class... Values>
 [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto invalid_completion_signature(Values... values);
-#endif
+#endif // ^^^ no constexpr exceptions ^^^
 
 struct _IN_COMPLETION_SIGNATURES_APPLY;
 struct _IN_COMPLETION_SIGNATURES_TRANSFORM_REDUCE;
@@ -899,14 +899,14 @@ catch (...)
 {
   return false; // different kind of exception was thrown; not a dependent sender
 }
-#else
+#else // ^^^ constexpr exceptions ^^^ / vvv no constexpr exceptions vvv
 template <class _Sndr>
 [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto __is_dependent_sender() noexcept -> bool
 {
   using _Completions _CCCL_NODEBUG_ALIAS = decltype(get_completion_signatures<_Sndr>());
   return _CUDA_VSTD::is_base_of_v<dependent_sender_error, _Completions>;
 }
-#endif
+#endif // ^^^ no constexpr exceptions ^^^
 
 } // namespace cuda::experimental::execution
 
@@ -914,4 +914,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // _CUDAX_EXECUTION_COMPLETION_SIGNATURES_H

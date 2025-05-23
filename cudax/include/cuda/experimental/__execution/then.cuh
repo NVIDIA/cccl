@@ -340,4 +340,4 @@ _CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_THEN

@@ -194,4 +194,4 @@ extern __fn_t<set_stopped_t>* __set_tag<__stopped, _Void>;
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_FWD
