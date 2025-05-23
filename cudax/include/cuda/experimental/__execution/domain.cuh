@@ -139,8 +139,8 @@ struct get_domain_t<start_t>
 template <>
 _CCCL_GLOBAL_CONSTANT get_domain_t<start_t> get_domain<start_t>{};
 
-// For querying a sender's attributes for the domain on which `set_[value|error|stopped]`
-// will be called, if it knows.
+// For querying a sender's attributes for the domain on which `set_value` will be called,
+// if it knows.
 template <>
 struct get_domain_t<set_value_t>
 {
@@ -168,7 +168,7 @@ _CCCL_GLOBAL_CONSTANT get_domain_t<set_value_t> get_domain<set_value_t>{};
 namespace __detail
 {
 template <class _Env, class _GetScheduler, class _Tag>
-_CCCL_TRIVIAL_API constexpr auto __get_domain_impl() noexcept
+_CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto __get_domain_impl() noexcept
 {
   if constexpr (__queryable_with<_Env, get_domain_t<_Tag>>)
   {
@@ -182,12 +182,12 @@ _CCCL_TRIVIAL_API constexpr auto __get_domain_impl() noexcept
     }
     else
     {
-      return default_domain();
+      return default_domain{};
     }
   }
   else
   {
-    return default_domain();
+    return default_domain{};
   }
   _CCCL_UNREACHABLE();
 }

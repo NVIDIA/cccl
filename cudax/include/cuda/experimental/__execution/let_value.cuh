@@ -223,23 +223,13 @@ private:
   struct __domain_transform_fn
   {
     template <class... _Ts>
-<<<<<<< HEAD
-    _CCCL_API auto operator()(_SetTag (*)(_Ts...)) const
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_SetTag (*)(_Ts...)) const
     {
       using __result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_Ts>&...>;
       // ask the result sender if it knows where it will complete:
       if constexpr (__queryable_with<env_of_t<__result_t>, get_domain_t<set_value_t>>)
       {
         return __query_result_t<env_of_t<__result_t>, get_domain_t<set_value_t>>{};
-=======
-    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_SetTag (*)(_Ts...)) const
-    {
-      using __result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_Ts>&...>;
-      // ask the result sender if it knows where it will complete:
-      if constexpr (__queryable_with<env_of_t<__result_t>, get_domain_t>)
-      {
-        return __query_result_t<env_of_t<__result_t>, get_domain_t>{};
->>>>>>> origin/main
       }
       else
       {
@@ -251,11 +241,7 @@ private:
   struct __domain_reduce_fn
   {
     template <class... _Domains>
-<<<<<<< HEAD
-    _CCCL_API auto operator()(_Domains...) const
-=======
     [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()(_Domains...) const
->>>>>>> origin/main
     {
       if constexpr (_CUDA_VSTD::_IsValidExpansion<_CUDA_VSTD::common_type_t, _Domains...>::value)
       {
@@ -269,27 +255,17 @@ private:
   };
 
   template <class _Sndr, class _Fn>
-<<<<<<< HEAD
-  _CCCL_API static constexpr auto __get_completion_domain() noexcept
-=======
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completion_domain() noexcept
->>>>>>> origin/main
   {
     // we can know the completion domain for non-dependent senders
     using __completions = completion_signatures_of_t<_Sndr>;
     if constexpr (__valid_completion_signatures<__completions>)
     {
-<<<<<<< HEAD
-      auto __dom =
-        __completions().select(_SetTag()).transform_reduce(__domain_transform_fn<_Fn>(), __domain_reduce_fn());
-      return __dom;
-=======
-      return __completions{}.select(_SetTag()).transform_reduce(__domain_transform_fn<_Fn>{}, __domain_reduce_fn{});
->>>>>>> origin/main
+      return __completions{}.select(_SetTag{}).transform_reduce(__domain_transform_fn<_Fn>{}, __domain_reduce_fn{});
     }
     else
     {
-      return __nil();
+      return __nil{};
     }
   }
 

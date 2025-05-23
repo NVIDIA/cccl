@@ -28,6 +28,7 @@
     "source=${localWorkspaceFolder}/.aws,target=/home/coder/.aws,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.cache,target=/home/coder/.cache,type=bind,consistency=consistent",
     "source=${localWorkspaceFolder}/.config,target=/home/coder/.config,type=bind,consistency=consistent",
+    "source=${localEnv:HOME}/.ssh,target=/home/coder/.ssh,type=bind,consistency=consistent",
     "source=cccl-build,target=/home/coder/cccl/build",
     "source=cccl-wheelhouse,target=/home/coder/cccl/wheelhouse"
   ],
