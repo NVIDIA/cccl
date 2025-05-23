@@ -50,7 +50,7 @@ struct narrowing_error : ::std::runtime_error
       : ::std::runtime_error("Narrowing error")
   {}
 };
-#endif // !_CCCL_COMPILER(NVRTC)
+#endif // _CCCL_HAS_EXCEPTIONS()
 
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void __throw_narrowing_error()
 {
