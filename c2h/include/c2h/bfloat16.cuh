@@ -261,9 +261,14 @@ public:
   }
 };
 
+namespace cub
+{
+
 template <>
-struct cub::NumericTraits<bfloat16_t> : BaseTraits<FLOATING_POINT, true, unsigned short, bfloat16_t>
+struct NumericTraits<bfloat16_t> : BaseTraits<FLOATING_POINT, true, unsigned short, bfloat16_t>
 {};
+
+} // namespace cub
 
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
