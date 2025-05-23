@@ -95,7 +95,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto floating_point_to_comparable_int(ReductionOp
   using signed_t        = __make_nbit_int_t<__num_bits_v<T>, true>;
   constexpr auto lowest = signed_t{1} << (__num_bits_v<T> - 1);
   constexpr auto is_max = is_cuda_maximum_v<ReductionOp, T>;
-  const auto nan        = is_max ? -numeric_limits<T>::quiet_NaN() : numeric_limits<T>::quiet_NaN();
+  const auto nan        = is_max ? T{-numeric_limits<T>::quiet_NaN()} : numeric_limits<T>::quiet_NaN();
   auto value1           = _CUDA_VSTD::isnan(value) ? nan : value;
   auto value_int        = cub::detail::unsafe_bitcast<signed_t>(value1);
   return static_cast<signed_t>(value_int < 0 ? lowest - value_int : value_int);
