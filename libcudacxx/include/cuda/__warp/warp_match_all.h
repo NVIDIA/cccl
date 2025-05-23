@@ -38,13 +38,13 @@ extern "C" _CCCL_DEVICE void __cuda__match_all_sync_is_not_supported_before_SM_7
 template <typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE bool warp_match_all(const _Tp& __data, uint32_t __lane_mask = 0xFFFFFFFF)
 {
-  constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
   _CCCL_ASSERT((__lane_mask & __activemask()) == __lane_mask, "lane mask must be a subset of the active mask");
   _CCCL_ASSERT(__lane_mask != 0, "lane_mask must be non-zero");
+  constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
   uint32_t __array[__ratio];
-  ::memcpy(__array, _CUDA_VSTD::addressof(__data), sizeof(_Up));
+  _CUDA_VSTD::memcpy(__array, _CUDA_VSTD::addressof(__data), sizeof(_Up));
   bool __ret = true;
-  _CCCL_PRAGMA_UNROLL_FULL()
+  _CCCL_PRAGMA_UNROLL_FULL() // TODO(fbusato): move to static_for
   for (int i = 0; i < __ratio; ++i)
   {
     int __pred = false;
