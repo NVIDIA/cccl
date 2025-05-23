@@ -128,7 +128,10 @@ struct segmented_reduce_kernel_source
 };
 } // namespace segmented_reduce
 
-struct segmented_reduce_iterator_tag;
+struct segmented_reduce_input_iterator_tag;
+struct segmented_reduce_output_iterator_tag;
+struct segmented_reduce_start_offset_iterator_tag;
+struct segmented_reduce_end_offset_iterator_tag;
 struct segmented_reduce_operation_tag;
 
 CUresult cccl_device_segmented_reduce_build(
@@ -157,14 +160,17 @@ CUresult cccl_device_segmented_reduce_build(
     const auto accum_cpp         = cccl_type_enum_to_name(accum_t.type);
 
     const auto [input_iterator_name, input_iterator_src] =
-      get_specialization<segmented_reduce_iterator_tag>(template_id<input_iterator_traits>(), input_it);
+      get_specialization<segmented_reduce_input_iterator_tag>(template_id<input_iterator_traits>(), input_it);
 
-    const auto [output_iterator_name, output_iterator_src] =
-      get_specialization<segmented_reduce_iterator_tag>(template_id<output_iterator_traits>(), output_it, accum_t);
+    const auto [output_iterator_name, output_iterator_src] = get_specialization<segmented_reduce_output_iterator_tag>(
+      template_id<output_iterator_traits>(), output_it, accum_t);
+
     const auto [start_offset_iterator_name, start_offset_iterator_src] =
-      get_specialization<segmented_reduce_iterator_tag>(template_id<input_iterator_traits>(), start_offset_it);
+      get_specialization<segmented_reduce_start_offset_iterator_tag>(
+        template_id<input_iterator_traits>(), start_offset_it);
+
     const auto [end_offset_iterator_name, end_offset_iterator_src] =
-      get_specialization<segmented_reduce_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
+      get_specialization<segmented_reduce_end_offset_iterator_tag>(template_id<input_iterator_traits>(), end_offset_it);
 
     const auto [op_name, op_src] =
       get_specialization<segmented_reduce_operation_tag>(template_id<binary_user_operation_traits>(), op, accum_t);
