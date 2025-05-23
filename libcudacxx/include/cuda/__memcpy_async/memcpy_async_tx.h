@@ -61,21 +61,22 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 
   _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__dest, __src, __size), "memcpy_async_tx preconditions unmet");
 
-  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-  _CCCL_ASSERT(__isShared(__dest), "dest must point to shared memory.");
-  _CCCL_ASSERT(__isGlobal(__src), "src must point to global memory.");
+  _CCCL_ASSERT(::__isShared(_CUDA_DEVICE::barrier_native_handle(__b)),
+               "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(::__isShared(__dest), "dest must point to shared memory.");
+  _CCCL_ASSERT(::__isGlobal(__src), "src must point to global memory.");
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (
-      if (__isShared(__dest) && __isGlobal(__src)) {
+      if (::__isShared(__dest) && ::__isGlobal(__src)) {
         _CUDA_VPTX::cp_async_bulk(
           _CUDA_VPTX::space_cluster,
           _CUDA_VPTX::space_global,
           __dest,
           __src,
           static_cast<uint32_t>(__size),
-          barrier_native_handle(__b));
+          _CUDA_DEVICE::barrier_native_handle(__b));
       } else {
         // memcpy_async_tx only supports copying from global to shared
         // or from shared to remote cluster dsmem. To copy to remote
@@ -83,7 +84,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         // is not yet implemented. So we trap in this case as well.
         _CCCL_UNREACHABLE();
       }),
-    (__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
+    (_CUDA_DEVICE::__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
 
   return async_contract_fulfillment::async;
 }

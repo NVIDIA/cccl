@@ -25,8 +25,6 @@
  *
  ******************************************************************************/
 #include "catch2_radix_sort_helper.cuh"
-// above header needs to be included first
-
 #include "catch2_segmented_sort_helper.cuh"
 #include <c2h/catch2_test_helper.h>
 

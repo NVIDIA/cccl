@@ -41,7 +41,7 @@ declare -A dependencies=(
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx thrust cub c2h"
   [stdpar]="cccl libcudacxx cub thrust"
-  [python]="cccl libcudacxx cub thrust cccl_c_parallel"
+  [python]="cccl libcudacxx cub cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust c2h"
   [c2h]="cccl libcudacxx cub thrust"
 )

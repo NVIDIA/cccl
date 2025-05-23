@@ -116,14 +116,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   using __sndr2_t _CCCL_NODEBUG_ALIAS      = _Sndr2;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__completions1) = get_child_completion_signatures<_Self, _Sndr1, _Env...>())
     {
       _CUDAX_LET_COMPLETIONS(auto(__completions2) = get_child_completion_signatures<_Self, _Sndr2, _Env...>())
       {
         // ignore the first sender's value completions
-        return __completions2 + transform_completion_signatures(__completions1, __swallow_transform());
+        return __completions2 + transform_completion_signatures(__completions1, __swallow_transform{});
       }
     }
 
@@ -144,9 +144,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr2>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr2>>
   {
-    return execution::get_env(__sndr2_);
+    return __fwd_env(execution::get_env(__sndr2_));
   }
 
   _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;

@@ -39,7 +39,7 @@ template <thread_scope _Sco,
                            && _CCCL_TRAIT(_CUDA_VSTD::is_same, _CompF, _CUDA_VSTD::__empty_completion)>
 _LIBCUDACXX_HIDE_FROM_ABI bool __is_local_smem_barrier(barrier<_Sco, _CompF>& __barrier)
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return _Is_mbarrier && __isShared(&__barrier);), (return false;));
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return _Is_mbarrier && ::__isShared(&__barrier);), (return false;));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA

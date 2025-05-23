@@ -35,6 +35,8 @@ namespace cuda::experimental::execution
 {
 struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
 {
+  // When calling connect on a continues_on sender, first transform the sender into a
+  // schedule_from sender.
   template <class _Sndr>
   _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept
   {
@@ -45,84 +47,37 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
   }
 
   template <class _Sndr, class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<continues_on_t, _Sch, _Sndr>
+  {};
 
   template <class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t;
-
-  template <class _Sndr, class _Sch>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const;
-
-  template <class _Sch>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>;
-};
-
-template <class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__closure_t
-{
-  _Sch __sch;
-
-  template <class _Sndr>
-  _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __closure_t
   {
-    return continues_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
-  }
-};
-
-template <class _Sndr, class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t::__sndr_t
-{
-  using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  _CCCL_NO_UNIQUE_ADDRESS continues_on_t __tag_;
-  _Sch __sch_;
-  _Sndr __sndr_;
-
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __attrs_t
-  {
-    template <class _SetTag>
-    _CCCL_API auto query(get_completion_scheduler_t<_SetTag>) const = delete;
-
-    _CCCL_API auto query(get_completion_scheduler_t<set_value_t>) const noexcept -> _Sch
+    template <class _Sndr>
+    [[nodiscard]] _CCCL_TRIVIAL_API friend constexpr auto operator|(_Sndr __sndr, __closure_t __self)
     {
-      return __sndr_->__sch_;
+      return continues_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
     }
 
-    template <class _Query>
-    _CCCL_API auto query(_Query) const -> __query_result_t<_Query, env_of_t<_Sndr>>
-    {
-      return execution::get_env(__sndr_->__sndr_).query(_Query{});
-    }
-
-    const __sndr_t* __sndr_;
+    _Sch __sch;
   };
 
-  template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  template <class _Sndr, class _Sch>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr __sndr, _Sch __sch) const
   {
-    using __sndr_t = __copy_cvref_t<_Self, schedule_from_t::__sndr_t<_Sndr, _Sch>>;
-    return execution::get_completion_signatures<__sndr_t, _Env...>();
+    static_assert(__is_sender<_Sndr>);
+    static_assert(__is_scheduler<_Sch>);
+    // continues_on always dispatches based on the domain of the predecessor sender
+    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+    return execution::transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
   }
 
-  _CCCL_API auto get_env() const noexcept -> __attrs_t
+  template <class _Sch>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
   {
-    return __attrs_t{this};
+    return __closure_t<_Sch>{__sch};
   }
 };
-
-template <class _Sndr, class _Sch>
-_CCCL_TRIVIAL_API constexpr auto continues_on_t::operator()(_Sndr __sndr, _Sch __sch) const
-{
-  static_assert(__is_sender<_Sndr>);
-  static_assert(__is_scheduler<_Sch>);
-  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
-  return execution::transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)});
-}
-
-template <class _Sch>
-_CCCL_TRIVIAL_API constexpr auto continues_on_t::operator()(_Sch __sch) const noexcept -> __closure_t<_Sch>
-{
-  return __closure_t<_Sch>{__sch};
-}
 
 template <class _Sndr, class _Sch>
 inline constexpr size_t structured_binding_size<continues_on_t::__sndr_t<_Sndr, _Sch>> = 3;

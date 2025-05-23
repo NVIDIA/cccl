@@ -120,6 +120,7 @@ private:
       execution::start(__opstate_);
     }
 
+    _CCCL_EXEC_CHECK_DISABLE
     template <bool _CanThrow = false, class... _Ts>
     _CCCL_API void __set(_Ts&&... __ts) noexcept(!_CanThrow)
     {
@@ -193,11 +194,11 @@ private:
   struct __transform_args_fn
   {
     template <class... _Ts>
-    _CCCL_API constexpr auto operator()() const
+    [[nodiscard]] _CCCL_API _CCCL_CONSTEVAL auto operator()() const
     {
       if constexpr (_CUDA_VSTD::__is_callable_v<_Fn, _Ts...>)
       {
-        return __upon::__completion<_Fn, _Ts...>();
+        return __upon::__completion<_Fn, _Ts...>{};
       }
       else
       {
@@ -233,7 +234,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
   _Sndr __sndr_;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -274,9 +275,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Fn>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 };
 

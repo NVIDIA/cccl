@@ -98,6 +98,20 @@ public:
       : Parent(n)
   {}
 
+  //! This constructor creates a \p host_vector with the given size, performing only default-initialization instead of
+  //! value-initialization.
+  //! \param n The number of elements to initially create.
+  _CCCL_HOST host_vector(size_type n, default_init_t)
+      : Parent(n, default_init_t{})
+  {}
+
+  //! This constructor creates a \p host_vector with the given size, without initializing elements. It mandates that
+  //! the element type is trivially default-constructible.
+  //! \param n The number of elements to initially create.
+  _CCCL_HOST host_vector(size_type n, no_init_t)
+      : Parent(n, no_init_t{})
+  {}
+
   /*! This constructor creates a \p host_vector with the given
    *  size.
    *  \param n The number of elements to initially create.
@@ -288,6 +302,18 @@ public:
      *  extended and new elements are populated with given data.
      */
     void resize(size_type new_size, const value_type &x = value_type());
+
+    //! \brief Resizes this vector to the specified number of elements, performing default-initialization instead of
+    //!         value-initialization.
+    //! \param new_size Number of elements this vector should contain.
+    //! \throw std::length_error If n exceeds max_size().
+    void resize(size_type new_size, default_init_t);
+
+    //! \brief Resizes this vector to the specified number of elements, without initializing elements. It mandates
+    //! that the element type is trivially default-constructible.
+    //! \param new_size Number of elements this vector should contain.
+    //! \throw std::length_error If n exceeds max_size().
+    void resize(size_type new_size, no_init_t);
 
     /*! Returns the number of elements in this vector.
      */

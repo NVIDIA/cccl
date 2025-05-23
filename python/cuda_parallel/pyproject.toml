@@ -19,8 +19,11 @@ requires-python = ">=3.9"
 dependencies = [
   "cuda-cccl",
   "numba>=0.60.0",
-  "cuda-python==12.*",
+  # Pinning to exact version until cuda.bindings.path_finder API is made public:
+  "cuda-python==12.9.0",
   "cupy-cuda12x",
+  "nvidia-cuda-nvrtc-cu12",
+  "nvidia-nvjitlink-cu12",
 ]
 dynamic = ["version"]
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -51,9 +54,6 @@ source-dir = "."
 version = ">=1.11"
 make-fallback = true
 
-[tool.scikit-build.wheel]
-py-api = "py3"
-
 [tool.scikit-build.wheel.packages]
 "cuda" = "cuda"
 "cuda/parallel" = "cuda/parallel"
@@ -79,4 +79,7 @@ extend = "../../pyproject.toml"
 known-first-party = ["cuda.parallel"]
 
 [tool.pytest.ini_options]
-markers = ["no_verify_sass: skip SASS verification check"]
+markers = [
+  "no_verify_sass: skip SASS verification check",
+  "large: tests requiring large device memory allocations",
+]
