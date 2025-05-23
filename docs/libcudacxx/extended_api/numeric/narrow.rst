@@ -34,7 +34,7 @@ Example
 
     #include <cuda/numeric>
 
-    __global__ void device(size_t n) {
+    __global__ void kernel(size_t n) {
         unsigned int r1 = narrow<unsigned int>(n); // traps
 
         unsigned int r2 = narrow_cast<unsigned int>(n); // truncation of value is intended
@@ -49,3 +49,5 @@ Example
 
         kernel<<<1, 1>>>(2LL << 35); // size larger than unsigned int
     }
+
+`See it on Godbolt 🔗 <https://godbolt.org/z/qb33xKv8E>`_
