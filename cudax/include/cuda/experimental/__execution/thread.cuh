@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THREAD
-#define __CUDAX_ASYNC_DETAIL_THREAD
+#ifndef __CUDAX_EXECUTION_THREAD
+#define __CUDAX_EXECUTION_THREAD
 
 #include <cuda/std/detail/__config>
 

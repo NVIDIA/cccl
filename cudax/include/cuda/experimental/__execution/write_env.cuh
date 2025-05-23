@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_WRITE_ENV
-#define __CUDAX_ASYNC_DETAIL_WRITE_ENV
+#ifndef __CUDAX_EXECUTION_WRITE_ENV
+#define __CUDAX_EXECUTION_WRITE_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -78,7 +78,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   template <class _Self, class... _Env2>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    using _Child _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
+    using _Child _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
     return execution::get_completion_signatures<_Child, env<const _Env&, __fwd_env_t<_Env2>>...>();
   }
 

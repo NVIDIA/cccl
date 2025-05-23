@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_JUST_FROM
-#define __CUDAX_ASYNC_DETAIL_JUST_FROM
+#ifndef __CUDAX_EXECUTION_JUST_FROM
+#define __CUDAX_EXECUTION_JUST_FROM
 
 #include <cuda/std/detail/__config>
 
@@ -38,7 +38,7 @@ namespace cuda::experimental::execution
 namespace __detail
 {
 template <__disposition_t, class _Void = void>
-extern __undefined<_Void> __just_from_tag;
+extern _CUDA_VSTD::__undefined<_Void> __just_from_tag;
 template <class _Void>
 extern __fn_t<just_from_t>* __just_from_tag<__value, _Void>;
 template <class _Void>
@@ -123,7 +123,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
   template <class _Self, class...>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
-    return __call_result_t<_Fn, __probe_fn>{};
+    return _CUDA_VSTD::__call_result_t<_Fn, __probe_fn>{};
   }
 
   template <class _Rcvr>
@@ -145,7 +145,7 @@ template <__disposition_t _Disposition>
 template <class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __just_from_t<_Disposition>::operator()(_Fn __fn) const noexcept -> __sndr_t<_Fn>
 {
-  using __completions _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, __probe_fn>;
+  using __completions _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, __probe_fn>;
   static_assert(__valid_completion_signatures<__completions>,
                 "The function passed to just_from must return an instance of a specialization of "
                 "completion_signatures<>.");

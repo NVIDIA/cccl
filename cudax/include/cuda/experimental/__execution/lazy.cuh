@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_LAZY
-#define __CUDAX_ASYNC_DETAIL_LAZY
+#ifndef __CUDAX_EXECUTION_LAZY
+#define __CUDAX_EXECUTION_LAZY
 
 #include <cuda/std/detail/__config>
 
@@ -90,7 +90,7 @@ struct __lazy_tupl<_CUDA_VSTD::index_sequence<>>
 {
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
-    noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
+    noexcept(__nothrow_callable<_Fn, _Us...>) -> _CUDA_VSTD::__call_result_t<_Fn, _Us...>
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
   }
@@ -127,11 +127,12 @@ struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__la
 
   template <class _Fn, class _Self, class... _Us>
   _CCCL_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
-    noexcept(__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>)
-      -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>
+    noexcept(__nothrow_callable<_Fn, _Us..., _CUDA_VSTD::__copy_cvref_t<_Self, _Ts>...>)
+      -> _CUDA_VSTD::__call_result_t<_Fn, _Us..., _CUDA_VSTD::__copy_cvref_t<_Self, _Ts>...>
   {
-    return static_cast<_Fn&&>(__fn)(
-      static_cast<_Us&&>(__us)..., static_cast<__copy_cvref_t<_Self, _Ts>&&>(*__self.template __get<_Idx, _Ts>())...);
+    return static_cast<_Fn&&>(
+      __fn)(static_cast<_Us&&>(__us)...,
+            static_cast<_CUDA_VSTD::__copy_cvref_t<_Self, _Ts>&&>(*__self.template __get<_Idx, _Ts>())...);
   }
 
   bool __engaged_[sizeof...(_Ts)] = {};
@@ -153,7 +154,7 @@ using __lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tupl<_CUDA_VSTD::make_index_sequ
 #endif
 
 template <class... _Ts>
-using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<__decay_t<_Ts>...>;
+using __decayed_lazy_tuple _CCCL_NODEBUG_ALIAS = __lazy_tuple<_CUDA_VSTD::decay_t<_Ts>...>;
 
 } // namespace cuda::experimental::execution
 

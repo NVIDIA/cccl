@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONDITIONAL
-#define __CUDAX_ASYNC_DETAIL_CONDITIONAL
+#ifndef __CUDAX_EXECUTION_CONDITIONAL
+#define __CUDAX_EXECUTION_CONDITIONAL
 
 #include <cuda/std/detail/__config>
 
@@ -96,8 +96,8 @@ private:
       else
       {
         return concat_completion_signatures(
-          get_completion_signatures<__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
-          get_completion_signatures<__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
+          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, _Env...>(),
+          get_completion_signatures<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, _Env...>());
       }
     }
   };
@@ -112,8 +112,8 @@ private:
     template <class... _As>
     using __opstate_t _CCCL_NODEBUG_ALIAS = //
       _CUDA_VSTD::__type_list< //
-        connect_result_t<__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>,
-        connect_result_t<__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>>;
+        connect_result_t<_CUDA_VSTD::__call_result_t<_Then, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>,
+        connect_result_t<_CUDA_VSTD::__call_result_t<_Else, __just_from_t<_As...>>, __rcvr_ref<_Rcvr>>>;
 
     using __next_ops_variant_t _CCCL_NODEBUG_ALIAS = //
       __value_types<completion_signatures_of_t<_Sndr, __env_t>, __opstate_t, __type_concat_into_quote<__variant>::__call>;

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_UTILITY
-#define __CUDAX_ASYNC_DETAIL_UTILITY
+#ifndef __CUDAX_EXECUTION_UTILITY
+#define __CUDAX_EXECUTION_UTILITY
 
 #include <cuda/std/detail/__config>
 
@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -35,10 +35,6 @@
 namespace cuda::experimental::execution
 {
 _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
-
-using __ignore _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // NOLINT: misc-unused-using-decls
-using _CUDA_VSTD::__undefined; // NOLINT: misc-unused-using-decls
-using experimental::detail::__immovable; // NOLINT: misc-unused-using-decls
 
 struct __empty
 {};

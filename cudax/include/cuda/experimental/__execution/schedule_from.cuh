@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_SCHEDULE_FROM
-#define __CUDAX_ASYNC_DETAIL_SCHEDULE_FROM
+#ifndef __CUDAX_EXECUTION_SCHEDULE_FROM
+#define __CUDAX_EXECUTION_SCHEDULE_FROM
 
 #include <cuda/std/detail/__config>
 
@@ -58,11 +58,11 @@ struct __decay_args
     }
     else if constexpr (!__nothrow_decay_copyable<_Ts...>)
     {
-      return completion_signatures<_Tag(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<_Tag(_CUDA_VSTD::decay_t<_Ts>...), set_error_t(::std::exception_ptr)>{};
     }
     else
     {
-      return completion_signatures<_Tag(__decay_t<_Ts>...)>{};
+      return completion_signatures<_Tag(_CUDA_VSTD::decay_t<_Ts>...)>{};
     }
   }
 };
@@ -136,10 +136,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t
 {
 private:
   template <class... _As>
-  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_value_t, __decay_t<_As>...>;
+  using __set_value_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_value_t, _CUDA_VSTD::decay_t<_As>...>;
 
   template <class _Error>
-  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_error_t, __decay_t<_Error>>;
+  using __set_error_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_error_t, _CUDA_VSTD::decay_t<_Error>>;
 
   using __set_stopped_tuple_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<set_stopped_t>;
 
@@ -162,7 +162,7 @@ private:
     template <class _Tag, class... _As>
     _CCCL_API void __set_result(_Tag, _As&&... __as) noexcept
     {
-      using __tupl_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<_Tag, __decay_t<_As>...>;
+      using __tupl_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__tuple<_Tag, _CUDA_VSTD::decay_t<_As>...>;
       if constexpr (__nothrow_decay_copyable<_As...>)
       {
         __result_.template __emplace<__tupl_t>(_Tag(), static_cast<_As&&>(__as)...);
@@ -296,4 +296,4 @@ _CCCL_GLOBAL_CONSTANT schedule_from_t schedule_from{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_SCHEDULE_FROM
+#endif // __CUDAX_EXECUTION_SCHEDULE_FROM

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_FWD
-#define __CUDAX_ASYNC_DETAIL_FWD
+#ifndef __CUDAX_EXECUTION_FWD
+#define __CUDAX_EXECUTION_FWD
 
 #include <cuda/std/detail/__config>
 
@@ -26,13 +26,24 @@
 #include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
-#include <cuda/experimental/__execution/meta.cuh>
+#include <cuda/experimental/__execution/type_traits.cuh>
 #include <cuda/experimental/__execution/visit.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
-namespace cuda::experimental::execution
+namespace cuda::experimental
 {
+// so we can refer to the cuda::experimental::__detail namespace below
+namespace __detail
+{
+}
+namespace execution
+{
+namespace __detail
+{
+using namespace cuda::experimental::__detail; // // NOLINT(misc-unused-using-decls)
+} // namespace __detail
+
 struct _CCCL_TYPE_VISIBILITY_DEFAULT receiver_t
 {};
 
@@ -55,13 +66,13 @@ template <class _Ty>
 using __scheduler_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
-inline constexpr bool __is_sender = __type_valid_v<__sender_concept_t, _Ty>;
+inline constexpr bool __is_sender = __is_instantiable_with_v<__sender_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_receiver = __type_valid_v<__receiver_concept_t, _Ty>;
+inline constexpr bool __is_receiver = __is_instantiable_with_v<__receiver_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_scheduler = __type_valid_v<__scheduler_concept_t, _Ty>;
+inline constexpr bool __is_scheduler = __is_instantiable_with_v<__scheduler_concept_t, _Ty>;
 
 struct stream_domain;
 struct dependent_sender_error;
@@ -171,7 +182,8 @@ extern __fn_t<set_error_t>* __set_tag<__error, _Void>;
 template <class _Void>
 extern __fn_t<set_stopped_t>* __set_tag<__stopped, _Void>;
 } // namespace __detail
-} // namespace cuda::experimental::execution
+} // namespace execution
+} // namespace cuda::experimental
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 

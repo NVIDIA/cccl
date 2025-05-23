@@ -73,8 +73,8 @@ namespace __detail
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
 {
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const
-    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Env>) -> __fwd_env_<_Env>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Env&& __env) const noexcept(__nothrow_movable<_Env>)
+    -> __fwd_env_<_Env>
   {
     return __fwd_env_<_Env>{static_cast<_Env&&>(__env)};
   }
@@ -116,7 +116,7 @@ private:
   using __stream_ref = stream_ref;
 
   __resource __mr_                      = device_memory_resource{};
-  __stream_ref __stream_                = detail::__invalid_stream;
+  __stream_ref __stream_                = __detail::__invalid_stream;
   execution::execution_policy __policy_ = execution::execution_policy::invalid_execution_policy;
 
 public:
@@ -130,7 +130,7 @@ public:
   //! @param __policy The execution_policy passed in
   _CCCL_HIDE_FROM_ABI
   env_t(__resource __mr,
-        __stream_ref __stream                = detail::__invalid_stream,
+        __stream_ref __stream                = __detail::__invalid_stream,
         execution::execution_policy __policy = execution::execution_policy::invalid_execution_policy) noexcept
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)

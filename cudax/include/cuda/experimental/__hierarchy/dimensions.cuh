@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -88,7 +88,7 @@ struct hierarchy_query_result : public dimensions<T, Extents...>
   }
 };
 
-namespace detail
+namespace __detail
 {
 template <typename OpType>
 [[nodiscard]] _CCCL_HOST_DEVICE constexpr size_t merge_extents(size_t e1, size_t e2)
@@ -154,7 +154,7 @@ template <typename TyTrunc, typename Index, typename Dims>
   return (static_cast<TyTrunc>(index.extent(2)) * dims.extent(1) + index.extent(1)) * dims.extent(0) + index.extent(0);
 }
 
-} // namespace detail
+} // namespace __detail
 } // namespace cuda::experimental
 #endif // _CCCL_STD_VER >= 2017
 

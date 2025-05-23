@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RCVR_REF
-#define __CUDAX_ASYNC_DETAIL_RCVR_REF
+#ifndef __CUDAX_EXECUTION_RCVR_REF
+#define __CUDAX_EXECUTION_RCVR_REF
 
 #include <cuda/std/detail/__config>
 
@@ -66,4 +66,4 @@ _CCCL_HOST_DEVICE __rcvr_ref(_Rcvr&) -> __rcvr_ref<_Rcvr>;
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_RCVR_REF
+#endif // __CUDAX_EXECUTION_RCVR_REF

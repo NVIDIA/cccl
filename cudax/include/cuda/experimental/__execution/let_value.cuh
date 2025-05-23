@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_LET_VALUE
-#define __CUDAX_ASYNC_DETAIL_LET_VALUE
+#ifndef __CUDAX_EXECUTION_LET_VALUE
+#define __CUDAX_EXECUTION_LET_VALUE
 
 #include <cuda/std/detail/__config>
 
@@ -49,7 +49,7 @@ struct _FUNCTION_MUST_RETURN_A_SENDER;
 namespace __detail
 {
 template <__disposition_t, class _Void = void>
-extern __undefined<_Void> __let_tag;
+extern _CUDA_VSTD::__undefined<_Void> __let_tag;
 template <class _Void>
 extern __fn_t<let_value_t>* __let_tag<__value, _Void>;
 template <class _Void>
@@ -82,7 +82,8 @@ private:
   struct __opstate_fn
   {
     template <class... _As>
-    using __call _CCCL_NODEBUG_ALIAS = connect_result_t<__call_result_t<_Fn, __decay_t<_As>&...>, __rcvr_ref<_Rcvr>>;
+    using __call _CCCL_NODEBUG_ALIAS =
+      connect_result_t<_CUDA_VSTD::__call_result_t<_Fn, _CUDA_VSTD::decay_t<_As>&...>, __rcvr_ref<_Rcvr>>;
   };
 
   /// @brief Computes the type of a variant of operation states to hold
@@ -378,14 +379,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __let_t<_Disposition>::__closure_t
   _Fn __fn_;
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const -> __call_result_t<_LetTag, _Sndr, _Fn>
+  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) const -> _CUDA_VSTD::__call_result_t<_LetTag, _Sndr, _Fn>
   {
     return _LetTag()(static_cast<_Sndr&&>(__sndr), __fn_);
   }
 
   template <class _Sndr>
   _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self)
-    -> __call_result_t<_LetTag, _Sndr, _Fn>
+    -> _CUDA_VSTD::__call_result_t<_LetTag, _Sndr, _Fn>
   {
     return _LetTag()(static_cast<_Sndr&&>(__sndr), __self.__fn_);
   }

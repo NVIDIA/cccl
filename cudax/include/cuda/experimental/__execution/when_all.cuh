@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_WHEN_ALL
-#define __CUDAX_ASYNC_DETAIL_WHEN_ALL
+#ifndef __CUDAX_EXECUTION_WHEN_ALL
+#define __CUDAX_EXECUTION_WHEN_ALL
 
 #include <cuda/std/detail/__config>
 
@@ -213,13 +213,13 @@ private:
         // without worry.
         if constexpr (__nothrow_decay_copyable<_Error>)
         {
-          __errors_.template __emplace<__decay_t<_Error>>(static_cast<_Error&&>(__err));
+          __errors_.template __emplace<_CUDA_VSTD::decay_t<_Error>>(static_cast<_Error&&>(__err));
         }
         else
         {
           _CUDAX_TRY( //
             ({ //
-              __errors_.template __emplace<__decay_t<_Error>>(static_cast<_Error&&>(__err));
+              __errors_.template __emplace<_CUDA_VSTD::decay_t<_Error>>(static_cast<_Error&&>(__err));
             }),
             _CUDAX_CATCH(...) //
             ({ //
@@ -318,7 +318,8 @@ private:
     struct __connect_subs_fn
     {
       template <class... _CvSndrs>
-      _CCCL_API auto operator()(__state_t& __state, __ignore, __ignore, _CvSndrs&&... __sndrs_) const
+      _CCCL_API auto
+      operator()(__state_t& __state, _CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t, _CvSndrs&&... __sndrs_) const
       {
         using __state_ref_t _CCCL_NODEBUG_ALIAS = __zip<__state_t>;
         // When there are no offsets, the when_all sender has no value
@@ -455,15 +456,16 @@ _CCCL_DIAG_POP
 
 // The sender for when_all
 template <class... _Sndrs>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t : _CUDA_VSTD::__tuple<when_all_t, __ignore, _Sndrs...>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT when_all_t::__sndr_t
+    : _CUDA_VSTD::__tuple<when_all_t, _CUDA_VSTD::__ignore_t, _Sndrs...>
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
-  using __sndrs_t _CCCL_NODEBUG_ALIAS      = _CUDA_VSTD::__tuple<when_all_t, __ignore, _Sndrs...>;
+  using __sndrs_t _CCCL_NODEBUG_ALIAS      = _CUDA_VSTD::__tuple<when_all_t, _CUDA_VSTD::__ignore_t, _Sndrs...>;
 
   template <class _Self, class... _Env>
   [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto __get_completions_and_offsets()
   {
-    return __merge_completions(__child_completions<__copy_cvref_t<_Self, _Sndrs>, _Env...>()...);
+    return __merge_completions(__child_completions<_CUDA_VSTD::__copy_cvref_t<_Self, _Sndrs>, _Env...>()...);
   }
 
   template <class _Self, class... _Env>
@@ -506,9 +508,9 @@ _CCCL_TRIVIAL_API constexpr auto when_all_t::operator()(_Sndrs... __sndrs) const
   {
     return __sndr_t{};
   }
-  else if constexpr (!__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>)
+  else if constexpr (!__is_instantiable_with_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>)
   {
-    static_assert(__type_valid_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>,
+    static_assert(__is_instantiable_with_v<_CUDA_VSTD::common_type_t, domain_for_t<_Sndrs>...>,
                   "when_all: all child senders must have the same domain");
   }
   else

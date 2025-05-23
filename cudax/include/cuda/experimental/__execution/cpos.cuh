@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CPOS
-#define __CUDAX_ASYNC_DETAIL_CPOS
+#ifndef __CUDAX_EXECUTION_CPOS
+#define __CUDAX_EXECUTION_CPOS
 
 #include <cuda/std/detail/__config>
 

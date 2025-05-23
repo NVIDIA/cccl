@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_START_DETACHED
-#define __CUDAX_ASYNC_DETAIL_START_DETACHED
+#ifndef __CUDAX_EXECUTION_START_DETACHED
+#define __CUDAX_EXECUTION_START_DETACHED
 
 #include <cuda/std/detail/__config>
 

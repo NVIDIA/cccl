@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_JUST
-#define __CUDAX_ASYNC_DETAIL_JUST
+#ifndef __CUDAX_EXECUTION_JUST
+#define __CUDAX_EXECUTION_JUST
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@ namespace cuda::experimental::execution
 namespace __detail
 {
 template <__disposition_t, class _Void = void>
-extern __undefined<_Void> __just_tag;
+extern _CUDA_VSTD::__undefined<_Void> __just_tag;
 template <class _Void>
 extern __fn_t<just_t>* __just_tag<__value, _Void>;
 template <class _Void>
