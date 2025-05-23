@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from cuda.cooperative.experimental.block._block_exchange import (
+    striped_to_blocked,
+)
 from cuda.cooperative.experimental.block._block_load_store import load, store
 from cuda.cooperative.experimental.block._block_merge_sort import merge_sort_keys
 from cuda.cooperative.experimental.block._block_radix_sort import (
@@ -29,5 +32,6 @@ __all__ = [
     "radix_sort_keys",
     "radix_sort_keys_descending",
     "load",
+    "striped_to_blocked",
     "store",
 ]
