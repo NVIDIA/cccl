@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/get_device_address.h>
 #include <cuda/__memory/address_space.h>
 #include <cuda/std/memory>
 
