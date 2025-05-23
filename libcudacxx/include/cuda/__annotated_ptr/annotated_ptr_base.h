@@ -50,14 +50,14 @@ protected:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __annotated_ptr_base(_AccessProperty) noexcept {}
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__associate(__p, _AccessProperty{});
   }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _AccessProperty __get_property() const noexcept
   {
@@ -80,12 +80,12 @@ protected:
 
   _CCCL_HIDE_FROM_ABI __annotated_ptr_base() noexcept = default;
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
   [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE void* __apply_prop(void* __p) const
   {
     return ::cuda::__associate_raw_descriptor(__p, __prop);
   }
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr access_property __get_property() const noexcept
   {

@@ -27,7 +27,7 @@
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -146,6 +146,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDA_PTX_HELPER_FUNCTIONS_H_
