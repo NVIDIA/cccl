@@ -243,8 +243,6 @@ template <typename T, typename ReductionOp, typename Config>
     is_cuda_minimum_maximum_v<ReductionOp, T> || is_cuda_std_plus_v<ReductionOp, T>
     || is_cuda_std_bitwise_v<ReductionOp, T>;
   [[maybe_unused]] constexpr bool is_small_integer = is_integral_v<T> && sizeof(T) <= sizeof(uint32_t);
-  constexpr auto logical_warp_size                 = config.logical_size;
-  auto valid_items                                 = config.valid_items;
   // generalize_operator() is fundamental to avoid slow fallback with the recursive implementation,
   // matching PTX shuffle_op, and integer promotion calls
   auto reduction_op1 = generalize_operator(reduction_op);
