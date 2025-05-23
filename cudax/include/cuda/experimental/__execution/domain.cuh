@@ -135,7 +135,7 @@ struct get_domain_t<start_t>
   }
 };
 
-// Explicitly instantiate this because of variable template wierdness in device code
+// Explicitly instantiate this because of variable template weirdness in device code
 template <>
 _CCCL_GLOBAL_CONSTANT get_domain_t<start_t> get_domain<start_t>{};
 
