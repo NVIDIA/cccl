@@ -80,10 +80,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __fwd_env_fn
   }
 
   template <class _Env>
-  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>&& __env) const noexcept
-    -> __fwd_env_<_Env>&&
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(__fwd_env_<_Env>&& __env) const noexcept -> __fwd_env_<_Env>
   {
-    return static_cast<_Env&&>(__env);
+    static_assert(noexcept(__fwd_env_<_Env>{static_cast<_Env&&>(__env)}),
+                  "The move constructor of __fwd_env_ must be noexcept");
+    return static_cast<__fwd_env_<_Env>&&>(__env);
   }
 
   template <class _Env>

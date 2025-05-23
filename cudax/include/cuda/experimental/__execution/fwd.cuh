@@ -66,6 +66,10 @@ template <class _Ty>
 using __scheduler_concept_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
+using __operation_state_concept_t _CCCL_NODEBUG_ALIAS =
+  typename _CUDA_VSTD::remove_reference_t<_Ty>::operation_state_concept;
+
+template <class _Ty>
 inline constexpr bool __is_sender = __is_instantiable_with_v<__sender_concept_t, _Ty>;
 
 template <class _Ty>
@@ -73,6 +77,9 @@ inline constexpr bool __is_receiver = __is_instantiable_with_v<__receiver_concep
 
 template <class _Ty>
 inline constexpr bool __is_scheduler = __is_instantiable_with_v<__scheduler_concept_t, _Ty>;
+
+template <class _Ty>
+inline constexpr bool __is_operation_state = __is_instantiable_with_v<__operation_state_concept_t, _Ty>;
 
 struct stream_domain;
 struct dependent_sender_error;

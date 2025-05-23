@@ -47,7 +47,7 @@ inline _CCCL_DEVICE void __cp_async_bulk_shared_global(
                       _CUDA_VPTX::cp_async_bulk(
                         _CUDA_VPTX::space_cluster, _CUDA_VPTX::space_global, __dest, __src, __size, __bar_handle);
                     }),
-                    (__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
+                    (::cuda::__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
