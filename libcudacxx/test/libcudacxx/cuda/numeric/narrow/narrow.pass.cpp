@@ -10,6 +10,7 @@
 #include <cuda/numeric>
 #include <cuda/std/cassert>
 #include <cuda/std/limits>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 
@@ -22,6 +23,22 @@
                  } catch (const cuda::narrowing_error&) { assert((throw_cond)); } catch (...) { assert(false); }), \
                (if (!(throw_cond)) { assert((expr)); }))
 
+struct my_float
+{
+  _CCCL_HOST_DEVICE my_float(float value)
+      : value(value)
+  {}
+
+  _CCCL_HOST_DEVICE operator float() const
+  {
+    return value;
+  }
+
+private:
+  float value;
+};
+static_assert(!cuda::std::is_arithmetic_v<my_float>);
+
 template <class To, class From>
 __host__ __device__ void test_type()
 {
@@ -31,10 +48,10 @@ __host__ __device__ void test_type()
   // 2. Casting positive one should always work
   assert(cuda::narrow<To>(From{1}) == To{1});
 
-  // 3. Casting negative one should overflow if the destination type is unsigned
+  // 3. Casting negative one should overflow if the destination type is not signed
   if constexpr (cuda::std::is_signed_v<From>)
   {
-    CHECK_NARROWING_ERROR((cuda::narrow<To>(From{-1}) == (To) -1), (cuda::std::is_unsigned_v<To>) );
+    CHECK_NARROWING_ERROR((cuda::narrow<To>(From{-1}) == (To) -1), (!cuda::std::is_signed_v<To>) );
   }
 
   // 4. Casting the minimum value of From type
@@ -54,25 +71,26 @@ __host__ __device__ void test_type()
   }
 }
 
-template <class T>
+template <class To>
 __host__ __device__ void test_type()
 {
-  test_type<T, signed char>();
-  test_type<T, unsigned char>();
-  test_type<T, short>();
-  test_type<T, unsigned short>();
-  test_type<T, int>();
-  test_type<T, unsigned int>();
-  test_type<T, long>();
-  test_type<T, unsigned long>();
-  test_type<T, long long>();
-  test_type<T, unsigned long long>();
+  test_type<To, signed char>();
+  test_type<To, unsigned char>();
+  test_type<To, short>();
+  test_type<To, unsigned short>();
+  test_type<To, int>();
+  test_type<To, unsigned int>();
+  test_type<To, long>();
+  test_type<To, unsigned long>();
+  test_type<To, long long>();
+  test_type<To, unsigned long long>();
 #if _CCCL_HAS_INT128()
-  test_type<T, __int128_t>();
-  test_type<T, __uint128_t>();
+  test_type<To, __int128_t>();
+  test_type<To, __uint128_t>();
 #endif // _CCCL_HAS_INT128()
-  test_type<T, float>();
-  test_type<T, double>();
+  test_type<To, float>();
+  test_type<To, double>();
+  test_type<To, my_float>();
 }
 
 __host__ __device__ bool test()
@@ -93,6 +111,7 @@ __host__ __device__ bool test()
 #endif // _CCCL_HAS_INT128()
   test_type<float>();
   test_type<double>();
+  test_type<my_float>();
 
   return true;
 }
