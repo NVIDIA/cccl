@@ -81,7 +81,7 @@ namespace detail
       "mov.b32 r0, {%0, dummy};                                                                                \n\t\t" \
       "shfl.sync.down.b32 r0|p, r0, %1, %2, %3;                                                                \n\t\t" \
       "mov.b32 {h1, dummy}, r0;                                                                                \n\t\t" \
-      "" #PTX_OP " %0, h1, %0;                                                                                 \n\t\t" \
+      "@p " #PTX_OP " %0, h1, %0;                                                                              \n\t\t" \
       "}"                                                                                                              \
       : "+h"(tmp)                                                                                                      \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
@@ -103,7 +103,7 @@ namespace detail
       ".reg .pred p;                                                                                           \n\t\t" \
       ".reg .b32  r0;                                                                                          \n\t\t" \
       "shfl.sync.down.b32 r0|p, %0, %1, %2, %3;                                                                \n\t\t" \
-      "" #PTX_OP " %0, r0, %0;                                                                                 \n\t\t" \
+      "@p " #PTX_OP " %0, r0, %0;                                                                              \n\t\t" \
       "}"                                                                                                              \
       : "+r"(tmp)                                                                                                      \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \
@@ -130,7 +130,7 @@ namespace detail
       "shfl.sync.down.b32 lo,   lo, %1, %2, %3;                                                                \n\t\t" \
       "shfl.sync.down.b32 hi|p, hi, %1, %2, %3;                                                                \n\t\t" \
       "mov.b64 r1, {lo, hi};                                                                                   \n\t\t" \
-      "" #PTX_OP " %0, r1, %0;                                                                                 \n\t\t" \
+      "@p " #PTX_OP " %0, r1, %0;                                                                              \n\t\t" \
       "}"                                                                                                              \
       : "+l"(tmp)                                                                                                      \
       : "r"(source_offset), "r"(shfl_c), "r"(mask));                                                                   \

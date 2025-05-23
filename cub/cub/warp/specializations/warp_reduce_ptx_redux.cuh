@@ -82,11 +82,6 @@ template <typename Config>
   {
     return ::cuda::bitmask(first_pos, valid_items.extent(0) - first_pos + 1);
   }
-  else if constexpr (valid_items.rank_dynamic() == 1)
-  {
-    auto base_mask = ::cuda::bitmask(0, valid_items.extent(0));
-    return base_mask << shift;
-  }
   else
   {
     constexpr auto base_mask = ::cuda::bitmask(0, logical_size); // must be constexpr
