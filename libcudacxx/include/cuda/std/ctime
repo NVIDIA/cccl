@@ -46,15 +46,6 @@ using ::size_t;
 using ::time_t;
 using ::timespec;
 
-// CCCL_CLOCKS_PER_SEC
-
-[[nodiscard]] _CCCL_FORCEINLINE _CCCL_VISIBILITY_HIDDEN _CCCL_HOST_DEVICE clock_t __cccl_clocks_per_sec_impl() noexcept
-{
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return CLOCKS_PER_SEC;), (return clock_t(1'000'000'000);))
-}
-
-#define CCCL_CLOCKS_PER_SEC _CUDA_VSTD::__cccl_clocks_per_sec_impl()
-
 // clock
 
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI clock_t clock() noexcept
