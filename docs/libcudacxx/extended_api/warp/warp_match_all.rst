@@ -25,6 +25,7 @@ The function allows to exchange data of any data size, including raw arrays, poi
 
 **Preconditions**
 
+- The functionality is only supported on ``SM >= 70``
 - ``lane_mask`` must be a subset of the active mask and be non-zero
 
 **Performance considerations**
