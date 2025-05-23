@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
+#ifndef _CUDA___MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
+#define _CUDA___MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
 
 #include <cuda/std/detail/__config>
 
@@ -95,4 +95,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CCCL_CUDA_COMPILER
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
+#endif // _CUDA___MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_

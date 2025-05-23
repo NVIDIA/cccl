@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#ifndef _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#define _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
 
 #include <cuda/std/detail/__config>
 
@@ -92,4 +92,4 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 #  endif // __cccl_ptx_isa >= 800
 #endif // _CCCL_CUDA_COMPILER
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#endif // _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
