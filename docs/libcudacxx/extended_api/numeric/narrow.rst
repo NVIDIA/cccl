@@ -5,30 +5,47 @@
 
 .. code:: cpp
 
+   struct narrowing_error;
+
    template <typename To, typename From>
    [[nodiscard]] constexpr
-   To narrow(From from)
+   To narrow(From from);
 
-Casts the value ``from`` to type ``To`` and checks whether the value has changed.
-Throws in host code and traps in device code.
-Modelled after ``gsl::narrow``.
+   template <typename To, typename From>
+   [[nodiscard]] constexpr
+   To narrow_cast(From&& __from) noexcept;
+
+
+Both functions use a ``static_cast`` to cast the value ``from`` to type ``To``.
+``cuda::narrow`` additionally checks whether the value has changed and
+throws ``cuda::narrowing_error`` in host code and traps in device code.
+``cuda::narrow_cast`` does not check (it's a plain cast) and is just intended to show
+that narrowing and a potential change of the value is intended.
+The functions are modelled after ``gsl::narrow`` and  ``gsl::narrow_cast``.
+See also the C++ Core Guidelines
+`ES.46 <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-narrowing>`_ and
+`ES.49 <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-casts-named>`_.
+
 
 Example
 -------
 
 .. code:: cpp
 
-    #include <cuda/narrow>
-    #include <cuda/std/cassert>
+    #include <cuda/numeric>
 
     __global__ void device(size_t n) {
-        unsigned int r = narrow<unsigned int>(n); // traps
+        unsigned int r1 = narrow<unsigned int>(n); // traps
+
+        unsigned int r2 = narrow_cast<unsigned int>(n); // truncation of value is intended
     }
 
     void host() {
         unsigned char r1 = narrow<unsigned char>( 200); // ok
         unsigned char r2 = narrow<unsigned char>( 300); // throws narrowing_error
         unsigned int  r3 = narrow<unsigned int >(-100); // throws narrowing_error
+
+        unsigned char r4 = narrow_cast<unsigned char>( 300); // truncation of value is intended
 
         kernel<<<1, 1>>>(2LL << 35); // size larger than unsigned int
     }
