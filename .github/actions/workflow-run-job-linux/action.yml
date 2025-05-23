@@ -31,12 +31,9 @@ runs:
       shell: sh
       run: |
         # Install script dependencies
-        sudo apt update
-        sudo apt install -y --no-install-recommends tree git
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        persist-credentials: false
+        alias retry="${{github.workspace}}/ci/util/retry.sh 5 30"
+        retry sudo apt update
+        retry sudo apt install -y --no-install-recommends tree git
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
