@@ -24,9 +24,9 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
+#include <cuda/cmath>
 #include <cuda/functional>
 #include <cuda/ptx>
-#include <cuda/std/bit>
 #include <cuda/std/complex>
 #include <cuda/std/cstddef>
 #include <cuda/std/limits>
@@ -83,29 +83,28 @@ inline constexpr bool is_device_supported_type_v<cuda::std::complex<__half>> = f
 
 #endif // defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 530
 
-template <unsigned LogicalWarpThreads, bool EnableNumItems = false, typename Input, typename T, typename ReductionOp>
-__device__ void warp_reduce_function(Input& thread_data, T* output, ReductionOp reduction_op, int num_items = 0)
+template <unsigned LogicalWarpThreads, bool EnableValidItems = false, typename Input, typename T, typename ReductionOp>
+__device__ void warp_reduce_function(Input& thread_data, T* output, ReductionOp reduction_op, int valid_items = 0)
 {
   if constexpr (is_device_supported_type_v<T>)
   {
     using warp_reduce_t = cub::WarpReduce<T, LogicalWarpThreads>;
     using storage_t     = typename warp_reduce_t::TempStorage;
     __shared__ storage_t storage[total_warps];
-    constexpr bool is_power_of_two = cuda::std::has_single_bit(LogicalWarpThreads);
+    constexpr bool is_power_of_two = cuda::is_power_of_two(LogicalWarpThreads);
     auto lane                      = cuda::ptx::get_sreg_laneid();
     auto logical_warp              = is_power_of_two ? threadIdx.x / LogicalWarpThreads : threadIdx.x / warp_size;
     auto logical_lane              = is_power_of_two ? threadIdx.x % LogicalWarpThreads : lane;
-    auto limit                     = EnableNumItems ? num_items : LogicalWarpThreads;
-    if (!is_power_of_two && lane >= limit)
+    if (!is_power_of_two && lane >= LogicalWarpThreads)
     {
       return;
     }
     warp_reduce_t warp_reduce{storage[logical_warp]};
     using result_t = decltype(reduction_op(warp_reduce, thread_data));
     result_t result;
-    if constexpr (EnableNumItems)
+    if constexpr (EnableValidItems)
     {
-      result = reduction_op(warp_reduce, thread_data, num_items);
+      result = reduction_op(warp_reduce, thread_data, valid_items);
     }
     else
     {
@@ -118,11 +117,11 @@ __device__ void warp_reduce_function(Input& thread_data, T* output, ReductionOp 
   }
 }
 
-template <unsigned LogicalWarpThreads, bool EnableNumItems, typename T, typename ReductionOp>
-__global__ void warp_reduce_kernel(T* input, T* output, ReductionOp reduction_op, int num_items = 0)
+template <unsigned LogicalWarpThreads, bool EnableValidItems, typename T, typename ReductionOp>
+__global__ void warp_reduce_kernel(T* input, T* output, ReductionOp reduction_op, int valid_items = 0)
 {
   auto thread_data = input[threadIdx.x];
-  warp_reduce_function<LogicalWarpThreads, EnableNumItems>(thread_data, output, reduction_op, num_items);
+  warp_reduce_function<LogicalWarpThreads, EnableValidItems>(thread_data, output, reduction_op, valid_items);
 }
 
 template <unsigned LogicalWarpThreads, typename T, typename ReductionOp>
@@ -146,9 +145,9 @@ struct warp_reduce_t
   }
 
   template <int LogicalWarpThreads>
-  __device__ auto operator()(cub::WarpReduce<T, LogicalWarpThreads> warp_reduce, T& data, int num_items) const
+  __device__ auto operator()(cub::WarpReduce<T, LogicalWarpThreads> warp_reduce, T& data, int valid_items) const
   {
-    return warp_reduce.Reduce(data, Op{}, num_items);
+    return warp_reduce.Reduce(data, Op{}, valid_items);
   }
 };
 
@@ -182,10 +181,10 @@ struct warp_reduce_t<cuda::minimum<>, T>
   }
 };
 
-template <int LogicalWarpThreads, bool EnableNumItems = false, typename T, typename... TArgs>
+template <int LogicalWarpThreads, bool EnableValidItems = false, typename T, typename... TArgs>
 void warp_reduce_launch(c2h::device_vector<T>& input, c2h::device_vector<T>& output, TArgs... args)
 {
-  warp_reduce_kernel<LogicalWarpThreads, EnableNumItems><<<1, total_warps * warp_size>>>(
+  warp_reduce_kernel<LogicalWarpThreads, EnableValidItems><<<1, total_warps * warp_size>>>(
     thrust::raw_pointer_cast(input.data()), thrust::raw_pointer_cast(output.data()), args...);
 
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
