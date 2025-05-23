@@ -308,7 +308,7 @@ template <__disposition_t _Disposition>
 template <class _Sndr, class _Fn>
 _CCCL_TRIVIAL_API constexpr auto __upon_t<_Disposition>::operator()(_Sndr __sndr, _Fn __fn) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+  using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.
   if constexpr (!dependent_sender<_Sndr>)

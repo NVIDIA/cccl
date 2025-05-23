@@ -143,9 +143,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
 template <class _Sch, class _Sndr>
 _CCCL_TRIVIAL_API constexpr auto starts_on_t::operator()(_Sch __sch, _Sndr __sndr) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS  = __domain_of_t<_Sch>; // see [exec.starts.on]
   using __sndr_t _CCCL_NODEBUG_ALIAS = starts_on_t::__sndr_t<_Sch, _Sndr>;
-  return transform_sender(__dom_t{}, __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
+  return transform_sender(get_domain<set_value_t>(__sch),
+                          __sndr_t{{}, static_cast<_Sch&&>(__sch), static_cast<_Sndr&&>(__sndr)});
 }
 
 template <class _Sch, class _Sndr>

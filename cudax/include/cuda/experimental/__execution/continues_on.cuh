@@ -68,7 +68,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);
     // continues_on always dispatches based on the domain of the predecessor sender
-    using __dom_t _CCCL_NODEBUG_ALIAS = domain_for_t<_Sndr>;
+    using __dom_t _CCCL_NODEBUG_ALIAS = __early_domain_of_t<_Sndr>;
     return execution::transform_sender(__dom_t{}, __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
   }
 

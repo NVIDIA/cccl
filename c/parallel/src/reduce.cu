@@ -175,7 +175,7 @@ CUresult cccl_device_reduce_build(
 
   try
   {
-    const char* name = "test";
+    const char* name = "device_reduce";
 
     const int cc                 = cc_major * 10 + cc_minor;
     const cccl_type_info accum_t = reduce::get_accumulator_type(op, input_it, init);
@@ -241,7 +241,7 @@ struct __align__({1}) storage_t {{
 
 #if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", final_src.c_str());
     fflush(stdout);
 #endif
 

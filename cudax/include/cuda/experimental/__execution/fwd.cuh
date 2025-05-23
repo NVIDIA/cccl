@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -156,9 +158,10 @@ struct get_allocator_t;
 struct get_stop_token_t;
 struct get_scheduler_t;
 struct get_delegation_scheduler_t;
+struct get_forward_progress_guarantee_t;
 template <class _Tag>
 struct get_completion_scheduler_t;
-struct get_forward_progress_guarantee_t;
+template <class _Tag>
 struct get_domain_t;
 
 namespace __detail
@@ -177,6 +180,9 @@ struct __get_tag
 template <class _Sndr>
 using tag_of_t _CCCL_NODEBUG_ALIAS =
   decltype(visit(declval<__detail::__get_tag&>(), declval<_Sndr>(), declval<int&>()));
+
+template <class _Sndr, class _Tag>
+_CCCL_CONCEPT __sender_for = _CCCL_REQUIRES_EXPR((_Sndr, _Tag))(_Same_as(_Tag) tag_of_t<_Sndr>{});
 
 namespace __detail
 {
