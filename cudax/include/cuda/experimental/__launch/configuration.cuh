@@ -126,8 +126,8 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
  */
 struct cooperative_launch : public __detail::launch_option
 {
-  static constexpr bool needs_attribute_space      = true;
-  static constexpr bool is_relevant_on_device      = true;
+  static constexpr bool needs_attribute_space        = true;
+  static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::cooperative_launch;
 
   constexpr cooperative_launch() = default;
@@ -201,9 +201,9 @@ private:
 template <typename Content, std::size_t Extent = 1, bool NonPortableSize = false>
 struct dynamic_shared_memory_option : public __detail::launch_option
 {
-  using content_type                               = Content;
-  static constexpr std::size_t extent              = Extent;
-  static constexpr bool is_relevant_on_device      = true;
+  using content_type                                 = Content;
+  static constexpr std::size_t extent                = Extent;
+  static constexpr bool is_relevant_on_device        = true;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::dynamic_shared_memory;
   const std::size_t size;
 
@@ -290,8 +290,8 @@ dynamic_shared_memory(std::size_t count) noexcept
  */
 struct launch_priority : public __detail::launch_option
 {
-  static constexpr bool needs_attribute_space      = true;
-  static constexpr bool is_relevant_on_dpevice     = false;
+  static constexpr bool needs_attribute_space        = true;
+  static constexpr bool is_relevant_on_dpevice       = false;
   static constexpr __detail::launch_option_kind kind = __detail::launch_option_kind::launch_priority;
   int priority;
 
