@@ -48,10 +48,10 @@ inline _CCCL_DEVICE void __cp_async_shared_global(char* __dest, const char* __sr
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
     (asm volatile("cp.async.ca.shared.global [%0], [%1], %2, %2;" : : "r"(
-                    static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-                  "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+                    static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__dest))),
+                  "l"(static_cast<_CUDA_VSTD::uint64_t>(::__cvta_generic_to_global(__src))),
                   "n"(_Copy_size) : "memory");),
-    (__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
+    (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 
 template <>
@@ -62,10 +62,10 @@ inline _CCCL_DEVICE void __cp_async_shared_global<16>(char* __dest, const char* 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
     (asm volatile("cp.async.cg.shared.global [%0], [%1], %2, %2;" : : "r"(
-                    static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-                  "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+                    static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__dest))),
+                  "l"(static_cast<_CUDA_VSTD::uint64_t>(::__cvta_generic_to_global(__src))),
                   "n"(16) : "memory");),
-    (__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
+    (::cuda::__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 
 template <size_t _Alignment, typename _Group>
@@ -85,7 +85,7 @@ __cp_async_shared_global_mechanism(_Group __g, char* __dest, const char* __src, 
   const int __stride     = __group_size * __copy_size;
   for (int __offset = __group_rank * __copy_size; __offset < static_cast<int>(__size); __offset += __stride)
   {
-    __cp_async_shared_global<__copy_size>(__dest + __offset, __src + __offset);
+    ::cuda::__cp_async_shared_global<__copy_size>(__dest + __offset, __src + __offset);
   }
 }
 
