@@ -121,7 +121,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_from_t<_Disposition>::__sndr_t
   _Fn __fn_;
 
   template <class _Self, class...>
-  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
     return __call_result_t<_Fn, __probe_fn>{};
   }

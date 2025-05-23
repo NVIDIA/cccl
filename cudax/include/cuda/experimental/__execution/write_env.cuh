@@ -76,7 +76,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   template <class _Self, class... _Env2>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     using _Child _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
     return execution::get_completion_signatures<_Child, env<const _Env&, __fwd_env_t<_Env2>>...>();

@@ -61,7 +61,7 @@ struct __memcpy_completion_impl
     // In principle, this is the overload for shared memory barriers. However, a
     // block-scope barrier may also be located in global memory. Therefore, we
     // check if the barrier is a non-smem barrier and handle that separately.
-    if (!__is_local_smem_barrier(__barrier))
+    if (!::cuda::__is_local_smem_barrier(__barrier))
     {
       return __defer_non_smem_barrier(__cm, __group, __size, __barrier);
     }
@@ -76,10 +76,10 @@ struct __memcpy_completion_impl
             // Non-Blocking: unbalance barrier by 1, barrier will be
             // rebalanced when all thread-local cp.async instructions
             // have completed writing to shared memory.
-            _CUDA_VSTD::uint64_t* __bh = __try_get_barrier_handle(__barrier);
+            _CUDA_VSTD::uint64_t* __bh = ::cuda::__try_get_barrier_handle(__barrier);
 
             asm volatile("cp.async.mbarrier.arrive.shared.b64 [%0];" ::"r"(
-              static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__bh))) : "memory");));
+              static_cast<_CUDA_VSTD::uint32_t>(::__cvta_generic_to_shared(__bh))) : "memory");));
         return async_contract_fulfillment::async;
       case __completion_mechanism::__async_bulk_group:
         // This completion mechanism should not be used with a shared
@@ -92,7 +92,7 @@ struct __memcpy_completion_impl
         NV_IF_TARGET(NV_PROVIDES_SM_90,
                      (
                        // Only perform the expect_tx operation with the leader thread
-                       if (__group.thread_rank() == 0) { ::cuda::device::barrier_expect_tx(__barrier, __size); }));
+                       if (__group.thread_rank() == 0) { _CUDA_DEVICE::barrier_expect_tx(__barrier, __size); }));
 #endif // __cccl_ptx_isa >= 800
         return async_contract_fulfillment::async;
       case __completion_mechanism::__sync:

@@ -33,10 +33,9 @@ endif()
 add_subdirectory(src/jit_templates)
 
 find_package(CUDAToolkit REQUIRED)
-
-# TODO Use static versions of cudart, nvrtc, and nvJitLink
+set_target_properties(cccl.c.parallel PROPERTIES CUDA_RUNTIME_LIBRARY STATIC)
 target_link_libraries(cccl.c.parallel PRIVATE
-  CUDA::cudart
+  CUDA::cudart_static
   CUDA::nvrtc
   CUDA::nvJitLink
   CUDA::cuda_driver
