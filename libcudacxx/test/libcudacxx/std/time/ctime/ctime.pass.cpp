@@ -13,24 +13,6 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-// Undefine macros that conflict with the tested symbols
-
-#if defined(clock)
-#  undef clock
-#endif // clock
-
-#if defined(difftime)
-#  undef difftime
-#endif // difftime
-
-#if defined(time)
-#  undef time
-#endif // time
-
-#if defined(timespec_get)
-#  undef timespec_get
-#endif // timespec_get
-
 #ifndef TIME_UTC
 #  error TIME_UTC not defined
 #endif
