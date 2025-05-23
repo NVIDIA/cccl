@@ -45,8 +45,6 @@
 #include <cuda/functional>
 #include <cuda/std/cstdint>
 
-#include <vector_types.h>
-
 #if _CCCL_HAS_NVFP16()
 #  include <cuda_fp16.h>
 #endif // _CCCL_HAS_NVFP16()
