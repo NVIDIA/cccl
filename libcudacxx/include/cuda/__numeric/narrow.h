@@ -69,20 +69,27 @@ template <class _To, class _From>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _To narrow(_From __from)
 {
   const auto __converted = static_cast<_To>(__from);
-  if constexpr (_CUDA_VSTD::is_arithmetic_v<_From>)
-  {
-    constexpr bool __is_different_signedness = _CUDA_VSTD::is_signed_v<_From> != _CUDA_VSTD::is_signed_v<_To>;
-    _CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
-    if (static_cast<_From>(__converted) != __from
-        || (__is_different_signedness && (__converted < _To{} != __from < _From{})))
-    {
-      __throw_narrowing_error();
-    }
-    _CCCL_NV_DIAG_DEFAULT(186)
-  }
-  else if (static_cast<_From>(__converted) != __from)
+  if (static_cast<_From>(__converted) != __from)
   {
     __throw_narrowing_error();
+  }
+
+  if constexpr (_CUDA_VSTD::is_arithmetic_v<_From>)
+  {
+    if constexpr (_CUDA_VSTD::is_signed_v<_From> && !_CUDA_VSTD::is_signed_v<_To>)
+    {
+      if (__from < _From{})
+      {
+        __throw_narrowing_error();
+      }
+    }
+    if constexpr (!_CUDA_VSTD::is_signed_v<_From> && _CUDA_VSTD::is_signed_v<_To>)
+    {
+      if (__converted < _To{})
+      {
+        __throw_narrowing_error();
+      }
+    }
   }
   return __converted;
 }
