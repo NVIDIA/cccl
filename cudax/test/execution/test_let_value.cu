@@ -11,10 +11,10 @@
 #include <cuda/experimental/execution.cuh>
 
 #include "common/checked_receiver.cuh"
-#include "common/error_scheduler.cuh"
+#include "common/error_scheduler.cuh" // IWYU pragma: keep
 #include "common/impulse_scheduler.cuh" // IWYU pragma: keep
-#include "common/inline_scheduler.cuh"
-#include "common/stopped_scheduler.cuh"
+#include "common/inline_scheduler.cuh" // IWYU pragma: keep
+#include "common/stopped_scheduler.cuh" // IWYU pragma: keep
 #include "common/utility.cuh"
 #include "testing.cuh" // IWYU pragma: keep
 

@@ -43,7 +43,8 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
   _CUDA_VSTD::ptrdiff_t __arrive_count_update,
   _CUDA_VSTD::ptrdiff_t __transaction_count_update)
 {
-  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(::__isShared(_CUDA_DEVICE::barrier_native_handle(__b)),
+               "Barrier must be located in local shared memory.");
   _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
   _CCCL_ASSERT(__arrive_count_update <= (1 << 20) - 1, "Arrival count update cannot exceed 2^20 - 1.");
   _CCCL_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
@@ -63,7 +64,8 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
     NV_PROVIDES_SM_90,
     (
 
-      auto __native_handle = barrier_native_handle(__b); auto __bh = __cvta_generic_to_shared(__native_handle);
+      auto __native_handle = _CUDA_DEVICE::barrier_native_handle(__b);
+      auto __bh            = ::__cvta_generic_to_shared(__native_handle);
       if (__arrive_count_update == 1) {
         __token = _CUDA_VPTX::mbarrier_arrive_expect_tx(
           _CUDA_VPTX::sem_release,
@@ -84,7 +86,7 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_arrive_tx_is_not_supported_befor
           __native_handle,
           __arrive_count_update);
       }),
-    (__cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();));
+    (_CUDA_DEVICE::__cuda_ptx_barrier_arrive_tx_is_not_supported_before_SM_90__();));
   return __token;
 }
 

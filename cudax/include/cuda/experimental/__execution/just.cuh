@@ -98,7 +98,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
     return completion_signatures<_SetTag(_Ts...)>{};
   }

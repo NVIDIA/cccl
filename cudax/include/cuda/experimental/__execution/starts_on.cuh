@@ -105,7 +105,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
   using __env_t _CCCL_NODEBUG_ALIAS = env<__sch_env_t<_Sch>, __fwd_env_t<_Env>>;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     using __sch_sndr _CCCL_NODEBUG_ALIAS   = schedule_result_t<_Sch>;
     using __child_sndr _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
@@ -115,7 +115,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT starts_on_t::__sndr_t
       _CUDAX_LET_COMPLETIONS(
         auto(__sch_completions) = execution::get_completion_signatures<__sch_sndr, __fwd_env_t<_Env>...>())
       {
-        return __sndr_completions + transform_completion_signatures(__sch_completions, __swallow_transform());
+        return __sndr_completions + transform_completion_signatures(__sch_completions, __swallow_transform{});
       }
     }
 

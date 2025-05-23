@@ -48,7 +48,7 @@ template <class _Tag>
 struct __decay_args
 {
   template <class... _Ts>
-  _CCCL_TRIVIAL_API constexpr auto operator()() const noexcept
+  [[nodiscard]] _CCCL_TRIVIAL_API _CCCL_CONSTEVAL auto operator()() const noexcept
   {
     if constexpr (!__decay_copyable<_Ts...>)
     {
@@ -112,7 +112,7 @@ struct __transfer_sndr_t
   };
 
   template <class _Self, class... _Env>
-  [[nodiscard]] _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     _CUDAX_LET_COMPLETIONS(auto(__child_completions) = get_child_completion_signatures<_Self, _Sndr, _Env...>())
     {
@@ -121,7 +121,7 @@ struct __transfer_sndr_t
       {
         // The scheduler contributes error and stopped completions.
         return concat_completion_signatures(
-          transform_completion_signatures(__sch_completions, __swallow_transform()),
+          transform_completion_signatures(__sch_completions, __swallow_transform{}),
           transform_completion_signatures(
             __child_completions, __decay_args<set_value_t>{}, __decay_args<set_error_t>{}));
       }
@@ -273,38 +273,30 @@ private:
 
 public:
   template <class _Sndr, class _Sch>
-  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t;
+  struct _CCCL_TYPE_VISIBILITY_DEFAULT __sndr_t : __detail::__transfer_sndr_t<schedule_from_t, _Sch, _Sndr>
+  {
+    template <class _Rcvr>
+    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
+    {
+      return {static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+    }
+
+    template <class _Rcvr>
+    [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
+    {
+      return {this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+    }
+  };
 
   template <class _Sch, class _Sndr>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const;
-};
-
-template <class _Sndr, class _Sch>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT schedule_from_t::__sndr_t
-    : __detail::__transfer_sndr_t<schedule_from_t, _Sch, _Sndr>
-{
-  template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, _Sndr, _Sch>
+  [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto operator()(_Sch __sch, _Sndr __sndr) const
   {
-    return {static_cast<_Sndr&&>(this->__sndr_), this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
-  }
-
-  template <class _Rcvr>
-  [[nodiscard]] _CCCL_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, const _Sndr&, _Sch>
-  {
-    return {this->__sndr_, this->__sch_, static_cast<_Rcvr&&>(__rcvr)};
+    static_assert(__is_sender<_Sndr>);
+    static_assert(__is_scheduler<_Sch>);
+    // schedule_from always dispatches based on the domain of the scheduler
+    return transform_sender(get_domain<set_value_t>(__sch), __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
   }
 };
-
-template <class _Sch, class _Sndr>
-[[nodiscard]] _CCCL_TRIVIAL_API constexpr auto schedule_from_t::operator()(_Sch __sch, _Sndr __sndr) const
-{
-  static_assert(__is_sender<_Sndr>);
-  static_assert(__is_scheduler<_Sch>);
-  // schedule_from always dispatches based on the domain of the scheduler
-  return transform_sender(get_domain<set_value_t>(__sch),
-                          __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
-}
 
 template <class _Sndr, class _Sch>
 inline constexpr size_t structured_binding_size<schedule_from_t::__sndr_t<_Sndr, _Sch>> = 3;
