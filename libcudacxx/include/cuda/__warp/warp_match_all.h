@@ -21,12 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/ceil_div.h>
-#include <cuda/std/__memory/addressof.h>
-#include <cuda/std/__type_traits/remove_cv.h>
-#include <cuda/std/cstdint>
+#if _CCCL_CUDA_COMPILATION()
 
-#if __cccl_ptx_isa >= 600
+#  include <cuda/__cmath/ceil_div.h>
+#  include <cuda/std/__memory/addressof.h>
+#  include <cuda/std/__type_traits/remove_cv.h>
+#  include <cuda/std/cstdint>
+#  include <cuda/std/cstring>
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -59,5 +60,5 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // __cccl_ptx_isa >= 600
+#endif // _CCCL_CUDA_COMPILATION()
 #endif // _CUDA___WARP_WARP_MATCH_H
