@@ -219,7 +219,7 @@ using arithmetic_type_list = c2h::type_list<
    , float2
 #endif
   , ulonglong4, custom_t
-#  if TEST_INT128_GENERATOR()
+#  if TEST_INT128()
   , __int128_t
 #  endif
 #  if TEST_HALF_T()
@@ -241,7 +241,7 @@ using arithmetic_type_list = c2h::type_list<
 >;
 
 using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
-#  if TEST_INT128_GENERATOR()
+#  if TEST_INT128()
     , __uint128_t
 #  endif
 >;
@@ -253,7 +253,7 @@ using logical_op_list = c2h::type_list<cuda::std::logical_and<>, cuda::std::logi
 using min_max_type_list = c2h::type_list<
   int8_t, uint16_t, int32_t, int64_t,
   short2, ushort2,
-#  if TEST_INT128_GENERATOR()
+#  if TEST_INT128()
   __int128_t,
 #  endif
   float, double, custom_t

@@ -45,13 +45,13 @@
 #  endif
 #endif // TEST_BF_T
 
-#ifndef TEST_INT128_GENERATOR
+#ifndef TEST_INT128
 #  if _CCCL_HAS_INT128() && !_CCCL_CUDA_COMPILER(CLANG) // clang-cuda crashes with int128 in generator.cu
-#    define TEST_INT128_GENERATOR() 1
+#    define TEST_INT128() 1
 #  else
-#    define TEST_INT128_GENERATOR() 0
+#    define TEST_INT128() 0
 #  endif
-#endif // TEST_INT128_GENERATOR
+#endif // TEST_INT128
 
 #if TEST_HALF_T()
 #  include <cuda_fp16.h>
