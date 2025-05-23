@@ -106,11 +106,12 @@ private:
   {
     using operation_state_concept _CCCL_NODEBUG_ALIAS = operation_state_t;
     using __env_t _CCCL_NODEBUG_ALIAS                 = env_of_t<_Rcvr>;
+    using __rcvr_t _CCCL_NODEBUG_ALIAS                = __rcvr_ref_t<__opstate_t, __env_t>;
 
     _CCCL_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __fn_{static_cast<_Fn&&>(__fn)}
-        , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this})}
+        , __opstate_{execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this))}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
@@ -187,7 +188,7 @@ private:
 
     _Rcvr __rcvr_;
     _Fn __fn_;
-    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t, __env_t>> __opstate_;
+    connect_result_t<_CvSndr, __rcvr_t> __opstate_;
   };
 
   template <class _Fn>

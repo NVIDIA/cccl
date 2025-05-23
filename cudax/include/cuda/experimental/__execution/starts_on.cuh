@@ -60,8 +60,8 @@ private:
 
     _CCCL_API __opstate_t(_Sch __sch, _Rcvr __rcvr, _CvSndr&& __sndr)
         : __rcvr_with_sch_t{static_cast<_Rcvr&&>(__rcvr), {__sch}}
-        , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref<__opstate_t, __env_t>{*this})}
-        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref<__rcvr_with_sch_t>{*this})}
+        , __opstate1_{connect(schedule(this->__env_.__sch_), __rcvr_ref_t<__opstate_t, __env_t>{*this})}
+        , __opstate2_{connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref_t<__rcvr_with_sch_t>{*this})}
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
@@ -81,8 +81,8 @@ private:
       return execution::get_env(this->__base());
     }
 
-    connect_result_t<schedule_result_t<_Sch&>, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
-    connect_result_t<_CvSndr, __rcvr_ref<__rcvr_with_sch_t>> __opstate2_;
+    connect_result_t<schedule_result_t<_Sch&>, __rcvr_ref_t<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<_CvSndr, __rcvr_ref_t<__rcvr_with_sch_t>> __opstate2_;
   };
 
 public:

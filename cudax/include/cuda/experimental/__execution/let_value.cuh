@@ -82,7 +82,7 @@ private:
   struct __opstate_fn
   {
     template <class... _As>
-    using __call _CCCL_NODEBUG_ALIAS = connect_result_t<__call_result_t<_Fn, __decay_t<_As>&...>, __rcvr_ref<_Rcvr>>;
+    using __call _CCCL_NODEBUG_ALIAS = connect_result_t<__call_result_t<_Fn, __decay_t<_As>&...>, __rcvr_ref_t<_Rcvr>>;
   };
 
   /// @brief Computes the type of a variant of operation states to hold
@@ -113,7 +113,7 @@ private:
       __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __fn_(static_cast<_Fn&&>(__fn))
-        , __opstate1_(execution::connect(static_cast<_CvSndr&&>(__sndr), __rcvr_ref{*this}))
+        , __opstate1_(execution::connect(static_cast<_CvSndr&&>(__sndr), __ref_rcvr(*this)))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
@@ -137,7 +137,7 @@ private:
             // Call the function with the results and connect the resulting
             // sender, storing the operation state in __opstate2_.
             auto& __next_op = __opstate2_.__emplace_from(
-              execution::connect, _CUDA_VSTD::__apply(static_cast<_Fn&&>(__fn_), __tupl), __rcvr_ref<_Rcvr>{__rcvr_});
+              execution::connect, _CUDA_VSTD::__apply(static_cast<_Fn&&>(__fn_), __tupl), __ref_rcvr(__rcvr_));
             execution::start(__next_op);
           }),
           _CUDAX_CATCH(...) //
@@ -178,7 +178,7 @@ private:
     _Rcvr __rcvr_;
     _Fn __fn_;
     __results<_CvSndr, __env_t> __result_;
-    connect_result_t<_CvSndr, __rcvr_ref<__opstate_t, __env_t>> __opstate1_;
+    connect_result_t<_CvSndr, __rcvr_ref_t<__opstate_t, __env_t>> __opstate1_;
     __opstate_variant_t __opstate2_;
   };
 
