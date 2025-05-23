@@ -112,7 +112,6 @@ template <bool UsePtx = true, typename T, typename ReductionOp, typename Config>
   constexpr auto log2_size                           = ::cuda::ceil_ilog2(logical_size());
   constexpr auto logical_size1                       = is_segmented ? warp_threads : logical_size;
   [[maybe_unused]] constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size1);
-  // constexpr bool is_vector_type                      = _CUDA_VSTD::is_same_v<float2, T> && is_any_short2_v<T>;
   const auto mask    = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
   using cast_t       = signed_promotion_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
   auto input1        = static_cast<cast_t>(input);
@@ -265,8 +264,7 @@ template <typename T, typename ReductionOp, typename Config>
     {
       auto input_int  = floating_point_to_comparable_int(reduction_op1, input);
       auto result_int = warp_reduce_dispatch(input_int, reduction_op1, config);
-      auto result_rev = comparable_int_to_floating_point(result_int); // reverse
-      return unsafe_bitcast<T>(result_rev);
+      return comparable_int_to_floating_point<T>(result_int);
     }
   }
   //--------------------------------------------------------------------------------------------------------------------
