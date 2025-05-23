@@ -461,16 +461,16 @@ template <typename T, typename Op>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto try_simd_operator(Op op)
 {
   using _CUDA_VSTD::is_same_v;
-  if constexpr (is_cuda_std_plus_v<Op>
-                && (is_same_v<T, float2> || is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>) )
+  constexpr bool is_supported_vector_type = is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>;
+  if constexpr (is_cuda_std_plus_v<Op> && (is_same_v<T, float2> || is_supported_vector_type))
   {
     return SimdSum<T>{};
   }
-  else if constexpr (is_cuda_minimum_v<Op> && (is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>) )
+  else if constexpr (is_cuda_minimum_v<Op> && is_supported_vector_type)
   {
     return SimdMin<T>{};
   }
-  else if constexpr (is_cuda_maximum_v<Op> && (is_any_short2_v<T> || is_bfloat162_v<T> || is_half2_v<T>) )
+  else if constexpr (is_cuda_maximum_v<Op> && is_supported_vector_type)
   {
     return SimdMax<T>{};
   }
