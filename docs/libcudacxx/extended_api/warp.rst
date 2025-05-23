@@ -8,6 +8,7 @@ Warp
    :maxdepth: 1
 
    cuda::device::warp_shuffle <warp/warp_shuffle>
+   cuda::device::warp_match_all <warp/warp_match_all>
 
 .. list-table::
    :widths: 25 45 30 30
@@ -37,3 +38,8 @@ Warp
      - Warp shuffle from original lane index xor mask
      - CCCL 3.0.0
      - CUDA 13.0
+
+   * - :ref:`warp_match_all <libcudacxx-extended-api-warp-warp-match-all>`
+     - Check if all lanes have the same value
+     - CCCL 3.1.0
+     - CUDA 13.1
