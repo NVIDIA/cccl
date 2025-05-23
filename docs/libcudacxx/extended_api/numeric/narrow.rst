@@ -17,8 +17,10 @@
 
 
 Both functions use a ``static_cast`` to cast the value ``from`` to type ``To``.
+``From``needs to be convertible to ``To``.
 ``cuda::narrow`` additionally checks whether the value has changed and
 throws ``cuda::narrowing_error`` in host code and traps in device code.
+In this case, ``To`` additionally needs to be convertible to ``From``.
 ``cuda::narrow_cast`` does not check (it's a plain cast) and is just intended to show
 that narrowing and a potential change of the value is intended.
 The functions are modelled after ``gsl::narrow`` and  ``gsl::narrow_cast``.
