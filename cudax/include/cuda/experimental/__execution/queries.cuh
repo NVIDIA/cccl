@@ -125,7 +125,7 @@ struct get_completion_scheduler_t
 template <class _Tag>
 extern __undefined<_Tag> get_completion_scheduler;
 
-// Explicitly instantiate these because of variable template wierdness in device code
+// Explicitly instantiate these because of variable template weirdness in device code
 template <>
 _CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_value_t> get_completion_scheduler<set_value_t>{};
 template <>

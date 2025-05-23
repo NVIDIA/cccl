@@ -161,7 +161,7 @@ struct get_domain_t<set_value_t>
   }
 };
 
-// Explicitly instantiate this because of variable template wierdness in device code
+// Explicitly instantiate this because of variable template weirdness in device code
 template <>
 _CCCL_GLOBAL_CONSTANT get_domain_t<set_value_t> get_domain<set_value_t>{};
 

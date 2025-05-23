@@ -102,8 +102,8 @@ struct __transfer_sndr_t
     _CCCL_TEMPLATE(class _Query)
     _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND(!detail::__is_specialization_of<_Query, get_domain_t>)
                      _CCCL_AND __queryable_with<env_of_t<_Sndr>, _Query>)
-    [[nodiscard]] _CCCL_API auto query(_Query) const noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>)
-      -> __query_result_t<env_of_t<_Sndr>, _Query>
+    [[nodiscard]] _CCCL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<env_of_t<_Sndr>, _Query>) -> __query_result_t<env_of_t<_Sndr>, _Query>
     {
       return execution::get_env(__self_->__sndr_).query(_Query{});
     }
@@ -294,7 +294,8 @@ public:
     static_assert(__is_sender<_Sndr>);
     static_assert(__is_scheduler<_Sch>);
     // schedule_from always dispatches based on the domain of the scheduler
-    return transform_sender(get_domain<set_value_t>(__sch), __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
+    return transform_sender(get_domain<set_value_t>(__sch),
+                            __sndr_t<_Sndr, _Sch>{{{}, __sch, static_cast<_Sndr&&>(__sndr)}});
   }
 };
 
