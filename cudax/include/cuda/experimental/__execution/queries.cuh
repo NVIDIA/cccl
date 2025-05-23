@@ -41,10 +41,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace cuda::experimental::execution
 {
+// NOLINTBEGIN(misc-unused-using-decls)
 using _CUDA_STD_EXEC::__forwarding_query;
 using _CUDA_STD_EXEC::__queryable_with;
 using _CUDA_STD_EXEC::forwarding_query;
 using _CUDA_STD_EXEC::forwarding_query_t;
+// NOLINTEND(misc-unused-using-decls)
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_allocator
@@ -121,7 +123,15 @@ struct get_completion_scheduler_t
 };
 
 template <class _Tag>
-_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<_Tag> get_completion_scheduler{};
+extern __undefined<_Tag> get_completion_scheduler;
+
+// Explicitly instantiate these because of variable template weirdness in device code
+template <>
+_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_value_t> get_completion_scheduler<set_value_t>{};
+template <>
+_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_error_t> get_completion_scheduler<set_error_t>{};
+template <>
+_CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_stopped_t> get_completion_scheduler<set_stopped_t>{};
 
 template <class _Env, class _Tag = set_value_t>
 using __completion_scheduler_of_t _CCCL_NODEBUG_ALIAS =
@@ -197,29 +207,6 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
     }
   }
 } get_forward_progress_guarantee{};
-
-//////////////////////////////////////////////////////////////////////////////////////////
-// get_domain
-_CCCL_GLOBAL_CONSTANT struct get_domain_t
-{
-  _CCCL_EXEC_CHECK_DISABLE
-  template <class _Env>
-  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env) const noexcept
-  {
-    if constexpr (__queryable_with<_Env, get_domain_t>)
-    {
-      static_assert(noexcept(__env.query(*this)));
-      return __env.query(*this);
-    }
-    else
-    {
-      return default_domain{};
-    }
-  }
-} get_domain{};
-
-template <class _Env>
-using __domain_of_t _CCCL_NODEBUG_ALIAS = __call_result_t<get_domain_t, _Env>;
 
 } // namespace cuda::experimental::execution
 

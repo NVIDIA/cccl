@@ -31,6 +31,8 @@
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
+_CCCL_NV_DIAG_SUPPRESS(114) // function "foo" was referenced but not defined
+
 namespace cuda::experimental::execution
 {
 template <class _Rcvr, class _Env = env_of_t<_Rcvr>>
@@ -126,9 +128,11 @@ template <class _Env = void, class _Rcvr>
 }
 
 template <class _Rcvr, class _Env = env_of_t<_Rcvr>>
-using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(execution::__ref_rcvr<_Env>(declval<_Rcvr&>()));
+using __rcvr_ref_t _CCCL_NODEBUG_ALIAS = decltype(::cuda::experimental::execution::__ref_rcvr<_Env>(declval<_Rcvr&>()));
 
 } // namespace cuda::experimental::execution
+
+_CCCL_NV_DIAG_DEFAULT(114) // function "foo" was references but not defined
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
