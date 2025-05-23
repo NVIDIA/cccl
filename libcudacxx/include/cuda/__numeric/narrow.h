@@ -43,7 +43,7 @@ template <class _To, class _From>
   return static_cast<_To>(_CUDA_VSTD::forward<_From>(__from));
 }
 
-#if !_CCCL_COMPILER(NVRTC)
+#if _CCCL_HAS_EXCEPTIONS()
 struct narrowing_error : ::std::runtime_error
 {
   narrowing_error()
