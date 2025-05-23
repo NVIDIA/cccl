@@ -113,17 +113,17 @@ template <bool UsePtx = true, typename T, typename ReductionOp, typename Config>
   constexpr auto logical_size1                       = is_segmented ? warp_threads : logical_size;
   [[maybe_unused]] constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size1);
   // constexpr bool is_vector_type                      = _CUDA_VSTD::is_same_v<float2, T> && is_any_short2_v<T>;
-  const auto mask = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
-  using cast_t    = signed_promotion_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
-  auto input1     = static_cast<cast_t>(input);
+  const auto mask    = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
+  using cast_t       = signed_promotion_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
+  auto input1        = static_cast<cast_t>(input);
+  auto reduction_op1 = cub::detail::try_simd_operator<T>(reduction_op);
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int K = 0; K < log2_size; K++)
   {
     if constexpr (is_power_of_two && valid_items.rank_dynamic() == 0)
     {
-      auto result        = _CUDA_DEVICE::warp_shuffle_down(input1, 1u << K, mask, logical_size);
-      auto reduction_op1 = cub::detail::try_simd_operator<T>(reduction_op);
-      input1             = reduction_op1(input1, result.data); // no benefits of using PTX shuffle predicate
+      auto result = _CUDA_DEVICE::warp_shuffle_down(input1, 1u << K, mask, logical_size);
+      input1      = reduction_op1(input1, result.data); // no benefits of using PTX shuffle predicate
     }
     else if constexpr (UsePtx)
     {
@@ -138,7 +138,7 @@ template <bool UsePtx = true, typename T, typename ReductionOp, typename Config>
       auto result    = _CUDA_DEVICE::warp_shuffle_idx<logical_size_round>(input1, dest, mask);
       if (lane_dest <= limit)
       {
-        input1 = reduction_op(input1, result.data);
+        input1 = reduction_op1(input1, result.data);
       }
     }
   }
