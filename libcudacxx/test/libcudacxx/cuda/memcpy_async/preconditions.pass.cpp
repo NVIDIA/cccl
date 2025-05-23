@@ -13,7 +13,7 @@
 #include <cuda/__memcpy_async/check_preconditions.h>
 #include <cuda/std/cstddef>
 
-__host__ __device__ void test_typed()
+__host__ __device__ void test()
 {
   using T = int;
 
@@ -22,127 +22,122 @@ __host__ __device__ void test_typed()
   constexpr cuda::std::size_t n           = 16;
   constexpr cuda::std::size_t size        = n * sizeof(T);
 
-  alignas(align) T a[n * 2]{};
-  alignas(align) const T b[n * 2]{};
-
-  const auto a_missaligned = reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(a) + alignof(T) / 2);
-  const auto b_missaligned = reinterpret_cast<const T*>(reinterpret_cast<uintptr_t>(b) + alignof(T) / 2);
-
-  // 1. test ordinary size type
+  // test typed overloads
   {
-    assert(cuda::__memcpy_async_check_pre(a, b, size));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size));
-    assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size));
+    alignas(align) T a[n * 2]{};
+    alignas(align) const T b[n * 2]{};
+
+    const auto a_missaligned = reinterpret_cast<T*>(reinterpret_cast<uintptr_t>(a) + alignof(T) / 2);
+    const auto b_missaligned = reinterpret_cast<const T*>(reinterpret_cast<uintptr_t>(b) + alignof(T) / 2);
+
+    // 1. test ordinary size type
+    {
+      assert(cuda::__memcpy_async_check_pre(a, b, size));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size));
+      assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size));
+    }
+
+    // 2. test overaligned cuda::aligned_size_t
+    {
+      cuda::aligned_size_t<align> size_aligned(size);
+      assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
+    }
+
+    // 3. test cuda::aligned_size_t aligned to alignof(T)
+    {
+      cuda::aligned_size_t<align / align_scale> size_aligned(size);
+      assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
+    }
+
+    // 4. test underaligned cuda::aligned_size_t
+    {
+      cuda::aligned_size_t<align / (2 * align_scale)> size_aligned(size);
+      assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
+    }
+
+    // 5. test overlap
+    {
+      assert(!cuda::__memcpy_async_check_pre(a, a, size));
+      assert(!cuda::__memcpy_async_check_pre(a, a_missaligned, size));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, a, size));
+      assert(cuda::__memcpy_async_check_pre(a, a + n, size));
+      assert(cuda::__memcpy_async_check_pre(a + n, a, size));
+      assert(!cuda::__memcpy_async_check_pre(a, a + n - 1, size));
+      assert(!cuda::__memcpy_async_check_pre(a + n - 1, a, size));
+    }
   }
 
-  // 2. test overaligned cuda::aligned_size_t
+  // test void overloads
   {
-    cuda::aligned_size_t<align> size_aligned(size);
-    assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
-  }
+    alignas(align) T a_buff[n * 2]{};
+    alignas(align) const T b_buff[n * 2]{};
 
-  // 3. test cuda::aligned_size_t aligned to alignof(T)
-  {
-    cuda::aligned_size_t<align / align_scale> size_aligned(size);
-    assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
-  }
+    void* a       = a_buff;
+    const void* b = b_buff;
 
-  // 4. test underaligned cuda::aligned_size_t
-  {
-    cuda::aligned_size_t<align / (2 * align_scale)> size_aligned(size);
-    assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
-  }
+    const auto a_missaligned = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(a) + alignof(T) / 2);
+    const auto b_missaligned = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(b) + alignof(T) / 2);
 
-  // 5. test overlap
-  {
-    assert(!cuda::__memcpy_async_check_pre(a, a, size));
-    assert(!cuda::__memcpy_async_check_pre(a, a_missaligned, size));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, a, size));
-    assert(cuda::__memcpy_async_check_pre(a, a + n, size));
-    assert(cuda::__memcpy_async_check_pre(a + n, a, size));
-    assert(!cuda::__memcpy_async_check_pre(a, a + n - 1, size));
-    assert(!cuda::__memcpy_async_check_pre(a + n - 1, a, size));
-  }
-}
+    // 1. test ordinary size type
+    {
+      assert(cuda::__memcpy_async_check_pre(a, b, size));
+      assert(cuda::__memcpy_async_check_pre(a_missaligned, b, size));
+      assert(cuda::__memcpy_async_check_pre(a, b_missaligned, size));
+      assert(cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size));
+    }
 
-__host__ __device__ void test_void()
-{
-  using T = int;
+    // 2. test overaligned cuda::aligned_size_t
+    {
+      cuda::aligned_size_t<align> size_aligned(size);
+      assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
+    }
 
-  constexpr cuda::std::size_t align_scale = 2;
-  constexpr cuda::std::size_t align       = align_scale * alignof(T);
-  constexpr cuda::std::size_t n           = 16;
-  constexpr cuda::std::size_t size        = n * sizeof(T);
+    // 3. test cuda::aligned_size_t aligned to alignof(T)
+    {
+      cuda::aligned_size_t<align / align_scale> size_aligned(size);
+      assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
+    }
 
-  alignas(align) T a_buff[n * 2]{};
-  alignas(align) const T b_buff[n * 2]{};
+    // 4. test underaligned cuda::aligned_size_t
+    {
+      cuda::aligned_size_t<align / (2 * align_scale)> size_aligned(size);
+      assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
+      assert(cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
+      assert(cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
+      assert(cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
+    }
 
-  void* a       = a_buff;
-  const void* b = b_buff;
-
-  const auto a_missaligned = reinterpret_cast<void*>(reinterpret_cast<uintptr_t>(a) + alignof(T) / 2);
-  const auto b_missaligned = reinterpret_cast<const void*>(reinterpret_cast<uintptr_t>(b) + alignof(T) / 2);
-
-  // 1. test ordinary size type
-  {
-    assert(cuda::__memcpy_async_check_pre(a, b, size));
-    assert(cuda::__memcpy_async_check_pre(a_missaligned, b, size));
-    assert(cuda::__memcpy_async_check_pre(a, b_missaligned, size));
-    assert(cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size));
-  }
-
-  // 2. test overaligned cuda::aligned_size_t
-  {
-    cuda::aligned_size_t<align> size_aligned(size);
-    assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
-  }
-
-  // 3. test cuda::aligned_size_t aligned to alignof(T)
-  {
-    cuda::aligned_size_t<align / align_scale> size_aligned(size);
-    assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
-  }
-
-  // 4. test underaligned cuda::aligned_size_t
-  {
-    cuda::aligned_size_t<align / (2 * align_scale)> size_aligned(size);
-    assert(cuda::__memcpy_async_check_pre(a, b, size_aligned));
-    assert(cuda::__memcpy_async_check_pre(a_missaligned, b, size_aligned));
-    assert(cuda::__memcpy_async_check_pre(a, b_missaligned, size_aligned));
-    assert(cuda::__memcpy_async_check_pre(a_missaligned, b_missaligned, size_aligned));
-  }
-
-  // 5. test overlap
-  {
-    assert(!cuda::__memcpy_async_check_pre(a, a, size));
-    assert(!cuda::__memcpy_async_check_pre(a, a_missaligned, size));
-    assert(!cuda::__memcpy_async_check_pre(a_missaligned, a, size));
-    assert(cuda::__memcpy_async_check_pre(a, (const void*) (a_buff + n), size));
-    assert(cuda::__memcpy_async_check_pre((void*) (a_buff + n), a, size));
-    assert(!cuda::__memcpy_async_check_pre(a, (const void*) (a_buff + n - 1), size));
-    assert(!cuda::__memcpy_async_check_pre((void*) (a_buff + n - 1), a, size));
+    // 5. test overlap
+    {
+      assert(!cuda::__memcpy_async_check_pre(a, a, size));
+      assert(!cuda::__memcpy_async_check_pre(a, a_missaligned, size));
+      assert(!cuda::__memcpy_async_check_pre(a_missaligned, a, size));
+      assert(cuda::__memcpy_async_check_pre(a, (const void*) (a_buff + n), size));
+      assert(cuda::__memcpy_async_check_pre((void*) (a_buff + n), a, size));
+      assert(!cuda::__memcpy_async_check_pre(a, (const void*) (a_buff + n - 1), size));
+      assert(!cuda::__memcpy_async_check_pre((void*) (a_buff + n - 1), a, size));
+    }
   }
 }
 
 int main(int, char**)
 {
-  test_typed();
-  test_void();
+  test();
   return 0;
 }
