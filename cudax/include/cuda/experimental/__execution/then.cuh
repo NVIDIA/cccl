@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THEN
-#define __CUDAX_ASYNC_DETAIL_THEN
+#ifndef __CUDAX_EXECUTION_THEN
+#define __CUDAX_EXECUTION_THEN
 
 #include <cuda/std/detail/__config>
 
@@ -46,7 +46,7 @@ namespace cuda::experimental::execution
 namespace __detail
 {
 template <__disposition_t, class _Void = void>
-extern __undefined<_Void> __upon_tag;
+extern _CUDA_VSTD::__undefined<_Void> __upon_tag;
 template <class _Void>
 extern __fn_t<then_t>* __upon_tag<__value, _Void>;
 template <class _Void>
@@ -90,7 +90,8 @@ using __completion_ _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::__type_call1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
-using __completion _CCCL_NODEBUG_ALIAS = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
+using __completion _CCCL_NODEBUG_ALIAS =
+  __completion_<_CUDA_VSTD::__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
 } // namespace __upon
 
 template <__disposition_t _Disposition>
@@ -127,7 +128,7 @@ private:
     {
       if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
       {
-        if constexpr (_CUDA_VSTD::is_same_v<void, __call_result_t<_Fn, _Ts...>>)
+        if constexpr (_CUDA_VSTD::is_same_v<void, _CUDA_VSTD::__call_result_t<_Fn, _Ts...>>)
         {
           static_cast<_Fn&&>(__fn_)(static_cast<_Ts&&>(__ts)...);
           execution::set_value(static_cast<_Rcvr&&>(__rcvr_));
@@ -290,14 +291,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __upon_t<_Disposition>::__closure_t
   _Fn __fn_;
 
   template <class _Sndr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) -> __call_result_t<_UponTag, _Sndr, _Fn>
+  _CCCL_TRIVIAL_API auto operator()(_Sndr __sndr) -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
   {
     return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
   }
 
   template <class _Sndr>
   _CCCL_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
-    -> __call_result_t<_UponTag, _Sndr, _Fn>
+    -> _CUDA_VSTD::__call_result_t<_UponTag, _Sndr, _Fn>
   {
     return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
   }
@@ -339,4 +340,4 @@ _CCCL_GLOBAL_CONSTANT auto upon_stopped = upon_stopped_t{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_THEN

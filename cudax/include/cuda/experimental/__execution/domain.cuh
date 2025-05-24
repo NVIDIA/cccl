@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_DOMAIN
-#define __CUDAX_ASYNC_DETAIL_DOMAIN
+#ifndef __CUDAX_EXECUTION_DOMAIN
+#define __CUDAX_EXECUTION_DOMAIN
 
 #include <cuda/std/detail/__config>
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__execution/env.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/type_list.h>
 
@@ -90,8 +91,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   //! @overload
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
-  _CCCL_TRIVIAL_API static constexpr auto
-  transform_sender(_Sndr&& __sndr) noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Sndr>) -> _Sndr
+  _CCCL_TRIVIAL_API static constexpr auto transform_sender(_Sndr&& __sndr) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     // FUTURE TODO: add a transform for the split sender once we have a split sender
     return static_cast<_Sndr&&>(__sndr);
@@ -101,8 +101,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Sndr>
   _CCCL_TRIVIAL_API static constexpr auto
-  transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Sndr>)
-    -> _Sndr
+  transform_sender(_Sndr&& __sndr, _CUDA_VSTD::__ignore_t) noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }
@@ -111,7 +110,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_domain
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_domain
 template <class _Tag>
-extern __undefined<_Tag> get_domain;
+extern _CUDA_VSTD::__undefined<_Tag> get_domain;
 
 // Used to query a sender's attributes for the domain on which `start` will be called,
 // if it knows. Also used to query a receiver's environment for the "current" domain,
@@ -237,4 +236,4 @@ using __domain_of_t _CCCL_NODEBUG_ALIAS =
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_DOMAIN
+#endif // __CUDAX_EXECUTION_DOMAIN

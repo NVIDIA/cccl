@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RCVR_REF
-#define __CUDAX_ASYNC_DETAIL_RCVR_REF
+#ifndef __CUDAX_EXECUTION_RCVR_REF
+#define __CUDAX_EXECUTION_RCVR_REF
 
 #include <cuda/std/detail/__config>
 
@@ -104,7 +104,7 @@ template <class _Env = void, class _Rcvr>
   {
     return execution::__ref_rcvr<env_of_t<_Rcvr>>(__rcvr);
   }
-  else if constexpr (detail::__is_specialization_of<_Rcvr, __rcvr_ref>)
+  else if constexpr (__is_specialization_of_v<_Rcvr, __rcvr_ref>)
   {
     return __rcvr;
   }
@@ -136,4 +136,4 @@ _CCCL_NV_DIAG_DEFAULT(114) // function "foo" was references but not defined
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_RCVR_REF
+#endif // __CUDAX_EXECUTION_RCVR_REF

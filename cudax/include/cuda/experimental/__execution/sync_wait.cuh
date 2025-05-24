@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_SYNC_WAIT
-#define __CUDAX_ASYNC_DETAIL_SYNC_WAIT
+#ifndef __CUDAX_EXECUTION_SYNC_WAIT
+#define __CUDAX_EXECUTION_SYNC_WAIT
 
 #include <cuda/std/detail/__config>
 
@@ -111,7 +111,7 @@ private:
           }), //
           _CUDAX_CATCH(...) //
           ({ //
-            if constexpr (!_CUDA_VSTD::is_nothrow_constructible_v<_Values, _As...>)
+            if constexpr (!__nothrow_constructible<_Values, _As...>)
             {
               __state_->__errors_.__emplace(::std::current_exception());
             }
@@ -272,4 +272,4 @@ _CCCL_GLOBAL_CONSTANT sync_wait_t sync_wait{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_SYNC_WAIT
+#endif // __CUDAX_EXECUTION_SYNC_WAIT

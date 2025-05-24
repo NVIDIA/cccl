@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_JUST
-#define __CUDAX_ASYNC_DETAIL_JUST
+#ifndef __CUDAX_EXECUTION_JUST
+#define __CUDAX_EXECUTION_JUST
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@ namespace cuda::experimental::execution
 namespace __detail
 {
 template <__disposition_t, class _Void = void>
-extern __undefined<_Void> __just_tag;
+extern _CUDA_VSTD::__undefined<_Void> __just_tag;
 template <class _Void>
 extern __fn_t<just_t>* __just_tag<__value, _Void>;
 template <class _Void>
@@ -71,7 +71,7 @@ private:
     // escapes. So for gcc, we let this operation state be movable.
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
-#endif
+#endif // !_CCCL_COMPILER(GCC)
 
     _CCCL_API void start() & noexcept
     {
@@ -143,4 +143,4 @@ _CCCL_GLOBAL_CONSTANT auto just_stopped = just_stopped_t{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_JUST

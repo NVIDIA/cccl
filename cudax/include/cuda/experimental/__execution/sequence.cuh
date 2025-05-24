@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_SEQUENCE
-#define __CUDAX_ASYNC_DETAIL_SEQUENCE
+#ifndef __CUDAX_EXECUTION_SEQUENCE
+#define __CUDAX_EXECUTION_SEQUENCE
 
 #include <cuda/std/detail/__config>
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -150,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   }
 
   _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS __ignore __ign_;
+  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VSTD::__ignore_t __ign_;
   __sndr1_t __sndr1_;
   __sndr2_t __sndr2_;
 };
@@ -171,4 +172,4 @@ _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_SEQUENCE

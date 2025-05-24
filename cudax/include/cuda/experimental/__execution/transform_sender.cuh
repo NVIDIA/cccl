@@ -90,7 +90,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__passthru))
   _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const
-    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Sndr>) -> _Sndr
+    noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }

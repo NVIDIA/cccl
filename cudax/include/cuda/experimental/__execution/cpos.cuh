@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CPOS
-#define __CUDAX_ASYNC_DETAIL_CPOS
+#ifndef __CUDAX_EXECUTION_CPOS
+#define __CUDAX_EXECUTION_CPOS
 
 #include <cuda/std/detail/__config>
 
@@ -163,4 +163,4 @@ inline constexpr bool __nothrow_connectable = noexcept(connect(declval<_Sndr>(),
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_CPOS

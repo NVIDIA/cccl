@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONTINUES_ON
-#define __CUDAX_ASYNC_DETAIL_CONTINUES_ON
+#ifndef __CUDAX_EXECUTION_CONTINUES_ON
+#define __CUDAX_EXECUTION_CONTINUES_ON
 
 #include <cuda/std/detail/__config>
 
@@ -43,7 +43,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT continues_on_t
     // _Sndr is a (possibly cvref-qualified) instance of continues_on_t::__sndr_t
     auto&& [__tag, __sch, __child] = static_cast<_Sndr&&>(__sndr);
     // By default, continues_on(sndr, sch) lowers to schedule_from(sch, sndr) in connect:
-    return schedule_from(__sch, static_cast<__copy_cvref_t<_Sndr&&, decltype(__child)>>(__child));
+    return schedule_from(__sch, static_cast<_CUDA_VSTD::__copy_cvref_t<_Sndr&&, decltype(__child)>>(__child));
   }
 
   template <class _Sndr, class _Sch>
@@ -87,4 +87,4 @@ _CCCL_GLOBAL_CONSTANT continues_on_t continues_on{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_CONTINUES_ON

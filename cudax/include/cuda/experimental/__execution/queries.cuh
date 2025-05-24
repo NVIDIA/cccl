@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_QUERIES
-#define __CUDAX_ASYNC_DETAIL_QUERIES
+#ifndef __CUDAX_EXECUTION_QUERIES
+#define __CUDAX_EXECUTION_QUERIES
 
 #include <cuda/std/detail/__config>
 
@@ -99,7 +99,7 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 } get_stop_token{};
 
 template <class _Ty>
-using stop_token_of_t _CCCL_NODEBUG_ALIAS = __decay_t<__call_result_t<get_stop_token_t, _Ty>>;
+using stop_token_of_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<get_stop_token_t, _Ty>>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_completion_scheduler
@@ -123,7 +123,7 @@ struct get_completion_scheduler_t
 };
 
 template <class _Tag>
-extern __undefined<_Tag> get_completion_scheduler;
+extern _CUDA_VSTD::__undefined<_Tag> get_completion_scheduler;
 
 // Explicitly instantiate these because of variable template weirdness in device code
 template <>
@@ -135,7 +135,7 @@ _CCCL_GLOBAL_CONSTANT get_completion_scheduler_t<set_stopped_t> get_completion_s
 
 template <class _Env, class _Tag = set_value_t>
 using __completion_scheduler_of_t _CCCL_NODEBUG_ALIAS =
-  __decay_t<__call_result_t<get_completion_scheduler_t<_Tag>, _Env>>;
+  _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<get_completion_scheduler_t<_Tag>, _Env>>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_scheduler
@@ -158,7 +158,7 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 } get_scheduler{};
 
 template <class _Env>
-using __scheduler_of_t _CCCL_NODEBUG_ALIAS = __decay_t<__call_result_t<get_scheduler_t, _Env>>;
+using __scheduler_of_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::decay_t<_CUDA_VSTD::__call_result_t<get_scheduler_t, _Env>>;
 
 //////////////////////////////////////////////////////////////////////////////////////////
 // get_delegation_scheduler
@@ -212,4 +212,4 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_QUERIES
