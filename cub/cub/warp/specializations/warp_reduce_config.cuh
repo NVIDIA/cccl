@@ -145,10 +145,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void check_warp_reduce_config(WarpReduceConfig co
     static_assert(valid_items.rank_dynamic() == 1, "valid_items must be dynamic with segmented reductions");
     static_assert(result_mode == first_lane_result, "result_mode must be first_lane_result with segmented reductions");
   }
-#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS) && defined(_CUB_ENABLE_MASK_ASSERTIONS)
   // Check last position
-  auto last_pos_limit = (is_segmented && logical_mode == multiple_reductions) ? warp_threads : logical_size;
+  [[maybe_unused]] auto last_pos_limit =
+    (is_segmented && logical_mode == multiple_reductions) ? warp_threads : logical_size;
   _CCCL_ASSERT(valid_items.extent(0) >= 0 && valid_items.extent(0) <= last_pos_limit, "invalid last position");
+  // the following section should be always enabled but the compiler wrongly generates code that can hang
+#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS) && defined(_CUB_ENABLE_MASK_ASSERTIONS)
   // Check which lanes are active
   uint32_t logical_mask = 0;
   if constexpr (!is_segmented)
