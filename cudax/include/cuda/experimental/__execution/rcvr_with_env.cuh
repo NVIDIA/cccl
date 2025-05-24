@@ -85,7 +85,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
 };
 
 template <class _Rcvr, class _Env>
-__rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
+_CCCL_HOST_DEVICE __rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
 
 } // namespace cuda::experimental::execution
 

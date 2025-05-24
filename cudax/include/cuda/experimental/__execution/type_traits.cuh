@@ -41,6 +41,12 @@ namespace cuda::experimental::execution
 template <template <class...> class _Fn, class... _Ts>
 inline constexpr bool __is_instantiable_with_v = _CUDA_VSTD::_IsValidExpansion<_Fn, _Ts...>::value;
 
+template <class _Ret, class... _Args>
+using __fn_t _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
+
+template <class _Ret, class... _Args>
+using __fn_ptr_t _CCCL_NODEBUG_ALIAS = _Ret (*)(_Args...);
+
 template <class _Ty>
 using __cref_t _CCCL_NODEBUG_ALIAS = _Ty const&;
 

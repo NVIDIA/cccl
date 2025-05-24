@@ -105,8 +105,8 @@
 // debuggers to skip it. This is useful for trivial internal functions that do dispatching
 // or other plumbing work. It is particularly useful in the definition of customization
 // point objects.
-#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
-#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG inline
+#define _CCCL_TRIVIAL_API        _CCCL_API _CCCL_ARTIFICIAL _CCCL_NODEBUG
+#define _CCCL_TRIVIAL_HOST_API   _CCCL_HOST_API _CCCL_ARTIFICIAL _CCCL_NODEBUG
+#define _CCCL_TRIVIAL_DEVICE_API _CCCL_DEVICE_API _CCCL_ARTIFICIAL _CCCL_NODEBUG
 
 #endif // __CCCL_VISIBILITY_H

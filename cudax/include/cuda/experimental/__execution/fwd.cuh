@@ -169,8 +169,7 @@ namespace __detail
 struct __get_tag
 {
   template <class _Tag, class... _Child>
-  _CCCL_TRIVIAL_API constexpr auto operator()(_CUDA_VSTD::__ignore_t, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const
-    -> _Tag
+  _CCCL_TRIVIAL_API constexpr auto operator()(int, _Tag, _CUDA_VSTD::__ignore_t, _Child&&...) const -> _Tag
   {
     return _Tag{};
   }

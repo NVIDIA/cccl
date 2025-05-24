@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -29,6 +31,7 @@
 #include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/meta.cuh>
 #include <cuda/experimental/__execution/type_traits.cuh>
+#include <cuda/experimental/__memory_resource/managed_memory_resource.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -110,6 +113,38 @@ template <class _Ty>
 _CCCL_API constexpr auto __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>) -> _CUDA_VSTD::decay_t<_Ty>
 {
   return static_cast<_Ty&&>(__ty);
+}
+
+template <class _Ty>
+struct __managed_box
+{
+  using type = _Ty;
+
+  _CCCL_HOST_API static void* operator new(size_t __size) noexcept
+  {
+    void* const __ptr = managed_memory_resource{}.allocate(__size);
+    cudaDeviceSynchronize(); // Ensure allocation is complete before returning
+    return __ptr;
+  }
+
+  _CCCL_HOST_API static void operator delete(void* __ptr, size_t __size) noexcept
+  {
+    cudaDeviceSynchronize(); // Ensure all operations on the pointer are complete
+    managed_memory_resource{}.deallocate(__ptr, __size);
+  }
+
+  type __value;
+
+private:
+  friend class _CUDA_VSTD::default_delete<__managed_box<_Ty>>;
+  ~__managed_box() = default;
+};
+
+[[nodiscard]] _CCCL_HOST_API inline auto __get_pointer_attributes(const void* __pv) -> cudaPointerAttributes
+{
+  cudaPointerAttributes __attrs;
+  _CCCL_TRY_CUDA_API(cudaPointerGetAttributes, "cudaPointerGetAttributes failed", &__attrs, __pv);
+  return __attrs;
 }
 
 _CCCL_DIAG_PUSH
