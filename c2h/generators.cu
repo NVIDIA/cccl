@@ -661,9 +661,9 @@ VEC_SPECIALIZATION(double, 2);
 VEC_SPECIALIZATION(double, 3);
 VEC_SPECIALIZATION(double, 4);
 
-#  if TEST_BF_T()
+#  if TEST_HALF_T()
 VEC_SPECIALIZATION(__half, 2);
-#  endif // TEST_BF_T()
+#  endif // TEST_HALF_T()
 #  if TEST_BF_T()
 VEC_SPECIALIZATION(__nv_bfloat16, 2);
 #  endif // TEST_BF_T()
