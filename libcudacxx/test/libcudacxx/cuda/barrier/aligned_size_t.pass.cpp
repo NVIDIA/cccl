@@ -22,8 +22,8 @@
 __host__ __device__ constexpr bool test()
 {
   using aligned_t = cuda::aligned_size_t<1>;
-  static_assert(!cuda::std::is_default_constructible<aligned_t>::value, "");
-  static_assert(aligned_t::align == 1, "");
+  static_assert(!cuda::std::is_default_constructible<aligned_t>::value);
+  static_assert(aligned_t::align == 1);
   {
     const aligned_t aligned{42};
     assert(aligned.value == 42);
@@ -33,11 +33,11 @@ __host__ __device__ constexpr bool test()
 }
 
 // test C++11 differently
-static_assert(cuda::aligned_size_t<42>{1337}.value == 1337, "");
+static_assert(cuda::aligned_size_t<32>{1024}.value == 1024);
 
 int main(int, char**)
 {
   test();
-  static_assert(test(), "");
+  static_assert(test());
   return 0;
 }
