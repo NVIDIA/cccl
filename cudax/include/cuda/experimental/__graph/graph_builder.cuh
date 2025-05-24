@@ -86,7 +86,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   _CCCL_HOST_API graph_builder(device_ref __dev = device_ref{0})
       : __dev_{__dev}
   {
-    __ensure_current_device __dev_setter(__dev);
     _CCCL_TRY_CUDA_API(cudaGraphCreate, "cudaGraphCreate failed", &__graph_, 0);
   }
 

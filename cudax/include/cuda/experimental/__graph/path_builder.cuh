@@ -16,6 +16,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>
 
+#include <cuda/experimental/__graph/concepts.cuh>
 #include <cuda/experimental/__graph/graph_builder.cuh>
 #include <cuda/experimental/__graph/graph_node_ref.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
@@ -131,12 +132,13 @@ struct path_builder
     __nodes_.insert(__nodes_.end(), __other.__nodes_.begin(), __other.__nodes_.end());
   }
 
+  template <typename... Nodes>
+  static constexpr bool __all_dependencies = (graph_dependency<Nodes> && ...);
+
   //! \brief Add the dependencies of another path builder or single nodes to the current path builder.
   //! \param __nodes The nodes or path builders to add to the path builder as dependencies.
   _CCCL_TEMPLATE(typename... Nodes)
-  _CCCL_REQUIRES((((_CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<Nodes>, graph_node_ref>)
-                   || _CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<Nodes>, path_builder>)
-                  && ...))
+  _CCCL_REQUIRES(__all_dependencies<Nodes...>)
   _CCCL_HOST_API void depends_on(Nodes... __nodes)
   {
     (
