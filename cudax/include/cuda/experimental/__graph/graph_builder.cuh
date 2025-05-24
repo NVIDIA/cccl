@@ -349,7 +349,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT graph_builder
   //! \brief Retrieves the number of nodes in the graph.
   //! \return The number of nodes in the graph.
   //! \throws cuda::std::cuda_error if `cudaGraphGetNodes` fails.
-  _CCCL_HOST_API size_t node_count() const
+  [[nodiscard]] _CCCL_HOST_API size_t node_count() const
   {
     size_t __count = 0;
     _CCCL_TRY_CUDA_API(cudaGraphGetNodes, "cudaGraphGetNodes failed", __graph_, nullptr, &__count);
