@@ -291,7 +291,7 @@ void compute_host_reference(
   int items_per_logical_warp = 0,
   int items_per_thread1      = 1)
 {
-  auto identity          = operator_identity_v<T, predefined_op>;
+  auto identity          = identity_v<predefined_op, T>;
   items_per_logical_warp = items_per_logical_warp == 0 ? logical_warp_threads : items_per_logical_warp;
   for (unsigned i = 0; i < total_warps; ++i)
   {
