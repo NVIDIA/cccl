@@ -110,6 +110,33 @@ using iota = ::cuda::std::__type_iota<std::size_t, Start, Size, Stride>;
 template <typename TypeList, typename T>
 using remove = ::cuda::std::__type_remove<TypeList, T>;
 
+template <typename T>
+[[nodiscard]] constexpr bool isnan(T value) noexcept
+{
+  return cuda::std::isnan(value);
+}
+
+// TODO: move to libcu++
+#if TEST_HALF_T()
+
+template <>
+[[nodiscard]] constexpr bool isnan<__half2>(__half2 value) noexcept
+{
+  return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
+}
+
+#endif // TEST_HALF_T()
+
+#if TEST_BF_T()
+
+template <>
+[[nodiscard]] constexpr bool isnan(__nv_bfloat162 value) noexcept
+{
+  return cuda::std::isnan(value.x) || cuda::std::isnan(value.y);
+}
+
+#endif // TEST_BF_T()
+
 } // namespace c2h
 
 namespace detail
@@ -148,29 +175,6 @@ std::vector<T> to_vec(std::vector<T> const& vec)
     REQUIRE_THAT(vec_ref, Catch::Matchers::Approx(vec_out).epsilon(eps)); \
   }
 
-// TODO: move to libcu++
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-#if TEST_HALF_T()
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__half2 __x) noexcept
-{
-  return cuda::std::isnan(__x.x) || cuda::std::isnan(__x.y);
-}
-
-#endif // TEST_HALF_T()
-
-#if TEST_BF_T()
-
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool isnan(__nv_bfloat162 __x) noexcept
-{
-  return cuda::std::isnan(__x.x) || cuda::std::isnan(__x.y);
-}
-
-#endif // TEST_BF_T()
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
 namespace detail
 {
 // Returns true if values are equal, or both NaN:
@@ -179,7 +183,7 @@ struct equal_or_nans
   template <typename T>
   bool operator()(const T& a, const T& b) const
   {
-    return (cuda::std::isnan(a) && cuda::std::isnan(b)) || a == b;
+    return (c2h::isnan(a) && c2h::isnan(b)) || a == b;
   }
 };
 
