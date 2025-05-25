@@ -77,19 +77,19 @@ template <typename _Tp>
 #  endif // _CCCL_HAS_INT128()
   if constexpr (sizeof(_Tp) == sizeof(uint64_t))
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (return __brevll(__value);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brevll(__value);))
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint32_t))
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (return __brev(__value);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(__value);))
   }
   else if constexpr (sizeof(_Tp) == sizeof(uint16_t))
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (return __brev(static_cast<uint32_t>(__value) << 16);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(static_cast<uint32_t>(__value) << 16);))
   }
   else
   {
-    NV_IF_TARGET(NV_IS_DEVICE, (return __brev(static_cast<uint32_t>(__value) << 24);))
+    NV_IF_TARGET(NV_IS_DEVICE, (return ::__brev(static_cast<uint32_t>(__value) << 24);))
   }
   _CCCL_UNREACHABLE();
 }

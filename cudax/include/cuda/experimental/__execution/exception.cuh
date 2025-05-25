@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_EXCEPTION
-#define __CUDAX_ASYNC_DETAIL_EXCEPTION
+#ifndef __CUDAX_EXECUTION_EXCEPTION
+#define __CUDAX_EXECUTION_EXCEPTION
 
 #include <cuda/std/detail/__config>
 
@@ -43,4 +43,4 @@
 #  define _CUDAX_NOEXCEPT_EXPR(...) noexcept(__VA_ARGS__)
 #endif // ^^^ !_CCCL_DEVICE_COMPILATION() || _CCCL_CUDA_COMPILER(NVHPC) ^^^
 
-#endif
+#endif // __CUDAX_EXECUTION_EXCEPTION

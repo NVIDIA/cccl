@@ -8,14 +8,16 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__tuple_dir/ignore.h>
+
 #include <cuda/experimental/execution.cuh>
 
 #include "common/checked_receiver.cuh"
 #include "common/error_scheduler.cuh"
-#include "common/impulse_scheduler.cuh"
+#include "common/impulse_scheduler.cuh" // IWYU pragma: keep
 #include "common/stopped_scheduler.cuh"
 #include "common/utility.cuh"
-#include "testing.cuh"
+#include "testing.cuh" // IWYU pragma: keep
 
 namespace
 {
@@ -197,7 +199,7 @@ struct just_ref
     return cudax_async::completion_signatures<cudax_async::set_value_t(Ts & ...)>{};
   }
 
-  _CCCL_HOST_DEVICE just_ref connect(cudax_async::__ignore) const
+  _CCCL_HOST_DEVICE just_ref connect(cuda::std::__ignore_t) const
   {
     return {};
   }

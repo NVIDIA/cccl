@@ -391,7 +391,7 @@ _CCCL_GLOBAL_CONSTANT struct forwarding_query_t
 } forwarding_query{};
 
 template <class _Tag>
-_CCCL_CONCEPT __forwarding_query = _CCCL_REQUIRES_EXPR((_Tag))(forwarding_query(_Tag{}));
+_CCCL_CONCEPT __forwarding_query = forwarding_query(_Tag{});
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
 

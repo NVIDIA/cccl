@@ -91,9 +91,15 @@
 // - `_CCCL_API` declares the function host/device and hides the symbol from the ABI
 // - `_CCCL_TRIVIAL_API` does the same while also inlining and hiding the function from
 //   debuggers
-#define _CCCL_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#define _CCCL_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#if _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
+#  define _CCCL_API        _CCCL_HOST_DEVICE
+#  define _CCCL_HOST_API   _CCCL_HOST
+#  define _CCCL_DEVICE_API _CCCL_DEVICE
+#else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
+#  define _CCCL_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CCCL_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#endif // !_CCCL_COMPILER(NVHPC)
 
 // _CCCL_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes
 // debuggers to skip it. This is useful for trivial internal functions that do dispatching

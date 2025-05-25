@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,7 +25,7 @@
 namespace cuda::experimental
 {
 
-namespace detail
+namespace __detail
 {
 template <typename Config, typename Kernel, class... Args>
 __global__ void kernel_launcher(const Config conf, Kernel kernel_fn, Args... args)
@@ -48,13 +48,13 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
   cudaLaunchConfig_t config{};
   cudaError_t status                      = cudaSuccess;
   constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;
-  constexpr unsigned int num_attrs_needed = detail::kernel_config_count_attr_space(conf) + has_cluster_level;
+  constexpr unsigned int num_attrs_needed = __detail::kernel_config_count_attr_space(conf) + has_cluster_level;
   cudaLaunchAttribute attrs[num_attrs_needed == 0 ? 1 : num_attrs_needed];
   config.attrs    = &attrs[0];
   config.numAttrs = 0;
   config.stream   = stream.get();
 
-  status = detail::apply_kernel_config(conf, config, reinterpret_cast<void*>(kernel_fn));
+  status = __detail::apply_kernel_config(conf, config, reinterpret_cast<void*>(kernel_fn));
   if (status != cudaSuccess)
   {
     return status;
@@ -77,7 +77,7 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
   // TODO lower to cudaLaunchKernelExC?
   return cudaLaunchKernelEx(&config, kernel_fn, args...);
 }
-} // namespace detail
+} // namespace __detail
 
 /**
  * @brief Launch a kernel functor with specified configuration and arguments
@@ -130,8 +130,8 @@ void launch(
   auto combined = conf.combine_with_default(kernel);
   if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, kernel_arg_t<Args>...>)
   {
-    auto launcher = detail::kernel_launcher<decltype(combined), Kernel, kernel_arg_t<Args>...>;
-    status        = detail::launch_impl(
+    auto launcher = __detail::kernel_launcher<decltype(combined), Kernel, kernel_arg_t<Args>...>;
+    status        = __detail::launch_impl(
       stream,
       combined,
       launcher,
@@ -142,8 +142,8 @@ void launch(
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, kernel_arg_t<Args>...>);
-    auto launcher = detail::kernel_launcher_no_config<Kernel, kernel_arg_t<Args>...>;
-    status        = detail::launch_impl(
+    auto launcher = __detail::kernel_launcher_no_config<Kernel, kernel_arg_t<Args>...>;
+    status        = __detail::launch_impl(
       stream, combined, launcher, kernel, __kernel_transform(__launch_transform(stream, std::forward<Args>(args)))...);
   }
   if (status != cudaSuccess)
@@ -199,7 +199,7 @@ void launch(::cuda::stream_ref stream,
             ActArgs&&... args)
 {
   __ensure_current_device __dev_setter(stream);
-  cudaError_t status = detail::launch_impl(
+  cudaError_t status = __detail::launch_impl(
     stream, //
     conf,
     kernel,
@@ -258,7 +258,7 @@ void launch(::cuda::stream_ref stream,
             ActArgs&&... args)
 {
   __ensure_current_device __dev_setter(stream);
-  cudaError_t status = detail::launch_impl(
+  cudaError_t status = __detail::launch_impl(
     stream, //
     conf,
     kernel,
