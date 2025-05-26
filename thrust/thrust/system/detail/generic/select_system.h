@@ -44,7 +44,7 @@ inline constexpr bool select_system_exists_impl = false;
 
 template <typename... Tags>
 inline constexpr bool
-  select_system_exists_impl<::cuda::std::void_t<decltype(select_system(::cuda::std::declval<Tags>()...))>, Tags...> =
+  select_system_exists_impl<::cuda::std::void_t<decltype(select_system(::cuda::std::declval<Tags&>()...))>, Tags...> =
     true;
 
 template <typename, typename... Tags>
