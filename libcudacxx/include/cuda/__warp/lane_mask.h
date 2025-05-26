@@ -35,16 +35,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 struct lane_mask
 {
-  using __value_type = _CUDA_VSTD::uint32_t;
-
-  __value_type value = 0;
+  _CUDA_VSTD::uint32_t value = 0;
 
   _CCCL_HIDE_FROM_ABI constexpr lane_mask() noexcept = default;
 
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND(sizeof(_Tp) == sizeof(__value_type)))
+  _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND(sizeof(_Tp) == sizeof(_CUDA_VSTD::uint32_t)))
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(_Tp __v) noexcept
-      : value{static_cast<__value_type>(__v)}
+      : value{static_cast<_CUDA_VSTD::uint32_t>(__v)}
   {}
 
   _CCCL_HIDE_FROM_ABI constexpr lane_mask(const lane_mask&) noexcept = default;
@@ -58,7 +56,7 @@ struct lane_mask
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask all() noexcept
   {
-    return lane_mask{_CUDA_VSTD::numeric_limits<__value_type>::max()};
+    return lane_mask{_CUDA_VSTD::numeric_limits<_CUDA_VSTD::uint32_t>::max()};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_active() noexcept
@@ -187,7 +185,7 @@ struct lane_mask
     return __lhs.value >= __rhs.value;
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr operator __value_type() const noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::uint32_t() const noexcept
   {
     return value;
   }
