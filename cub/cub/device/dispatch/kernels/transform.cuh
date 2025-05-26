@@ -88,7 +88,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void process_tile_vectorized_dispatch(
   RandomAccessIteratorIn2 in2,
   ::cuda::std::true_type /* is_exactly_two_iterators */)
 {
-  using InputT                   = it_value_t<RandomAccessIteratorOut>;
+  using InputT                   = it_value_t<RandomAccessIteratorIn1>;
   constexpr int items_per_vec    = VectorizedPolicy::vector_load_length; // How many elements in single load instruction
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
   constexpr int vectors_per_thread = items_per_thread / items_per_vec;
@@ -132,7 +132,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void process_tile_vectorized_dispatch(
   }
 
   auto vec_items                 = reinterpret_cast<VectorT*>(processed_output.data());
-  VectorT* d_out_unqualified_vec = reinterpret_cast<VectorT*>(const_cast<InputT*>(out));
+  VectorT* d_out_unqualified_vec = reinterpret_cast<VectorT*>(const_cast<it_value_t<RandomAccessIteratorOut>*>(out));
 
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int vec_idx = 0; vec_idx < vectors_per_thread; ++vec_idx)
