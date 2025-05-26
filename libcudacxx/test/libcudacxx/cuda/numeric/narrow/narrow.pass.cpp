@@ -85,10 +85,10 @@ __host__ __device__ void test_type()
   test_type<To, long long>();
   test_type<To, unsigned long long>();
 #if _CCCL_HAS_INT128()
-#  if _CCCL_HAS_NVFP16()
+#  if _LIBCUDACXX_HAS_NVFP16()
   // __int128_t and __uint128_t are not convertible to __half or __nv_bfloat16
   if constexpr (!::cuda::std::is_same_v<To, __half> && !::cuda::std::is_same_v<To, __nv_bfloat16>)
-#  endif // _CCCL_HAS_NVFP16()
+#  endif // _LIBCUDACXX_HAS_NVFP16()
   {
     test_type<To, __int128_t>();
     test_type<To, __uint128_t>();
@@ -101,12 +101,12 @@ __host__ __device__ void test_type()
   if constexpr (!::cuda::std::is_same_v<To, __int128_t> && !::cuda::std::is_same_v<To, __uint128_t>)
 #endif // _CCCL_HAS_INT128()
   {
-#if _CCCL_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16()
     test_type<To, __half>();
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
     test_type<To, __nv_bfloat16>();
-#endif // _CCCL_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16()
   }
   test_type<To, my_float>();
 }
@@ -129,12 +129,12 @@ __host__ __device__ bool test()
 #endif // _CCCL_HAS_INT128()
   test_type<float>();
   test_type<double>();
-#if _CCCL_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVFP16()
   test_type<__half>();
-#endif // _CCCL_HAS_NVFP16()
-#if _CCCL_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVFP16()
+#if _LIBCUDACXX_HAS_NVBF16()
   test_type<__nv_bfloat16>();
-#endif // _CCCL_HAS_NVBF16()
+#endif // _LIBCUDACXX_HAS_NVBF16()
   test_type<my_float>();
 
   return true;

@@ -39,7 +39,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-narrowing">ES.46</a> and <a
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-casts-named">ES.49</a>.
 template <class _To, class _From>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _To narrow_cast(_From&& __from) noexcept
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _To
+narrow_cast(_From&& __from) noexcept(noexcept(static_cast<_To>(_CUDA_VSTD::forward<_From>(__from))))
 {
   return static_cast<_To>(_CUDA_VSTD::forward<_From>(__from));
 }
@@ -73,7 +74,7 @@ template <class _To, class _From>
   const auto __converted = static_cast<_To>(__from);
   if (static_cast<_From>(__converted) != __from)
   {
-    __throw_narrowing_error();
+    ::cuda::__throw_narrowing_error();
   }
 
   if constexpr (_CUDA_VSTD::is_arithmetic_v<_From>)
@@ -82,14 +83,14 @@ template <class _To, class _From>
     {
       if (__from < _From{})
       {
-        __throw_narrowing_error();
+        ::cuda::__throw_narrowing_error();
       }
     }
     if constexpr (!_CUDA_VSTD::is_signed_v<_From> && _CUDA_VSTD::is_signed_v<_To>)
     {
       if (__converted < _To{})
       {
-        __throw_narrowing_error();
+        ::cuda::__throw_narrowing_error();
       }
     }
   }
