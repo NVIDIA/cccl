@@ -58,7 +58,7 @@ __host__ __device__ void test_type()
   if constexpr (cuda::std::is_integral_v<From> && cuda::std::is_integral_v<To>)
   {
     constexpr auto min = cuda::std::numeric_limits<From>::min();
-    CHECK_NARROWING_ERROR((cuda::narrow<To>(min) == (To) min),
+    CHECK_NARROWING_ERROR((cuda::narrow<To>(min) == static_cast<To>(min)),
                           (cuda::std::cmp_less(min, cuda::std::numeric_limits<To>::min())));
   }
 
@@ -66,7 +66,7 @@ __host__ __device__ void test_type()
   if constexpr (cuda::std::is_integral_v<From> && cuda::std::is_integral_v<To>)
   {
     constexpr auto max = cuda::std::numeric_limits<From>::max();
-    CHECK_NARROWING_ERROR((cuda::narrow<To>(max) == (To) max),
+    CHECK_NARROWING_ERROR((cuda::narrow<To>(max) == static_cast<To>(max)),
                           (cuda::std::cmp_greater(max, cuda::std::numeric_limits<To>::max())));
   }
 }
