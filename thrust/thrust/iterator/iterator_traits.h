@@ -200,7 +200,7 @@ struct iterator_system<::cuda::discard_iterator>
 template <>
 struct iterator_traversal<::cuda::discard_iterator>
 {
-  using traversal = random_access_traversal_tag;
+  using type = random_access_traversal_tag;
 };
 
 template <class Start>
@@ -211,7 +211,7 @@ struct iterator_system<::cuda::counting_iterator<Start>>
 template <class Start>
 struct iterator_traversal<::cuda::counting_iterator<Start>>
 {
-  using traversal = random_access_traversal_tag;
+  using type = random_access_traversal_tag;
 };
 
 template <class Iter, class Fn>
