@@ -152,10 +152,24 @@ _LIBCUDACXX_VEC_IMPL_GET_1_TO_4(float, float)
 _LIBCUDACXX_VEC_IMPL_GET_1_TO_4(double, double)
 _LIBCUDACXX_VEC_IMPL_GET(dim3, unsigned int)
 
+_LIBCUDACXX_END_NAMESPACE_STD
+
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(char, signed char)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(uchar, unsigned char)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(short, short)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(ushort, unsigned short)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(int, int)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(uint, unsigned int)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(long, long)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(ulong, unsigned long)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(longlong, long long)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(ulonglong, unsigned long long)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(float, float)
+_LIBCUDACXX_VEC_IMPL_GET_1_TO_4(double, double)
+_LIBCUDACXX_VEC_IMPL_GET(dim3, unsigned int)
+
 #  undef _LIBCUDACXX_VEC_IMPL_GET
 #  undef _LIBCUDACXX_VEC_IMPL_GET_1_TO_4
-
-_LIBCUDACXX_END_NAMESPACE_STD
 
 #  include <cuda/std/__cccl/epilogue.h>
 
