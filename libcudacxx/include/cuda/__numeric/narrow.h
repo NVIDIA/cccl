@@ -33,9 +33,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! Uses static_cast to cast a value \p __from to type \p _To. \p _From needs to be convertible to \p _To. This function
-//! is intended to show that narrowing and a potential change of the value is intended. Modelled after
-//! `gsl::narrow_cast`. See also the C++ Core Guidelines <a
+//! Uses static_cast to cast a value \p __from to type \p _To. \p _From needs to be convertible to \p _To, and \p
+//! implement operator!=. This function is intended to show that narrowing and a potential change of the value is
+//! intended. Modelled after `gsl::narrow_cast`. See also the C++ Core Guidelines <a
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-narrowing">ES.46</a> and <a
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-casts-named">ES.49</a>.
 template <class _To, class _From>
@@ -64,8 +64,8 @@ struct narrowing_error : ::std::runtime_error
 }
 
 //! Uses static_cast to cast a value \p __from to type \p _To and checks whether the value has changed. \p _From needs
-//! to be convertible to \p _To and vice versa. Throws \ref narrowing_error in host code and traps in device code.
-//! Modelled after `gsl::narrow`. See also the C++ Core Guidelines <a
+//! to be convertible to \p _To and vice versa, and \p implement operator!=. Throws \ref narrowing_error in host code
+//! and traps in device code. Modelled after `gsl::narrow`. See also the C++ Core Guidelines <a
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-narrowing">ES.46</a> and <a
 //! href="https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#Res-casts-named">ES.49</a>.
 template <class _To, class _From>
