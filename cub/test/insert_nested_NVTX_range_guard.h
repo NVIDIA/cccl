@@ -8,7 +8,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-inline thread_local bool entered = false;
+inline thread_local const char* current_nvtx_range_name = nullptr;
 
 struct NestedNVTXRangeGuard
 {
@@ -18,14 +18,13 @@ struct NestedNVTXRangeGuard
   explicit NestedNVTXRangeGuard(const char* name)
       : inside_cub_range(strstr(name, "cub::") == name)
   {
-    UNSCOPED_INFO("Entering NVTX range " << name);
     if (inside_cub_range)
     {
-      if (entered)
+      if (current_nvtx_range_name)
       {
-        FAIL("Nested NVTX range detected");
+        FAIL("Nested NVTX range detected. Entered " << current_nvtx_range_name << ". Now entering " << name);
       }
-      entered = true;
+      current_nvtx_range_name = name;
     }
   }
 
@@ -33,9 +32,8 @@ struct NestedNVTXRangeGuard
   {
     if (inside_cub_range)
     {
-      entered = false;
+      current_nvtx_range_name = nullptr;
     }
-    UNSCOPED_INFO("Leaving NVTX range");
   }
 };
 
