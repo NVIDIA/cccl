@@ -89,6 +89,11 @@ struct lane_mask
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_ge()};
   }
 
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_not_equal() noexcept
+  {
+    return lane_mask{~_CUDA_VPTX::get_sreg_lanemask_eq()};
+  }
+
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator&(lane_mask __lhs, lane_mask __rhs) noexcept
   {

@@ -275,7 +275,7 @@ __device__ void test_static_methods()
   static_assert(noexcept(lane_mask::all_greater()));
   {
     lane_mask lm = lane_mask::all_greater();
-    assert(lm.value == (~((1u << (threadIdx.x + 1)) - 1) & active_lanes_mask));
+    assert(lm.value == (~((1u << (threadIdx.x + 1)) - 1)));
   }
 
   // all_greater_equal
@@ -283,7 +283,15 @@ __device__ void test_static_methods()
   static_assert(noexcept(lane_mask::all_greater_equal()));
   {
     lane_mask lm = lane_mask::all_greater_equal();
-    assert(lm.value == (~((1u << threadIdx.x) - 1) & active_lanes_mask));
+    assert(lm.value == (~((1u << threadIdx.x) - 1)));
+  }
+
+  // all_not_equal
+  static_assert(cuda::std::is_same_v<lane_mask, decltype(lane_mask::all_not_equal())>);
+  static_assert(noexcept(lane_mask::all_not_equal()));
+  {
+    lane_mask lm = lane_mask::all_not_equal();
+    assert(lm.value == (~(1u << threadIdx.x)));
   }
 }
 
