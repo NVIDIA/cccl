@@ -222,11 +222,11 @@ __device__ constexpr void test_comparison_operators()
 
 __device__ void test_static_methods()
 {
-  // empty
-  static_assert(cuda::std::is_same_v<lane_mask, decltype(lane_mask::empty())>);
-  static_assert(noexcept(lane_mask::empty()));
+  // none
+  static_assert(cuda::std::is_same_v<lane_mask, decltype(lane_mask::none())>);
+  static_assert(noexcept(lane_mask::none()));
   {
-    lane_mask lm = lane_mask::empty();
+    lane_mask lm = lane_mask::none();
     assert(lm.value == 0);
   }
 

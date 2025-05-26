@@ -25,7 +25,6 @@
 
 #  include <cuda/__ptx/instructions/get_sreg.h>
 #  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__limits/numeric_limits.h>
 #  include <cuda/std/__type_traits/is_integer.h>
 #  include <cuda/std/cstdint>
 
@@ -45,18 +44,14 @@ struct lane_mask
       : value{static_cast<_CUDA_VSTD::uint32_t>(__v)}
   {}
 
-  _CCCL_HIDE_FROM_ABI constexpr lane_mask(const lane_mask&) noexcept = default;
-
-  _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator=(const lane_mask&) noexcept = default;
-
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask empty() noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask none() noexcept
   {
     return lane_mask{};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask all() noexcept
   {
-    return lane_mask{_CUDA_VSTD::numeric_limits<_CUDA_VSTD::uint32_t>::max()};
+    return lane_mask{static_cast<_CUDA_VSTD::uint32_t>(-1)};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_active() noexcept
