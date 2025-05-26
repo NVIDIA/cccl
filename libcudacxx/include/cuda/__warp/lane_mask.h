@@ -35,9 +35,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
 struct lane_mask
 {
-  using __value_type = uint32_t;
+  using __value_type = _CUDA_VSTD::uint32_t;
 
-  __value_type value;
+  __value_type value = 0;
 
   _CCCL_HIDE_FROM_ABI constexpr lane_mask() noexcept = default;
 
@@ -76,11 +76,6 @@ struct lane_mask
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_lt()};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less() noexcept
-  {
-    return lane_mask{_CUDA_VPTX::get_sreg_lanemask_lt()};
-  }
-
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less_equal() noexcept
   {
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_le()};
@@ -102,7 +97,7 @@ struct lane_mask
     return lane_mask{__lhs.value & __rhs.value};
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator&=(lane_mask __v) noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator&=(lane_mask __v) noexcept
   {
     return *this = *this & __v;
   }
@@ -113,7 +108,7 @@ struct lane_mask
     return lane_mask{__lhs.value | __rhs.value};
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator|=(lane_mask __v) noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator|=(lane_mask __v) noexcept
   {
     return *this = *this | __v;
   }
@@ -124,7 +119,7 @@ struct lane_mask
     return lane_mask{__lhs.value ^ __rhs.value};
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator^=(lane_mask __v) noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator^=(lane_mask __v) noexcept
   {
     return *this = *this ^ __v;
   }
@@ -135,7 +130,7 @@ struct lane_mask
     return lane_mask{__mask.value << __shift};
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator<<=(int __shift) noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator<<=(int __shift) noexcept
   {
     return *this = *this << __shift;
   }
@@ -146,7 +141,7 @@ struct lane_mask
     return lane_mask{__mask.value >> __shift};
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator>>=(int __shift) noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator>>=(int __shift) noexcept
   {
     return *this = *this >> __shift;
   }
