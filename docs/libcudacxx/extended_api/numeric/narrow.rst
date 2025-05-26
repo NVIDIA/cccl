@@ -37,7 +37,7 @@ Example
     #include <cuda/numeric>
 
     __global__ void kernel(size_t n) {
-        unsigned int r1 = narrow<unsigned int>(n); // traps
+        unsigned int r1 = cuda::narrow<unsigned int>(n); // traps
 
         unsigned int r2 = narrow_cast<unsigned int>(n); // truncation of value is intended
     }
