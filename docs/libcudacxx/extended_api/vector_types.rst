@@ -10,7 +10,9 @@ The ``<cuda/vector_types>`` header imports the vector types, such as ``float2`` 
 The ``<vector_functions.h>`` header provides factory functions for all of the vector types. In C++, they are practically pointless because we can do `list initialization <https://en.cppreference.com/w/cpp/language/list_initialization>`__, but we provide them for consistency with the CUDA Toolkit and extend them to simplify the creation of the vector types.
 
 For each type (in the example below, only ``float3`` is shown), the following factory functions are provided:
-.. code:: cpp
+
+.. code:: cuda
+
    // equivalent to float3{}
    [[nodiscard]] __host__ __device__ inline constexpr
    float3 make_float3() noexcept;
@@ -32,7 +34,8 @@ The ``cuda::value_broadcast_t`` type is a tag type that indicates that the value
 
 To leverage the generic programming, the header provides generic alternatives to the vector types and the factory functions. The ``cuda::vector_type`` type provides is a type alias ``type`` to a vector type that matches the given type and size. The ``cuda::is_vector_type`` trait is an integral constant which can be used to determine if a given type is a *cv-qualified* CUDA vector type. The ``cuda::make_vector`` functions are generic equivalents to the factory functions described above.
 
-.. code:: cpp
+.. code:: cuda
+
    template <class T, cuda::std::size_t Size>
    struct vector_type
    {
@@ -67,7 +70,9 @@ To leverage the generic programming, the header provides generic alternatives to
 The ``<cuda/vector_types>`` also implements the `tuple protocol <https://en.cppreference.com/w/cpp/utility/tuple/tuple-like>`__ for the vector types. This means that the vector types can be used with the `get` function, the `tuple_size` and the `tuple_element` traits and in a `structured binding <https://en.cppreference.com/w/cpp/language/structured_binding>`__ declaration.
 
 .. rubric:: Example
-.. code:: cpp
+
+.. code:: cuda
+
    #include <cuda/vector_types>
    #include <cuda/std/tuple>
    #include <iostream>
