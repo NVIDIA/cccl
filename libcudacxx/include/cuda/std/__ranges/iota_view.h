@@ -24,12 +24,10 @@
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
 #  include <cuda/std/__compare/three_way_comparable.h>
 #endif // _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
-#include <cuda/std/__concepts/arithmetic.h>
+#include <cuda/__iterator/counting_iterator.h>
 #include <cuda/std/__concepts/constructible.h>
-#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
-#include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__concepts/totally_ordered.h>
@@ -39,18 +37,11 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__iterator/unreachable_sentinel.h>
 #include <cuda/std/__ranges/enable_borrowed_range.h>
-#include <cuda/std/__ranges/iota_iterator.h>
-#include <cuda/std/__ranges/movable_box.h>
 #include <cuda/std/__ranges/view_interface.h>
-#include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_constructible.h>
-#include <cuda/std/__type_traits/is_nothrow_copy_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
-#include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
-#include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
@@ -72,7 +63,7 @@ template <class _Start,
 class iota_view : public view_interface<iota_view<_Start, _BoundSentinel>>
 {
 public:
-  using __iterator = __iota_iterator<_Start>;
+  using __iterator = ::cuda::counting_iterator<_Start>;
 
   struct __sentinel
   {
