@@ -14,7 +14,7 @@
 #  error \
     "cccl internal error: <cuda/std/__cccl/epilogue.h> must be included before next <cuda/std/__cccl/prologue.h> is reincluded"
 #endif
-#define _CCCL_PROLOGUE_INCLUDED
+#define _CCCL_PROLOGUE_INCLUDED() 1
 
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/diagnostic.h>
