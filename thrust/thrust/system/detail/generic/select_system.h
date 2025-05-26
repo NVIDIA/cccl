@@ -40,11 +40,15 @@ THRUST_NAMESPACE_BEGIN
 namespace system::detail::generic
 {
 template <typename, typename... Tags>
-inline constexpr bool select_system_exists = false;
+inline constexpr bool select_system_exists_impl = false;
 
 template <typename... Tags>
 inline constexpr bool
-  select_system_exists<::cuda::std::void_t<decltype(select_system(::cuda::std::declval<Tags>()...))>, Tags...> = true;
+  select_system_exists_impl<::cuda::std::void_t<decltype(select_system(::cuda::std::declval<Tags>()...))>, Tags...> =
+    true;
+
+template <typename, typename... Tags>
+inline constexpr bool select_system_exists = select_system_exists_impl<void, Tags...>;
 
 template <typename System, ::cuda::std::enable_if_t<!select_system_exists<System>, int> = 0>
 _CCCL_HOST_DEVICE auto select_system(thrust::execution_policy<System>& system) -> System&
@@ -72,7 +76,7 @@ select_system(thrust::execution_policy<System1>& system1, thrust::execution_poli
 template <typename System1,
           typename System2,
           typename... Systems,
-          ::cuda::std::enable_if_t<!select_system_exists<Systems...>, int> = 0>
+          ::cuda::std::enable_if_t<!select_system_exists<System1, System2, Systems...>, int> = 0>
 _CCCL_HOST_DEVICE auto select_system(
   thrust::execution_policy<System1>& system1,
   thrust::execution_policy<System2>& system2,
