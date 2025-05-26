@@ -277,7 +277,7 @@ struct dispatch_t<StableAddress,
       num_items,
       elem_per_thread,
       op,
-      out,
+      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
       make_aligned_base_ptr_kernel_arg(
         THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_align)...);
   }
@@ -343,7 +343,7 @@ struct dispatch_t<StableAddress,
               num_items,
               items_per_thread_clamped,
               op,
-              out,
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
               kernel_source.MakeIteratorKernelArg(
                 THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
   }
@@ -402,7 +402,7 @@ struct dispatch_t<StableAddress,
               num_items,
               items_per_thread,
               op,
-              out,
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
               kernel_source.MakeIteratorKernelArg(
                 THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
   }
