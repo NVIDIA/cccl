@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-#define _CCCL_HEADER_TEST
-
 #if defined(_MSC_VER)
 # define NOMINMAX
 #endif
