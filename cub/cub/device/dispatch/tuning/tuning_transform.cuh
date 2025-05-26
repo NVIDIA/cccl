@@ -56,19 +56,17 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace transform
+namespace detail::transform
 {
 enum class Algorithm
 {
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
   // is always superior to that fallback, so it was removed.
   prefetch,
+  vectorized,
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   ublkcp,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-  vectorized,
 };
 
 template <int BlockThreads>
@@ -76,11 +74,9 @@ struct prefetch_policy_t
 {
   static constexpr int block_threads = BlockThreads;
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int items_per_thread_no_input   = 2; // when there are no input iterators, the kernel is just filling
-  static constexpr int min_items_per_thread        = 1;
-  static constexpr int max_items_per_thread        = 32;
-  static constexpr int items_per_thread_vectorized = 1;
-  static constexpr int vector_load_length          = 1;
+  static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
+  static constexpr int min_items_per_thread      = 1;
+  static constexpr int max_items_per_thread      = 32;
 };
 
 template <int BlockThreads, int BulkCopyAlignment>
@@ -94,16 +90,11 @@ struct async_copy_policy_t
   static constexpr int bulk_copy_alignment = BulkCopyAlignment;
 };
 
-template <int BlockThreads>
-struct vectorized_policy_t
+template <int BlockThreads, int ItemsPerThread, int LoadStoreWordSize>
+struct vectorized_policy_t : prefetch_policy_t<BlockThreads>
 {
-  static constexpr int block_threads = BlockThreads;
-  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int items_per_thread_no_input   = 2; // when there are no input iterators, the kernel is just filling
-  static constexpr int min_items_per_thread        = 1;
-  static constexpr int max_items_per_thread        = 32;
-  static constexpr int items_per_thread_vectorized = 16;
-  static constexpr int vector_load_length          = 4;
+  static constexpr int items_per_thread     = ItemsPerThread;
+  static constexpr int load_store_word_size = LoadStoreWordSize;
 };
 
 // mult must be a power of 2
@@ -165,6 +156,12 @@ _CCCL_HOST_DEVICE constexpr int arch_to_min_bytes_in_flight(int sm_arch)
   return 12 * 1024; // V100 and below
 }
 
+template <typename T, typename... Ts>
+_CCCL_HOST_DEVICE constexpr bool are_equal([[maybe_unused]] T head, Ts... tail)
+{
+  return ((head == tail) && ...);
+}
+
 template <typename PolicyT, typename = void>
 struct TransformPolicyWrapper : PolicyT
 {
@@ -205,14 +202,15 @@ struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(Static
     return StaticPolicyT::algo_policy::max_items_per_thread;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadVectorized()
+  template <typename = void>
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThread()
   {
-    return StaticPolicyT::algo_policy::items_per_thread_vectorized;
+    return StaticPolicyT::algo_policy::items_per_thread;
   }
 
-  _CCCL_HOST_DEVICE static constexpr int VectorLoadLength()
+  _CCCL_HOST_DEVICE static constexpr int LoadStoreWordSize()
   {
-    return StaticPolicyT::algo_policy::vector_load_length;
+    return StaticPolicyT::algo_policy::load_store_word_size;
   }
 };
 
@@ -222,31 +220,49 @@ _CCCL_HOST_DEVICE TransformPolicyWrapper<PolicyT> MakeTransformPolicyWrapper(Pol
   return TransformPolicyWrapper<PolicyT>(base);
 }
 
-template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
+template <typename T>
+inline constexpr size_t size_of = sizeof(T);
+
+template <>
+inline constexpr size_t size_of<void> = 0;
+
+template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn, typename RandomAccessIteratorOut>
 struct policy_hub
 {
   static_assert(sizeof(RandomAccessIteratorTupleIn) == 0, "Second parameter must be a tuple");
 };
 
-template <bool RequiresStableAddress, typename... RandomAccessIteratorsIn>
-struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIteratorsIn...>>
+template <bool RequiresStableAddress, typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut>
+struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut>
 {
   static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
   static constexpr bool all_contiguous =
-    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorsIn>...>;
+    (THRUST_NS_QUALIFIER::is_contiguous_iterator_v<RandomAccessIteratorsIn> && ...);
   static constexpr bool all_values_trivially_reloc =
-    ::cuda::std::conjunction_v<THRUST_NS_QUALIFIER::is_trivially_relocatable<it_value_t<RandomAccessIteratorsIn>>...>;
-
+    (THRUST_NS_QUALIFIER::is_trivially_relocatable_v<it_value_t<RandomAccessIteratorsIn>> && ...);
   static constexpr bool can_memcpy = all_contiguous && all_values_trivially_reloc;
+  static constexpr bool all_values_same_size =
+    are_equal(size_of<it_value_t<RandomAccessIteratorsIn>>..., size_of<it_value_t<RandomAccessIteratorOut>>);
+
+  // for vectorized policy:
+  static constexpr int load_store_word_size = 8;
+  // static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 16;
+  // static constexpr int loaded_bytes_per_item       = (sizeof(it_value_t<RandomAccessIteratorsIn>) + ... + 0);
+  // // use register bound scaling
+  // static constexpr int items_per_thread =
+  //   ::cuda::std::max(1, NOMINAL_4B_ITEMS_PER_THREAD * 4 / ::cuda::std::max(4, loaded_bytes_per_item));
+  static constexpr int items_per_thread = 16;
+  using default_vectorized_policy_t     = vectorized_policy_t<256, items_per_thread, load_store_word_size>;
 
   // TODO(bgruber): consider a separate kernel for just filling
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
+    static constexpr int min_bif       = arch_to_min_bytes_in_flight(300);
+    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy || !all_values_same_size;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = Algorithm::vectorized; // will fall back to prefetch if necessary
-    using algo_policy               = prefetch_policy_t<256>;
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
+    using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, default_vectorized_policy_t>;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
@@ -302,7 +318,6 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   using max_policy = policy1200;
 };
 
-} // namespace transform
-} // namespace detail
+} // namespace detail::transform
 
 CUB_NAMESPACE_END
