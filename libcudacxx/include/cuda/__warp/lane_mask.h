@@ -24,8 +24,6 @@
 #if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/__ptx/instructions/get_sreg.h>
-#  include <cuda/std/__concepts/concept_macros.h>
-#  include <cuda/std/__type_traits/is_integer.h>
 #  include <cuda/std/cstdint>
 
 #  include <cuda/std/__cccl/prologue.h>
@@ -38,10 +36,8 @@ struct lane_mask
 
   _CCCL_HIDE_FROM_ABI constexpr lane_mask() noexcept = default;
 
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(_CUDA_VSTD::__cccl_is_integer_v<_Tp> _CCCL_AND(sizeof(_Tp) == sizeof(_CUDA_VSTD::uint32_t)))
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(_Tp __v) noexcept
-      : value{static_cast<_CUDA_VSTD::uint32_t>(__v)}
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(_CUDA_VSTD::uint32_t __v) noexcept
+      : value{__v}
   {}
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask none() noexcept

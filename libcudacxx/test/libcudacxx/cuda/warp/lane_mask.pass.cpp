@@ -29,25 +29,14 @@ __device__ constexpr void test_constructors()
   // assignment operator
   static_assert(cuda::std::is_trivially_copy_assignable_v<lane_mask>);
 
-  // explicit constructor from 32-bit integer types
-  static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::int32_t>);
+  // explicit constructor from uint32_t
   static_assert(cuda::std::is_nothrow_constructible_v<cuda::std::uint32_t>);
-  static_assert(!cuda::std::is_convertible_v<cuda::std::int32_t, lane_mask>);
   static_assert(!cuda::std::is_convertible_v<cuda::std::uint32_t, lane_mask>);
-  {
-    constexpr cuda::std::int32_t value{-0x12345678};
-    lane_mask lm{value};
-    assert(lm.value == static_cast<cuda::std::uint32_t>(value));
-  }
   {
     constexpr cuda::std::uint32_t value{0x12345678u};
     lane_mask lm{value};
     assert(lm.value == value);
   }
-
-  // construction from other integer types is not allowed
-  static_assert(!cuda::std::is_constructible_v<lane_mask, cuda::std::int16_t>);
-  static_assert(!cuda::std::is_constructible_v<lane_mask, cuda::std::int64_t>);
 }
 
 __device__ constexpr void test_conversion_operators()
