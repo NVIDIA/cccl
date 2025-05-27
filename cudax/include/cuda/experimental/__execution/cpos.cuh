@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CPOS
-#define __CUDAX_ASYNC_DETAIL_CPOS
+#ifndef __CUDAX_EXECUTION_CPOS
+#define __CUDAX_EXECUTION_CPOS
 
 #include <cuda/std/detail/__config>
 
@@ -23,7 +23,9 @@
 
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/fwd.cuh>
+#include <cuda/experimental/__execution/transform_sender.cuh>
 
 #include <cuda/experimental/__execution/prologue.cuh>
 
@@ -50,6 +52,7 @@ struct __completion_tag
 
 struct set_value_t : __completion_tag<__value>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class... _Ts>
   _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
@@ -63,6 +66,7 @@ struct set_value_t : __completion_tag<__value>
 
 struct set_error_t : __completion_tag<__error>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr, class _Ey>
   _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e)))
@@ -76,6 +80,7 @@ struct set_error_t : __completion_tag<__error>
 
 struct set_stopped_t : __completion_tag<__stopped>
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Rcvr>
   _CCCL_TRIVIAL_API auto operator()(_Rcvr&& __rcvr) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
@@ -88,6 +93,7 @@ struct set_stopped_t : __completion_tag<__stopped>
 
 struct start_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _OpState>
   _CCCL_TRIVIAL_API auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
@@ -100,19 +106,38 @@ struct start_t
 // connect
 struct connect_t
 {
-  template <class _Sndr, class _Rcvr>
-  _CCCL_TRIVIAL_API auto operator()(_Sndr&& __sndr, _Rcvr&& __rcvr) const
-    noexcept(noexcept(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr))))
-      -> decltype(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr)))
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Sndr, class _Rcvr, class _Domain = __late_domain_of_t<_Sndr, env_of_t<_Rcvr>>>
+  _CCCL_TRIVIAL_API static constexpr auto __do_transform(_Sndr&& __sndr, _Rcvr __rcvr) noexcept(
+    noexcept(transform_sender(_Domain{}, declval<_Sndr>(), get_env(__rcvr)))) -> decltype(auto)
+  {
+    return transform_sender(_Domain{}, static_cast<_Sndr&&>(__sndr), get_env(__rcvr));
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
+  _CCCL_REQUIRES((!__has_sender_transform<_Sndr, env_of_t<_Rcvr>>) )
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+    noexcept(noexcept(declval<_Sndr>().connect(declval<_Rcvr>()))) -> decltype(auto)
   {
     return static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr));
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Sndr, class _Rcvr)
+  _CCCL_REQUIRES(__has_sender_transform<_Sndr, env_of_t<_Rcvr>>)
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Sndr&& __sndr, _Rcvr __rcvr) const
+    noexcept(noexcept(__do_transform(declval<_Sndr>(), __rcvr).connect(declval<_Rcvr>()))) -> decltype(auto)
+  {
+    return __do_transform(static_cast<_Sndr&&>(__sndr), __rcvr).connect(static_cast<_Rcvr&&>(__rcvr));
   }
 };
 
 struct schedule_t
 {
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Sch>
-  _CCCL_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept -> decltype(static_cast<_Sch&&>(__sch).schedule())
+  _CCCL_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept
   {
     static_assert(noexcept(static_cast<_Sch&&>(__sch).schedule()));
     return static_cast<_Sch&&>(__sch).schedule();
@@ -138,4 +163,4 @@ inline constexpr bool __nothrow_connectable = noexcept(connect(declval<_Sndr>(),
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_CPOS

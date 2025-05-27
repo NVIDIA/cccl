@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,8 +31,7 @@
 
 #include <cuda/experimental/__utility/basic_any.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -254,7 +253,7 @@ template <class _Derived>
 struct __with_try_get_property
 {
   template <class _Property>
-  _CCCL_HOST_API _CCCL_NODISCARD_FRIEND auto try_get_property(const _Derived& __self, _Property) noexcept
+  [[nodiscard]] _CCCL_HOST_API friend auto try_get_property(const _Derived& __self, _Property) noexcept
     -> __try_property_result_t<_Property>
   {
     auto __prop = experimental::dynamic_any_cast<const __iproperty<_Property>*>(&__self);
@@ -930,6 +929,6 @@ auto make_any_async_resource(_Args&&... __args) -> any_async_resource<_Propertie
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_ANY_RESOURCE_H

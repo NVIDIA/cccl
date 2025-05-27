@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
+#ifndef _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
+#define _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
 
 #include <cuda/std/detail/__config>
 
@@ -34,6 +34,8 @@
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -91,7 +93,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
   // shared memory, supports the mbarrier_complete_tx mechanism in addition to
   // the async group mechanism.
   _CUDA_VSTD::uint32_t __allowed_completions =
-    __is_local_smem_barrier(__barrier)
+    ::cuda::__is_local_smem_barrier(__barrier)
       ? (_CUDA_VSTD::uint32_t(__completion_mechanism::__async_group)
          | _CUDA_VSTD::uint32_t(__completion_mechanism::__mbarrier_complete_tx))
       : _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
@@ -108,10 +110,12 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
   // 2. Issue actual copy instructions.
   _CUDA_VSTD::uint64_t* __bh = nullptr;
 #if __cccl_ptx_isa >= 800
-  NV_IF_TARGET(NV_PROVIDES_SM_90,
-               (__bh = __is_local_smem_barrier(__barrier) ? __try_get_barrier_handle(__barrier) : nullptr;))
+  NV_IF_TARGET(
+    NV_PROVIDES_SM_90,
+    (__bh = ::cuda::__is_local_smem_barrier(__barrier) ? ::cuda::__try_get_barrier_handle(__barrier) : nullptr;))
 #endif // __cccl_ptx_isa >= 800
-  auto __cm = __dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bh);
+  auto __cm =
+    ::cuda::__dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions, __bh);
 
   // 3. Synchronize barrier with copy instructions.
   return __memcpy_completion_impl::__defer(__cm, __group, __size, __barrier);
@@ -119,4 +123,6 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_BARRIER_H_

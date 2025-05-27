@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -34,6 +34,8 @@
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
@@ -176,5 +178,7 @@ static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, device_acc
 static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, host_accessible>, "");
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDAX__MEMORY_RESOURCE_MANAGED_MEMORY_RESOURCE_CUH

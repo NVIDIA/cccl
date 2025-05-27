@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,8 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
-
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
 
@@ -30,15 +28,19 @@
 #include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
+#include <cuda_runtime_api.h>
+
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
-namespace detail
+namespace __detail
 {
 // 0 is a valid stream in CUDA, so we need some other invalid stream representation
 // Can't make it constexpr, because cudaStream_t is a pointer type
 static const ::cudaStream_t __invalid_stream = reinterpret_cast<cudaStream_t>(~0ULL);
-} // namespace detail
+} // namespace __detail
 
 //! @brief A non-owning wrapper for cudaStream_t.
 struct stream_ref : ::cuda::stream_ref
@@ -108,7 +110,7 @@ struct stream_ref : ::cuda::stream_ref
   {
     _CCCL_ASSERT(__ev.get() != nullptr, "cuda::experimental::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
-    detail::driver::streamWaitEvent(get(), __ev.get());
+    __detail::driver::streamWaitEvent(get(), __ev.get());
   }
 
   //! @brief Make all future work submitted into this stream depend on completion of all work from the specified
@@ -121,7 +123,7 @@ struct stream_ref : ::cuda::stream_ref
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
-    _CCCL_ASSERT(__stream != detail::__invalid_stream, "cuda::experimental::stream_ref::wait invalid stream passed");
+    _CCCL_ASSERT(__stream != __detail::__invalid_stream, "cuda::experimental::stream_ref::wait invalid stream passed");
     if (*this != __other)
     {
       event __tmp(__other);
@@ -138,12 +140,12 @@ struct stream_ref : ::cuda::stream_ref
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
 #if CUDART_VERSION >= 12050
-    if (detail::driver::getVersion() >= 12050)
+    if (__detail::driver::getVersion() >= 12050)
     {
-      auto __ctx = detail::driver::streamGetCtx_v2(__stream);
-      if (__ctx.__ctx_kind == detail::driver::__ctx_from_stream::__kind::__green)
+      auto __ctx = __detail::driver::streamGetCtx_v2(__stream);
+      if (__ctx.__ctx_kind == __detail::driver::__ctx_from_stream::__kind::__green)
       {
-        __stream_ctx = detail::driver::ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
+        __stream_ctx = __detail::driver::ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
         __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
       }
       else
@@ -155,7 +157,7 @@ struct stream_ref : ::cuda::stream_ref
     else
 #endif // CUDART_VERSION >= 12050
     {
-      __stream_ctx = detail::driver::streamGetCtx(__stream);
+      __stream_ctx = __detail::driver::streamGetCtx(__stream);
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
     // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
@@ -179,5 +181,7 @@ struct stream_ref : ::cuda::stream_ref
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__STREAM_STREAM_REF

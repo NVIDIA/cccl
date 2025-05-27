@@ -41,6 +41,7 @@
 // cooperative groups do not support NVHPC yet
 #if !_CCCL_CUDA_COMPILER(NVHPC)
 #  include <cooperative_groups.h>
+
 #  include <cooperative_groups/memcpy_async.h>
 #endif // !_CCCL_CUDA_COMPILER(NVHPC)
 
@@ -168,6 +169,7 @@ struct dispatch_t<StableAddress,
   RandomAccessIteratorOut out;
   Offset num_items;
   TransformOp op;
+  int bulk_copy_align;
   cudaStream_t stream;
   KernelSource kernel_source             = {};
   KernelLauncherFactory launcher_factory = {};
@@ -182,9 +184,9 @@ struct dispatch_t<StableAddress,
   {
     using policy_t          = typename ActivePolicy::algo_policy;
     constexpr int block_dim = policy_t::block_threads;
-    static_assert(block_dim % bulk_copy_alignment == 0,
-                  "block_threads needs to be a multiple of bulk_copy_alignment (128)"); // then tile_size is a multiple
-                                                                                        // of 128-byte
+    _CCCL_ASSERT_HOST(block_dim % bulk_copy_align == 0,
+                      "block_threads needs to be a multiple of bulk_copy_alignment"); // then tile_size is a multiple of
+                                                                                      // it
 
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
       const auto max_smem = get_max_shared_memory();
@@ -201,7 +203,7 @@ struct dispatch_t<StableAddress,
            ++elem_per_thread)
       {
         const int tile_size = block_dim * elem_per_thread;
-        const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size);
+        const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size, bulk_copy_align);
         if (smem_size > *max_smem)
         {
           // assert should be prevented by smem check in policy
@@ -245,7 +247,7 @@ struct dispatch_t<StableAddress,
     }
     _CCCL_ASSERT_HOST(config->elem_per_thread > 0, "");
     _CCCL_ASSERT_HOST(config->tile_size > 0, "");
-    _CCCL_ASSERT_HOST(config->tile_size % bulk_copy_alignment == 0, "");
+    _CCCL_ASSERT_HOST(config->tile_size % bulk_copy_align == 0, "");
     _CCCL_ASSERT_HOST((sizeof...(RandomAccessIteratorsIn) == 0) != (config->smem_size != 0), ""); // logical xor
 
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{config->tile_size}));
@@ -271,7 +273,7 @@ struct dispatch_t<StableAddress,
       op,
       out,
       make_aligned_base_ptr_kernel_arg(
-        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_alignment)...);
+        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_align)...);
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
@@ -384,6 +386,7 @@ struct dispatch_t<StableAddress,
       ::cuda::std::move(out),
       num_items,
       ::cuda::std::move(op),
+      bulk_copy_alignment(ptx_version),
       stream,
       kernel_source,
       launcher_factory};

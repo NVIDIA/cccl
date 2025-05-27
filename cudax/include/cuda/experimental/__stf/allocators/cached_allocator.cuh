@@ -245,7 +245,11 @@ public:
     // That is a miss, we need to allocate data using the root allocator
 
     /* Create one large block of memory */
-    size_t cnt                = 50;
+    static const size_t cnt = [] {
+      const char* fifo_env = ::std::getenv("CUDASTF_CACHED_FIFO");
+      return (fifo_env ? atol(fifo_env) : 50);
+    }();
+
     ::std::ptrdiff_t large_sz = cnt * s;
     auto* base                = root_allocator.allocate(ctx, memory_node, large_sz, prereqs);
     _CCCL_ASSERT(large_sz >= 0, "failed to allocate large buffer");
@@ -334,6 +338,17 @@ public:
   ::std::string to_string() const override
   {
     return "cached_block_allocator_fifo";
+  }
+
+  /**
+   * @brief Prints additional information about the allocator.
+   *
+   * This function currently prints no additional information.
+   */
+  void print_info() const override
+  {
+    const auto s = to_string();
+    fprintf(stderr, "No additional info for allocator of kind \"%.*s\".\n", static_cast<int>(s.size()), s.data());
   }
 
 protected:

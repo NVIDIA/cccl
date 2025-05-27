@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
+#ifndef _CUDA___MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
+#define _CUDA___MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
 
 #include <cuda/std/detail/__config>
 
@@ -25,6 +25,8 @@
 #include <cuda/std/cstddef>
 
 #include <nv/target>
+
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -65,4 +67,6 @@ __cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, _CUDA
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_
+#include <cuda/std/__cccl/epilogue.h>
+
+#endif // _CUDA___MEMCPY_ASYNC_CP_ASYNC_FALLBACK_H_

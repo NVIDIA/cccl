@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,7 +25,6 @@
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
-#include <cuda/experimental/__memory_resource/get_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/legacy_pinned_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/managed_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>

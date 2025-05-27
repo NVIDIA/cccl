@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_READ_ENV
-#define __CUDAX_ASYNC_DETAIL_READ_ENV
+#ifndef __CUDAX_EXECUTION_READ_ENV
+#define __CUDAX_EXECUTION_READ_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -56,6 +56,7 @@ private:
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
 
+    _CCCL_EXEC_CHECK_DISABLE
     _CCCL_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
@@ -101,7 +102,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 
   template <class _Self, class _Env>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
     if constexpr (!_CUDA_VSTD::__is_callable_v<_Query, _Env>)
     {
@@ -110,7 +111,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
                                           _WITH_QUERY(_Query),
                                           _WITH_ENVIRONMENT(_Env)>();
     }
-    else if constexpr (_CUDA_VSTD::is_void_v<__call_result_t<_Query, _Env>>)
+    else if constexpr (_CUDA_VSTD::is_void_v<_CUDA_VSTD::__call_result_t<_Query, _Env>>)
     {
       return invalid_completion_signature<_WHERE(_IN_ALGORITHM, read_env_t),
                                           _WHAT(_THE_CURRENT_ENVIRONMENT_RETURNED_VOID_FOR_THIS_QUERY),
@@ -119,11 +120,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT read_env_t::__sndr_t
     }
     else if constexpr (__nothrow_callable<_Query, _Env>)
     {
-      return completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>{};
+      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>)>{};
     }
     else
     {
-      return completion_signatures<set_value_t(__call_result_t<_Query, _Env>), set_error_t(::std::exception_ptr)>{};
+      return completion_signatures<set_value_t(_CUDA_VSTD::__call_result_t<_Query, _Env>),
+                                   set_error_t(::std::exception_ptr)>{};
     }
 
     _CCCL_UNREACHABLE();
@@ -151,4 +153,4 @@ _CCCL_GLOBAL_CONSTANT read_env_t read_env{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_READ_ENV

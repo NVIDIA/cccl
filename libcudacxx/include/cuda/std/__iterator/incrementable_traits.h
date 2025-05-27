@@ -36,6 +36,8 @@
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -144,5 +146,7 @@ using iter_difference_t =
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_INCREMENTABLE_TRAITS_H

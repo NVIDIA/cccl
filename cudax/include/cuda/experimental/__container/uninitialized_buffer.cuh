@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,6 +32,8 @@
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 #if defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
@@ -104,7 +106,7 @@ private:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
@@ -115,7 +117,7 @@ private:
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
+  [[nodiscard]] _CCCL_HIDE_FROM_ABI friend auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
@@ -295,5 +297,7 @@ using uninitialized_device_buffer = uninitialized_buffer<_Tp, device_accessible>
 } // namespace cuda::experimental
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_BUFFER_H

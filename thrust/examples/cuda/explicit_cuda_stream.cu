@@ -1,11 +1,11 @@
-#include <cuda_runtime.h>
-
 #include <thrust/device_vector.h>
 #include <thrust/execution_policy.h> // For thrust::device
 #include <thrust/reduce.h>
 #include <thrust/sequence.h>
 
 #include <iostream>
+
+#include <cuda_runtime.h>
 
 // This example shows how to execute a Thrust device algorithm on an explicit
 // CUDA stream. The simple program below fills a vector with the numbers

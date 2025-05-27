@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THREAD_CONTEXT
-#define __CUDAX_ASYNC_DETAIL_THREAD_CONTEXT
+#ifndef __CUDAX_EXECUTION_THREAD_CONTEXT
+#define __CUDAX_EXECUTION_THREAD_CONTEXT
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(__CUDA_ARCH__)
+#if _CCCL_HOST_COMPILATION()
 
 #  include <cuda/experimental/__execution/run_loop.cuh>
 
@@ -66,6 +66,6 @@ private:
 
 #  include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // !defined(__CUDA_ARCH__)
+#endif // _CCCL_HOST_COMPILATION()
 
-#endif
+#endif // __CUDAX_EXECUTION_THREAD_CONTEXT

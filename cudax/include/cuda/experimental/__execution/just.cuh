@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_JUST
-#define __CUDAX_ASYNC_DETAIL_JUST
+#ifndef __CUDAX_EXECUTION_JUST
+#define __CUDAX_EXECUTION_JUST
 
 #include <cuda/std/detail/__config>
 
@@ -32,16 +32,11 @@
 
 namespace cuda::experimental::execution
 {
-// Forward declarations of the just* tag types:
-struct just_t;
-struct just_error_t;
-struct just_stopped_t;
-
 // Map from a disposition to the corresponding tag types:
 namespace __detail
 {
 template <__disposition_t, class _Void = void>
-extern __undefined<_Void> __just_tag;
+extern _CUDA_VSTD::__undefined<_Void> __just_tag;
 template <class _Void>
 extern __fn_t<just_t>* __just_tag<__value, _Void>;
 template <class _Void>
@@ -51,7 +46,8 @@ extern __fn_t<just_stopped_t>* __just_tag<__stopped, _Void>;
 } // namespace __detail
 
 template <__disposition_t _Disposition>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_PREFERRED_NAME(just_t) _CCCL_PREFERRED_NAME(just_error_t)
+  _CCCL_PREFERRED_NAME(just_stopped_t) __just_t
 {
 private:
   using _JustTag _CCCL_NODEBUG_ALIAS = decltype(__detail::__just_tag<_Disposition>());
@@ -75,7 +71,7 @@ private:
     // escapes. So for gcc, we let this operation state be movable.
     // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98995
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
-#endif
+#endif // !_CCCL_COMPILER(GCC)
 
     _CCCL_API void start() & noexcept
     {
@@ -102,9 +98,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __just_t<_Disposition>::__sndr_t
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   template <class _Self, class... _Env>
-  _CCCL_API static constexpr auto get_completion_signatures() noexcept
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures() noexcept
   {
-    return completion_signatures<_SetTag(_Ts...)>();
+    return completion_signatures<_SetTag(_Ts...)>{};
   }
 
   template <class _Rcvr>
@@ -134,25 +130,17 @@ _CCCL_TRIVIAL_API constexpr auto __just_t<_Disposition>::operator()(_Ts... __ts)
 }
 
 template <class _Fn>
-inline constexpr size_t structured_binding_size<__just_t<__value>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<just_t::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr size_t structured_binding_size<__just_t<__error>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<just_error_t::__sndr_t<_Fn>> = 2;
 template <class _Fn>
-inline constexpr size_t structured_binding_size<__just_t<__stopped>::__sndr_t<_Fn>> = 2;
+inline constexpr size_t structured_binding_size<just_stopped_t::__sndr_t<_Fn>> = 2;
 
-_CCCL_GLOBAL_CONSTANT struct just_t : __just_t<__value>
-{
-} just{};
-
-_CCCL_GLOBAL_CONSTANT struct just_error_t : __just_t<__error>
-{
-} just_error{};
-
-_CCCL_GLOBAL_CONSTANT struct just_stopped_t : __just_t<__stopped>
-{
-} just_stopped{};
+_CCCL_GLOBAL_CONSTANT auto just         = just_t{};
+_CCCL_GLOBAL_CONSTANT auto just_error   = just_error_t{};
+_CCCL_GLOBAL_CONSTANT auto just_stopped = just_stopped_t{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_JUST

@@ -51,6 +51,8 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/forward.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -77,12 +79,11 @@ using iter_common_reference_t = common_reference_t<iter_reference_t<_Tp>, iter_v
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
 concept indirectly_writable = requires(_Out&& __o, _Tp&& __t) {
-  *__o                            = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
-  *_CUDA_VSTD::forward<_Out>(__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t); // not required to be
-                                                                                    // equality-preserving
-  const_cast<const iter_reference_t<_Out>&&>(*_CUDA_VSTD::forward<_Out>(__o)) =
-    _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
+  *__o                                             = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  *static_cast<_Out&&>(__o)                        = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t); // not required to be equality-preserving
+  const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) =
+    static_cast<_Tp&&>(__t); // not required to be equality-preserving
 };
 
 // [iterator.concept.winc]
@@ -140,7 +141,7 @@ concept input_iterator = input_or_output_iterator<_Ip> && indirectly_readable<_I
 template <class _Ip, class _Tp>
 concept output_iterator =
   input_or_output_iterator<_Ip> && indirectly_writable<_Ip, _Tp> && requires(_Ip __it, _Tp&& __t) {
-    *__it++ = _CUDA_VSTD::forward<_Tp>(__t); // not required to be equality-preserving
+    *__it++ = static_cast<_Tp&&>(__t); // not required to be equality-preserving
   };
 
 // [iterator.concept.forward]
@@ -276,19 +277,14 @@ _CCCL_CONCEPT indirectly_readable = _CCCL_FRAGMENT(__indirectly_readable_impl_, 
 template <class _Tp>
 using iter_common_reference_t =
   enable_if_t<indirectly_readable<_Tp>, common_reference_t<iter_reference_t<_Tp>, iter_value_t<_Tp>&>>;
+
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __indirectly_writable_,
-  requires(_Out&& __o, _Tp&& __t)(
-    typename(decltype(*__o = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(*_CUDA_VSTD::forward<_Out>(__o) = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(const_cast<const iter_reference_t<_Out>&&>(*__o) = _CUDA_VSTD::forward<_Tp>(__t))),
-    typename(decltype(const_cast<const iter_reference_t<_Out>&&>(*_CUDA_VSTD::forward<_Out>(__o)) =
-                        _CUDA_VSTD::forward<_Tp>(__t)))));
-
-template <class _Out, class _Tp>
-_CCCL_CONCEPT indirectly_writable = _CCCL_FRAGMENT(__indirectly_writable_, _Out, _Tp);
+_CCCL_CONCEPT indirectly_writable = _CCCL_REQUIRES_EXPR((_Out, _Tp), _Out&& __o, _Tp&& __t)(
+  (*__o = static_cast<_Tp&&>(__t)),
+  (*static_cast<_Out&&>(__o) = static_cast<_Tp&&>(__t)),
+  (const_cast<const iter_reference_t<_Out>&&>(*__o) = static_cast<_Tp&&>(__t)),
+  (const_cast<const iter_reference_t<_Out>&&>(*static_cast<_Out&&>(__o)) = static_cast<_Tp&&>(__t)));
 
 // [iterator.concept.winc]
 template <class _Tp>
@@ -373,7 +369,7 @@ template <class _Ip, class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__output_iterator_,
                        requires(_Ip __it, _Tp&& __t)(requires(input_or_output_iterator<_Ip>),
                                                      requires(indirectly_writable<_Ip, _Tp>),
-                                                     (*__it++ = _CUDA_VSTD::forward<_Tp>(__t))));
+                                                     (*__it++ = static_cast<_Tp&&>(__t))));
 
 template <class _Ip, class _Tp>
 _CCCL_CONCEPT output_iterator = _CCCL_FRAGMENT(__output_iterator_, _Ip, _Tp);
@@ -606,5 +602,7 @@ inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_conc
 #endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_CONCEPTS_H

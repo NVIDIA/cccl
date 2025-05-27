@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THREAD
-#define __CUDAX_ASYNC_DETAIL_THREAD
+#ifndef __CUDAX_EXECUTION_THREAD
+#define __CUDAX_EXECUTION_THREAD
 
 #include <cuda/std/detail/__config>
 
@@ -30,11 +30,13 @@
 #  define _CUDAX_FOR_HOST_OR_DEVICE(_FOR_HOST, _FOR_DEVICE) {_CCCL_PP_EXPAND _FOR_HOST}
 #endif // ^^^ !_CCCL_CUDA_COMPILATION() ^^^
 
+#include <cuda/experimental/__execution/prologue.cuh>
+
 namespace cuda::experimental::execution
 {
-#if defined(__CUDA_ARCH__)
+#if _CCCL_DEVICE_COMPILATION() && !_CCCL_CUDA_COMPILER(NVHPC)
 using __thread_id _CCCL_NODEBUG_ALIAS = int;
-#elif _CCCL_COMPILER(NVHPC)
+#elif _CCCL_CUDA_COMPILER(NVHPC)
 struct __thread_id
 {
   union
@@ -64,9 +66,9 @@ struct __thread_id
     return !(__self == __other);
   }
 };
-#else
+#else // ^^^ cuda device compilation ^^^ / vvv host compilation vvv
 using __thread_id _CCCL_NODEBUG_ALIAS = ::std::thread::id;
-#endif
+#endif // ^^^ host compilation ^^^
 
 inline _CCCL_API auto __this_thread_id() noexcept -> __thread_id
 {
@@ -80,4 +82,6 @@ inline _CCCL_API void __this_thread_yield() noexcept
 }
 } // namespace cuda::experimental::execution
 
-#endif
+#include <cuda/experimental/__execution/epilogue.cuh>
+
+#endif // __CUDAX_EXECUTION_THREAD

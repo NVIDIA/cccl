@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,16 +28,18 @@
 #include <string>
 #include <vector>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 class device;
 struct arch_traits_t;
 
-namespace detail
+namespace __detail
 {
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr;
-} // namespace detail
+} // namespace __detail
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref
@@ -60,6 +62,7 @@ public:
     return __id_;
   }
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   //! @brief Compares two `device_ref`s for equality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -68,12 +71,12 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ == __rhs.__id_;
   }
 
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Compares two `device_ref`s for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
@@ -82,11 +85,12 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different device ordinal
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
+  [[nodiscard]] constexpr friend bool operator!=(device_ref __lhs, device_ref __rhs) noexcept
   {
     return __lhs.__id_ != __rhs.__id_;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Retrieve the specified attribute for the device
   //!
@@ -106,7 +110,7 @@ public:
   template <::cudaDeviceAttr _Attr>
   [[nodiscard]] auto attr() const
   {
-    return attr(detail::__dev_attr<_Attr>());
+    return attr(__detail::__dev_attr<_Attr>());
   }
 
   //! @brief Retrieve string with the name of this device.
@@ -118,7 +122,7 @@ public:
     ::std::string __name(256, 0);
 
     // For some reason there is no separate name query in CUDA runtime
-    detail::driver::getName(__name.data(), __max_name_length, get());
+    __detail::driver::getName(__name.data(), __max_name_length, get());
     return __name;
   }
 
@@ -164,5 +168,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__DEVICE_DEVICE_REF

@@ -21,8 +21,14 @@
 
 #include <nvJitLink.h>
 #include <nvrtc.h>
+
 #include <util/errors.h>
 
+struct nvrtc_ptx
+{
+  std::unique_ptr<char[]> ptx{};
+  size_t size;
+};
 struct nvrtc_link_result
 {
   std::unique_ptr<char[]> data{};
@@ -64,6 +70,10 @@ struct nvrtc_compile
   const char** args;
   size_t num_args;
 };
+struct nvrtc_get_ptx
+{
+  nvrtc_ptx& ptx_ref;
+};
 struct nvrtc_program_cleanup
 {};
 struct nvrtc_ltoir
@@ -92,10 +102,8 @@ struct nvrtc_jitlink
   }
 };
 
-struct nvrtc_command_list_visitor
+struct nvrtc_compile_command_list_visitor
 {
-  nvrtc_jitlink& jitlink;
-  std::string_view program_name = "test";
   nvrtcProgram program{};
 
   template <typename T, typename... Tx>
@@ -135,16 +143,59 @@ struct nvrtc_command_list_visitor
     check(nvrtcGetLoweredName(program, gn.name.data(), &lowered_name));
     gn.lowered_name = lowered_name;
   }
+  void execute(nvrtc_get_ptx ptx)
+  {
+    std::size_t ptx_size{};
+    check(nvrtcGetPTXSize(program, &ptx_size));
+    ptx.ptx_ref.ptx = std::unique_ptr<char[]>{new char[ptx_size]};
+    check(nvrtcGetPTX(program, ptx.ptx_ref.ptx.get()));
+  }
   void execute(nvrtc_program_cleanup)
   {
+    nvrtcDestroyProgram(&program);
+  }
+};
+
+struct nvrtc_link_command_list_visitor
+{
+  nvrtc_jitlink& jitlink;
+  std::string_view program_name              = "test";
+  nvrtc_compile_command_list_visitor compile = {};
+
+  template <typename T, typename... Tx>
+  void operator()(T&& t, Tx&&... rest)
+  {
+    execute(std::forward<T>(t));
+    operator()(std::forward<Tx>(rest)...);
+  }
+  void operator()() {}
+
+  void execute(nvrtc_translation_unit p)
+  {
+    compile.execute(p);
+  }
+  void execute(nvrtc_expression e)
+  {
+    compile.execute(e);
+  }
+  void execute(nvrtc_compile c)
+  {
+    compile.execute(c);
+  }
+  void execute(nvrtc_get_name gn)
+  {
+    compile.execute(std::move(gn));
+  }
+  void execute(nvrtc_program_cleanup cl)
+  {
     std::size_t ltoir_size{};
-    check(nvrtcGetLTOIRSize(program, &ltoir_size));
+    check(nvrtcGetLTOIRSize(compile.program, &ltoir_size));
     std::unique_ptr<char[]> ltoir{new char[ltoir_size]};
-    check(nvrtcGetLTOIR(program, ltoir.get()));
+    check(nvrtcGetLTOIR(compile.program, ltoir.get()));
 
     check(nvJitLinkAddData(jitlink.handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, program_name.data()));
 
-    nvrtcDestroyProgram(&program);
+    compile.execute(cl);
   }
   void execute(nvrtc_ltoir lto)
   {
@@ -193,10 +244,10 @@ struct nvrtc_command_list_visitor
   }
 };
 
-template <typename... Tx, typename T>
-std::tuple<Tx..., T> nvrtc_command_list_append(std::tuple<Tx...>&& tup, T&& a)
+template <typename... Tx, typename... Ts>
+std::tuple<Tx..., Ts...> nvrtc_command_list_append(std::tuple<Tx...>&& tup, Ts&&... as)
 {
-  return std::tuple_cat(std::forward<std::tuple<Tx...>>(tup), std::make_tuple(std::forward<T>(a)));
+  return std::tuple_cat(std::forward<std::tuple<Tx...>>(tup), std::forward_as_tuple(std::forward<Ts>(as)...));
 }
 
 template <typename... Tx>
@@ -220,6 +271,17 @@ struct nvrtc_sm_compilation_unit
   {
     return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
   }
+  // Compile program to ptx
+  // This ends the chain, similarly to finalize_program
+  nvrtc_ptx compile_program_to_ptx(nvrtc_compile arg)
+  {
+    nvrtc_ptx ret;
+    nvrtc_get_ptx get_ptx{ret};
+    std::apply(nvrtc_compile_command_list_visitor{},
+               nvrtc_command_list_append(std::move(cl), arg, std::move(get_ptx), nvrtc_program_cleanup{}));
+
+    return ret;
+  }
 };
 
 template <typename... Tx>
@@ -232,7 +294,6 @@ struct nvrtc_sm_cleanup_tu
   {
     return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
   }
-  // Compile program
   nvrtc_sm_top_level<Tx..., nvrtc_program_cleanup> cleanup_program()
   {
     return {nvrtc_command_list_append(std::move(cl), nvrtc_program_cleanup{})};
@@ -267,7 +328,7 @@ struct nvrtc_sm_top_level
     nvrtc_link_result link_result{};
     nvrtc_jitlink_cleanup cleanup{link_result};
     nvrtc_jitlink jl(numLtoOpts, ltoOpts);
-    std::apply(nvrtc_command_list_visitor{jl}, nvrtc_command_list_append(std::move(cl), std::move(cleanup)));
+    std::apply(nvrtc_link_command_list_visitor{jl}, nvrtc_command_list_append(std::move(cl), std::move(cleanup)));
     return link_result;
   }
 };

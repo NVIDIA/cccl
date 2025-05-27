@@ -380,6 +380,8 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__container/*.cuh",
     "../../cudax/include/cuda/experimental/__device/*.cuh",
     "../../cudax/include/cuda/experimental/__event/*.cuh",
+    "../../cudax/include/cuda/experimental/graph.cuh",
+    "../../cudax/include/cuda/experimental/__graph/*.cuh",
     "../../cudax/include/cuda/experimental/__hierarchy/*.cuh",
     "../../cudax/include/cuda/experimental/__launch/*.cuh",
     "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
@@ -401,6 +403,10 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__stf/stream/interfaces/*.cuh",
 ]
 
+doxygen_exclude = [
+    "../../cudax/include/cuda/experimental/__graph/fwd.cuh",
+]
+
 doxygen_predefined = [
   "__device__",
   "__host__",
@@ -420,7 +426,6 @@ doxygen_predefined = [
   "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
-  "_CCCL_NODISCARD_FRIEND=",
   "_CCCL_STD_VER=2020",
   "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",
@@ -428,6 +433,8 @@ doxygen_predefined = [
   "_CUDA_VSTD=cuda::std",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
+  "_CCCL_CONSTEXPR_CXX20=constexpr",
+  "_CCCL_CONSTEXPR_CXX23=constexpr",
   "_CCCL_DIAG_PUSH=",
   "_CCCL_DIAG_POP=",
   "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
@@ -444,6 +451,7 @@ doxygen_predefined = [
   "_CCCL_TRIVIAL_HOST_API",
   "_CCCL_TRIVIAL_DEVICE_API",
   "_CUDAX_PUBLIC_API",
+  "_CUDAX_CONSTEXPR_FRIEND=friend",
   "_LIBCUDACXX_HAS_SPACESHIP_OPERATOR()",
   "_LIBCUDACXX_HIDE_FROM_ABI=inline",
   "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",

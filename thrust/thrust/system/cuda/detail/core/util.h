@@ -163,7 +163,7 @@ struct specialize_plan_impl_match<P, typelist<SM, SMs...>>
 #    define _THRUST_TUNING_ARCH sm52
 #  endif
 #else
-#  if (__CUDA_ARCH__ >= 600)
+#  if (_CCCL_PTX_ARCH() >= 600)
 #    define _THRUST_TUNING_ARCH sm60
 #  else
 #    define _THRUST_TUNING_ARCH sm52

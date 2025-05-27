@@ -17,8 +17,9 @@
 
 #include <cuda/barrier>
 
-#include "test_macros.h"
 #include <cooperative_groups.h>
+
+#include "test_macros.h"
 
 // Suppress warning about barrier in shared memory
 TEST_NV_DIAG_SUPPRESS(static_var_with_dynamic_init)

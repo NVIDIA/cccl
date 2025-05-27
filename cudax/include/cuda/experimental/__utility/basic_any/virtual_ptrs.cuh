@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -27,8 +27,7 @@
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 
-_CCCL_PUSH_MACROS
-#undef interface
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -61,12 +60,12 @@ struct __base_vptr
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   bool operator==(__base_vptr const& __other) const noexcept = default;
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
   {
     return __lhs.__vptr_ == __rhs.__vptr_;
   }
 
-  _CCCL_NODISCARD_FRIEND _CCCL_HOST_API constexpr auto operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
+  [[nodiscard]] _CCCL_HOST_API friend constexpr auto operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }
@@ -77,6 +76,6 @@ struct __base_vptr
 
 } // namespace cuda::experimental
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_PTRS_H

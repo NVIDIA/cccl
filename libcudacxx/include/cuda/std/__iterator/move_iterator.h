@@ -42,6 +42,8 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !defined(_CCCL_NO_CONCEPTS)
@@ -393,5 +395,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator<_Iter> make_move_iterator(_Ite
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ITERATOR_MOVE_ITERATOR_H

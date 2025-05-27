@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,8 +26,11 @@
 #include <cuda/std/__type_traits/is_swappable.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
+#include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
@@ -54,7 +57,7 @@ struct shared_resource
   //! dynamically allocated with \c new.
   //! @param __args The arguments to be passed to the \c _Resource constructor.
   template <class... _Args>
-  explicit shared_resource(_Args&&... __args)
+  explicit shared_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args)
       : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
   {}
 
@@ -184,7 +187,7 @@ struct shared_resource
   //! @param __lhs The first \c shared_resource
   //! @param __rhs The other \c shared_resource
   //! @return Checks whether the objects refer to resources that compare equal.
-  _CCCL_NODISCARD_FRIEND bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
+  [[nodiscard]] friend bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
   {
     if (__lhs.__control_block == __rhs.__control_block)
     {
@@ -203,7 +206,7 @@ struct shared_resource
   //! @param __lhs The first \c shared_resource
   //! @param __rhs The other \c shared_resource
   //! @return Checks whether the objects refer to resources that compare unequal.
-  _CCCL_NODISCARD_FRIEND bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
+  [[nodiscard]] friend bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
   {
     return !(__lhs == __rhs);
   }
@@ -216,7 +219,7 @@ struct shared_resource
   //! @brief Forwards the stateful properties
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND(has_property<_Resource, _Property>))
-  _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
+  [[nodiscard]] friend __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
   {
     return get_property(__self.__control_block->__resource, _Property{});
   }
@@ -250,9 +253,11 @@ template <class _Resource, class... _Args>
 auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
-  return shared_resource<_Resource>{_CUDA_VSTD::forward<_Args>(__args)...};
+  return shared_resource<_Resource>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
 }
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H

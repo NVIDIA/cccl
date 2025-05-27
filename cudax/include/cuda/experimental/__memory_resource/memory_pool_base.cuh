@@ -33,6 +33,8 @@
 
 #include <cuda/experimental/__stream/internal_streams.cuh>
 
+#include <cuda/std/__cccl/prologue.h>
+
 //! @file
 //! The \c __memory_pool_base class provides a wrapper around a `cudaMempool_t`.
 namespace cuda::experimental
@@ -145,11 +147,9 @@ private:
         case ::cudaSuccess:
           break;
         case ::cudaErrorInvalidValue:
-          ::cudaGetLastError(); // Clear CUDA error state
           ::cuda::__throw_cuda_error(
             ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on given device");
         default:
-          ::cudaGetLastError(); // Clear CUDA error state
           ::cuda::__throw_cuda_error(__status, "Failed to call cudaDeviceGetAttribute");
       }
     }
@@ -382,26 +382,26 @@ public:
   //! @brief Equality comparison with a \c cudaMemPool_t.
   //! @param __rhs A \c cudaMemPool_t.
   //! @returns true if the stored ``cudaMemPool_t`` is equal to \p __rhs.
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ == __rhs;
   }
 
 #if _CCCL_STD_VER <= 2017
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator==(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ == __lhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(__memory_pool_base const& __lhs, ::cudaMemPool_t __rhs) noexcept
   {
     return __lhs.__pool_handle_ != __rhs;
   }
 
   //! @copydoc __memory_pool_base::operator==(__memory_pool_base const&, ::cudaMemPool_t)
-  _CCCL_NODISCARD_FRIEND constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
+  [[nodiscard]] friend constexpr bool operator!=(::cudaMemPool_t __lhs, __memory_pool_base const& __rhs) noexcept
   {
     return __rhs.__pool_handle_ != __lhs;
   }
@@ -415,5 +415,7 @@ public:
 };
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _CUDAX__MEMORY_RESOURCE_MEMORY_POOL_BASE

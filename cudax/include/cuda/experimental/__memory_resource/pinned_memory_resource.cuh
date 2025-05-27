@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,6 +33,8 @@
 
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
 #include <cuda/experimental/__memory_resource/pinned_memory_pool.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 // Trigger a rebuild of the file
 
@@ -104,5 +106,7 @@ static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, host_access
 #endif // _CCCL_CUDACC_AT_LEAST(12, 6)
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_RESOURCE_H

@@ -25,7 +25,7 @@
 #include <cuda/std/__algorithm/min_element.h>
 #include <cuda/std/initializer_list>
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -57,6 +57,6 @@ template <class _Tp>
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-_CCCL_POP_MACROS
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___ALGORITHM_MIN_H

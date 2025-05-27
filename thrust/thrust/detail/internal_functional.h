@@ -38,6 +38,8 @@
 #include <thrust/iterator/iterator_traits.h>
 #include <thrust/tuple.h>
 
+#include <cuda/__iterator/discard_iterator.h>
+
 THRUST_NAMESPACE_BEGIN
 
 namespace detail
@@ -118,6 +120,13 @@ struct is_non_const_reference
                         ::cuda::std::disjunction<::cuda::std::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
 {};
 
+// We treat the discarding proxy of cuda::discard_iterator as a const reference, we discard the value
+template <typename T>
+inline constexpr bool is_discard_proxy = false;
+
+template <>
+inline constexpr bool is_discard_proxy<::cuda::discard_iterator::__discard_proxy> = true;
+
 template <typename T>
 struct is_tuple_of_iterator_references : thrust::detail::false_type
 {};
@@ -130,7 +139,8 @@ struct is_tuple_of_iterator_references<thrust::detail::tuple_of_iterator_referen
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
 struct enable_if_non_const_reference_or_tuple_of_iterator_references
-    : ::cuda::std::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value>
+    : ::cuda::std::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value
+                             || is_discard_proxy<T>>
 {};
 
 template <typename UnaryFunction>

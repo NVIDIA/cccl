@@ -25,6 +25,7 @@
 #include <cuda/std/__cccl/architecture.h>
 #include <cuda/std/__cccl/cuda_toolkit.h>
 #include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__cccl/os.h>
 #include <cuda/std/__cccl/preprocessor.h>
 
@@ -45,6 +46,7 @@
 #  define _CCCL_HAS_INT128() 1
 #endif
 
+// Fixme: replace the condition with (!_CCCL_DEVICE_COMPILATION())
 // FIXME: Enable this for clang-cuda in a followup
 #if !_CCCL_HAS_CUDA_COMPILER()
 #  undef _CCCL_HAS_LONG_DOUBLE
@@ -92,7 +94,7 @@
 #if !defined(CCCL_DISABLE_FLOAT128_SUPPORT) && _CCCL_OS(LINUX) && !_CCCL_ARCH(ARM64)
 #  if (defined(__CUDACC_RTC_FLOAT128__) || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__)) /*HOST COMPILERS*/
 #    if _CCCL_CUDA_COMPILER(NVHPC) \
-      || ((_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && __CUDA_ARCH__ >= 1000) /*DEVICE CODE*/
+      || ((_CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(CLANG)) && _CCCL_PTX_ARCH() >= 1000) /*DEVICE CODE*/
 #      undef _CCCL_HAS_FLOAT128
 #      define _CCCL_HAS_FLOAT128() 1
 #    endif // CUDA compiler

@@ -18,7 +18,9 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
+#include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/container.cuh>
+#include <cuda/experimental/launch.cuh>
 
 #include <algorithm>
 
@@ -37,7 +39,7 @@ struct policy_hub_for_alg
     using algo_policy =
       ::cuda::std::_If<Alg == Algorithm::prefetch,
                        cub::detail::transform::prefetch_policy_t<256>,
-                       cub::detail::transform::async_copy_policy_t<256>>;
+                       cub::detail::transform::async_copy_policy_t<256, 128>>;
   };
 };
 
@@ -98,12 +100,12 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   cudax::stream stream{};
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
 
-  cudax::async_device_buffer<type> a{env, num_items, cudax::uninit};
-  cudax::async_device_buffer<type> b{env, num_items, cudax::uninit};
+  cudax::async_device_buffer<type> a{env, num_items, cudax::no_init};
+  cudax::async_device_buffer<type> b{env, num_items, cudax::no_init};
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), a.begin(), a.end());
   thrust::sequence(thrust::cuda::par_nosync.on(stream.get()), b.begin(), b.end());
 
-  cudax::async_device_buffer<type> result{env, num_items, cudax::uninit};
+  cudax::async_device_buffer<type> result{env, num_items, cudax::no_init};
 
   transform_many_with_alg<alg>(
     ::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<type>{});
@@ -125,4 +127,40 @@ C2H_TEST("DeviceTransform::Transform cudax::async_device_buffer", "[device][devi
   thrust::host_vector<type> reference_h(num_items);
   std::transform(a_h.begin(), a_h.end(), b_h.begin(), reference_h.begin(), std::plus<type>{});
   REQUIRE(reference_h == result_h);
+}
+
+struct add_kernel
+{
+  template <typename T>
+  __device__ void operator()(cuda::std::span<T> a, cuda::std::span<const T> b)
+  {
+    for (int i = cudax::hierarchy::rank(cudax::thread, cudax::grid); i < a.size();
+         i += cudax::hierarchy::count(cudax::thread, cudax::grid))
+    {
+      a[i] += b[i];
+    }
+  }
+};
+
+C2H_TEST("cudax::async_buffer launch transform", "[container][async_buffer]")
+{
+  cudax::stream stream{};
+  cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
+
+  const cuda::std::array array = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+  cudax::async_device_buffer<int> a{env, array};
+  const cudax::async_device_buffer<int> b{env, a.size(), 1};
+
+  cudax::launch(stream, cudax::make_config(cudax::grid_dims<1>, cudax::block_dims<32>), add_kernel{}, a, b);
+
+  std::vector<int> host_result(a.size());
+  cudax::copy_bytes(stream, a, host_result);
+
+  stream.sync();
+
+  for (size_t i = 0; i < array.size(); ++i)
+  {
+    REQUIRE(host_result[i] == array[i] + 1);
+  }
 }

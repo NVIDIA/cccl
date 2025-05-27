@@ -36,6 +36,8 @@
 #  include <cuda/std/cstddef>
 #  include <cuda/stream_ref>
 
+#  include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 
 union _AnyResourceStorage
@@ -581,7 +583,7 @@ public:
   //! @param __rhs The second \c basic_resource_ref
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! the result of that equality comparison. Otherwise returns false.
-  _CCCL_NODISCARD_FRIEND bool operator==(const basic_resource_ref& __lhs, const basic_resource_ref& __rhs)
+  [[nodiscard]] friend bool operator==(const basic_resource_ref& __lhs, const basic_resource_ref& __rhs)
   {
     // BUGBUG: comparing function pointers like this can lead to false negatives:
     return (__lhs.__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
@@ -604,7 +606,7 @@ public:
   //! @param __rhs The second \c basic_resource_ref
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! the inverse result of that equality comparison. Otherwise returns true.
-  _CCCL_NODISCARD_FRIEND bool operator!=(const basic_resource_ref& __lhs, const basic_resource_ref& __rhs)
+  [[nodiscard]] friend bool operator!=(const basic_resource_ref& __lhs, const basic_resource_ref& __rhs)
   {
     return !(__lhs == __rhs);
   }
@@ -626,7 +628,7 @@ public:
   //! @brief Forwards the stateful properties
   _CCCL_TEMPLATE(class _Property)
   _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
-  _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
+  [[nodiscard]] friend __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
   {
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);
   }
@@ -643,6 +645,8 @@ template <class... _Properties>
 using async_resource_ref = basic_resource_ref<_AllocType::_Async, _Properties...>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
+
+#  include <cuda/std/__cccl/epilogue.h>
 
 #endif // LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 

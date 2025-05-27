@@ -24,6 +24,8 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if defined(_CCCL_BUILTIN_IS_UNION) && !defined(_LIBCUDACXX_USE_IS_UNION_FALLBACK)
@@ -49,5 +51,7 @@ inline constexpr bool is_union_v = is_union<_Tp>::value;
 #endif // defined(_CCCL_BUILTIN_IS_UNION) && !defined(_LIBCUDACXX_USE_IS_UNION_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_IS_UNION_H

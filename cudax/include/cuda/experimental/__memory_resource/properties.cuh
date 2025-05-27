@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,6 +24,8 @@
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 
+#include <cuda/std/__cccl/prologue.h>
+
 namespace cuda::experimental
 {
 
@@ -31,5 +33,7 @@ using ::cuda::mr::device_accessible;
 using ::cuda::mr::host_accessible;
 
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDAX__MEMORY_RESOURCE_PROPERTIES_CUH

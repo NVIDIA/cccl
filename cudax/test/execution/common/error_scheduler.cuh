@@ -35,7 +35,7 @@ private:
   };
 
   template <class Rcvr>
-  struct opstate_t : cudax_async::__immovable
+  struct opstate_t : cudax::__immovable
   {
     using operation_state_concept = cudax_async::operation_state_t;
 
@@ -90,6 +90,8 @@ private:
 
 public:
   using scheduler_concept = cudax_async::scheduler_t;
+
+  _CCCL_HIDE_FROM_ABI error_scheduler() = default;
 
   _CCCL_HOST_DEVICE explicit error_scheduler(Error err)
       : _err(static_cast<Error&&>(err))

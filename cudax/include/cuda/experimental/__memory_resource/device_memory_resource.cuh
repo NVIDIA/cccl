@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,6 +33,8 @@
 
 #include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
 #include <cuda/experimental/__memory_resource/memory_resource_base.cuh>
+
+#include <cuda/std/__cccl/prologue.h>
 
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
@@ -108,5 +110,7 @@ public:
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE

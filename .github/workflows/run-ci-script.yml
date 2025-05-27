@@ -1,0 +1,133 @@
+name: Run CI Script
+
+on:
+  workflow_call:
+    inputs:
+      script-command:
+        required: true
+        type: string
+        description: 'The command to run in the CI script'
+      python-version:
+        required: true
+        type: string
+        description: 'Python version to use'
+      needs-artifact:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether to download the wheel artifact'
+      artifact-name:
+        required: false
+        type: string
+        description: 'Name of the artifact to download'
+      artifact-path:
+        required: false
+        type: string
+        description: 'Path to download the artifact to'
+      upload-artifact:
+        required: false
+        type: boolean
+        default: false
+        description: 'Whether to upload the wheel artifact'
+      upload-artifact-name:
+        required: false
+        type: string
+        description: 'Name for the uploaded artifact'
+      upload-artifact-path:
+        required: false
+        type: string
+        description: 'Path to upload the artifact from'
+      runner:
+        required: false
+        type: string
+        default: 'ubuntu-latest'
+        description: 'The runner to use for this job'
+
+jobs:
+  run-script:
+    name: Run CI Script
+    runs-on: ${{ inputs.runner }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Get AWS credentials for sccache bucket
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12 hours
+
+      - name: Download wheel artifact
+        if: ${{ inputs.needs-artifact }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact-name }}
+          path: ${{ inputs.artifact-path }}
+          continue-on-error: true
+
+      - name: Create CI script
+        run: |
+          cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
+          #! /usr/bin/env bash
+          set -eo pipefail
+
+          ${{ inputs.script-command }};
+          EOF
+
+          chmod +x "$RUNNER_TEMP/ci.sh"
+
+          mkdir -p .aws
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=$AWS_ACCESS_KEY_ID
+          aws_session_token=$AWS_SESSION_TOKEN
+          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
+      - name: Run script
+        env:
+          PYTHON_VERSION: ${{ inputs.python-version }}
+        run: |
+          ${{github.workspace}}/.devcontainer/launch.sh \
+            --docker \
+            --cuda 12.9 \
+            --host gcc13 \
+            --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
+            --env "CI=$CI" \
+            --env "AWS_ROLE_ARN=" \
+            --env "SCCACHE_IDLE_TIMEOUT=0" \
+            --env "GITHUB_ENV=$GITHUB_ENV" \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_PATH=$GITHUB_PATH" \
+            --env "GITHUB_OUTPUT=$GITHUB_OUTPUT" \
+            --env "GITHUB_ACTIONS=$GITHUB_ACTIONS" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_WORKSPACE=$GITHUB_WORKSPACE" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --env "GITHUB_STEP_SUMMARY=$GITHUB_STEP_SUMMARY" \
+            --env "HOST_WORKSPACE=${{github.workspace}}/" \
+            -- /ci.sh
+
+      - name: Upload wheel artifact
+        if: ${{ inputs.upload-artifact }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.upload-artifact-name }}
+          path: ${{ inputs.upload-artifact-path }}
+          retention-days: 1
+        continue-on-error: true

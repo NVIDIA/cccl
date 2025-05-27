@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,21 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
+
+#include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
 {
-namespace detail
-{
-// This is a helper type that can be used to ignore function arguments.
-struct [[maybe_unused]] __ignore
-{
-  _CCCL_HIDE_FROM_ABI __ignore() = default;
-
-  template <typename... _Args>
-  _CCCL_HOST_DEVICE constexpr __ignore(_Args&&...) noexcept
-  {}
-};
+// NOLINTBEGIN(misc-unused-using-decls)
+using _CUDA_VSTD::declval;
+// NOLINTEND(misc-unused-using-decls)
 
 // Classes can inherit from this type to become immovable.
 struct __immovable
@@ -50,24 +45,25 @@ struct _CCCL_DECLSPEC_EMPTY_BASES __inherit : _Types...
 {};
 
 template <class _Type, template <class...> class _Template>
-inline constexpr bool __is_specialization_of = false;
+inline constexpr bool __is_specialization_of_v = false;
 
 template <template <class...> class _Template, class... _Args>
-inline constexpr bool __is_specialization_of<_Template<_Args...>, _Template> = true;
-
-} // namespace detail
+inline constexpr bool __is_specialization_of_v<_Template<_Args...>, _Template> = true;
 
 template <class _Tp>
 using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
 
-using _CUDA_VSTD::declval;
-
-struct uninit_t
+struct no_init_t
 {
-  explicit uninit_t() = default;
+  explicit no_init_t() = default;
 };
 
-_CCCL_GLOBAL_CONSTANT uninit_t uninit{};
+_CCCL_GLOBAL_CONSTANT no_init_t no_init{};
+
+using uninit_t CCCL_DEPRECATED_BECAUSE("Use cuda::experimental::no_init_t instead") = no_init_t;
+_CCCL_GLOBAL_CONSTANT no_init_t uninit{};
 } // namespace cuda::experimental
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif // __CUDAX_DETAIL_UTILITY_H

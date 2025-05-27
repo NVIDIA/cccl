@@ -27,6 +27,8 @@
 #include <cuda/barrier>
 #include <cuda/std/chrono>
 
+#include <cuda/std/__cccl/prologue.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // Forward declaration in barrier of pipeline
@@ -111,10 +113,10 @@ public:
     NV_IF_TARGET(
       NV_IS_DEVICE,
       const uint32_t __match_mask =
-        __match_any_sync(__activemask(), reinterpret_cast<uintptr_t>(__shared_state_get_refcount()));
-      const uint32_t __elected_id = __ffs(__match_mask) - 1;
+        ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(__shared_state_get_refcount()));
+      const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
       __elected                   = (__pipeline_asm_helper::__lane_id() == __elected_id);
-      __sub_count                 = __popc(__match_mask);
+      __sub_count                 = ::__popc(__match_mask);
       , __elected = true;
       __sub_count = 1;)
     bool __released = false;
@@ -301,10 +303,10 @@ make_pipeline(const _Group& __group, pipeline_shared_state<_Scope, _Stages_count
     NV_IF_TARGET(
       NV_IS_DEVICE,
       const uint32_t __match_mask =
-        __match_any_sync(__activemask(), reinterpret_cast<uintptr_t>(&__shared_state->__refcount));
-      const uint32_t __elected_id = __ffs(__match_mask) - 1;
+        ::__match_any_sync(::__activemask(), reinterpret_cast<uintptr_t>(&__shared_state->__refcount));
+      const uint32_t __elected_id = ::__ffs(__match_mask) - 1;
       __elected                   = (__pipeline_asm_helper::__lane_id() == __elected_id);
-      __add_count                 = __popc(__match_mask);
+      __add_count                 = ::__popc(__match_mask);
       , __elected = true;
       __add_count = 1;)
     if (__elected)
@@ -373,7 +375,7 @@ public:
       if (__head == __tail) { return; }
 
       const uint8_t __prior = __head - __tail - 1;
-      device::__pipeline_consumer_wait(*this, __prior);
+      _CUDA_DEVICE::__pipeline_consumer_wait(*this, __prior);
       ++__tail;)
   }
 
@@ -431,31 +433,31 @@ _CCCL_DEVICE inline void __pipeline_consumer_wait(pipeline<thread_scope_thread>&
   switch (__prior)
   {
     case 0:
-      device::__pipeline_consumer_wait<0>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<0>(__pipeline);
       break;
     case 1:
-      device::__pipeline_consumer_wait<1>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<1>(__pipeline);
       break;
     case 2:
-      device::__pipeline_consumer_wait<2>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<2>(__pipeline);
       break;
     case 3:
-      device::__pipeline_consumer_wait<3>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<3>(__pipeline);
       break;
     case 4:
-      device::__pipeline_consumer_wait<4>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<4>(__pipeline);
       break;
     case 5:
-      device::__pipeline_consumer_wait<5>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<5>(__pipeline);
       break;
     case 6:
-      device::__pipeline_consumer_wait<6>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<6>(__pipeline);
       break;
     case 7:
-      device::__pipeline_consumer_wait<7>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<7>(__pipeline);
       break;
     default:
-      device::__pipeline_consumer_wait<8>(__pipeline);
+      _CUDA_DEVICE::__pipeline_consumer_wait<8>(__pipeline);
       break;
   }
 }
@@ -472,7 +474,7 @@ _LIBCUDACXX_HIDE_FROM_ABI pipeline<thread_scope_thread> make_pipeline()
 template <uint8_t _Prior>
 _LIBCUDACXX_HIDE_FROM_ABI void pipeline_consumer_wait_prior(pipeline<thread_scope_thread>& __pipeline)
 {
-  NV_IF_TARGET(NV_PROVIDES_SM_80, device::__pipeline_consumer_wait<_Prior>(__pipeline);
+  NV_IF_TARGET(NV_PROVIDES_SM_80, _CUDA_DEVICE::__pipeline_consumer_wait<_Prior>(__pipeline);
                __pipeline.__tail = __pipeline.__head - _Prior;)
 }
 
@@ -506,7 +508,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_pipeline(
   char const* __src_char = reinterpret_cast<char const*>(__source);
 
   // 2. Issue actual copy instructions.
-  auto __cm = __dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions);
+  auto __cm = ::cuda::__dispatch_memcpy_async<__align>(__group, __dest_char, __src_char, __size, __allowed_completions);
 
   // 3. No need to synchronize with copy instructions.
   return __memcpy_completion_impl::__defer(__cm, __group, __size, __pipeline);
@@ -516,7 +518,7 @@ template <typename _Group, class _Type, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group, _Type* __destination, _Type const* __source, std::size_t __size, pipeline<_Scope>& __pipeline)
 {
-  return __memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
+  return ::cuda::__memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
 }
 
 template <typename _Group,
@@ -531,21 +533,21 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   pipeline<_Scope>& __pipeline)
 {
-  return __memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
+  return ::cuda::__memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
 }
 
 template <class _Type, typename _Size, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(_Type* __destination, _Type const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
-  return __memcpy_async_pipeline(__single_thread_group{}, __destination, __source, __size, __pipeline);
+  return ::cuda::__memcpy_async_pipeline(__single_thread_group{}, __destination, __source, __size, __pipeline);
 }
 
 template <typename _Group, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group, void* __destination, void const* __source, std::size_t __size, pipeline<_Scope>& __pipeline)
 {
-  return __memcpy_async_pipeline(
+  return ::cuda::__memcpy_async_pipeline(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __pipeline);
 }
 
@@ -557,7 +559,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   pipeline<_Scope>& __pipeline)
 {
-  return __memcpy_async_pipeline(
+  return ::cuda::__memcpy_async_pipeline(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __pipeline);
 }
 
@@ -565,7 +567,7 @@ template <typename _Size, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(void* __destination, void const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
-  return __memcpy_async_pipeline(
+  return ::cuda::__memcpy_async_pipeline(
     __single_thread_group{},
     reinterpret_cast<char*>(__destination),
     reinterpret_cast<char const*>(__source),
@@ -574,5 +576,7 @@ memcpy_async(void* __destination, void const* __source, _Size __size, pipeline<_
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+#include <cuda/std/__cccl/epilogue.h>
 
 #endif //_CUDA_PIPELINE
