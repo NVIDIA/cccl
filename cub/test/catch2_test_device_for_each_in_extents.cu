@@ -183,16 +183,14 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
 #endif // !_CCCL_COMPILER(MSVC)
 }
 
-#if TEST_LAUNCH == 0
-
 struct dynamic_policy_t
 {
-  struct for_policy_t
+  struct for_policy_t : cub::ChainedPolicy<500, for_policy_t, for_policy_t>
   {
     static constexpr int block_threads    = 0;
     static constexpr int items_per_thread = 1;
   };
-  // using MaxPolicy = for_policy_t;
+  using MaxPolicy = for_policy_t;
 };
 
 C2H_TEST("DeviceForEachInExtents Dynamic Grid Config", "[ForEachInExtents][dynamic_grid]", index_types_dynamic)
@@ -201,25 +199,23 @@ C2H_TEST("DeviceForEachInExtents Dynamic Grid Config", "[ForEachInExtents][dynam
   using index_type   = c2h::get<0, TestType>;
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
+  using ext_t        = cuda::std::dextents<index_type, 3>;
   auto X             = GENERATE_COPY(take(3, random(2, 10)));
   auto Y             = GENERATE_COPY(take(3, random(2, 10)));
   auto Z             = GENERATE_COPY(take(3, random(2, 10)));
-  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
+  ext_t ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
-  cub::detail::for_each_in_extents::dispatch_t<cuda::std::dextents<index_type, 3>, store_op_t> dispatch{
-    ext, store_op_t{d_output_raw}, nullptr};
-  [[maybe_unused]] auto ret = dispatch.template Invoke<dynamic_policy_t>();
-  REQUIRE(dispatch.template Invoke<dynamic_policy_t>() == cudaSuccess);
+  using dispatch_t          = cub::detail::for_each_in_extents::dispatch_t<ext_t, store_op_t, dynamic_policy_t>;
+  [[maybe_unused]] auto ret = dispatch_t::dispatch(ext, store_op_t{d_output_raw}, nullptr);
+  REQUIRE(ret == cudaSuccess);
 
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
-#  if !_CCCL_COMPILER(MSVC)
+#if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
-#  endif // !_CCCL_COMPILER(MSVC)
+#endif // !_CCCL_COMPILER(MSVC)
 }
-
-#endif // TEST_LAUNCH == 0
