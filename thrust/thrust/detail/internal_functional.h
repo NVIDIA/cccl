@@ -63,6 +63,12 @@ struct equal_to_value
 {
   T2 rhs;
 
+  // need this ctor for nvcc 12.0 + clang14 to make copy ctor of not_fn_t<equal_to_value> work. Check test:
+  // thrust.cpp.cuda.cpp20.test.remove.
+  _CCCL_HOST_DEVICE equal_to_value(const T2& rhs)
+      : rhs(rhs)
+  {}
+
   template <typename T1>
   _CCCL_HOST_DEVICE bool operator()(const T1& lhs) const
   {
