@@ -26,6 +26,7 @@
 
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -71,6 +72,9 @@ struct narrowing_error : ::std::runtime_error
 template <class _To, class _From>
 [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _To narrow(_From __from)
 {
+  static_assert(_CUDA_VSTD::is_constructible_v<_From, _To>);
+  static_assert(_CUDA_VSTD::is_constructible_v<_To, _From>);
+
   const auto __converted = static_cast<_To>(__from);
   if (static_cast<_From>(__converted) != __from)
   {
