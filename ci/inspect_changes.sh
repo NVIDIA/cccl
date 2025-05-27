@@ -262,7 +262,7 @@ main() {
   for subproject in "${subprojects[@]}"; do
     add_dependencies ${subproject}
     local dirty=$?
-    declare ${subproject^^}_DIRTY=${dirty}
+    declare ${subproject^^}_OR_DEPS_DIRTY=${dirty}
     checkmark="$(get_checkmark ${dirty})"
     echo "| ${checkmark} | ${project_names[$subproject]}" | tee_to_step_summary
   done
@@ -271,7 +271,7 @@ main() {
 
   declare -a dirty_subprojects=()
   for subproject in "${subprojects[@]}"; do
-    var_name="${subproject^^}_DIRTY"
+    var_name="${subproject^^}_OR_DEPS_DIRTY"
     if [[ ${!var_name} -ne 0 ]]; then
       dirty_subprojects+=("$subproject")
     fi
