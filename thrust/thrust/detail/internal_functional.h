@@ -213,6 +213,20 @@ struct fill_functor
 {
   T exemplar;
 
+  // explicit declaration is needed to avoid an exec check warning
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE fill_functor(const T& _exemplar)
+      : exemplar(_exemplar)
+  {}
+
+  // explicit declaration is needed to avoid an exec check warning
+  _CCCL_EXEC_CHECK_DISABLE
+  fill_functor(const fill_functor& other) = default;
+
+  // explicit declaration is needed to avoid an exec check warning
+  _CCCL_EXEC_CHECK_DISABLE
+  ~fill_functor() = default;
+
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE T operator()() const
   {
@@ -224,6 +238,20 @@ template <typename T>
 struct uninitialized_fill_functor
 {
   T exemplar;
+
+  // explicit declaration is needed to avoid an exec check warning
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE uninitialized_fill_functor(const T& x)
+      : exemplar(x)
+  {}
+
+  // explicit declaration is needed to avoid an exec check warning
+  _CCCL_EXEC_CHECK_DISABLE
+  uninitialized_fill_functor(const uninitialized_fill_functor& other) = default;
+
+  // explicit declaration is needed to avoid an exec check warning
+  _CCCL_EXEC_CHECK_DISABLE
+  ~uninitialized_fill_functor() = default;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void operator()(T& x)
