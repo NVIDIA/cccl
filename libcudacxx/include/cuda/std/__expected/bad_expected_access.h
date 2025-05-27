@@ -26,7 +26,7 @@
 #include <nv/target>
 
 #if _CCCL_HAS_EXCEPTIONS()
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected
 #    include <expected>
 #  else // ^^^ __cpp_lib_expected ^^^ / vvv !__cpp_lib_expected vvv
 #    include <exception>
@@ -39,7 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_HAS_EXCEPTIONS()
 
-#  ifdef __cpp_lib_expected
+#  if __cpp_lib_expected
 
 using ::std::bad_expected_access;
 
