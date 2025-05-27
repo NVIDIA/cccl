@@ -38,7 +38,7 @@ extern "C" _CCCL_DEVICE void __cuda__match_all_sync_is_not_supported_before_SM_7
 template <typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
 [[nodiscard]] _CCCL_HIDE_FROM_ABI _CCCL_DEVICE bool warp_match_all(const _Tp& __data, uint32_t __lane_mask = 0xFFFFFFFF)
 {
-  _CCCL_ASSERT((__lane_mask & __activemask()) == __lane_mask, "lane mask must be a subset of the active mask");
+  _CCCL_ASSERT((__lane_mask & ::__activemask()) == __lane_mask, "lane mask must be a subset of the active mask");
   _CCCL_ASSERT(__lane_mask != 0, "lane_mask must be non-zero");
   constexpr int __ratio = ::cuda::ceil_div(sizeof(_Up), sizeof(uint32_t));
   uint32_t __array[__ratio];
