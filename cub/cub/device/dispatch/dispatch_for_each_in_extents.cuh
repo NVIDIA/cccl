@@ -164,7 +164,7 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(_CUDA_VSTD::bool_constant<StaticBlockSize> is_static_block_size) const
   {
-    return InvokeVariadic<ActivePolicyT>(v, seq);
+    return InvokeVariadic<ActivePolicyT>(is_static_block_size, seq);
   }
 
   template <typename ActivePolicyT>
