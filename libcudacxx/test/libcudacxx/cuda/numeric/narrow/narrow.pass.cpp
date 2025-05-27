@@ -25,7 +25,7 @@
 
 struct my_float
 {
-  _CCCL_HOST_DEVICE my_float(float value)
+  explicit _CCCL_HOST_DEVICE my_float(float value)
       : value(value)
   {}
 
