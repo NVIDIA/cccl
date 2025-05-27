@@ -55,7 +55,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [iterator.concept.readable]
 template <class _In>
@@ -255,7 +255,7 @@ concept indirectly_copyable_storable =
 // Note: indirectly_swappable is located in iter_swap.h to prevent a dependency cycle
 // (both iter_swap and indirectly_swappable require indirectly_readable).
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 // [iterator.concept.readable]
 template <class _In>
@@ -599,7 +599,7 @@ inline constexpr bool __has_iter_concept = false;
 template <class _Ip>
 inline constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
