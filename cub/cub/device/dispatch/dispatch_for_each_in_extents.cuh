@@ -129,16 +129,16 @@ public:
     return cudaSuccess;
   }
 
-  template <typename ActivePolicyT, size_t... Ranks>
+  template <typename, size_t... Ranks>
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   InvokeVariadic(_CUDA_VSTD::false_type, _CUDA_VSTD::index_sequence<Ranks...>) const
   {
-    auto sub_sizes_div_array            = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    auto extents_div_array              = cub::detail::extents_fast_div_mod(_ext, seq);
-    constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
+    auto sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    auto extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
+    int items_per_thread     = 2;
+    int block_threads        = 256;
     auto kernel =
       cub::detail::for_each_in_extents::dynamic_kernel<OpType, ExtentsType, decltype(sub_sizes_div_array), Ranks...>;
-    int block_threads  = 256;
     cudaError_t status = cudaSuccess;
     NV_IF_TARGET(NV_IS_HOST,
                  (int _{}; //
