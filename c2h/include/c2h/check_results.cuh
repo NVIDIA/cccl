@@ -27,6 +27,7 @@
 #pragma once
 
 #include <cub/detail/type_traits.cuh>
+#include <cub/util_device.cuh>
 
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
@@ -39,18 +40,15 @@ template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
 {
   using namespace cub::detail;
-  int device_id                = 0;
-  int compute_capability_major = 0;
-  int compute_capability_minor = 0;
+  int device_id = 0;
   CubDebugExit(cudaGetDevice(&device_id));
-  CubDebugExit(cudaDeviceGetAttribute(&compute_capability_major, cudaDevAttrComputeCapabilityMajor, device_id));
-  CubDebugExit(cudaDeviceGetAttribute(&compute_capability_minor, cudaDevAttrComputeCapabilityMinor, device_id));
-  int compute_capability = 10 * compute_capability_major + compute_capability_minor;
-  if (compute_capability < 80 && is_any_bfloat16_v<T>)
+  int ptx_version = 0;
+  CubDebugExit(CUB_NS_QUALIFIER::PtxVersion(ptx_version, device_id));
+  if (ptx_version < 80 && is_any_bfloat16_v<T>)
   {
     return;
   }
-  if (compute_capability < 53 && is_any_half_v<T>)
+  if (ptx_version < 53 && is_any_half_v<T>)
   {
     return;
   }
