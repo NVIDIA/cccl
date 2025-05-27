@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_THREAD
-#define __CUDAX_ASYNC_DETAIL_THREAD
+#ifndef __CUDAX_EXECUTION_THREAD
+#define __CUDAX_EXECUTION_THREAD
 
 #include <cuda/std/detail/__config>
 
@@ -84,4 +84,4 @@ inline _CCCL_API void __this_thread_yield() noexcept
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_THREAD

@@ -16,7 +16,7 @@
 
 #undef interface
 
-using immovable = cudax::detail::__immovable;
+using immovable = cudax::__immovable;
 
 struct TestCounters
 {

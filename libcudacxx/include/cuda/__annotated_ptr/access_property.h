@@ -52,27 +52,27 @@ public:
   struct persisting
   {
 #if _CCCL_HAS_CTK()
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator ::cudaAccessProperty() const noexcept
     {
-      return cudaAccessProperty::cudaAccessPropertyPersisting;
+      return ::cudaAccessProperty::cudaAccessPropertyPersisting;
     }
 #endif // _CCCL_HAS_CTK()
   };
   struct streaming
   {
 #if _CCCL_HAS_CTK()
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator ::cudaAccessProperty() const noexcept
     {
-      return cudaAccessProperty::cudaAccessPropertyStreaming;
+      return ::cudaAccessProperty::cudaAccessPropertyStreaming;
     }
 #endif // _CCCL_HAS_CTK()
   };
   struct normal
   {
 #if _CCCL_HAS_CTK()
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator cudaAccessProperty() const noexcept
+    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr operator ::cudaAccessProperty() const noexcept
     {
-      return cudaAccessProperty::cudaAccessPropertyNormal;
+      return ::cudaAccessProperty::cudaAccessPropertyNormal;
     }
 #endif // _CCCL_HAS_CTK()
   };

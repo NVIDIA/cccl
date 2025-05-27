@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#ifndef _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#define _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__barrier/aligned_size.h>
@@ -57,21 +57,22 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
 
-  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-  _CCCL_ASSERT(__isShared(__dest), "dest must point to shared memory.");
-  _CCCL_ASSERT(__isGlobal(__src), "src must point to global memory.");
+  _CCCL_ASSERT(::__isShared(_CUDA_DEVICE::barrier_native_handle(__b)),
+               "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(::__isShared(__dest), "dest must point to shared memory.");
+  _CCCL_ASSERT(::__isGlobal(__src), "src must point to global memory.");
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (
-      if (__isShared(__dest) && __isGlobal(__src)) {
+      if (::__isShared(__dest) && ::__isGlobal(__src)) {
         _CUDA_VPTX::cp_async_bulk(
           _CUDA_VPTX::space_cluster,
           _CUDA_VPTX::space_global,
           __dest,
           __src,
           static_cast<uint32_t>(__size),
-          barrier_native_handle(__b));
+          _CUDA_DEVICE::barrier_native_handle(__b));
       } else {
         // memcpy_async_tx only supports copying from global to shared
         // or from shared to remote cluster dsmem. To copy to remote
@@ -79,7 +80,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         // is not yet implemented. So we trap in this case as well.
         _CCCL_UNREACHABLE();
       }),
-    (__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
+    (_CUDA_DEVICE::__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
 
   return async_contract_fulfillment::async;
 }
@@ -89,6 +90,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 #    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILATION()
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#endif // _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_

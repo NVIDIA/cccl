@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.06-cpp-nvhpc25.3",
+  "image": "rapidsai/devcontainers:25.08-cpp-nvhpc25.5",
   "hostRequirements": {
     "gpu": "optional"
   },
@@ -14,11 +14,11 @@
     "SCCACHE_BUCKET": "rapids-sccache-devs",
     "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "${containerWorkspaceFolder}/.cache/._bash_history",
-    "DEVCONTAINER_NAME": "cuda12.8-nvhpc25.3",
-    "CCCL_CUDA_VERSION": "12.8",
+    "DEVCONTAINER_NAME": "cuda12.9-nvhpc25.5",
+    "CCCL_CUDA_VERSION": "12.9",
     "CCCL_HOST_COMPILER": "nvhpc",
-    "CCCL_HOST_COMPILER_VERSION": "25.3",
-    "CCCL_BUILD_INFIX": "cuda12.8-nvhpc25.3",
+    "CCCL_HOST_COMPILER_VERSION": "25.5",
+    "CCCL_BUILD_INFIX": "cuda12.9-nvhpc25.5",
     "CCCL_CUDA_EXTENDED": "false",
     "HOST_WORKSPACE": "${localWorkspaceFolder}"
   },
@@ -52,10 +52,5 @@
       }
     }
   },
-  "name": "cuda12.8-nvhpc25.3",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
-      "moby": false
-    }
-  }
+  "name": "cuda12.9-nvhpc25.5"
 }

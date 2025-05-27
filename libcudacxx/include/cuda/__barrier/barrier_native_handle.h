@@ -25,7 +25,7 @@
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/cstdint>
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/std/__cccl/prologue.h>
 
@@ -40,6 +40,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 #endif // _CUDA___BARRIER_BARRIER_NATIVE_HANDLE_H

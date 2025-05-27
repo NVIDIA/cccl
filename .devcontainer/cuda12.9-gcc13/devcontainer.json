@@ -1,6 +1,6 @@
 {
   "shutdownAction": "stopContainer",
-  "image": "rapidsai/devcontainers:25.06-cpp-gcc13-cuda12.9",
+  "image": "rapidsai/devcontainers:25.08-cpp-gcc13-cuda12.9",
   "hostRequirements": {
     "gpu": "optional"
   },
@@ -52,10 +52,5 @@
       }
     }
   },
-  "name": "cuda12.9-gcc13",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {
-      "moby": false
-    }
-  }
+  "name": "cuda12.9-gcc13"
 }

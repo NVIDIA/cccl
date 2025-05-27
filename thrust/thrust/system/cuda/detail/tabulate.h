@@ -46,39 +46,28 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace __tabulate
 {
-
-template <class Iterator, class TabulateOp, class Size>
+template <class Iterator, class TabulateOp>
 struct functor
 {
   Iterator items;
   TabulateOp op;
 
-  _CCCL_HOST_DEVICE functor(Iterator items_, TabulateOp op_)
-      : items(items_)
-      , op(op_)
-  {}
-
+  template <typename Size>
   void _CCCL_DEVICE operator()(Size idx)
   {
     items[idx] = op(idx);
   }
-}; // struct functor
-
+};
 } // namespace __tabulate
 
 template <class Derived, class Iterator, class TabulateOp>
 void _CCCL_HOST_DEVICE tabulate(execution_policy<Derived>& policy, Iterator first, Iterator last, TabulateOp tabulate_op)
 {
   using size_type = thrust::detail::it_difference_t<Iterator>;
-
   size_type count = ::cuda::std::distance(first, last);
-
-  using functor_t = __tabulate::functor<Iterator, TabulateOp, size_type>;
-
-  cuda_cub::parallel_for(policy, functor_t(first, tabulate_op), count);
+  cuda_cub::parallel_for(policy, __tabulate::functor<Iterator, TabulateOp>{first, tabulate_op}, count);
 }
 
 } // namespace cuda_cub

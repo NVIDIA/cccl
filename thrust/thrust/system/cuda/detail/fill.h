@@ -44,10 +44,8 @@
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
-
 namespace __fill
 {
-
 // fill functor
 template <class Iterator, class T>
 struct functor
@@ -55,26 +53,19 @@ struct functor
   Iterator it;
   T value;
 
-  THRUST_FUNCTION
-  functor(Iterator it, T value)
-      : it(it)
-      , value(value)
-  {}
-
   template <class Size>
   THRUST_DEVICE_FUNCTION void operator()(Size idx)
   {
     it[idx] = value;
   }
 }; // struct functor
-
 } // namespace __fill
 
 template <class Derived, class OutputIterator, class Size, class T>
 OutputIterator _CCCL_HOST_DEVICE
 fill_n(execution_policy<Derived>& policy, OutputIterator first, Size count, const T& value)
 {
-  cuda_cub::parallel_for(policy, __fill::functor<OutputIterator, T>(first, value), count);
+  cuda_cub::parallel_for(policy, __fill::functor<OutputIterator, T>{first, value}, count);
 
   return first + count;
 } // func fill_n
