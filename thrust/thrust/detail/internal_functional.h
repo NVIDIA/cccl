@@ -103,7 +103,8 @@ inline constexpr bool is_tuple_of_iterator_references_v<tuple_of_iterator_refere
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
 using enable_if_assignable_ref =
-  ::cuda::std::enable_if_t<is_non_const_reference_v<T> || is_tuple_of_iterator_references_v<T> || is_discard_proxy<T>, int>;
+  ::cuda::std::enable_if_t<is_non_const_reference_v<T> || is_tuple_of_iterator_references_v<T> || is_discard_proxy<T>,
+                           int>;
 
 template <typename UnaryFunction>
 struct unary_transform_functor
