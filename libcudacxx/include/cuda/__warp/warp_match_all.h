@@ -49,8 +49,8 @@ template <typename _Tp, typename _Up = _CUDA_VSTD::remove_cv_t<_Tp>>
   {
     int __pred = false;
     NV_IF_ELSE_TARGET(NV_PROVIDES_SM_70,
-                      (__match_all_sync(__lane_mask, __array[i], &__pred);),
-                      (__cuda__match_all_sync_is_not_supported_before_SM_70__();));
+                      (::__match_all_sync(__lane_mask, __array[i], &__pred);),
+                      (_CUDA_DEVICE::__cuda__match_all_sync_is_not_supported_before_SM_70__();));
     __ret = __ret && __pred;
   }
   return __ret;
