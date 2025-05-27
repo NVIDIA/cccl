@@ -8,48 +8,35 @@
 //
 //===----------------------------------------------------------------------===//
 
-// constexpr explicit iterator(W value);
+// constexpr iterator& operator+=(difference_type n);
 
 #include <cuda/iterator>
 #include <cuda/std/cassert>
 
 #include "test_macros.h"
 #include "types.h"
+template <class Stride>
+__host__ __device__ constexpr void test(Stride stride)
+{
+  int buffer[] = {1, 2, 3, 4, 5, 6, 7, 8};
+
+  cuda::strided_iterator iter1{buffer, stride};
+  cuda::strided_iterator iter2{buffer, stride};
+  assert(iter1 == iter2);
+  iter1 += 0;
+  assert(iter1 == iter2);
+  iter1 += 3;
+  assert(iter1 != iter2);
+  assert(iter1.base() == buffer + 3 * iter1.stride());
+
+  static_assert(noexcept(iter2 += 3));
+  static_assert(cuda::std::is_reference_v<decltype(iter2 += 3)>);
+}
 
 __host__ __device__ constexpr bool test()
 {
-  { // CTAD
-    const int val = 42;
-    cuda::counting_iterator iter{val};
-    assert(*iter == 42);
-  }
-
-  { // CTAD
-    cuda::counting_iterator iter{42};
-    assert(*iter == 42);
-  }
-
-  {
-    const int val = 42;
-    cuda::counting_iterator<int> iter{val};
-    assert(*iter == 42);
-  }
-
-  {
-    cuda::counting_iterator<int> iter{42};
-    assert(*iter == 42);
-  }
-
-  {
-    const Int42<ValueCtor> val{42};
-    cuda::counting_iterator<Int42<ValueCtor>> iter{val};
-    assert(*iter == Int42<ValueCtor>{42});
-  }
-
-  {
-    cuda::counting_iterator<Int42<ValueCtor>> iter{Int42<ValueCtor>{42}};
-    assert(*iter == Int42<ValueCtor>{42});
-  }
+  test(2);
+  test(Stride<2>{});
 
   return true;
 }
