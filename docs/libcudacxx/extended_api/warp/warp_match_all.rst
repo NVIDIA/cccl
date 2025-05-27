@@ -12,7 +12,7 @@ Warp Match All
     warp_match_all(const T& data, uint32_t lane_mask = 0xFFFFFFFF)
 
 The functionality provides a generalized and safe alternative to CUDA warp match all intrinsic ``__match_all_sync``.
-The function allows to exchange data of any data size, including raw arrays, pointers, and structs.
+The function allows bitwise comparison of any data size, including raw arrays, pointers, and structs.
 
 **Parameters**
 
