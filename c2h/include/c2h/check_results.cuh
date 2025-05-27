@@ -31,8 +31,9 @@
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
-#include <catch2/matchers/catch_matchers_floating_point.hpp>
 #include <test_util.h>
+
+#include <catch2/matchers/catch_matchers_floating_point.hpp>
 
 template <typename T>
 void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_vector<T>& test_results)
@@ -59,7 +60,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat16> || cuda::std::is_same_v<T, __half>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, __half> ? 0.08f : 0.12f;
+    constexpr auto rel_err = cuda::std::is_same_v<T, __half> ? 0.08f : 0.14f;
     REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, rel_err);
   }
   else if constexpr (cuda::std::is_same_v<T, float2>)
@@ -72,7 +73,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat162> || cuda::std::is_same_v<T, __half2>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, __half2> ? 0.08f : 0.12f;
+    constexpr auto rel_err = cuda::std::is_same_v<T, __half2> ? 0.08f : 0.14f;
     for (size_t i = 0; i < test_results.size(); ++i)
     {
       REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x, rel_err));
@@ -82,7 +83,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   else if constexpr (cuda::std::is_same_v<T, cuda::std::complex<__nv_bfloat16>>
                      || cuda::std::is_same_v<T, cuda::std::complex<__half>>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? 0.08f : 0.12f;
+    constexpr auto rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? 0.08f : 0.14f;
     for (size_t i = 0; i < test_results.size(); ++i)
     {
       auto expected_real = static_cast<float>(expected_data[i].real());

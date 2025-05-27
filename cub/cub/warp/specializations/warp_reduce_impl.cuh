@@ -112,7 +112,7 @@ template <bool UsePtx = true, typename T, typename ReductionOp, typename Config>
   constexpr auto log2_size                           = ::cuda::ceil_ilog2(logical_size());
   constexpr auto logical_size1                       = is_segmented ? warp_threads : logical_size;
   [[maybe_unused]] constexpr auto logical_size_round = ::cuda::next_power_of_two(logical_size1);
-  const auto mask    = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items, is_segmented);
+  const auto mask                                    = cub::detail::reduce_lane_mask(logical_mode, logical_size);
   using cast_t       = signed_promotion_t<T>; // promote (u)int8, (u)int16, (u)long (windows) to (u)int32
   auto input1        = static_cast<cast_t>(input);
   auto reduction_op1 = cub::detail::try_simd_operator<T>(reduction_op);
@@ -351,7 +351,7 @@ template <bool IsHeadSegment,
   logical_warp_size_t<LogicalWarpSize> logical_size)
 {
   auto logical_base_warp_id = cub::detail::logical_warp_base_id(logical_size);
-  auto member_mask          = cub::detail::reduce_lane_mask(logical_mode, logical_size, valid_items_t<0>{});
+  auto member_mask          = cub::detail::reduce_lane_mask(logical_mode, logical_size);
   auto warp_flags           = __ballot_sync(member_mask, flag);
   warp_flags >>= IsHeadSegment; // Convert to tail-segmented
   warp_flags |= (1u << (logical_base_warp_id + LogicalWarpSize - 1)); // Mask in the last lane of each logical warp

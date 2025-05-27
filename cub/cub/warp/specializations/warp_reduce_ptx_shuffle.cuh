@@ -241,25 +241,11 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 //----------------------------------------------------------------------------------------------------------------------
 // Generation of Shuffle/Reduce Member Mask
 
-template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems, bool IsSegmented = false>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_lane_mask(
-  reduce_logical_mode_t<LogicalMode> logical_mode,
-  logical_warp_size_t<LogicalWarpSize>,
-  valid_items_t<ValidItems> valid_items,
-  is_segmented_t<IsSegmented> is_segmented = {})
+template <ReduceLogicalMode LogicalMode, int LogicalWarpSize>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t
+reduce_lane_mask(reduce_logical_mode_t<LogicalMode> logical_mode, logical_warp_size_t<LogicalWarpSize>)
 {
-  if constexpr (logical_mode == multiple_reductions)
-  {
-    return 0xFFFFFFFF;
-  }
-  else if constexpr (!is_segmented && valid_items.rank_dynamic() == 1)
-  {
-    return 0xFFFFFFFF >> (warp_threads - valid_items.extent(0));
-  }
-  else
-  {
-    return 0xFFFFFFFF >> (warp_threads - LogicalWarpSize);
-  }
+  return (logical_mode == multiple_reductions) ? 0xFFFFFFFF : (0xFFFFFFFF >> (warp_threads - LogicalWarpSize));
 }
 
 } // namespace detail
