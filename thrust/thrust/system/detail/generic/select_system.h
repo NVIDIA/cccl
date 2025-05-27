@@ -56,19 +56,20 @@ _CCCL_HOST_DEVICE auto select_system(thrust::execution_policy<System>& system) -
   return thrust::detail::derived_cast(system);
 }
 
+// note: previous binary implementation of select_system also did not check select_system_exists<System1, System2>
 template <typename System1, typename System2>
 _CCCL_HOST_DEVICE auto
 select_system(thrust::execution_policy<System1>& system1, thrust::execution_policy<System2>& system2)
   -> thrust::detail::minimum_system_t<System1, System2>&
 {
-  if constexpr (::cuda::std::is_same_v<System1, System2>
-                || ::cuda::std::is_same_v<System1, thrust::detail::minimum_system_t<System1, System2>>)
+  using min_sys = thrust::detail::minimum_system_t<System1, System2>;
+  if constexpr (::cuda::std::is_same_v<System1, System2> || ::cuda::std::is_same_v<System1, min_sys>)
   {
     return thrust::detail::derived_cast(system1);
   }
   else
   {
-    static_assert(::cuda::std::is_same_v<System2, thrust::detail::minimum_system_t<System1, System2>>);
+    static_assert(::cuda::std::is_same_v<System2, min_sys>);
     return thrust::detail::derived_cast(system2);
   }
 }
@@ -80,7 +81,7 @@ template <typename System1,
 _CCCL_HOST_DEVICE auto select_system(
   thrust::execution_policy<System1>& system1,
   thrust::execution_policy<System2>& system2,
-  thrust::execution_policy<Systems>&... systems) -> thrust::detail::minimum_system_t<System1, System2, Systems...>
+  thrust::execution_policy<Systems>&... systems) -> thrust::detail::minimum_system_t<System1, System2, Systems...>&
 {
   return select_system(select_system(system1, system2), systems...);
 }
