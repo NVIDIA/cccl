@@ -16,7 +16,7 @@ The function allows to exchange data of any data size, including raw arrays, poi
 
 **Parameters**
 
-- ``data``: data to exchange.
+- ``data``: data to compare.
 - ``lane_mask``: mask of the active lanes
 
 **Return value**
