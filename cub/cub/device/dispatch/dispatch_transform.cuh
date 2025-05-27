@@ -87,12 +87,6 @@ struct TransformKernelSource<Offset,
   {
     return detail::transform::make_iterator_kernel_arg(it);
   }
-
-  _CCCL_HOST_DEVICE static constexpr bool CanVectorize()
-  {
-    return (::cuda::std::contiguous_iterator<RandomAccessIteratorsIn> && ...)
-        && is_primitive<it_value_t<RandomAccessIteratorOut>>::value;
-  }
 };
 
 enum class requires_stable_address
@@ -287,9 +281,9 @@ struct dispatch_t<StableAddress,
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-  template <typename ActivePolicy, size_t... Is>
+  template <typename WrappedActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy policy, bool vectorize)
+  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, WrappedActivePolicy policy)
   {
     const int block_dim = policy.BlockThreads();
 
@@ -327,7 +321,7 @@ struct dispatch_t<StableAddress,
     }
 
     const int ipt = [&] {
-      if (vectorize)
+      if constexpr (Algorithm::vectorized == policy.GetAlgorithm())
       {
         return policy.ItemsPerThreadVectorized();
       }
@@ -374,8 +368,7 @@ struct dispatch_t<StableAddress,
     }
     else
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-      return invoke_prefetch_or_vectorized_algorithm(
-        seq, wrapped_policy, Algorithm::vectorized == wrapped_policy.GetAlgorithm() && kernel_source.CanVectorize());
+      return invoke_prefetch_or_vectorized_algorithm(seq, wrapped_policy);
   }
 
   template <typename MaxPolicyT = typename PolicyHub::max_policy>

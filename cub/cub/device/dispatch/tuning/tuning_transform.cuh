@@ -96,7 +96,7 @@ template <int BlockThreads>
 struct vectorized_policy_t
 {
   static constexpr int block_threads      = BlockThreads;
-  static constexpr int items_per_thread   = 16;
+  static constexpr int items_per_thread   = 16; // TODO(bgruber): we should specify vectors per thread, not items
   static constexpr int vector_load_length = 4; // How many elements in single load instruction
 };
 
@@ -199,6 +199,7 @@ struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(Static
     return StaticPolicyT::algo_policy::max_items_per_thread;
   }
 
+  template <typename = void>
   _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadVectorized()
   {
     return StaticPolicyT::algo_policy::items_per_thread;
@@ -241,8 +242,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
-    using algo_policy               = prefetch_policy_t<256>;
-    // using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, vectorized_policy_t<256>>;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, vectorized_policy_t<256>>;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP

@@ -128,6 +128,23 @@ _CCCL_DEVICE void transform_kernel_impl(
   }
 }
 
+template <typename T, int LoadLength>
+using vector_type = ::cuda::std::_If<
+  sizeof(T) * LoadLength == 1,
+  int8_t,
+  ::cuda::std::_If<
+    sizeof(T) * LoadLength == 2,
+    int16_t,
+    ::cuda::std::_If<
+      sizeof(T) * LoadLength == 4,
+      int32_t,
+      ::cuda::std::_If<
+        sizeof(T) * LoadLength == 8,
+        int64_t,
+        ::cuda::std::_If<sizeof(T) * LoadLength == 16,
+                         int4,
+                         ::cuda::std::_If<sizeof(T) * LoadLength == 32, longlong4, ::cuda::std::array<T, LoadLength>>>>>>>;
+
 // This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
 // global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of
 // the parameter yields a global memory address.
@@ -159,6 +176,8 @@ _CCCL_DEVICE void transform_kernel_impl(
   // Disabling prefetching is better on the A100
   // (..., prefetch_tile<block_dim>(THRUST_NS_QUALIFIER::raw_reference_cast(ins), tile_size));
 
+  // FIXME(bgruber): implement handling of unalinged data
+
   if (num_valid == tile_size)
   {
     constexpr int vector_load_length = VectorizedPolicy::vector_load_length;
@@ -170,8 +189,10 @@ _CCCL_DEVICE void transform_kernel_impl(
       auto load_tile_vectorized = [&](auto in, auto& input) {
         // TODO(bgruber): assert tile size has to be multiple of items per vector
 
-        // using input_vector_t = typename CubVector<InputT, vector_load_length>::Type;
-        using input_vector_t = uint64_t;
+        using input_t = it_value_t<decltype(in)>;
+        // using input_vector_t = typename CubVector<input_t, vector_load_length>::Type;
+        // using input_vector_t = uint64_t;
+        using input_vector_t = vector_type<input_t, vector_load_length>;
         auto in_vec          = reinterpret_cast<const input_vector_t*>(in);
         auto input_vec       = reinterpret_cast<input_vector_t*>(input.data());
 
@@ -194,9 +215,11 @@ _CCCL_DEVICE void transform_kernel_impl(
       }
 
       // write output
-      using output_vector_t = uint64_t;
-      auto output_vec       = reinterpret_cast<const output_vector_t*>(output.data());
-      auto out_vec          = reinterpret_cast<output_vector_t*>(out);
+      // TODO(bgruber): dispatch whether we can vectorize writing here
+      using output_vector_t = vector_type<output_t, vector_load_length>;
+      // using output_vector_t = uint64_t;
+      auto output_vec = reinterpret_cast<const output_vector_t*>(output.data());
+      auto out_vec    = reinterpret_cast<output_vector_t*>(out);
 
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int vec_idx = 0; vec_idx < vectors_per_thread; ++vec_idx)
