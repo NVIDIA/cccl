@@ -102,8 +102,8 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads)
   using active_policy_t   = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type = typename ExtentType::index_type;
   using offset_t          = implicit_prom_t<extent_index_type>;
-  constexpr auto stride   = offset_t{active_policy_t::block_threads};
-  auto id                 = static_cast<offset_t>(threadIdx.x + blockIdx.x * active_policy_t::block_threads);
+  auto stride             = static_cast<offset_t>(gridDim.x * offset_t{active_policy_t::block_threads});
+  auto id                 = static_cast<offset_t>(threadIdx.x + blockIdx.x * offset_t{active_policy_t::block_threads});
   for (auto i = id; i < cub::detail::size(extents); i += stride)
   {
     func(i, coordinate_at<Ranks>(i, extents, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
@@ -120,7 +120,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   using cub::detail::for_each_in_extents::coordinate_at;
   using extent_index_type = typename ExtentType::index_type;
   using offset_t          = implicit_prom_t<extent_index_type>;
-  auto stride             = static_cast<offset_t>(blockDim.x);
+  auto stride             = static_cast<offset_t>(gridDim.x * blockDim.x);
   auto id                 = static_cast<offset_t>(threadIdx.x + blockIdx.x * blockDim.x);
   for (auto i = id; i < cub::detail::size(extents); i += stride)
   {

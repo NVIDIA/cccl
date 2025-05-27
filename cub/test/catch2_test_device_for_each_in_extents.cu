@@ -28,15 +28,17 @@
 
 #include <cub/device/device_for.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
+#include <thrust/count.h>
+#include <thrust/device_vector.h>
+#include <thrust/sequence.h>
 
 #include <cuda/std/array>
 #include <cuda/std/mdspan>
 #include <cuda/std/span>
 
-#include "c2h/catch2_test_helper.h"
-#include "c2h/utility.h"
-#include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/utility.h>
+#include <catch2_test_launch_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -137,7 +139,7 @@ auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
   return {};
 }
 
-C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
+C2H_TEST("DeviceFor::ForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
 {
   using index_type    = c2h::get<0, TestType>;
   using dims          = c2h::get<1, TestType>;
@@ -160,7 +162,7 @@ C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", 
 #endif // !_CCCL_COMPILER(MSVC)
 }
 
-C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dynamic)
+C2H_TEST("DeviceFor::ForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dynamic)
 {
   constexpr int rank = 3;
   using index_type   = c2h::get<0, TestType>;
@@ -193,7 +195,7 @@ struct dynamic_policy_t
   using MaxPolicy = for_policy_t;
 };
 
-C2H_TEST("DeviceForEachInExtents Dynamic Grid Config", "[ForEachInExtents][dynamic_grid]", index_types_dynamic)
+C2H_TEST("DeviceFor::ForEachInExtents Dynamic Grid Config", "[ForEachInExtents][dynamic_grid]", index_types_dynamic)
 {
   constexpr int rank = 3;
   using index_type   = c2h::get<0, TestType>;
@@ -218,4 +220,57 @@ C2H_TEST("DeviceForEachInExtents Dynamic Grid Config", "[ForEachInExtents][dynam
 #if !_CCCL_COMPILER(MSVC)
   REQUIRE(h_output == h_output_gpu);
 #endif // !_CCCL_COMPILER(MSVC)
+}
+
+//----------------------------------------------------------------------------------------------------------------------
+//
+
+template <class OffsetT>
+class offset_proxy_t
+{
+  OffsetT m_offset;
+
+public:
+  __host__ __device__ offset_proxy_t(OffsetT offset)
+      : m_offset(offset)
+  {}
+
+  __host__ __device__ operator OffsetT() const
+  {
+    return m_offset;
+  }
+};
+
+struct incrementer_t
+{
+  int* d_counts;
+
+  template <class OffsetT>
+  __device__ void operator()(OffsetT i, OffsetT)
+  {
+    atomicAdd(d_counts + i, 1); // Check if `i` was served more than once
+  }
+};
+
+C2H_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]")
+{
+  constexpr int max_items  = 5000000;
+  constexpr int min_items  = 1;
+  using offset_t           = int;
+  using ext_t              = cuda::std::dextents<offset_t, 1>;
+  const offset_t num_items = GENERATE_COPY(
+    take(3, random(min_items, max_items)),
+    values({
+      min_items,
+      max_items,
+    }));
+  c2h::device_vector<offset_proxy_t<offset_t>> input(num_items, offset_t{});
+  thrust::sequence(c2h::device_policy, input.begin(), input.end(), offset_t{});
+  c2h::device_vector<int> counts(num_items);
+  int* d_counts = thrust::raw_pointer_cast(counts.data());
+  device_for_each_in_extents(ext_t{num_items}, incrementer_t{d_counts});
+
+  const auto num_of_once_marked_items =
+    static_cast<offset_t>(thrust::count(c2h::device_policy, counts.begin(), counts.end(), 1));
+  REQUIRE(num_of_once_marked_items == num_items);
 }
