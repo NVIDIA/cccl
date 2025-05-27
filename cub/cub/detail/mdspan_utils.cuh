@@ -51,7 +51,7 @@ namespace detail
 {
 
 // Compute the submdspan size of a given rank
-template <_CUDA_VSTD::size_t Rank, typename IndexType, _CUDA_VSTD::size_t Extent0, _CUDA_VSTD::size_t... Extents>
+template <size_t Rank, typename IndexType, size_t Extent0, size_t... Extents>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
 sub_size(const _CUDA_VSTD::extents<IndexType, Extent0, Extents...>& ext)
 {
@@ -64,7 +64,7 @@ sub_size(const _CUDA_VSTD::extents<IndexType, Extent0, Extents...>& ext)
 }
 
 // avoid pointless comparison of unsigned integer with zero (nvcc 11.x doesn't support nv_diag warning suppression)
-template <_CUDA_VSTD::size_t Rank, typename IndexType>
+template <size_t Rank, typename IndexType>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
 sub_size(const _CUDA_VSTD::extents<IndexType>&)
 {
@@ -72,7 +72,7 @@ sub_size(const _CUDA_VSTD::extents<IndexType>&)
 }
 
 // TODO: move to cuda::std
-template <typename IndexType, _CUDA_VSTD::size_t... Extents>
+template <typename IndexType, size_t... Extents>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _CUDA_VSTD::make_unsigned_t<IndexType>
 size(const _CUDA_VSTD::extents<IndexType, Extents...>& ext)
 {
@@ -80,7 +80,7 @@ size(const _CUDA_VSTD::extents<IndexType, Extents...>& ext)
 }
 
 // precompute modulo/division for each submdspan size (by rank)
-template <typename IndexType, _CUDA_VSTD::size_t... E, _CUDA_VSTD::size_t... Ranks>
+template <typename IndexType, size_t... E, size_t... Ranks>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 sub_sizes_fast_div_mod(const _CUDA_VSTD::extents<IndexType, E...>& ext, _CUDA_VSTD::index_sequence<Ranks...> = {})
 {
@@ -90,7 +90,7 @@ sub_sizes_fast_div_mod(const _CUDA_VSTD::extents<IndexType, E...>& ext, _CUDA_VS
 }
 
 // precompute modulo/division for each mdspan extent
-template <typename IndexType, _CUDA_VSTD::size_t... E, _CUDA_VSTD::size_t... Ranks>
+template <typename IndexType, size_t... E, size_t... Ranks>
 [[nodiscard]] _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 extents_fast_div_mod(const _CUDA_VSTD::extents<IndexType, E...>& ext, _CUDA_VSTD::index_sequence<Ranks...> = {})
 {
