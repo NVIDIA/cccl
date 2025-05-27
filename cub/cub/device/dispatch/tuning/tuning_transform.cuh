@@ -65,10 +65,10 @@ enum class Algorithm
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
   // is always superior to that fallback, so it was removed.
   prefetch,
+  vectorized,
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   ublkcp,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-  vectorized,
 };
 
 template <int BlockThreads>
@@ -76,11 +76,9 @@ struct prefetch_policy_t
 {
   static constexpr int block_threads = BlockThreads;
   // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int items_per_thread_no_input   = 2; // when there are no input iterators, the kernel is just filling
-  static constexpr int min_items_per_thread        = 1;
-  static constexpr int max_items_per_thread        = 32;
-  static constexpr int items_per_thread_vectorized = 1;
-  static constexpr int vector_load_length          = 1;
+  static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
+  static constexpr int min_items_per_thread      = 1;
+  static constexpr int max_items_per_thread      = 32;
 };
 
 template <int BlockThreads, int BulkCopyAlignment>
@@ -97,13 +95,9 @@ struct async_copy_policy_t
 template <int BlockThreads>
 struct vectorized_policy_t
 {
-  static constexpr int block_threads = BlockThreads;
-  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int items_per_thread_no_input   = 2; // when there are no input iterators, the kernel is just filling
-  static constexpr int min_items_per_thread        = 1;
-  static constexpr int max_items_per_thread        = 32;
-  static constexpr int items_per_thread_vectorized = 16;
-  static constexpr int vector_load_length          = 4;
+  static constexpr int block_threads      = BlockThreads;
+  static constexpr int items_per_thread   = 16;
+  static constexpr int vector_load_length = 4; // How many elements in single load instruction
 };
 
 // mult must be a power of 2
@@ -207,7 +201,7 @@ struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(Static
 
   _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadVectorized()
   {
-    return StaticPolicyT::algo_policy::items_per_thread_vectorized;
+    return StaticPolicyT::algo_policy::items_per_thread;
   }
 
   _CCCL_HOST_DEVICE static constexpr int VectorLoadLength()
@@ -243,10 +237,12 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
+    static constexpr int min_bif       = arch_to_min_bytes_in_flight(300);
+    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = Algorithm::vectorized; // will fall back to prefetch if necessary
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
     using algo_policy               = prefetch_policy_t<256>;
+    // using algo_policy = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, vectorized_policy_t<256>>;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP

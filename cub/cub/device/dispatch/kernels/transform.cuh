@@ -16,6 +16,7 @@
 #include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/iterator/cache_modified_input_iterator.cuh>
 #include <cub/thread/thread_load.cuh>
+#include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -72,114 +73,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It begin, int tile_size)
       prefetch(reinterpret_cast<const char*>(::cuda::std::to_address(begin)) + offset);
     }
   }
-}
-
-// New implementation for exactly 2 iterators
-template <typename VectorizedPolicy,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename RandomAccessIteratorIn1,
-          typename RandomAccessIteratorIn2>
-_CCCL_DEVICE _CCCL_FORCEINLINE void process_tile_vectorized_dispatch(
-  int /*tile_size*/,
-  F f,
-  RandomAccessIteratorOut out,
-  RandomAccessIteratorIn1 in1,
-  RandomAccessIteratorIn2 in2,
-  ::cuda::std::true_type /* is_exactly_two_iterators */)
-{
-  using InputT                   = it_value_t<RandomAccessIteratorIn1>;
-  constexpr int items_per_vec    = VectorizedPolicy::vector_load_length; // How many elements in single load instruction
-  constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
-  constexpr int vectors_per_thread = items_per_thread / items_per_vec;
-  /// Vector type of InputT for data movement
-  // using VectorT = typename CubVector<InputT, items_per_vec>::Type;
-  using VectorT = uint64_t;
-
-  ::cuda::std::array<InputT, items_per_thread> processed_input_1;
-  ::cuda::std::array<InputT, items_per_thread> processed_input_2;
-  ::cuda::std::array<InputT, items_per_thread> processed_output;
-
-  auto process_single_in = [&](auto input_ptr, auto& input_items) {
-    // tile size has to be multiple of items per vector
-
-    // Fabricate a vectorized input iterator
-    auto d_in_unqualified     = const_cast<InputT*>(input_ptr);
-    auto d_in_unqualified_vec = reinterpret_cast<VectorT*>(d_in_unqualified);
-
-    // Load items as vector items
-    // InputT input_items[PrefetchPolicy::max_items_per_thread];
-    VectorT* vec_items = reinterpret_cast<VectorT*>(input_items.data());
-
-    // constexpr int NUM_THREADS_PER_BLOCK = 0; // TODO: might be known at compile time
-    _CCCL_PRAGMA_UNROLL_FULL()
-    for (int vec_idx = 0; vec_idx < vectors_per_thread; ++vec_idx)
-    {
-      // need to see LDG.64 (4 elements)
-      vec_items[vec_idx] = d_in_unqualified_vec[(vec_idx * VectorizedPolicy::block_threads) + threadIdx.x];
-    }
-  };
-
-  // For now, throw away variadic part, hardoce two iterators. Then we can
-  // generalize.
-  process_single_in(in1, processed_input_1);
-  process_single_in(in2, processed_input_2);
-
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int i = 0; i < items_per_thread; ++i)
-  {
-    processed_output[i] = f(processed_input_1[i], processed_input_2[i]);
-  }
-
-  auto vec_items                 = reinterpret_cast<VectorT*>(processed_output.data());
-  VectorT* d_out_unqualified_vec = reinterpret_cast<VectorT*>(const_cast<it_value_t<RandomAccessIteratorOut>*>(out));
-
-  _CCCL_PRAGMA_UNROLL_FULL()
-  for (int vec_idx = 0; vec_idx < vectors_per_thread; ++vec_idx)
-  {
-    // need to see LDG.64 (4 elements)
-    d_out_unqualified_vec[(vec_idx * VectorizedPolicy::block_threads) + threadIdx.x] = vec_items[vec_idx];
-  }
-}
-
-// Original implementation for any other number of iterators
-template <typename VectorizedPolicy, typename F, typename RandomAccessIteratorOut, typename... RandomAccessIteratorIn>
-_CCCL_DEVICE _CCCL_FORCEINLINE void process_tile_vectorized_dispatch(
-  int tile_size,
-  F f,
-  RandomAccessIteratorOut out,
-  RandomAccessIteratorIn... ins,
-  ::cuda::std::false_type /* is_exactly_two_iterators */)
-{
-  // Original implementation for any other number of iterators
-  constexpr int items_per_thread = VectorizedPolicy::items_per_thread_vectorized;
-
-  // Here you'd put your legacy implementation that handles variable numbers of iterators
-  // ...
-
-  // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
-  // bgruber: but A6000 and H100 show small gains without pragma
-  // _CCCL_PRAGMA_NOUNROLL()
-  for (int j = 0; j < items_per_thread; ++j)
-  {
-    const int idx = j * VectorizedPolicy::block_threads + threadIdx.x;
-    if (idx < tile_size)
-    {
-      // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
-      out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins[idx])...);
-    }
-  }
-}
-
-// Primary template - dispatches to the appropriate implementation based on parameter count
-template <typename PrefetchPolicy, typename F, typename RandomAccessIteratorOut, typename... RandomAccessIteratorIn>
-_CCCL_DEVICE _CCCL_FORCEINLINE void
-process_tile_vectorized(int tile_size, F f, RandomAccessIteratorOut out, RandomAccessIteratorIn... ins)
-{
-  // Dispatch to either the new implementation (exactly 2 iterators)
-  // or the original implementation (any other number of iterators)
-  process_tile_vectorized_dispatch<PrefetchPolicy, F, RandomAccessIteratorOut, RandomAccessIteratorIn...>(
-    tile_size, f, out, ins..., ::cuda::std::integral_constant < bool, sizeof...(ins) == 2 > {});
 }
 
 // This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
@@ -251,11 +144,11 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
-  constexpr int block_dim           = VectorizedPolicy::block_threads;
-  constexpr int num_elem_per_thread = VectorizedPolicy::items_per_thread_vectorized;
-  constexpr int tile_size           = block_dim * num_elem_per_thread;
-  const Offset offset               = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int num_valid               = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
+  constexpr int block_dim        = VectorizedPolicy::block_threads;
+  constexpr int items_per_thread = VectorizedPolicy::items_per_thread;
+  constexpr int tile_size        = block_dim * items_per_thread;
+  const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_size;
+  const int num_valid            = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -268,30 +161,66 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   if (num_valid == tile_size)
   {
-    process_tile_vectorized<VectorizedPolicy, F, RandomAccessIteratorOut, RandomAccessIteratorIn...>(
-      num_valid, f, out, ins...);
+    constexpr int vector_load_length = VectorizedPolicy::vector_load_length;
+    static_assert(items_per_thread % vector_load_length == 0);
+    constexpr int vectors_per_thread = items_per_thread / vector_load_length;
+
+    auto provide_array = [&](auto... inputs) {
+      // load inputs
+      auto load_tile_vectorized = [&](auto in, auto& input) {
+        // TODO(bgruber): assert tile size has to be multiple of items per vector
+
+        // using input_vector_t = typename CubVector<InputT, vector_load_length>::Type;
+        using input_vector_t = uint64_t;
+        auto in_vec          = reinterpret_cast<const input_vector_t*>(in);
+        auto input_vec       = reinterpret_cast<input_vector_t*>(input.data());
+
+        _CCCL_PRAGMA_UNROLL_FULL()
+        for (int vec_idx = 0; vec_idx < vectors_per_thread; ++vec_idx)
+        {
+          // need to see LDG.64 (4 elements)
+          input_vec[vec_idx] = in_vec[vec_idx * VectorizedPolicy::block_threads + threadIdx.x];
+        }
+      };
+      (load_tile_vectorized(ins, inputs), ...);
+
+      // process
+      using output_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, it_value_t<RandomAccessIteratorIn>&...>>;
+      ::cuda::std::array<output_t, items_per_thread> output;
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = 0; i < items_per_thread; ++i)
+      {
+        output[i] = f(inputs[i]...);
+      }
+
+      // write output
+      using output_vector_t = uint64_t;
+      auto output_vec       = reinterpret_cast<const output_vector_t*>(output.data());
+      auto out_vec          = reinterpret_cast<output_vector_t*>(out);
+
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int vec_idx = 0; vec_idx < vectors_per_thread; ++vec_idx)
+      {
+        // need to see LDG.64 (4 elements)
+        out_vec[vec_idx * VectorizedPolicy::block_threads + threadIdx.x] = output_vec[vec_idx];
+      }
+    };
+    provide_array(::cuda::std::array<it_value_t<RandomAccessIteratorIn>, items_per_thread>{}...);
   }
   else
   {
-    auto process_tile_old =
-      [&](auto full_tile, auto... ins2 /* nvcc fails to compile when just using the captured ins */) {
-        // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
-        // bgruber: but A6000 and H100 show small gains without pragma
-        // _CCCL_PRAGMA_NOUNROLL()
-        for (int j = 0; j < num_elem_per_thread; ++j)
-        {
-          const int idx = j * block_dim + threadIdx.x;
-          if (full_tile || idx < tile_size)
-          {
-            // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
-            out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins2[idx])...);
-          }
-        }
-      };
-
-    process_tile_old(::cuda::std::true_type{}, ins...);
-  }
+    for (int j = 0; j < items_per_thread; ++j)
+    {
+      const int idx = j * block_dim + threadIdx.x;
+      if (idx < tile_size)
+      {
+        // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
+        out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins[idx])...);
+      }
+    }
+  };
 }
+
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
 //
 // For performance considerations of memcpy_async:

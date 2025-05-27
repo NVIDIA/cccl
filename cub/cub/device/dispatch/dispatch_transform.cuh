@@ -90,8 +90,8 @@ struct TransformKernelSource<Offset,
 
   _CCCL_HOST_DEVICE static constexpr bool CanVectorize()
   {
-    return (::cuda::std::is_pointer_v<RandomAccessIteratorsIn> && ...)
-        && is_primitive<it_value_t<RandomAccessIteratorOut>>::value && (sizeof...(RandomAccessIteratorsIn) == 2);
+    return (::cuda::std::contiguous_iterator<RandomAccessIteratorsIn> && ...)
+        && is_primitive<it_value_t<RandomAccessIteratorOut>>::value;
   }
 };
 
@@ -289,7 +289,7 @@ struct dispatch_t<StableAddress,
 
   template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_prefetch_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy policy)
+  invoke_prefetch_or_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy policy, bool vectorize)
   {
     const int block_dim = policy.BlockThreads();
 
@@ -326,85 +326,36 @@ struct dispatch_t<StableAddress,
       return config.error();
     }
 
-    auto loaded_bytes_per_iter = kernel_source.LoadedBytesPerIteration();
-    // choose items per thread to reach minimum bytes in flight
-    const int items_per_thread =
-      loaded_bytes_per_iter == 0
-        ? +policy.ItemsPerThreadNoInput()
-        : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
+    const int ipt = [&] {
+      if (vectorize)
+      {
+        return policy.ItemsPerThreadVectorized();
+      }
+      else
+      {
+        auto loaded_bytes_per_iter = kernel_source.LoadedBytesPerIteration();
+        // choose items per thread to reach minimum bytes in flight
+        const int items_per_thread =
+          loaded_bytes_per_iter == 0
+            ? +policy.ItemsPerThreadNoInput()
+            : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
 
-    // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
-    const int items_per_thread_evenly_spread = static_cast<int>(
-      (::cuda::std::min)(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
-
-    const int items_per_thread_clamped =
-      ::cuda::std::clamp(items_per_thread_evenly_spread, +policy.MinItemsPerThread(), +policy.MaxItemsPerThread());
-    const int tile_size = block_dim * items_per_thread_clamped;
+        // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20
+        // elements
+        const int items_per_thread_evenly_spread = static_cast<int>((::cuda::std::min)(
+          Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
+        const int items_per_thread_clamped =
+          ::cuda::std::clamp(items_per_thread_evenly_spread, +policy.MinItemsPerThread(), +policy.MaxItemsPerThread());
+        return items_per_thread_clamped;
+      }
+    }();
+    const int tile_size = block_dim * ipt;
     const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
       launcher_factory(grid_dim, block_dim, 0, stream)
         .doit(kernel_source.TransformKernel(),
               num_items,
-              items_per_thread_clamped,
-              op,
-              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
-              kernel_source.MakeIteratorKernelArg(
-                THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
-  }
-
-  template <typename ActivePolicy, size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_vectorized_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy policy)
-  {
-    if (policy.ItemsPerThreadVectorized() % policy.VectorLoadLength() != 0)
-    {
-      return invoke_prefetch_algorithm(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{}, policy);
-    }
-    const int block_dim = policy.BlockThreads();
-
-    auto determine_config = [&]() -> cuda_expected<prefetch_config> {
-      int max_occupancy = 0;
-      auto error =
-        CubDebug(launcher_factory.MaxSmOccupancy(max_occupancy, kernel_source.TransformKernel(), block_dim, 0));
-      if (error != cudaSuccess)
-      {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
-      }
-      int sm_count = 0;
-      error        = launcher_factory.MultiProcessorCount(sm_count);
-      if (error != cudaSuccess)
-      {
-        return ::cuda::std::unexpected<cudaError_t /* nvcc 12.0 fails CTAD here */>(error);
-      }
-      return prefetch_config{max_occupancy, sm_count};
-    };
-
-    cuda_expected<prefetch_config> config = [&]() {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (
-          // this static variable exists for each template instantiation of the surrounding function and class, on which
-          // the chosen element count solely depends (assuming max SMEM is constant during a program execution)
-          static auto cached_config = determine_config(); return cached_config;),
-        (
-          // we cannot cache the determined element count in device code
-          return determine_config();));
-    }();
-    if (!config)
-    {
-      return config.error();
-    }
-
-    auto loaded_bytes_per_iter = kernel_source.LoadedBytesPerIteration();
-    // choose items per thread to reach minimum bytes in flight
-    const int items_per_thread = policy.ItemsPerThreadVectorized();
-    const int tile_size        = block_dim * items_per_thread;
-    const auto grid_dim        = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
-    return CubDebug(
-      launcher_factory(grid_dim, block_dim, 0, stream)
-        .doit(kernel_source.TransformKernel(),
-              num_items,
-              items_per_thread,
+              ipt,
               op,
               THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(out),
               kernel_source.MakeIteratorKernelArg(
@@ -415,20 +366,16 @@ struct dispatch_t<StableAddress,
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
     auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
-    if constexpr (Algorithm::vectorized == wrapped_policy.GetAlgorithm() && kernel_source.CanVectorize())
-    {
-      return invoke_vectorized_algorithm(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{}, wrapped_policy);
-    }
+    auto seq            = ::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{};
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
     if constexpr (Algorithm::ublkcp == wrapped_policy.GetAlgorithm())
     {
-      return invoke_ublkcp_algorithm<ActivePolicyT>(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{});
+      return invoke_ublkcp_algorithm<ActivePolicyT>(seq);
     }
     else
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-    {
-      return invoke_prefetch_algorithm(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{}, wrapped_policy);
-    }
+      return invoke_prefetch_or_vectorized_algorithm(
+        seq, wrapped_policy, Algorithm::vectorized == wrapped_policy.GetAlgorithm() && kernel_source.CanVectorize());
   }
 
   template <typename MaxPolicyT = typename PolicyHub::max_policy>
