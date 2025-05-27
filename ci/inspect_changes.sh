@@ -35,7 +35,7 @@ subprojects=(
 # ...and their dependencies.
 # Mapped as: key project is rebuilt if any value project is dirty.
 declare -A dependencies=(
-  [cccl]=""
+  [cccl]="libcudacxx cub thrust cudax"
   [libcudacxx]="cccl"
   [cub]="cccl libcudacxx thrust c2h"
   [thrust]="cccl libcudacxx cub"
