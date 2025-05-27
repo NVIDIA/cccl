@@ -161,6 +161,9 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorOut out,
   RandomAccessIteratorIn... ins)
 {
+  static_assert((::cuda::std::contiguous_iterator<RandomAccessIteratorIn> && ...));
+  static_assert(::cuda::std::contiguous_iterator<RandomAccessIteratorOut>);
+
   constexpr int block_dim        = VectorizedPolicy::block_threads;
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread;
   constexpr int tile_size        = block_dim * items_per_thread;
@@ -206,7 +209,7 @@ _CCCL_DEVICE void transform_kernel_impl(
       (load_tile_vectorized(ins, inputs), ...);
 
       // process
-      using output_t = ::cuda::std::decay_t<::cuda::std::invoke_result_t<F, it_value_t<RandomAccessIteratorIn>&...>>;
+      using output_t = it_value_t<RandomAccessIteratorOut>;
       ::cuda::std::array<output_t, items_per_thread> output;
       _CCCL_PRAGMA_UNROLL_FULL()
       for (int i = 0; i < items_per_thread; ++i)
