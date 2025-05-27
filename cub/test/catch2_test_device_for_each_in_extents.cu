@@ -213,7 +213,7 @@ C2H_TEST("DeviceForEachInExtents Dynamic Grid Config", "[ForEachInExtents][dynam
   cub::detail::for_each_in_extents::dispatch_t<cuda::std::dextents<index_type, 3>, store_op_t> dispatch{
     ext, store_op_t{d_output_raw}, nullptr};
   [[maybe_unused]] auto ret = dispatch.template Invoke<dynamic_policy_t>();
-  assert(dispatch.Invoke<dynamic_policy_t>() == cudaSuccess);
+  REQUIRE(dispatch.template Invoke<dynamic_policy_t>() == cudaSuccess);
 
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
