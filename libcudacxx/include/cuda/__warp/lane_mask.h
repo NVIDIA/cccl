@@ -30,57 +30,68 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 
-struct lane_mask
+class lane_mask
 {
-  _CUDA_VSTD::uint32_t value = 0;
+  _CUDA_VSTD::uint32_t __value_ = 0;
 
+public:
   _CCCL_HIDE_FROM_ABI constexpr lane_mask() noexcept = default;
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(_CUDA_VSTD::uint32_t __v) noexcept
-      : value{__v}
+      : __value_{__v}
   {}
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask none() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr _CUDA_VSTD::uint32_t value() const noexcept
+  {
+    return __value_;
+  }
+
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr operator _CUDA_VSTD::uint32_t() const noexcept
+  {
+    return __value_;
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask none() noexcept
   {
     return lane_mask{};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask all() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask all() noexcept
   {
     return lane_mask{static_cast<_CUDA_VSTD::uint32_t>(-1)};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_active() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_active() noexcept
   {
     return lane_mask{::__activemask()};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask this_lane() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask this_lane() noexcept
   {
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_eq()};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less() noexcept
   {
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_lt()};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less_equal() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_less_equal() noexcept
   {
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_le()};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater() noexcept
   {
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_gt()};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater_equal() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_greater_equal() noexcept
   {
     return lane_mask{_CUDA_VPTX::get_sreg_lanemask_ge()};
   }
 
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_not_equal() noexcept
+  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static lane_mask all_not_equal() noexcept
   {
     return lane_mask{~_CUDA_VPTX::get_sreg_lanemask_eq()};
   }
@@ -88,7 +99,7 @@ struct lane_mask
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator&(lane_mask __lhs, lane_mask __rhs) noexcept
   {
-    return lane_mask{__lhs.value & __rhs.value};
+    return lane_mask{__lhs.__value_ & __rhs.__value_};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator&=(lane_mask __v) noexcept
@@ -99,7 +110,7 @@ struct lane_mask
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator|(lane_mask __lhs, lane_mask __rhs) noexcept
   {
-    return lane_mask{__lhs.value | __rhs.value};
+    return lane_mask{__lhs.__value_ | __rhs.__value_};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator|=(lane_mask __v) noexcept
@@ -110,7 +121,7 @@ struct lane_mask
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator^(lane_mask __lhs, lane_mask __rhs) noexcept
   {
-    return lane_mask{__lhs.value ^ __rhs.value};
+    return lane_mask{__lhs.__value_ ^ __rhs.__value_};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator^=(lane_mask __v) noexcept
@@ -121,7 +132,7 @@ struct lane_mask
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator<<(lane_mask __mask, int __shift) noexcept
   {
-    return lane_mask{__mask.value << __shift};
+    return lane_mask{__mask.__value_ << __shift};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator<<=(int __shift) noexcept
@@ -132,7 +143,7 @@ struct lane_mask
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator>>(lane_mask __mask, int __shift) noexcept
   {
-    return lane_mask{__mask.value >> __shift};
+    return lane_mask{__mask.__value_ >> __shift};
   }
 
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator>>=(int __shift) noexcept
@@ -142,48 +153,19 @@ struct lane_mask
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask operator~(lane_mask __mask) noexcept
   {
-    return lane_mask{~__mask.value};
+    return lane_mask{~__mask.__value_};
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
   operator==(lane_mask __lhs, lane_mask __rhs) noexcept
   {
-    return __lhs.value == __rhs.value;
+    return __lhs.__value_ == __rhs.__value_;
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
   operator!=(lane_mask __lhs, lane_mask __rhs) noexcept
   {
     return !(__lhs == __rhs);
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator<(lane_mask __lhs, lane_mask __rhs) noexcept
-  {
-    return __lhs.value < __rhs.value;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator<=(lane_mask __lhs, lane_mask __rhs) noexcept
-  {
-    return __lhs.value <= __rhs.value;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator>(lane_mask __lhs, lane_mask __rhs) noexcept
-  {
-    return __lhs.value > __rhs.value;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr bool
-  operator>=(lane_mask __lhs, lane_mask __rhs) noexcept
-  {
-    return __lhs.value >= __rhs.value;
-  }
-
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr operator _CUDA_VSTD::uint32_t() const noexcept
-  {
-    return value;
   }
 };
 
