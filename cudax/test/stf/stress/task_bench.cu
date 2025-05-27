@@ -188,7 +188,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
   const size_t data_size = 128;
 
   /*
-   * Note :  CUDASTF_DOT_REMOVE_DATA_DEPS=1 CUDASTF_DOT_NO_FENCE=1 ACUDASTF_DOT_DISPLAY_stageS=1
+   * Note :  CUDASTF_DOT_REMOVE_DATA_DEPS=1 CUDASTF_DOT_NO_FENCE=1 ACUDASTF_DOT_DISPLAY_STAGES=1
    * CUDASTF_DOT_FILE=pif.dot build/nvcc/tests/stress/task_bench 8 6 1 3; dot -Tpdf pif.dot -o pif.pdf
    */
   ctx.get_dot()->set_tracing(false);

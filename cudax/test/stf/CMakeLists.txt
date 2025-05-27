@@ -9,6 +9,7 @@ set(stf_test_sources
   dot/graph_print_to_dot.cu
   dot/sections.cu
   dot/sections_2.cu
+  dot/sections_2_epoch.cu
   dot/section_movable.cu
   dot/with_events.cu
   error_checks/ctx_mismatch.cu
@@ -36,6 +37,7 @@ set(stf_test_sources
   interface/data_from_device_async.cu
   interface/move_operator.cu
   local_stf/legacy_to_stf.cu
+  local_stf/legacy_to_stf_epoch.cu
   local_stf/threads_multiple_graphs.cu
   places/affinity_gc.cu
   places/managed.cu

@@ -22,9 +22,7 @@ int main()
 // TODO (miscco): Make it work for windows
 #if !_CCCL_COMPILER(MSVC)
   context ctx;
-  auto lA = ctx.token().set_symbol("A");
-  auto lB = ctx.token().set_symbol("B");
-  auto lC = ctx.token().set_symbol("C");
+  auto epoch = ctx.epoch();
 
   // Begin a top-level section named "foo"
   auto s_foo = ctx.dot_section("foo");
@@ -32,15 +30,18 @@ int main()
   {
     // Section named "bar" using RAII
     auto s_bar = ctx.dot_section("bar");
-    ctx.task(lA.read(), lB.rw()).set_symbol("t1")->*[](cudaStream_t) {};
+    ctx.task(epoch).set_symbol("t1")->*[](cudaStream_t) {};
     for (size_t j = 0; j < 2; j++)
     {
       // Section named "baz" using RAII
       auto s_bar = ctx.dot_section("baz");
-      ctx.task(lA.read(), lC.rw()).set_symbol("t2")->*[](cudaStream_t) {};
-      ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("t3")->*[](cudaStream_t) {};
+      ctx.task(epoch).set_symbol("t2")->*[](cudaStream_t) {};
+      epoch++;
+      ctx.task(epoch).set_symbol("t3")->*[](cudaStream_t) {};
+      epoch++;
       // Implicit end of section "baz"
     }
+    epoch++;
     // Implicit end of section "bar"
   }
   s_foo.end(); // Explicit end of section "foo"
