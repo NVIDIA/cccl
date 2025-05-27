@@ -50,10 +50,6 @@ struct predicate_to_integral
 {
   Predicate pred;
 
-  _CCCL_HOST_DEVICE explicit predicate_to_integral(const Predicate& pred)
-      : pred(pred)
-  {}
-
   template <typename T>
   _CCCL_HOST_DEVICE IntegralType operator()(const T& x)
   {
@@ -67,10 +63,6 @@ struct equal_to_value
 {
   T2 rhs;
 
-  _CCCL_HOST_DEVICE equal_to_value(const T2& rhs)
-      : rhs(rhs)
-  {}
-
   template <typename T1>
   _CCCL_HOST_DEVICE bool operator()(const T1& lhs) const
   {
@@ -81,44 +73,18 @@ struct equal_to_value
 template <typename Predicate>
 struct tuple_binary_predicate
 {
-  using result_type = bool;
-
-  _CCCL_HOST_DEVICE tuple_binary_predicate(const Predicate& p)
-      : pred(p)
-  {}
-
   template <typename Tuple>
   _CCCL_HOST_DEVICE bool operator()(const Tuple& t) const
   {
-    return pred(thrust::get<0>(t), thrust::get<1>(t));
-  }
-
-  mutable Predicate pred;
-};
-
-template <typename Predicate>
-struct tuple_not_binary_predicate
-{
-  using result_type = bool;
-
-  _CCCL_HOST_DEVICE tuple_not_binary_predicate(const Predicate& p)
-      : pred(p)
-  {}
-
-  template <typename Tuple>
-  _CCCL_HOST_DEVICE bool operator()(const Tuple& t) const
-  {
-    return !pred(thrust::get<0>(t), thrust::get<1>(t));
+    return pred(::cuda::std::get<0>(t), ::cuda::std::get<1>(t));
   }
 
   mutable Predicate pred;
 };
 
 template <typename T>
-struct is_non_const_reference
-    : ::cuda::std::_And<thrust::detail::not_<::cuda::std::is_const<T>>,
-                        ::cuda::std::disjunction<::cuda::std::is_reference<T>, thrust::detail::is_proxy_reference<T>>>
-{};
+inline constexpr bool is_non_const_reference_v =
+  !::cuda::std::is_const_v<T> && (::cuda::std::is_reference_v<T> || detail::is_proxy_reference_v<T>);
 
 // We treat the discarding proxy of cuda::discard_iterator as a const reference, we discard the value
 template <typename T>
@@ -128,18 +94,16 @@ template <>
 inline constexpr bool is_discard_proxy<::cuda::discard_iterator::__discard_proxy> = true;
 
 template <typename T>
-struct is_tuple_of_iterator_references : thrust::detail::false_type
-{};
+inline constexpr bool is_tuple_of_iterator_references_v = false;
 
 template <typename... Ts>
-struct is_tuple_of_iterator_references<thrust::detail::tuple_of_iterator_references<Ts...>> : thrust::detail::true_type
-{};
+inline constexpr bool is_tuple_of_iterator_references_v<tuple_of_iterator_references<Ts...>> = true;
 
 // use this enable_if to avoid assigning to temporaries in the transform functors below
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
 using enable_if_assignable_ref =
-  ::cuda::std::enable_if_t<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value|| is_discard_proxy<T>, int>;
+  ::cuda::std::enable_if_t<is_non_const_reference_v<T> || is_tuple_of_iterator_references_v<T> || is_discard_proxy<T>, int>;
 
 template <typename UnaryFunction>
 struct unary_transform_functor
@@ -150,7 +114,7 @@ struct unary_transform_functor
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<1, Tuple>> = 0>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    thrust::get<1>(t) = f(thrust::get<0>(t));
+    ::cuda::std::get<1>(t) = f(::cuda::std::get<0>(t));
   }
 };
 
@@ -163,7 +127,7 @@ struct binary_transform_functor
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<2, Tuple>> = 0>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    thrust::get<2>(t) = f(thrust::get<0>(t), thrust::get<1>(t));
+    ::cuda::std::get<2>(t) = f(::cuda::std::get<0>(t), ::cuda::std::get<1>(t));
   }
 };
 
@@ -177,9 +141,9 @@ struct unary_transform_if_functor
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<1, Tuple>> = 0>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    if (pred(thrust::get<0>(t)))
+    if (pred(::cuda::std::get<0>(t)))
     {
-      thrust::get<1>(t) = unary_op(thrust::get<0>(t));
+      ::cuda::std::get<1>(t) = unary_op(::cuda::std::get<0>(t));
     }
   }
 }; // end unary_transform_if_functor
@@ -194,9 +158,9 @@ struct unary_transform_if_with_stencil_functor
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<2, Tuple>> = 0>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    if (pred(thrust::get<1>(t)))
+    if (pred(::cuda::std::get<1>(t)))
     {
-      thrust::get<2>(t) = unary_op(thrust::get<0>(t));
+      ::cuda::std::get<2>(t) = unary_op(::cuda::std::get<0>(t));
     }
   }
 }; // end unary_transform_if_with_stencil_functor
@@ -211,9 +175,9 @@ struct binary_transform_if_functor
   template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<3, Tuple>> = 0>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    if (pred(thrust::get<2>(t)))
+    if (pred(::cuda::std::get<2>(t)))
     {
-      thrust::get<3>(t) = binary_op(thrust::get<0>(t), thrust::get<1>(t));
+      ::cuda::std::get<3>(t) = binary_op(::cuda::std::get<0>(t), ::cuda::std::get<1>(t));
     }
   }
 }; // end binary_transform_if_functor
@@ -250,20 +214,7 @@ struct fill_functor
   T exemplar;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE fill_functor(const T& _exemplar)
-      : exemplar(_exemplar)
-  {}
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE fill_functor(const fill_functor& other)
-      : exemplar(other.exemplar)
-  {}
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE ~fill_functor() {}
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE T operator()(void) const
+  _CCCL_HOST_DEVICE T operator()() const
   {
     return exemplar;
   }
@@ -275,59 +226,21 @@ struct uninitialized_fill_functor
   T exemplar;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE uninitialized_fill_functor(const T& x)
-      : exemplar(x)
-  {}
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE uninitialized_fill_functor(const uninitialized_fill_functor& other)
-      : exemplar(other.exemplar)
-  {}
-
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE ~uninitialized_fill_functor() {}
-
-  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE void operator()(T& x)
   {
     ::new (static_cast<void*>(&x)) T(exemplar);
   } // end operator()()
 }; // end uninitialized_fill_functor
 
-// this predicate tests two two-element tuples
-// we first use a Compare for the first element
-// if the first elements are equivalent, we use
-// < for the second elements
-template <typename Compare>
-struct compare_first_less_second
-{
-  compare_first_less_second(Compare c)
-      : comp(c)
-  {}
-
-  template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE bool operator()(T1 lhs, T2 rhs)
-  {
-    return comp(thrust::get<0>(lhs), thrust::get<0>(rhs))
-        || (!comp(thrust::get<0>(rhs), thrust::get<0>(lhs)) && thrust::get<1>(lhs) < thrust::get<1>(rhs));
-  }
-
-  Compare comp;
-}; // end compare_first_less_second
-
 template <typename Compare>
 struct compare_first
 {
   Compare comp;
 
-  _CCCL_HOST_DEVICE compare_first(Compare comp)
-      : comp(comp)
-  {}
-
   template <typename Tuple1, typename Tuple2>
   _CCCL_HOST_DEVICE bool operator()(const Tuple1& x, const Tuple2& y)
   {
-    return comp(thrust::raw_reference_cast(thrust::get<0>(x)), thrust::raw_reference_cast(thrust::get<0>(y)));
+    return comp(thrust::raw_reference_cast(::cuda::std::get<0>(x)), thrust::raw_reference_cast(::cuda::std::get<0>(y)));
   }
 }; // end compare_first
 
