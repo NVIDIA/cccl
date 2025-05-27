@@ -138,27 +138,17 @@ struct is_tuple_of_iterator_references<thrust::detail::tuple_of_iterator_referen
 // use this enable_if to avoid assigning to temporaries in the transform functors below
 // XXX revisit this problem with c++11 perfect forwarding
 template <typename T>
-struct enable_if_non_const_reference_or_tuple_of_iterator_references
-    : ::cuda::std::enable_if<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value
-                             || is_discard_proxy<T>>
-{};
+using enable_if_assignable_ref =
+  ::cuda::std::enable_if_t<is_non_const_reference<T>::value || is_tuple_of_iterator_references<T>::value|| is_discard_proxy<T>, int>;
 
 template <typename UnaryFunction>
 struct unary_transform_functor
 {
-  using result_type = void;
-
   UnaryFunction f;
 
-  _CCCL_HOST_DEVICE unary_transform_functor(UnaryFunction f)
-      : f(f)
-  {}
-
   _CCCL_EXEC_CHECK_DISABLE
-  template <typename Tuple>
-  inline _CCCL_HOST_DEVICE typename enable_if_non_const_reference_or_tuple_of_iterator_references<
-    typename thrust::tuple_element<1, Tuple>::type>::type
-  operator()(Tuple t)
+  template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<1, Tuple>> = 0>
+  _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
     thrust::get<1>(t) = f(thrust::get<0>(t));
   }
@@ -169,15 +159,9 @@ struct binary_transform_functor
 {
   BinaryFunction f;
 
-  _CCCL_HOST_DEVICE binary_transform_functor(BinaryFunction f)
-      : f(f)
-  {}
-
   _CCCL_EXEC_CHECK_DISABLE
-  template <typename Tuple>
-  inline _CCCL_HOST_DEVICE typename enable_if_non_const_reference_or_tuple_of_iterator_references<
-    typename thrust::tuple_element<2, Tuple>::type>::type
-  operator()(Tuple t)
+  template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<2, Tuple>> = 0>
+  _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
     thrust::get<2>(t) = f(thrust::get<0>(t), thrust::get<1>(t));
   }
@@ -189,16 +173,9 @@ struct unary_transform_if_functor
   UnaryFunction unary_op;
   Predicate pred;
 
-  _CCCL_HOST_DEVICE unary_transform_if_functor(UnaryFunction unary_op, Predicate pred)
-      : unary_op(unary_op)
-      , pred(pred)
-  {}
-
   _CCCL_EXEC_CHECK_DISABLE
-  template <typename Tuple>
-  inline _CCCL_HOST_DEVICE typename enable_if_non_const_reference_or_tuple_of_iterator_references<
-    typename thrust::tuple_element<1, Tuple>::type>::type
-  operator()(Tuple t)
+  template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<1, Tuple>> = 0>
+  _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
     if (pred(thrust::get<0>(t)))
     {
@@ -213,16 +190,9 @@ struct unary_transform_if_with_stencil_functor
   UnaryFunction unary_op;
   Predicate pred;
 
-  _CCCL_HOST_DEVICE unary_transform_if_with_stencil_functor(UnaryFunction unary_op, Predicate pred)
-      : unary_op(unary_op)
-      , pred(pred)
-  {}
-
   _CCCL_EXEC_CHECK_DISABLE
-  template <typename Tuple>
-  inline _CCCL_HOST_DEVICE typename enable_if_non_const_reference_or_tuple_of_iterator_references<
-    typename thrust::tuple_element<2, Tuple>::type>::type
-  operator()(Tuple t)
+  template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<2, Tuple>> = 0>
+  _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
     if (pred(thrust::get<1>(t)))
     {
@@ -237,16 +207,9 @@ struct binary_transform_if_functor
   BinaryFunction binary_op;
   Predicate pred;
 
-  _CCCL_HOST_DEVICE binary_transform_if_functor(BinaryFunction binary_op, Predicate pred)
-      : binary_op(binary_op)
-      , pred(pred)
-  {}
-
   _CCCL_EXEC_CHECK_DISABLE
-  template <typename Tuple>
-  inline _CCCL_HOST_DEVICE typename enable_if_non_const_reference_or_tuple_of_iterator_references<
-    typename thrust::tuple_element<3, Tuple>::type>::type
-  operator()(Tuple t)
+  template <typename Tuple, enable_if_assignable_ref<::cuda::std::tuple_element_t<3, Tuple>> = 0>
+  _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
     if (pred(thrust::get<2>(t)))
     {
