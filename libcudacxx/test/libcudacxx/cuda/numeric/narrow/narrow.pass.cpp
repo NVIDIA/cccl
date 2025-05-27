@@ -108,7 +108,6 @@ __host__ __device__ void test_type()
     test_type<To, __nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
   }
-  test_type<To, my_float>();
 }
 
 __host__ __device__ bool test()
@@ -135,7 +134,6 @@ __host__ __device__ bool test()
 #if _LIBCUDACXX_HAS_NVBF16()
   test_type<__nv_bfloat16>();
 #endif // _LIBCUDACXX_HAS_NVBF16()
-  test_type<my_float>();
 
   return true;
 }
@@ -143,6 +141,9 @@ __host__ __device__ bool test()
 int main(int arg, char** argv)
 {
   test();
+
+  test_type<float, my_float>();
+  test_type<my_float, float>();
 
   assert(cuda::narrow<float>(2 << (23 + 1)) == float{2 << (23 + 1)});
   CHECK_NARROWING_ERROR((cuda::narrow<float>((2 << (23 + 1)) + 1)), true);
