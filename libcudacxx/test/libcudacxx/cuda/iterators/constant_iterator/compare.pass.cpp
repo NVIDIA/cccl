@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// counting_iterator::operator{<,>,<=,>=,==,!=,<=>}
+// constant_iterator::operator{<,>,<=,>=,==,!=,<=>}
 
 #include <cuda/iterator>
 #if _LIBCUDACXX_HAS_SPACESHIP_OPERATOR()
@@ -19,7 +19,7 @@
 
 __host__ __device__ constexpr bool test()
 {
-  cuda::counting_iterator<int> iter1{42};
+  cuda::constant_iterator iter1{42, 2};
   const auto iter2 = iter1 + 1;
 
   assert(!(iter1 < iter1));
@@ -41,8 +41,15 @@ __host__ __device__ constexpr bool test()
   assert(iter1 != iter2);
   assert(!(iter2 != iter2));
 
+  static_assert(noexcept(iter1 == iter2));
+  static_assert(noexcept(iter1 != iter2));
+  static_assert(noexcept(iter1 < iter2));
+  static_assert(noexcept(iter1 <= iter2));
+  static_assert(noexcept(iter1 > iter2));
+  static_assert(noexcept(iter1 >= iter2));
+
 #if TEST_HAS_SPACESHIP()
-  static_assert(cuda::std::three_way_comparable<cuda::counting_iterator<int>>);
+  static_assert(cuda::std::three_way_comparable<cuda::constant_iterator<int>>);
   assert((iter1 <=> iter2) == cuda::std::strong_ordering::less);
   assert((iter1 <=> iter1) == cuda::std::strong_ordering::equal);
   assert((iter2 <=> iter1) == cuda::std::strong_ordering::greater);

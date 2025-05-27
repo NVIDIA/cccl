@@ -26,6 +26,24 @@ TEST_CASE("discard_iterator", "[iterators]")
   }
 }
 
+TEST_CASE("constant_iterator", "[iterators]")
+{
+  { // device system
+    thrust::device_vector<int> vec{1, 2, 3, 4};
+    thrust::copy(cuda::constant_iterator{42, 0}, cuda::constant_iterator{42, 4}, vec.begin());
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{1, 2, 3, 4};
+    thrust::copy(cuda::constant_iterator{42, 0}, cuda::constant_iterator{42, 4}, vec.begin());
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{1, 2, 3, 4};
+    thrust::copy(cuda::constant_iterator{42, 0}, cuda::constant_iterator{42, 4}, vec.begin());
+  }
+}
+
 TEST_CASE("counting_iterator", "[iterators]")
 {
   { // device system
