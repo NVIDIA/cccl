@@ -92,12 +92,13 @@ struct async_copy_policy_t
   static constexpr int bulk_copy_alignment = BulkCopyAlignment;
 };
 
-template <int BlockThreads>
+template <int BlockThreads, int Size1, int... Sizes>
 struct vectorized_policy_t
 {
-  static constexpr int block_threads      = BlockThreads;
-  static constexpr int items_per_thread   = 16; // TODO(bgruber): we should specify vectors per thread, not items
-  static constexpr int vector_load_length = 4; // How many elements in single load instruction
+  static constexpr int block_threads    = BlockThreads;
+  static constexpr int items_per_thread = 32 / Size1; // TODO(bgruber): we should specify vectors per thread, not items
+  static constexpr int vector_load_length = ::cuda::std::max(8 / Size1, 1); // How many elements in single load
+                                                                            // instruction
 };
 
 // mult must be a power of 2
@@ -242,7 +243,10 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, vectorized_policy_t<256>>;
+    using algo_policy =
+      ::cuda::std::_If<use_fallback,
+                       prefetch_policy_t<256>,
+                       vectorized_policy_t<256, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
