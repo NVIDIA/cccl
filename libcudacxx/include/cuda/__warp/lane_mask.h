@@ -83,7 +83,7 @@ public:
   //! @note This function may return a mask with 1s set even on inactive lane bits,
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI static constexpr lane_mask all() noexcept
   {
-    return lane_mask{static_cast<_CUDA_VSTD::uint32_t>(-1)};
+    return lane_mask{0xffffffff};
   }
 
   //! @brief Returns a lane mask object with all active lane bits set.
@@ -239,9 +239,12 @@ public:
   //! @param __shift The number of bits to shift left.
   //!
   //! @return A new lane_mask object representing the left-shifted lane_mask.
+  //!
+  //! @pre `__shift` must be in the range [0, 32).
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator<<(lane_mask __mask, int __shift) noexcept
   {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return lane_mask{__mask.__value_ << __shift};
   }
 
@@ -250,8 +253,11 @@ public:
   //! @param __shift The number of bits to shift left.
   //!
   //! @return A reference to the current lane_mask after the left shift operation.
+  //!
+  //! @pre `__shift` must be in the range [0, 32).
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator<<=(int __shift) noexcept
   {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return *this = *this << __shift;
   }
 
@@ -264,6 +270,7 @@ public:
   [[nodiscard]] _CCCL_DEVICE _CCCL_HIDE_FROM_ABI friend constexpr lane_mask
   operator>>(lane_mask __mask, int __shift) noexcept
   {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return lane_mask{__mask.__value_ >> __shift};
   }
 
@@ -272,8 +279,11 @@ public:
   //! @param __shift The number of bits to shift right.
   //!
   //! @return A reference to the current lane_mask after the right shift operation.
+  //!
+  //! @pre `__shift` must be in the range [0, 32).
   _CCCL_DEVICE _CCCL_HIDE_FROM_ABI constexpr lane_mask& operator>>=(int __shift) noexcept
   {
+    _CCCL_ASSERT(__shift >= 0 && __shift < 32, "shift must be in range [0, 32)");
     return *this = *this >> __shift;
   }
 
