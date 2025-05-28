@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -42,14 +42,6 @@
 #include <cuda/std/climits>
 #include <cuda/std/cmath>
 
-#ifndef __CUDACC__
-// disable zero checks
-#  define DISABLE_ZERO
-
-// disable nan / infinity checks
-#  define DISABLE_NANINF
-#endif
-
 // jump table for indexing into data
 #define _CUB_RFA_MAX_JUMP_ 5
 static_assert(_CUB_RFA_MAX_JUMP_ <= 5, "MAX_JUMP greater than max");
@@ -68,59 +60,6 @@ static _CCCL_DEVICE Float* get_shared_bin_array()
   return bin_computed_array;
 }
 
-// vector types with RFA are not supported currently
-#if 0
-template <class T>
-struct get_vector_type
-{};
-template <>
-struct get_vector_type<double>
-{
-  using type = double2;
-};
-template <>
-struct get_vector_type<float>
-{
-  using type = float4;
-};
-
-template <class T>
-using vector_t = typename get_vector_type<T>::type;
-
-template <class T>
-auto vector_size()
-{
-  return sizeof(vector_t<T>) / sizeof(T);
-}
-
-template <class T>
-_CCCL_FORCEINLINE static double abs_max(const T&);
-
-template <>
-_CCCL_DEVICE double abs_max(const float4& x)
-{
-  return fmax(fmaxf(fabs(x.x), fabs(x.y)), fmax(fabs(x.z), fabs(x.w)));
-}
-
-template <>
-_CCCL_DEVICE double abs_max(const double4& x)
-{
-  return fmax(fmax(fabs(x.x), fabs(x.y)), fmax(fabs(x.z), fabs(x.w)));
-}
-
-template <>
-_CCCL_DEVICE double abs_max(const double2& x)
-{
-  return fmax(fabs(x.x), fabs(x.y));
-}
-
-template <>
-_CCCL_DEVICE double abs_max(const float2& x)
-{
-  return fmax(fabs(x.x), fabs(x.y));
-}
-#endif
-
 template <class ftype>
 struct RFA_bins
 {
@@ -134,7 +73,7 @@ struct RFA_bins
   // The maximum floating-point fold supported by the library
   static constexpr int MAXFOLD = MAXINDEX + 1;
 
-  _CCCL_DEVICE static ftype initialize_bins(int index)
+  _CCCL_DEVICE static ftype initialize_bins(int index) noexcept
   {
     if (index == 0)
     {
@@ -161,18 +100,16 @@ struct RFA_bins
 
 //! Class to hold a reproducible summation of the numbers passed to it
 //!
-//!@param ftype Floating-point data type; either `float` or `double
-//!@param FOLD  The fold, uses 3 by default.
-template <class ftype_,
-          int FOLD                                                                     = 3,
-          typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<ftype_>>* = nullptr>
-class alignas(2 * sizeof(ftype_)) ReproducibleFloatingAccumulator
+//!@param FType Floating-point data type; either `float` or `double
+//!@param Fold  Number of collectors in the binned number (K-fold), used for reproducible summation. Defaults to 3.
+template <class FType, int Fold = 3, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FType>>* = nullptr>
+class alignas(2 * sizeof(FType)) ReproducibleFloatingAccumulator
 {
 public:
-  using ftype = ftype_;
+  using ftype = FType;
 
 private:
-  ::cuda::std::array<ftype, 2 * FOLD> data = {0};
+  ::cuda::std::array<ftype, 2 * Fold> data = {0};
 
   /// Floating-point precision bin width
   static constexpr int BIN_WIDTH = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
@@ -205,72 +142,72 @@ private:
   static constexpr auto ENDURANCE = 1 << (MANT_DIG - BIN_WIDTH - 2);
 
   /// Return a binned floating-point bin
-  _CCCL_DEVICE _CCCL_FORCEINLINE ftype binned_bins(int index) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static ftype binned_bins(int index)
   {
     ftype* bins = get_shared_bin_array<ftype, MAXINDEX + MAXFOLD>();
     return bins[index];
   }
 
   /// Get the bit representation of a float
-  _CCCL_DEVICE _CCCL_FORCEINLINE static uint32_t& get_bits(float& x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint32_t& get_bits(float& x) noexcept
   {
     return *reinterpret_cast<uint32_t*>(&x);
   }
   /// Get the bit representation of a double
-  _CCCL_DEVICE _CCCL_FORCEINLINE static uint64_t& get_bits(double& x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint64_t& get_bits(double& x) noexcept
   {
     return *reinterpret_cast<uint64_t*>(&x);
   }
   /// Get the bit representation of a const float
-  _CCCL_DEVICE _CCCL_FORCEINLINE static uint32_t get_bits(const float& x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint32_t get_bits(const float& x) noexcept
   {
     return ::cuda::std::bit_cast<uint32_t>(x);
   }
   /// Get the bit representation of a const double
-  _CCCL_DEVICE _CCCL_FORCEINLINE static uint64_t get_bits(const double& x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static uint64_t get_bits(const double& x) noexcept
   {
     return ::cuda::std::bit_cast<uint64_t>(x);
   }
 
   /// Return primary vector value const ref
-  _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& primary(int i) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& primary(int i) const noexcept
   {
-    if (FOLD <= _CUB_RFA_MAX_JUMP_)
+    if constexpr (Fold <= _CUB_RFA_MAX_JUMP_)
     {
       switch (i)
       {
         case 0:
-          if (FOLD >= 1)
+          if constexpr (Fold >= 1)
           {
             return data[0];
           }
           [[fallthrough]];
         case 1:
-          if (FOLD >= 2)
+          if constexpr (Fold >= 2)
           {
             return data[1];
           }
           [[fallthrough]];
         case 2:
-          if (FOLD >= 3)
+          if constexpr (Fold >= 3)
           {
             return data[2];
           }
           [[fallthrough]];
         case 3:
-          if (FOLD >= 4)
+          if constexpr (Fold >= 4)
           {
             return data[3];
           }
           [[fallthrough]];
         case 4:
-          if (FOLD >= 5)
+          if constexpr (Fold >= 5)
           {
             return data[4];
           }
           [[fallthrough]];
         default:
-          return data[FOLD - 1];
+          return data[Fold - 1];
       }
     }
     else
@@ -280,92 +217,78 @@ private:
   }
 
   /// Return carry vector value const ref
-  _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& carry(int i) const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& carry(int i) const noexcept
   {
-    if (FOLD <= _CUB_RFA_MAX_JUMP_)
+    if (Fold <= _CUB_RFA_MAX_JUMP_)
     {
       switch (i)
       {
         case 0:
-          if (FOLD >= 1)
+          if (Fold >= 1)
           {
-            return data[FOLD + 0];
+            return data[Fold + 0];
           }
           [[fallthrough]];
         case 1:
-          if (FOLD >= 2)
+          if (Fold >= 2)
           {
-            return data[FOLD + 1];
+            return data[Fold + 1];
           }
           [[fallthrough]];
         case 2:
-          if (FOLD >= 3)
+          if (Fold >= 3)
           {
-            return data[FOLD + 2];
+            return data[Fold + 2];
           }
           [[fallthrough]];
         case 3:
-          if (FOLD >= 4)
+          if (Fold >= 4)
           {
-            return data[FOLD + 3];
+            return data[Fold + 3];
           }
           [[fallthrough]];
         case 4:
-          if (FOLD >= 5)
+          if (Fold >= 5)
           {
-            return data[FOLD + 4];
+            return data[Fold + 4];
           }
           [[fallthrough]];
         default:
-          return data[2 * FOLD - 1];
+          return data[2 * Fold - 1];
       }
     }
     else
     {
-      return data[FOLD + i];
+      return data[Fold + i];
     }
   }
 
   /// Return primary vector value ref
-  _CCCL_DEVICE _CCCL_FORCEINLINE ftype& primary(int i)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ftype& primary(int i) noexcept
   {
     const auto& c = *this;
     return const_cast<ftype&>(c.primary(i));
   }
 
   /// Return carry vector value ref
-  _CCCL_DEVICE _CCCL_FORCEINLINE ftype& carry(int i)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE ftype& carry(int i) noexcept
   {
     const auto& c = *this;
     return const_cast<ftype&>(c.carry(i));
   }
 
-#ifdef DISABLE_ZERO
-  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr bool is_zero_v(const ftype)
-  {
-    return false;
-  }
-#else
-  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr bool is_zero_v(const ftype x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr bool is_zero_v(const ftype x) noexcept
   {
     return x == 0.0;
   }
-#endif
 
-#ifdef DISABLE_NANINF
-  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr int is_nan_inf_v(const ftype)
-  {
-    return false;
-  }
-#else
-  _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr int is_nan_inf_v(const ftype x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr int is_nan_inf_v(const ftype x) noexcept
   {
     const auto bits = get_bits(x);
     return (bits & ((2ull * MAX_EXP - 1) << (MANT_DIG - 1))) == ((2ull * MAX_EXP - 1) << (MANT_DIG - 1));
   }
-#endif
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE static int exp_val(const ftype x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int exp_val(const ftype x) noexcept
   {
     const auto bits = get_bits(x);
     return (bits >> (MANT_DIG - 1)) & (2 * MAX_EXP - 1);
@@ -375,36 +298,37 @@ private:
   /// The index of a non-binned type is the smallest index a binned type would
   /// need to have to sum it reproducibly. Higher indices correspond to smaller
   /// bins.
-  _CCCL_DEVICE _CCCL_FORCEINLINE static int binned_dindex(const ftype x)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int binned_dindex(const ftype x)
   {
     int exp = exp_val(x);
-    if (exp == 0)
+
+    if (exp != 0)
     {
-      if (x == 0.0)
-      {
-        return MAXINDEX;
-      }
-      else
-      {
-        (void) ::cuda::std::frexpf(x, &exp);
-        // use +MAXINDEX to optimize the host constexpr variable `MAXINDEX` to be used in the device function
-        return (::cuda::std::min)((MAX_EXP - exp) / BIN_WIDTH, +MAXINDEX);
-      }
+      return ((MAX_EXP + EXP_BIAS) - exp) / BIN_WIDTH;
     }
-    return ((MAX_EXP + EXP_BIAS) - exp) / BIN_WIDTH;
+    if (x == 0.0)
+    {
+      return MAXINDEX;
+    }
+    else
+    {
+      (void) ::cuda::std::frexpf(x, &exp);
+      // use +MAXINDEX to optimize the host constexpr variable `MAXINDEX` to be used in the device function
+      return (::cuda::std::min)((MAX_EXP - exp) / BIN_WIDTH, +MAXINDEX);
+    }
   }
 
   /// Get index of manually specified binned double precision
   /// The index of a binned type is the bin that it corresponds to. Higher
   /// indices correspond to smaller bins.
-  _CCCL_DEVICE _CCCL_FORCEINLINE int binned_index() const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int binned_index() const
   {
     return ((MAX_EXP + MANT_DIG - BIN_WIDTH + 1 + EXP_BIAS) - exp_val(primary(0))) / BIN_WIDTH;
   }
 
   /// Check if index of manually specified binned floating-point is 0
   /// A quick check to determine if the index is 0
-  _CCCL_DEVICE _CCCL_FORCEINLINE bool binned_index0() const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool binned_index0() const
   {
     return exp_val(primary(0)) == MAX_EXP + EXP_BIAS;
   }
@@ -427,37 +351,36 @@ private:
     if (is_zero_v(primary(0)))
     {
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < FOLD; i++)
+      for (int i = 0; i < Fold; i++)
       {
         primary(i * incpriY) = binned_bins(i + X_index);
         carry(i * inccarY)   = 0.0;
       }
+      return;
     }
-    else
+
+    int shift = binned_index() - X_index;
+    if (shift > 0)
     {
-      int shift = binned_index() - X_index;
-      if (shift > 0)
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int i = Fold - 1; i >= 1; i--)
       {
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int i = FOLD - 1; i >= 1; i--)
+        if (i < shift)
         {
-          if (i < shift)
-          {
-            break;
-          }
-          primary(i * incpriY) = primary((i - shift) * incpriY);
-          carry(i * inccarY)   = carry((i - shift) * inccarY);
+          break;
         }
-        _CCCL_PRAGMA_UNROLL_FULL()
-        for (int j = 0; j < FOLD; j++)
+        primary(i * incpriY) = primary((i - shift) * incpriY);
+        carry(i * inccarY)   = carry((i - shift) * inccarY);
+      }
+      _CCCL_PRAGMA_UNROLL_FULL()
+      for (int j = 0; j < Fold; j++)
+      {
+        if (j >= shift)
         {
-          if (j >= shift)
-          {
-            break;
-          }
-          primary(j * incpriY) = binned_bins(j + X_index);
-          carry(j * inccarY)   = 0.0;
+          break;
         }
+        primary(j * incpriY) = binned_bins(j + X_index);
+        carry(j * inccarY)   = 0.0;
       }
     }
   }
@@ -492,7 +415,7 @@ private:
       x += M;
       x += M;
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 1; i < FOLD - 1; i++)
+      for (int i = 1; i < Fold - 1; i++)
       {
         M  = primary(i * incpriY);
         qd = x;
@@ -504,14 +427,14 @@ private:
       }
       qd = x;
       ql |= 1;
-      primary((FOLD - 1) * incpriY) += qd;
+      primary((Fold - 1) * incpriY) += qd;
     }
     else
     {
       ftype qd = x;
       auto& ql = get_bits(qd);
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < FOLD - 1; i++)
+      for (int i = 0; i < Fold - 1; i++)
       {
         M  = primary(i * incpriY);
         qd = x;
@@ -523,7 +446,7 @@ private:
       }
       qd = x;
       ql |= 1;
-      primary((FOLD - 1) * incpriY) += qd;
+      primary((Fold - 1) * incpriY) += qd;
     }
   }
 
@@ -542,7 +465,7 @@ private:
     }
 
     _CCCL_PRAGMA_UNROLL_FULL()
-    for (int i = 0; i < FOLD; i++)
+    for (int i = 0; i < Fold; i++)
     {
       auto tmp_renormd  = primary(i * incpriX);
       auto& tmp_renorml = get_bits(tmp_renormd);
@@ -574,7 +497,7 @@ private:
   //!
   //!@param incpriX stride within X's primary vector (use every incpriX'th element)
   //!@param inccarX stride within X's carry vector (use every inccarX'th element)
-  _CCCL_DEVICE double binned_conv_double(const int incpriX, const int inccarX) const
+  [[nodiscard]] _CCCL_DEVICE double binned_conv_double(const int incpriX, const int inccarX) const
   {
     int i = 0;
 
@@ -596,7 +519,7 @@ private:
     {
       scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * MANT_DIG - BIN_WIDTH));
       scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * MANT_DIG - BIN_WIDTH));
-      scaled     = ::cuda::std::max(::cuda::std::min(FOLD, (3 * MANT_DIG) / BIN_WIDTH - X_index), 0);
+      scaled     = ::cuda::std::max(::cuda::std::min(Fold, (3 * MANT_DIG) / BIN_WIDTH - X_index), 0);
       if (X_index == 0)
       {
         Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * EXPANSION);
@@ -614,9 +537,9 @@ private:
         Y += carry(i * inccarX) * ((binned_bins(i + X_index) / 6.0) * scale_down);
         Y += (primary((i - 1) * incpriX) - binned_bins(i - 1 + X_index)) * scale_down;
       }
-      if (i == FOLD)
+      if (i == Fold)
       {
-        Y += (primary((FOLD - 1) * incpriX) - binned_bins(FOLD - 1 + X_index)) * scale_down;
+        Y += (primary((Fold - 1) * incpriX) - binned_bins(Fold - 1 + X_index)) * scale_down;
         return Y * scale_up;
       }
       if (::cuda::std::isinf(Y * scale_up))
@@ -624,22 +547,22 @@ private:
         return Y * scale_up;
       }
       Y *= scale_up;
-      for (; i < FOLD; i++)
+      for (; i < Fold; i++)
       {
         Y += carry(i * inccarX) * (binned_bins(i + X_index) / 6.0);
         Y += primary((i - 1) * incpriX) - binned_bins(i - 1 + X_index);
       }
-      Y += primary((FOLD - 1) * incpriX) - binned_bins(FOLD - 1 + X_index);
+      Y += primary((Fold - 1) * incpriX) - binned_bins(Fold - 1 + X_index);
     }
     else
     {
       Y += carry(0) * (binned_bins(0 + X_index) / 6.0);
-      for (i = 1; i < FOLD; i++)
+      for (i = 1; i < Fold; i++)
       {
         Y += carry(i * inccarX) * (binned_bins(i + X_index) / 6.0);
         Y += (primary((i - 1) * incpriX) - binned_bins(i - 1 + X_index));
       }
-      Y += (primary((FOLD - 1) * incpriX) - binned_bins(FOLD - 1 + X_index));
+      Y += (primary((Fold - 1) * incpriX) - binned_bins(Fold - 1 + X_index));
     }
     return Y;
   }
@@ -648,7 +571,7 @@ private:
   //!
   //!@param incpriX stride within X's primary vector (use every incpriX'th element)
   //!@param inccarX stride within X's carry vector (use every inccarX'th element)
-  _CCCL_DEVICE float binned_conv_single(const int incpriX, const int inccarX) const
+  [[nodiscard]] _CCCL_DEVICE float binned_conv_single(const int incpriX, const int inccarX) const
   {
     int i    = 0;
     double Y = 0.0;
@@ -678,12 +601,12 @@ private:
       Y += (double) carry(0) * (double) (binned_bins(0 + X_index) / 6.0);
       i = 1;
     }
-    for (; i < FOLD; i++)
+    for (; i < Fold; i++)
     {
       Y += (double) carry(i * inccarX) * (double) (binned_bins(i + X_index) / 6.0);
       Y += (double) (primary((i - 1) * incpriX) - binned_bins(i - 1 + X_index));
     }
-    Y += (double) (primary((FOLD - 1) * incpriX) - binned_bins(FOLD - 1 + X_index));
+    Y += (double) (primary((Fold - 1) * incpriX) - binned_bins(Fold - 1 + X_index));
 
     return (float) Y;
   }
@@ -706,7 +629,7 @@ private:
 
     if (is_zero_v(primary(0)))
     {
-      for (int i = 0; i < FOLD; i++)
+      for (int i = 0; i < Fold; i++)
       {
         primary(i * incpriY) = x.primary(i * incpriX);
         carry(i * inccarY)   = x.carry(i * inccarX);
@@ -727,7 +650,7 @@ private:
     {
       // shift Y upwards and add X to Y
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = FOLD - 1; i >= 1; i--)
+      for (int i = Fold - 1; i >= 1; i--)
       {
         if (i < shift)
         {
@@ -738,7 +661,7 @@ private:
         carry(i * inccarY) = x.carry(i * inccarX) + carry((i - shift) * inccarY);
       }
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < FOLD; i++)
+      for (int i = 0; i < Fold; i++)
       {
         if (i == shift)
         {
@@ -752,7 +675,7 @@ private:
     {
       // shift X upwards and add X to Y
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < FOLD; i++)
+      for (int i = 0; i < Fold; i++)
       {
         if (i < -shift)
         {
@@ -766,7 +689,7 @@ private:
     {
       // add X to Y
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < FOLD; i++)
+      for (int i = 0; i < Fold; i++)
       {
         primary(i * incpriY) += x.primary(i * incpriX) - binned_bins(i + X_index);
         carry(i * inccarY) += x.carry(i * inccarX);
@@ -784,19 +707,16 @@ private:
   }
 
 public:
-  ReproducibleFloatingAccumulator()                                       = default;
-  ReproducibleFloatingAccumulator(const ReproducibleFloatingAccumulator&) = default;
-  /// Sets this binned fp equal to another binned fp
-  ReproducibleFloatingAccumulator& operator=(const ReproducibleFloatingAccumulator&) = default;
+  ReproducibleFloatingAccumulator() = default;
 
   /// Set the binned fp to zero
-  _CCCL_DEVICE void zero()
+  _CCCL_DEVICE void zero() noexcept
   {
     data = {0};
   }
 
   /// Return the endurance of the binned fp
-  _CCCL_DEVICE _CCCL_FORCEINLINE constexpr int endurance() const
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr int endurance() const noexcept
   {
     return ENDURANCE;
   }
@@ -858,17 +778,15 @@ public:
 
   //! Returns the negative of this binned fp
   //! NOTE: Makes a copy and performs arithmetic; slow.
-  _CCCL_DEVICE ReproducibleFloatingAccumulator operator-()
+  [[nodiscard]] _CCCL_DEVICE ReproducibleFloatingAccumulator operator-()
   {
     constexpr int incpriX                = 1;
     constexpr int inccarX                = 1;
     ReproducibleFloatingAccumulator temp = *this;
     if (primary(0) != 0.0)
     {
-      // constexpr auto const bins = binned_bins(binned_index());
-
       _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < FOLD; i++)
+      for (int i = 0; i < Fold; i++)
       {
         temp.primary(i * incpriX) =
           binned_bins(i + binned_index()) - (primary(i * incpriX) - binned_bins(i + binned_index()));
@@ -879,7 +797,7 @@ public:
   }
 
   /// Convert this binned fp into its native floating-point representation
-  _CCCL_DEVICE ftype conv() const
+  [[nodiscard]] _CCCL_DEVICE ftype conv() const
   {
     if (::cuda::std::is_same_v<ftype, float>)
     {
