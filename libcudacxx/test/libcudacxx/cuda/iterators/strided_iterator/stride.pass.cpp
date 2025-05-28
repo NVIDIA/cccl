@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// constexpr explicit iterator(W value);
+// stride() const noexcept;
 
 #include <cuda/iterator>
 #include <cuda/std/cassert>
@@ -16,40 +16,24 @@
 #include "test_macros.h"
 #include "types.h"
 
+template <class Stride>
+__host__ __device__ constexpr void test(Stride stride)
+{
+  {
+    cuda::strided_iterator<int*, Stride> iter;
+    assert(iter.stride() == _CUDA_VSTD::__de_ice(Stride{}));
+  }
+
+  {
+    cuda::strided_iterator<int*, Stride> iter{nullptr, stride};
+    assert(iter.stride() == _CUDA_VSTD::__de_ice(stride));
+  }
+}
+
 __host__ __device__ constexpr bool test()
 {
-  { // CTAD
-    const int val = 42;
-    cuda::counting_iterator iter{val};
-    assert(*iter == 42);
-  }
-
-  { // CTAD
-    cuda::counting_iterator iter{42};
-    assert(*iter == 42);
-  }
-
-  {
-    const int val = 42;
-    cuda::counting_iterator<int> iter{val};
-    assert(*iter == 42);
-  }
-
-  {
-    cuda::counting_iterator<int> iter{42};
-    assert(*iter == 42);
-  }
-
-  {
-    const Int42<ValueCtor> val{42};
-    cuda::counting_iterator<Int42<ValueCtor>> iter{val};
-    assert(*iter == Int42<ValueCtor>{42});
-  }
-
-  {
-    cuda::counting_iterator<Int42<ValueCtor>> iter{Int42<ValueCtor>{42}};
-    assert(*iter == Int42<ValueCtor>{42});
-  }
+  test(0);
+  test(Stride<2>{});
 
   return true;
 }
