@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 
@@ -47,7 +48,11 @@ _LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& 
     return nullptr;
   }
   __space -= __diff;
+#if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
+  return __ptr = _CCCL_BUILTIN_ASSUME_ALIGNED(reinterpret_cast<void*>(static_cast<char*>(__ptr) + __diff), __alignment);
+#else // ^^^ _CCCL_BUILTIN_ASSUME_ALIGNED ^^^/ vvv !_CCCL_BUILTIN_ASSUME_ALIGNED vvv
   return __ptr = reinterpret_cast<void*>(static_cast<char*>(__ptr) + __diff);
+#endif // !_CCCL_BUILTIN_ASSUME_ALIGNED
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
