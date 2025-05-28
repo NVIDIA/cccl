@@ -56,8 +56,8 @@ namespace detail
 template <typename ElementIterator, typename IndexIterator>
 struct make_permutation_iterator_base
 {
-  using System1 = typename iterator_system<ElementIterator>::type;
-  using System2 = typename iterator_system<IndexIterator>::type;
+  using System1 = iterator_system_t<ElementIterator>;
+  using System2 = iterator_system_t<IndexIterator>;
 
   using type =
     iterator_adaptor<permutation_iterator<ElementIterator, IndexIterator>,

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -103,12 +103,12 @@ _CCCL_HOST_API auto __launch_impl(_Dst&& __dst, _Config __conf, void* __kernel_f
                 "Can't launch a configuration without hierarchy dimensions");
   cudaLaunchConfig_t __config{};
   constexpr bool __has_cluster_level        = has_level<cluster_level, decltype(__conf.dims)>;
-  constexpr unsigned int __num_attrs_needed = detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
+  constexpr unsigned int __num_attrs_needed = __detail::kernel_config_count_attr_space(__conf) + __has_cluster_level;
   cudaLaunchAttribute __attrs[__num_attrs_needed == 0 ? 1 : __num_attrs_needed];
   __config.attrs    = &__attrs[0];
   __config.numAttrs = 0;
 
-  cudaError_t __status = detail::apply_kernel_config(__conf, __config, __kernel_fn);
+  cudaError_t __status = __detail::apply_kernel_config(__conf, __config, __kernel_fn);
   if (__status != cudaSuccess)
   {
     __throw_cuda_error(__status, "Failed to prepare a launch configuration");
@@ -242,7 +242,7 @@ _CCCL_HOST_API graph_node_ref launch(
       reinterpret_cast<void*>(__launcher),
       __combined,
       __kernel,
-      __kernel_transform(__launch_transform({detail::__invalid_stream}, std::forward<_Args>(__args)))...);
+      __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_Args>(__args)))...);
     return graph_node_ref{__node, __inserter.get_graph()};
   }
   else
@@ -254,7 +254,7 @@ _CCCL_HOST_API graph_node_ref launch(
       __combined,
       reinterpret_cast<void*>(__launcher),
       __kernel,
-      __kernel_transform(__launch_transform({detail::__invalid_stream}, std::forward<_Args>(__args)))...);
+      __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_Args>(__args)))...);
     return graph_node_ref{__node, __inserter.get_graph()};
   }
 }
@@ -348,7 +348,7 @@ _CCCL_HOST_API graph_node_ref launch(
     __conf,
     reinterpret_cast<void*>(__kernel),
     __conf,
-    __kernel_transform(__launch_transform({detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
+    __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
   return graph_node_ref{__node, __inserter.get_graph()};
 }
 
@@ -438,7 +438,7 @@ _CCCL_HOST_API graph_node_ref launch(
     _CUDA_VSTD::forward<_GraphInserter>(__inserter), //
     __conf,
     reinterpret_cast<void*>(__kernel),
-    __kernel_transform(__launch_transform({detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
+    __kernel_transform(__launch_transform({__detail::__invalid_stream}, std::forward<_ActArgs>(__args)))...);
   return graph_node_ref{__node, __inserter.get_graph()};
 }
 } // namespace cuda::experimental

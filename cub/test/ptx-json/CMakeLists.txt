@@ -17,6 +17,10 @@ if(NOT is_20_available)
   return()
 endif()
 
+# Remove -G, -g, and -lineinfo from CUDA_FLAGS, otherwise the location information
+# will throw off the JSON output. This will only apply to targets created in this directory.
+string(REGEX REPLACE "(-G|-g|-lineinfo)" "" CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}")
+
 include(CheckIncludeFileCXX)
 check_include_file_cxx("format" _CCCL_PTX_JSON_TEST_HAS_FORMAT)
 mark_as_advanced(_CCCL_PTX_JSON_TEST_HAS_FORMAT)

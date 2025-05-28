@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_UTILITY
-#define __CUDAX_ASYNC_DETAIL_UTILITY
+#ifndef __CUDAX_EXECUTION_UTILITY
+#define __CUDAX_EXECUTION_UTILITY
 
 #include <cuda/std/detail/__config>
 
@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_same.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/initializer_list>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -35,10 +35,6 @@
 namespace cuda::experimental::execution
 {
 _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
-
-using __ignore _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__ignore_t; // NOLINT: misc-unused-using-decls
-using _CUDA_VSTD::__undefined; // NOLINT: misc-unused-using-decls
-using experimental::detail::__immovable; // NOLINT: misc-unused-using-decls
 
 struct __empty
 {};
@@ -179,7 +175,7 @@ using __zip _CCCL_NODEBUG_ALIAS = _Type;
 template <class _Id>
 using __unzip _CCCL_NODEBUG_ALIAS = _Id;
 
-#else
+#else // ^^^ _CCCL_COMPILER(CLANG, <, 12) ^^^ / vvv !_CCCL_COMPILER(CLANG, <, 12) vvv
 
 template <class _Type, size_t _Val = execution::__next<_Type>(0)>
 using __zip _CCCL_NODEBUG_ALIAS = __slot<_Val>;
@@ -187,7 +183,7 @@ using __zip _CCCL_NODEBUG_ALIAS = __slot<_Val>;
 template <class _Id>
 using __unzip _CCCL_NODEBUG_ALIAS = decltype(__slot_allocated(_Id())());
 
-#endif
+#endif // ^^^ !_CCCL_COMPILER(CLANG, <, 12) ^^^
 
 // burn the first slot
 using __ignore_this_typedef [[maybe_unused]] = __zip<void>;
@@ -200,4 +196,4 @@ _CCCL_DIAG_POP
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_UTILITY

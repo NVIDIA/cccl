@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
-#define __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
+#ifndef __CUDAX_EXECUTION_RCVR_WITH_ENV
+#define __CUDAX_EXECUTION_RCVR_WITH_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -91,4 +91,4 @@ __rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_RCVR_WITH_ENV

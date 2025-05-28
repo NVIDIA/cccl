@@ -4,37 +4,39 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 
 #include <catch2/catch_test_macros.hpp>
 
-#if defined(__cpp_inline_variables)
-inline thread_local bool entered = false;
+inline thread_local const char* current_nvtx_range_name = nullptr;
 
 struct NestedNVTXRangeGuard
 {
-  NestedNVTXRangeGuard(const char* name)
+  // complain only about CUB nested NVTX ranges, not Thrust
+  bool inside_cub_range;
+
+  explicit NestedNVTXRangeGuard(const char* name)
+      : inside_cub_range(strstr(name, "cub::") == name)
   {
-    UNSCOPED_INFO("Entering NVTX range " << name);
-    if (entered)
+    if (inside_cub_range)
     {
-      FAIL("Nested NVTX range detected");
+      if (current_nvtx_range_name)
+      {
+        FAIL("Nested NVTX range detected. Entered " << current_nvtx_range_name << ". Now entering " << name);
+      }
+      current_nvtx_range_name = name;
     }
-    entered = true;
   }
 
   ~NestedNVTXRangeGuard()
   {
-    entered = false;
-    UNSCOPED_INFO("Leaving NVTX range");
+    if (inside_cub_range)
+    {
+      current_nvtx_range_name = nullptr;
+    }
   }
 };
 
-// TODO(giannis): Thrust algorithms lead to NVTX nesting, we still want to avoid nested ranges
-// on the CUB Device level side. This guard makes sure that when a newly added CUB primitive
-// uses another CUB primitive it calls it from the dispatch layer. We can disable the guard
-// just for thrust conditionally in the future, since thrust nesting is more often and very
-// frequent on the high API level.
-#  define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)
-// ::cuda::std::optional<::NestedNVTXRangeGuard> __cub_nvtx3_reentrency_guard;
-// NV_IF_TARGET(NV_IS_HOST, __cub_nvtx3_reentrency_guard.emplace(name););
-#endif // defined(__cpp_inline_variables)
+#define _CCCL_BEFORE_NVTX_RANGE_SCOPE(name)                                   \
+  ::cuda::std::optional<::NestedNVTXRangeGuard> __cub_nvtx3_reentrency_guard; \
+  NV_IF_TARGET(NV_IS_HOST, __cub_nvtx3_reentrency_guard.emplace(name););
