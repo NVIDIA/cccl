@@ -47,7 +47,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& 
     return nullptr;
   }
   __space -= __diff;
-  return __ptr = reinterpret_cast<void*>(__aligned);
+  return __ptr = reinterpret_cast<void*>(static_cast<char*>(__ptr) + __diff);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
