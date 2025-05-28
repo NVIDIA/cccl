@@ -204,68 +204,96 @@ void warp_reduce_multiple_items_launch(c2h::device_vector<T>& input, c2h::device
 /***********************************************************************************************************************
  * Types
  **********************************************************************************************************************/
-// clang-format off
 
 using custom_t =
   c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_comparable_t, c2h::lexicographical_less_comparable_t>;
 
 using arithmetic_type_list = c2h::type_list<
-  int8_t, uint16_t, int32_t, int64_t,
-  float, double,
-  cuda::std::complex<float>, cuda::std::complex<double>,
-  short2, ushort2
+  int8_t,
+  uint16_t,
+  int32_t,
+  int64_t,
+  float,
+  double,
+  cuda::std::complex<float>,
+  cuda::std::complex<double>,
+  short2,
+  ushort2
 #if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
-   , float2
+  ,
+  float2
 #endif
-  , ulonglong4, custom_t
-#  if TEST_INT128()
-  , __int128_t
+  ,
+  ulonglong4,
+  custom_t
+#if TEST_INT128()
+  ,
+  __int128_t
+#endif
+#if TEST_HALF_T()
+  ,
+  __half,
+  __half2
+#  if _CCCL_CUDACC_AT_LEAST(12, 2)
+  ,
+  cuda::std::complex<__half>
 #  endif
-#  if TEST_HALF_T()
-   , __half
-   , __half2
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+  ,
+  __nv_bfloat16
+#  if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
+  ,
+  __nv_bfloat162
+#  endif
 #  if _CCCL_CUDACC_AT_LEAST(12, 2)
-   , cuda::std::complex<__half>
-#endif
-#  endif // TEST_HALF_T()
-#  if TEST_BF_T()
-   , __nv_bfloat16
-#if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
-   , __nv_bfloat162
-#endif
-#  if _CCCL_CUDACC_AT_LEAST(12, 2)
-   , cuda::std::complex<__nv_bfloat16>
-#endif
-#  endif // TEST_BF_T()
->;
+  ,
+  cuda::std::complex<__nv_bfloat16>
+#  endif
+#endif // TEST_BF_T()
+  >;
 
-using bitwise_type_list = c2h::type_list<uint8_t, uint16_t, uint32_t, uint64_t
-#  if TEST_INT128()
-    , __uint128_t
-#  endif
->;
+using bitwise_type_list =
+  c2h::type_list<uint8_t,
+                 uint16_t,
+                 uint32_t,
+                 uint64_t
+#if TEST_INT128()
+                 ,
+                 __uint128_t
+#endif
+                 >;
 
 using bitwise_op_list = c2h::type_list<cuda::std::bit_and<>, cuda::std::bit_or<>, cuda::std::bit_xor<>>;
 
 using logical_op_list = c2h::type_list<cuda::std::logical_and<>, cuda::std::logical_or<>>;
 
 using min_max_type_list = c2h::type_list<
-  int8_t, uint16_t, int32_t, int64_t,
-  short2, ushort2,
-#  if TEST_INT128()
+  int8_t,
+  uint16_t,
+  int32_t,
+  int64_t,
+  short2,
+  ushort2,
+#if TEST_INT128()
   __int128_t,
-#  endif
-  float, double, custom_t
-#  if TEST_HALF_T()
-  , __half
-  , __half2
-#  endif // TEST_HALF_T()
-#  if TEST_BF_T()
-  , __nv_bfloat16
-#if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
-   , __nv_bfloat162
 #endif
-#  endif // TEST_BF_T()
+  float,
+  double,
+  custom_t
+#if TEST_HALF_T()
+  ,
+  __half,
+  __half2
+#endif // TEST_HALF_T()
+#if TEST_BF_T()
+  ,
+  __nv_bfloat16
+#  if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
+  ,
+  __nv_bfloat162
+#  endif
+#endif // TEST_BF_T()
   >;
 
 using min_max_op_list = c2h::type_list<cuda::minimum<>, cuda::maximum<>>;
@@ -274,7 +302,6 @@ using builtin_type_list = c2h::type_list<int8_t, uint16_t, int32_t, int64_t, flo
 
 using logical_warp_threads = c2h::enum_type_list<unsigned, 32, 16, 7, 1>;
 
-// clang-format on
 /***********************************************************************************************************************
  * Reference
  **********************************************************************************************************************/
