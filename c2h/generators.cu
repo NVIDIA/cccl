@@ -103,24 +103,6 @@ struct random_to_item_t<cuda::std::complex<T>, false>
   }
 };
 
-template <typename T>
-struct random_to_item_t<T, true>
-{
-  using storage_t = ::cuda::std::_If<(sizeof(T) > 4), double, float>;
-  storage_t m_min;
-  storage_t m_max;
-
-  __host__ __device__ random_to_item_t(T min, T max)
-      : m_min(static_cast<storage_t>(min))
-      , m_max(static_cast<storage_t>(max))
-  {}
-
-  __device__ T operator()(float random_value)
-  {
-    return static_cast<T>(m_max * random_value + m_min * (1.0f - random_value));
-  }
-};
-
 generator_t::generator_t()
 {
 #if C2H_HAS_CURAND
