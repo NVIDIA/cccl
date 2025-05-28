@@ -151,17 +151,17 @@ void lib_call_epoch(async_resources_handle& handle, cudaStream_t stream, double*
   Ctx_t ctx(stream, handle);
   auto epoch = ctx.epoch();
 
-  ctx.task(epoch/*lA.write()*/)->*[=](cudaStream_t s) {
+  ctx.task(epoch /*lA.write()*/)->*[=](cudaStream_t s) {
     initA<<<128, 32, 0, s>>>(d_ptrA, N);
   };
 
-  ctx.task(epoch/*lB.write()*/)->*[=](cudaStream_t s) {
+  ctx.task(epoch /*lB.write()*/)->*[=](cudaStream_t s) {
     initB<<<128, 32, 0, s>>>(d_ptrB, N);
   };
 
   epoch++;
 
-  ctx.task(epoch/*lA.read(), lB.rw()*/)->*[=](cudaStream_t s) {
+  ctx.task(epoch /*lA.read(), lB.rw()*/)->*[=](cudaStream_t s) {
     axpy<<<128, 32, 0, s>>>(3.0, d_ptrA, d_ptrB, N);
   };
 
