@@ -49,17 +49,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 template <weakly_incrementable _Start, semiregular _BoundSentinel = unreachable_sentinel_t>
   requires __weakly_equality_comparable_with<_Start, _BoundSentinel> && copyable<_Start>
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 template <class _Start,
           class _BoundSentinel                                                        = unreachable_sentinel_t,
           enable_if_t<weakly_incrementable<_Start>, int>                              = 0,
           enable_if_t<semiregular<_BoundSentinel>, int>                               = 0,
           enable_if_t<__weakly_equality_comparable_with<_Start, _BoundSentinel>, int> = 0,
           enable_if_t<copyable<_Start>, int>                                          = 0>
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 class iota_view : public view_interface<iota_view<_Start, _BoundSentinel>>
 {
 public:
@@ -125,17 +125,17 @@ private:
   _BoundSentinel __bound_sentinel_ = _BoundSentinel();
 
 public:
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_HIDE_FROM_ABI iota_view()
     requires default_initializable<_Start>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_TEMPLATE(class _Start2 = _Start)
   _CCCL_REQUIRES(default_initializable<_Start2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iota_view() noexcept(is_nothrow_default_constructible_v<_Start2>)
       : view_interface<iota_view<_Start, _BoundSentinel>>()
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit iota_view(_Start __value) noexcept(
     is_nothrow_move_constructible_v<_Start>)
