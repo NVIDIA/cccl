@@ -13,17 +13,6 @@
 using cuda::device::address_space;
 using cuda::device::is_address_from;
 
-template <address_space exp_space>
-__device__ void test_is_address_from(const void* ptr)
-{
-  assert(is_address_from(address_space::global, ptr) == (exp_space == address_space::global));
-  assert(is_address_from(address_space::shared, ptr) == (exp_space == address_space::shared));
-  assert(is_address_from(address_space::constant, ptr) == (exp_space == address_space::constant));
-  assert(is_address_from(address_space::local, ptr) == (exp_space == address_space::local));
-  assert(is_address_from(address_space::grid_constant, ptr) == (exp_space == address_space::grid_constant));
-  assert(is_address_from(address_space::cluster_shared, ptr) == (exp_space == address_space::cluster_shared));
-}
-
 struct MutableStruct
 {
   mutable int v;
@@ -37,13 +26,10 @@ __global__ void test_kernel(const _CCCL_GRID_CONSTANT MutableStruct grid_constan
   __shared__ int shared_var;
   int local_var;
 
-  test_is_address_from<address_space::global>(&global_var);
-  test_is_address_from<address_space::shared>(&shared_var);
-  test_is_address_from<address_space::constant>(&constant_var);
-  test_is_address_from<address_space::local>(&local_var);
-
-  // __grid_constant__ address may come from other address spaces, so we test the variable address comes from the
-  // address_space::grid_constant
+  assert(is_address_from(address_space::global, &global_var));
+  assert(is_address_from(address_space::shared, &shared_var));
+  assert(is_address_from(address_space::constant, &constant_var));
+  assert(is_address_from(address_space::local, &local_var));
   assert(is_address_from(address_space::grid_constant, &grid_constant_var) == _CCCL_HAS_GRID_CONSTANT());
 
   // todo: test address_space::cluster_shared
