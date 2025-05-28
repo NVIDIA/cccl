@@ -745,7 +745,7 @@ inline std::ostream& operator<<(std::ostream& stream, const __half2& value)
 
 #if _CCCL_HAS_NVBF16()
 
-static std::ostream& operator<<(std::ostream& stream, const __nv_bfloat162& value)
+inline std::ostream& operator<<(std::ostream& stream, const __nv_bfloat162& value)
 {
   stream << "(" << value.x << "," << value.y << ")";
   return stream;
