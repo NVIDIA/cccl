@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/swap.h>
 
@@ -61,7 +62,8 @@ template <class _Tp, class _Up, class _Vp = decltype(true ? __identity_t<_Tp*>()
   return static_cast<_Vp>(__lhs) == static_cast<_Vp>(__rhs);
 }
 
-[[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __ptr_eq(detail::__ignore, detail::__ignore) noexcept -> bool
+[[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto __ptr_eq(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t) noexcept
+  -> bool
 {
   return false;
 }

@@ -38,7 +38,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
      auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+     if (!::__isGlobal(__ptr1))
      {
        return;
      }
@@ -63,7 +63,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void apply_access_property(
     NV_PROVIDES_SM_80,
     (_CCCL_ASSERT(__ptr != nullptr, "null pointer");
      auto __ptr1 = const_cast<void*>(__ptr);
-     if (!__isGlobal(__ptr1))
+     if (!::__isGlobal(__ptr1))
      {
        return;
      }

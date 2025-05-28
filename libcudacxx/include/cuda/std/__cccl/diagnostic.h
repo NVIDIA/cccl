@@ -117,7 +117,7 @@
 #else // ^^^ _CCCL_HAS_CUDA_COMPILER() ^^^ / vvv !_CCCL_HAS_CUDA_COMPILER() vvv
 #  define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
-#endif // other compilers
+#endif // ^^^ !_CCCL_HAS_CUDA_COMPILER() ^^^
 
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_HAS_PRAGMA_MSVC_WARNING

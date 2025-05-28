@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_VISIT
-#define __CUDAX_ASYNC_DETAIL_VISIT
+#ifndef __CUDAX_EXECUTION_VISIT
+#define __CUDAX_EXECUTION_VISIT
 
 #include <cuda/std/detail/__config>
 
@@ -141,4 +141,4 @@ _CCCL_GLOBAL_CONSTANT visit_t visit{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_VISIT
+#endif // __CUDAX_EXECUTION_VISIT

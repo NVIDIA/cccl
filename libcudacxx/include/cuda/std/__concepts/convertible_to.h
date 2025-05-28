@@ -30,12 +30,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.convertible]
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _From, class _To>
 concept convertible_to = is_convertible_v<_From, _To> && requires { static_cast<_To>(_CUDA_VSTD::declval<_From>()); };
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 #  if _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
@@ -62,7 +62,7 @@ _CCCL_NV_DIAG_DEFAULT(1211) // nonstandard cast to array type ignored
 #  endif // _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_DEFAULT(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

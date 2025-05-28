@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_CONCEPTS
-#define __CUDAX_ASYNC_DETAIL_CONCEPTS
+#ifndef __CUDAX_EXECUTION_CONCEPTS
+#define __CUDAX_EXECUTION_CONCEPTS
 
 #include <cuda/std/detail/__config>
 
@@ -150,4 +150,4 @@ _CCCL_CONCEPT dependent_sender = //
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_CONCEPTS
+#endif // __CUDAX_EXECUTION_CONCEPTS

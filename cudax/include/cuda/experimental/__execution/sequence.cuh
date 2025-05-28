@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_SEQUENCE
-#define __CUDAX_ASYNC_DETAIL_SEQUENCE
+#ifndef __CUDAX_EXECUTION_SEQUENCE
+#define __CUDAX_EXECUTION_SEQUENCE
 
 #include <cuda/std/detail/__config>
 
@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/unreachable.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/cpos.cuh>
@@ -62,8 +63,8 @@ private:
 
     _CCCL_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
-        , __opstate1_(execution::connect(static_cast<__sndr1_t&&>(__sndr1), __rcvr_ref{*this}))
-        , __opstate2_(execution::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref{__rcvr_}))
+        , __opstate1_(execution::connect(static_cast<__sndr1_t&&>(__sndr1), __ref_rcvr(*this)))
+        , __opstate2_(execution::connect(static_cast<__sndr2_t&&>(__sndr2), __ref_rcvr(__rcvr_)))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate);
@@ -96,8 +97,8 @@ private:
     }
 
     __rcvr_t __rcvr_;
-    connect_result_t<__sndr1_t, __rcvr_ref<__opstate, __env_t>> __opstate1_;
-    connect_result_t<__sndr2_t, __rcvr_ref<__rcvr_t>> __opstate2_;
+    connect_result_t<__sndr1_t, __rcvr_ref_t<__opstate, __env_t>> __opstate1_;
+    connect_result_t<__sndr2_t, __rcvr_ref_t<__rcvr_t>> __opstate2_;
   };
 
 public:
@@ -150,7 +151,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
   }
 
   _CCCL_NO_UNIQUE_ADDRESS sequence_t __tag_;
-  _CCCL_NO_UNIQUE_ADDRESS __ignore __ign_;
+  _CCCL_NO_UNIQUE_ADDRESS _CUDA_VSTD::__ignore_t __ign_;
   __sndr1_t __sndr1_;
   __sndr2_t __sndr2_;
 };
@@ -158,7 +159,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT sequence_t::__sndr_t
 template <class _Sndr1, class _Sndr2>
 _CCCL_TRIVIAL_API constexpr auto sequence_t::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS  = domain_for_t<_Sndr1>;
+  using __dom_t _CCCL_NODEBUG_ALIAS  = __early_domain_of_t<_Sndr1>;
   using __sndr_t _CCCL_NODEBUG_ALIAS = sequence_t::__sndr_t<_Sndr1, _Sndr2>;
   return transform_sender(__dom_t{}, __sndr_t{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)});
 }
@@ -171,4 +172,4 @@ _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_SEQUENCE

@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -35,11 +35,11 @@ namespace cuda::experimental
 class device;
 struct arch_traits_t;
 
-namespace detail
+namespace __detail
 {
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr;
-} // namespace detail
+} // namespace __detail
 
 //! @brief A non-owning representation of a CUDA device
 class device_ref
@@ -110,7 +110,7 @@ public:
   template <::cudaDeviceAttr _Attr>
   [[nodiscard]] auto attr() const
   {
-    return attr(detail::__dev_attr<_Attr>());
+    return attr(__detail::__dev_attr<_Attr>());
   }
 
   //! @brief Retrieve string with the name of this device.
@@ -122,7 +122,7 @@ public:
     ::std::string __name(256, 0);
 
     // For some reason there is no separate name query in CUDA runtime
-    detail::driver::getName(__name.data(), __max_name_length, get());
+    __detail::driver::getName(__name.data(), __max_name_length, get());
     return __name;
   }
 
