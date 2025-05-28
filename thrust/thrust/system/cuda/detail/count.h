@@ -67,7 +67,7 @@ template <class Derived, class InputIt, class Value>
 thrust::detail::it_difference_t<InputIt> _CCCL_HOST_DEVICE
 count(execution_policy<Derived>& policy, InputIt first, InputIt last, Value const& value)
 {
-  return cuda_cub::count_if(policy, first, last, thrust::detail::equal_to_value<Value>(value));
+  return cuda_cub::count_if(policy, first, last, thrust::detail::equal_to_value<Value>{value});
 }
 
 } // namespace cuda_cub
