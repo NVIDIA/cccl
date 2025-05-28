@@ -33,20 +33,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
 //! @brief A class representing a lane mask in a warp.
 class lane_mask
 {
-  _CUDA_VSTD::uint32_t __value_ = 0;
+  _CUDA_VSTD::uint32_t __value_;
 
 public:
-  //! @brief Default constructor, initializes the lane mask to none.
-  //!
-  //! @post `value() == 0`
-  _CCCL_HIDE_FROM_ABI constexpr lane_mask() noexcept = default;
-
   //! @brief Constructs a lane mask object from a 32-bit unsigned integer.
   //!
-  //! @param __v The value to initialize the lane mask with.
+  //! @param __v The value to initialize the lane mask with. Defaults to 0.
   //!
   //! @post `value() == __v`
-  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(_CUDA_VSTD::uint32_t __v) noexcept
+  _CCCL_DEVICE _CCCL_HIDE_FROM_ABI explicit constexpr lane_mask(_CUDA_VSTD::uint32_t __v = 0) noexcept
       : __value_{__v}
   {}
 

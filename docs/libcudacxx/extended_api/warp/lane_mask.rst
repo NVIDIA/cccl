@@ -14,8 +14,7 @@ Defined in ``<cuda/warp>`` header.
         class lane_mask
         {
             // constructors
-            constexpr lane_mask() noexcept = default; // performs zero-initialization
-            __device__ explicit constexpr lane_mask(cuda::std::uint32_t v) noexcept;
+            __device__ explicit constexpr lane_mask(cuda::std::uint32_t v = 0) noexcept;
 
             // member functions
             [[nodiscard]] __device__ constexpr cuda::std::uint32_t value() const noexcept;
