@@ -166,9 +166,9 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   constexpr int block_dim        = VectorizedPolicy::block_threads;
   constexpr int items_per_thread = VectorizedPolicy::items_per_thread;
-  constexpr int tile_size        = block_dim * items_per_thread;
-  const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_size;
-  const int num_valid            = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_size}));
+  constexpr int tile_stride      = block_dim * items_per_thread;
+  const Offset offset            = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size            = static_cast<int>((::cuda::std::min)(num_items - offset, Offset{tile_stride}));
 
   // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
@@ -181,7 +181,7 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   // FIXME(bgruber): implement handling of unalinged data
 
-  if (num_valid == tile_size)
+  if (tile_size == tile_stride)
   {
     constexpr int vector_load_length = VectorizedPolicy::vector_load_length;
     static_assert(items_per_thread % vector_load_length == 0);
