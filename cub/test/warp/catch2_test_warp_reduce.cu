@@ -311,7 +311,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // numeric(33): C: '=': conversion from 'int' to 
 
 template <typename predefined_op, typename T>
 void compute_host_reference(
-  c2h::host_vector<T>& h_in,
+  const c2h::host_vector<T>& h_in,
   c2h::host_vector<T>& h_out,
   int logical_warps,
   int logical_warp_threads,
