@@ -753,7 +753,7 @@ inline std::ostream& operator<<(std::ostream& stream, const __nv_bfloat162& valu
 
 #endif // _CCCL_HAS_NVBF16
 
-#if _CCCL_HAS_INT128()
+#if TEST_INT128()
 inline std::ostream& operator<<(std::ostream& os, __uint128_t val)
 {
   constexpr int max_digits      = 40;
