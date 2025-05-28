@@ -492,6 +492,11 @@ public:
     detail::reduce_logical_mode_t<Mode> logical_mode = {},
     detail::reduce_result_mode_t<Kind> result_mode   = {})
   {
+    if (valid_items <= 0)
+    {
+      return input;
+    }
+    _CCCL_ASSERT(valid_items <= LogicalWarpThreads, "Invalid value for valid_items");
     auto valid_items1 = detail::valid_items_t<>{_CUDA_VSTD::clamp(valid_items, 0, LogicalWarpThreads)};
     detail::WarpReduceConfig config{logical_mode, result_mode, logical_warp_size, valid_items1};
     return cub::detail::warp_reduce_dispatch(input, reduction_op, config);

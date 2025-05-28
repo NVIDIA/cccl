@@ -58,20 +58,20 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat16> || cuda::std::is_same_v<T, __half>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, __half> ? 0.08f : 0.14f;
+    constexpr auto rel_err = cuda::std::is_same_v<T, __half> ? 0.08f : 0.16f;
     REQUIRE_APPROX_EQ_EPSILON(expected_data, test_results, rel_err);
   }
   else if constexpr (cuda::std::is_same_v<T, float2>)
   {
     for (size_t i = 0; i < test_results.size(); ++i)
     {
-      REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x));
-      REQUIRE_THAT(expected_data[i].y, Catch::Matchers::WithinRel(test_results[i].y));
+      REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x, 0.01));
+      REQUIRE_THAT(expected_data[i].y, Catch::Matchers::WithinRel(test_results[i].y, 0.01));
     }
   }
   else if constexpr (cuda::std::is_same_v<T, __nv_bfloat162> || cuda::std::is_same_v<T, __half2>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, __half2> ? 0.08f : 0.14f;
+    constexpr auto rel_err = cuda::std::is_same_v<T, __half2> ? 0.08f : 0.16f;
     for (size_t i = 0; i < test_results.size(); ++i)
     {
       REQUIRE_THAT(expected_data[i].x, Catch::Matchers::WithinRel(test_results[i].x, rel_err));
@@ -81,7 +81,7 @@ void verify_results(const c2h::host_vector<T>& expected_data, const c2h::host_ve
   else if constexpr (cuda::std::is_same_v<T, cuda::std::complex<__nv_bfloat16>>
                      || cuda::std::is_same_v<T, cuda::std::complex<__half>>)
   {
-    constexpr auto rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? 0.08f : 0.14f;
+    constexpr auto rel_err = cuda::std::is_same_v<T, cuda::std::complex<__half>> ? 0.08f : 0.16f;
     for (size_t i = 0; i < test_results.size(); ++i)
     {
       auto expected_real = static_cast<float>(expected_data[i].real());

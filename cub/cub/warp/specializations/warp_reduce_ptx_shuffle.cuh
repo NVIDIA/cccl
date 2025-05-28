@@ -226,12 +226,12 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
   {
     return valid_items.extent(0); // segmented limit
   }
-  else if constexpr (valid_items.rank_dynamic() == 0 && ::cuda::is_power_of_two(ValidItems))
-  {
-    const auto clamp   = 1u << step;
-    const auto segmask = 0b11110u << (step + 8);
-    return clamp | segmask;
-  }
+  // else if constexpr (valid_items.rank_dynamic() == 0 && ::cuda::is_power_of_two(ValidItems))
+  //{
+  //   const auto clamp   = 1u << step;
+  //   const auto segmask = 0b11110u << (step + 8);
+  //   return clamp | segmask;
+  // }
   else // valid_items is dynamic
   {
     return cub::detail::logical_warp_base_id(logical_size) + valid_items.extent(0) - 1;
@@ -241,11 +241,21 @@ template <int LogicalWarpSize, size_t ValidItems, bool IsSegmented>
 //----------------------------------------------------------------------------------------------------------------------
 // Generation of Shuffle/Reduce Member Mask
 
-template <ReduceLogicalMode LogicalMode, int LogicalWarpSize>
-[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t
-reduce_lane_mask(reduce_logical_mode_t<LogicalMode> logical_mode, logical_warp_size_t<LogicalWarpSize>)
+template <ReduceLogicalMode LogicalMode, int LogicalWarpSize, size_t ValidItems = LogicalWarpSize, bool IsSegmented = false>
+[[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE uint32_t reduce_lane_mask(
+  [[maybe_unused]] reduce_logical_mode_t<LogicalMode> logical_mode,
+  logical_warp_size_t<LogicalWarpSize>,
+  valid_items_t<ValidItems> valid_items = {},
+  is_segmented_t<IsSegmented>           = {})
 {
-  return (logical_mode == multiple_reductions) ? 0xFFFFFFFF : (0xFFFFFFFF >> (warp_threads - LogicalWarpSize));
+  if constexpr (valid_items.rank_dynamic() == 0 || IsSegmented)
+  {
+    return (logical_mode == multiple_reductions) ? 0xFFFFFFFF : (0xFFFFFFFF >> (warp_threads - LogicalWarpSize));
+  }
+  else
+  {
+    return ::__activemask();
+  }
 }
 
 } // namespace detail
