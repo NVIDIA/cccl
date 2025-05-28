@@ -31,15 +31,14 @@ using cub::detail::transform::Algorithm;
 template <Algorithm Alg>
 struct policy_hub_for_alg
 {
-  struct max_policy : cub::ChainedPolicy<300, max_policy, max_policy>
-  {
-    static constexpr int min_bif         = 64 * 1024;
-    static constexpr Algorithm algorithm = Alg;
-    using algo_policy =
-      ::cuda::std::_If<Alg == Algorithm::prefetch,
-                       cub::detail::transform::prefetch_policy_t<256>,
-                       cub::detail::transform::async_copy_policy_t<256, 128>>;
-  };
+  static constexpr int min_bif = 64 * 1024;
+
+  struct max_policy
+      : ::cuda::std::_If<Alg == Algorithm::prefetch,
+                         cub::detail::transform::prefetch_policy_t<256, min_bif>,
+                         cub::detail::transform::async_copy_policy_t<256, min_bif, 128>>
+      , cub::ChainedPolicy<300, max_policy, max_policy>
+  {};
 };
 
 template <Algorithm Alg,

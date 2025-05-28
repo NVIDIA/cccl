@@ -82,10 +82,22 @@ struct TransformKernelSource<Offset,
     return loaded_bytes_per_iteration<RandomAccessIteratorsIn...>();
   };
 
+  CUB_RUNTIME_FUNCTION static constexpr auto ItValueSizes()
+  {
+    return ::cuda::std::array<::cuda::std::size_t, sizeof...(RandomAccessIteratorsIn)>{
+      {sizeof(it_value_t<RandomAccessIteratorsIn>)...}};
+  }
+
   template <typename It>
   CUB_RUNTIME_FUNCTION constexpr kernel_arg<It> MakeIteratorKernelArg(It it)
   {
     return detail::transform::make_iterator_kernel_arg(it);
+  }
+
+  template <typename It>
+  CUB_RUNTIME_FUNCTION constexpr kernel_arg<It> MakeAlignedBasePtrKernelArg(It it, int align)
+  {
+    return detail::transform::make_aligned_base_ptr_kernel_arg(it, align);
   }
 };
 
@@ -178,15 +190,14 @@ struct dispatch_t<StableAddress,
   // TODO(bgruber): I want to write tests for this but those are highly depending on the architecture we are running
   // on?
   template <typename ActivePolicy>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel() -> cuda_expected<
-    ::cuda::std::
-      tuple<THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron, decltype(kernel_source.TransformKernel()), int>>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE auto configure_ublkcp_kernel(ActivePolicy policy = {})
+    -> cuda_expected<
+      ::cuda::std::tuple<decltype(launcher_factory(0, 0, 0, 0)), decltype(kernel_source.TransformKernel()), int>>
   {
-    using policy_t          = typename ActivePolicy::algo_policy;
-    constexpr int block_dim = policy_t::block_threads;
+    int block_dim = policy.BlockThreads();
     _CCCL_ASSERT_HOST(block_dim % bulk_copy_align == 0,
                       "block_threads needs to be a multiple of bulk_copy_alignment"); // then tile_size is a multiple of
-                                                                                      // it
+                                                                                      // of it
 
     auto determine_element_counts = [&]() -> cuda_expected<elem_counts> {
       const auto max_smem = get_max_shared_memory();
@@ -197,13 +208,13 @@ struct dispatch_t<StableAddress,
 
       elem_counts last_counts{};
       // Increase the number of output elements per thread until we reach the required bytes in flight.
-      static_assert(policy_t::min_items_per_thread <= policy_t::max_items_per_thread, ""); // ensures the loop below
+      _CCCL_ASSERT_HOST(policy.MinItemsPerThread() <= policy.MaxItemsPerThread(), ""); // ensures the loop below
       // runs at least once
-      for (int elem_per_thread = +policy_t::min_items_per_thread; elem_per_thread < +policy_t::max_items_per_thread;
+      for (int elem_per_thread = +policy.MinItemsPerThread(); elem_per_thread < +policy.MaxItemsPerThread();
            ++elem_per_thread)
       {
         const int tile_size = block_dim * elem_per_thread;
-        const int smem_size = bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(tile_size, bulk_copy_align);
+        const int smem_size = bulk_copy_smem_for_tile_size(kernel_source.ItValueSizes(), tile_size, bulk_copy_align);
         if (smem_size > *max_smem)
         {
           // assert should be prevented by smem check in policy
@@ -225,7 +236,7 @@ struct dispatch_t<StableAddress,
         }
 
         const int bytes_in_flight_SM = max_occupancy * tile_size * kernel_source.LoadedBytesPerIteration();
-        if (ActivePolicy::min_bif <= bytes_in_flight_SM)
+        if (policy.MinBif() <= bytes_in_flight_SM)
         {
           return elem_counts{elem_per_thread, tile_size, smem_size};
         }
@@ -258,22 +269,33 @@ struct dispatch_t<StableAddress,
   }
 
   template <typename ActivePolicy, size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t invoke_ublkcp_algorithm(::cuda::std::index_sequence<Is...>)
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
+  invoke_ublkcp_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy policy)
   {
-    auto ret = configure_ublkcp_kernel<ActivePolicy>();
+    auto ret = configure_ublkcp_kernel(policy);
     if (!ret)
     {
       return ret.error();
     }
-    auto [launcher, kernel, elem_per_thread] = *ret;
-    return launcher.doit(
-      kernel,
-      num_items,
-      elem_per_thread,
-      op,
-      out,
-      make_aligned_base_ptr_kernel_arg(
-        THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_align)...);
+    // Note: this check is moved to runtime to allow for c.parallel's passing of a runtime value for the chosen
+    // algorithm.
+    if constexpr ((THRUST_NS_QUALIFIER::is_contiguous_iterator_v<::cuda::std::tuple_element_t<Is, decltype(in)>> && ...))
+    {
+      auto [launcher, kernel, elem_per_thread] = *ret;
+      return launcher.doit(
+        kernel,
+        num_items,
+        elem_per_thread,
+        op,
+        out,
+        kernel_source.MakeAlignedBasePtrKernelArg(
+          THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_align)...);
+    }
+    else
+    {
+      _CCCL_ASSERT_HOST(false, "ublkcp algorithm requires all input iterators to be contiguous");
+      _CCCL_UNREACHABLE();
+    }
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
@@ -321,7 +343,7 @@ struct dispatch_t<StableAddress,
     const int items_per_thread =
       loaded_bytes_per_iter == 0
         ? +policy.ItemsPerThreadNoInput()
-        : ::cuda::ceil_div(policy.min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
+        : ::cuda::ceil_div(policy.MinBif(), config->max_occupancy * block_dim * loaded_bytes_per_iter);
 
     // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
     const int items_per_thread_evenly_spread = static_cast<int>(
@@ -345,11 +367,11 @@ struct dispatch_t<StableAddress,
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
-    auto wrapped_policy = detail::transform::MakeTransformPolicyWrapper(active_policy);
+    auto wrapped_policy = MakePolicyWrapper(active_policy);
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-    if constexpr (Algorithm::ublkcp == wrapped_policy.GetAlgorithm())
+    if (Algorithm::ublkcp == wrapped_policy.GetAlgorithm())
     {
-      return invoke_ublkcp_algorithm<ActivePolicyT>(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{});
+      return invoke_ublkcp_algorithm(::cuda::std::index_sequence_for<RandomAccessIteratorsIn...>{}, wrapped_policy);
     }
     else
 #endif // _CUB_HAS_TRANSFORM_UBLKCP

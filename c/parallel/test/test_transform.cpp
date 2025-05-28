@@ -98,6 +98,56 @@ void binary_transform(
     cache, lookup_key, input1, input2, output, num_items, op);
 }
 
+C2H_TEST("Transform generates UBLKCP on SM90", "[transform][ublkcp]")
+{
+  constexpr int device_id = 0;
+  const auto& build_info  = BuildInformation<device_id>::init();
+
+  // Only test for ublkcp when it is actually possible to get it.
+  if (build_info.get_cc_major() < 9)
+  {
+    return;
+  }
+
+  cccl_device_transform_build_result_t build;
+  operation_t op = make_operation("op", get_unary_op(get_type_info<int>().type));
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_unary_transform_build(
+      &build,
+      pointer_t<int>(0),
+      pointer_t<int>(0),
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  std::string sass = inspect_sass(build.cubin, build.cubin_size);
+  CHECK(sass.find("UBLKCP") != std::string::npos);
+
+  op = make_operation("op", get_reduce_op(get_type_info<int>().type));
+  REQUIRE(
+    CUDA_SUCCESS
+    == cccl_device_binary_transform_build(
+      &build,
+      pointer_t<int>(0),
+      pointer_t<int>(0),
+      pointer_t<int>(0),
+      op,
+      build_info.get_cc_major(),
+      build_info.get_cc_minor(),
+      build_info.get_cub_path(),
+      build_info.get_thrust_path(),
+      build_info.get_libcudacxx_path(),
+      build_info.get_ctk_path()));
+
+  sass = inspect_sass(build.cubin, build.cubin_size);
+  CHECK(sass.find("UBLKCP") != std::string::npos);
+}
+
 using integral_types = c2h::type_list<int32_t, uint32_t, int64_t, uint64_t>;
 struct Transform_IntegralTypes_Fixture_Tag;
 C2H_TEST("Transform works with integral types", "[transform]", integral_types)
