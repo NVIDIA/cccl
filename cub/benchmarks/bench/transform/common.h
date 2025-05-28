@@ -43,28 +43,6 @@ struct policy_hub_t
 };
 #endif
 
-#ifdef TUNE_T
-using element_types = nvbench::type_list<TUNE_T>;
-#else
-using element_types =
-  nvbench::type_list<std::int8_t,
-                     std::int16_t,
-                     float,
-                     double
-#  ifdef NVBENCH_HELPER_HAS_I128
-                     ,
-                     __int128
-#  endif
-                     >;
-#endif
-
-// BabelStream uses 2^25, H200 can fit 2^31 int128s
-// 2^20 chars / 2^16 int128 saturate V100 (min_bif =12 * SM count =80)
-// 2^21 chars / 2^17 int128 saturate A100 (min_bif =16 * SM count =108)
-// 2^23 chars / 2^19 int128 saturate H100/H200 HBM3 (min_bif =32or48 * SM count =132)
-// inline auto array_size_powers = std::vector<nvbench::int64_t>{28};
-inline auto array_size_powers = nvbench::range(16, 28, 4);
-
 template <typename OffsetT,
           typename... RandomAccessIteratorsIn,
           typename RandomAccessIteratorOut,
@@ -88,12 +66,6 @@ void bench_transform(
       policy_hub_t<RandomAccessIteratorsIn...>>::dispatch(inputs, output, num_items, transform_op, launch.get_stream());
   });
 }
-
-// Modified from BabelStream to also work for integers
-inline constexpr auto startA      = 1; // BabelStream: 0.1
-inline constexpr auto startB      = 2; // BabelStream: 0.2
-inline constexpr auto startC      = 3; // BabelStream: 0.1
-inline constexpr auto startScalar = 4; // BabelStream: 0.4
 
 // TODO(bgruber): we should put those somewhere into libcu++:
 // from C++ GSL
