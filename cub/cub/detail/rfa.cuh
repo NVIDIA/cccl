@@ -63,15 +63,15 @@ static _CCCL_DEVICE Float* get_shared_bin_array()
 template <class ftype>
 struct RFA_bins
 {
-  static constexpr int BIN_WIDTH = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
-  static constexpr int MIN_EXP   = ::cuda::std::numeric_limits<ftype>::min_exponent;
-  static constexpr int MAX_EXP   = ::cuda::std::numeric_limits<ftype>::max_exponent;
-  static constexpr int MANT_DIG  = ::cuda::std::numeric_limits<ftype>::digits;
+  static constexpr int bin_width = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
+  static constexpr int min_exp   = ::cuda::std::numeric_limits<ftype>::min_exponent;
+  static constexpr int max_exp   = ::cuda::std::numeric_limits<ftype>::max_exponent;
+  static constexpr int mant_dig  = ::cuda::std::numeric_limits<ftype>::digits;
 
   /// Binned floating-point maximum index
-  static constexpr int MAXINDEX = ((MAX_EXP - MIN_EXP + MANT_DIG - 1) / BIN_WIDTH) - 1;
+  static constexpr int max_index = ((max_exp - min_exp + mant_dig - 1) / bin_width) - 1;
   // The maximum floating-point fold supported by the library
-  static constexpr int MAXFOLD = MAXINDEX + 1;
+  static constexpr int max_fold = max_index + 1;
 
   _CCCL_DEVICE static ftype initialize_bins(int index) noexcept
   {
@@ -79,21 +79,21 @@ struct RFA_bins
     {
       if constexpr (::cuda::std::is_same_v<ftype, float>)
       {
-        return ::cuda::std::ldexp(0.75, MAX_EXP);
+        return ::cuda::std::ldexp(0.75, max_exp);
       }
       else
       {
-        return 2.0 * ::cuda::std::ldexp(0.75, MAX_EXP - 1);
+        return 2.0 * ::cuda::std::ldexp(0.75, max_exp - 1);
       }
     }
 
-    if (index > 0 && index <= MAXINDEX)
+    if (index > 0 && index <= max_index)
     {
-      return ::cuda::std::ldexp(0.75, MAX_EXP + MANT_DIG - BIN_WIDTH + 1 - index * BIN_WIDTH);
+      return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - index * bin_width);
     }
     else
     {
-      return ::cuda::std::ldexp(0.75, MAX_EXP + MANT_DIG - BIN_WIDTH + 1 - MAXINDEX * BIN_WIDTH);
+      return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - max_index * bin_width);
     }
   }
 };
@@ -112,39 +112,33 @@ private:
   ::cuda::std::array<ftype, 2 * Fold> data = {0};
 
   /// Floating-point precision bin width
-  static constexpr int BIN_WIDTH = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
-  static constexpr int MIN_EXP   = ::cuda::std::numeric_limits<ftype>::min_exponent;
-  static constexpr int MAX_EXP   = ::cuda::std::numeric_limits<ftype>::max_exponent;
-  static constexpr int MANT_DIG  = ::cuda::std::numeric_limits<ftype>::digits;
+  static constexpr int bin_width = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
+  static constexpr int min_exp   = ::cuda::std::numeric_limits<ftype>::min_exponent;
+  static constexpr int max_exp   = ::cuda::std::numeric_limits<ftype>::max_exponent;
+  static constexpr int mant_dig  = ::cuda::std::numeric_limits<ftype>::digits;
 
 public:
   /// Binned floating-point maximum index
-
-  static constexpr int MAXINDEX = ((MAX_EXP - MIN_EXP + MANT_DIG - 1) / BIN_WIDTH) - 1;
+  static constexpr int max_index = ((max_exp - min_exp + mant_dig - 1) / bin_width) - 1;
 
   // The maximum floating-point fold supported by the library
-  static constexpr auto MAXFOLD = MAXINDEX + 1;
+  static constexpr auto max_fold = max_index + 1;
 
 private:
   /// Binned floating-point compression factor
   /// This factor is used to scale down inputs before deposition into the bin of
   /// highest index
-  static constexpr auto COMPRESSION = 1.0 / (1 << (MANT_DIG - BIN_WIDTH + 1));
+  static constexpr auto compression = 1.0 / (1 << (mant_dig - bin_width + 1));
   /// Binned double precision expansion factor
   /// This factor is used to scale up inputs after deposition into the bin of
   /// highest index
-  static constexpr auto EXPANSION = 1.0 * (1 << (MANT_DIG - BIN_WIDTH + 1));
-  static constexpr auto EXP_BIAS  = MAX_EXP - 2;
-  static constexpr auto EPSILON   = ::cuda::std::numeric_limits<ftype>::epsilon();
-  /// Binned floating-point deposit endurance
-  /// The number of deposits that can be performed before a renorm is necessary.
-  /// Applies also to binned complex double precision.
-  static constexpr auto ENDURANCE = 1 << (MANT_DIG - BIN_WIDTH - 2);
+  static constexpr auto expansion = 1.0 * (1 << (mant_dig - bin_width + 1));
+  static constexpr auto exp_bias  = max_exp - 2;
 
   /// Return a binned floating-point bin
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static ftype binned_bins(int index)
   {
-    ftype* bins = get_shared_bin_array<ftype, MAXINDEX + MAXFOLD>();
+    ftype* bins = get_shared_bin_array<ftype, max_index + max_fold>();
     return bins[index];
   }
 
@@ -285,13 +279,13 @@ private:
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr int is_nan_inf_v(const ftype x) noexcept
   {
     const auto bits = get_bits(x);
-    return (bits & ((2ull * MAX_EXP - 1) << (MANT_DIG - 1))) == ((2ull * MAX_EXP - 1) << (MANT_DIG - 1));
+    return (bits & ((2ull * max_exp - 1) << (mant_dig - 1))) == ((2ull * max_exp - 1) << (mant_dig - 1));
   }
 
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int exp_val(const ftype x) noexcept
   {
     const auto bits = get_bits(x);
-    return (bits >> (MANT_DIG - 1)) & (2 * MAX_EXP - 1);
+    return (bits >> (mant_dig - 1)) & (2 * max_exp - 1);
   }
 
   /// Get index of float-point precision
@@ -304,17 +298,17 @@ private:
 
     if (exp != 0)
     {
-      return ((MAX_EXP + EXP_BIAS) - exp) / BIN_WIDTH;
+      return ((max_exp + exp_bias) - exp) / bin_width;
     }
     if (x == 0.0)
     {
-      return MAXINDEX;
+      return max_index;
     }
     else
     {
       (void) ::cuda::std::frexpf(x, &exp);
-      // use +MAXINDEX to optimize the host constexpr variable `MAXINDEX` to be used in the device function
-      return (::cuda::std::min)((MAX_EXP - exp) / BIN_WIDTH, +MAXINDEX);
+      // use +max_index to optimize the host constexpr variable `max_index` to be used in the device function
+      return (::cuda::std::min)((max_exp - exp) / bin_width, +max_index);
     }
   }
 
@@ -323,14 +317,14 @@ private:
   /// indices correspond to smaller bins.
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE int binned_index() const
   {
-    return ((MAX_EXP + MANT_DIG - BIN_WIDTH + 1 + EXP_BIAS) - exp_val(primary(0))) / BIN_WIDTH;
+    return ((max_exp + mant_dig - bin_width + 1 + exp_bias) - exp_val(primary(0))) / bin_width;
   }
 
   /// Check if index of manually specified binned floating-point is 0
   /// A quick check to determine if the index is 0
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE bool binned_index0() const
   {
-    return exp_val(primary(0)) == MAX_EXP + EXP_BIAS;
+    return exp_val(primary(0)) == max_exp + exp_bias;
   }
 
   //! Update manually specified binned fp with a scalar (X -> Y)
@@ -405,13 +399,13 @@ private:
     if (binned_index0())
     {
       M        = primary(0);
-      ftype qd = x * COMPRESSION;
+      ftype qd = x * compression;
       auto& ql = get_bits(qd);
       ql |= 1;
       qd += M;
       primary(0) = qd;
       M -= qd;
-      M *= EXPANSION * 0.5;
+      M *= expansion * 0.5;
       x += M;
       x += M;
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -470,10 +464,10 @@ private:
       auto tmp_renormd  = primary(i * incpriX);
       auto& tmp_renorml = get_bits(tmp_renormd);
 
-      carry(i * inccarX) += (int) ((tmp_renorml >> (MANT_DIG - 3)) & 3) - 2;
+      carry(i * inccarX) += (int) ((tmp_renorml >> (mant_dig - 3)) & 3) - 2;
 
-      tmp_renorml &= ~(1ull << (MANT_DIG - 3));
-      tmp_renorml |= 1ull << (MANT_DIG - 2);
+      tmp_renorml &= ~(1ull << (mant_dig - 3));
+      tmp_renorml |= 1ull << (mant_dig - 2);
       primary(i * incpriX) = tmp_renormd;
     }
   }
@@ -515,16 +509,16 @@ private:
     double scale_up;
     int scaled;
     const auto X_index = binned_index();
-    if (X_index <= (3 * MANT_DIG) / BIN_WIDTH)
+    if (X_index <= (3 * mant_dig) / bin_width)
     {
-      scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * MANT_DIG - BIN_WIDTH));
-      scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * MANT_DIG - BIN_WIDTH));
-      scaled     = ::cuda::std::max(::cuda::std::min(Fold, (3 * MANT_DIG) / BIN_WIDTH - X_index), 0);
+      scale_down = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
+      scale_up   = ::cuda::std::ldexpf(0.5f, 1 - (2 * mant_dig - bin_width));
+      scaled     = ::cuda::std::max(::cuda::std::min(Fold, (3 * mant_dig) / bin_width - X_index), 0);
       if (X_index == 0)
       {
-        Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * EXPANSION);
+        Y += carry(0) * ((binned_bins(0 + X_index) / 6.0) * scale_down * expansion);
         Y += carry(inccarX) * ((binned_bins(1 + X_index) / 6.0) * scale_down);
-        Y += (primary(0) - binned_bins(0 + X_index)) * scale_down * EXPANSION;
+        Y += (primary(0) - binned_bins(0 + X_index)) * scale_down * expansion;
         i = 2;
       }
       else
@@ -591,9 +585,9 @@ private:
     const auto X_index = binned_index();
     if (X_index == 0)
     {
-      Y += (double) carry(0) * (double) (binned_bins(0 + X_index) / 6.0) * (double) EXPANSION;
+      Y += (double) carry(0) * (double) (binned_bins(0 + X_index) / 6.0) * (double) expansion;
       Y += (double) carry(inccarX) * (double) (binned_bins(1 + X_index) / 6.0);
-      Y += (double) (primary(0) - binned_bins(0 + X_index)) * (double) EXPANSION;
+      Y += (double) (primary(0) - binned_bins(0 + X_index)) * (double) expansion;
       i = 2;
     }
     else
@@ -718,7 +712,7 @@ public:
   /// Return the endurance of the binned fp
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE constexpr int endurance() const noexcept
   {
-    return ENDURANCE;
+    return 1 << (mant_dig - bin_width - 2);
   }
 
   //! Accumulate an arithmetic @p x into the binned fp.
@@ -821,7 +815,7 @@ public:
 
   //! Rebins for repeated accumulation of scalars with magnitude <= @p mav
   //!
-  //! Once rebinned, `ENDURANCE` values <= @p mav can be added to the accumulator
+  //! Once rebinned, `endurance` values <= @p mav can be added to the accumulator
   //! with `unsafe_add` after which `renorm()` must be called. See the source of
   //!`add()` for an example
   _CCCL_DEVICE void set_max_val(const ftype mav)

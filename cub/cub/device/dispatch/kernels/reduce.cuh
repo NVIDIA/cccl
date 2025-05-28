@@ -338,7 +338,7 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
   __shared__ typename BlockReduceT::TempStorage temp_storage;
 
   using FloatType                 = typename AccumT::ftype;
-  constexpr int BinLength         = AccumT::MAXINDEX + AccumT::MAXFOLD;
+  constexpr int BinLength         = AccumT::max_index + AccumT::max_fold;
   constexpr auto ITEMS_PER_THREAD = ChainedPolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
   constexpr auto BLOCK_THREADS    = ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS;
   const int GRID_DIM              = reduce_grid_size;
@@ -484,7 +484,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   }
 
   using FloatType         = typename AccumT::ftype;
-  constexpr int BinLength = AccumT::MAXINDEX + AccumT::MAXFOLD;
+  constexpr int BinLength = AccumT::max_index + AccumT::max_fold;
 
   FloatType* shared_bins = detail::rfa::get_shared_bin_array<FloatType, BinLength>();
 
