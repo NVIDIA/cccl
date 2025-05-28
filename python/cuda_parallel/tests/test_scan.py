@@ -45,7 +45,18 @@ def scan_device(d_input, d_output, num_items, op, h_init, force_inclusive, strea
     "force_inclusive",
     [True, False],
 )
-def test_scan_array_input(force_inclusive, input_array):
+def test_scan_array_input(force_inclusive, input_array, monkeypatch):
+    # Skip sass verification if input is complex
+    # as LDL/STL instructions are emitted for complex types.
+    if np.issubdtype(input_array.dtype, np.complexfloating):
+        import cuda.parallel.experimental._cccl_interop
+
+        monkeypatch.setattr(
+            cuda.parallel.experimental._cccl_interop,
+            "_check_sass",
+            False,
+        )
+
     def op(a, b):
         return a + b
 

@@ -31,17 +31,13 @@ runs:
       shell: sh
       run: |
         # Install script dependencies
-        sudo apt update
-        sudo apt install -y --no-install-recommends tree git
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        path: ${{github.event.repository.name}}
-        persist-credentials: false
+        alias retry="${{github.workspace}}/ci/util/retry.sh 5 30"
+        retry sudo apt update
+        retry sudo apt install -y --no-install-recommends tree git
     - name: Add NVCC problem matcher
       shell: bash --noprofile --norc -euo pipefail {0}
       run: |
-        echo "::add-matcher::${{github.event.repository.name}}/.github/problem-matchers/problem-matcher.json"
+        echo "::add-matcher::${{github.workspace}}/.github/problem-matchers/problem-matcher.json"
     - name: Get AWS credentials for sccache bucket
       uses: aws-actions/configure-aws-credentials@v4
       with:
@@ -52,7 +48,7 @@ runs:
       uses: actions/download-artifact@v4
       with:
         name: wheelhouse-${{ inputs.producer_id || inputs.id }}
-        path: ${{github.event.repository.name}}/wheelhouse/
+        path: wheelhouse/
       continue-on-error: true
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       shell: bash --noprofile --norc -euo pipefail {0}
@@ -111,7 +107,7 @@ runs:
         chmod +x ci.sh
 
         # The devcontainer will mount this path to the home directory:
-        readonly aws_dir="${{github.event.repository.name}}/.aws"
+        readonly aws_dir="${{github.workspace}}/.aws"
         mkdir "${aws_dir}";
 
         cat <<EOF > "${aws_dir}/config"
@@ -144,7 +140,7 @@ runs:
 
         # Launch this container using the host's docker daemon
         set -x
-        ${{github.event.repository.name}}/.devcontainer/launch.sh \
+        ${{github.workspace}}/.devcontainer/launch.sh \
           --docker \
           --cuda ${{inputs.cuda}} \
           --host ${{inputs.host}} \
@@ -199,5 +195,5 @@ runs:
       uses: actions/upload-artifact@v4
       with:
         name: wheelhouse-${{inputs.id}}
-        path: ${{github.event.repository.name}}/wheelhouse/
+        path: wheelhouse/
         compression-level: 0

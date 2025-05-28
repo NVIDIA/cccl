@@ -20,4 +20,5 @@ python -m pip install "${CUDA_PARALLEL_WHEEL_PATH}[test]"
 
 # Run tests
 cd "/home/coder/cccl/python/cuda_parallel/tests/"
-python -m pytest -n auto -v
+python -m pytest -n 6 -v -m "not large"
+python -m pytest -n 0 -v -m "large"

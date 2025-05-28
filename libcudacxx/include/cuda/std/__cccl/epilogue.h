@@ -18,11 +18,8 @@
 #endif
 #undef _CCCL_PROLOGUE_INCLUDED
 
-// msvc warnings pop
-
-#if _CCCL_COMPILER(MSVC)
-_CCCL_MSVC_WARNINGS_POP
-#endif // _CCCL_COMPILER(MSVC)
+// warnings pop
+_CCCL_DIAG_POP
 
 // __declspec modifiers
 
