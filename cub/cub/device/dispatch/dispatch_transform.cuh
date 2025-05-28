@@ -74,7 +74,7 @@ struct TransformKernelSource<Offset,
     transform_kernel<typename PolicyHub::max_policy,
                      Offset,
                      TransformOp,
-                     RandomAccessIteratorOut,
+                     THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorOut>,
                      THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator_t<RandomAccessIteratorsIn>...>);
 
   CUB_RUNTIME_FUNCTION static constexpr int LoadedBytesPerIteration()
@@ -139,12 +139,8 @@ template <requires_stable_address StableAddress,
           typename RandomAccessIteratorOut,
           typename TransformOp,
           typename PolicyHub = policy_hub<StableAddress == requires_stable_address::yes, RandomAccessIteratorTupleIn>,
-          typename KernelSource = detail::transform::TransformKernelSource<
-            Offset,
-            RandomAccessIteratorTupleIn,
-            thrust::try_unwrap_contiguous_iterator_t<RandomAccessIteratorOut>,
-            TransformOp,
-            PolicyHub>,
+          typename KernelSource =
+            TransformKernelSource<Offset, RandomAccessIteratorTupleIn, RandomAccessIteratorOut, TransformOp, PolicyHub>,
           typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct dispatch_t;
 
