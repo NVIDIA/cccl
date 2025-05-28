@@ -67,8 +67,15 @@ struct make_zip_iterator_base
 template <typename... Its>
 struct make_zip_iterator_base<::cuda::std::tuple<Its...>>
 {
+  // We need this to make discard iterator work because that has a void reference type
+  template <class Iter>
+  using zip_iterator_reference_t =
+    _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<it_reference_t<Iter>, void>,
+                              decltype(*_CUDA_VSTD::declval<Iter>()),
+                              it_reference_t<Iter>>;
+
   // reference type is the type of the tuple obtained from the iterator's reference types.
-  using reference = tuple_of_iterator_references<it_reference_t<Its>...>;
+  using reference = tuple_of_iterator_references<zip_iterator_reference_t<Its>...>;
 
   // Boost's Value type is the same as reference type. using value_type = reference;
   using value_type = ::cuda::std::tuple<it_value_t<Its>...>;

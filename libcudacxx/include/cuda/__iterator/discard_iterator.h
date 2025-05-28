@@ -69,6 +69,7 @@ class discard_iterator
 private:
   _CUDA_VSTD::ptrdiff_t __index_ = 0;
 
+public:
   struct __discard_proxy
   {
     _CCCL_TEMPLATE(class _Tp)
@@ -79,7 +80,6 @@ private:
     }
   };
 
-public:
   using iterator_concept  = _CUDA_VSTD::random_access_iterator_tag;
   using iterator_category = _CUDA_VSTD::random_access_iterator_tag;
   using difference_type   = _CUDA_VSTD::ptrdiff_t;

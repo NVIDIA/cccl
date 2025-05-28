@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__barrier/barrier_thread_scope.h>
@@ -30,6 +31,7 @@
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
 #include <cuda/__memcpy_async/memcpy_completion.h>
 #include <cuda/__memcpy_async/try_get_barrier_handle.h>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/cstddef>
@@ -38,36 +40,6 @@
 #include <cuda/std/__cccl/prologue.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-/***********************************************************************
- * cuda::memcpy_async dispatch helper functions
- *
- * - __get_size_align struct to determine the alignment from a size type.
- ***********************************************************************/
-
-// The __get_size_align struct provides a way to query the guaranteed
-// "alignment" of a provided size. In this case, an n-byte aligned size means
-// that the size is a multiple of n.
-//
-// Use as follows:
-// static_assert(__get_size_align<size_t>::align == 1)
-// static_assert(__get_size_align<aligned_size_t<n>>::align == n)
-
-// Default impl: always returns 1.
-template <typename, typename = void>
-struct __get_size_align
-{
-  static constexpr int align = 1;
-};
-
-// aligned_size_t<n> overload: return n.
-template <typename T>
-struct __get_size_align<T, _CUDA_VSTD::void_t<decltype(T::align)>>
-{
-  static constexpr int align = T::align;
-};
-
-////////////////////////////////////////////////////////////////////////////////
 
 struct __single_thread_group
 {
@@ -99,8 +71,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_barrier(
       : _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
   // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-  constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
-  constexpr _CUDA_VSTD::size_t __align      = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+  constexpr auto __align = _CUDA_VSTD::max(alignof(_Tp), __get_size_align_v<_Size>);
   // Cast to char pointers. We don't need the type for alignment anymore and
   // erasing the types reduces the number of instantiations of down-stream
   // functions.
