@@ -22,13 +22,13 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/get_property.h>
-#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/optional>
 
+#include <cuda/experimental/__memory_resource/properties.cuh>
 #include <cuda/experimental/__utility/basic_any.cuh>
 
 #include <cuda/std/__cccl/prologue.h>
@@ -305,6 +305,8 @@ public:
 
   // Inherit other constructors from basic_any
   using __base_t::__base_t;
+
+  using default_queries = properties_list<_Properties...>;
 };
 
 // ``any_async_resource`` wraps any given async_resource that satisfies the
@@ -336,6 +338,8 @@ private:
 public:
   // Inherit constructors from basic_any
   using __base_t::__base_t;
+
+  using default_queries = properties_list<_Properties...>;
 };
 
 //! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
@@ -369,6 +373,8 @@ public:
 
   // Inherit other constructors from basic_any
   using __base_t::__base_t;
+
+  using default_queries = properties_list<_Properties...>;
 };
 
 //! @brief Type erased wrapper around a `async_resource` that satisfies \tparam _Properties
@@ -401,6 +407,8 @@ public:
 
   // Inherit other constructors from basic_any
   using __base_t::__base_t;
+
+  using default_queries = properties_list<_Properties...>;
 };
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
