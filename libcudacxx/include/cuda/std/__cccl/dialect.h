@@ -77,8 +77,10 @@
 
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
-#  define _CCCL_NO_CONCEPTS
-#endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
+#  define _CCCL_HAS_CONCEPTS() 0
+#else // ^^^ no concepts ^^^ / vvv has concepts vvv
+#  define _CCCL_HAS_CONCEPTS() 1
+#endif // ^^^ has concepts ^^^
 
 // Three way comparison is only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L

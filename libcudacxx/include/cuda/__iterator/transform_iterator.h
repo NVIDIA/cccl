@@ -180,19 +180,19 @@ public:
   using difference_type = _CUDA_VSTD::iter_difference_t<_Iter>;
 
   //! @brief Default constructs a \p transform_iterator with a value initialized iterator and functor
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HIDE_FROM_ABI transform_iterator()
     requires _CUDA_VSTD::default_initializable<_Iter> && _CUDA_VSTD::default_initializable<_Fn>
   = default;
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Iter2 = _Iter, class _Fn2 = _Fn)
   _CCCL_REQUIRES(_CUDA_VSTD::default_initializable<_Iter2> _CCCL_AND _CUDA_VSTD::default_initializable<_Fn2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr transform_iterator() noexcept(
     _CUDA_VSTD::is_nothrow_default_constructible_v<_Iter2> && _CUDA_VSTD::is_nothrow_default_constructible_v<_Fn2>)
   {}
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
   //! @brief Constructs a \p transform_iterator with a given \p __iter iterator and \p __func functor
   //! @param __iter The iterator to transform
