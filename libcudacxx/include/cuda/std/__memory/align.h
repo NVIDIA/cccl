@@ -40,15 +40,17 @@ _LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& 
     return nullptr;
   }
 
-  const auto __intptr  = reinterpret_cast<uintptr_t>(__ptr);
-  const auto __aligned = (__intptr - 1u + __alignment) & -__alignment;
-  const auto __diff    = __aligned - __intptr;
+  char* __char_ptr = static_cast<char*>(__ptr);
+  char* __aligned_ptr =
+    reinterpret_cast<char*>(reinterpret_cast<uintptr_t>(__char_ptr + (__alignment - 1)) & -__alignment);
+  const size_t __diff = static_cast<size_t>(__aligned_ptr - __char_ptr);
   if (__diff > (__space - __size))
   {
     return nullptr;
   }
+
+  __ptr = reinterpret_cast<void*>(__char_ptr + __diff);
   __space -= __diff;
-  __ptr = reinterpret_cast<void*>(static_cast<char*>(__ptr) + __diff);
   _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
   return __ptr;
 }
