@@ -399,7 +399,7 @@ _CCCL_CONCEPT __forwarding_query = forwarding_query(_Tag{});
 namespace __detail
 {
 // query an environment, or return a default value if the query is not supported
-struct __query_or_default_t
+struct __query_or_t
 {
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Env, class _Query, class _Default)
@@ -421,11 +421,11 @@ struct __query_or_default_t
 };
 } // namespace __detail
 
-_CCCL_GLOBAL_CONSTANT __detail::__query_or_default_t __query_or_default{};
+_CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
 
 template <class _Env, class _Query, class _Default>
-using __query_result_or_default_t _CCCL_NODEBUG_ALIAS =
-  decltype(__query_or_default(declval<_Env>(), _Query{}, declval<_Default>()));
+using __query_result_or_t _CCCL_NODEBUG_ALIAS =
+  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _Query{}, _CUDA_VSTD::declval<_Default>()));
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
 
