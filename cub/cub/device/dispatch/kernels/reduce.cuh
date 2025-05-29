@@ -349,7 +349,7 @@ __launch_bounds__(int(ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS))
   _CCCL_PRAGMA_UNROLL_FULL()
   for (int index = threadIdx.x; index < BinLength; index += ChainedPolicyT::DeterministicReducePolicy::BLOCK_THREADS)
   {
-    shared_bins[index] = AccumT::initialize_bins(index);
+    shared_bins[index] = AccumT::initialize_bin(index);
   }
 
   __syncthreads();
@@ -492,7 +492,7 @@ __launch_bounds__(int(ChainedPolicyT::SingleTilePolicy::BLOCK_THREADS), 1) void 
   for (int index = threadIdx.x; index < BinLength;
        index += ChainedPolicyT::ActivePolicy::SingleTilePolicy::BLOCK_THREADS)
   {
-    shared_bins[index] = AccumT::initialize_bins(index);
+    shared_bins[index] = AccumT::initialize_bin(index);
   }
 
   __syncthreads();

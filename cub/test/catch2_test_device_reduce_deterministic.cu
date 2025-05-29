@@ -25,12 +25,11 @@
  *
  ******************************************************************************/
 
-#include "cub/util_type.cuh"
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/detail/rfa.cuh>
 #include <cub/device/dispatch/dispatch_reduce_deterministic.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/device_vector.h>
 
@@ -209,59 +208,3 @@ C2H_TEST("Deterministic Device reduce works with float and double and is determi
   CAPTURE(num_items);
   deterministic_reduce_gpu<type>(num_items);
 }
-
-// The following tests require RFA to be compiled on host. Currently, RFA on host with clang compiler
-// produces compilation error complaining, optimizer cannot unroll loops.
-// These tests are disabled for now, and will be enabled when we would like to support RFA on host.
-#if 0
-C2H_TEST("Deterministic Device reduce works with float and double on cpu", "[reduce][deterministic]", float_type_list)
-{
-  using type          = typename c2h::get<0, TestType>;
-  const int num_items = 1000;
-  // use device vector to generate random numbers, as gen function only works with device vector
-  c2h::device_vector<type> d_input(num_items);
-  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(0.0), static_cast<type>(1000.0));
-
-  c2h::host_vector<type> h_input = d_input;
-
-  cub::detail::rfa::deterministic_sum_t<type> op{};
-  cub::detail::rfa::ReproducibleFloatingAccumulator<type> h_res = std::accumulate(
-    h_input.begin(), h_input.end(), cub::detail::rfa::ReproducibleFloatingAccumulator<type>{}, op);
-
-  auto h_expected = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
-  REQUIRE(approx_eq(h_expected, h_res.conv()));
-}
-
-C2H_TEST("Deterministic Device reduce works with float and double on cpu and gpu and compare result",
-         "[reduce][deterministic]",
-         float_type_list)
-{
-  using type              = typename c2h::get<0, TestType>;
-  constexpr int max_items = 50000;
-  constexpr int min_items = 1;
-
-  const int num_items = GENERATE_COPY(
-    take(3, random(min_items, max_items)),
-    values({
-      min_items,
-      max_items,
-    }));
-
-  CAPTURE(num_items);
-
-  c2h::device_vector<type> d_input(num_items);
-  c2h::gen(C2H_SEED(2), d_input, static_cast<type>(0.0f), static_cast<type>(1000.0f));
-  c2h::host_vector<type> h_input = d_input;
-
-  cub::detail::rfa::deterministic_sum_t<type> op{};
-  cub::detail::rfa::ReproducibleFloatingAccumulator<type> h_expected = std::accumulate(
-    h_input.begin(), h_input.end(), cub::detail::rfa::ReproducibleFloatingAccumulator<type>{}, op);
-
-  c2h::device_vector<type> d_output(1);
-  const type* d_input_ptr = thrust::raw_pointer_cast(d_input.data());
-  deterministic_sum(d_input_ptr, d_output.begin(), num_items);
-
-  c2h::host_vector<type> h_output = d_output;
-  REQUIRE(approx_eq(h_expected.conv(), h_output[0]));
-}
-#endif
