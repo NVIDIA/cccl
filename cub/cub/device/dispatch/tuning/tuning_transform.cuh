@@ -65,6 +65,7 @@ enum class Algorithm
   // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
   // is always superior to that fallback, so it was removed.
   prefetch,
+  vectorized,
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   ublkcp,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
@@ -89,6 +90,15 @@ struct async_copy_policy_t
   static constexpr int max_items_per_thread = 32;
 
   static constexpr int bulk_copy_alignment = BulkCopyAlignment;
+};
+
+template <int BlockThreads, int Size1, int... Sizes>
+struct vectorized_policy_t
+{
+  static constexpr int block_threads    = BlockThreads;
+  static constexpr int items_per_thread = 32 / Size1; // TODO(bgruber): we should specify vectors per thread, not items
+  static constexpr int vector_load_length = ::cuda::std::max(8 / Size1, 1); // How many elements in single load
+                                                                            // instruction
 };
 
 // mult must be a power of 2
@@ -189,6 +199,17 @@ struct TransformPolicyWrapper<StaticPolicyT, ::cuda::std::void_t<decltype(Static
   {
     return StaticPolicyT::algo_policy::max_items_per_thread;
   }
+
+  template <typename = void>
+  _CCCL_HOST_DEVICE static constexpr int ItemsPerThreadVectorized()
+  {
+    return StaticPolicyT::algo_policy::items_per_thread;
+  }
+
+  _CCCL_HOST_DEVICE static constexpr int VectorLoadLength()
+  {
+    return StaticPolicyT::algo_policy::vector_load_length;
+  }
 };
 
 template <typename PolicyT>
@@ -218,10 +239,14 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
   struct policy300 : ChainedPolicy<300, policy300, policy300>
   {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
+    static constexpr int min_bif       = arch_to_min_bytes_in_flight(300);
+    static constexpr bool use_fallback = RequiresStableAddress || !can_memcpy;
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = Algorithm::prefetch;
-    using algo_policy               = prefetch_policy_t<256>;
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::vectorized;
+    using algo_policy =
+      ::cuda::std::_If<use_fallback,
+                       prefetch_policy_t<256>,
+                       vectorized_policy_t<256, sizeof(it_value_t<RandomAccessIteratorsIn>)...>>;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
