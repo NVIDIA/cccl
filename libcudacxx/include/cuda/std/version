@@ -143,7 +143,7 @@
 // #   define __cccl_lib_shared_mutex                       201505L
 // # define __cccl_lib_shared_ptr_arrays                    201611L
 // # define __cccl_lib_shared_ptr_weak_type                 201606L
-// # define __cccl_lib_string_view                          201606L
+#define __cccl_lib_string_view 201803L
 // # define __cccl_lib_to_chars                             201611L
 // #  define __cccl_lib_uncaught_exceptions           201411L
 // #  define __cccl_lib_unordered_map_try_emplace     201411L
@@ -173,7 +173,6 @@
 // # define __cccl_lib_constexpr_misc                       201811L
 // # define __cccl_lib_constexpr_numeric                    201911L
 // # define __cccl_lib_constexpr_string                     201907L
-// # define __cccl_lib_constexpr_string_view                201811L
 // # define __cccl_lib_constexpr_swap_algorithms            201806L
 // # define __cccl_lib_constexpr_tuple                      201811L
 // # define __cccl_lib_constexpr_utility                    201811L
@@ -206,8 +205,6 @@
 // # define __cccl_lib_source_location                      201907L
 // # define __cccl_lib_ssize                                201902L
 // # define __cccl_lib_starts_ends_with                     201711L
-// # undef  __cccl_lib_string_view
-// # define __cccl_lib_string_view                          201803L
 // # define __cccl_lib_syncbuf                              201803L
 // # define __cccl_lib_three_way_comparison                 201907L
 #  define __cccl_lib_unwrap_ref 201811L

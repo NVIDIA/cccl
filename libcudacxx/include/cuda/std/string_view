@@ -57,7 +57,7 @@
 #include <cuda/std/version>
 
 #if !_CCCL_COMPILER(NVRTC)
-#  include <iosfwd>
+#  include <string_view>
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__cccl/prologue.h>
@@ -68,6 +68,19 @@ template <class _Range, class _CharT, class _Traits>
 _CCCL_CONCEPT __cccl_has_basic_sv_conv_operator =
   _CCCL_REQUIRES_EXPR((_Range, _CharT, _Traits), remove_cvref_t<_Range>& __d)(
     (__d.operator _CUDA_VSTD::basic_string_view<_CharT, _Traits>()));
+
+#if !_CCCL_COMPILER(NVRTC)
+template <class _Tp>
+inline constexpr bool __cccl_is_std_basic_string_view_v = false;
+template <class _Tp>
+inline constexpr bool __cccl_is_std_basic_string_view_v<const _Tp> = __cccl_is_std_basic_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __cccl_is_std_basic_string_view_v<volatile _Tp> = __cccl_is_std_basic_string_view_v<_Tp>;
+template <class _Tp>
+inline constexpr bool __cccl_is_std_basic_string_view_v<const volatile _Tp> = __cccl_is_std_basic_string_view_v<_Tp>;
+template <class _CharT, class _Traits>
+inline constexpr bool __cccl_is_std_basic_string_view_v<::std::basic_string_view<_CharT, _Traits>> = true;
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _CharT, class _Traits>
 class basic_string_view
@@ -105,6 +118,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI basic_string_view& operator=(const basic_string_view&) noexcept = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr basic_string_view(const _CharT* __s) noexcept
       : __data_{__s}
       , __size_{_Traits::length(__s)}
@@ -145,6 +159,20 @@ public:
       : __data_{_CUDA_VRANGES::data(__r)}
       , __size_{_CUDA_VRANGES::size(__r)}
   {}
+
+#if !_CCCL_COMPILER(NVRTC)
+  _CCCL_TEMPLATE(class _Traits2 = _Traits)
+  _CCCL_REQUIRES(is_same_v<_Traits2, char_traits<_CharT>>)
+  _CCCL_HIDE_FROM_ABI constexpr basic_string_view(::std::basic_string_view<_CharT> __sv) noexcept
+      : __data_{__sv.data()}
+      , __size_{__sv.size()}
+  {}
+
+  _CCCL_HIDE_FROM_ABI constexpr basic_string_view(::std::basic_string_view<_CharT, _Traits> __sv) noexcept
+      : __data_{__sv.data()}
+      , __size_{__sv.size()}
+  {}
+#endif // !_CCCL_COMPILER(NVRTC)
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const_iterator begin() const noexcept
   {
@@ -262,6 +290,7 @@ public:
     __other.__size_ = __sz;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type copy(_CharT* __s, size_type __n, size_type __pos = 0) const
   {
     if (__pos > __size_)
@@ -288,6 +317,7 @@ public:
 
   // compare
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(basic_string_view __sv) const noexcept
   {
     const auto __rlen = _CUDA_VSTD::min(__size_, __sv.__size_);
@@ -350,6 +380,7 @@ public:
     return _CUDA_VSTD::__cccl_str_find<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type find(const _CharT* __s, size_type __pos = 0) const noexcept
   {
     _CCCL_ASSERT(__s != nullptr, "string_view::find(): received nullptr");
@@ -379,6 +410,7 @@ public:
     return _CUDA_VSTD::__cccl_str_rfind<value_type, size_type, traits_type, npos>(__data_, __size_, __s, __pos, __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
   rfind(const _CharT* __s, size_type __pos = npos) const noexcept
   {
@@ -411,6 +443,7 @@ public:
       __data_, __size_, __s, __pos, __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
   find_first_of(const _CharT* __s, size_type __pos = 0) const noexcept
   {
@@ -443,6 +476,7 @@ public:
       __data_, __size_, __s, __pos, __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
   find_last_of(const _CharT* __s, size_type __pos = npos) const noexcept
   {
@@ -476,6 +510,7 @@ public:
       __data_, __size_, __s, __pos, __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
   find_first_not_of(const _CharT* __s, size_type __pos = 0) const noexcept
   {
@@ -509,6 +544,7 @@ public:
       __data_, __size_, __s, __pos, __n);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr size_type
   find_last_not_of(const _CharT* __s, size_type __pos = npos) const noexcept
   {
@@ -524,6 +560,7 @@ public:
     return (__size_ >= __s.__size_) && compare(0, __s.__size_, __s) == 0;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool starts_with(value_type __c) const noexcept
   {
     return (__size_ > 0) && _Traits::eq(front(), __c);
@@ -541,6 +578,7 @@ public:
     return (__size_ >= __s.__size_) && compare(__size_ - __s.__size_, npos, __s) == 0;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool ends_with(value_type __c) const noexcept
   {
     return (__size_ > 0) && _Traits::eq(back(), __c);
@@ -711,6 +749,20 @@ public:
     return __lhs.compare(__rhs) >= 0;
   }
 
+#if !_CCCL_COMPILER(NVRTC)
+  _CCCL_TEMPLATE(class _Traits2 = _Traits)
+  _CCCL_REQUIRES(is_same_v<_Traits2, char_traits<_CharT>>)
+  _CCCL_HIDE_FROM_ABI constexpr operator ::std::basic_string_view<_CharT>() const noexcept
+  {
+    return ::std::basic_string_view<_CharT>{__data_, __size_};
+  }
+
+  _CCCL_HIDE_FROM_ABI constexpr operator ::std::basic_string_view<_CharT, _Traits>() const noexcept
+  {
+    return ::std::basic_string_view<_CharT, _Traits>{__data_, __size_};
+  }
+#endif // !_CCCL_COMPILER(NVRTC)
+
 private:
   enum class __assume_valid
   {
@@ -735,19 +787,34 @@ _CCCL_REQUIRES(contiguous_iterator<_It> _CCCL_AND sized_sentinel_for<_End, _It>)
 _CCCL_HOST_DEVICE basic_string_view(_It, _End) -> basic_string_view<iter_value_t<_It>>;
 
 _CCCL_TEMPLATE(class _Range)
-_CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
+_CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range> _CCCL_AND(!__cccl_is_std_basic_string_view_v<_Range>))
 _CCCL_HOST_DEVICE basic_string_view(_Range&&) -> basic_string_view<_CUDA_VRANGES::range_value_t<_Range>>;
+
+#if !_CCCL_COMPILER(NVRTC)
+template <class _CharT>
+_CCCL_HOST_DEVICE basic_string_view(::std::basic_string_view<_CharT>) -> basic_string_view<_CharT>;
+
+template <class _CharT, class _Traits>
+_CCCL_HOST_DEVICE basic_string_view(::std::basic_string_view<_CharT, _Traits>) -> basic_string_view<_CharT, _Traits>;
+#endif // !_CCCL_COMPILER(NVRTC)
 
 // operator <<
 
-#if 0 // todo: we need to implement char_traits stream types & functions
+#if !_CCCL_COMPILER(NVRTC)
+template <class _CharT>
+_CCCL_HIDE_FROM_ABI ::std::basic_ostream<_CharT>&
+operator<<(::std::basic_ostream<_CharT>& __os, basic_string_view<_CharT> __str)
+{
+  return __os << ::std::basic_string_view<_CharT>{__str};
+}
+
 template <class _CharT, class _Traits>
-_LIBCUDACXX_HIDE_FROM_ABI ::std::basic_ostream<_CharT, _Traits>&
+_CCCL_HIDE_FROM_ABI ::std::basic_ostream<_CharT, _Traits>&
 operator<<(::std::basic_ostream<_CharT, _Traits>& __os, basic_string_view<_CharT, _Traits> __str)
 {
-  return __os.write(__str.data(), static_cast<::std::streamsize>(__str.size()));
+  return __os << ::std::basic_string_view<_CharT, _Traits>{__str};
 }
-#endif // 0
+#endif // !_CCCL_COMPILER(NVRTC)
 
 // literals
 
