@@ -26,6 +26,7 @@
 #include <cuda/std/__functional/reference_wrapper.h>
 #include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/pod_tuple.h>
@@ -392,6 +393,39 @@ _CCCL_GLOBAL_CONSTANT struct forwarding_query_t
 
 template <class _Tag>
 _CCCL_CONCEPT __forwarding_query = forwarding_query(_Tag{});
+
+//////////////////////////////////////////////////////////////////////////////////////////
+// __query_or_default
+namespace __detail
+{
+// query an environment, or return a default value if the query is not supported
+struct __query_or_t
+{
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_TEMPLATE(class _Env, class _Query, class _Default)
+  _CCCL_REQUIRES(__queryable_with<_Env, _Query>)
+  [[nodiscard]] _CCCL_API constexpr auto operator()(const _Env& __env, _Query, _Default&&) const
+    noexcept(__nothrow_queryable_with<_Env, _Query>) -> __query_result_t<_Env, _Query>
+  {
+    return __env.query(_Query{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Default>
+  [[nodiscard]] _CCCL_API constexpr auto
+  operator()(_CUDA_VSTD::__ignore_t, _CUDA_VSTD::__ignore_t, _Default&& __default) const
+    noexcept(_CUDA_VSTD::is_nothrow_move_constructible_v<_Default>) -> _Default
+  {
+    return static_cast<_Default&&>(__default);
+  }
+};
+} // namespace __detail
+
+_CCCL_GLOBAL_CONSTANT __detail::__query_or_t __query_or{};
+
+template <class _Env, class _Query, class _Default>
+using __query_result_or_t _CCCL_NODEBUG_ALIAS =
+  decltype(__query_or(_CUDA_VSTD::declval<_Env>(), _Query{}, _CUDA_VSTD::declval<_Default>()));
 
 _LIBCUDACXX_END_NAMESPACE_EXECUTION
 
