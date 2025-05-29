@@ -225,22 +225,6 @@ C2H_TEST("DeviceFor::ForEachInExtents Dynamic Grid Config", "[ForEachInExtents][
 //----------------------------------------------------------------------------------------------------------------------
 //
 
-template <class OffsetT>
-class offset_proxy_t
-{
-  OffsetT m_offset;
-
-public:
-  __host__ __device__ offset_proxy_t(OffsetT offset)
-      : m_offset(offset)
-  {}
-
-  __host__ __device__ operator OffsetT() const
-  {
-    return m_offset;
-  }
-};
-
 struct incrementer_t
 {
   int* d_counts;
@@ -264,8 +248,6 @@ C2H_TEST("DeviceFor::ForEachInExtents works", "[ForEachInExtents]")
       min_items,
       max_items,
     }));
-  c2h::device_vector<offset_proxy_t<offset_t>> input(num_items, offset_t{});
-  thrust::sequence(c2h::device_policy, input.begin(), input.end(), offset_t{});
   c2h::device_vector<int> counts(num_items);
   int* d_counts = thrust::raw_pointer_cast(counts.data());
   device_for_each_in_extents(ext_t{num_items}, incrementer_t{d_counts});
