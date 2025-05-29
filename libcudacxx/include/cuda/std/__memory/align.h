@@ -56,25 +56,20 @@ _LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& 
   switch (__alignment)
   {
     case 1:
-      _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 1);
-      break;
+      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 1);
     case 2:
-      _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 2);
-      break;
+      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 2);
     case 4:
-      _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 4);
-      break;
+      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 4);
     case 8:
-      _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 8);
-      break;
+      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 8);
     case 16:
-      _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 16);
-      break;
+      return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 16);
   }
 #else // ^^^ _CCCL_BUILTIN_ASSUME_ALIGNED ^^^ / vvv !_CCCL_BUILTIN_ASSUME_ALIGNED vvv
   _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
-#endif // !_CCCL_BUILTIN_ASSUME_ALIGNED
   return __ptr;
+#endif // !_CCCL_BUILTIN_ASSUME_ALIGNED
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
