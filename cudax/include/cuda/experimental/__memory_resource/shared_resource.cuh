@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -30,6 +30,8 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
+#include <cuda/experimental/__memory_resource/properties.cuh>
+
 #include <cuda/std/__cccl/prologue.h>
 
 namespace cuda::experimental
@@ -48,7 +50,7 @@ namespace cuda::experimental
 //! @tparam _Resource The resource type to hold.
 //! @endrst
 template <class _Resource>
-struct shared_resource
+struct shared_resource : __copy_default_queries<_Resource>
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "");
 

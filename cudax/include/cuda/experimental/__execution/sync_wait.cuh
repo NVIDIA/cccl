@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_SYNC_WAIT
-#define __CUDAX_ASYNC_DETAIL_SYNC_WAIT
+#ifndef __CUDAX_EXECUTION_SYNC_WAIT
+#define __CUDAX_EXECUTION_SYNC_WAIT
 
 #include <cuda/std/detail/__config>
 
@@ -111,7 +111,7 @@ private:
           }), //
           _CUDAX_CATCH(...) //
           ({ //
-            if constexpr (!_CUDA_VSTD::is_nothrow_constructible_v<_Values, _As...>)
+            if constexpr (!__nothrow_constructible<_Values, _As...>)
             {
               __state_->__errors_.__emplace(::std::current_exception());
             }
@@ -255,14 +255,14 @@ public:
   template <class _Sndr, class _Env>
   _CCCL_HOST_API auto operator()(_Sndr&& __sndr, _Env&& __env) const
   {
-    using __dom_t = domain_for_t<_Sndr, __env_t<_Env>>;
+    using __dom_t = __late_domain_of_t<_Sndr, __env_t<_Env>>;
     return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr), static_cast<_Env&&>(__env));
   }
 
   template <class _Sndr, class... _Env>
   _CCCL_HOST_API auto operator()(_Sndr&& __sndr) const
   {
-    using __dom_t = domain_for_t<_Sndr, __env_t<env<>>>;
+    using __dom_t = __late_domain_of_t<_Sndr, __env_t<env<>>>;
     return execution::apply_sender(__dom_t{}, *this, static_cast<_Sndr&&>(__sndr));
   }
 };
@@ -272,4 +272,4 @@ _CCCL_GLOBAL_CONSTANT sync_wait_t sync_wait{};
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_SYNC_WAIT
+#endif // __CUDAX_EXECUTION_SYNC_WAIT

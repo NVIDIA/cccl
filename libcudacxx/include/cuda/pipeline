@@ -21,11 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__barrier/aligned_size.h>
+#include <cuda/__memcpy_async/check_preconditions.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/memcpy_async_barrier.h>
 #include <cuda/atomic>
 #include <cuda/barrier>
+#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/chrono>
+#include <cuda/std/cstdint>
 
 #include <cuda/std/__cccl/prologue.h>
 
@@ -499,8 +503,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment __memcpy_async_pipeline(
   _CUDA_VSTD::uint32_t __allowed_completions = _CUDA_VSTD::uint32_t(__completion_mechanism::__async_group);
 
   // Alignment: Use the maximum of the alignment of _Tp and that of a possible cuda::aligned_size_t.
-  constexpr _CUDA_VSTD::size_t __size_align = __get_size_align<_Size>::align;
-  constexpr _CUDA_VSTD::size_t __align      = (alignof(_Tp) < __size_align) ? __size_align : alignof(_Tp);
+  constexpr auto __align = _CUDA_VSTD::max(alignof(_Tp), __get_size_align_v<_Size>);
   // Cast to char pointers. We don't need the type for alignment anymore and
   // erasing the types reduces the number of instantiations of down-stream
   // functions.
@@ -518,14 +521,11 @@ template <typename _Group, class _Type, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group, _Type* __destination, _Type const* __source, std::size_t __size, pipeline<_Scope>& __pipeline)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
 }
 
-template <typename _Group,
-          class _Type,
-          std::size_t _Alignment,
-          thread_scope _Scope,
-          std::size_t _Larger_alignment = (alignof(_Type) > _Alignment) ? alignof(_Type) : _Alignment>
+template <typename _Group, class _Type, std::size_t _Alignment, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group,
   _Type* __destination,
@@ -533,6 +533,8 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   pipeline<_Scope>& __pipeline)
 {
+  static_assert(_Alignment >= alignof(_Type), "alignment must be at least the alignof(T)");
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_pipeline(__group, __destination, __source, __size, __pipeline);
 }
 
@@ -540,6 +542,7 @@ template <class _Type, typename _Size, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(_Type* __destination, _Type const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_pipeline(__single_thread_group{}, __destination, __source, __size, __pipeline);
 }
 
@@ -547,6 +550,7 @@ template <typename _Group, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   _Group const& __group, void* __destination, void const* __source, std::size_t __size, pipeline<_Scope>& __pipeline)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_pipeline(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __pipeline);
 }
@@ -559,6 +563,7 @@ _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment memcpy_async(
   aligned_size_t<_Alignment> __size,
   pipeline<_Scope>& __pipeline)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_pipeline(
     __group, reinterpret_cast<char*>(__destination), reinterpret_cast<char const*>(__source), __size, __pipeline);
 }
@@ -567,6 +572,7 @@ template <typename _Size, thread_scope _Scope>
 _LIBCUDACXX_HIDE_FROM_ABI async_contract_fulfillment
 memcpy_async(void* __destination, void const* __source, _Size __size, pipeline<_Scope>& __pipeline)
 {
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__destination, __source, __size), "memcpy_async preconditions unmet");
   return ::cuda::__memcpy_async_pipeline(
     __single_thread_group{},
     reinterpret_cast<char*>(__destination),

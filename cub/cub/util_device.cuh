@@ -533,9 +533,9 @@ namespace detail
 {
 
 #if defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
-#  if defined(_CCCL_NO_CONCEPTS)
+#  if !_CCCL_HAS_CONCEPTS()
 #    error Generation of runtime policy wrappers and/or policy PTX JSON information requires C++20 concepts.
-#  endif // defined(_CCCL_NO_CONCEPTS)
+#  endif // !_CCCL_HAS_CONCEPTS()
 #endif // defined(CUB_DEFINE_RUNTIME_POLICIES) || defined(CUB_ENABLE_POLICY_PTX_JSON)
 
 #define CUB_DETAIL_POLICY_WRAPPER_CONCEPT_TEST(field)     , StaticPolicyT::_CCCL_PP_FIRST field

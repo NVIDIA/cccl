@@ -24,6 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+#include "insert_nested_NVTX_range_guard.h"
 
 #include <cub/config.cuh>
 

@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 // [concept.relation]
 
@@ -45,7 +45,7 @@ concept equivalence_relation = relation<_Rp, _Tp, _Up>;
 template <class _Rp, class _Tp, class _Up>
 concept strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Rp, class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(
@@ -68,7 +68,7 @@ _CCCL_CONCEPT equivalence_relation = relation<_Rp, _Tp, _Up>;
 template <class _Rp, class _Tp, class _Up>
 _CCCL_CONCEPT strict_weak_order = relation<_Rp, _Tp, _Up>;
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

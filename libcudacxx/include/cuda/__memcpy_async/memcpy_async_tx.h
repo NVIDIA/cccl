@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#ifndef _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#define _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
 
 #include <cuda/std/detail/__config>
 
@@ -22,13 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__barrier/aligned_size.h>
 #    include <cuda/__barrier/async_contract_fulfillment.h>
 #    include <cuda/__barrier/barrier_block_scope.h>
 #    include <cuda/__barrier/barrier_native_handle.h>
+#    include <cuda/__memcpy_async/check_preconditions.h>
 #    include <cuda/__ptx/instructions/cp_async_bulk.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
@@ -56,6 +57,9 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
+  static_assert(_Alignment >= alignof(_Tp), "alignment must be at least the alignof(T)");
+
+  _CCCL_ASSERT(::cuda::__memcpy_async_check_pre(__dest, __src, __size), "memcpy_async_tx preconditions unmet");
 
   _CCCL_ASSERT(::__isShared(_CUDA_DEVICE::barrier_native_handle(__b)),
                "Barrier must be located in local shared memory.");
@@ -90,6 +94,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 #    include <cuda/std/__cccl/epilogue.h>
 
 #  endif // __cccl_ptx_isa >= 800
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILATION()
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_
+#endif // _CUDA___MEMCPY_ASYNC_MEMCPY_ASYNC_TX_H_

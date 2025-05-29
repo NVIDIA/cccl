@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
-#define _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
+#ifndef _CUDA___MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
+#define _CUDA___MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
 
 #include <cuda/std/detail/__config>
 
@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
@@ -93,6 +93,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #  include <cuda/std/__cccl/epilogue.h>
 
-#endif // _CCCL_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILATION()
 
-#endif // _CUDA_PTX__MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_
+#endif // _CUDA___MEMCPY_ASYNC_CP_ASYNC_SHARED_GLOBAL_H_

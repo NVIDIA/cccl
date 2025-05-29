@@ -13,7 +13,14 @@ setup_python_env() {
     if [ -f /etc/os-release ]; then
         source /etc/os-release
         if [ "$ID" = "ubuntu" ]; then
-            sudo apt update; sudo apt install -y make libssl-dev zlib1g-dev \
+            # Use the retry helper to mitigate issues with apt network errors:
+            script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+            retry() {
+              "${script_dir}/util/retry.sh" 5 30 "$@"
+            }
+
+            retry sudo apt update
+            retry sudo apt install -y make libssl-dev zlib1g-dev \
             libbz2-dev libreadline-dev libsqlite3-dev curl git \
             libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
         elif [ "$ID" = "rocky" ]; then

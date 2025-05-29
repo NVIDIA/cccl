@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_VARIANT
-#define __CUDAX_ASYNC_DETAIL_VARIANT
+#ifndef __CUDAX_EXECUTION_VARIANT
+#define __CUDAX_EXECUTION_VARIANT
 
 #include <cuda/std/detail/__config>
 
@@ -139,9 +139,9 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class... _As>
   _CCCL_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
-    noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
+    noexcept(__nothrow_callable<_Fn, _As...>) -> _CUDA_VSTD::__call_result_t<_Fn, _As...>&
   {
-    using __result_t _CCCL_NODEBUG_ALIAS = __call_result_t<_Fn, _As...>;
+    using __result_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__call_result_t<_Fn, _As...>;
     constexpr size_t __new_index         = execution::__index_of<__result_t, _Ts...>();
     static_assert(__new_index != __npos, "_Type not in variant");
 
@@ -154,7 +154,7 @@ public:
   _CCCL_EXEC_CHECK_DISABLE
   template <class _Fn, class _Self, class... _As>
   _CCCL_API static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
-    noexcept((__nothrow_callable<_Fn, _As..., __copy_cvref_t<_Self, _Ts>> && ...))
+    noexcept((__nothrow_callable<_Fn, _As..., _CUDA_VSTD::__copy_cvref_t<_Self, _Ts>> && ...))
   {
     // make this local in case destroying the sub-object destroys *this
     const auto index = __self.__index_;
@@ -197,15 +197,15 @@ struct __mk_variant_
 
 template <class... _Ts>
 using __variant _CCCL_NODEBUG_ALIAS = typename __mk_variant_<_Ts...>::type;
-#else
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class... _Ts>
 using __variant _CCCL_NODEBUG_ALIAS = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
-#endif
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 template <class... _Ts>
-using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<__decay_t<_Ts>...>;
+using __decayed_variant _CCCL_NODEBUG_ALIAS = __variant<_CUDA_VSTD::decay_t<_Ts>...>;
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_VARIANT

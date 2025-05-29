@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RUN_LOOP
-#define __CUDAX_ASYNC_DETAIL_RUN_LOOP
+#ifndef __CUDAX_EXECUTION_RUN_LOOP
+#define __CUDAX_EXECUTION_RUN_LOOP
 
 #include <cuda/std/detail/__config>
 
@@ -21,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__execution/atomic_intrusive_queue.cuh>
 #include <cuda/experimental/__execution/completion_signatures.cuh>
 #include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/exception.cuh>
+#include <cuda/experimental/__execution/fwd.cuh>
 #include <cuda/experimental/__execution/queries.cuh>
 #include <cuda/experimental/__execution/utility.cuh>
 
@@ -240,4 +242,4 @@ private:
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif // __CUDAX_ASYNC_DETAIL_RUN_LOOP
+#endif // __CUDAX_EXECUTION_RUN_LOOP

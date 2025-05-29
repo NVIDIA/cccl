@@ -40,8 +40,13 @@
 #  endif // !_CCCL_CUDACC_EQUAL((CUDART_VERSION / 1000), (CUDART_VERSION % 1000) / 10)
 #endif // _CCCL_CUDA_COMPILATION()
 
+#if _CCCL_HAS_CTK()
+#  define _CCCL_CTK() (CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10)
+#else // ^^^ has cuda toolkit ^^^ / vvv no cuda toolkit vvv
+#  define _CCCL_CTK() _CCCL_VERSION_INVALID()
+#endif // ^^^ no cuda toolkit ^^^
+
 #define _CCCL_CTK_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 1000 + (_MINOR) * 10)
-#define _CCCL_CTK()                            (CUDART_VERSION / 1000, (CUDART_VERSION % 1000) / 10)
 #define _CCCL_CTK_BELOW(...)                   _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, <, __VA_ARGS__)
 #define _CCCL_CTK_AT_LEAST(...)                _CCCL_VERSION_COMPARE(_CCCL_CTK_, _CCCL_CTK, >=, __VA_ARGS__)
 

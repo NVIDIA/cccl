@@ -40,7 +40,7 @@ enum class __l2_evict_t : uint32_t
  * PTX MAPPING
  **********************************************************************************************************************/
 
-#if _CCCL_HAS_CUDA_COMPILER()
+#if _CCCL_CUDA_COMPILATION()
 
 template <typename = void>
 [[nodiscard]] _CCCL_CONST _CCCL_HIDE_FROM_ABI _CCCL_DEVICE uint64_t __createpolicy_range_ptx(
@@ -200,7 +200,7 @@ __createpolicy_fraction(__l2_evict_t __primary, __l2_evict_t __secondary, float 
                     (::cuda::__createpolicy_is_not_supported_before_SM_80(); return 0;))
 }
 
-#endif // _CCCL_HAS_CUDA_COMPILER()
+#endif // _CCCL_CUDA_COMPILATION()
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
