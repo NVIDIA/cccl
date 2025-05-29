@@ -49,6 +49,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& 
     return nullptr;
   }
 
+  //! We need to avoid using __aligned_ptr here, as nvcc looses track of the execution space otherwise
   __ptr = reinterpret_cast<void*>(__char_ptr + __diff);
   __space -= __diff;
   _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
