@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__type_traits/is_valid_expansion.h>
 
 #include <cuda/experimental/__detail/utility.cuh>
@@ -65,8 +66,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
     }
     else
     {
-      using __dom2_t _CCCL_NODEBUG_ALIAS = __transform_domain_t<domain_for_t<__result_t, _Env...>, __result_t, _Env...>;
-      using __result2_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom2_t, _Sndr, _Env...>;
+      using __dom2_t _CCCL_NODEBUG_ALIAS =
+        __transform_domain_t<__domain_of_t<__result_t, _Env...>, __result_t, _Env...>;
+      using __result2_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom2_t, __result_t, _Env...>;
 
       if constexpr (_CUDA_VSTD::_IsSame<__result2_t&&, __result_t&&>::value)
       {
@@ -84,13 +86,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
     }
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__passthru))
-  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const noexcept -> _Sndr&&
+  _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&...) const
+    noexcept(__nothrow_movable<_Sndr>) -> _Sndr
   {
     return static_cast<_Sndr&&>(__sndr);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_ == __strategy::__transform))
   _CCCL_TRIVIAL_API constexpr auto operator()(_Domain, _Sndr&& __sndr, const _Env&... __env) const
@@ -100,6 +105,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
     return __dom_t{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env...);
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _CCCL_TEMPLATE(class _Self = transform_sender_t, class _Domain, class _Sndr, class... _Env)
   _CCCL_REQUIRES((__get_transform_strategy<_Self, _Domain, _Sndr, _Env...>().__strategy_
                   == __strategy::__transform_recurse))
@@ -108,7 +114,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT transform_sender_t
   {
     using __dom1_t _CCCL_NODEBUG_ALIAS    = __transform_domain_t<_Domain, _Sndr, _Env...>;
     using __result1_t _CCCL_NODEBUG_ALIAS = __transform_sender_result_t<__dom1_t, _Sndr, _Env...>;
-    using __dom2_t _CCCL_NODEBUG_ALIAS    = __transform_domain_t<domain_for_t<__result1_t>, __result1_t, _Env...>;
+    using __dom2_t _CCCL_NODEBUG_ALIAS = __transform_domain_t<__early_domain_of_t<__result1_t>, __result1_t, _Env...>;
     return (*this)(__dom2_t{}, __dom1_t{}.transform_sender(static_cast<_Sndr&&>(__sndr), __env...), __env...);
   }
 };
@@ -117,7 +123,7 @@ _CCCL_GLOBAL_CONSTANT transform_sender_t transform_sender{};
 
 template <class _Sndr, class... _Env>
 _CCCL_CONCEPT __has_sender_transform =
-  transform_sender_t::__get_transform_strategy<transform_sender_t, domain_for_t<_Sndr, _Env...>, _Sndr, _Env...>()
+  transform_sender_t::__get_transform_strategy<transform_sender_t, __domain_of_t<_Sndr, _Env...>, _Sndr, _Env...>()
     .__strategy_
   != transform_sender_t::__strategy::__passthru;
 

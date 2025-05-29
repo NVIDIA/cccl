@@ -91,17 +91,22 @@ struct TestZipIteratorManipulation
     sequence(v2.begin(), v2.end());
 
     using IteratorTuple = tuple<typename Vector::iterator, typename Vector::iterator>;
+    IteratorTuple t     = make_tuple(v0.begin(), v1.begin());
+    using ZipIterator   = zip_iterator<IteratorTuple>;
 
-    IteratorTuple t = make_tuple(v0.begin(), v1.begin());
-
-    using ZipIterator = zip_iterator<IteratorTuple>;
-
-    // test construction
+    // test construction from tuple
     ZipIterator iter0 = make_zip_iterator(t);
     ASSERT_EQUAL(true, iter0 == ZipIterator{t});
-
     ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0.get_iterator_tuple()));
     ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0.get_iterator_tuple()));
+    static_assert(::cuda::std::is_same_v<decltype(zip_iterator{t}), ZipIterator>); // CTAD
+
+    // test construction from pack
+    ZipIterator iter0_pack = make_zip_iterator(v0.begin(), v1.begin());
+    ASSERT_EQUAL(true, (iter0_pack == ZipIterator{v0.begin(), v1.begin()}));
+    ASSERT_EQUAL_QUIET(v0.begin(), get<0>(iter0_pack.get_iterator_tuple()));
+    ASSERT_EQUAL_QUIET(v1.begin(), get<1>(iter0_pack.get_iterator_tuple()));
+    static_assert(::cuda::std::is_same_v<decltype(zip_iterator{v0.begin(), v1.begin()}), ZipIterator>); // CTAD
 
     // test dereference
     ASSERT_EQUAL(*v0.begin(), get<0>(*iter0));
@@ -206,133 +211,6 @@ struct TestZipIteratorReference
   } // end operator()()
 };
 SimpleUnitTest<TestZipIteratorReference, NumericTypes> TestZipIteratorReferenceInstance;
-
-template <typename T>
-struct TestZipIteratorTraversal
-{
-  void operator()(void)
-  {
-    using namespace thrust;
-
-#if 0
-    // test host types
-    using Iterator1 = typename host_vector<T>::iterator         ;
-    using Iterator2 = typename host_vector<T>::const_iterator   ;
-    using IteratorTuple1 = tuple<Iterator1,Iterator2>                ;
-    using ZipIterator1 = zip_iterator<IteratorTuple1>;
-
-    using zip_iterator_traversal_type1 = typename iterator_traversal<ZipIterator1>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type1,
-    // random_access_traversal_tag>::value) );
-
-#if 0
-    // test device types
-    using Iterator3 = typename device_vector<T>::iterator       ;
-    using Iterator4 = typename device_vector<T>::const_iterator ;
-    using IteratorTuple2 = tuple<Iterator3,Iterator4>                ;
-    using ZipIterator2 = zip_iterator<IteratorTuple2>;
-
-    using zip_iterator_traversal_type2 = typename iterator_traversal<ZipIterator2>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_traversal_type2,
-    // thrust::random_access_traversal_tag>::value) );
-  } // end operator()()
-};
-SimpleUnitTest<TestZipIteratorTraversal, NumericTypes> TestZipIteratorTraversalInstance;
-
-template <typename T>
-struct TestZipIteratorSystem
-{
-  void operator()(void)
-  {
-    using namespace thrust;
-
-    // XXX these assertions complain about undefined references to integral_constant<...>::value
-
-#if 0
-    // test host types
-    using Iterator1 = typename host_vector<T>::iterator         ;
-    using Iterator2 = typename host_vector<T>::const_iterator   ;
-    using IteratorTuple1 = tuple<Iterator1,Iterator2>                ;
-    using ZipIterator1 = zip_iterator<IteratorTuple1>;
-
-    using zip_iterator_system_type1 = typename iterator_system<ZipIterator1>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_same<zip_iterator_system_type1, experimental::space::host>::value) );
-
-#if 0
-    // test device types
-    using Iterator3 = typename device_vector<T>::iterator       ;
-    using Iterator4 = typename device_vector<T>::const_iterator ;
-    using IteratorTuple2 = tuple<Iterator3,Iterator4>                ;
-    using ZipIterator2 = zip_iterator<IteratorTuple1>;
-
-    using zip_iterator_system_type2 = typename iterator_system<ZipIterator2>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type2, experimental::space::device>::value)
-    // );
-
-#if 0
-    // test any
-    using Iterator5 = counting_iterator<T>        ;
-    using Iterator6 = counting_iterator<const T>  ;
-    using IteratorTuple3 = tuple<Iterator5, Iterator6>               ;
-    using ZipIterator3 = zip_iterator<IteratorTuple3>;
-
-    using zip_iterator_system_type3 = typename iterator_system<ZipIterator3>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type3,
-    // thrust::experimental::space::any>::value)
-    // );
-
-#if 0
-    // test host/any
-    using IteratorTuple4 = tuple<Iterator1, Iterator5>               ;
-    using ZipIterator4 = zip_iterator<IteratorTuple4>;
-
-    using zip_iterator_system_type4 = typename iterator_system<ZipIterator4>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type4, thrust::host_system_tag>::value) );
-
-#if 0
-    // test any/host
-    using IteratorTuple5 = tuple<Iterator5, Iterator1>               ;
-    using ZipIterator5 = zip_iterator<IteratorTuple5>;
-
-    using zip_iterator_system_type5 = typename iterator_system<ZipIterator5>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type5, thrust::host_system_tag>::value) );
-
-#if 0
-    // test device/any
-    using IteratorTuple6 = tuple<Iterator3, Iterator5>               ;
-    using ZipIterator6 = zip_iterator<IteratorTuple6>;
-
-    using zip_iterator_system_type6 = typename iterator_system<ZipIterator6>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type6, thrust::device_system_tag>::value) );
-
-#if 0
-    // test any/device
-    using IteratorTuple7 = tuple<Iterator5, Iterator3>               ;
-    using ZipIterator7 = zip_iterator<IteratorTuple7>;
-
-    using zip_iterator_system_type7 = typename iterator_system<ZipIterator7>::type;
-#endif
-
-    // ASSERT_EQUAL(true, (::cuda::std::is_convertible<zip_iterator_system_type7, thrust::device_system_tag>::value) );
-  } // end operator()()
-};
-SimpleUnitTest<TestZipIteratorSystem, NumericTypes> TestZipIteratorSystemInstance;
 
 template <typename Vector>
 void TestZipIteratorCopy()
@@ -463,7 +341,7 @@ void TestZipIteratorCopyAoSToSoA()
 
   thrust::copy(d_aos.begin(), d_aos.end(), h_soa);
   ASSERT_EQUAL_QUIET(make_tuple(7, 13), h_soa[0]);
-};
+}
 DECLARE_UNITTEST(TestZipIteratorCopyAoSToSoA);
 
 void TestZipIteratorCopySoAToAoS()

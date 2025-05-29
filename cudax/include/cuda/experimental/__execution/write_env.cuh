@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_WRITE_ENV
-#define __CUDAX_ASYNC_DETAIL_WRITE_ENV
+#ifndef __CUDAX_EXECUTION_WRITE_ENV
+#define __CUDAX_EXECUTION_WRITE_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -36,7 +36,7 @@
 
 namespace cuda::experimental::execution
 {
-struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __write_env_t
 {
 private:
   template <class _Rcvr, class _Sndr, class _Env>
@@ -46,7 +46,7 @@ private:
 
     _CCCL_API explicit __opstate_t(_Sndr&& __sndr, _Env __env, _Rcvr __rcvr)
         : __env_rcvr_{static_cast<_Rcvr&&>(__rcvr), static_cast<_Env&&>(__env)}
-        , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __rcvr_ref{__env_rcvr_}))
+        , __opstate_(execution::connect(static_cast<_Sndr&&>(__sndr), __ref_rcvr(__env_rcvr_)))
     {}
 
     _CCCL_IMMOVABLE_OPSTATE(__opstate_t);
@@ -57,7 +57,7 @@ private:
     }
 
     __rcvr_with_env_t<_Rcvr, _Env> __env_rcvr_;
-    connect_result_t<_Sndr, __rcvr_ref<__rcvr_with_env_t<_Rcvr, _Env>>> __opstate_;
+    connect_result_t<_Sndr, __rcvr_ref_t<__rcvr_with_env_t<_Rcvr, _Env>>> __opstate_;
   };
 
 public:
@@ -71,15 +71,15 @@ public:
 };
 
 template <class _Sndr, class _Env>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __write_env_t::__sndr_t
 {
   using sender_concept _CCCL_NODEBUG_ALIAS = sender_t;
 
   template <class _Self, class... _Env2>
-  _CCCL_API static constexpr auto get_completion_signatures()
+  [[nodiscard]] _CCCL_API static _CCCL_CONSTEVAL auto get_completion_signatures()
   {
-    using _Child _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Self, _Sndr>;
-    return execution::get_completion_signatures<_Child, env<const _Env&, _FWD_ENV_T<_Env2>>...>();
+    using _Child _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__copy_cvref_t<_Self, _Sndr>;
+    return execution::get_completion_signatures<_Child, env<const _Env&, __fwd_env_t<_Env2>>...>();
   }
 
   template <class _Rcvr>
@@ -95,30 +95,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT write_env_t::__sndr_t
     return __opstate_t<_Rcvr, const _Sndr&, _Env>{__sndr_, __env_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_API auto get_env() const noexcept -> env_of_t<_Sndr>
+  [[nodiscard]] _CCCL_API auto get_env() const noexcept -> __fwd_env_t<env_of_t<_Sndr>>
   {
-    return execution::get_env(__sndr_);
+    return __fwd_env(execution::get_env(__sndr_));
   }
 
-  _CCCL_NO_UNIQUE_ADDRESS write_env_t __tag_;
+  _CCCL_NO_UNIQUE_ADDRESS __write_env_t __tag_;
   _Env __env_;
   _Sndr __sndr_;
 };
 
 template <class _Sndr, class _Env>
-_CCCL_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const
+_CCCL_TRIVIAL_API constexpr auto __write_env_t::operator()(_Sndr __sndr, _Env __env) const
 {
-  using __dom_t _CCCL_NODEBUG_ALIAS  = __domain_of_t<_Env>;
-  using __sndr_t _CCCL_NODEBUG_ALIAS = write_env_t::__sndr_t<_Sndr, _Env>;
-  return transform_sender(__dom_t{}, __sndr_t{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)});
+  // The write_env algorithm is not customizable by design; hence, we don't dispatch to
+  // transform_sender like we do for other algorithms.
+  return __sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};
 }
 
 template <class _Sndr, class _Env>
-inline constexpr size_t structured_binding_size<write_env_t::__sndr_t<_Sndr, _Env>> = 3;
+inline constexpr size_t structured_binding_size<__write_env_t::__sndr_t<_Sndr, _Env>> = 3;
 
-_CCCL_GLOBAL_CONSTANT write_env_t write_env{};
+_CCCL_GLOBAL_CONSTANT __write_env_t write_env{};
 } // namespace cuda::experimental::execution
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_WRITE_ENV

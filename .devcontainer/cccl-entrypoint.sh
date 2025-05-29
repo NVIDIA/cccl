@@ -8,6 +8,8 @@ devcontainer-utils-post-create-command;
 devcontainer-utils-init-git;
 devcontainer-utils-post-attach-command;
 
+sudo apt-get update && sudo apt-get install -y ca-certificates
+
 cd /home/coder/cccl/
 
 # Check if docker CLI is available, and if not, install docker-outside-of-docker feature if specified in devcontainer.json

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
-#define __CUDAX_ASYNC_DETAIL_RCVR_WITH_ENV
+#ifndef __CUDAX_EXECUTION_RCVR_WITH_ENV
+#define __CUDAX_EXECUTION_RCVR_WITH_ENV
 
 #include <cuda/std/detail/__config>
 
@@ -34,25 +34,26 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
   struct _CCCL_TYPE_VISIBILITY_DEFAULT __env_t
   {
     template <class _Query>
-    _CCCL_TRIVIAL_API static constexpr decltype(auto) __get_1st(const __env_t& __self) noexcept
+    [[nodiscard]] _CCCL_TRIVIAL_API static constexpr auto __get_1st(const __env_t& __self) noexcept -> decltype(auto)
     {
       if constexpr (__queryable_with<_Env, _Query>)
       {
         return (__self.__rcvr_->__env_);
       }
-      else if constexpr (__queryable_with<env_of_t<_Rcvr>, _Query>)
+      else
       {
-        return execution::get_env(static_cast<const _Rcvr&>(*__self.__rcvr_));
+        return execution::get_env(__self.__rcvr_->__base());
       }
     }
 
     template <class _Query>
     using __1st_env_t _CCCL_NODEBUG_ALIAS = decltype(__env_t::__get_1st<_Query>(declval<const __env_t&>()));
 
-    template <class _Query>
-    _CCCL_TRIVIAL_API constexpr auto query(_Query) const
-      noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) //
-      -> __query_result_t<__1st_env_t<_Query>, _Query>
+    _CCCL_EXEC_CHECK_DISABLE
+    _CCCL_TEMPLATE(class _Query)
+    _CCCL_REQUIRES(__forwarding_query<_Query> _CCCL_AND __queryable_with<__1st_env_t<_Query>, _Query>)
+    [[nodiscard]] _CCCL_TRIVIAL_API constexpr auto query(_Query) const
+      noexcept(__nothrow_queryable_with<__1st_env_t<_Query>, _Query>) -> __query_result_t<__1st_env_t<_Query>, _Query>
     {
       return __env_t::__get_1st<_Query>(*this).query(_Query{});
     }
@@ -75,7 +76,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __rcvr_with_env_t : _Rcvr
     return *this;
   }
 
-  _CCCL_TRIVIAL_API auto get_env() const noexcept -> __env_t
+  [[nodiscard]] _CCCL_TRIVIAL_API auto get_env() const noexcept -> __env_t
   {
     return __env_t{this};
   }
@@ -90,4 +91,4 @@ __rcvr_with_env_t(_Rcvr, _Env) -> __rcvr_with_env_t<_Rcvr, _Env>;
 
 #include <cuda/experimental/__execution/epilogue.cuh>
 
-#endif
+#endif // __CUDAX_EXECUTION_RCVR_WITH_ENV

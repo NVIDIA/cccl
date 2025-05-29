@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_CCCL_NO_CONCEPTS)
+#if _CCCL_HAS_CONCEPTS()
 
 template <class _Input1,
           class _Input2,
@@ -43,7 +43,7 @@ concept mergeable =
   && indirectly_copyable<_Input1, _Output> && indirectly_copyable<_Input2, _Output>
   && indirect_strict_weak_order<_Comp, projected<_Input1, _Proj1>, projected<_Input2, _Proj2>>;
 
-#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
+#else // ^^^ _CCCL_HAS_CONCEPTS() ^^^ / vvv !_CCCL_HAS_CONCEPTS() vvv
 
 template <class _Input1, class _Input2, class _Output, class _Comp, class _Proj1, class _Proj2>
 _CCCL_CONCEPT_FRAGMENT(
@@ -63,7 +63,7 @@ template <class _Input1,
           class _Proj2 = identity>
 _CCCL_CONCEPT mergeable = _CCCL_FRAGMENT(__mergeable_, _Input1, _Input2, _Output, _Comp, _Proj1, _Proj2);
 
-#endif // _CCCL_NO_CONCEPTS
+#endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

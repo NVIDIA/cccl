@@ -50,6 +50,7 @@
 #include <thrust/type_traits/integer_sequence.h>
 
 #include <cuda/bit>
+#include <cuda/functional>
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/cstdint>
@@ -228,7 +229,8 @@ struct is_tuple_of_references_to_fundamental_types_t< //
 {};
 
 template <class KeyT, class DecomposerT>
-using decomposer_check_t = is_tuple_of_references_to_fundamental_types_t<invoke_result_t<DecomposerT, KeyT&>>;
+using decomposer_check_t =
+  is_tuple_of_references_to_fundamental_types_t<_CUDA_VSTD::invoke_result_t<DecomposerT, KeyT&>>;
 
 template <class T>
 struct bit_ordered_conversion_policy_t

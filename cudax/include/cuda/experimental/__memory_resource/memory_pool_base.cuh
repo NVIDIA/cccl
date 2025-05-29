@@ -147,11 +147,9 @@ private:
         case ::cudaSuccess:
           break;
         case ::cudaErrorInvalidValue:
-          ::cudaGetLastError(); // Clear CUDA error state
           ::cuda::__throw_cuda_error(
             ::cudaErrorNotSupported, "Requested IPC memory handle type not supported on given device");
         default:
-          ::cudaGetLastError(); // Clear CUDA error state
           ::cuda::__throw_cuda_error(__status, "Failed to call cudaDeviceGetAttribute");
       }
     }

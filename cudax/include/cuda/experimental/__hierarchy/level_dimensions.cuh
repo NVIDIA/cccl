@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -22,7 +22,7 @@
 namespace cuda::experimental
 {
 
-namespace detail
+namespace __detail
 {
 
 /* Keeping it around in case issues like https://github.com/NVIDIA/cccl/issues/522
@@ -77,7 +77,7 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
     return dimensions<dimensions_index_type, size_t(d), 1, 1>();
   }
 };
-} // namespace detail
+} // namespace __detail
 
 /**
  * @brief Type representing dimensions of a level in a thread hierarchy.
@@ -166,8 +166,8 @@ _CCCL_HOST_DEVICE constexpr auto grid_dims() noexcept
 template <typename T>
 _CCCL_HOST_DEVICE constexpr auto grid_dims(T t) noexcept
 {
-  static_assert(detail::dimensions_handler<T>::is_type_supported);
-  auto dims = detail::dimensions_handler<T>::translate(t);
+  static_assert(__detail::dimensions_handler<T>::is_type_supported);
+  auto dims = __detail::dimensions_handler<T>::translate(t);
   return level_dimensions<grid_level, decltype(dims)>(dims);
 }
 
@@ -190,8 +190,8 @@ _CCCL_HOST_DEVICE constexpr auto cluster_dims() noexcept
 template <typename T>
 _CCCL_HOST_DEVICE constexpr auto cluster_dims(T t) noexcept
 {
-  static_assert(detail::dimensions_handler<T>::is_type_supported);
-  auto dims = detail::dimensions_handler<T>::translate(t);
+  static_assert(__detail::dimensions_handler<T>::is_type_supported);
+  auto dims = __detail::dimensions_handler<T>::translate(t);
   return level_dimensions<cluster_level, decltype(dims)>(dims);
 }
 
@@ -214,8 +214,8 @@ _CCCL_HOST_DEVICE constexpr auto block_dims() noexcept
 template <typename T>
 _CCCL_HOST_DEVICE constexpr auto block_dims(T t) noexcept
 {
-  static_assert(detail::dimensions_handler<T>::is_type_supported);
-  auto dims = detail::dimensions_handler<T>::translate(t);
+  static_assert(__detail::dimensions_handler<T>::is_type_supported);
+  auto dims = __detail::dimensions_handler<T>::translate(t);
   return level_dimensions<block_level, decltype(dims)>(dims);
 }
 

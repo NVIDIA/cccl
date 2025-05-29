@@ -26,7 +26,6 @@
  ******************************************************************************/
 
 #include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
 
 #include <cub/device/device_select.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
