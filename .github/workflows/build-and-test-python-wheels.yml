@@ -1,6 +1,9 @@
 name: Build and Test Python Wheels
 
 on:
+  push:
+    branches:
+      - "pull-request/[0-9]+"
   workflow_dispatch:
 
 defaults:
