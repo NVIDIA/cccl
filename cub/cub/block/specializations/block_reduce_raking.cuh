@@ -49,8 +49,6 @@
 #include <cub/util_ptx.cuh>
 #include <cub/warp/warp_reduce.cuh>
 
-#include <cuda/cmath>
-
 CUB_NAMESPACE_BEGIN
 namespace detail
 {
@@ -90,7 +88,7 @@ struct BlockReduceRaking
   using BlockRakingLayout = BlockRakingLayout<T, BLOCK_THREADS>;
 
   ///  WarpReduce utility type
-  using WarpReduce = WarpReduce<T, BlockRakingLayout::RAKING_THREADS>;
+  using WarpReduce = typename WarpReduce<T, BlockRakingLayout::RAKING_THREADS>::InternalWarpReduce;
 
   /// Constants
   /// Number of raking threads
@@ -109,11 +107,12 @@ struct BlockReduceRaking
   /// Whether or not accesses into smem are unguarded
   static constexpr bool RAKING_UNGUARDED = BlockRakingLayout::UNGUARDED;
 
-  static constexpr bool IsPowerOfTwo = ::cuda::is_power_of_two(RAKING_THREADS);
-
   /// Shared memory storage layout type
   union _TempStorage
   {
+    /// Storage for warp-synchronous reduction
+    typename WarpReduce::TempStorage warp_storage;
+
     /// Padded thread block raking grid
     typename BlockRakingLayout::TempStorage raking_grid;
   };
@@ -123,7 +122,6 @@ struct BlockReduceRaking
   {};
 
   // Thread fields
-  typename WarpReduce::TempStorage warp_tmp;
   _TempStorage& temp_storage;
   unsigned int linear_tid;
 
@@ -194,13 +192,10 @@ struct BlockReduceRaking
   template <bool IS_FULL_TILE, typename ReductionOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T partial, int num_valid, ReductionOp reduction_op)
   {
-    using namespace cub::detail;
     if (WARP_SYNCHRONOUS)
     {
       // Short-circuit directly to warp synchronous reduction (unguarded if active threads is a power-of-two)
-      constexpr auto logical_mode =
-        IS_FULL_TILE && IsPowerOfTwo ? ReduceLogicalMode::MultipleReductions : ReduceLogicalMode::SingleReduction;
-      partial = WarpReduce{warp_tmp}.Reduce(partial, reduction_op, num_valid, reduce_logical_mode_t<logical_mode>{});
+      partial = WarpReduce(temp_storage.warp_storage).template Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
     }
     else
     {
@@ -224,12 +219,9 @@ struct BlockReduceRaking
         static_assert(RAKING_THREADS <= warp_threads, "RAKING_THREADS must be <= warp size.");
         unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
         __syncwarp(mask);
-        constexpr auto logical_mode =
-          (IS_FULL_TILE && RAKING_UNGUARDED && IsPowerOfTwo)
-            ? ReduceLogicalMode::MultipleReductions
-            : ReduceLogicalMode::SingleReduction;
-        partial = WarpReduce{warp_tmp}.Reduce(
-          partial, reduction_op, valid_raking_threads, reduce_logical_mode_t<logical_mode>{});
+
+        partial = WarpReduce(temp_storage.warp_storage)
+                    .template Reduce<(IS_FULL_TILE && RAKING_UNGUARDED)>(partial, valid_raking_threads, reduction_op);
       }
     }
 
@@ -250,7 +242,9 @@ struct BlockReduceRaking
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
   {
-    return Reduce<IS_FULL_TILE>(partial, num_valid, ::cuda::std::plus<>{});
+    ::cuda::std::plus<> reduction_op;
+
+    return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
   }
 };
 } // namespace detail

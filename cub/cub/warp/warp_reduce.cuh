@@ -1,6 +1,6 @@
 /***********************************************************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * Copyright (c) 2011-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
  * following conditions are met:
@@ -39,16 +39,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/type_traits.cuh> // is_fixed_size_random_access_range_v
-#include <cub/thread/thread_reduce.cuh> // ThreadReduce
-#include <cub/util_arch.cuh> // warp_threads
-#include <cub/warp/specializations/warp_reduce_config.cuh>
-#include <cub/warp/specializations/warp_reduce_impl.cuh>
+#include <cub/detail/type_traits.cuh>
+#include <cub/thread/thread_operators.cuh>
+#include <cub/thread/thread_reduce.cuh>
+#include <cub/util_arch.cuh>
+#include <cub/util_type.cuh>
+#include <cub/warp/specializations/warp_reduce_shfl.cuh>
+#include <cub/warp/specializations/warp_reduce_smem.cuh>
 
-#include <cuda/cmath>
-#include <cuda/functional> // cuda::maximum
-#include <cuda/std/__algorithm/clamp.h>
-#include <cuda/std/type_traits> // _CCCL_TEMPLATE
+#include <cuda/functional>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/bit>
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -142,31 +144,46 @@ CUB_NAMESPACE_BEGIN
 template <typename T, int LogicalWarpThreads = detail::warp_threads>
 class WarpReduce
 {
-  static_assert(detail::is_valid_logical_warp_size_v<LogicalWarpThreads>,
+  static_assert(LogicalWarpThreads >= 1 && LogicalWarpThreads <= detail::warp_threads,
                 "LogicalWarpThreads must be in the range [1, 32]");
 
-  static constexpr auto logical_mode_default =
-    (::cuda::is_power_of_two(LogicalWarpThreads) && LogicalWarpThreads < detail::warp_threads)
-      ? detail::ReduceLogicalMode::MultipleReductions
-      : detail::ReduceLogicalMode::SingleReduction;
-
-  static constexpr auto result_mode_default = detail::ReduceResultMode::SingleLane;
-
-  static constexpr auto logical_warp_size = detail::logical_warp_size_t<LogicalWarpThreads>{};
+  static constexpr bool is_full_warp    = (LogicalWarpThreads == detail::warp_threads);
+  static constexpr bool is_power_of_two = _CUDA_VSTD::has_single_bit(uint32_t{LogicalWarpThreads});
 
 public:
-  struct TempStorage : Uninitialized<NullType>
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
+  /// Internal specialization.
+  /// Use SHFL-based reduction if LogicalWarpThreads is a power-of-two
+  using InternalWarpReduce = _CUDA_VSTD::
+    _If<is_power_of_two, detail::WarpReduceShfl<T, LogicalWarpThreads>, detail::WarpReduceSmem<T, LogicalWarpThreads>>;
+
+#endif // _CCCL_DOXYGEN_INVOKED
+
+private:
+  /// Shared memory storage layout type for WarpReduce
+  using _TempStorage = typename InternalWarpReduce::TempStorage;
+
+  /// Shared storage reference
+  _TempStorage& temp_storage;
+
+public:
+  /// \smemstorage{WarpReduce}
+  struct TempStorage : Uninitialized<_TempStorage>
   {};
 
   //! @name Collective constructors
   //! @{
+
   //! @rst
   //! Collective constructor using the specified memory allocation as temporary storage.
   //! Logical warp and lane identifiers are constructed from ``threadIdx.x``.
   //! @endrst
   //!
   //! @param[in] temp_storage Reference to memory allocation having layout type TempStorage
-  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage&) {}
+  _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& temp_storage)
+      : temp_storage{temp_storage.Alias()}
+  {}
 
   //! @}  end member group
   //! @name Summation reductions
@@ -205,64 +222,219 @@ public:
   //! ``3568``, respectively (and is undefined in other threads).
   //! @endrst
   //!
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(
-    T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
-    return this->Reduce(input, _CUDA_VSTD::plus<>{}, logical_mode, result_mode);
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Sum(const InputType& input,
-      detail::reduce_logical_mode_t<Mode> logical_mode = {},
-      detail::reduce_result_mode_t<Kind> result_mode   = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, _CUDA_VSTD::plus<>{});
-    return this->Reduce(thread_reduction, _CUDA_VSTD::plus<>{}, logical_mode, result_mode);
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(
+      thread_reduction, LogicalWarpThreads, _CUDA_VSTD::plus<>{});
   }
 
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(
-    T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
   {
-    return this->Reduce(input, ::cuda::maximum<>{}, logical_mode, result_mode);
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::maximum<>{});
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Max(const InputType& input,
-      detail::reduce_logical_mode_t<Mode> logical_mode = {},
-      detail::reduce_result_mode_t<Kind> result_mode   = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::maximum<>{});
-    return this->Reduce(thread_reduction, ::cuda::maximum<>{}, logical_mode, result_mode);
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(
+      thread_reduction, LogicalWarpThreads, ::cuda::maximum<>{});
   }
 
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(
-    T input, detail::reduce_logical_mode_t<Mode> logical_mode = {}, detail::reduce_result_mode_t<Kind> result_mode = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input)
   {
-    return this->Reduce(input, ::cuda::minimum<>{}, logical_mode, result_mode);
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, ::cuda::minimum<>{});
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Min(const InputType& input,
-      detail::reduce_logical_mode_t<Mode> logical_mode = {},
-      detail::reduce_result_mode_t<Kind> result_mode   = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
     auto thread_reduction = cub::ThreadReduce(input, ::cuda::minimum<>{});
-    return this->Reduce(thread_reduction, ::cuda::minimum<>{}, logical_mode, result_mode);
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(
+      thread_reduction, LogicalWarpThreads, ::cuda::minimum<>{});
+  }
+
+  //! @rst
+  //! Computes a partially-full warp-wide sum in the calling warp.
+  //! The output is valid in warp *lane*\ :sub:`0`.
+  //!
+  //! All threads across the calling warp must agree on the same value for ``valid_items``.
+  //! Otherwise the result is undefined.
+  //!
+  //! @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a sum reduction within a single, partially-full
+  //! block of 32 threads (one warp).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(int *d_data, int valid_items)
+  //!    {
+  //!        // Specialize WarpReduce for type int
+  //!        using WarpReduce = cub::WarpReduce<int>;
+  //!
+  //!        // Allocate WarpReduce shared memory for one warp
+  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
+  //!
+  //!        // Obtain one input item per thread if in range
+  //!        int thread_data;
+  //!        if (threadIdx.x < valid_items)
+  //!            thread_data = d_data[threadIdx.x];
+  //!
+  //!        // Return the warp-wide sums to each lane0
+  //!        int aggregate = WarpReduce(temp_storage).Sum(
+  //!            thread_data, valid_items);
+  //!
+  //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ...`` and ``valid_items`` is ``4``.
+  //! The corresponding output ``aggregate`` in *lane*\ :sub:`0` is ``6``
+  //! (and is undefined in other threads).
+  //! @endrst
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] valid_items
+  //!   Total number of valid items in the calling thread's logical warp
+  //!   (may be less than ``LogicalWarpThreads``)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
+  {
+    // Determine if we don't need bounds checking
+    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, _CUDA_VSTD::plus<>{});
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int valid_items)
+  {
+    // Determine if we don't need bounds checking
+    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::maximum<>{});
+  }
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int valid_items)
+  {
+    // Determine if we don't need bounds checking
+    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, ::cuda::minimum<>{});
+  }
+
+  //! @rst
+  //! Computes a segmented sum in the calling warp where segments are defined by head-flags.
+  //! The sum of each segment is returned to the first lane in that segment
+  //! (which always includes *lane*\ :sub:`0`).
+  //!
+  //! @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a head-segmented warp sum
+  //! reduction within a block of 32 threads (one warp).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpReduce for type int
+  //!        using WarpReduce = cub::WarpReduce<int>;
+  //!
+  //!        // Allocate WarpReduce shared memory for one warp
+  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
+  //!
+  //!        // Obtain one input item and flag per thread
+  //!        int thread_data = ...
+  //!        int head_flag = ...
+  //!
+  //!        // Return the warp-wide sums to each lane0
+  //!        int aggregate = WarpReduce(temp_storage).HeadSegmentedSum(
+  //!            thread_data, head_flag);
+  //!
+  //! Suppose the set of input ``thread_data`` and ``head_flag`` across the block of threads
+  //! is ``{0, 1, 2, 3, ..., 31`` and is ``{1, 0, 0, 0, 1, 0, 0, 0, ..., 1, 0, 0, 0``,
+  //! respectively. The corresponding output ``aggregate`` in threads 0, 4, 8, etc. will be
+  //! ``6``, ``22``, ``38``, etc. (and is undefined in other threads).
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] head_flag
+  //!   Head flag denoting whether or not `input` is the start of a new segment
+  template <typename FlagT>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT head_flag)
+  {
+    return HeadSegmentedReduce(input, head_flag, _CUDA_VSTD::plus<>{});
+  }
+
+  //! @rst
+  //! Computes a segmented sum in the calling warp where segments are defined by tail-flags.
+  //! The sum of each segment is returned to the first lane in that segment
+  //! (which always includes *lane*\ :sub:`0`).
+  //!
+  //! @smemwarpreuse
+  //!
+  //! Snippet
+  //! +++++++
+  //!
+  //! The code snippet below illustrates a tail-segmented warp sum reduction within a block of 32
+  //! threads (one warp).
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh>
+  //!
+  //!    __global__ void ExampleKernel(...)
+  //!    {
+  //!        // Specialize WarpReduce for type int
+  //!        using WarpReduce = cub::WarpReduce<int>;
+  //!
+  //!        // Allocate WarpReduce shared memory for one warp
+  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
+  //!
+  //!        // Obtain one input item and flag per thread
+  //!        int thread_data = ...
+  //!        int tail_flag = ...
+  //!
+  //!        // Return the warp-wide sums to each lane0
+  //!        int aggregate = WarpReduce(temp_storage).TailSegmentedSum(
+  //!            thread_data, tail_flag);
+  //!
+  //! Suppose the set of input ``thread_data`` and ``tail_flag`` across the block of threads
+  //! is ``{0, 1, 2, 3, ..., 31}`` and is ``{0, 0, 0, 1, 0, 0, 0, 1, ..., 0, 0, 0, 1}``,
+  //! respectively. The corresponding output ``aggregate`` in threads 0, 4, 8, etc. will be
+  //! ``6``, ``22``, ``38``, etc. (and is undefined in other threads).
+  //! @endrst
+  //!
+  //! @tparam ReductionOp
+  //!   **[inferred]** Binary reduction operator type having member
+  //!   `T operator()(const T &a, const T &b)`
+  //!
+  //! @param[in] input
+  //!   Calling thread's input
+  //!
+  //! @param[in] tail_flag
+  //!   Head flag denoting whether or not `input` is the start of a new segment
+  template <typename FlagT>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
+  {
+    return TailSegmentedReduce(input, tail_flag, _CUDA_VSTD::plus<>{});
   }
 
   //! @}  end member group
@@ -318,114 +490,19 @@ public:
   //!
   //! @param[in] reduction_op
   //!   Binary reduction operator
-  template <typename ReductionOp,
-            detail::ReduceLogicalMode Mode = logical_mode_default,
-            detail::ReduceResultMode Kind  = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
-    T input,
-    ReductionOp reduction_op,
-    detail::reduce_logical_mode_t<Mode> logical_mode = {},
-    detail::reduce_result_mode_t<Kind> result_mode   = {})
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op)
   {
-    detail::WarpReduceConfig config{logical_mode, result_mode, logical_warp_size};
-    return cub::detail::warp_reduce_dispatch(input, reduction_op, config);
+    return InternalWarpReduce{temp_storage}.template Reduce<true>(input, LogicalWarpThreads, reduction_op);
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 typename ReductionOp,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
-    const InputType& input,
-    ReductionOp reduction_op,
-    detail::reduce_logical_mode_t<Mode> logical_mode = {},
-    detail::reduce_result_mode_t<Kind> result_mode   = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     auto thread_reduction = cub::ThreadReduce(input, reduction_op);
-    return this->Reduce(thread_reduction, reduction_op, logical_mode, result_mode);
+    return WarpReduce<T, LogicalWarpThreads>::Reduce(thread_reduction, LogicalWarpThreads, reduction_op);
   }
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // DYNAMIC SIZE
-
-  //! @rst
-  //! Computes a partially-full warp-wide sum in the calling warp.
-  //! The output is valid in warp *lane*\ :sub:`0`.
-  //!
-  //! All threads across the calling warp must agree on the same value for ``valid_items``.
-  //! Otherwise the result is undefined.
-  //!
-  //! @smemwarpreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates a sum reduction within a single, partially-full
-  //! block of 32 threads (one warp).
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(int *d_data, int valid_items)
-  //!    {
-  //!        // Specialize WarpReduce for type int
-  //!        using WarpReduce = cub::WarpReduce<int>;
-  //!
-  //!        // Allocate WarpReduce shared memory for one warp
-  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
-  //!
-  //!        // Obtain one input item per thread if in range
-  //!        int thread_data;
-  //!        if (threadIdx.x < valid_items)
-  //!            thread_data = d_data[threadIdx.x];
-  //!
-  //!        // Return the warp-wide sums to each lane0
-  //!        int aggregate = WarpReduce(temp_storage).Sum(
-  //!            thread_data, valid_items);
-  //!
-  //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ...`` and ``valid_items`` is ``4``.
-  //! The corresponding output ``aggregate`` in *lane*\ :sub:`0` is ``6``
-  //! (and is undefined in other threads).
-  //! @endrst
-  //!
-  //! @param[in] input
-  //!   Calling thread's input
-  //!
-  //! @param[in] valid_items
-  //!   Total number of valid items in the calling thread's logical warp
-  //!   (may be less than ``LogicalWarpThreads``)
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Sum(T input,
-      int valid_items,
-      detail::reduce_logical_mode_t<Mode> logical_mode = {},
-      detail::reduce_result_mode_t<Kind> result_mode   = {})
-  {
-    return this->Reduce(input, _CUDA_VSTD::plus<>{}, valid_items, logical_mode, result_mode);
-  }
-
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Max(T input,
-      int valid_items,
-      detail::reduce_logical_mode_t<Mode> logical_mode = {},
-      detail::reduce_result_mode_t<Kind> result_mode   = {})
-  {
-    return this->Reduce(input, ::cuda::maximum<>{}, valid_items, logical_mode, result_mode);
-  }
-
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Min(T input,
-      int valid_items,
-      detail::reduce_logical_mode_t<Mode> logical_mode = {},
-      detail::reduce_result_mode_t<Kind> result_mode   = {})
-  {
-    return this->Reduce(input, ::cuda::minimum<>{}, valid_items, logical_mode, result_mode);
-  }
-
   //! @rst
   //! Computes a partially-full warp-wide reduction in the calling warp using the specified binary
   //! reduction functor. The output is valid in warp *lane*\ :sub:`0`.
@@ -482,135 +559,10 @@ public:
   //! @param[in] valid_items
   //!   Total number of valid items in the calling thread's logical warp
   //!   (may be less than ``LogicalWarpThreads``)
-  template <typename ReductionOp,
-            detail::ReduceLogicalMode Mode = logical_mode_default,
-            detail::ReduceResultMode Kind  = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
-    T input,
-    ReductionOp reduction_op,
-    int valid_items,
-    detail::reduce_logical_mode_t<Mode> logical_mode = {},
-    detail::reduce_result_mode_t<Kind> result_mode   = {})
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp reduction_op, int valid_items)
   {
-    if (valid_items <= 0)
-    {
-      return input;
-    }
-    _CCCL_ASSERT(valid_items <= LogicalWarpThreads, "Invalid value for valid_items");
-    auto valid_items1 = detail::valid_items_t<>{_CUDA_VSTD::clamp(valid_items, 0, LogicalWarpThreads)};
-    detail::WarpReduceConfig config{logical_mode, result_mode, logical_warp_size, valid_items1};
-    return cub::detail::warp_reduce_dispatch(input, reduction_op, config);
-  }
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // SEGMENTED REDUCTION
-
-  //! @rst
-  //! Computes a segmented sum in the calling warp where segments are defined by head-flags.
-  //! The sum of each segment is returned to the first lane in that segment
-  //! (which always includes *lane*\ :sub:`0`).
-  //!
-  //! @smemwarpreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates a head-segmented warp sum
-  //! reduction within a block of 32 threads (one warp).
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpReduce for type int
-  //!        using WarpReduce = cub::WarpReduce<int>;
-  //!
-  //!        // Allocate WarpReduce shared memory for one warp
-  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
-  //!
-  //!        // Obtain one input item and flag per thread
-  //!        int thread_data = ...
-  //!        int head_flag = ...
-  //!
-  //!        // Return the warp-wide sums to each lane0
-  //!        int aggregate = WarpReduce(temp_storage).HeadSegmentedSum(
-  //!            thread_data, head_flag);
-  //!
-  //! Suppose the set of input ``thread_data`` and ``head_flag`` across the block of threads
-  //! is ``{0, 1, 2, 3, ..., 31`` and is ``{1, 0, 0, 0, 1, 0, 0, 0, ..., 1, 0, 0, 0``,
-  //! respectively. The corresponding output ``aggregate`` in threads 0, 4, 8, etc. will be
-  //! ``6``, ``22``, ``38``, etc. (and is undefined in other threads).
-  //! @endrst
-  //!
-  //! @tparam ReductionOp
-  //!   **[inferred]** Binary reduction operator type having member
-  //!   `T operator()(const T &a, const T &b)`
-  //!
-  //! @param[in] input
-  //!   Calling thread's input
-  //!
-  //! @param[in] head_flag
-  //!   Head flag denoting whether or not `input` is the start of a new segment
-  template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT head_flag)
-  {
-    return this->HeadSegmentedReduce(input, head_flag, _CUDA_VSTD::plus<>{});
-  }
-
-  //! @rst
-  //! Computes a segmented sum in the calling warp where segments are defined by tail-flags.
-  //! The sum of each segment is returned to the first lane in that segment
-  //! (which always includes *lane*\ :sub:`0`).
-  //!
-  //! @smemwarpreuse
-  //!
-  //! Snippet
-  //! +++++++
-  //!
-  //! The code snippet below illustrates a tail-segmented warp sum reduction within a block of 32
-  //! threads (one warp).
-  //!
-  //! .. code-block:: c++
-  //!
-  //!    #include <cub/cub.cuh>
-  //!
-  //!    __global__ void ExampleKernel(...)
-  //!    {
-  //!        // Specialize WarpReduce for type int
-  //!        using WarpReduce = cub::WarpReduce<int>;
-  //!
-  //!        // Allocate WarpReduce shared memory for one warp
-  //!        __shared__ typename WarpReduce::TempStorage temp_storage;
-  //!
-  //!        // Obtain one input item and flag per thread
-  //!        int thread_data = ...
-  //!        int tail_flag = ...
-  //!
-  //!        // Return the warp-wide sums to each lane0
-  //!        int aggregate = WarpReduce(temp_storage).TailSegmentedSum(
-  //!            thread_data, tail_flag);
-  //!
-  //! Suppose the set of input ``thread_data`` and ``tail_flag`` across the block of threads
-  //! is ``{0, 1, 2, 3, ..., 31}`` and is ``{0, 0, 0, 1, 0, 0, 0, 1, ..., 0, 0, 0, 1}``,
-  //! respectively. The corresponding output ``aggregate`` in threads 0, 4, 8, etc. will be
-  //! ``6``, ``22``, ``38``, etc. (and is undefined in other threads).
-  //! @endrst
-  //!
-  //! @tparam ReductionOp
-  //!   **[inferred]** Binary reduction operator type having member
-  //!   `T operator()(const T &a, const T &b)`
-  //!
-  //! @param[in] input
-  //!   Calling thread's input
-  //!
-  //! @param[in] tail_flag
-  //!   Head flag denoting whether or not `input` is the start of a new segment
-  template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
-  {
-    return this->TailSegmentedReduce(input, tail_flag, _CUDA_VSTD::plus<>{});
+    return InternalWarpReduce{temp_storage}.template Reduce<false>(input, valid_items, reduction_op);
   }
 
   //! @rst
@@ -669,9 +621,7 @@ public:
   template <typename ReductionOp, typename FlagT>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedReduce(T input, FlagT head_flag, ReductionOp reduction_op)
   {
-    detail::reduce_logical_mode_t<logical_mode_default> logical_mode;
-    return cub::detail::warp_segmented_reduce_dispatch<true>(
-      input, head_flag, reduction_op, logical_mode, logical_warp_size);
+    return InternalWarpReduce{temp_storage}.template SegmentedReduce<true>(input, head_flag, reduction_op);
   }
 
   //! @rst
@@ -730,178 +680,143 @@ public:
   template <typename ReductionOp, typename FlagT>
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedReduce(T input, FlagT tail_flag, ReductionOp reduction_op)
   {
-    detail::reduce_logical_mode_t<logical_mode_default> logical_mode;
-    return cub::detail::warp_segmented_reduce_dispatch<false>(
-      input, tail_flag, reduction_op, logical_mode, logical_warp_size);
+    return InternalWarpReduce{temp_storage}.template SegmentedReduce<false>(input, tail_flag, reduction_op);
   }
 
   //! @}  end member group
 };
 
-//----------------------------------------------------------------------------------------------------------------------
-// WarpReduce specialization for N = 1
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-
 template <typename T>
 class WarpReduce<T, 1>
 {
-  static constexpr auto logical_mode_default = detail::ReduceLogicalMode::SingleReduction;
-  static constexpr auto result_mode_default  = detail::ReduceResultMode::SingleLane;
+private:
+  using _TempStorage = cub::NullType;
 
 public:
-  struct TempStorage : Uninitialized<NullType>
-  {};
+  struct InternalWarpReduce
+  {
+    struct TempStorage : Uninitialized<_TempStorage>
+    {};
 
-  WarpReduce() = default;
+    _CCCL_DEVICE _CCCL_FORCEINLINE InternalWarpReduce(TempStorage& /*temp_storage */) {}
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage&) {}
+    template <bool ALL_LANES_VALID, typename ReductionOp>
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+    Reduce(T input, int /* valid_items */, ReductionOp /* reduction_op */)
+    {
+      return input;
+    }
 
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Sum(T input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
+    template <bool HEAD_SEGMENTED, typename FlagT, typename ReductionOp>
+    [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+    SegmentedReduce(T input, FlagT /* flag */, ReductionOp /* reduction_op */)
+    {
+      return input;
+    }
+  };
+
+  using TempStorage = typename InternalWarpReduce::TempStorage;
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE WarpReduce(TempStorage& /*temp_storage */) {}
+
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
     return input;
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Sum(const InputType& input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(const InputType& input)
   {
     return cub::ThreadReduce(input, _CUDA_VSTD::plus<>{});
   }
 
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Sum(T input,
-      [[maybe_unused]] int valid_items,
-      detail::reduce_logical_mode_t<Mode> = {},
-      detail::reduce_result_mode_t<Kind>  = {})
-  {
-    _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
-    return input;
-  }
-
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Max(T input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int /* valid_items */)
   {
     return input;
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input)
+  {
+    return input;
+  }
+
+  _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Max(const InputType& input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(const InputType& input)
   {
     return cub::ThreadReduce(input, ::cuda::maximum<>{});
   }
 
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Max(T input,
-      [[maybe_unused]] int valid_items,
-      detail::reduce_logical_mode_t<Mode> = {},
-      detail::reduce_result_mode_t<Kind>  = {})
-  {
-    _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
-    return input;
-  }
-
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Min(T input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Max(T input, int /* valid_items */)
   {
     return input;
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input)
+  {
+    return input;
+  }
+
+  _CCCL_TEMPLATE(typename InputType)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Min(const InputType& input, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(const InputType& input)
   {
     return cub::ThreadReduce(input, ::cuda::minimum<>{});
   }
 
-  template <detail::ReduceLogicalMode Mode = logical_mode_default, detail::ReduceResultMode Kind = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Min(T input,
-      [[maybe_unused]] int valid_items,
-      detail::reduce_logical_mode_t<Mode> = {},
-      detail::reduce_result_mode_t<Kind>  = {})
-  {
-    _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
-    return input;
-  }
-
-  template <typename ReductionOp,
-            detail::ReduceLogicalMode Mode = logical_mode_default,
-            detail::ReduceResultMode Kind  = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
-  Reduce(T input, ReductionOp, detail::reduce_logical_mode_t<Mode> = {}, detail::reduce_result_mode_t<Kind> = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Min(T input, int /* valid_items */)
   {
     return input;
   }
 
-  _CCCL_TEMPLATE(typename InputType,
-                 typename ReductionOp,
-                 detail::ReduceLogicalMode Mode = logical_mode_default,
-                 detail::ReduceResultMode Kind  = result_mode_default)
+  template <typename FlagT>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT /* head_flag */)
+  {
+    return input;
+  }
+
+  template <typename FlagT>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT /* tail_flag */)
+  {
+    return input;
+  }
+
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp /* reduction_op */)
+  {
+    return input;
+  }
+
+  _CCCL_TEMPLATE(typename InputType, typename ReductionOp)
   _CCCL_REQUIRES(_CCCL_TRAIT(detail::is_fixed_size_random_access_range, InputType))
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
-    const InputType& input,
-    ReductionOp reduction_op,
-    detail::reduce_logical_mode_t<Mode> = {},
-    detail::reduce_result_mode_t<Kind>  = {})
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(const InputType& input, ReductionOp reduction_op)
   {
     return cub::ThreadReduce(input, reduction_op);
   }
 
-  template <typename ReductionOp,
-            detail::ReduceLogicalMode Mode = logical_mode_default,
-            detail::ReduceResultMode Kind  = result_mode_default>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(
-    T input,
-    ReductionOp,
-    [[maybe_unused]] int valid_items,
-    detail::reduce_logical_mode_t<Mode> = {},
-    detail::reduce_result_mode_t<Kind>  = {})
-  {
-    _CCCL_ASSERT(valid_items == 1, "Invalid value for valid_items");
-    return input;
-  }
-
-  template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT)
-  {
-    return input;
-  }
-
-  template <typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT)
+  template <typename ReductionOp>
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T Reduce(T input, ReductionOp /* reduction_op */, int /* valid_items */)
   {
     return input;
   }
 
   template <typename ReductionOp, typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedReduce(T input, FlagT, ReductionOp)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  HeadSegmentedReduce(T input, FlagT /* head_flag */, ReductionOp /* reduction_op */)
   {
     return input;
   }
 
   template <typename ReductionOp, typename FlagT>
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedReduce(T input, FlagT, ReductionOp)
+  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE T
+  TailSegmentedReduce(T input, FlagT /* tail_flag */, ReductionOp /* reduction_op */)
   {
     return input;
   }
 };
 
 #endif // _CCCL_DOXYGEN_INVOKED
+
 CUB_NAMESPACE_END

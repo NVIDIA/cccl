@@ -1,5 +1,5 @@
 /***********************************************************************************************************************
- * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
  * SPDX-License-Identifier: BSD-3-Clause
  *
  * Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -188,6 +188,11 @@ template <typename T>
 inline constexpr bool is_any_short2_v = is_any_short2_impl_v<_CUDA_VSTD::remove_cv_t<T>>;
 
 //----------------------------------------------------------------------------------------------------------------------
+
+// half/bfloat16
+template <typename T>
+inline constexpr bool is_arithmetic_cuda_floating_point_v =
+  is_any_half_v<T> || is_any_bfloat16_v<T> || _CUDA_VSTD::is_floating_point_v<T>;
 
 // - promote small integer types to their corresponding 32-bit promotion type
 // - address the incompatibility between linux/windows for int/long
