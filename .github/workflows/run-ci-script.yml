@@ -11,6 +11,15 @@ on:
         required: true
         type: string
         description: 'Python version to use'
+      ctk-version:
+        required: true
+        type: string
+        description: 'CTK version to use (e.g. "12.9")'
+      host-compiler:
+        required: false
+        type: string
+        default: 'gcc13'
+        description: 'Host compiler and version to use (default is "gcc13")'
       needs-artifact:
         required: false
         type: boolean
@@ -101,12 +110,14 @@ jobs:
 
       - name: Run script
         env:
+          CTK_VERSION: ${{ inputs.ctk-version }}
+          HOST_COMPILER: ${{ inputs.host-compiler }}
           PYTHON_VERSION: ${{ inputs.python-version }}
         run: |
           ${{github.workspace}}/.devcontainer/launch.sh \
             --docker \
-            --cuda 12.9 \
-            --host gcc13 \
+            --cuda $CTK_VERSION \
+            --host $HOST_COMPILER \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             --env "CI=$CI" \
             --env "AWS_ROLE_ARN=" \
