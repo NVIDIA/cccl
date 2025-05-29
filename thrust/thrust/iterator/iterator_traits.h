@@ -215,6 +215,13 @@ struct iterator_traversal<::cuda::counting_iterator<Start>>
   using type = random_access_traversal_tag;
 };
 
+template <class Iter, class Stride>
+struct iterator_system<::cuda::strided_iterator<Iter, Stride>> : iterator_system<Iter>
+{};
+template <class Iter, class Stride>
+struct iterator_traversal<::cuda::strided_iterator<Iter, Stride>> : iterator_traversal<Iter>
+{};
+
 template <class Iter, class Fn>
 struct iterator_system<::cuda::transform_iterator<Iter, Fn>> : iterator_system<Iter>
 {};
