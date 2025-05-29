@@ -299,28 +299,8 @@ struct policy_hub
   // Architecture-specific tuning policies
   //---------------------------------------------------------------------------
 
-  /// SM30
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 2;
-
-    // ReducePolicy (GTX670: 154.0 @ 48M 4B items)
-    using DeterministicReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_DEFAULT>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = DeterministicReducePolicy;
-  };
-
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
+  /// SM50
+  struct Policy500 : ChainedPolicy<500, Policy500, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 20;
@@ -341,7 +321,7 @@ struct policy_hub
   };
 
   /// SM60
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy350>
+  struct Policy600 : ChainedPolicy<600, Policy600, Policy500>
   {
     static constexpr int threads_per_block  = 256;
     static constexpr int items_per_thread   = 16;

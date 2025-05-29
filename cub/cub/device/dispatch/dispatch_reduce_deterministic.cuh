@@ -26,7 +26,7 @@
  ******************************************************************************/
 
 /**
- * @file cub::DeterministicDeviceReduce provides device-wide, parallel operations for
+ * @file This file device-wide, parallel operations for
  *       computing a reduction across a sequence of data items residing within
  *       device-accessible memory. Current reduction operator supported is ::cuda::std::plus
  */
@@ -59,8 +59,6 @@
 
 #include <cuda/std/functional>
 
-#include <stdio.h>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -87,29 +85,7 @@ struct deterministic_sum_t
     return acc;
   }
 
-  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, float4 f)
-  {
-    acc += f;
-    return acc;
-  }
-
-  _CCCL_DEVICE DeterministicAcc operator()(DeterministicAcc acc, double4 f)
-  {
-    acc += f;
-    return acc;
-  }
-
   _CCCL_DEVICE DeterministicAcc operator()(FloatType f, DeterministicAcc acc)
-  {
-    return this->operator()(acc, f);
-  }
-
-  _CCCL_DEVICE DeterministicAcc operator()(float4 f, DeterministicAcc acc)
-  {
-    return this->operator()(acc, f);
-  }
-
-  _CCCL_DEVICE DeterministicAcc operator()(double4 f, DeterministicAcc acc)
   {
     return this->operator()(acc, f);
   }
@@ -195,35 +171,7 @@ struct DispatchReduceDeterministic
 
   int ptx_version;
 
-  TransformOpT transform_op;
-
-  //---------------------------------------------------------------------------
-  // Constructor
-  //---------------------------------------------------------------------------
-
-  /// Constructor
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchReduceDeterministic(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorTransformT d_out,
-    OffsetT num_items,
-    ReductionOpT reduction_op,
-    InitT init,
-    cudaStream_t stream,
-    int ptx_version,
-    TransformOpT transform_op = {})
-      : d_temp_storage(d_temp_storage)
-      , temp_storage_bytes(temp_storage_bytes)
-      , d_in(d_in)
-      , d_out(d_out)
-      , num_items(num_items)
-      , reduction_op(reduction_op)
-      , init(init)
-      , stream(stream)
-      , ptx_version(ptx_version)
-      , transform_op(transform_op)
-  {}
+  TransformOpT transform_op = {};
 
   //---------------------------------------------------------------------------
   // Small-problem (single tile) invocation
@@ -246,46 +194,37 @@ struct DispatchReduceDeterministic
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokeSingleTile(SingleTileKernelT single_tile_kernel)
   {
-    cudaError error = cudaSuccess;
-    do
+    // Return if the caller is simply requesting the size of the storage
+    // allocation
+    if (d_temp_storage == nullptr)
     {
-      // Return if the caller is simply requesting the size of the storage
-      // allocation
-      if (d_temp_storage == nullptr)
-      {
-        temp_storage_bytes = 1;
-        break;
-      }
-
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
 // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-              "%d items per thread\n",
-              ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
-              (long long) stream,
-              ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
+    _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+            "%d items per thread\n",
+            ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
+            (long long) stream,
+            ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
 #endif
-
-      // Invoke single_reduce_sweep_kernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
-        .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
-
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
-
-    return error;
+    // Invoke single_reduce_sweep_kernel
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      .doit(single_tile_kernel, d_in, d_out, num_items, reduction_op, init, transform_op);
+    // Check for failure to launch
+    auto error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+    // Sync the stream if specified to flush runtime errors
+    error = CubDebug(detail::DebugSyncStream(stream));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
+    return cudaSuccess;
   }
 
   //---------------------------------------------------------------------------
@@ -314,135 +253,131 @@ struct DispatchReduceDeterministic
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   InvokePasses(ReduceKernelT reduce_kernel, SingleTileKernelT single_tile_kernel)
   {
-    cudaError error = cudaSuccess;
-    do
+    const auto tile_size = ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS
+                         * ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
+    // Get device ordinal
+    int device_ordinal;
+    auto error = CubDebug(cudaGetDevice(&device_ordinal));
+    if (cudaSuccess != error)
     {
-      const auto tile_size = ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS
-                           * ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD;
-      // Get device ordinal
-      int device_ordinal;
-      error = CubDebug(cudaGetDevice(&device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+      return error;
+    }
 
-      int sm_count;
-      error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    int sm_count;
+    error = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device_ordinal));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      KernelConfig reduce_config;
-      error = CubDebug(reduce_config.Init<typename ActivePolicyT::DeterministicReducePolicy>(reduce_kernel));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    KernelConfig reduce_config;
+    error = CubDebug(reduce_config.Init<typename ActivePolicyT::DeterministicReducePolicy>(reduce_kernel));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
-      const int max_blocks              = reduce_device_occupancy * CUB_SUBSCRIPTION_FACTOR(0);
-      const int resulting_grid_size     = (num_items + tile_size - 1) / tile_size;
+    const int reduce_device_occupancy = reduce_config.sm_occupancy * sm_count;
+    const int max_blocks              = reduce_device_occupancy * CUB_SUBSCRIPTION_FACTOR(0);
+    const int resulting_grid_size     = (num_items + tile_size - 1) / tile_size;
 
-      // Get grid size for device_reduce_sweep_kernel
-      const int reduce_grid_size = resulting_grid_size > max_blocks ? max_blocks : resulting_grid_size;
+    // Get grid size for device_reduce_sweep_kernel
+    const int reduce_grid_size = resulting_grid_size > max_blocks ? max_blocks : resulting_grid_size;
 
-      // Temporary storage allocation requirements
-      void* allocations[1]       = {};
-      size_t allocation_sizes[1] = {
-        reduce_grid_size * sizeof(deterministic_accum_t) // bytes needed for privatized block
-                                                         // reductions
-      };
+    // Temporary storage allocation requirements
+    void* allocations[1]       = {};
+    size_t allocation_sizes[1] = {
+      reduce_grid_size * sizeof(deterministic_accum_t) // bytes needed for privatized block
+                                                       // reductions
+    };
 
-      // Alias the temporary allocations from the single storage blob (or
-      // compute the necessary size of the blob)
-      error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Alias the temporary allocations from the single storage blob (or
+    // compute the necessary size of the blob)
+    error = CubDebug(AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      if (d_temp_storage == nullptr)
-      {
-        // Return if the caller is simply requesting the size of the storage
-        // allocation
-        return cudaSuccess;
-      }
+    if (d_temp_storage == nullptr)
+    {
+      // Return if the caller is simply requesting the size of the storage
+      // allocation
+      return cudaSuccess;
+    }
 
-      // Alias the allocation for the privatized per-block reductions
-      deterministic_accum_t* d_block_reductions = (deterministic_accum_t*) allocations[0];
+    // Alias the allocation for the privatized per-block reductions
+    deterministic_accum_t* d_block_reductions = (deterministic_accum_t*) allocations[0];
 
-      // Log device_reduce_sweep_kernel configuration
+    // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
-              "per thread, %d SM occupancy\n",
-              reduce_grid_size,
-              ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS,
-              (long long) stream,
-              ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD,
-              reduce_config.sm_occupancy);
+    _CubLog("Invoking DeterministicDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), %d items "
+            "per thread, %d SM occupancy\n",
+            reduce_grid_size,
+            ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS,
+            (long long) stream,
+            ActivePolicyT::DeterministicReducePolicy::ITEMS_PER_THREAD,
+            reduce_config.sm_occupancy);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
-        reduce_grid_size, ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS, 0, stream)
-        .doit(reduce_kernel,
-              d_in,
-              d_block_reductions,
-              static_cast<int>(num_items),
-              reduction_op,
-              transform_op,
-              reduce_grid_size);
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(
+      reduce_grid_size, ActivePolicyT::DeterministicReducePolicy::BLOCK_THREADS, 0, stream)
+      .doit(reduce_kernel,
+            d_in,
+            d_block_reductions,
+            static_cast<int>(num_items),
+            reduction_op,
+            transform_op,
+            reduce_grid_size);
 
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Check for failure to launch
+    error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Sync the stream if specified to flush runtime errors
+    error = CubDebug(detail::DebugSyncStream(stream));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
 // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
-              "%d items per thread\n",
-              ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
-              (long long) stream,
-              ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
+    _CubLog("Invoking DeterministicDeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+            "%d items per thread\n",
+            ActivePolicyT::SingleTilePolicy::BLOCK_THREADS,
+            (long long) stream,
+            ActivePolicyT::SingleTilePolicy::ITEMS_PER_THREAD);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
-      // Invoke DeterministicDeviceReduceSingleTileKernel
-      THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
-        .doit(single_tile_kernel,
-              d_block_reductions,
-              d_out,
-              reduce_grid_size, // triple_chevron is not type safe, make sure to use int
-              reduction_op,
-              init,
-              ::cuda::std::__identity{});
+    // Invoke DeterministicDeviceReduceSingleTileKernel
+    THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS, 0, stream)
+      .doit(single_tile_kernel,
+            d_block_reductions,
+            d_out,
+            reduce_grid_size, // triple_chevron is not type safe, make sure to use int
+            reduction_op,
+            init,
+            ::cuda::std::__identity{});
 
-      // Check for failure to launch
-      error = CubDebug(cudaPeekAtLastError());
-      if (cudaSuccess != error)
-      {
-        break;
-      }
+    // Check for failure to launch
+    error = CubDebug(cudaPeekAtLastError());
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-      // Sync the stream if specified to flush runtime errors
-      error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-    } while (0);
+    // Sync the stream if specified to flush runtime errors
+    error = CubDebug(detail::DebugSyncStream(stream));
+    if (cudaSuccess != error)
+    {
+      return error;
+    }
 
-    return error;
+    return cudaSuccess;
   }
 
   //---------------------------------------------------------------------------
@@ -546,7 +481,7 @@ struct DispatchReduceDeterministic
       THRUST_NS_QUALIFIER::make_transform_output_iterator(d_out, AcumFloatTransformT{});
 
     // Create dispatch functor
-    DispatchReduceDeterministic dispatch(
+    DispatchReduceDeterministic dispatch{
       d_temp_storage,
       temp_storage_bytes,
       d_in,
@@ -556,7 +491,7 @@ struct DispatchReduceDeterministic
       init,
       stream,
       ptx_version,
-      transform_op);
+      transform_op};
 
     // Dispatch to chained policy
     error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
