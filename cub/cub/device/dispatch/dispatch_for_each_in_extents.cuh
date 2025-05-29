@@ -45,10 +45,10 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include <cuda/std/__type_traits/integral_constant.h> // cuda::std::integral_constant
-#include <cuda/std/__utility/integer_sequence.h> // cuda::std::index_sequence
 #include <cuda/std/array> // cuda::std::array
 #include <cuda/std/cstddef> // size_t
+#include <cuda/std/type_traits> // cuda::std::integral_constant
+#include <cuda/std/utility> // cuda::std::index_sequence
 
 #define _CUB_RETURN_IF_ERROR(STATUS)       \
   {                                        \
@@ -103,12 +103,12 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   InvokeVariadic(_CUDA_VSTD::true_type, _CUDA_VSTD::index_sequence<Ranks...>) const
   {
-    auto sub_sizes_div_array            = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    auto extents_div_array              = cub::detail::extents_fast_div_mod(_ext, seq);
-    constexpr unsigned block_threads    = ActivePolicyT::for_policy_t::block_threads;
-    constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
-    unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
-
+    using fast_mod_array_t               = _CUDA_VSTD::array<cub::detail::fast_div_mod<index_type>, sizeof...(Ranks)>;
+    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
+    constexpr unsigned block_threads     = ActivePolicyT::for_policy_t::block_threads;
+    constexpr unsigned items_per_thread  = ActivePolicyT::for_policy_t::items_per_thread;
+    unsigned num_cta                     = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 #ifdef CUB_DEBUG_LOG
     _CubLog("Invoking detail::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
             num_cta,
@@ -118,12 +118,12 @@ public:
 #endif
     auto status =
       THRUST_NS_QUALIFIER::cuda_cub::detail::triple_chevron(num_cta, block_threads, 0, _stream)
-        .doit(cub::detail::for_each_in_extents::
-                static_kernel<max_policy_t, OpType, ExtentsType, decltype(sub_sizes_div_array), Ranks...>,
-              _op,
-              _ext,
-              sub_sizes_div_array,
-              extents_div_array);
+        .doit(
+          cub::detail::for_each_in_extents::static_kernel<max_policy_t, OpType, ExtentsType, fast_mod_array_t, Ranks...>,
+          _op,
+          _ext,
+          sub_sizes_div_array,
+          extents_div_array);
     _CUB_RETURN_IF_ERROR(status)
     _CUB_RETURN_IF_STREAM_ERROR(_stream)
     return cudaSuccess;
@@ -133,12 +133,12 @@ public:
   [[nodiscard]] CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   InvokeVariadic(_CUDA_VSTD::false_type, _CUDA_VSTD::index_sequence<Ranks...>) const
   {
-    auto sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    auto extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
-    int items_per_thread     = 2;
-    int block_threads        = 256;
-    auto kernel =
-      cub::detail::for_each_in_extents::dynamic_kernel<OpType, ExtentsType, decltype(sub_sizes_div_array), Ranks...>;
+    using fast_mod_array_t               = _CUDA_VSTD::array<cub::detail::fast_div_mod<index_type>, sizeof...(Ranks)>;
+    fast_mod_array_t sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    fast_mod_array_t extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
+    int items_per_thread                 = 2;
+    int block_threads                    = 256;
+    auto kernel = cub::detail::for_each_in_extents::dynamic_kernel<OpType, ExtentsType, fast_mod_array_t, Ranks...>;
     cudaError_t status = cudaSuccess;
     NV_IF_TARGET(NV_IS_HOST,
                  (int _{}; //
