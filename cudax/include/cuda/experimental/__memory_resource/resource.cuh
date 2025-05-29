@@ -55,7 +55,7 @@ struct __different_non_polymorphic_resources_impl<true>
 
 template <class _Resource, class _OtherResource>
 _CCCL_CONCEPT __different_non_polymorphic_resources =
-  __different_non_polymorphic_resources_impl<_CUDA_VMR::__different_resource<_Resource, _OtherResource>>::__value(
+  __different_non_polymorphic_resources_impl<!_CUDA_VSTD::is_same_v<_Resource, _OtherResource>>::__value(
     static_cast<_Resource*>(nullptr), static_cast<_OtherResource*>(nullptr));
 
 //! @brief Equality comparison between two resources of different types.
