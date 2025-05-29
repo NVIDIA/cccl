@@ -71,7 +71,7 @@ jobs:
           if [[ "${COMPONENT}" == "parallel" ]]; then
             mv dl/*/*${COMPONENT}*.whl dist/
           elif [[ "${COMPONENT}" == "cooperative" || "${COMPONENT}" == "cccl" ]]; then
-            # Wwe build multiple copies right now so squash them into a single file.
+            # We build multiple copies right now so squash them into a single file.
             mv --backup=numbered dl/*/*${COMPONENT}*.whl dist/
             rm -f dist/*~
           elif [[ "${COMPONENT}" == "all" ]]; then
