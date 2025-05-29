@@ -202,13 +202,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 }
 #endif
 
-#if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
-using value_types = all_types;
-#else
-using value_types = fundamental_types;
-#endif
-
-NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(value_types, offset_types))
+NVBENCH_BENCH_TYPES(reduce, NVBENCH_TYPE_AXES(all_types, offset_types))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

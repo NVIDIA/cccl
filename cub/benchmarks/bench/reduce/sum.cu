@@ -30,8 +30,6 @@
 
 // Tuning parameters found for signed integer types apply equally for unsigned integer types
 
-#include <cub/config.cuh>
-
 #include <nvbench_helper.cuh>
 
 // %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
@@ -39,10 +37,6 @@
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
 // TODO(bgruber): let's add __half and __nv_bfloat16 eventually when they compile, since we have fast paths for them.
-#if !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_COMPILER(GCC, <=, 9) && !_CCCL_COMPILER(MSVC, <=, 19, 29)
 using value_types = all_types;
-#else
-using value_types = fundamental_types;
-#endif
-using op_t = ::cuda::std::plus<>;
+using op_t        = ::cuda::std::plus<>;
 #include "base.cuh"
