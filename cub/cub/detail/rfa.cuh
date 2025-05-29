@@ -42,36 +42,47 @@
 #include <cuda/std/climits>
 #include <cuda/std/cmath>
 
-// jump table for indexing into data
-#define _CUB_RFA_MAX_JUMP_ 5
-static_assert(_CUB_RFA_MAX_JUMP_ <= 5, "MAX_JUMP greater than max");
-
 CUB_NAMESPACE_BEGIN
 
-namespace detail
-{
-namespace rfa
+namespace detail::rfa
 {
 
-template <typename Float, int LEN>
+// jump table for indexing into data
+inline constexpr int cub_rfa_max_jump = 5;
+static_assert(cub_rfa_max_jump <= 5, "cub_rfa_max_jump must be less than or equal to 5");
+
+template <typename Float, int Len>
 static _CCCL_DEVICE Float* get_shared_bin_array()
 {
-  static __shared__ Float bin_computed_array[LEN];
+  static __shared__ Float bin_computed_array[Len];
   return bin_computed_array;
 }
 
-template <class ftype>
-struct RFA_bins
+//! Class to hold a reproducible summation of the numbers passed to it
+//!
+//!@param FType Floating-point data type; either `float` or `double
+//!@param Fold  Number of collectors in the binned number (K-fold), used for reproducible summation. Defaults to 3.
+template <class FType, int Fold = 3, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FType>>* = nullptr>
+class alignas(2 * sizeof(FType)) ReproducibleFloatingAccumulator
 {
+public:
+  using ftype = FType;
+
+private:
+  ::cuda::std::array<ftype, 2 * Fold> data{};
+
+  /// Floating-point precision bin width
   static constexpr int bin_width = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
   static constexpr int min_exp   = ::cuda::std::numeric_limits<ftype>::min_exponent;
   static constexpr int max_exp   = ::cuda::std::numeric_limits<ftype>::max_exponent;
   static constexpr int mant_dig  = ::cuda::std::numeric_limits<ftype>::digits;
 
+public:
   /// Binned floating-point maximum index
   static constexpr int max_index = ((max_exp - min_exp + mant_dig - 1) / bin_width) - 1;
+
   // The maximum floating-point fold supported by the library
-  static constexpr int max_fold = max_index + 1;
+  static constexpr auto max_fold = max_index + 1;
 
   _CCCL_DEVICE static ftype initialize_bins(int index) noexcept
   {
@@ -96,33 +107,6 @@ struct RFA_bins
       return ::cuda::std::ldexp(0.75, max_exp + mant_dig - bin_width + 1 - max_index * bin_width);
     }
   }
-};
-
-//! Class to hold a reproducible summation of the numbers passed to it
-//!
-//!@param FType Floating-point data type; either `float` or `double
-//!@param Fold  Number of collectors in the binned number (K-fold), used for reproducible summation. Defaults to 3.
-template <class FType, int Fold = 3, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FType>>* = nullptr>
-class alignas(2 * sizeof(FType)) ReproducibleFloatingAccumulator
-{
-public:
-  using ftype = FType;
-
-private:
-  ::cuda::std::array<ftype, 2 * Fold> data = {0};
-
-  /// Floating-point precision bin width
-  static constexpr int bin_width = ::cuda::std::is_same_v<ftype, double> ? 40 : 13;
-  static constexpr int min_exp   = ::cuda::std::numeric_limits<ftype>::min_exponent;
-  static constexpr int max_exp   = ::cuda::std::numeric_limits<ftype>::max_exponent;
-  static constexpr int mant_dig  = ::cuda::std::numeric_limits<ftype>::digits;
-
-public:
-  /// Binned floating-point maximum index
-  static constexpr int max_index = ((max_exp - min_exp + mant_dig - 1) / bin_width) - 1;
-
-  // The maximum floating-point fold supported by the library
-  static constexpr auto max_fold = max_index + 1;
 
 private:
   /// Binned floating-point compression factor
@@ -166,7 +150,7 @@ private:
   /// Return primary vector value const ref
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& primary(int i) const noexcept
   {
-    if constexpr (Fold <= _CUB_RFA_MAX_JUMP_)
+    if constexpr (Fold <= cub_rfa_max_jump)
     {
       switch (i)
       {
@@ -213,7 +197,7 @@ private:
   /// Return carry vector value const ref
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE const ftype& carry(int i) const noexcept
   {
-    if (Fold <= _CUB_RFA_MAX_JUMP_)
+    if (Fold <= cub_rfa_max_jump)
     {
       switch (i)
       {
@@ -307,7 +291,6 @@ private:
     else
     {
       (void) ::cuda::std::frexpf(x, &exp);
-      // use +max_index to optimize the host constexpr variable `max_index` to be used in the device function
       return (::cuda::std::min)((max_exp - exp) / bin_width, +max_index);
     }
   }
@@ -332,8 +315,8 @@ private:
   //! This method updates the binned fp to an index suitable for adding numbers
   //! with absolute value less than @p max_abs_val
   //!
-  //!@param incpriY stride within Y's primary vector (use every incpriY'th element)
-  //!@param inccarY stride within Y's carry vector (use every inccarY'th element)
+  //! @param incpriY stride within Y's primary vector (use every incpriY'th element)
+  //! @param inccarY stride within Y's carry vector (use every inccarY'th element)
   _CCCL_DEVICE void binned_dmdupdate(const ftype max_abs_val, const int incpriY, const int inccarY)
   {
     if (is_nan_inf_v(primary(0)))
@@ -384,7 +367,7 @@ private:
   //! Performs the operation Y += X on an binned type Y where the index of Y is
   //! larger than the index of @p X
   //!
-  //!@param incpriY stride within Y's primary vector (use every incpriY'th element)
+  //! @param incpriY stride within Y's primary vector (use every incpriY'th element)
   _CCCL_DEVICE void binned_dmddeposit(const ftype X, const int incpriY)
   {
     ftype M;
@@ -855,8 +838,6 @@ struct rfa_float_transform_t
     return accum.conv();
   }
 };
-} // namespace rfa
-
-} // namespace detail
+} // namespace detail::rfa
 
 CUB_NAMESPACE_END
