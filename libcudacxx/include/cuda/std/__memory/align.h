@@ -65,6 +65,8 @@ _LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& 
       return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 8);
     case 16:
       return _CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, 16);
+    default:
+      return __ptr;
   }
 #else // ^^^ _CCCL_BUILTIN_ASSUME_ALIGNED ^^^ / vvv !_CCCL_BUILTIN_ASSUME_ALIGNED vvv
   _CCCL_ASSUME(reinterpret_cast<uintptr_t>(__ptr) % __alignment == 0);
