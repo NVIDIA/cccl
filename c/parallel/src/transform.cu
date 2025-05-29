@@ -152,7 +152,7 @@ struct transform_kernel_source
 
   cub::detail::transform::kernel_arg<char*> MakeAlignedBasePtrKernelArg(indirect_arg_t it, int align)
   {
-    return cub::detail::transform::make_aligned_base_ptr_kernel_arg(static_cast<char*>(&it), align);
+    return cub::detail::transform::make_aligned_base_ptr_kernel_arg(*static_cast<char**>(&it), align);
   }
 };
 

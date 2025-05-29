@@ -200,12 +200,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
 
 struct thread_block
 {
-  _CCCL_DEVICE int size()
+  _CCCL_DEVICE int size() const
   {
     return blockDim.x;
   }
 
-  _CCCL_DEVICE int thread_rank()
+  _CCCL_DEVICE int thread_rank() const
   {
     return blockIdx.x;
   }
