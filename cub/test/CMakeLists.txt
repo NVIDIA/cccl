@@ -340,7 +340,6 @@ foreach (test_src IN LISTS test_srcs)
         add_dependencies(${variant_meta_target} ${test_target})
         add_dependencies(${cub_variant_meta_target} ${test_target})
         target_compile_definitions(${test_target} PRIVATE ${defs})
-        break()
       endforeach() # Variant
     endif() # Has variants
   endforeach() # CUB targets
