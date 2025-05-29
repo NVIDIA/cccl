@@ -44,6 +44,34 @@ TEST_CASE("counting_iterator", "[iterators]")
   }
 }
 
+TEST_CASE("permutation_iterator", "[iterators]")
+{
+  auto discard = cuda::discard_iterator{};
+  { // device system
+    thrust::device_vector<int> vec{1, 2, 3, 4};
+    thrust::device_vector<int> off{0, 1, 2, 3};
+    thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
+                 cuda::permutation_iterator{vec.begin(), off.begin()},
+                 discard);
+  }
+
+  { // host system
+    thrust::host_vector<int> vec{1, 2, 3, 4};
+    thrust::host_vector<int> off{0, 1, 2, 3};
+    thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
+                 cuda::permutation_iterator{vec.begin(), off.begin()},
+                 discard);
+  }
+
+  { // plain std::vector
+    std::vector<int> vec{1, 2, 3, 4};
+    std::vector<int> off{0, 1, 2, 3};
+    thrust::copy(cuda::permutation_iterator{vec.begin(), off.begin()},
+                 cuda::permutation_iterator{vec.begin(), off.begin()},
+                 discard);
+  }
+}
+
 TEST_CASE("strided_iterator", "[iterators]")
 {
   auto discard = cuda::discard_iterator{};
