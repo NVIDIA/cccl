@@ -34,7 +34,7 @@ double Y0(size_t i)
 
 int main()
 {
-  auto ctx;
+  context ctx;
   const size_t N = 16384;
 
   double *X, *Y, *Z;
@@ -52,7 +52,7 @@ int main()
   double alpha = 3.14;
   double beta  = 1664.0;
 
-  auto e = epoch(ctx);
+  auto e = ctx.epoch();
 
   ctx.parallel_for(box(N), e)->*[alpha, X, Y] __device__(size_t i) {
     Y[i] += alpha * X[i];
