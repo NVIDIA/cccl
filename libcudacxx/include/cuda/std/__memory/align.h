@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/pow2.h>
 #include <cuda/std/__memory/assume_aligned.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
@@ -35,6 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 _LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
+  _CCCL_ASSERT(::cuda::is_power_of_two(__alignment), "cuda::std::align: alignment must be a power of two!");
   if (__space < __size)
   {
     return nullptr;
