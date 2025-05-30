@@ -57,11 +57,11 @@ other_args=()
 for arg in "$@"; do
   for switch in "${switches[@]}"; do
     if [ "$arg" = "$switch" ]; then
-      found_switches+=("\"$arg\"")
+      found_switches+=("$arg")
       continue 2
     fi
   done
-  other_args+=("\"$arg\"")
+  other_args+=("$arg")
 done
 
-echo "${found_switches[@]} -- ${other_args[@]}"
+printf '%q ' "${found_switches[@]}" -- "${other_args[@]}"

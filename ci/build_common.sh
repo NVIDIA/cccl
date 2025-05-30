@@ -5,6 +5,11 @@ set -eo pipefail
 # Ensure the script is being executed in its containing directory
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )";
 
+# DO NOT COMMIT: temporarily disable sccache for testing:
+# unset CMAKE_C_COMPILER_LAUNCHER || :
+# unset CMAKE_CXX_COMPILER_LAUNCHER || :
+# unset CMAKE_CUDA_COMPILER_LAUNCHER || :
+
 # Script defaults
 VERBOSE=${VERBOSE:-}
 HOST_COMPILER=${CXX:-g++} # $CXX if set, otherwise `g++`
@@ -56,8 +61,9 @@ while [ "${#args[@]}" -ne 0 ]; do
     -disable-benchmarks) DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
         if [ -n "${args[1]}" ]; then
-            IFS=' ' read -ra split_args <<< "${args[1]}"
-            GLOBAL_CMAKE_OPTIONS+=("${split_args[@]}")
+            # Parse the -cmake-options argument string into the GLOBAL_CMAKE_OPTIONS array
+            # while properly handling spaces and quotes:
+            eval "GLOBAL_CMAKE_OPTIONS=(${args[1]})"
             args=("${args[@]:2}")
         else
             echo "Error: No arguments provided for -cmake-options"
@@ -123,12 +129,14 @@ print_environment_details() {
       CXX \
       CUDACXX \
       CUDAHOSTCXX \
+      CMAKE_CXX_COMPILER_LAUNCHER \
+      CMAKE_C_COMPILER_LAUNCHER \
       NVCC_VERSION \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
       CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
-      GLOBAL_CMAKE_OPTIONS \
+      GLOBAL_CMAKE_OPTIONS[@] \
       TBB_ROOT
 
   echo "Current commit is:"
