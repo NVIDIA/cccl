@@ -165,7 +165,7 @@ struct __rcvr_t
 };
 
 template <class _Sndr>
-_CCCL_API auto __bulk_launch_config(const _Sndr& __sndr) noexcept
+_CCCL_HOST_API auto __bulk_launch_config(const _Sndr& __sndr) noexcept
 {
   constexpr int __block             = 256;
   auto&& [__tag, __params, __child] = __sndr;
