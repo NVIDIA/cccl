@@ -123,6 +123,8 @@ print_environment_details() {
       CXX \
       CUDACXX \
       CUDAHOSTCXX \
+      CMAKE_CXX_COMPILER_LAUNCHER \
+      CMAKE_C_COMPILER_LAUNCHER \
       NVCC_VERSION \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
