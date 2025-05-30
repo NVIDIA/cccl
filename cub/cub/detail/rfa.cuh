@@ -254,17 +254,6 @@ private:
     return const_cast<ftype&>(c.carry(i));
   }
 
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr bool is_zero_v(const ftype x) noexcept
-  {
-    return x == 0.0;
-  }
-
-  [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static constexpr int is_nan_inf_v(const ftype x) noexcept
-  {
-    const auto bits = get_bit_representation(x);
-    return (bits & ((2ull * max_exp - 1) << (mant_dig - 1))) == ((2ull * max_exp - 1) << (mant_dig - 1));
-  }
-
   [[nodiscard]] _CCCL_DEVICE _CCCL_FORCEINLINE static int exp_val(const ftype x) noexcept
   {
     const auto bits = get_bit_representation(x);
@@ -315,24 +304,8 @@ private:
   //! with absolute value less than @p max_abs_val
   _CCCL_DEVICE void binned_update(const ftype max_abs_val)
   {
-    if (is_nan_inf_v(primary(0)))
-    {
-      return;
-    }
-
     int X_index = binned_dindex(max_abs_val);
-    if (is_zero_v(primary(0)))
-    {
-      _CCCL_PRAGMA_UNROLL_FULL()
-      for (int i = 0; i < Fold; i++)
-      {
-        primary(i) = binned_bins(i + X_index);
-        carry(i)   = 0.0;
-      }
-      return;
-    }
-
-    int shift = binned_index() - X_index;
+    int shift   = binned_index() - X_index;
     if (shift > 0)
     {
       _CCCL_PRAGMA_UNROLL_FULL()
@@ -366,12 +339,6 @@ private:
   {
     ftype M;
     ftype x = X;
-
-    if (is_nan_inf_v(x) || is_nan_inf_v(primary(0)))
-    {
-      primary(0) += x;
-      return;
-    }
 
     if (is_binned_index_zero())
     {
@@ -427,11 +394,6 @@ private:
   //! shifting over to the carry vector
   _CCCL_DEVICE _CCCL_FORCEINLINE void binned_renorm()
   {
-    if (is_zero_v(primary(0)) || is_nan_inf_v(primary(0)))
-    {
-      return;
-    }
-
     _CCCL_PRAGMA_UNROLL_FULL()
     for (int i = 0; i < Fold; i++)
     {
@@ -462,27 +424,6 @@ private:
   //! @param x   Another binned fp of the same type
   _CCCL_DEVICE void binned_add(const ReproducibleFloatingAccumulator& x)
   {
-    if (is_zero_v(x.primary(0)))
-    {
-      return;
-    }
-
-    if (is_zero_v(primary(0)))
-    {
-      for (int i = 0; i < Fold; i++)
-      {
-        primary(i) = x.primary(i);
-        carry(i)   = x.carry(i);
-      }
-      return;
-    }
-
-    if (is_nan_inf_v(x.primary(0)) || is_nan_inf_v(primary(0)))
-    {
-      primary(0) += x.primary(0);
-      return;
-    }
-
     const auto X_index = x.binned_index();
     const auto Y_index = this->binned_index();
     const auto shift   = Y_index - X_index;
@@ -540,17 +481,7 @@ private:
 
   [[nodiscard]] _CCCL_DEVICE double conv_binned_to_double() const
   {
-    int i = 0;
-
-    if (is_nan_inf_v(primary(0)))
-    {
-      return primary(0);
-    }
-    if (is_zero_v(primary(0)))
-    {
-      return 0.0;
-    }
-
+    int i              = 0;
     double Y           = 0.0;
     const auto X_index = binned_index();
     if (X_index <= (3 * mant_dig) / bin_width)
@@ -609,15 +540,6 @@ private:
   {
     int i    = 0;
     double Y = 0.0;
-
-    if (is_nan_inf_v(primary(0)))
-    {
-      return primary(0);
-    }
-    if (is_zero_v(primary(0)))
-    {
-      return 0.0;
-    }
 
     // Note that the following order of summation is in order of decreasing
     // exponent. The following code is specific to SBWIDTH=13, FLT_MANT_DIG=24, and
