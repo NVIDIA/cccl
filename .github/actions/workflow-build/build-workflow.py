@@ -495,7 +495,9 @@ def generate_dispatch_job_command(matrix_job, job_type):
     if device_compiler["id"] != "nvcc":
         command += f" -cuda \"{device_compiler['exe']}\""
     if cmake_options:
-        command += f' -cmake-options {cmake_options}'
+        # Escape quotes in cmake_options for shell compatibility:
+        cmake_options = cmake_options.replace('"', '\\"')
+        command += f' -cmake-options "{cmake_options}"'
     if py_version:
         command += f' -py-version "{py_version}"'
 
