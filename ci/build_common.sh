@@ -56,8 +56,9 @@ while [ "${#args[@]}" -ne 0 ]; do
     -disable-benchmarks) DISABLE_CUB_BENCHMARKS=1; args=("${args[@]:1}");;
     -cmake-options)
         if [ -n "${args[1]}" ]; then
-            IFS=' ' read -ra split_args <<< "${args[1]}"
-            GLOBAL_CMAKE_OPTIONS+=("${split_args[@]}")
+            # Parse the -cmake-options argument string into the GLOBAL_CMAKE_OPTIONS array
+            # while properly handling spaces and quotes:
+            eval "GLOBAL_CMAKE_OPTIONS=(${args[1]})"
             args=("${args[@]:2}")
         else
             echo "Error: No arguments provided for -cmake-options"
@@ -130,7 +131,7 @@ print_environment_details() {
       CTEST_PARALLEL_LEVEL \
       CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
-      GLOBAL_CMAKE_OPTIONS \
+      GLOBAL_CMAKE_OPTIONS[@] \
       TBB_ROOT
 
   echo "Current commit is:"
