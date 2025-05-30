@@ -38,7 +38,6 @@
 #endif // no system header
 
 #include <cub/device/dispatch/dispatch_for.cuh>
-#include <cub/device/dispatch/dispatch_for_each_in_extents.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
