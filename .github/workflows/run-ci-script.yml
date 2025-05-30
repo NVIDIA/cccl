@@ -105,7 +105,7 @@ jobs:
         run: |
           ${{github.workspace}}/.devcontainer/launch.sh \
             --docker \
-            --cuda 12.9 \
+            --cuda 12.8 \
             --host gcc13 \
             --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
             --env "CI=$CI" \
