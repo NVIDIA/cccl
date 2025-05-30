@@ -1,0 +1,80 @@
+.. _libcudacxx-extended-api-utility-static-for:
+
+``static_for``
+==============
+
+Defined in ``<cuda/utility>`` header.
+
+.. code:: cuda
+
+    namespace cuda {
+
+    template <auto Size, typename Operator, typename... TArgs>
+    __host__ __device__
+    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+
+    template <auto Start, decltype(Start) End, decltype(Start) Step = 1, typename Operator, typename... TArgs>
+    __host__ __device__
+    constexpr void static_for(Operator op, TArgs&&... args) noexcept
+
+    } // namespace cuda
+
+| The functionality provides a ``for`` loop with compile-time indices.
+| ``static_for`` is available in two forms:
+
+- Executes ``op`` for each value in the range ``[0, Size)``.
+- Executes ``op`` for each value in the range ``[Start, End)`` with step ``Step``.
+
+**Parameters**
+
+- ``Size``: the number of iterations.
+- ``Start``, ``End``, ``Step``: the start, end, and step of the range.
+- ``op``: the function to execute.
+- ``args``: optional arguments to pass to ``op``.
+
+``op`` is a callable object that accepts an ``integral_constant`` of the same type of ``Size`` or ``Start``.
+
+**Constrains**
+
+- ``Size`` must be greater than zero.
+
+**Performance considerations**
+
+- The function is useful as metaprogramming utility and when a loop requires fully unrolling, independently of the compiler constrains, optimization level, and heuristics. In addition, the index is a compile-time constant, which be used in a constant expression and further optimize the code.
+
+Example
+-------
+
+.. code:: cuda
+
+    #include <cuda/utility>
+    #include <cstdio>
+
+    __global__ void kernel() {
+        cuda::static_for<5>([](auto i){ static_assert(i >= 0 && i < 5); });
+
+        cuda::static_for<5>([](auto i){ printf("%d, ", i()); }); // 0, 1, 2, 3, 4,
+        printf("\n");
+
+        cuda::static_for<-5, 7, 3>([](auto i){ printf("%d, ", i()); }); // -5, -2, 1, 4,
+        printf("\n");
+
+        cuda::static_for<5>([](auto i){
+            if constexpr (i > 0) {
+                cuda::static_for<i()>([](auto j){ printf("%d, ", j()); });
+                printf("\n");
+            }
+        });
+        // 0,
+        // 0, 1,
+        // 0, 1, 2,
+        // 0, 1, 2, 3,
+        cuda::static_for<5>([](auto i, int a, int b, int c){}, 1, 2, 3); // 1, 2, 3 optional arguments
+    }
+
+    int main() {
+        kernel<<<1, 1>>>();
+        cudaDeviceSynchronize();
+    }
+
+`See it on Godbolt 🔗 <https://godbolt.org/z/3jdzn1PKh>`_
