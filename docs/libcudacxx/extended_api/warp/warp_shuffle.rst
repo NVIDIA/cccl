@@ -3,6 +3,8 @@
 Warp Shuffle
 ============
 
+Defined in ``<cuda/warp>`` header.
+
 ``warp_shuffle_idx``:
 
 .. code:: cuda
