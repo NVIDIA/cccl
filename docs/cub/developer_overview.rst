@@ -958,3 +958,214 @@ When CUB device algorithms are called on a stream subject to
 `graph capture <https://developer.nvidia.com/blog/cuda-graphs/>`_,
 the NVTX range is reported for the duration of capture (where no execution happens),
 and not when a captured graph is executed later (the actual execution).
+
+Functional requirements API
+************************************
+
+Problem statement
+====================================
+
+Some CUB algorithms are not run-to-run deterministic.
+For instance, usage of decoupled look-back in device scan with floating point types
+leads to different results each time scan is executed.
+This is a flaw for some critical use cases.
+
+To address this issue, CUB could expose an separate set of algorithms.
+So, apart from ``cub::DeviceScan::Sum`` we could have ``cub::DeviceScan::SumDeterministic``.
+The issue with this approach is that there are multiple forms of determinism.
+Some use cases require gpu-to-gpu determinism,
+meaning that the same result is produced on different GPUs.
+There are examples of functional requirement not related to determinism.
+Providing separate API for each of these requirements would lead to a combinatorial explosion of the API surface.
+To address mentioned issues, we introduce functional requirements API.
+
+Functional requirements API
+************************************
+
+Problem statement
+====================================
+
+Some CUB algorithms are not run-to-run deterministic.
+For instance, usage of decoupled look-back in device scan with floating point types
+leads to different results each time scan is executed.
+This is a flaw for some critical use cases.
+
+To address this issue, CUB could expose an separate set of algorithms.
+So, apart from ``cub::DeviceScan::Sum`` we could have ``cub::DeviceScan::SumDeterministic``.
+The issue with this approach is that there are multiple forms of determinism.
+Some use cases require gpu-to-gpu determinism,
+meaning that the same result is produced on different GPUs.
+There are examples of functional requirement not related to determinism.
+Providing separate API for each of these requirements would lead to a combinatorial explosion of the API surface.
+To address mentioned issues, we introduce functional requirements API.
+
+Functional Requirements API
+====================================
+
+The terminology is the following.
+Algorithms provide guarantees, whereas users have requirements.
+Examples of the requirements API:
+
+
+.. code-block:: c++
+
+   // default guarantees (see below)
+   reduce::sum(begin, end);
+
+   // run-to-run determinism is enforced
+   reduce::sum(begin, end, cub::require(cub::run_to_run_determinism));
+
+   // default determinism guarantees, memory footprint limit
+   reduce::sum(begin, end, cub::require(cub::max_memory_footprint(128_KB)));
+
+   // run-to-run deterministic with memory footprint limit
+   reduce::sum(begin, end, cub::require(cub::run_to_run_determinism,
+                                        cub::max_memory_footprint(128_KB)));
+
+
+The requirements belong to requirement catageries.
+For instance, ``cub::run_to_run_determinism`` shares category with ``cub::nondeterminism``.
+Only one requirement per category is allowed in the requirements list.
+
+The requirements API allows:
+
+  #. stateful requirements
+  #. providing requirements in any order
+  #. not instantiating unrelated kernels
+  #. failing at compile time if requirements can't be satisfied
+
+
+The requirements API doesn't allow:
+
+  #. multiple requirements from the same category in the requirements list
+  #. providing requirements from the category that is not supported by the algorithm
+
+
+Users do not see passed this API.
+As far as users are concerned,
+we reserve the right to change default guarantees at any time.
+If there are functional requirements that are critical for users,
+those should be specified specifically.
+
+All guarantees are ordered within the category.
+We reserve the right to select the implementation with stronger guarantees compared to what user requested.
+The remaining part of this section is only related to CUB developers.
+
+
+Guarantees
+====================================
+
+The best form of documentation is code.
+The default guarantees should be visible to the user in a convenient way outside of the documentation.
+This is achieved as follows:
+
+
+.. code-block:: c++
+
+   struct reduce
+   {
+      using default_guarantees_t =                                                                                          // (1)
+        cub::detail::guarantees::guarantees_t<cub::detail::guarantees::determinism_not_guaranteed_t,
+                                              detail::max_memory_footprint_t>;
+
+      template <class IteratorT, class RequirementsT = default_guarantees_t>
+      static auto sum(IteratorT begin, IteratorT end, RequirementsT requirements = default_guarantees_t())                  // (2)
+      {
+        auto guarantees    = cub::detail::requirements::mask(default_guarantees_t(), requirements);                         // (3)
+        auto max_footprint = cub::detail::requirements::match<detail::max_memory_footprint_t>(guarantees);                  // (4)
+        auto determinism = cub::detail::requirements::match<cub::detail::guarantees::run_to_run_deterministic_t>(guarantees); // (5)
+        return reduce::sum(begin, end, determinism, max_footprint);                                                           // (6)
+      }
+   };
+
+
+Above, the default guarantees are provided in (1).
+CUB API receives requirements in (2).
+User-specified requirements mask the default guarantees in (3).
+Concrete guarantees are queried by providing category representative in (4) and (5).
+Finally, tag dispatch can be used to select the proper implementation in (6).
+
+Tag dispatch is used for simple cases.
+Given many requirement categories, it might lead to some complications.
+To address this issue, algorithm author might approach dispatch differently.
+
+Since each requirement is ordered within the category,
+it's possible to order implementation by strength.
+
+
+.. code-block:: c++
+
+    class scan
+    {
+      using weak_guarantees_t = cub::detail::guarantees::guarantees_t<cub::detail::guarantees::determinism_not_guaranteed_t,
+                                                                      detail::discard_partials_t>;
+
+      using strong_guarantees_t = cub::detail::guarantees::guarantees_t<cub::detail::guarantees::run_to_run_deterministic_t,
+                                                                        detail::preserve_partials_in_t<void>>;
+
+      using default_guarantees_t = weak_guarantees_t;
+
+      template <class IteratorT, class RequirementsT>
+      static typename ::cuda::std::enable_if<
+        cub::detail::guarantees::statically_satisfy_t<weak_guarantees_t, RequirementsT>::value,             // (1)
+        scan_backend_detector_t>::type
+      sum_impl(IteratorT begin, IteratorT end, RequirementsT requirements)
+      {
+        return scan_backend_detector_t::weak;
+      }
+
+      template <class IteratorT, class RequirementsT>
+      static typename ::cuda::std::enable_if<
+        !cub::detail::guarantees::statically_satisfy_t<weak_guarantees_t, RequirementsT>::value             // (2)
+          && cub::detail::guarantees::statically_satisfy_t<strong_guarantees_t, RequirementsT>::value,
+        scan_backend_detector_t>::type
+      sum_impl(IteratorT begin, IteratorT end, RequirementsT requirements)
+      {
+        return scan_backend_detector_t::strong;
+      }
+
+    public:
+      template <class T>
+      static detail::preserve_partials_in_t<T> preserve_partials_in(T* d_ptr)
+      {
+        return detail::preserve_partials_in_t<T>{d_ptr};
+      }
+
+      template <class IteratorT, class RequirementsT = default_guarantees_t>
+      scan_backend_detector_t sum(IteratorT begin, IteratorT end, RequirementsT requirements = default_guarantees_t())
+      {
+        return sum_impl(begin, end, cub::detail::requirements::mask(default_guarantees_t(), requirements)); // (3)
+      }
+    };
+
+
+Above, there are two implementations of ``sum``.
+One of them provides statically stronger guarantees than the other.
+Helper facility ``statically_satisfy_t`` can be used to deffer dispatching to SFINAE in (1) and (2).
+
+The guarantees are ordered with ``operator<``.
+For example:
+
+
+.. code-block:: c++
+
+   enum class determinism_t
+   {
+     not_guaranteed,
+     run_to_run
+   };
+
+   template <determinism_t Guarantee>
+   struct determinism_holder_t
+   {
+     static constexpr determinism_t value = Guarantee;
+   };
+
+   template <determinism_t L, determinism_t R>
+   _CCCL_HOST_DEVICE constexpr bool operator<(determinism_holder_t<L>, determinism_holder_t<R>)
+   {
+     return L < R;
+   }
+
+
+This is sufficient to define a guarantee along with the guarantee category.
