@@ -7,7 +7,6 @@ Omissions
 ---------
 
 -  Currently we do not expose any parallel algorithms.
--  Saturation arithmetics have not been implemented yet
 
 Extensions
 ----------
