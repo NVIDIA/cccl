@@ -85,6 +85,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   static_assert(cuda::std::is_same_v<decltype(e4.query(query1)), int>);
   static_assert(cuda::std::is_same_v<decltype(e4.query(query2)), const double&>);
 
+  assert(cuda::std::execution::__query_or(e2, query1, 0) == 42);
+  assert(cuda::std::execution::__query_or(e2, query2, &e2) == &e2);
+
   return true;
 }
 

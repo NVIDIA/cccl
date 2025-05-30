@@ -107,11 +107,11 @@ _CCCL_CONCEPT __advanceable = _CCCL_REQUIRES_EXPR((_Iter), _Iter __i, const _Ite
   requires(_CUDA_VSTD::convertible_to<decltype(__j - __j), _IotaDiffT<_Iter>>));
 
 template <class, class = void>
-struct counting_iterator_category
+struct __counting_iterator_category
 {};
 
 template <class _Tp>
-struct counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::incrementable<_Tp>>>
+struct __counting_iterator_category<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::incrementable<_Tp>>>
 {
   using iterator_category = _CUDA_VSTD::input_iterator_tag;
 };
@@ -124,7 +124,7 @@ template <class _Start,
           _CUDA_VSTD::enable_if_t<_CUDA_VSTD::weakly_incrementable<_Start>, int> = 0,
           _CUDA_VSTD::enable_if_t<_CUDA_VSTD::copyable<_Start>, int>             = 0>
 #endif // ^^^ !_CCCL_HAS_CONCEPTS() ^^^
-struct counting_iterator : public counting_iterator_category<_Start>
+struct counting_iterator : public __counting_iterator_category<_Start>
 {
   using iterator_concept = _CUDA_VSTD::conditional_t<
     __advanceable<_Start>,
