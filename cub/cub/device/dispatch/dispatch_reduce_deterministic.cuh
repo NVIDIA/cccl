@@ -68,10 +68,10 @@ namespace rfa
 {
 
 template <typename ReductionOpT, typename InitT, typename InputIteratorT>
-using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, cub::detail::it_value_t<InputIteratorT>>;
+using AccumT = ::cuda::std::__accumulator_t<ReductionOpT, InitT, it_value_t<InputIteratorT>>;
 
 template <typename OutputIteratorT, typename InputIteratorT>
-using InitT = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::it_value_t<InputIteratorT>>;
+using InitT = non_void_value_t<OutputIteratorT, it_value_t<InputIteratorT>>;
 
 template <typename FloatType                                                              = float,
           typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FloatType>>* = nullptr>
