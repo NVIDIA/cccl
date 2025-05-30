@@ -49,9 +49,19 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{});
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
 
     { // from env and size, no allocation
       const Buffer buf{env, 0};
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{}, 0);
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
@@ -61,9 +71,19 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
+    {
+      const auto buf = cudax::make_async_buffer(stream, Resource{}, 0, T{42});
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
 
     { // from env and size
       const Buffer buf{env, 5};
+      CUDAX_CHECK(buf.size() == 5);
+      CUDAX_CHECK(equal_size_value(buf, 5, T(0)));
+    }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{}, 5);
       CUDAX_CHECK(buf.size() == 5);
       CUDAX_CHECK(equal_size_value(buf, 5, T(0)));
     }
@@ -72,6 +92,36 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
       const Buffer buf{env, 5, T{42}};
       CUDAX_CHECK(buf.size() == 5);
       CUDAX_CHECK(equal_size_value(buf, 5, T(42)));
+    }
+    {
+      const auto buf = cudax::make_async_buffer(stream, Resource{}, 5, T{42});
+      CUDAX_CHECK(buf.size() == 5);
+      CUDAX_CHECK(equal_size_value(buf, 5, T(42)));
+    }
+  }
+
+  { // from env and size with no_init, no allocation
+    SECTION("from env and size with no_init, no allocation")
+    {
+      const Buffer buf{env, 0, cudax::no_init};
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{}, 0, cudax::no_init);
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
+
+    { // from env and size with no_init
+      const Buffer buf{env, 5, cudax::no_init};
+      CUDAX_CHECK(buf.size() == 5);
+      CUDAX_CHECK(buf.data() != nullptr);
+    }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{}, 5, cudax::no_init);
+      CUDAX_CHECK(buf.size() == 5);
+      CUDAX_CHECK(buf.data() != nullptr);
     }
   }
 
@@ -83,9 +133,19 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{}, input.begin(), input.begin());
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
 
     { // can be constructed from two input iterators
       Buffer buf(env, input.begin(), input.end());
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
+    }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{}, input.begin(), input.end());
       CUDAX_CHECK(buf.size() == 6);
       CUDAX_CHECK(equal_range(buf));
     }
@@ -98,9 +158,20 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
+    {
+      const auto buf = cudax::make_async_buffer<T>(stream, Resource{}, cuda::std::array<T, 0>{});
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
 
     { // can be constructed from a non-empty random access range
       Buffer buf(env, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+      CUDAX_CHECK(!buf.empty());
+      CUDAX_CHECK(equal_range(buf));
+    }
+    {
+      const auto buf = cudax::make_async_buffer<T>(
+        stream, Resource{}, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CUDAX_CHECK(!buf.empty());
       CUDAX_CHECK(equal_range(buf));
     }
@@ -114,10 +185,21 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
       CUDAX_CHECK(buf.empty());
       CUDAX_CHECK(buf.data() == nullptr);
     }
+    {
+      const auto buf = cudax::make_async_buffer(stream, Resource{}, cuda::std::initializer_list<T>{});
+      CUDAX_CHECK(buf.empty());
+      CUDAX_CHECK(buf.data() == nullptr);
+    }
 
     { // can be constructed from a non-empty initializer_list
       const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
       Buffer buf(env, input);
+      CUDAX_CHECK(buf.size() == 6);
+      CUDAX_CHECK(equal_range(buf));
+    }
+    {
+      const auto buf = cudax::make_async_buffer(
+        stream, Resource{}, cuda::std::initializer_list<T>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CUDAX_CHECK(buf.size() == 6);
       CUDAX_CHECK(equal_range(buf));
     }
@@ -164,6 +246,7 @@ C2H_TEST("cudax::async_buffer constructors", "[container][async_buffer]", test_t
       CUDAX_CHECK(equal_range(buf));
     }
   }
+  stream.sync();
 
 #if 0 // Implement exception handling
 #  if _CCCL_HAS_EXCEPTIONS()
