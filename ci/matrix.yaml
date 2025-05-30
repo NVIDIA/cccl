@@ -57,7 +57,7 @@ workflows:
     - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: 'rtx2080'}
     ## TODO: Python test jobs cannot be run on consumer cards unless the runners have at least
     ## the same version of CUDA as the build jobs (forward compatibility does not work on consumer cards).
-    - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'python', ctk: '12.8', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}
@@ -107,7 +107,7 @@ workflows:
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang'],   gpu: 'rtx2080'}
     # Python and c/parallel jobs:
     - {jobs: ['test'], project: ['cccl_c_parallel'], gpu: 'rtx2080'}
-    - {jobs: ['test'], project: 'python', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
+    - {jobs: ['test'], project: 'python', ctk: '12.8', py_version: ['3.10', '3.13'], gpu: 'rtxa6000'}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14'], gpu: 'rtx2080'}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang'],   gpu: 'rtx2080'}

@@ -2,6 +2,7 @@ name: Build and Test Python Wheels
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 defaults:
   run:
@@ -14,6 +15,7 @@ jobs:
     with:
       script-command: ci/build_cuda_cccl_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
+      ctk-version: '12.8'
       upload-artifact: true
       upload-artifact-name: wheel-cccl-${{ matrix.python-version }}
       upload-artifact-path: wheelhouse/
@@ -32,6 +34,7 @@ jobs:
     with:
       script-command: ci/test_cuda_cccl_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
+      ctk-version: ${{ matrix.ctk-version }}
       needs-artifact: true
       artifact-name: wheel-cccl-${{ matrix.python-version }}
       artifact-path: wheelhouse/
@@ -39,6 +42,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
+        ctk-version: ['12.8', '12.9']
     permissions:
       id-token: write
       contents: read
@@ -49,6 +53,7 @@ jobs:
     with:
       script-command: ci/build_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
+      ctk-version: '12.8'
       upload-artifact: true
       upload-artifact-name: wheel-cooperative-${{ matrix.python-version }}
       upload-artifact-path: wheelhouse/
@@ -67,6 +72,7 @@ jobs:
     with:
       script-command: ci/test_cuda_cooperative_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
+      ctk-version: ${{ matrix.ctk-version }}
       needs-artifact: true
       artifact-name: wheel-cooperative-${{ matrix.python-version }}
       artifact-path: wheelhouse/
@@ -74,6 +80,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
+        ctk-version: ['12.8', '12.9']
     permissions:
       id-token: write
       contents: read
@@ -84,6 +91,7 @@ jobs:
     with:
       script-command: ci/build_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
+      ctk-version: '12.8'
       upload-artifact: true
       upload-artifact-name: wheel-parallel-${{ matrix.python-version }}
       upload-artifact-path: wheelhouse/
@@ -102,6 +110,7 @@ jobs:
     with:
       script-command: ci/test_cuda_parallel_python.sh -py-version ${{ matrix.python-version }}
       python-version: ${{ matrix.python-version }}
+      ctk-version: ${{ matrix.ctk-version }}
       needs-artifact: true
       artifact-name: wheel-parallel-${{ matrix.python-version }}
       artifact-path: wheelhouse/
@@ -109,6 +118,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13']
+        ctk-version: ['12.8', '12.9']
     permissions:
       id-token: write
       contents: read
