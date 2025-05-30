@@ -268,6 +268,14 @@ struct dispatch_t<StableAddress,
       config->elem_per_thread);
   }
 
+  template <typename It,
+            typename = decltype(kernel_source.MakeAlignedBasePtrKernelArg(
+              THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::declval<It>()), 0))>
+  std::true_type check_if_valid_ublkcp_iterator(int) const;
+
+  template <typename It>
+  std::false_type check_if_valid_ublkcp_iterator(long) const;
+
   template <typename ActivePolicy, size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   invoke_ublkcp_algorithm(::cuda::std::index_sequence<Is...>, ActivePolicy policy)
@@ -279,7 +287,7 @@ struct dispatch_t<StableAddress,
     }
     // Note: this check is moved to runtime to allow for c.parallel's passing of a runtime value for the chosen
     // algorithm.
-    if constexpr ((THRUST_NS_QUALIFIER::is_contiguous_iterator_v<::cuda::std::tuple_element_t<Is, decltype(in)>> && ...))
+    if constexpr ((decltype(check_if_valid_ublkcp_iterator<RandomAccessIteratorsIn>(0))::value && ...))
     {
       auto [launcher, kernel, elem_per_thread] = *ret;
       return launcher.doit(
