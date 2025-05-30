@@ -46,7 +46,7 @@ class new_delete_resource_base : public memory_resource<>
 public:
   void* do_allocate(std::size_t bytes, std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-#if defined(__cpp_aligned_new)
+#if __cpp_aligned_new
     return ::operator new(bytes, std::align_val_t(alignment));
 #else
     // allocate memory for bytes, plus potential alignment correction,
@@ -69,8 +69,8 @@ public:
                      [[maybe_unused]] std::size_t bytes,
                      [[maybe_unused]] std::size_t alignment = THRUST_MR_DEFAULT_ALIGNMENT) override
   {
-#if defined(__cpp_aligned_new)
-#  if defined(__cpp_sized_deallocation)
+#if __cpp_aligned_new
+#  if __cpp_sized_deallocation
     ::operator delete(p, bytes, std::align_val_t(alignment));
 #  else
     ::operator delete(p, std::align_val_t(alignment));

@@ -43,9 +43,9 @@ int main(int, char**)
   test<char>(CHAR_MIN);
   test<signed char>(SCHAR_MIN);
   test<unsigned char>(0);
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t>(0);
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t>(0);
   test<char32_t>(0);
   test<short>(SHRT_MIN);

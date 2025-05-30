@@ -30,9 +30,9 @@ int main(int, char**)
   test<signed char, false>();
   test<unsigned char, true>();
 //    test<wchar_t, false>(); // don't know
-#if TEST_STD_VER > 2017 && defined(__cpp_char8_t)
+#if _CCCL_HAS_CHAR8_T()
   test<char8_t, true>();
-#endif
+#endif // _CCCL_HAS_CHAR8_T()
   test<char16_t, true>();
   test<char32_t, true>();
   test<short, false>();

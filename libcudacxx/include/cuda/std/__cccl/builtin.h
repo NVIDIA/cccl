@@ -1317,8 +1317,7 @@
 
 // std::forward_like builtin
 // Leaving out MSVC for now because it is hard for forward-declare std::forward_like.
-#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && defined(__cpp_lib_forward_like) \
-      && (__cpp_lib_forward_like >= 202217L)
+#    if (_CCCL_COMPILER(CLANG, >=, 17) || _CCCL_COMPILER(GCC, >=, 15)) && (__cpp_lib_forward_like >= 202217L)
 #      define _CCCL_HAS_BUILTIN_STD_FORWARD_LIKE() 1
 #    endif
 #  endif // defined(_GLIBCXX_VERSION) || defined(_LIBCXX_VERSION) || defined(_MSVC_STL_VERSION)

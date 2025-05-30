@@ -47,7 +47,7 @@
 #    include <memory>
 #  endif // _CCCL_COMPILER(NVRTC)
 
-#  ifndef __cpp_lib_constexpr_dynamic_alloc
+#  if !__cpp_lib_constexpr_dynamic_alloc
 namespace std
 {
 _CCCL_EXEC_CHECK_DISABLE

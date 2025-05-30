@@ -7,7 +7,7 @@
 
 #include <unittest/unittest.h>
 
-#ifdef __cpp_lib_concepts
+#if __cpp_lib_concepts
 static_assert(std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
 #endif // __cpp_lib_concepts
 static_assert(cuda::std::indirectly_writable<thrust::device_ptr<uint8_t>, uint8_t>);
