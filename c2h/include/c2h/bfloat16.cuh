@@ -261,9 +261,13 @@ public:
   }
 };
 
+CUB_NAMESPACE_BEGIN
+
 template <>
-struct cub::NumericTraits<bfloat16_t> : BaseTraits<FLOATING_POINT, true, uint16_t, bfloat16_t>
+struct NumericTraits<bfloat16_t> : BaseTraits<FLOATING_POINT, true, uint16_t, bfloat16_t>
 {};
+
+CUB_NAMESPACE_END
 
 #ifdef __GNUC__
 #  pragma GCC diagnostic pop
