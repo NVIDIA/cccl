@@ -3,13 +3,17 @@
 Warp Match All
 ==============
 
-``warp_match_all``:
+Defined in ``<cuda/warp>`` header.
 
 .. code:: cuda
 
+    namespace cuda::device {
+
     template <typename T>
     [[nodiscard]] __device__ bool
-    warp_match_all(const T& data, uint32_t lane_mask = 0xFFFFFFFF)
+    warp_match_all(const T& data, lane_mask = lane_mask::all_active());
+
+    } // namespace cuda::device
 
 The functionality provides a generalized and safe alternative to CUDA warp match all intrinsic ``__match_all_sync``.
 The function allows bitwise comparison of any data size, including raw arrays, pointers, and structs.
@@ -17,20 +21,22 @@ The function allows bitwise comparison of any data size, including raw arrays, p
 **Parameters**
 
 - ``data``: data to compare.
-- ``lane_mask``: mask of the active lanes
+- ``lane_mask``: mask of the active lanes.
 
 **Return value**
 
-- ``true`` if all lanes in the ``lane_mask`` have the same value for ``data``. ``false`` otherwise
+- ``true`` if all lanes in the ``lane_mask`` have the same value for ``data``. ``false`` otherwise.
 
 **Preconditions**
 
-- The functionality is only supported on ``SM >= 70``
-- ``lane_mask`` must be a subset of the active mask and be non-zero
+- The functionality is only supported on ``SM >= 70``.
+- ``lane_mask`` must be a subset of the active mask and be non-zero.
 
 **Performance considerations**
 
 - The function calls the PTX instruction ``match.sync`` :math:`ceil\left(\frac{sizeof(data)}{4}\right)` times.
+- The function is slightly faster when called with a mask of all active lanes (overload function) even if all lanes participates in the call.
+- The function is slower when called with a non-fully active warp.
 
 **References**
 
@@ -53,6 +59,7 @@ Example
 
     __global__ void warp_match_kernel() {
         assert(cuda::device::warp_match_all(2));
+        assert(cuda::device::warp_match_all(2, cuda::device::lane_mask::all()));
         assert(cuda::device::warp_match_all(MyStruct{1.0, 3}));
         assert(!cuda::device::warp_match_all(threadIdx.x));
     }
@@ -63,4 +70,4 @@ Example
         return 0;
     }
 
-`See it on Godbolt 🔗 <https://godbolt.org/z/MYv7jMsss>`_
+`See it on Godbolt 🔗 <https://godbolt.org/z/Eq81fTb8z>`_

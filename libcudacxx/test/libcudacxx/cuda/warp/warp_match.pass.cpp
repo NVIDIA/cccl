@@ -21,7 +21,7 @@ __device__ void test_types(T valueA = T{}, T valueB = T{1})
 {
   for (int i = 1; i < 32; ++i)
   {
-    auto mask = (1u << i) - 1;
+    auto mask = cuda::device::lane_mask{(1u << i) - 1};
     assert(cuda::device::warp_match_all(valueA, mask));
     auto value = threadIdx.x == 0 ? valueA : valueB;
     assert(!cuda::device::warp_match_all(value, mask));
