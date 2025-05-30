@@ -174,6 +174,13 @@ struct graph_node_ref
     return __node_;
   }
 
+  //! \brief Retrieves the CUDA graph this node belongs to.
+  //! \return The CUDA graph.
+  [[nodiscard]] _CCCL_TRIVIAL_HOST_API constexpr auto get_graph() const noexcept -> cudaGraph_t
+  {
+    return __graph_;
+  }
+
   //! \brief Retrieves the type of the CUDA graph node.
   //! \return The type of the graph node as a graph_node_type.
   //! \pre The internal graph node handle is not null.
