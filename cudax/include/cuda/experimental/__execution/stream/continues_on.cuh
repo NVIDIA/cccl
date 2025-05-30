@@ -59,7 +59,7 @@ struct stream_domain::__apply_t<continues_on_t>
       execution::start(__opstate_);
       if (auto __status = ::cudaStreamSynchronize(__stream_.get()); __status != ::cudaSuccess)
       {
-        printf("stream continues_on failed to synchronize stream\n");
+        printf("stream continues_on failed to synchronize stream: (%d)\n", __status);
         execution::set_error(static_cast<_Rcvr&&>(__rcvr_), cudaError_t(__status));
       }
     }
