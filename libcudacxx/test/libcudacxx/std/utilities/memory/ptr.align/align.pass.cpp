@@ -17,8 +17,8 @@
 
 #include "test_macros.h"
 
-#if !TEST_CUDA_COMPILER(NVCC, ==, 12, 0) || !TEST_COMPILER(MSVC)
-#  if TEST_HAS_CUDA_COMPILER()
+#if TEST_HAS_CUDA_COMPILER()
+
 struct MutableStruct
 {
   mutable int v;
@@ -52,17 +52,17 @@ __global__ void test_kernel(const _CCCL_GRID_CONSTANT MutableStruct grid_constan
     void* local_ptr = &local_var;
     assert(is_address_from(address_space::local, cuda::std::align(4, 10, local_ptr, space)));
   }
-#    if _CCCL_HAS_GRID_CONSTANT()
+// Compilation with lang-14 with nvcc-12 stucks
+#  if _CCCL_HAS_GRID_CONSTANT() && !_CCCL_COMPILER(CLANG, <=, 14) && !_CCCL_CUDA_COMPILER(NVCC, ==, 12, 0)
   {
-    void* grid_constant_ptr = &grid_constant_var.v;
+    void* grid_constant_ptr = const_cast<void*>(static_cast<const void*>(&grid_constant_var.v));
     assert(is_address_from(address_space::grid_constant, cuda::std::align(4, 10, grid_constant_ptr, space)));
   }
-#    endif // _CCCL_HAS_GRID_CONSTANT()
-
+#  endif // _CCCL_HAS_GRID_CONSTANT() && !_CCCL_COMPILER(CLANG, <= 14)
   // todo: test address_space::cluster_shared
 }
-#  endif // TEST_HAS_CUDA_COMPILER()
-#endif // !TEST_CUDA_COMPILER(NVCC, ==, 12, 0) || !TEST_COMPILER(MSVC)
+
+#endif // TEST_HAS_CUDA_COMPILER()
 
 int main(int, char**)
 {
@@ -132,11 +132,9 @@ int main(int, char**)
   assert(r == nullptr);
   assert(s == N);
 
-#if !TEST_CUDA_COMPILER(NVCC, ==, 12, 0) || !TEST_COMPILER(MSVC)
-#  if TEST_HAS_CUDA_COMPILER()
+#if TEST_HAS_CUDA_COMPILER()
   NV_IF_TARGET(NV_IS_HOST, (test_kernel<<<1, 1>>>(MutableStruct{}); assert(cudaDeviceSynchronize() == cudaSuccess);))
-#  endif // TEST_HAS_CUDA_COMPILER()
-#endif // !TEST_CUDA_COMPILER(NVCC, ==, 12, 0) || !TEST_COMPILER(MSVC)
+#endif // TEST_HAS_CUDA_COMPILER()
 
   return 0;
 }
