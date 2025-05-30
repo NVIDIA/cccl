@@ -30,7 +30,7 @@
 namespace cuda::experimental::execution
 {
 /////////////////////////////////////////////////////////////////////////////////
-// sync_wait: customization for the stream scheduler
+// sequence: customization for the stream scheduler
 template <>
 struct stream_domain::__apply_t<sequence_t>
 {

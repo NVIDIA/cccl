@@ -30,7 +30,7 @@
 namespace cuda::experimental::execution
 {
 /////////////////////////////////////////////////////////////////////////////////
-// sync_wait: customization for the stream scheduler
+// let_value, let_error, let_stopped: customization for the stream scheduler
 template <__disposition_t _Disposition>
 struct stream_domain::__apply_t<__let_t<_Disposition>>
 {

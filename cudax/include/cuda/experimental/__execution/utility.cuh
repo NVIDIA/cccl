@@ -176,11 +176,13 @@ struct __managed_box : private __immovable
   {
     void* __ptr = nullptr;
     _CCCL_TRY_CUDA_API(::cudaMallocManaged, "cudaMallocManaged failed", &__ptr, __size);
+    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure the memory is allocated before returning it.
     return __ptr;
   }
 
   _CCCL_HOST_API static void operator delete(void* __ptr, size_t) noexcept
   {
+    _CUDA_VSTD::ignore = ::cudaDeviceSynchronize(); // Ensure all operations on the memory are complete.
     _CUDA_VSTD::ignore = ::cudaFree(__ptr);
   }
 
