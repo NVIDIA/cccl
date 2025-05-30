@@ -108,6 +108,8 @@ struct hub_t
 
 DECLARE_LAUNCH_WRAPPER(DeterministicSum, deterministic_sum);
 
+// TODO (srinivasyadav18): Replace with macro `REQUIRE_APPROX_EQ_EPSILON` once the PR
+// https://github.com/NVIDIA/cccl/pull/4842 is merged
 template <typename T>
 bool approx_eq(const T& expected, const T& actual, const double tolerance = 0.01)
 {
@@ -129,7 +131,11 @@ C2H_TEST("Deterministic Device reduce works with float and double on gpu", "[red
 
   deterministic_sum(d_input_ptr, d_output.begin(), num_items);
 
-  c2h::host_vector<type> h_input  = d_input;
+  c2h::host_vector<type> h_input = d_input;
+
+  // Requires `std::accumulate` to produce deterministic result which is required for comparison
+  // with the device RFA result.
+  // NOTE: `std::reduce` is not equivalent
   const type h_expected           = std::accumulate(h_input.begin(), h_input.end(), type{}, ::cuda::std::plus<type>());
   c2h::host_vector<type> h_output = d_output;
 
@@ -187,7 +193,7 @@ void deterministic_reduce_gpu(const int N)
   // device RFA result should be approximately equal to host result
   REQUIRE(approx_eq(h_expected, res_p1));
 
-  // Both results should be same, as RFA is deterministic
+  // Both device RFA results should be strictly equal, as RFA is deterministic
   REQUIRE(res_p1 == res_p2);
 }
 

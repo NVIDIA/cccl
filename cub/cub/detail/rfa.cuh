@@ -60,8 +60,8 @@ static _CCCL_DEVICE FType* get_shared_bin_array()
 
 //! Class to hold a reproducible summation of the numbers passed to it
 //!
-//!@param FType Floating-point data type; either `float` or `double
-//!@param Fold  Number of collectors in the binned number (K-fold), used for reproducible summation. Defaults to 3.
+//! @param FType Floating-point data type; either `float` or `double
+//! @param Fold  Number of collectors in the binned number (K-fold), used for reproducible summation. Defaults to 3.
 template <class FType, int Fold = 3, ::cuda::std::enable_if_t<::cuda::std::is_floating_point_v<FType>>* = nullptr>
 class alignas(2 * sizeof(FType)) ReproducibleFloatingAccumulator
 {
